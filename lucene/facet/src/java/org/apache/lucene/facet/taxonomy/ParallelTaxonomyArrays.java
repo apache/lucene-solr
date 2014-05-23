@@ -42,6 +42,10 @@ package org.apache.lucene.facet.taxonomy;
  */
 public abstract class ParallelTaxonomyArrays {
 
+  /** Sole constructor. */
+  public ParallelTaxonomyArrays() {
+  }
+
   /**
    * Returns the parents array, where {@code parents[i]} denotes the parent of
    * category ordinal {@code i}.

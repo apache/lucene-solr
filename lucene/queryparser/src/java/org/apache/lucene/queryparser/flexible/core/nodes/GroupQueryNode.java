@@ -73,7 +73,7 @@ public class GroupQueryNode extends QueryNodeImpl {
   }
 
   public void setChild(QueryNode child) {
-    List<QueryNode> list = new ArrayList<QueryNode>();
+    List<QueryNode> list = new ArrayList<>();
     list.add(child);
     this.set(list);
   }

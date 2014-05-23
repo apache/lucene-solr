@@ -21,12 +21,14 @@ import java.io.Reader;
 import java.util.Map;
 
 import org.apache.lucene.analysis.util.TokenizerFactory;
-import org.apache.lucene.util.AttributeSource.AttributeFactory;
+import org.apache.lucene.util.AttributeFactory;
 
 /**
  * Factory for the SmartChineseAnalyzer {@link SentenceTokenizer}
  * @lucene.experimental
+ * @deprecated Use {@link HMMChineseTokenizerFactory} instead
  */
+@Deprecated
 public class SmartChineseSentenceTokenizerFactory extends TokenizerFactory {
   
   /** Creates a new SmartChineseSentenceTokenizerFactory */
@@ -38,7 +40,7 @@ public class SmartChineseSentenceTokenizerFactory extends TokenizerFactory {
   }
   
   @Override
-  public SentenceTokenizer create(AttributeFactory factory, Reader input) {
-    return new SentenceTokenizer(factory, input);
+  public SentenceTokenizer create(AttributeFactory factory) {
+    return new SentenceTokenizer(factory);
   }
 }

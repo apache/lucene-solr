@@ -17,10 +17,12 @@
 package org.apache.solr.handler.dataimport;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
 
@@ -138,7 +140,7 @@ public class FileDataSource extends DataSource<Reader> {
   protected Reader openStream(File file) throws FileNotFoundException,
           UnsupportedEncodingException {
     if (encoding == null) {
-      return new InputStreamReader(new FileInputStream(file), "UTF-8");
+      return new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8);
     } else {
       return new InputStreamReader(new FileInputStream(file), encoding);
     }

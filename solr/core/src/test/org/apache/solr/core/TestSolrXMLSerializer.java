@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,8 +39,8 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrXMLSerializer.SolrCoreXMLDef;
 import org.apache.solr.core.SolrXMLSerializer.SolrXMLDef;
 import org.junit.Test;
@@ -48,7 +49,7 @@ import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
 
-public class TestSolrXMLSerializer extends LuceneTestCase {
+public class TestSolrXMLSerializer extends SolrTestCaseJ4 {
   private static final XPathFactory xpathFactory = XPathFactory.newInstance();
   private static final String defaultCoreNameKey = "defaultCoreName";
   private static final String defaultCoreNameVal = "collection1";
@@ -72,21 +73,19 @@ public class TestSolrXMLSerializer extends LuceneTestCase {
         sharedLibVal, adminPathKey, adminPathVal, shareSchemaKey,
         shareSchemaVal, instanceDirKey, instanceDirVal);
     
-    Writer w = new StringWriter();
+    StringWriter w = new StringWriter();
     try {
       serializer.persist(w, solrXMLDef);
     } finally {
       w.close();
     }
     
-    assertResults(((StringWriter) w).getBuffer().toString().getBytes("UTF-8"));
-    
-    // again with default file
-    File tmpFile = _TestUtil.createTempFile("solr.xml", null, TEMP_DIR);
-    
-    serializer.persistFile(tmpFile, solrXMLDef);
+    assertResults(w.toString().getBytes(StandardCharsets.UTF_8));
 
-    assertResults(FileUtils.readFileToString(tmpFile, "UTF-8").getBytes("UTF-8"));
+    // again with default file
+    File tmpFile = new File(createTempDir(), "solr.xml");
+    serializer.persistFile(tmpFile, solrXMLDef);
+    assertResults(FileUtils.readFileToByteArray(tmpFile));
     tmpFile.delete();
   }
 
@@ -117,12 +116,12 @@ public class TestSolrXMLSerializer extends LuceneTestCase {
       String adminPathVal, String shareSchemaKey, String shareSchemaVal,
       String instanceDirKey, String instanceDirVal) {
     // <solr attrib="value">
-    Map<String,String> rootSolrAttribs = new HashMap<String,String>();
+    Map<String,String> rootSolrAttribs = new HashMap<>();
     rootSolrAttribs.put(sharedLibKey, sharedLibVal);
     rootSolrAttribs.put(peristentKey, persistentVal);
     
     // <solr attrib="value"> <cores attrib="value">
-    Map<String,String> coresAttribs = new HashMap<String,String>();
+    Map<String,String> coresAttribs = new HashMap<>();
     coresAttribs.put(adminPathKey, adminPathVal);
     coresAttribs.put(shareSchemaKey, shareSchemaVal);
     coresAttribs.put(defaultCoreNameKey, defaultCoreNameVal);
@@ -130,9 +129,9 @@ public class TestSolrXMLSerializer extends LuceneTestCase {
     SolrXMLDef solrXMLDef = new SolrXMLDef();
     
     // <solr attrib="value"> <cores attrib="value"> <core attrib="value">
-    List<SolrCoreXMLDef> solrCoreXMLDefs = new ArrayList<SolrCoreXMLDef>();
+    List<SolrCoreXMLDef> solrCoreXMLDefs = new ArrayList<>();
     SolrCoreXMLDef coreDef = new SolrCoreXMLDef();
-    Map<String,String> coreAttribs = new HashMap<String,String>();
+    Map<String,String> coreAttribs = new HashMap<>();
     coreAttribs.put(instanceDirKey, instanceDirVal);
     coreDef.coreAttribs = coreAttribs ;
     coreDef.coreProperties = new Properties();
@@ -143,6 +142,9 @@ public class TestSolrXMLSerializer extends LuceneTestCase {
     solrXMLDef.containerProperties = containerProperties ;
     solrXMLDef.solrAttribs = rootSolrAttribs;
     solrXMLDef.coresAttribs = coresAttribs;
+    solrXMLDef.loggingAttribs = new HashMap<>();
+    solrXMLDef.loggingAttribs = new HashMap<>();
+    solrXMLDef.watcherAttribs = new HashMap<>();
     return solrXMLDef;
   }
   

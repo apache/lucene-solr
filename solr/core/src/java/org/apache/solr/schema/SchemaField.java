@@ -201,7 +201,7 @@ public final class SchemaField extends FieldProperties {
       defaultValue = (String)props.get(DEFAULT_VALUE);
     }
     SchemaField field = new SchemaField(name, ft, calcProps(name, ft, props), defaultValue);
-    field.args = new HashMap<String,Object>(props);
+    field.args = new HashMap<>(props);
     return field;
   }
 
@@ -239,13 +239,21 @@ public final class SchemaField extends FieldProperties {
 
     if (on(falseProps,INDEXED)) {
       int pp = (INDEXED 
-              | STORE_TERMVECTORS | STORE_TERMPOSITIONS | STORE_TERMOFFSETS
-              | SORT_MISSING_FIRST | SORT_MISSING_LAST);
+              | STORE_TERMVECTORS | STORE_TERMPOSITIONS | STORE_TERMOFFSETS);
       if (on(pp,trueProps)) {
         throw new RuntimeException("SchemaField: " + name + " conflicting 'true' field options for non-indexed field:" + props);
       }
       p &= ~pp;
     }
+    
+    if (on(falseProps,INDEXED) && on(falseProps,DOC_VALUES)) {
+      int pp = (SORT_MISSING_FIRST | SORT_MISSING_LAST);
+      if (on(pp,trueProps)) {
+        throw new RuntimeException("SchemaField: " + name + " conflicting 'true' field options for non-indexed/non-docValues field:" + props);
+      }
+      p &= ~pp;
+    }
+    
     if (on(falseProps,INDEXED)) {
       int pp = (OMIT_NORMS | OMIT_TF_POSITIONS | OMIT_POSITIONS);
       if (on(pp,falseProps)) {
@@ -305,7 +313,7 @@ public final class SchemaField extends FieldProperties {
    * not overridden in the field declaration).
    */
   public SimpleOrderedMap<Object> getNamedPropertyValues(boolean showDefaults) {
-    SimpleOrderedMap<Object> properties = new SimpleOrderedMap<Object>();
+    SimpleOrderedMap<Object> properties = new SimpleOrderedMap<>();
     properties.add(FIELD_NAME, getName());
     properties.add(TYPE_NAME, getType().getTypeName());
     if (showDefaults) {

@@ -21,6 +21,7 @@
     </orderEntry>
     <orderEntry type="library" scope="TEST" name="JUnit" level="project" />
     <orderEntry type="module" scope="TEST" module-name="lucene-test-framework" />
+    <orderEntry type="module" scope="TEST" module-name="codecs" />
     <orderEntry type="module" module-name="lucene-core" />
   </component>
 </module>

@@ -88,7 +88,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     String[] dates = {"0299-12-31T23:59:59.999Z","2000-01-01T00:00:00.000Z","2000-01-01T00:00:00.001Z",  "0299-12-31T23:59:59.998Z","2000-01-01T00:00:00.002Z" };
 
     // fields that normal range queries should work on
-    Map<String,String[]> norm_fields = new HashMap<String,String[]>();
+    Map<String,String[]> norm_fields = new HashMap<>();
     norm_fields.put("foo_i", ints);
     norm_fields.put("foo_l", longs);
     norm_fields.put("foo_d", doubles);
@@ -103,7 +103,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
 
 
     // fields that frange queries should work on
-    Map<String,String[]> frange_fields = new HashMap<String,String[]>();
+    Map<String,String[]> frange_fields = new HashMap<>();
     frange_fields.put("foo_i", ints);
     frange_fields.put("foo_l", longs);
     frange_fields.put("foo_d", doubles);
@@ -113,19 +113,15 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     frange_fields.put("foo_td", doubles);
     frange_fields.put("foo_tdt", dates);
 
-    frange_fields.put("foo_pi", ints);
-    frange_fields.put("foo_pl", longs);
-    frange_fields.put("foo_pd", doubles);
-
     frange_fields.put("foo_s", strings);
     frange_fields.put("foo_dt", dates);
 
-    Map<String,String[]> all_fields = new HashMap<String,String[]>();
+    Map<String,String[]> all_fields = new HashMap<>();
     all_fields.putAll(norm_fields);
     all_fields.putAll(frange_fields);
 
     for (int j=0; j<ints.length-2; j++) {
-      List<String> fields = new ArrayList<String>();
+      List<String> fields = new ArrayList<>();
       fields.add("id");
       fields.add(""+j);
       for (Map.Entry<String,String[]> entry : all_fields.entrySet()) {
@@ -202,9 +198,8 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
   @Test
   public void testRandomRangeQueries() throws Exception {
     String handler="";
-    final String[] fields = {"foo_s","foo_i","foo_l","foo_f","foo_d"  // SortableIntField, etc
-            ,"foo_pi","foo_pl","foo_pf","foo_pd"                      // plain int  IntField, etc
-            ,"foo_ti","foo_tl","foo_tf","foo_td"                      // trie numer fields
+    final String[] fields = {"foo_s","foo_i","foo_l","foo_f","foo_d"
+            ,"foo_ti","foo_tl","foo_tf","foo_td"
     };
     final int l=5;
     final int u=25;
@@ -226,8 +221,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     };
     
     // fields that a value source range query should work on
-    String[] frange_fields = {"foo_i","foo_l","foo_f","foo_d",
-            "foo_pi","foo_pl","foo_pf","foo_pd"};
+    String[] frange_fields = {"foo_i","foo_l","foo_f","foo_d"};
 
     for (int i=0; i<1000; i++) {
       int lower = l + r.nextInt(u-l+10)-5;
@@ -239,7 +233,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
       // lower=2; upper=2; inclusive=true;      
       // inclusive=true; lowerMissing=true; upperMissing=true;    
 
-      List<String> qs = new ArrayList<String>();
+      List<String> qs = new ArrayList<>();
       for (String field : norm_fields) {
         String q = field + ':' + (inclusive?'[':'{')
                 + (lowerMissing?"*":lower)

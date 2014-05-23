@@ -28,13 +28,13 @@ import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
-import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.packed.PackedInts;
 import org.junit.Ignore;
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
-@Ignore("Requires tons of heap to run (10G works)")
+@Ignore("Requires tons of heap to run (30 GB hits OOME but 35 GB passes after ~4.5 hours)")
 @TimeoutSuite(millis = 100 * TimeUnits.HOUR)
 public class Test2BFST extends LuceneTestCase {
 
@@ -45,17 +45,17 @@ public class Test2BFST extends LuceneTestCase {
     IntsRef input = new IntsRef(ints, 0, ints.length);
     long seed = random().nextLong();
 
-    Directory dir = new MMapDirectory(_TestUtil.getTempDir("2BFST"));
+    Directory dir = new MMapDirectory(createTempDir("2BFST"));
 
     for(int doPackIter=0;doPackIter<2;doPackIter++) {
       boolean doPack = doPackIter == 1;
 
-      // Build FST w/ NoOutputs and stop when nodeCount > 3B
+      // Build FST w/ NoOutputs and stop when nodeCount > 2.2B
       if (!doPack) {
         System.out.println("\nTEST: 3B nodes; doPack=false output=NO_OUTPUTS");
         Outputs<Object> outputs = NoOutputs.getSingleton();
         Object NO_OUTPUT = outputs.getNoOutput();
-        final Builder<Object> b = new Builder<Object>(FST.INPUT_TYPE.BYTE1, 0, 0, false, false, Integer.MAX_VALUE, outputs,
+        final Builder<Object> b = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs,
                                                       null, doPack, PackedInts.COMPACT, true, 15);
 
         int count = 0;
@@ -72,7 +72,7 @@ public class Test2BFST extends LuceneTestCase {
           if (count % 100000 == 0) {
             System.out.println(count + ": " + b.fstSizeInBytes() + " bytes; " + b.getTotStateCount() + " nodes");
           }
-          if (b.getTotStateCount() > LIMIT) {
+          if (b.getTotStateCount() > Integer.MAX_VALUE + 100L * 1024 * 1024) {
             break;
           }
           nextInput(r, ints2);
@@ -98,7 +98,7 @@ public class Test2BFST extends LuceneTestCase {
           }
 
           System.out.println("\nTEST: enum all input/outputs");
-          IntsRefFSTEnum<Object> fstEnum = new IntsRefFSTEnum<Object>(fst);
+          IntsRefFSTEnum<Object> fstEnum = new IntsRefFSTEnum<>(fst);
 
           Arrays.fill(ints2, 0);
           r = new Random(seed);
@@ -124,7 +124,7 @@ public class Test2BFST extends LuceneTestCase {
             fst.save(out);
             out.close();
             IndexInput in = dir.openInput("fst", IOContext.DEFAULT);
-            fst = new FST<Object>(in, outputs);
+            fst = new FST<>(in, outputs);
             in.close();
           } else {
             dir.deleteFile("fst");
@@ -137,7 +137,7 @@ public class Test2BFST extends LuceneTestCase {
       {
         System.out.println("\nTEST: 3 GB size; doPack=" + doPack + " outputs=bytes");
         Outputs<BytesRef> outputs = ByteSequenceOutputs.getSingleton();
-        final Builder<BytesRef> b = new Builder<BytesRef>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs,
+        final Builder<BytesRef> b = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs,
                                                           null, doPack, PackedInts.COMPACT, true, 15);
 
         byte[] outputBytes = new byte[20];
@@ -177,7 +177,7 @@ public class Test2BFST extends LuceneTestCase {
           }
 
           System.out.println("\nTEST: enum all input/outputs");
-          IntsRefFSTEnum<BytesRef> fstEnum = new IntsRefFSTEnum<BytesRef>(fst);
+          IntsRefFSTEnum<BytesRef> fstEnum = new IntsRefFSTEnum<>(fst);
 
           Arrays.fill(ints, 0);
           r = new Random(seed);
@@ -201,7 +201,7 @@ public class Test2BFST extends LuceneTestCase {
             fst.save(out);
             out.close();
             IndexInput in = dir.openInput("fst", IOContext.DEFAULT);
-            fst = new FST<BytesRef>(in, outputs);
+            fst = new FST<>(in, outputs);
             in.close();
           } else {
             dir.deleteFile("fst");
@@ -214,7 +214,7 @@ public class Test2BFST extends LuceneTestCase {
       {
         System.out.println("\nTEST: 3 GB size; doPack=" + doPack + " outputs=long");
         Outputs<Long> outputs = PositiveIntOutputs.getSingleton();
-        final Builder<Long> b = new Builder<Long>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs,
+        final Builder<Long> b = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs,
                                                   null, doPack, PackedInts.COMPACT, true, 15);
 
         long output = 1;
@@ -260,7 +260,7 @@ public class Test2BFST extends LuceneTestCase {
           }
 
           System.out.println("\nTEST: enum all input/outputs");
-          IntsRefFSTEnum<Long> fstEnum = new IntsRefFSTEnum<Long>(fst);
+          IntsRefFSTEnum<Long> fstEnum = new IntsRefFSTEnum<>(fst);
 
           Arrays.fill(ints, 0);
           r = new Random(seed);
@@ -285,7 +285,7 @@ public class Test2BFST extends LuceneTestCase {
             fst.save(out);
             out.close();
             IndexInput in = dir.openInput("fst", IOContext.DEFAULT);
-            fst = new FST<Long>(in, outputs);
+            fst = new FST<>(in, outputs);
             in.close();
           } else {
             dir.deleteFile("fst");

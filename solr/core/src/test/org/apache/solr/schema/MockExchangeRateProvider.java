@@ -29,7 +29,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
  * Simple mock provider with fixed rates and some assertions
  */
 public class MockExchangeRateProvider implements ExchangeRateProvider {
-  private static Map<String,Double> map = new HashMap<String,Double>();
+  private static Map<String,Double> map = new HashMap<>();
   static {
     map.put("USD,EUR", 0.8);
     map.put("EUR,USD", 1.2);
@@ -59,7 +59,7 @@ public class MockExchangeRateProvider implements ExchangeRateProvider {
     Set<String> currenciesPairs = map.keySet();
     Set<String> returnSet;
     
-    returnSet = new HashSet<String>();
+    returnSet = new HashSet<>();
     for (String c : currenciesPairs) {
       String[] pairs = c.split(",");
       returnSet.add(pairs[0]);

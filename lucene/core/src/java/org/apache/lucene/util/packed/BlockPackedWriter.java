@@ -17,6 +17,8 @@ package org.apache.lucene.util.packed;
  * limitations under the License.
  */
 
+import static org.apache.lucene.util.BitUtil.zigZagEncode;
+
 import java.io.IOException;
 
 import org.apache.lucene.store.DataOutput;

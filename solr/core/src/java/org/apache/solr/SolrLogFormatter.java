@@ -17,20 +17,24 @@ package org.apache.solr;
  * limitations under the License.
  */
 
-import org.apache.solr.cloud.ZkController;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestInfo;
-import org.slf4j.LoggerFactory;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
-import java.util.logging.*;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Formatter;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
+
+import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
+import org.slf4j.LoggerFactory;
 
 public class SolrLogFormatter extends Formatter {
 
@@ -43,7 +47,7 @@ public class SolrLogFormatter extends Formatter {
 
   long startTime = System.currentTimeMillis();
   long lastTime = startTime;
-  Map<Method, String> methodAlias = new HashMap<Method, String>();
+  Map<Method, String> methodAlias = new HashMap<>();
   
   public static class Method {
     public String className;
@@ -102,17 +106,17 @@ public class SolrLogFormatter extends Formatter {
     Map<String, Object> coreProps;
   }
 
-  Map<SolrCore, CoreInfo> coreInfoMap = new WeakHashMap<SolrCore, CoreInfo>();    // TODO: use something that survives across a core reload?
+  Map<SolrCore, CoreInfo> coreInfoMap = new WeakHashMap<>();    // TODO: use something that survives across a core reload?
 
-  public Map<String,String> classAliases = new HashMap<String, String>();
+  public Map<String,String> classAliases = new HashMap<>();
 
   @Override
   public String format(LogRecord record) {
     try {
       return _format(record);
-    } catch (Throwable th) {
+    } catch (Exception e) {
       // logging swallows exceptions, so if we hit an exception we need to convert it to a string to see it
-      return "ERROR IN SolrLogFormatter! original message:" + record.getMessage() + "\n\tException: " + SolrException.toStr(th);
+      return "ERROR IN SolrLogFormatter! original message:" + record.getMessage() + "\n\tException: " + SolrException.toStr(e);
     }
   }
 
@@ -259,7 +263,7 @@ sb.append("(group_name=").append(tg.getName()).append(")");
 
   private Map<String,Object> getReplicaProps(ZkController zkController, SolrCore core) {
     final String collection = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
-    Replica replica = zkController.getClusterState().getReplica(collection, zkController.getCoreNodeName(core.getCoreDescriptor()));
+    Replica replica = zkController.getClusterState().getReplica(collection, core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
     if(replica!=null) {
       return replica.getProperties();
     }
@@ -375,7 +379,7 @@ sb.append("(group_name=").append(tg.getName()).append(")");
 
 
 
-  static ThreadLocal<String> threadLocal = new ThreadLocal<String>();
+  static ThreadLocal<String> threadLocal = new ThreadLocal<>();
   
   public static void main(String[] args) throws Exception {
 
@@ -411,7 +415,7 @@ sb.append("(group_name=").append(tg.getName()).append(")");
       public void run() {
         try {
           go();
-        } catch (Throwable e) {
+        } catch (Exception e) {
           e.printStackTrace();
         }
       }

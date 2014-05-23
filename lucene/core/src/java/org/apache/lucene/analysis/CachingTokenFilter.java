@@ -51,7 +51,7 @@ public final class CachingTokenFilter extends TokenFilter {
   public final boolean incrementToken() throws IOException {
     if (cache == null) {
       // fill cache lazily
-      cache = new LinkedList<AttributeSource.State>();
+      cache = new LinkedList<>();
       fillCache();
       iterator = cache.iterator();
     }

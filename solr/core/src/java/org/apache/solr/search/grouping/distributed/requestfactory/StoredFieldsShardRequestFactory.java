@@ -42,7 +42,7 @@ public class StoredFieldsShardRequestFactory implements ShardRequestFactory {
 
   @Override
   public ShardRequest[] constructRequest(ResponseBuilder rb) {
-    HashMap<String, Set<ShardDoc>> shardMap = new HashMap<String,Set<ShardDoc>>();
+    HashMap<String, Set<ShardDoc>> shardMap = new HashMap<>();
     for (TopGroups<BytesRef> topGroups : rb.mergedTopGroups.values()) {
       for (GroupDocs<BytesRef> group : topGroups.groups) {
         mapShardToDocs(shardMap, group.scoreDocs);
@@ -75,7 +75,7 @@ public class StoredFieldsShardRequestFactory implements ShardRequestFactory {
          }
       }
 
-      List<String> ids = new ArrayList<String>(shardDocs.size());
+      List<String> ids = new ArrayList<>(shardDocs.size());
       for (ShardDoc shardDoc : shardDocs) {
         ids.add(shardDoc.id.toString());
       }
@@ -91,7 +91,7 @@ public class StoredFieldsShardRequestFactory implements ShardRequestFactory {
       ShardDoc solrDoc = (ShardDoc) scoreDoc;
       Set<ShardDoc> shardDocs = shardMap.get(solrDoc.shard);
       if (shardDocs == null) {
-        shardMap.put(solrDoc.shard, shardDocs = new HashSet<ShardDoc>());
+        shardMap.put(solrDoc.shard, shardDocs = new HashSet<>());
       }
       shardDocs.add(solrDoc);
     }

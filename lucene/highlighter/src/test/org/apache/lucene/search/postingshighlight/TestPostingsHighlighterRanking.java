@@ -43,10 +43,8 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
-@SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom"})
 public class TestPostingsHighlighterRanking extends LuceneTestCase {
   /** 
    * indexes a bunch of gibberish, and then highlights top(n).
@@ -75,7 +73,7 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
     
     for (int i = 0; i < numDocs; i++) {
       StringBuilder bodyText = new StringBuilder();
-      int numSentences = _TestUtil.nextInt(random(), 1, maxNumSentences);
+      int numSentences = TestUtil.nextInt(random(), 1, maxNumSentences);
       for (int j = 0; j < numSentences; j++) {
         bodyText.append(newSentence(random(), maxSentenceLength));
       }
@@ -89,7 +87,7 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
     for (int i = 0; i < numDocs; i++) {
       checkDocument(searcher, i, maxTopN);
     }
-    iw.close();
+    iw.shutdown();
     ir.close();
     dir.close();
   }
@@ -144,14 +142,14 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
    */
   private String newSentence(Random r, int maxSentenceLength) {
     StringBuilder sb = new StringBuilder();
-    int numElements = _TestUtil.nextInt(r, 1, maxSentenceLength);
+    int numElements = TestUtil.nextInt(r, 1, maxSentenceLength);
     for (int i = 0; i < numElements; i++) {
       if (sb.length() > 0) {
         sb.append(' ');
-        sb.append((char)_TestUtil.nextInt(r, 'a', 'z'));
+        sb.append((char) TestUtil.nextInt(r, 'a', 'z'));
       } else {
         // capitalize the first word to help breakiterator
-        sb.append((char)_TestUtil.nextInt(r, 'A', 'Z'));
+        sb.append((char) TestUtil.nextInt(r, 'A', 'Z'));
       }
     }
     sb.append(". "); // finalize sentence
@@ -163,7 +161,7 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
    * instead it just collects them for asserts!
    */
   static class FakePassageFormatter extends PassageFormatter {
-    HashSet<Pair> seen = new HashSet<Pair>();
+    HashSet<Pair> seen = new HashSet<>();
     
     @Override
     public String format(Passage passages[], String content) {
@@ -173,6 +171,8 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
         assertTrue(p.getNumMatches() > 0);
         assertTrue(p.getStartOffset() >= 0);
         assertTrue(p.getStartOffset() <= content.length());
+        assertTrue(p.getEndOffset() >= p.getStartOffset());
+        assertTrue(p.getEndOffset() <= content.length());
         // we use a very simple analyzer. so we can assert the matches are correct
         int lastMatchStart = -1;
         for (int i = 0; i < p.getNumMatches(); i++) {
@@ -262,7 +262,7 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
     iw.addDocument(doc);
     
     IndexReader ir = iw.getReader();
-    iw.close();
+    iw.shutdown();
     
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter(10000) {
@@ -301,7 +301,7 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
     iw.addDocument(doc);
     
     IndexReader ir = iw.getReader();
-    iw.close();
+    iw.shutdown();
     
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter(10000) {

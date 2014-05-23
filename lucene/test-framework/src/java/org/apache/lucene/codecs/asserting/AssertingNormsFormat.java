@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.NormsFormat;
-import org.apache.lucene.codecs.asserting.AssertingDocValuesFormat.AssertingDocValuesConsumer;
+import org.apache.lucene.codecs.asserting.AssertingDocValuesFormat.AssertingNormsConsumer;
 import org.apache.lucene.codecs.asserting.AssertingDocValuesFormat.AssertingDocValuesProducer;
 import org.apache.lucene.codecs.lucene42.Lucene42NormsFormat;
 import org.apache.lucene.index.SegmentReadState;
@@ -38,7 +38,7 @@ public class AssertingNormsFormat extends NormsFormat {
   public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
     DocValuesConsumer consumer = in.normsConsumer(state);
     assert consumer != null;
-    return new AssertingDocValuesConsumer(consumer, state.segmentInfo.getDocCount());
+    return new AssertingNormsConsumer(consumer, state.segmentInfo.getDocCount());
   }
 
   @Override

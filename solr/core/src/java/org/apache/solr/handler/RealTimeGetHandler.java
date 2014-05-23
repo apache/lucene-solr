@@ -28,7 +28,7 @@ public class RealTimeGetHandler extends SearchHandler {
   @Override
   protected List<String> getDefaultComponents()
   {
-    List<String> names = new ArrayList<String>(1);
+    List<String> names = new ArrayList<>(1);
     names.add(RealTimeGetComponent.COMPONENT_NAME);
     return names;
   }

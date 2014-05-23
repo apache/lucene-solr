@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.index.AtomicReaderContext;
@@ -44,7 +45,7 @@ import org.apache.lucene.util.Bits;
 public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
 
   /* The subqueries */
-  private ArrayList<Query> disjuncts = new ArrayList<Query>();
+  private ArrayList<Query> disjuncts = new ArrayList<>();
 
   /* Multiple of the non-max disjunct scores added into our final score.  Non-zero values support tie-breaking. */
   private float tieBreakerMultiplier = 0.0f;
@@ -114,7 +115,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
   protected class DisjunctionMaxWeight extends Weight {
 
     /** The Weights for our subqueries, in 1-1 correspondence with disjuncts */
-    protected ArrayList<Weight> weights = new ArrayList<Weight>();  // The Weight's for our subqueries, in 1-1 correspondence with disjuncts
+    protected ArrayList<Weight> weights = new ArrayList<>();  // The Weight's for our subqueries, in 1-1 correspondence with disjuncts
 
     /** Construct the Weight for this Query searched by searcher.  Recursively construct subquery weights. */
     public DisjunctionMaxWeight(IndexSearcher searcher) throws IOException {
@@ -152,20 +153,24 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
 
     /** Create the scorer used to score our associated DisjunctionMaxQuery */
     @Override
-    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, Bits acceptDocs) throws IOException {
-      Scorer[] scorers = new Scorer[weights.size()];
-      int idx = 0;
+    public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+      List<Scorer> scorers = new ArrayList<>();
       for (Weight w : weights) {
         // we will advance() subscorers
-        Scorer subScorer = w.scorer(context, true, false, acceptDocs);
+        Scorer subScorer = w.scorer(context, acceptDocs);
         if (subScorer != null) {
-          scorers[idx++] = subScorer;
+          scorers.add(subScorer);
         }
       }
-      if (idx == 0) return null; // all scorers did not have documents
-      DisjunctionMaxScorer result = new DisjunctionMaxScorer(this, tieBreakerMultiplier, scorers, idx);
-      return result;
+      if (scorers.isEmpty()) {
+        // no sub-scorers had any documents
+        return null;
+      } else if (scorers.size() == 1) {
+        // only one sub-scorer in this segment
+        return scorers.get(0);
+      } else {
+        return new DisjunctionMaxScorer(this, tieBreakerMultiplier, scorers.toArray(new Scorer[scorers.size()]));
+      }
     }
 
     /** Explain the score we computed for doc */

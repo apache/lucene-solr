@@ -54,7 +54,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     }
 
     s = newSearcher(w.getReader());
-    w.close();
+    w.shutdown();
   }
 
   @AfterClass
@@ -65,63 +65,57 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     dir = null;
   }
 
-  private static class CountingCollector extends Collector {
-    private final Collector other;
-    private int docBase;
+  private static class CountingCollector extends FilterCollector {
+    public final Map<Integer, Map<Query, Float>> docCounts = new HashMap<>();
 
-    public final Map<Integer, Map<Query, Float>> docCounts = new HashMap<Integer, Map<Query, Float>>();
-
-    private final Map<Query, Scorer> subScorers = new HashMap<Query, Scorer>();
+    private final Map<Query, Scorer> subScorers = new HashMap<>();
     private final Set<String> relationships;
 
     public CountingCollector(Collector other) {
-      this(other, new HashSet<String>(Arrays.asList("MUST", "SHOULD", "MUST_NOT")));
+      this(other, new HashSet<>(Arrays.asList("MUST", "SHOULD", "MUST_NOT")));
     }
 
     public CountingCollector(Collector other, Set<String> relationships) {
-      this.other = other;
+      super(other);
       this.relationships = relationships;
-    }
-
-    @Override
-    public void setScorer(Scorer scorer) throws IOException {
-      other.setScorer(scorer);
-      subScorers.clear();
-      setSubScorers(scorer, "TOP");
     }
     
     public void setSubScorers(Scorer scorer, String relationship) {
       for (ChildScorer child : scorer.getChildren()) {
-        if (relationships.contains(child.relationship)) {
+        if (scorer instanceof AssertingScorer || relationships.contains(child.relationship)) {
           setSubScorers(child.child, child.relationship);
         }
       }
       subScorers.put(scorer.getWeight().getQuery(), scorer);
     }
-
-    @Override
-    public void collect(int doc) throws IOException {
-      final Map<Query, Float> freqs = new HashMap<Query, Float>();
-      for (Map.Entry<Query, Scorer> ent : subScorers.entrySet()) {
-        Scorer value = ent.getValue();
-        int matchId = value.docID();
-        freqs.put(ent.getKey(), matchId == doc ? value.freq() : 0.0f);
-      }
-      docCounts.put(doc + docBase, freqs);
-      other.collect(doc);
-    }
-
-    @Override
-    public void setNextReader(AtomicReaderContext context)
+    
+    public LeafCollector getLeafCollector(AtomicReaderContext context)
         throws IOException {
-      docBase = context.docBase;
-      other.setNextReader(context);
+      final int docBase = context.docBase;
+      return new FilterLeafCollector(super.getLeafCollector(context)) {
+        
+        @Override
+        public void collect(int doc) throws IOException {
+          final Map<Query, Float> freqs = new HashMap<Query, Float>();
+          for (Map.Entry<Query, Scorer> ent : subScorers.entrySet()) {
+            Scorer value = ent.getValue();
+            int matchId = value.docID();
+            freqs.put(ent.getKey(), matchId == doc ? value.freq() : 0.0f);
+          }
+          docCounts.put(doc + docBase, freqs);
+          super.collect(doc);
+        }
+        
+        @Override
+        public void setScorer(Scorer scorer) throws IOException {
+          super.setScorer(scorer);
+          subScorers.clear();
+          setSubScorers(scorer, "TOP");
+        }
+        
+      };
     }
 
-    @Override
-    public boolean acceptsDocsOutOfOrder() {
-      return other.acceptsDocsOutOfOrder();
-    }
   }
 
   private static final float FLOAT_TOLERANCE = 0.00001F;
@@ -165,7 +159,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     // see http://docs.oracle.com/javase/7/docs/api/java/lang/SafeVarargs.html
     @SuppressWarnings("unchecked") final Iterable<Set<String>> occurList = Arrays.asList(
         Collections.singleton("MUST"), 
-        new HashSet<String>(Arrays.asList("MUST", "SHOULD"))
+        new HashSet<>(Arrays.asList("MUST", "SHOULD"))
     );
     
     for (final Set<String> occur : occurList) {
@@ -177,19 +171,22 @@ public class TestSubScorerFreqs extends LuceneTestCase {
       boolean includeOptional = occur.contains("SHOULD");
       for (int i = 0; i < maxDocs; i++) {
         Map<Query, Float> doc0 = c.docCounts.get(i);
-        assertEquals(includeOptional ? 5 : 4, doc0.size());
+        // Y doesnt exist in the index, so its not in the scorer tree
+        assertEquals(4, doc0.size());
         assertEquals(1.0F, doc0.get(aQuery), FLOAT_TOLERANCE);
         assertEquals(4.0F, doc0.get(dQuery), FLOAT_TOLERANCE);
-        if (includeOptional)
+        if (includeOptional) {
           assertEquals(3.0F, doc0.get(cQuery), FLOAT_TOLERANCE);
+        }
 
         Map<Query, Float> doc1 = c.docCounts.get(++i);
-        assertEquals(includeOptional ? 5 : 4, doc1.size());
+        // Y doesnt exist in the index, so its not in the scorer tree
+        assertEquals(4, doc1.size());
         assertEquals(1.0F, doc1.get(aQuery), FLOAT_TOLERANCE);
         assertEquals(1.0F, doc1.get(dQuery), FLOAT_TOLERANCE);
-        if (includeOptional)
+        if (includeOptional) {
           assertEquals(1.0F, doc1.get(cQuery), FLOAT_TOLERANCE);
-
+        }
       }
     }
   }

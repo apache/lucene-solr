@@ -438,7 +438,7 @@ public class TestRealTimeGet extends TestRTGBase {
 
     final AtomicInteger numCommitting = new AtomicInteger();
 
-    List<Thread> threads = new ArrayList<Thread>();
+    List<Thread> threads = new ArrayList<>();
 
     for (int i=0; i<nWriteThreads; i++) {
       Thread thread = new Thread("WRITER"+i) {
@@ -456,7 +456,7 @@ public class TestRealTimeGet extends TestRTGBase {
                 long version;
 
                 synchronized(TestRealTimeGet.this) {
-                  newCommittedModel = new HashMap<Integer,DocInfo>(model);  // take a snapshot
+                  newCommittedModel = new HashMap<>(model);  // take a snapshot
                   version = snapshotCount++;
                   verbose("took snapshot version=",version);
                 }

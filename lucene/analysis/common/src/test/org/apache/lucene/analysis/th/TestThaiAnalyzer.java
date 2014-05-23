@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.th;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -30,7 +29,6 @@ import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.StopAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.Version;
 
 /**
  * Test case for ThaiAnalyzer, modified from TestFrenchAnalyzer
@@ -42,7 +40,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    assumeTrue("JRE does not support Thai dictionary-based BreakIterator", ThaiWordFilter.DBBI_AVAILABLE);
+    assumeTrue("JRE does not support Thai dictionary-based BreakIterator", ThaiTokenizer.DBBI_AVAILABLE);
   }
   /* 
    * testcase for offsets
@@ -62,16 +60,6 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
         new int[] { 5, 2, 1 });
   }
   
-  public void testTokenType() throws Exception {
-      assertAnalyzesTo(new ThaiAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET), "การที่ได้ต้องแสดงว่างานดี ๑๒๓", 
-                       new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี", "๑๒๓" },
-                       new String[] { "<SOUTHEAST_ASIAN>", "<SOUTHEAST_ASIAN>", 
-                                      "<SOUTHEAST_ASIAN>", "<SOUTHEAST_ASIAN>", 
-                                      "<SOUTHEAST_ASIAN>", "<SOUTHEAST_ASIAN>",
-                                      "<SOUTHEAST_ASIAN>", "<SOUTHEAST_ASIAN>",
-                                      "<NUM>" });
-  }
-
   /*
    * Test that position increments are adjusted correctly for stopwords.
    */
@@ -94,14 +82,14 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
   
   public void testReusableTokenStream() throws Exception {
     ThaiAnalyzer analyzer = new ThaiAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
-    assertAnalyzesToReuse(analyzer, "", new String[] {});
+    assertAnalyzesTo(analyzer, "", new String[] {});
 
-      assertAnalyzesToReuse(
+      assertAnalyzesTo(
           analyzer,
           "การที่ได้ต้องแสดงว่างานดี",
           new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี"});
 
-      assertAnalyzesToReuse(
+      assertAnalyzesTo(
           analyzer,
           "บริษัทชื่อ XY&Z - คุยกับ xyz@demo.com",
           new String[] { "บริษัท", "ชื่อ", "xy", "z", "คุย", "กับ", "xyz", "demo.com" });
@@ -122,22 +110,18 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
   public void testAttributeReuse() throws Exception {
     ThaiAnalyzer analyzer = new ThaiAnalyzer(TEST_VERSION_CURRENT);
     // just consume
-    TokenStream ts = analyzer.tokenStream("dummy", new StringReader("ภาษาไทย"));
+    TokenStream ts = analyzer.tokenStream("dummy", "ภาษาไทย");
     assertTokenStreamContents(ts, new String[] { "ภาษา", "ไทย" });
     // this consumer adds flagsAtt, which this analyzer does not use. 
-    ts = analyzer.tokenStream("dummy", new StringReader("ภาษาไทย"));
+    ts = analyzer.tokenStream("dummy", "ภาษาไทย");
     ts.addAttribute(FlagsAttribute.class);
     assertTokenStreamContents(ts, new String[] { "ภาษา", "ไทย" });
   }
   
-  public void testEmptyTerm() throws IOException {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
-        return new TokenStreamComponents(tokenizer, new ThaiWordFilter(TEST_VERSION_CURRENT, tokenizer));
-      }
-    };
-    checkOneTermReuse(a, "", "");
+  public void testTwoSentences() throws Exception {
+    assertAnalyzesTo(new ThaiAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET), "This is a test. การที่ได้ต้องแสดงว่างานดี", 
+          new String[] { "this", "is", "a", "test", "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี" },
+          new int[] { 0, 5, 8, 10, 16, 19, 22, 25, 29, 33, 36, 39 },
+          new int[] { 4, 7, 9, 14, 19, 22, 25, 29, 33, 36, 39, 41 });
   }
 }

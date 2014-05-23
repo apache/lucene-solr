@@ -21,8 +21,9 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.grouping.AbstractSecondPassGroupingCollector;
 import org.apache.lucene.search.grouping.SearchGroup;
@@ -53,9 +54,9 @@ public class TermSecondPassGroupingCollector extends AbstractSecondPassGroupingC
   }
 
   @Override
-  public void setNextReader(AtomicReaderContext readerContext) throws IOException {
-    super.setNextReader(readerContext);
-    index = FieldCache.DEFAULT.getTermsIndex(readerContext.reader(), groupField);
+  protected void doSetNextReader(AtomicReaderContext readerContext) throws IOException {
+    super.doSetNextReader(readerContext);
+    index = DocValues.getSorted(readerContext.reader(), groupField);
 
     // Rebuild ordSet
     ordSet.clear();

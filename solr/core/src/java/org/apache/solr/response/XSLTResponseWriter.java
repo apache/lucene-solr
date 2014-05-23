@@ -108,9 +108,7 @@ public class XSLTResponseWriter implements QueryResponseWriter {
     try {
       t.transform(source, result);
     } catch(TransformerException te) {
-      final IOException ioe = new IOException("XSLT transformation error");
-      ioe.initCause(te);
-      throw ioe;
+      throw new IOException("XSLT transformation error", te);
     }
   }
   

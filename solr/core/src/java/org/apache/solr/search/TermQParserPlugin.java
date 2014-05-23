@@ -41,7 +41,7 @@ import org.apache.solr.schema.FieldType;
  * <br>Example: <code>{!term f=weight}1.5</code>
  */
 public class TermQParserPlugin extends QParserPlugin {
-  public static String NAME = "term";
+  public static final String NAME = "term";
 
   @Override
   public void init(NamedList args) {

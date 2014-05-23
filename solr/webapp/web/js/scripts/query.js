@@ -106,6 +106,39 @@ sammy.get
             }
           );
 
+        $( '.multiple a', query_form )
+          .die( 'click' )
+          .live
+          (
+            'click',
+            function( event )
+            {
+              var self = $( this );
+              var row = self.closest( '.row' );
+              var container = self.closest( '.multiple' );
+              
+              var add = parseInt( self.data( 'action' ), 10 );
+              if( add )
+              {
+                var new_row = row.clone();
+                new_row.find( 'input' ).val( '' );
+                row.after( new_row );
+                row.next().find( 'input' ).focus();
+              }
+              else if( 1 === $( '.row', container ).size() )
+              {
+                row.find( 'input' ).val( '' ).focus();
+              }
+              else
+              {
+                row.remove();
+                container.find( 'input:last' ).focus();
+              }
+
+              return false;
+            }
+          )
+
         query_form
           .die( 'submit' )
           .live

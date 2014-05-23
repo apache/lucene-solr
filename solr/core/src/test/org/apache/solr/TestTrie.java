@@ -16,18 +16,15 @@
  */
 package org.apache.solr;
 
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.DateField;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.util.DateMathParser;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.StringReader;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -49,38 +46,6 @@ public class TestTrie extends SolrTestCaseJ4 {
   public void tearDown() throws Exception {
     clearIndex();
     super.tearDown();
-  }
-  
-  @Test
-  public void testTokenizer() throws Exception {
-    FieldType type = h.getCore().getLatestSchema().getFieldType("tint");
-    assertTrue(type instanceof TrieField);
-    
-    String value = String.valueOf(random().nextInt());
-    TokenStream ts = type.getAnalyzer().tokenStream("dummy", new StringReader(value));
-    OffsetAttribute ofsAtt = ts.addAttribute(OffsetAttribute.class);
-    ts.reset();
-    int count = 0;
-    while (ts.incrementToken()) {
-      count++;
-      assertEquals(0, ofsAtt.startOffset());
-      assertEquals(value.length(), ofsAtt.endOffset());
-    }
-    final int precStep = ((TrieField) type).getPrecisionStep();
-    assertEquals( (32 + precStep - 1) / precStep, count);
-    ts.end();
-    assertEquals(value.length(), ofsAtt.startOffset());
-    assertEquals(value.length(), ofsAtt.endOffset());
-    ts.close();
-    
-    // Test empty one:
-    ts = type.getAnalyzer().tokenStream("dummy", new StringReader(""));
-    ts.reset();
-    assertFalse(ts.incrementToken());
-    ts.end();
-    assertEquals(0, ofsAtt.startOffset());
-    assertEquals(0, ofsAtt.endOffset());
-    ts.close();    
   }
 
   @Test
@@ -208,7 +173,7 @@ public class TestTrie extends SolrTestCaseJ4 {
     format.setTimeZone(TimeZone.getTimeZone("UTC"));
 
     assertU(delQ("*:*"));
-    DateMathParser dmp = new DateMathParser(DateField.UTC, Locale.ROOT);
+    DateMathParser dmp = new DateMathParser(TrieDateField.UTC, Locale.ROOT);
     String largestDate = "";
     for (int i = 0; i < 10; i++) {
       // index 10 days starting with today
@@ -257,7 +222,7 @@ public class TestTrie extends SolrTestCaseJ4 {
     // For tdate tests
     SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ROOT);
     format.setTimeZone(TimeZone.getTimeZone("UTC"));
-    DateMathParser dmp = new DateMathParser(DateField.UTC, Locale.ROOT);
+    DateMathParser dmp = new DateMathParser(TrieDateField.UTC, Locale.ROOT);
 
     for (int i = 0; i < 10; i++) {
       long l = Integer.MAX_VALUE + i*1L;

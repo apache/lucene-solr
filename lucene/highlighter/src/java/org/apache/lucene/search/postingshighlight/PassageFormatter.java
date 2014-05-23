@@ -31,8 +31,11 @@ public abstract class PassageFormatter {
    * @param passages top-N passages for the field. Note these are sorted in
    *        the order that they appear in the document for convenience.
    * @param content content for the field.
-   * @return formatted highlight
+   * @return formatted highlight.  Note that for the
+   * non-expert APIs in {@link PostingsHighlighter} that
+   * return String, the toString method on the Object
+   * returned by this method is used to compute the string.
    */
-  public abstract String format(Passage passages[], String content);
+  public abstract Object format(Passage passages[], String content);
 
 }

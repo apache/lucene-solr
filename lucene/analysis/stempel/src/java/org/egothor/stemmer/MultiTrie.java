@@ -70,7 +70,7 @@ public class MultiTrie extends Trie {
   final char EOM = '*';
   final String EOM_NODE = "" + EOM;
   
-  List<Trie> tries = new ArrayList<Trie>();
+  List<Trie> tries = new ArrayList<>();
   
   int BY = 1;
   
@@ -186,7 +186,7 @@ public class MultiTrie extends Trie {
    */
   @Override
   public Trie reduce(Reduce by) {
-    List<Trie> h = new ArrayList<Trie>();
+    List<Trie> h = new ArrayList<>();
     for (Trie trie : tries)
       h.add(trie.reduce(by));
     

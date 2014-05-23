@@ -24,6 +24,7 @@
   -->
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
+  <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
   <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
 
@@ -53,7 +54,6 @@
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
 
-
   <updateRequestProcessorChain name="trim-all">
     <!-- no specific src field configs, so all fields should get trimmed -->
     <processor class="solr.TrimFieldUpdateProcessorFactory">
@@ -65,7 +65,6 @@
       <str name="fieldName">foo_t</str>
     </processor>
   </updateRequestProcessorChain>
-
 
   <updateRequestProcessorChain name="trim-most">
     <!-- all fields except the exclusions should be trimmed -->
@@ -90,7 +89,7 @@
       <str name="fieldRegex">bar.*</str>
       <!-- each set of exclusions is checked independently -->
       <lst name="exclude">
-        <str name="typeClass">solr.DateField</str>
+        <str name="typeClass">solr.TrieDateField</str>
       </lst>
       <lst name="exclude">
         <str name="fieldRegex">.*HOSS.*</str>
@@ -103,7 +102,7 @@
       <str name="fieldRegex">bar.*</str>
       <!-- only excluded if it matches all in set -->
       <lst name="exclude">
-        <str name="typeClass">solr.DateField</str>
+        <str name="typeClass">solr.TrieDateField</str>
         <str name="fieldRegex">.*HOSS.*</str>
       </lst>
     </processor>
@@ -140,14 +139,14 @@
 
   <updateRequestProcessorChain name="trim-classes">
     <processor class="solr.TrimFieldUpdateProcessorFactory">
-      <str name="typeClass">solr.DateField</str>
+      <str name="typeClass">solr.TrieDateField</str>
       <str name="typeClass">solr.StrField</str>
     </processor>
   </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="trim-multi">
     <processor class="solr.TrimFieldUpdateProcessorFactory">
-      <str name="typeClass">solr.DateField</str>
+      <str name="typeClass">solr.TrieDateField</str>
       <str name="typeClass">solr.StrField</str>
       <arr name="fieldRegex">
         <str>foo.*</str>
@@ -239,6 +238,46 @@
 
   <updateRequestProcessorChain name="ignore-not-in-schema">
     <processor class="solr.IgnoreFieldUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="ignore-not-in-schema-explicit-selector">
+    <processor class="solr.IgnoreFieldUpdateProcessorFactory">
+      <bool name="fieldNameMatchesSchemaField">false</bool>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="ignore-in-schema">
+    <processor class="solr.IgnoreFieldUpdateProcessorFactory">
+      <bool name="fieldNameMatchesSchemaField">true</bool>
+    </processor>
+  </updateRequestProcessorChain>
+  
+  <updateRequestProcessorChain name="ignore-not-in-schema-and-foo-name-prefix">
+    <processor class="solr.IgnoreFieldUpdateProcessorFactory">
+      <str name="fieldRegex">foo.*</str>
+      <bool name="fieldNameMatchesSchemaField">false</bool>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="ignore-foo-name-prefix-except-not-schema">
+    <processor class="solr.IgnoreFieldUpdateProcessorFactory">
+      <str name="fieldRegex">foo.*</str>
+      <lst name="exclude">
+        <bool name="fieldNameMatchesSchemaField">false</bool>
+      </lst>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="ignore-not-in-schema-explicit-str-selector">
+    <processor class="solr.IgnoreFieldUpdateProcessorFactory">
+      <str name="fieldNameMatchesSchemaField">false</str>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="ignore-in-schema-str-selector">
+    <processor class="solr.IgnoreFieldUpdateProcessorFactory">
+      <str name="fieldNameMatchesSchemaField">true</str>
+    </processor>
   </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="ignore-some">
@@ -373,6 +412,45 @@
     </processor>
   </updateRequestProcessorChain>
 
+  <updateRequestProcessorChain name="regex-replace-literal-true">
+    <processor class="solr.RegexReplaceProcessorFactory">
+      <str name="fieldName">content</str>
+      <str name="fieldName">title</str>
+      <str name="pattern">(try)</str>
+      <str name="replacement">&lt;$1&gt;</str>
+      <bool name="literalReplacement">true</bool>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="regex-replace-literal-default-true">
+    <processor class="solr.RegexReplaceProcessorFactory">
+      <str name="fieldName">content</str>
+      <str name="fieldName">title</str>
+      <str name="pattern">(try)</str>
+      <str name="replacement">&lt;$1&gt;</str>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="regex-replace-literal-false">
+    <processor class="solr.RegexReplaceProcessorFactory">
+      <str name="fieldName">content</str>
+      <str name="fieldName">title</str>
+      <str name="pattern">(try)</str>
+      <str name="replacement">&lt;$1&gt;</str>
+      <bool name="literalReplacement">false</bool>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="regex-replace-literal-str-true">
+    <processor class="solr.RegexReplaceProcessorFactory">
+      <str name="fieldName">content</str>
+      <str name="fieldName">title</str>
+      <str name="pattern">(try)</str>
+      <str name="replacement">&lt;$1&gt;</str>
+      <str name="literalReplacement">true</str>
+    </processor>
+  </updateRequestProcessorChain>
+
   <updateRequestProcessorChain name="default-values">
     <processor class="solr.DefaultValueUpdateProcessorFactory">
       <str name="fieldName">processor_default_s</str>
@@ -387,6 +465,12 @@
     </processor>
     <processor class="solr.TimestampUpdateProcessorFactory">
       <str name="fieldName">timestamp</str>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="uniq-values">
+    <processor class="solr.UniqFieldsUpdateProcessorFactory">
+      <str name="fieldRegex">uniq_.*</str>
     </processor>
   </updateRequestProcessorChain>
 

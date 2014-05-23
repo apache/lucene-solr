@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.TokenStream;
 public abstract class TokenFilterFactory extends AbstractAnalysisFactory {
 
   private static final AnalysisSPILoader<TokenFilterFactory> loader =
-      new AnalysisSPILoader<TokenFilterFactory>(TokenFilterFactory.class,
+      new AnalysisSPILoader<>(TokenFilterFactory.class,
           new String[] { "TokenFilterFactory", "FilterFactory" });
   
   /** looks up a tokenfilter by name from context classpath */

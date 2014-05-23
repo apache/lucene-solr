@@ -57,8 +57,9 @@ public class SessionTokenTest extends ReplicatorTestCase {
     List<RevisionFile> files1 = session1.sourceFiles.values().iterator().next();
     List<RevisionFile> files2 = session2.sourceFiles.values().iterator().next();
     assertEquals(files1, files2);
-    
-    IOUtils.close(writer, dir);
+
+    writer.shutdown();
+    IOUtils.close(dir);
   }
   
 }

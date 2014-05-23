@@ -69,12 +69,6 @@ public class ThrottledIndexOutput extends IndexOutput {
   }
 
   @Override
-  public void flush() throws IOException {
-    sleep(flushDelayMillis);
-    delegate.flush();
-  }
-
-  @Override
   public void close() throws IOException {
     try {
       sleep(closeDelayMillis + getDelay(true));
@@ -89,11 +83,6 @@ public class ThrottledIndexOutput extends IndexOutput {
   }
 
   @Override
-  public long length() throws IOException {
-    return delegate.length();
-  }
-
-  @Override
   public void writeByte(byte b) throws IOException {
     bytes[0] = b;
     writeBytes(bytes, 0, 1);
@@ -102,11 +91,13 @@ public class ThrottledIndexOutput extends IndexOutput {
   @Override
   public void writeBytes(byte[] b, int offset, int length) throws IOException {
     final long before = System.nanoTime();
+    // TODO: sometimes, write only half the bytes, then
+    // sleep, then 2nd half, then sleep, so we sometimes
+    // interrupt having only written not all bytes
     delegate.writeBytes(b, offset, length);
     timeElapsed += System.nanoTime() - before;
     pendingBytes += length;
     sleep(getDelay(false));
-
   }
 
   protected long getDelay(boolean closing) {
@@ -135,12 +126,12 @@ public class ThrottledIndexOutput extends IndexOutput {
   }
   
   @Override
-  public void setLength(long length) throws IOException {
-    delegate.setLength(length);
+  public void copyBytes(DataInput input, long numBytes) throws IOException {
+    delegate.copyBytes(input, numBytes);
   }
 
   @Override
-  public void copyBytes(DataInput input, long numBytes) throws IOException {
-    delegate.copyBytes(input, numBytes);
+  public long getChecksum() throws IOException {
+    return delegate.getChecksum();
   }
 }

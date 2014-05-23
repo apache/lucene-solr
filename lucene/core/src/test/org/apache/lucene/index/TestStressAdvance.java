@@ -35,7 +35,7 @@ public class TestStressAdvance extends LuceneTestCase {
       }
       Directory dir = newDirectory();
       RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-      final Set<Integer> aDocs = new HashSet<Integer>();
+      final Set<Integer> aDocs = new HashSet<>();
       final Document doc = new Document();
       final Field f = newStringField("field", "", Field.Store.NO);
       doc.add(f);
@@ -61,8 +61,8 @@ public class TestStressAdvance extends LuceneTestCase {
 
       w.forceMerge(1);
 
-      final List<Integer> aDocIDs = new ArrayList<Integer>();
-      final List<Integer> bDocIDs = new ArrayList<Integer>();
+      final List<Integer> aDocIDs = new ArrayList<>();
+      final List<Integer> bDocIDs = new ArrayList<>();
 
       final DirectoryReader r = w.getReader();
       final int[] idToDocID = new int[r.maxDoc()];
@@ -82,15 +82,15 @@ public class TestStressAdvance extends LuceneTestCase {
           System.out.println("\nTEST: iter=" + iter + " iter2=" + iter2);
         }
         assertEquals(TermsEnum.SeekStatus.FOUND, te.seekCeil(new BytesRef("a")));
-        de = _TestUtil.docs(random(), te, null, de, DocsEnum.FLAG_NONE);
+        de = TestUtil.docs(random(), te, null, de, DocsEnum.FLAG_NONE);
         testOne(de, aDocIDs);
 
         assertEquals(TermsEnum.SeekStatus.FOUND, te.seekCeil(new BytesRef("b")));
-        de = _TestUtil.docs(random(), te, null, de, DocsEnum.FLAG_NONE);
+        de = TestUtil.docs(random(), te, null, de, DocsEnum.FLAG_NONE);
         testOne(de, bDocIDs);
       }
 
-      w.close();
+      w.shutdown();
       r.close();
       dir.close();
     }
@@ -115,7 +115,7 @@ public class TestStressAdvance extends LuceneTestCase {
         docID = docs.nextDoc();
       } else {
         // test advance()
-        final int inc = _TestUtil.nextInt(random(), 1, expected.size()-1-upto);
+        final int inc = TestUtil.nextInt(random(), 1, expected.size() - 1 - upto);
         if (VERBOSE) {
           System.out.println("    do advance inc=" + inc);
         }

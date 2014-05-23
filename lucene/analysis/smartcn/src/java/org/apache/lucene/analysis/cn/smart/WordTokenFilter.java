@@ -31,7 +31,9 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 /**
  * A {@link TokenFilter} that breaks sentences into words.
  * @lucene.experimental
+ * @deprecated Use {@link HMMChineseTokenizer} instead.
  */
+@Deprecated
 public final class WordTokenFilter extends TokenFilter {
 
   private WordSegmenter wordSegmenter;

@@ -21,9 +21,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.RandomAccessFile;
-import java.nio.channels.FileChannel;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -41,10 +38,8 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.store.NIOFSDirectory.NIOFSIndexInput;
-import org.apache.lucene.store.SimpleFSDirectory.SimpleFSIndexInput;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ArrayUtil;
 
 public class TestBufferedIndexInput extends LuceneTestCase {
@@ -84,25 +79,6 @@ public class TestBufferedIndexInput extends LuceneTestCase {
   public void testReadBytes() throws Exception {
     MyBufferedIndexInput input = new MyBufferedIndexInput();
     runReadBytes(input, BufferedIndexInput.BUFFER_SIZE, random());
-
-    // This tests the workaround code for LUCENE-1566 where readBytesInternal
-    // provides a workaround for a JVM Bug that incorrectly raises a OOM Error
-    // when a large byte buffer is passed to a file read.
-    // NOTE: this does only test the chunked reads and NOT if the Bug is triggered.
-    //final int tmpFileSize = 1024 * 1024 * 5;
-    final int inputBufferSize = 128;
-    File tmpInputFile = _TestUtil.createTempFile("IndexInput", "tmpFile", TEMP_DIR);
-    tmpInputFile.deleteOnExit();
-    writeBytes(tmpInputFile, TEST_FILE_LENGTH);
-
-    // run test with chunk size of 10 bytes
-    runReadBytesAndClose(new SimpleFSIndexInput("SimpleFSIndexInput(path=\"" + tmpInputFile + "\")", 
-        new RandomAccessFile(tmpInputFile, "r"), newIOContext(random()), 10), inputBufferSize, random());
-
-    // run test with chunk size of 10 bytes
-    runReadBytesAndClose(new NIOFSIndexInput("NIOFSIndexInput(path=\"" + tmpInputFile + "\")", 
-        FileChannel.open(tmpInputFile.toPath(), StandardOpenOption.READ), newIOContext(random()), 10), 
-        inputBufferSize, random());
   }
 
   private void runReadBytesAndClose(IndexInput input, int bufferSize, Random r) throws IOException {
@@ -211,6 +187,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
     private static byte byten(long n){
       return (byte)(n*n%256);
     }
+    
     private static class MyBufferedIndexInput extends BufferedIndexInput {
       private long pos;
       private long len;
@@ -242,10 +219,15 @@ public class TestBufferedIndexInput extends LuceneTestCase {
       public long length() {
         return len;
       }
+      
+      @Override
+      public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
+        throw new UnsupportedOperationException();
+      }
     }
 
     public void testSetBufferSize() throws IOException {
-      File indexDir = _TestUtil.getTempDir("testSetBufferSize");
+      File indexDir = createTempDir("testSetBufferSize");
       MockFSDirectory dir = new MockFSDirectory(indexDir, random());
       try {
         IndexWriter writer = new IndexWriter(
@@ -294,16 +276,16 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         hits = searcher.search(new TermQuery(aaa), null, 1000).scoreDocs;
         dir.tweakBufferSizes();
         assertEquals(35, hits.length);
-        writer.close();
+        writer.shutdown();
         reader.close();
       } finally {
-        _TestUtil.rmDir(indexDir);
+        TestUtil.rm(indexDir);
       }
     }
 
-    private static class MockFSDirectory extends Directory {
+    private static class MockFSDirectory extends BaseDirectory {
 
-      List<IndexInput> allIndexInputs = new ArrayList<IndexInput>();
+      List<IndexInput> allIndexInputs = new ArrayList<>();
 
       Random rand;
 
@@ -350,12 +332,6 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         throws IOException
       {
         dir.deleteFile(name);
-      }
-      @Override
-      public boolean fileExists(String name)
-        throws IOException
-      {
-        return dir.fileExists(name);
       }
       @Override
       public String[] listAll()

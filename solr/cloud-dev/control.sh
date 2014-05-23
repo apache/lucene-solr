@@ -1,4 +1,5 @@
-#!/usr/bin/env bash
+#!/bin/bash
+
 source ./functions.sh
 
 case "$1" in

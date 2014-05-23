@@ -19,23 +19,26 @@ package org.apache.lucene.search.suggest.fst;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
-import org.apache.lucene.search.spell.TermFreqIterator;
-import org.apache.lucene.search.spell.TermFreqPayloadIterator;
+import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
-import org.apache.lucene.search.suggest.Sort.SortInfo;
-import org.apache.lucene.search.suggest.Sort;
 import org.apache.lucene.search.suggest.fst.FSTCompletion.Completion;
 import org.apache.lucene.search.suggest.tst.TSTLookup;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
-import org.apache.lucene.store.InputStreamDataInput;
-import org.apache.lucene.store.OutputStreamDataOutput;
-import org.apache.lucene.util.*;
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.OfflineSorter.SortInfo;
+import org.apache.lucene.util.OfflineSorter;
+import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.NoOutputs;
 
@@ -43,7 +46,7 @@ import org.apache.lucene.util.fst.NoOutputs;
  * An adapter from {@link Lookup} API to {@link FSTCompletion}.
  * 
  * <p>This adapter differs from {@link FSTCompletion} in that it attempts
- * to discretize any "weights" as passed from in {@link TermFreqIterator#weight()}
+ * to discretize any "weights" as passed from in {@link InputIterator#weight()}
  * to match the number of buckets. For the rationale for bucketing, see
  * {@link FSTCompletion}.
  * 
@@ -94,9 +97,12 @@ public class FSTCompletionLookup extends Lookup {
    */
   private FSTCompletion normalCompletion;
 
+  /** Number of entries the lookup was built with */
+  private long count = 0;
+
   /**
    * This constructor prepares for creating a suggested FST using the
-   * {@link #build(TermFreqIterator)} method. The number of weight
+   * {@link #build(InputIterator)} method. The number of weight
    * discretization buckets is set to {@link FSTCompletion#DEFAULT_BUCKETS} and
    * exact matches are promoted to the top of the suggestions list.
    */
@@ -106,7 +112,7 @@ public class FSTCompletionLookup extends Lookup {
 
   /**
    * This constructor prepares for creating a suggested FST using the
-   * {@link #build(TermFreqIterator)} method.
+   * {@link #build(InputIterator)} method.
    * 
    * @param buckets
    *          The number of weight discretization buckets (see
@@ -141,33 +147,37 @@ public class FSTCompletionLookup extends Lookup {
   }
 
   @Override
-  public void build(TermFreqIterator tfit) throws IOException {
-    if (tfit instanceof TermFreqPayloadIterator) {
+  public void build(InputIterator iterator) throws IOException {
+    if (iterator.hasPayloads()) {
       throw new IllegalArgumentException("this suggester doesn't support payloads");
     }
+    if (iterator.hasContexts()) {
+      throw new IllegalArgumentException("this suggester doesn't support contexts");
+    }
     File tempInput = File.createTempFile(
-        FSTCompletionLookup.class.getSimpleName(), ".input", Sort.defaultTempDir());
+        FSTCompletionLookup.class.getSimpleName(), ".input", OfflineSorter.defaultTempDir());
     File tempSorted = File.createTempFile(
-        FSTCompletionLookup.class.getSimpleName(), ".sorted", Sort.defaultTempDir());
+        FSTCompletionLookup.class.getSimpleName(), ".sorted", OfflineSorter.defaultTempDir());
 
-    Sort.ByteSequencesWriter writer = new Sort.ByteSequencesWriter(tempInput);
-    Sort.ByteSequencesReader reader = null;
+    OfflineSorter.ByteSequencesWriter writer = new OfflineSorter.ByteSequencesWriter(tempInput);
+    OfflineSorter.ByteSequencesReader reader = null;
     ExternalRefSorter sorter = null;
 
     // Push floats up front before sequences to sort them. For now, assume they are non-negative.
     // If negative floats are allowed some trickery needs to be done to find their byte order.
     boolean success = false;
+    count = 0;
     try {
       byte [] buffer = new byte [0];
       ByteArrayDataOutput output = new ByteArrayDataOutput(buffer);
       BytesRef spare;
-      while ((spare = tfit.next()) != null) {
+      while ((spare = iterator.next()) != null) {
         if (spare.length + 4 >= buffer.length) {
           buffer = ArrayUtil.grow(buffer, spare.length + 4);
         }
 
         output.reset(buffer);
-        output.writeInt(encodeWeight(tfit.weight()));
+        output.writeInt(encodeWeight(iterator.weight()));
         output.writeBytes(spare.bytes, spare.offset, spare.length);
         writer.write(buffer, 0, output.getPosition());
       }
@@ -175,13 +185,13 @@ public class FSTCompletionLookup extends Lookup {
 
       // We don't know the distribution of scores and we need to bucket them, so we'll sort
       // and divide into equal buckets.
-      SortInfo info = new Sort().sort(tempInput, tempSorted);
+      SortInfo info = new OfflineSorter().sort(tempInput, tempSorted);
       tempInput.delete();
       FSTCompletionBuilder builder = new FSTCompletionBuilder(
-          buckets, sorter = new ExternalRefSorter(new Sort()), sharedTailLength);
+          buckets, sorter = new ExternalRefSorter(new OfflineSorter()), sharedTailLength);
 
       final int inputLines = info.lines;
-      reader = new Sort.ByteSequencesReader(tempSorted);
+      reader = new OfflineSorter.ByteSequencesReader(tempSorted);
       long line = 0;
       int previousBucket = 0;
       int previousScore = 0;
@@ -208,6 +218,7 @@ public class FSTCompletionLookup extends Lookup {
         builder.add(tmp2, bucket);
 
         line++;
+        count++;
       }
 
       // The two FSTCompletions share the same automaton.
@@ -236,7 +247,10 @@ public class FSTCompletionLookup extends Lookup {
   }
 
   @Override
-  public List<LookupResult> lookup(CharSequence key, boolean higherWeightsFirst, int num) {
+  public List<LookupResult> lookup(CharSequence key, Set<BytesRef> contexts, boolean higherWeightsFirst, int num) {
+    if (contexts != null) {
+      throw new IllegalArgumentException("this suggester doesn't support contexts");
+    }
     final List<Completion> completions;
     if (higherWeightsFirst) {
       completions = higherWeightsCompletion.lookup(key, num);
@@ -244,7 +258,7 @@ public class FSTCompletionLookup extends Lookup {
       completions = normalCompletion.lookup(key, num);
     }
     
-    final ArrayList<LookupResult> results = new ArrayList<LookupResult>(completions.size());
+    final ArrayList<LookupResult> results = new ArrayList<>(completions.size());
     CharsRef spare = new CharsRef();
     for (Completion c : completions) {
       spare.grow(c.utf8.length);
@@ -265,28 +279,39 @@ public class FSTCompletionLookup extends Lookup {
 
 
   @Override
-  public synchronized boolean store(OutputStream output) throws IOException {
-
-    try {
-      if (this.normalCompletion == null || normalCompletion.getFST() == null) 
-        return false;
-      normalCompletion.getFST().save(new OutputStreamDataOutput(output));
-    } finally {
-      IOUtils.close(output);
-    }
+  public synchronized boolean store(DataOutput output) throws IOException {
+    output.writeVLong(count);
+    if (this.normalCompletion == null || normalCompletion.getFST() == null) 
+      return false;
+    normalCompletion.getFST().save(output);
     return true;
   }
 
   @Override
-  public synchronized boolean load(InputStream input) throws IOException {
-    try {
-      this.higherWeightsCompletion = new FSTCompletion(new FST<Object>(
-          new InputStreamDataInput(input), NoOutputs.getSingleton()));
-      this.normalCompletion = new FSTCompletion(
-          higherWeightsCompletion.getFST(), false, exactMatchFirst);
-    } finally {
-      IOUtils.close(input);
-    }
+  public synchronized boolean load(DataInput input) throws IOException {
+    count = input.readVLong();
+    this.higherWeightsCompletion = new FSTCompletion(new FST<>(
+        input, NoOutputs.getSingleton()));
+    this.normalCompletion = new FSTCompletion(
+        higherWeightsCompletion.getFST(), false, exactMatchFirst);
     return true;
+  }
+
+  @Override
+  public long sizeInBytes() {
+    long mem = RamUsageEstimator.shallowSizeOf(this) + RamUsageEstimator.shallowSizeOf(normalCompletion) + RamUsageEstimator.shallowSizeOf(higherWeightsCompletion);
+    if (normalCompletion != null) {
+      mem += normalCompletion.getFST().sizeInBytes();
+    }
+    if (higherWeightsCompletion != null && (normalCompletion == null || normalCompletion.getFST() != higherWeightsCompletion.getFST())) {
+      // the fst should be shared between the 2 completion instances, don't count it twice
+      mem += higherWeightsCompletion.getFST().sizeInBytes();
+    }
+    return mem;
+  }
+
+  @Override
+  public long getCount() {
+    return count;
   }
 }

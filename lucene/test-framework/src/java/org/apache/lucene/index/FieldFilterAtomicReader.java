@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FilterIterator;
 
 /**
@@ -38,7 +39,7 @@ public final class FieldFilterAtomicReader extends FilterAtomicReader {
     super(in);
     this.fields = fields;
     this.negate = negate;
-    ArrayList<FieldInfo> filteredInfos = new ArrayList<FieldInfo>();
+    ArrayList<FieldInfo> filteredInfos = new ArrayList<>();
     for (FieldInfo fi : in.getFieldInfos()) {
       if (hasField(fi.name)) {
         filteredInfos.add(fi);
@@ -134,6 +135,11 @@ public final class FieldFilterAtomicReader extends FilterAtomicReader {
   @Override
   public NumericDocValues getNormValues(String field) throws IOException {
     return hasField(field) ? super.getNormValues(field) : null;
+  }
+
+  @Override
+  public Bits getDocsWithField(String field) throws IOException {
+    return hasField(field) ? super.getDocsWithField(field) : null;
   }
 
   @Override

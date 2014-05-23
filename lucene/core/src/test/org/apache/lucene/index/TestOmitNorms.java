@@ -27,7 +27,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestOmitNorms extends LuceneTestCase {
   // Tests whether the DocumentWriter correctly enable the
@@ -64,7 +64,7 @@ public class TestOmitNorms extends LuceneTestCase {
     // force merge
     writer.forceMerge(1);
     // flush
-    writer.close();
+    writer.shutdown();
 
     SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(ram));
     FieldInfos fi = reader.getFieldInfos();
@@ -118,7 +118,7 @@ public class TestOmitNorms extends LuceneTestCase {
     // force merge
     writer.forceMerge(1);
     // flush
-    writer.close();
+    writer.shutdown();
 
     SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(ram));
     FieldInfos fi = reader.getFieldInfos();
@@ -166,7 +166,7 @@ public class TestOmitNorms extends LuceneTestCase {
     writer.forceMerge(1);
 
     // flush
-    writer.close();
+    writer.shutdown();
 
     SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(ram));
     FieldInfos fi = reader.getFieldInfos();
@@ -193,7 +193,7 @@ public class TestOmitNorms extends LuceneTestCase {
             TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(3).setMergePolicy(newLogMergePolicy()));
     LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
     lmp.setMergeFactor(2);
-    lmp.setUseCompoundFile(false);
+    lmp.setNoCFSRatio(0.0);
     Document d = new Document();
 
     FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
@@ -212,7 +212,7 @@ public class TestOmitNorms extends LuceneTestCase {
     // force merge
     writer.forceMerge(1);
     // flush
-    writer.close();
+    writer.shutdown();
 
     assertNoNrm(ram);
     ram.close();
@@ -281,7 +281,7 @@ public class TestOmitNorms extends LuceneTestCase {
     riw.addDocument(d);
     
     // add a mix of f1's and f2's
-    int numExtraDocs = _TestUtil.nextInt(random(), 1, 1000);
+    int numExtraDocs = TestUtil.nextInt(random(), 1, 1000);
     for (int i = 0; i < numExtraDocs; i++) {
       d = new Document();
       d.add(random().nextBoolean() ? f1 : f2);
@@ -306,7 +306,7 @@ public class TestOmitNorms extends LuceneTestCase {
     }
     ir1.close();
     ir2.close();
-    riw.close();
+    riw.shutdown();
     dir.close();
     return norms1;
   }

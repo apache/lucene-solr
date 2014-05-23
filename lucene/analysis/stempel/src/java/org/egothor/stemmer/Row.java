@@ -65,7 +65,7 @@ import java.util.TreeMap;
  * The Row class represents a row in a matrix representation of a trie.
  */
 public class Row {
-  TreeMap<Character,Cell> cells = new TreeMap<Character,Cell>();
+  TreeMap<Character,Cell> cells = new TreeMap<>();
   int uniformCnt = 0;
   int uniformSkip = 0;
   

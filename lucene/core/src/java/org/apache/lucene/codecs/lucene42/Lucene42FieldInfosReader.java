@@ -38,8 +38,10 @@ import org.apache.lucene.util.IOUtils;
  * Lucene 4.2 FieldInfos reader.
  * 
  * @lucene.experimental
+ * @deprecated Only for reading old 4.2-4.5 segments
  * @see Lucene42FieldInfosFormat
  */
+@Deprecated
 final class Lucene42FieldInfosReader extends FieldInfosReader {
 
   /** Sole constructor. */
@@ -47,7 +49,7 @@ final class Lucene42FieldInfosReader extends FieldInfosReader {
   }
 
   @Override
-  public FieldInfos read(Directory directory, String segmentName, IOContext iocontext) throws IOException {
+  public FieldInfos read(Directory directory, String segmentName, String segmentSuffix, IOContext iocontext) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(segmentName, "", Lucene42FieldInfosFormat.EXTENSION);
     IndexInput input = directory.openInput(fileName, iocontext);
     
@@ -87,12 +89,10 @@ final class Lucene42FieldInfosReader extends FieldInfosReader {
         final DocValuesType normsType = getDocValuesType(input, (byte) ((val >>> 4) & 0x0F));
         final Map<String,String> attributes = input.readStringStringMap();
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
-          omitNorms, storePayloads, indexOptions, docValuesType, normsType, Collections.unmodifiableMap(attributes));
+          omitNorms, storePayloads, indexOptions, docValuesType, normsType, -1, Collections.unmodifiableMap(attributes));
       }
 
-      if (input.getFilePointer() != input.length()) {
-        throw new CorruptIndexException("did not read all bytes from file \"" + fileName + "\": read " + input.getFilePointer() + " vs size " + input.length() + " (resource: " + input + ")");
-      }
+      CodecUtil.checkEOF(input);
       FieldInfos fieldInfos = new FieldInfos(infos);
       success = true;
       return fieldInfos;

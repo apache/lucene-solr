@@ -17,19 +17,24 @@ package org.apache.lucene.util.packed;
  * limitations under the License.
  */
 
-import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.checkBlockSize;
-import static org.apache.lucene.util.packed.BlockPackedReaderIterator.zigZagDecode;
+import static org.apache.lucene.util.BitUtil.zigZagDecode;
+import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.MAX_BLOCK_SIZE;
+import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.MIN_BLOCK_SIZE;
+import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
+import static org.apache.lucene.util.packed.PackedInts.numBlocks;
 
 import java.io.IOException;
 
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.LongValues;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Provides random access to a stream written with
  * {@link MonotonicBlockPackedWriter}.
  * @lucene.internal
  */
-public final class MonotonicBlockPackedReader {
+public final class MonotonicBlockPackedReader extends LongValues {
 
   private final int blockShift, blockMask;
   private final long valueCount;
@@ -39,14 +44,10 @@ public final class MonotonicBlockPackedReader {
 
   /** Sole constructor. */
   public MonotonicBlockPackedReader(IndexInput in, int packedIntsVersion, int blockSize, long valueCount, boolean direct) throws IOException {
-    checkBlockSize(blockSize);
     this.valueCount = valueCount;
-    blockShift = Integer.numberOfTrailingZeros(blockSize);
+    blockShift = checkBlockSize(blockSize, MIN_BLOCK_SIZE, MAX_BLOCK_SIZE);
     blockMask = blockSize - 1;
-    final int numBlocks = (int) (valueCount / blockSize) + (valueCount % blockSize == 0 ? 0 : 1);
-    if ((long) numBlocks * blockSize < valueCount) {
-      throw new IllegalArgumentException("valueCount is too large for this block size");
-    }
+    final int numBlocks = numBlocks(valueCount, blockSize);
     minValues = new long[numBlocks];
     averages = new float[numBlocks];
     subReaders = new PackedInts.Reader[numBlocks];
@@ -72,12 +73,28 @@ public final class MonotonicBlockPackedReader {
     }
   }
 
-  /** Get value at <code>index</code>. */
+  @Override
   public long get(long index) {
     assert index >= 0 && index < valueCount;
     final int block = (int) (index >>> blockShift);
     final int idx = (int) (index & blockMask);
     return minValues[block] + (long) (idx * averages[block]) + zigZagDecode(subReaders[block].get(idx));
+  }
+
+  /** Returns the number of values */
+  public long size() {
+    return valueCount;
+  }
+  
+  /** Returns the approximate RAM bytes used */
+  public long ramBytesUsed() {
+    long sizeInBytes = 0;
+    sizeInBytes += RamUsageEstimator.sizeOf(minValues);
+    sizeInBytes += RamUsageEstimator.sizeOf(averages);
+    for(PackedInts.Reader reader: subReaders) {
+      sizeInBytes += reader.ramBytesUsed();
+    }
+    return sizeInBytes;
   }
 
 }

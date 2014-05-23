@@ -277,7 +277,7 @@ public class MultiTrie2 extends MultiTrie {
    */
   @Override
   public Trie reduce(Reduce by) {
-    List<Trie> h = new ArrayList<Trie>();
+    List<Trie> h = new ArrayList<>();
     for (Trie trie : tries)
       h.add(trie.reduce(by));
 

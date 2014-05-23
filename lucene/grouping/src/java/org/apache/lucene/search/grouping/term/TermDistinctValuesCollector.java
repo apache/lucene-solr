@@ -18,8 +18,9 @@ package org.apache.lucene.search.grouping.term;
  */
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.grouping.AbstractDistinctValuesCollector;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.util.BytesRef;
@@ -107,9 +108,9 @@ public class TermDistinctValuesCollector extends AbstractDistinctValuesCollector
   }
 
   @Override
-  public void setNextReader(AtomicReaderContext context) throws IOException {
-    groupFieldTermIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), groupField);
-    countFieldTermIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), countField);
+  protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+    groupFieldTermIndex = DocValues.getSorted(context.reader(), groupField);
+    countFieldTermIndex = DocValues.getSorted(context.reader(), countField);
     ordSet.clear();
     for (GroupCount group : groups) {
       int groupOrd = group.groupValue == null ? -1 : groupFieldTermIndex.lookupTerm(group.groupValue);

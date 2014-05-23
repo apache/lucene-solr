@@ -67,7 +67,7 @@ public class TestSpansAdvanced extends LuceneTestCase {
     addDocument(writer, "3", "I think it should work.");
     addDocument(writer, "4", "I think it should work.");
     reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     searcher = newSearcher(reader);
     searcher.setSimilarity(new DefaultSimilarity());
   }

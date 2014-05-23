@@ -26,7 +26,7 @@ import org.junit.Test;
 public class NumericFieldsTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-master.xml", "schema-numeric.xml");
+    initCore("solrconfig-basic.xml", "schema-numeric.xml");
   }
 
   static String[] types = new String[]{"int", "long", "float", "double", "date"};

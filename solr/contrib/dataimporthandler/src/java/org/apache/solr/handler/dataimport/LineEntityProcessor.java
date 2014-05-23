@@ -125,7 +125,7 @@ public class LineEntityProcessor extends EntityProcessorBase {
       if (acceptLineRegex != null && ! acceptLineRegex.matcher(line).find()) continue;
       if (skipLineRegex != null &&   skipLineRegex.matcher(line).find()) continue;
       // Contruct the 'row' of fields
-      Map<String, Object> row = new HashMap<String, Object>();
+      Map<String, Object> row = new HashMap<>();
       row.put("rawLine", line);
       return row;
     }

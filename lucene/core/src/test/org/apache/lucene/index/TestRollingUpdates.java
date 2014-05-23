@@ -43,10 +43,13 @@ public class TestRollingUpdates extends LuceneTestCase {
 
     //provider.register(new MemoryCodec());
     if (random().nextBoolean()) {
-      Codec.setDefault(_TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat(random().nextBoolean(), random.nextFloat())));
+      Codec.setDefault(TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat(random().nextBoolean(), random.nextFloat())));
     }
 
-    final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
+
+    final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     final int SIZE = atLeast(20);
     int id = 0;
     IndexReader r = null;
@@ -59,7 +62,7 @@ public class TestRollingUpdates extends LuceneTestCase {
     // TODO: sometimes update ids not in order...
     for(int docIter=0;docIter<numUpdates;docIter++) {
       final Document doc = docs.nextDoc();
-      final String myID = ""+id;
+      final String myID = Integer.toString(id);
       if (id == SIZE-1) {
         id = 0;
       } else {
@@ -128,7 +131,7 @@ public class TestRollingUpdates extends LuceneTestCase {
     w.commit();
     assertEquals(SIZE, w.numDocs());
 
-    w.close();
+    w.shutdown();
 
     TestIndexWriter.assertNoUnreferencedFiles(dir, "leftover files after rolling updates");
 
@@ -138,7 +141,7 @@ public class TestRollingUpdates extends LuceneTestCase {
     SegmentInfos infos = new SegmentInfos();
     infos.read(dir);
     long totalBytes = 0;
-    for(SegmentInfoPerCommit sipc : infos) {
+    for(SegmentCommitInfo sipc : infos) {
       totalBytes += sipc.sizeInBytes();
     }
     long totalBytes2 = 0;
@@ -160,7 +163,7 @@ public class TestRollingUpdates extends LuceneTestCase {
       final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(2));
       final int numUpdates = atLeast(20);
-      int numThreads = _TestUtil.nextInt(random(), 2, 6);
+      int numThreads = TestUtil.nextInt(random(), 2, 6);
       IndexingThread[] threads = new IndexingThread[numThreads];
       for (int i = 0; i < numThreads; i++) {
         threads[i] = new IndexingThread(docs, w, numUpdates);
@@ -171,7 +174,7 @@ public class TestRollingUpdates extends LuceneTestCase {
         threads[i].join();
       }
 
-      w.close();
+      w.shutdown();
     }
 
     IndexReader open = DirectoryReader.open(dir);

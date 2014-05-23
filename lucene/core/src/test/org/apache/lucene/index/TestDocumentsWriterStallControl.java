@@ -339,6 +339,7 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
       for (Thread thread : threads) {
         if (thread.getState() != state) {
           done = false;
+          break;
         }
       }
       if (done) {

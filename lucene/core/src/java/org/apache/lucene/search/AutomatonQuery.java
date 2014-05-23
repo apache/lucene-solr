@@ -25,7 +25,6 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.BasicOperations;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
@@ -77,16 +76,7 @@ public class AutomatonQuery extends MultiTermQuery {
   public int hashCode() {
     final int prime = 31;
     int result = super.hashCode();
-    if (automaton != null) {
-      // we already minimized the automaton in the ctor, so
-      // this hash code will be the same for automata that
-      // are the same:
-      int automatonHashCode = automaton.getNumberOfStates() * 3 + automaton.getNumberOfTransitions() * 2;
-      if (automatonHashCode == 0) {
-        automatonHashCode = 1;
-      }
-      result = prime * result + automatonHashCode;
-    }
+    result = prime * result + compiled.hashCode();
     result = prime * result + ((term == null) ? 0 : term.hashCode());
     return result;
   }
@@ -100,10 +90,7 @@ public class AutomatonQuery extends MultiTermQuery {
     if (getClass() != obj.getClass())
       return false;
     AutomatonQuery other = (AutomatonQuery) obj;
-    if (automaton == null) {
-      if (other.automaton != null)
-        return false;
-    } else if (!BasicOperations.sameLanguage(automaton, other.automaton))
+    if (!compiled.equals(other.compiled))
       return false;
     if (term == null) {
       if (other.term != null)
@@ -127,5 +114,10 @@ public class AutomatonQuery extends MultiTermQuery {
     buffer.append("}");
     buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
+  }
+  
+  /** Returns the automaton used to create this query */
+  public Automaton getAutomaton() {
+    return automaton;
   }
 }

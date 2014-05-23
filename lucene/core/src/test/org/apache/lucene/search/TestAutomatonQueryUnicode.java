@@ -80,7 +80,7 @@ public class TestAutomatonQueryUnicode extends LuceneTestCase {
     writer.addDocument(doc);
     reader = writer.getReader();
     searcher = newSearcher(reader);
-    writer.close();
+    writer.shutdown();
   }
 
   @Override

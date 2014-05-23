@@ -58,7 +58,7 @@ public class TaskSequence extends PerfTask {
     setSequenceName();
     this.parent = parent;
     this.parallel = parallel;
-    tasks = new ArrayList<PerfTask>();
+    tasks = new ArrayList<>();
     logByTimeMsec = runData.getConfig().get("report.time.step.msec", 0);
   }
 
@@ -186,7 +186,7 @@ public class TaskSequence extends PerfTask {
         final PerfTask task = tasksArray[l];
         if (task.getRunInBackground()) {
           if (bgTasks == null) {
-            bgTasks = new ArrayList<RunBackgroundTask>();
+            bgTasks = new ArrayList<>();
           }
           RunBackgroundTask bgTask = new RunBackgroundTask(task, letChildReport);
           bgTask.setPriority(task.getBackgroundDeltaPriority() + Thread.currentThread().getPriority());
@@ -518,7 +518,7 @@ public class TaskSequence extends PerfTask {
   @Override
   protected TaskSequence clone() throws CloneNotSupportedException {
     TaskSequence res = (TaskSequence) super.clone();
-    res.tasks = new ArrayList<PerfTask>();
+    res.tasks = new ArrayList<>();
     for (int i = 0; i < tasks.size(); i++) {
       res.tasks.add(tasks.get(i).clone());
     }

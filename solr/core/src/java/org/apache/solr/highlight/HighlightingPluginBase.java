@@ -72,7 +72,7 @@ public abstract class HighlightingPluginBase implements SolrInfoMBean
 
   @Override
   public NamedList getStatistics() {
-    NamedList<Long> lst = new SimpleOrderedMap<Long>();
+    NamedList<Long> lst = new SimpleOrderedMap<>();
     lst.add("requests", numRequests);
     return lst;
   }

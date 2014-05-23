@@ -67,6 +67,9 @@ public final class LimitTokenPositionFilter extends TokenFilter {
    */
   public LimitTokenPositionFilter(TokenStream in, int maxTokenPosition, boolean consumeAllTokens) {
     super(in);
+    if (maxTokenPosition < 1) {
+      throw new IllegalArgumentException("maxTokenPosition must be greater than zero");
+    }
     this.maxTokenPosition = maxTokenPosition;
     this.consumeAllTokens = consumeAllTokens;
   }

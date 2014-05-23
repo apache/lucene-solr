@@ -113,7 +113,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
   }
     
   public void testPosIncrementAnalyzer() throws ParseException {
-    QueryParser qp = new QueryParser(Version.LUCENE_40, "", new PosIncrementAnalyzer());
+    QueryParser qp = new QueryParser(Version.LUCENE_4_0, "", new PosIncrementAnalyzer());
     assertEquals("quick brown", qp.parse("the quick brown").toString());
     assertEquals("quick brown fox", qp.parse("the quick brown fox").toString());
   }
@@ -125,8 +125,8 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
   private class MultiAnalyzer extends Analyzer {
 
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer result = new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
+    public TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer result = new MockTokenizer(MockTokenizer.WHITESPACE, true);
       return new TokenStreamComponents(result, new TestFilter(result));
     }
   }
@@ -196,8 +196,8 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
   private class PosIncrementAnalyzer extends Analyzer {
 
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer result = new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
+    public TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer result = new MockTokenizer(MockTokenizer.WHITESPACE, true);
       return new TokenStreamComponents(result, new TestPosIncrementFilter(result));
     }
   }

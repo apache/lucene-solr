@@ -40,8 +40,20 @@ public class RecoveryZkTest extends AbstractFullDistribZkTestBase {
     super();
     sliceCount = 1;
     shardCount = 2;
+    schemaString = "schema15.xml";      // we need a string id
   }
   
+  public static String[] fieldNames = new String[]{"f_i", "f_f", "f_d", "f_l", "f_dt"};
+  public static RandVal[] randVals = new RandVal[]{rint, rfloat, rdouble, rlong, rdate};
+  
+  protected String[] getFieldNames() {
+    return fieldNames;
+  }
+
+  protected RandVal[] getRandValues() {
+    return randVals;
+  }
+
   @Override
   public void doTest() throws Exception {
     handle.clear();
@@ -50,14 +62,20 @@ public class RecoveryZkTest extends AbstractFullDistribZkTestBase {
     
     // start a couple indexing threads
     
-    int[] maxDocList = new int[] {300, 700, 1200, 1350, 5000, 15000};
+    int[] maxDocList = new int[] {300, 700, 1200, 1350, 3000};
+    int[] maxDocNightlyList = new int[] {3000, 7000, 12000, 30000, 45000, 60000};
     
-    int maxDoc = maxDocList[random().nextInt(maxDocList.length - 1)];
+    int maxDoc;
+    if (!TEST_NIGHTLY) {
+      maxDoc = maxDocList[random().nextInt(maxDocList.length - 1)];
+    } else {
+      maxDoc = maxDocNightlyList[random().nextInt(maxDocList.length - 1)];
+    }
     
-    indexThread = new StopableIndexingThread(0, true, maxDoc);
+    indexThread = new StopableIndexingThread(controlClient, cloudClient, "1", true, maxDoc);
     indexThread.start();
     
-    indexThread2 = new StopableIndexingThread(10000, true, maxDoc);
+    indexThread2 = new StopableIndexingThread(controlClient, cloudClient, "2", true, maxDoc);
     
     indexThread2.start();
 
@@ -86,19 +104,25 @@ public class RecoveryZkTest extends AbstractFullDistribZkTestBase {
     indexThread.join();
     indexThread2.join();
     
-    Thread.sleep(500);
+    Thread.sleep(1000);
   
-    waitForThingsToLevelOut(30);
+    waitForThingsToLevelOut(120);
     
     Thread.sleep(2000);
     
     waitForThingsToLevelOut(30);
     
+    Thread.sleep(5000);
+    
     waitForRecoveriesToFinish(DEFAULT_COLLECTION, zkStateReader, false, true);
 
     // test that leader and replica have same doc count
     
-    checkShardConsistency("shard1", false, false);
+    String fail = checkShardConsistency("shard1", false, false);
+    if (fail != null) {
+      fail(fail);
+    }
+    
     SolrQuery query = new SolrQuery("*:*");
     query.setParam("distrib", "false");
     long client1Docs = shardToJetty.get("shard1").get(0).client.solrClient.query(query).getResults().getNumFound();

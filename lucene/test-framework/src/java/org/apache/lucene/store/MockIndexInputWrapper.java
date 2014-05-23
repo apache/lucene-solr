@@ -89,6 +89,16 @@ public class MockIndexInputWrapper extends IndexInput {
   }
 
   @Override
+  public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
+    ensureOpen();
+    dir.inputCloneCount.incrementAndGet();
+    IndexInput slice = delegate.slice(sliceDescription, offset, length);
+    MockIndexInputWrapper clone = new MockIndexInputWrapper(dir, sliceDescription, slice);
+    clone.isClone = true;
+    return clone;
+  }
+
+  @Override
   public long getFilePointer() {
     ensureOpen();
     return delegate.getFilePointer();

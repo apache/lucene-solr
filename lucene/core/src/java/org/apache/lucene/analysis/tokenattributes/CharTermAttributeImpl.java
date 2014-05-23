@@ -21,8 +21,8 @@ import java.nio.CharBuffer;
 
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeImpl;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.AttributeReflector;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.UnicodeUtil;
 
@@ -85,13 +85,11 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
   // *** TermToBytesRefAttribute interface ***
   private BytesRef bytes = new BytesRef(MIN_BUFFER_SIZE);
 
-  // not until java 6 @Override
   @Override
-  public int fillBytesRef() {
-    return UnicodeUtil.UTF16toUTF8WithHash(termBuffer, 0, termLength, bytes);
+  public void fillBytesRef() {
+    UnicodeUtil.UTF16toUTF8(termBuffer, 0, termLength, bytes);
   }
 
-  // not until java 6 @Override
   @Override
   public BytesRef getBytesRef() {
     return bytes;

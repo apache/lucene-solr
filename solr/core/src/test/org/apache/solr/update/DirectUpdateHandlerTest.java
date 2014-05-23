@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.SolrTestCaseJ4;
@@ -45,6 +46,8 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     savedFactory = System.getProperty("solr.DirectoryFactory");
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
+    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
+    System.setProperty("solr.tests.mergePolicy", TieredMergePolicy.class.getName());
     initCore("solrconfig.xml", "schema12.xml");
   }
   
@@ -168,7 +171,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     ureq.close();
     
     // search - "B" should not be found.
-    Map<String,String> args = new HashMap<String, String>();
+    Map<String,String> args = new HashMap<>();
     args.put( CommonParams.Q, "id:A OR id:B" );
     args.put( "indent", "true" );
     SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
@@ -214,7 +217,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     ureq.close();
 
     // search - "A","B" should be found.
-    Map<String,String> args = new HashMap<String, String>();
+    Map<String,String> args = new HashMap<>();
     args.put( CommonParams.Q, "id:A OR id:B" );
     args.put( "indent", "true" );
     SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
@@ -270,13 +273,14 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     assertU(commit());
 
     assertU(adoc("id","3"));
-    assertU(adoc("id","2"));
+    assertU(adoc("id","2")); // dup, triggers delete
     assertU(adoc("id","4"));
     assertU(commit());
 
     SolrQueryRequest sr = req("q","foo");
     DirectoryReader r = sr.getSearcher().getIndexReader();
-    assertTrue(r.maxDoc() > r.numDocs());   // should have deletions
+    assertTrue("maxDoc !> numDocs ... expected some deletions",
+               r.maxDoc() > r.numDocs());
     sr.close();
 
     assertU(commit("expungeDeletes","true"));

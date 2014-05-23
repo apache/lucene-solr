@@ -60,8 +60,8 @@ public class TestArabicAnalyzer extends BaseTokenStreamTestCase {
    */
   public void testReusableTokenStream() throws Exception {
     ArabicAnalyzer a = new ArabicAnalyzer(TEST_VERSION_CURRENT);
-    assertAnalyzesToReuse(a, "كبير", new String[] { "كبير" });
-    assertAnalyzesToReuse(a, "كبيرة", new String[] { "كبير" }); // feminine marker
+    assertAnalyzesTo(a, "كبير", new String[] { "كبير" });
+    assertAnalyzesTo(a, "كبيرة", new String[] { "كبير" }); // feminine marker
   }
 
   /**
@@ -86,12 +86,12 @@ public class TestArabicAnalyzer extends BaseTokenStreamTestCase {
     CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, asSet("ساهدهات"), false);
     ArabicAnalyzer a = new ArabicAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(a, "كبيرة the quick ساهدهات", new String[] { "كبير","the", "quick", "ساهدهات" });
-    assertAnalyzesToReuse(a, "كبيرة the quick ساهدهات", new String[] { "كبير","the", "quick", "ساهدهات" });
+    assertAnalyzesTo(a, "كبيرة the quick ساهدهات", new String[] { "كبير","the", "quick", "ساهدهات" });
 
     
     a = new ArabicAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, CharArraySet.EMPTY_SET);
     assertAnalyzesTo(a, "كبيرة the quick ساهدهات", new String[] { "كبير","the", "quick", "ساهد" });
-    assertAnalyzesToReuse(a, "كبيرة the quick ساهدهات", new String[] { "كبير","the", "quick", "ساهد" });
+    assertAnalyzesTo(a, "كبيرة the quick ساهدهات", new String[] { "كبير","the", "quick", "ساهد" });
   }
   
   /** blast some random strings through the analyzer */

@@ -61,7 +61,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) {
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
       base = context.docBase;
     }
 
@@ -112,7 +112,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
       writer.addDocument(new Document());
     }
     reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
   }
   
   @Override

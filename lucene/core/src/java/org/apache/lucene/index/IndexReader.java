@@ -17,6 +17,11 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.document.DocumentStoredFieldVisitor;
+import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.IOUtils;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
@@ -25,10 +30,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.lucene.document.DocumentStoredFieldVisitor;
-import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.util.Bits;
 // javadocs
 
 /** IndexReader is an abstract class, providing an interface for accessing an
@@ -125,11 +126,20 @@ public abstract class IndexReader implements Closeable {
     parentReaders.add(reader);
   }
 
-  private void notifyReaderClosedListeners() {
+  private void notifyReaderClosedListeners(Throwable th) {
     synchronized(readerClosedListeners) {
       for(ReaderClosedListener listener : readerClosedListeners) {
-        listener.onClose(this);
+        try {
+          listener.onClose(this);
+        } catch (Throwable t) {
+          if (th == null) {
+            th = t;
+          } else {
+            th.addSuppressed(t);
+          }
+        }
       }
+      IOUtils.reThrowUnchecked(th);
     }
   }
 
@@ -168,8 +178,9 @@ public abstract class IndexReader implements Closeable {
    * @see #tryIncRef
    */
   public final void incRef() {
-    ensureOpen();
-    refCount.incrementAndGet();
+    if (!tryIncRef()) {
+       ensureOpen();
+    }
   }
   
   /**
@@ -224,18 +235,19 @@ public abstract class IndexReader implements Closeable {
     
     final int rc = refCount.decrementAndGet();
     if (rc == 0) {
-      boolean success = false;
+      closed = true;
+      Throwable throwable = null;
       try {
         doClose();
-        success = true;
+      } catch (Throwable th) {
+        throwable = th;
       } finally {
-        if (!success) {
-          // Put reference back on failure
-          refCount.incrementAndGet();
+        try {
+          reportCloseToParentReaders();
+        } finally {
+          notifyReaderClosedListeners(throwable);
         }
       }
-      reportCloseToParentReaders();
-      notifyReaderClosedListeners();
     } else if (rc < 0) {
       throw new IllegalStateException("too many decRef calls: refCount is " + rc + " after decrement");
     }
@@ -414,7 +426,7 @@ public abstract class IndexReader implements Closeable {
     return getContext().leaves();
   }
 
-  /** Expert: Returns a key for this IndexReader, so FieldCache/CachingWrapperFilter can find
+  /** Expert: Returns a key for this IndexReader, so CachingWrapperFilter can find
    * it again.
    * This key must not have equals()/hashCode() methods, so &quot;equals&quot; means &quot;identical&quot;. */
   public Object getCoreCacheKey() {
@@ -424,7 +436,7 @@ public abstract class IndexReader implements Closeable {
   }
 
   /** Expert: Returns a key for this IndexReader that also includes deletions,
-   * so FieldCache/CachingWrapperFilter can find it again.
+   * so CachingWrapperFilter can find it again.
    * This key must not have equals()/hashCode() methods, so &quot;equals&quot; means &quot;identical&quot;. */
   public Object getCombinedCoreAndDeletesKey() {
     // Don't call ensureOpen since FC calls this (to evict)

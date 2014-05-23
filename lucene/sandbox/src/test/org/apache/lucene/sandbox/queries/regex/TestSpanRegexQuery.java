@@ -66,11 +66,11 @@ public class TestSpanRegexQuery extends LuceneTestCase {
     doc.add(newTextField("field", "first auto update", Field.Store.NO));
     writer.addDocument(doc);
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
 
     IndexReader reader = DirectoryReader.open(directory);
     IndexSearcher searcher = newSearcher(reader);
-    SpanQuery srq = new SpanMultiTermQueryWrapper<RegexQuery>(new RegexQuery(new Term("field", "aut.*")));
+    SpanQuery srq = new SpanMultiTermQueryWrapper<>(new RegexQuery(new Term("field", "aut.*")));
     SpanFirstQuery sfq = new SpanFirstQuery(srq, 1);
     // SpanNearQuery query = new SpanNearQuery(new SpanQuery[] {srq, stq}, 6,
     // true);

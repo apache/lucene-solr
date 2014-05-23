@@ -31,7 +31,6 @@
   <!-- if you extend the classpath refid in one contrib's build.xml (add JARs), use this as basis: -->
   <path id="base.classpath">
    <pathelement location="${common.dir}/build/core/classes/java"/>
-   <pathelement path="${project.classpath}"/>
   </path>
   
   <!-- default classpath refid, can be overridden by contrib's build.xml (use the above base.classpath as basis): -->
@@ -132,6 +131,17 @@
     </ant>
     <property name="queryparser-javadocs.uptodate" value="true"/>
   </target>
+	
+  <property name="join.jar" value="${common.dir}/build/join/lucene-join-${version}.jar"/>
+  <target name="check-join-uptodate" unless="join.uptodate">
+    <module-uptodate name="join" jarfile="${join.jar}" property="join.uptodate"/>
+  </target>
+  <target name="jar-join" unless="join.uptodate" depends="check-join-uptodate">
+    <ant dir="${common.dir}/join" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+	</ant>
+	<property name="join.uptodate" value="true"/>
+  </target>	
   
   <property name="analyzers-common.jar" value="${common.dir}/build/analysis/common/lucene-analyzers-common-${version}.jar"/>
   <target name="check-analyzers-common-uptodate" unless="analyzers-common.uptodate">
@@ -420,6 +430,28 @@
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="codecs-javadocs.uptodate" value="true"/>
+  </target>
+
+  <property name="expressions.jar" value="${common.dir}/build/expressions/lucene-expressions-${version}.jar"/>
+  <target name="check-expressions-uptodate" unless="expressions.uptodate">
+    <module-uptodate name="expressions" jarfile="${expressions.jar}" property="expressions.uptodate"/>
+  </target>
+  <target name="jar-expressions" unless="expressions.uptodate" depends="check-expressions-uptodate">
+    <ant dir="${common.dir}/expressions" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="expressions.uptodate" value="true"/>
+  </target>
+
+  <property name="expressions-javadoc.jar" value="${common.dir}/build/expressions/lucene-expressions-${version}-javadoc.jar"/>
+  <target name="check-expressions-javadocs-uptodate" unless="expressions-javadocs.uptodate">
+    <module-uptodate name="expressions" jarfile="${expressions-javadoc.jar}" property="expressions-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-expressions" unless="expressions-javadocs.uptodate" depends="check-expressions-javadocs-uptodate">
+    <ant dir="${common.dir}/expressions" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="expressions-javadocs.uptodate" value="true"/>
   </target>
 
   <property name="grouping.jar" value="${common.dir}/build/grouping/lucene-grouping-${version}.jar"/>

@@ -44,4 +44,39 @@ public class SOLR749Test extends SolrTestCaseJ4 {
     assertTrue("vsp is null and it shouldn't be", vsp != null);
     assertTrue("vsp is not an instanceof " + DummyValueSourceParser.class, vsp instanceof DummyValueSourceParser);
   }
+
+  public void testHowManyDocsHaveBoostFunctionComputed() throws Exception {
+    for (int i = 0; i < 100; i++) {
+      assertU(adoc("id",""+i));
+    }
+    assertU(commit());
+
+    // NOTE: we can't rely on the default lucene syntax because "FooQParser" is registered as "lucene"
+    assertQ(req("q","{!notfoo}*:*"), "//result[@numFound=100]");
+    assertQ(req("q","{!notfoo}id:[* TO 49]"), "//result[@numFound=50]");
+    try {
+      assertQ("query wrapped in boost func should only eval func for query matches",
+              req("q","{!boost b=$boostFunc defType=notfoo}id:[* TO 49]",
+                  "boostFunc", "countUsage('boost_func',3.4)"),
+              "//result[@numFound=50]");
+      assertEquals(50, CountUsageValueSourceParser.getAndClearCount("boost_func"));
+
+      assertQ("func query that is filtered should be evaled only for filtered docs",
+              req("q","{!func}product(id,countUsage('func_q',4.5))",
+                  "fq", "{!notfoo}id:[30 TO 59]"),
+              "//result[@numFound=30]");
+      assertEquals(30, CountUsageValueSourceParser.getAndClearCount("func_q"));
+
+      assertQ("func query that wraps a query which is also used as a should be evaled only for filtered docs",
+              req("q","{!func}product(query($qq),countUsage('func_q_wrapping_fq',4.5))",
+                  "qq", "{!notfoo}id:[20 TO 39]",
+                  "fq", "{!query v=$qq}"),
+              "//result[@numFound=20]");
+      assertEquals(20, CountUsageValueSourceParser.getAndClearCount("func_q_wrapping_fq"));
+
+    } finally {
+      CountUsageValueSourceParser.clearCounters();
+    }
+  }
+  
 }

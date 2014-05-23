@@ -18,9 +18,9 @@ package org.apache.lucene.benchmark.byTask.utils;
  */
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -50,8 +50,8 @@ public class Config {
 
   private int roundNumber = 0;
   private Properties props;
-  private HashMap<String, Object> valByRound = new HashMap<String, Object>();
-  private HashMap<String, String> colForValByRound = new HashMap<String, String>();
+  private HashMap<String, Object> valByRound = new HashMap<>();
+  private HashMap<String, String> colForValByRound = new HashMap<>();
   private String algorithmText;
 
   /**
@@ -62,7 +62,7 @@ public class Config {
    */
   public Config(Reader algReader) throws IOException {
     // read alg file to array of lines
-    ArrayList<String> lines = new ArrayList<String>();
+    ArrayList<String> lines = new ArrayList<>();
     BufferedReader r = new BufferedReader(algReader);
     int lastConfigLine = 0;
     for (String line = r.readLine(); line != null; line = r.readLine()) {
@@ -80,8 +80,7 @@ public class Config {
     }
     // read props from string
     this.props = new Properties();
-    // props.load always assumes iso8859-1...
-    props.load(new ByteArrayInputStream(sb.toString().getBytes("ISO-8859-1")));
+    props.load(new StringReader(sb.toString()));
 
     // make sure work dir is set properly 
     if (props.get("work.dir") == null) {
@@ -315,7 +314,7 @@ public class Config {
       return new String[]{s};
     }
 
-    ArrayList<String> a = new ArrayList<String>();
+    ArrayList<String> a = new ArrayList<>();
     StringTokenizer st = new StringTokenizer(s, ":");
     while (st.hasMoreTokens()) {
       String t = st.nextToken();
@@ -330,7 +329,7 @@ public class Config {
       return new int[]{Integer.parseInt(s)};
     }
 
-    ArrayList<Integer> a = new ArrayList<Integer>();
+    ArrayList<Integer> a = new ArrayList<>();
     StringTokenizer st = new StringTokenizer(s, ":");
     while (st.hasMoreTokens()) {
       String t = st.nextToken();
@@ -349,7 +348,7 @@ public class Config {
       return new double[]{Double.parseDouble(s)};
     }
 
-    ArrayList<Double> a = new ArrayList<Double>();
+    ArrayList<Double> a = new ArrayList<>();
     StringTokenizer st = new StringTokenizer(s, ":");
     while (st.hasMoreTokens()) {
       String t = st.nextToken();
@@ -368,7 +367,7 @@ public class Config {
       return new boolean[]{Boolean.valueOf(s).booleanValue()};
     }
 
-    ArrayList<Boolean> a = new ArrayList<Boolean>();
+    ArrayList<Boolean> a = new ArrayList<>();
     StringTokenizer st = new StringTokenizer(s, ":");
     while (st.hasMoreTokens()) {
       String t = st.nextToken();

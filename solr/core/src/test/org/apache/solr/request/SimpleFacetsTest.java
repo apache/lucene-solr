@@ -48,7 +48,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
       assertU(commit());
   }
 
-  static ArrayList<String[]> pendingDocs = new ArrayList<String[]>();
+  static ArrayList<String[]> pendingDocs = new ArrayList<>();
 
   // committing randomly gives different looking segments each time
   static void add_doc(String... fieldsAndValues) {
@@ -621,6 +621,13 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 )
             ,"*[count(//lst[@name='zerolen_s']/int)=1]"
      );
+
+    assertQ("a facet.query that analyzes to no query shoud not NPE",
+        req("q", "*:*",
+            "facet", "true",
+            "facet.query", "{!field key=k f=lengthfilt}a"),//2 char minimum
+        "//lst[@name='facet_queries']/int[@name='k'][.='0']"
+    );
   }
 
   public static void indexDateFacets() {
@@ -650,18 +657,10 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   public void testTrieDateFacets() {
     helpTestDateFacets("bday", false);
   }
-  @Test
-  public void testDateFacets() {
-    helpTestDateFacets("bday_pdt", false);
-  }
 
   @Test
   public void testTrieDateRangeFacets() {
     helpTestDateFacets("bday", true);
-  }
-  @Test
-  public void testDateRangeFacets() {
-    helpTestDateFacets("bday_pdt", true);
   }
 
   private void helpTestDateFacets(final String fieldName, 
@@ -855,18 +854,10 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   public void testTrieDateFacetsWithIncludeOption() {
     helpTestDateFacetsWithIncludeOption("a_tdt", false);
   }
-  @Test
-  public void testDateFacetsWithIncludeOption() {
-    helpTestDateFacetsWithIncludeOption("a_pdt", false);
-  }
 
   @Test
   public void testTrieDateRangeFacetsWithIncludeOption() {
     helpTestDateFacetsWithIncludeOption("a_tdt", true);
-  }
-  @Test
-  public void testDateRangeFacetsWithIncludeOption() {
-    helpTestDateFacetsWithIncludeOption("a_pdt", true);
   }
 
   /** similar to helpTestDateFacets, but for differnet fields with test data 
@@ -1181,10 +1172,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testDateFacetsWithTz() {
-    for (String field : new String[] { "a_tdt", "a_pdt"}) {
-      for (boolean rangeType : new boolean[] { true, false }) {
-        helpTestDateFacetsWithTz(field, rangeType);
-      }
+    for (boolean rangeType : new boolean[] { true, false }) {
+      helpTestDateFacetsWithTz("a_tdt", rangeType);
     }
   }
 
@@ -1281,22 +1270,10 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   public void testNumericRangeFacetsTrieDouble() {
     helpTestFractionalNumberRangeFacets("range_facet_d");
   }
-  @Test
-  public void testNumericRangeFacetsSortableFloat() {
-    helpTestFractionalNumberRangeFacets("range_facet_sf");
-  }
-  @Test
-  public void testNumericRangeFacetsSortableDouble() {
-    helpTestFractionalNumberRangeFacets("range_facet_sd");
-  }
 
   @Test
   public void testNumericRangeFacetsOverflowTrieDouble() {
     helpTestNumericRangeFacetsDoubleOverflow("range_facet_d");
-  }
-  @Test
-  public void testNumericRangeFacetsOverflowSortableDouble() {
-    helpTestNumericRangeFacetsDoubleOverflow("range_facet_sd");
   }
 
   private void helpTestNumericRangeFacetsDoubleOverflow(final String fieldName) {
@@ -1541,23 +1518,10 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   public void testNumericRangeFacetsTrieLong() {
     helpTestWholeNumberRangeFacets("range_facet_l");
   }
-  @Test
-  public void testNumericRangeFacetsSortableInt() {
-    helpTestWholeNumberRangeFacets("range_facet_si");
-  }
-  @Test
-  public void testNumericRangeFacetsSortableLong() {
-    helpTestWholeNumberRangeFacets("range_facet_sl");
-  }
-
 
   @Test
   public void testNumericRangeFacetsOverflowTrieLong() {
     helpTestNumericRangeFacetsLongOverflow("range_facet_l");
-  }
-  @Test
-  public void testNumericRangeFacetsOverflowSortableLong() {
-    helpTestNumericRangeFacetsLongOverflow("range_facet_sl");
   }
 
   private void helpTestNumericRangeFacetsLongOverflow(final String fieldName) {
@@ -2125,9 +2089,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
    */
   public void testRangeFacetInfiniteLoopDetection() {
 
-    for (String field : new String[] {"foo_f", "foo_sf", 
-                                      "foo_d", "foo_sd",
-                                      "foo_i", "foo_si"}) {
+    for (String field : new String[] {"foo_f", "foo_d", "foo_i"}) {
       assertQEx("no zero gap error: " + field,
                 req("q", "*:*",
                     "facet", "true",
@@ -2137,8 +2099,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                     "facet.range.end", "100"),
                 400);
     }
-    for (String field : new String[] {"foo_pdt", "foo_dt"}) {
-      for (String type : new String[] {"date", "range"}) {
+    String field = "foo_dt";
+    for (String type : new String[]{"date", "range"}) {
       assertQEx("no zero gap error for facet." + type + ": " + field,
                 req("q", "*:*",
                     "facet", "true",
@@ -2147,31 +2109,26 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                     "facet."+type+".gap", "+0DAYS",
                     "facet."+type+".end", "NOW+10DAY"),
                 400);
-      }
     }
-    
-    for (String field : new String[] {"foo_f", "foo_sf"}) {
-      assertQEx("no float underflow error: " + field,
-                req("q", "*:*",
-                    "facet", "true",
-                    "facet.range", field,
-                    "facet.range.start", "100000000000",
-                    "facet.range.end", "100000086200",
-                    "facet.range.gap", "2160"),
-                400);
-    }
+    field = "foo_f";
+    assertQEx("no float underflow error: " + field,
+              req("q", "*:*",
+                  "facet", "true",
+                  "facet.range", field,
+                  "facet.range.start", "100000000000",
+                  "facet.range.end", "100000086200",
+                  "facet.range.gap", "2160"),
+              400);
 
-    for (String field : new String[] {"foo_d", "foo_sd"}) {
-      assertQEx("no double underflow error: " + field,
-                req("q", "*:*",
-                    "facet", "true",
-                    "facet.range", field,
-                    "facet.range.start", "9900000000000",
-                    "facet.range.end", "9900000086200",
-                    "facet.range.gap", "0.0003"),
-                400);
-    }
-    
+    field = "foo_d";
+    assertQEx("no double underflow error: " + field,
+              req("q", "*:*",
+                  "facet", "true",
+                  "facet.range", field,
+                  "facet.range.start", "9900000000000",
+                  "facet.range.end", "9900000086200",
+                  "facet.range.gap", "0.0003"),
+              400);
   }
 
 }

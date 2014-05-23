@@ -23,8 +23,11 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.handler.component.ShardRequest;
@@ -35,6 +38,8 @@ import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
 import org.apache.solr.search.grouping.distributed.shardresultserializer.TopGroupsResultTransformer;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -65,29 +70,82 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
     }
     int docsPerGroupDefault = rb.getGroupingSpec().getGroupLimit();
 
-    Map<String, List<TopGroups<BytesRef>>> commandTopGroups = new HashMap<String, List<TopGroups<BytesRef>>>();
+    Map<String, List<TopGroups<BytesRef>>> commandTopGroups = new HashMap<>();
     for (String field : fields) {
       commandTopGroups.put(field, new ArrayList<TopGroups<BytesRef>>());
     }
 
-    Map<String, List<QueryCommandResult>> commandTopDocs = new HashMap<String, List<QueryCommandResult>>();
+    Map<String, List<QueryCommandResult>> commandTopDocs = new HashMap<>();
     for (String query : queries) {
       commandTopDocs.put(query, new ArrayList<QueryCommandResult>());
     }
 
     TopGroupsResultTransformer serializer = new TopGroupsResultTransformer(rb);
+
+    NamedList<Object> shardInfo = null;
+    if (rb.req.getParams().getBool(ShardParams.SHARDS_INFO, false)) {
+      shardInfo = new SimpleOrderedMap<>();
+      rb.rsp.getValues().add(ShardParams.SHARDS_INFO, shardInfo);
+    }
+
     for (ShardResponse srsp : shardRequest.responses) {
+      SimpleOrderedMap<Object> individualShardInfo = null;
+      if (shardInfo != null) {
+        individualShardInfo = new SimpleOrderedMap<>();
+
+        if (srsp.getException() != null) {
+          Throwable t = srsp.getException();
+          if (t instanceof SolrServerException) {
+            t = ((SolrServerException) t).getCause();
+          }
+          individualShardInfo.add("error", t.toString());
+          StringWriter trace = new StringWriter();
+          t.printStackTrace(new PrintWriter(trace));
+          individualShardInfo.add("trace", trace.toString());
+        } else {
+          // summary for successful shard response is added down below
+        }
+        if (srsp.getSolrResponse() != null) {
+          individualShardInfo.add("time", srsp.getSolrResponse().getElapsedTime());
+        }
+        if (srsp.getShardAddress() != null) {
+          individualShardInfo.add("shardAddress", srsp.getShardAddress());
+        }
+        shardInfo.add(srsp.getShard(), individualShardInfo);
+      }
+      if (rb.req.getParams().getBool(ShardParams.SHARDS_TOLERANT, false) && srsp.getException() != null) {
+        if(rb.rsp.getResponseHeader().get("partialResults") == null) {
+          rb.rsp.getResponseHeader().add("partialResults", Boolean.TRUE);
+        }
+        continue; // continue if there was an error and we're tolerant.  
+      }
       NamedList<NamedList> secondPhaseResult = (NamedList<NamedList>) srsp.getSolrResponse().getResponse().get("secondPhase");
       Map<String, ?> result = serializer.transformToNative(secondPhaseResult, groupSort, sortWithinGroup, srsp.getShard());
+      int numFound = 0;
+      float maxScore = Float.NaN;
       for (String field : commandTopGroups.keySet()) {
         TopGroups<BytesRef> topGroups = (TopGroups<BytesRef>) result.get(field);
         if (topGroups == null) {
           continue;
         }
+        if (individualShardInfo != null) { // keep track of this when shards.info=true
+          numFound += topGroups.totalHitCount;
+          if (Float.isNaN(maxScore) || topGroups.maxScore > maxScore) maxScore = topGroups.maxScore;
+        }
         commandTopGroups.get(field).add(topGroups);
       }
       for (String query : queries) {
-        commandTopDocs.get(query).add((QueryCommandResult) result.get(query));
+        QueryCommandResult queryCommandResult = (QueryCommandResult) result.get(query);
+        if (individualShardInfo != null) { // keep track of this when shards.info=true
+          numFound += queryCommandResult.getMatches();
+          float thisMax = queryCommandResult.getTopDocs().getMaxScore();
+          if (Float.isNaN(maxScore) || thisMax > maxScore) maxScore = thisMax;
+        }
+        commandTopDocs.get(query).add(queryCommandResult);
+      }
+      if (individualShardInfo != null) { // when shards.info=true
+        individualShardInfo.add("numFound", numFound);
+        individualShardInfo.add("maxScore", maxScore);
       }
     }
     try {
@@ -103,7 +161,7 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
 
       for (String query : commandTopDocs.keySet()) {
         List<QueryCommandResult> queryCommandResults = commandTopDocs.get(query);
-        List<TopDocs> topDocs = new ArrayList<TopDocs>(queryCommandResults.size());
+        List<TopDocs> topDocs = new ArrayList<>(queryCommandResults.size());
         int mergedMatches = 0;
         for (QueryCommandResult queryCommandResult : queryCommandResults) {
           topDocs.add(queryCommandResult.getTopDocs());
@@ -115,14 +173,17 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
         rb.mergedQueryCommandResults.put(query, new QueryCommandResult(mergedTopDocs, mergedMatches));
       }
 
-      Map<Object, ShardDoc> resultIds = new HashMap<Object, ShardDoc>();
+      Map<Object, ShardDoc> resultIds = new HashMap<>();
       int i = 0;
       for (TopGroups<BytesRef> topGroups : rb.mergedTopGroups.values()) {
         for (GroupDocs<BytesRef> group : topGroups.groups) {
           for (ScoreDoc scoreDoc : group.scoreDocs) {
             ShardDoc solrDoc = (ShardDoc) scoreDoc;
-            solrDoc.positionInResponse = i++;
-            resultIds.put(solrDoc.id, solrDoc);
+            // Include the first if there are duplicate IDs
+            if ( ! resultIds.containsKey(solrDoc.id)) {
+              solrDoc.positionInResponse = i++;
+              resultIds.put(solrDoc.id, solrDoc);
+            }
           }
         }
       }

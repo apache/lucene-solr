@@ -38,7 +38,7 @@ public class TestPKIndexSplitter extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false))
-        .setOpenMode(OpenMode.CREATE).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
+        .setOpenMode(OpenMode.CREATE).setMergePolicy(NoMergePolicy.INSTANCE));
     for (int x = 0; x < 11; x++) {
       Document doc = createDocument(x, "1", 3, format);
       w.addDocument(doc);
@@ -49,7 +49,7 @@ public class TestPKIndexSplitter extends LuceneTestCase {
       w.addDocument(doc);
       if (x%3==0) w.commit();
     }
-    w.close();
+    w.shutdown();
     
     final Term midTerm = new Term("id", format.format(11));
     
@@ -58,10 +58,10 @@ public class TestPKIndexSplitter extends LuceneTestCase {
     // delete some documents
     w = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false))
-        .setOpenMode(OpenMode.APPEND).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
+        .setOpenMode(OpenMode.APPEND).setMergePolicy(NoMergePolicy.INSTANCE));
     w.deleteDocuments(midTerm);
     w.deleteDocuments(new Term("id", format.format(2)));
-    w.close();
+    w.shutdown();
     
     checkSplitting(dir, midTerm, 10, 8);
     

@@ -138,7 +138,7 @@ public abstract class SolrSpellChecker {
         for (SuggestWord word : suggestions)
           result.add(token, word.string, word.freq);
       } else {
-        List<String> words = new ArrayList<String>(sugQueue.size());
+        List<String> words = new ArrayList<>(sugQueue.size());
         for (SuggestWord word : suggestions) words.add(word.string);
         result.add(token, words);
       }

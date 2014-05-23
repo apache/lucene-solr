@@ -34,8 +34,8 @@ public class TestLatvianAnalyzer extends BaseTokenStreamTestCase {
   public void testBasics() throws IOException {
     Analyzer a = new LatvianAnalyzer(TEST_VERSION_CURRENT);
     // stemming
-    checkOneTermReuse(a, "tirgiem", "tirg");
-    checkOneTermReuse(a, "tirgus", "tirg");
+    checkOneTerm(a, "tirgiem", "tirg");
+    checkOneTerm(a, "tirgus", "tirg");
     // stopword
     assertAnalyzesTo(a, "un", new String[] {});
   }
@@ -45,8 +45,8 @@ public class TestLatvianAnalyzer extends BaseTokenStreamTestCase {
     CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("tirgiem"), false);
     Analyzer a = new LatvianAnalyzer(TEST_VERSION_CURRENT, 
         LatvianAnalyzer.getDefaultStopSet(), exclusionSet);
-    checkOneTermReuse(a, "tirgiem", "tirgiem");
-    checkOneTermReuse(a, "tirgus", "tirg");
+    checkOneTerm(a, "tirgiem", "tirgiem");
+    checkOneTerm(a, "tirgus", "tirg");
   }
   
   /** blast some random strings through the analyzer */

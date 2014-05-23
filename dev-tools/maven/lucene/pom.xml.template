@@ -47,6 +47,7 @@
     <module>benchmark</module>
     <module>classification</module>
     <module>demo</module>
+    <module>expressions</module>
     <module>facet</module>
     <module>grouping</module>
     <module>highlighter</module>
@@ -77,7 +78,8 @@
                 <bundledSignature>jdk-system-out</bundledSignature>
               </bundledSignatures>
               <signaturesFiles>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/executors.txt</signaturesFile>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/rue.txt</signaturesFile>
               </signaturesFiles>
             </configuration>
             <goals>
@@ -95,7 +97,7 @@
               </bundledSignatures>
               <signaturesFiles>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/tests.txt</signaturesFile>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/executors.txt</signaturesFile>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>
               </signaturesFiles>
             </configuration>
             <goals>

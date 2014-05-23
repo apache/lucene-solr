@@ -41,7 +41,7 @@ final class ForwardBytesReader extends FST.BytesReader {
   }
 
   @Override
-  public void skipBytes(int count) {
+  public void skipBytes(long count) {
     pos += count;
   }
 

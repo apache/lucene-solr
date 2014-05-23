@@ -53,7 +53,8 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
     };
     
     for( String[] test : tests ) {     
-      TokenStream stream = new PatternTokenizer(new StringReader(test[2]), Pattern.compile(test[1]), Integer.parseInt(test[0]));
+      TokenStream stream = new PatternTokenizer(newAttributeFactory(), Pattern.compile(test[1]), Integer.parseInt(test[0]));
+      ((Tokenizer)stream).setReader(new StringReader(test[2]));
       String out = tsToString( stream );
       // System.out.println( test[2] + " ==> " + out );
 
@@ -77,7 +78,7 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
     final String INPUT = "G&uuml;nther G&uuml;nther is here";
 
     // create MappingCharFilter
-    List<String> mappingRules = new ArrayList<String>();
+    List<String> mappingRules = new ArrayList<>();
     mappingRules.add( "\"&uuml;\" => \"ü\"" );
     NormalizeCharMap.Builder builder = new NormalizeCharMap.Builder();
     builder.add("&uuml;", "ü");
@@ -85,7 +86,8 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
     CharFilter charStream = new MappingCharFilter( normMap, new StringReader( INPUT ) );
 
     // create PatternTokenizer
-    TokenStream stream = new PatternTokenizer(charStream, Pattern.compile("[,;/\\s]+"), -1);
+    Tokenizer stream = new PatternTokenizer(newAttributeFactory(), Pattern.compile("[,;/\\s]+"), -1);
+    stream.setReader(charStream);
     assertTokenStreamContents(stream,
         new String[] { "Günther", "Günther", "is", "here" },
         new int[] { 0, 13, 26, 29 },
@@ -93,7 +95,8 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
         INPUT.length());
     
     charStream = new MappingCharFilter( normMap, new StringReader( INPUT ) );
-    stream = new PatternTokenizer(charStream, Pattern.compile("Günther"), 0);
+    stream = new PatternTokenizer(newAttributeFactory(), Pattern.compile("Günther"), 0);
+    stream.setReader(charStream);
     assertTokenStreamContents(stream,
         new String[] { "Günther", "Günther" },
         new int[] { 0, 13 },
@@ -128,8 +131,8 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
   public void testRandomStrings() throws Exception {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new PatternTokenizer(reader, Pattern.compile("a"), -1);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new PatternTokenizer(newAttributeFactory(), Pattern.compile("a"), -1);
         return new TokenStreamComponents(tokenizer);
       }    
     };
@@ -137,8 +140,8 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
     
     Analyzer b = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new PatternTokenizer(reader, Pattern.compile("a"), 0);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new PatternTokenizer(newAttributeFactory(), Pattern.compile("a"), 0);
         return new TokenStreamComponents(tokenizer);
       }    
     };

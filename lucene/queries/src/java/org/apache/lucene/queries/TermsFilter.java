@@ -129,7 +129,7 @@ public final class TermsFilter extends Filter {
     this.offsets = new int[length+1];
     int lastEndOffset = 0;
     int index = 0;
-    ArrayList<TermsAndField> termsAndFields = new ArrayList<TermsAndField>();
+    ArrayList<TermsAndField> termsAndFields = new ArrayList<>();
     TermsAndField lastTermsAndField = null;
     BytesRef previousTerm = null;
     String previousField = null;
@@ -193,7 +193,7 @@ public final class TermsFilter extends Filter {
         for (int i = termsAndField.start; i < termsAndField.end; i++) {
           spare.offset = offsets[i];
           spare.length = offsets[i+1] - offsets[i];
-          if (termsEnum.seekExact(spare, false)) { // don't use cache since we could pollute the cache here easily
+          if (termsEnum.seekExact(spare)) {
             docs = termsEnum.docs(acceptDocs, docs, DocsEnum.FLAG_NONE); // no freq since we don't need them
             if (result == null) {
               if (docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
@@ -222,24 +222,14 @@ public final class TermsFilter extends Filter {
     }
     
     TermsFilter test = (TermsFilter) obj;
-    if (test.hashCode == hashCode && this.termsAndFields.length == test.termsAndFields.length) {
-      // first check the fields before even comparing the bytes
-      for (int i = 0; i < termsAndFields.length; i++) {
-        TermsAndField current = termsAndFields[i];
-        if (!current.equals(test.termsAndFields[i])) {
-          return false;
-        }
+    // first check the fields before even comparing the bytes
+    if (test.hashCode == hashCode && Arrays.equals(termsAndFields, test.termsAndFields)) {
+      int lastOffset = termsAndFields[termsAndFields.length - 1].end;
+      // compare offsets since we sort they must be identical
+      if (ArrayUtil.equals(offsets, 0, test.offsets, 0, lastOffset + 1)) {
+        // straight byte comparison since we sort they must be identical
+        return  ArrayUtil.equals(termsBytes, 0, test.termsBytes, 0, offsets[lastOffset]);
       }
-      // straight byte comparison since we sort they must be identical
-      int end = offsets[termsAndFields.length];
-      byte[] left = this.termsBytes;
-      byte[] right = test.termsBytes;
-      for(int i=0;i < end;i++) {
-        if (left[i] != right[i]) {
-          return false;
-        }
-      }
-      return true;
     }
     return false;
   }

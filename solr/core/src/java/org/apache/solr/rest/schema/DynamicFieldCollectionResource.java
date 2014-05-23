@@ -56,7 +56,7 @@ public class DynamicFieldCollectionResource extends BaseFieldResource implements
   public Representation get() {
     
     try {
-      List<SimpleOrderedMap<Object>> props = new ArrayList<SimpleOrderedMap<Object>>();
+      List<SimpleOrderedMap<Object>> props = new ArrayList<>();
       if (null == getRequestedFields()) {
         for (IndexSchema.DynamicField dynamicField : getSchema().getDynamicFields()) {
           if ( ! dynamicField.getRegex().startsWith(IndexSchema.INTERNAL_POLY_FIELD_PREFIX)) { // omit internal polyfields
@@ -68,7 +68,7 @@ public class DynamicFieldCollectionResource extends BaseFieldResource implements
           String message = "Empty " + CommonParams.FL + " parameter value";
           throw new SolrException(ErrorCode.BAD_REQUEST, message);
         }
-        Map<String,SchemaField> dynamicFieldsByName = new HashMap<String,SchemaField>();
+        Map<String,SchemaField> dynamicFieldsByName = new HashMap<>();
         for (IndexSchema.DynamicField dynamicField : getSchema().getDynamicFields()) {
           dynamicFieldsByName.put(dynamicField.getRegex(), dynamicField.getPrototype());
         }

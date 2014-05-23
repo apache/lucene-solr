@@ -53,31 +53,52 @@ package org.apache.lucene.analysis.no;
  */
 
 import static org.apache.lucene.analysis.util.StemmerUtil.*;
+import static org.apache.lucene.analysis.no.NorwegianLightStemmer.BOKMAAL;
+import static org.apache.lucene.analysis.no.NorwegianLightStemmer.NYNORSK;
 
 /**
- * Minimal Stemmer for Norwegian bokmål (no-nb)
+ * Minimal Stemmer for Norwegian Bokmål (no-nb) and Nynorsk (no-nn)
  * <p>
  * Stems known plural forms for Norwegian nouns only, together with genitiv -s
  */
 public class NorwegianMinimalStemmer {
+  final boolean useBokmaal;
+  final boolean useNynorsk;
   
-  public int stem(char s[], int len) {       
+  /** 
+   * Creates a new NorwegianMinimalStemmer
+   * @param flags set to {@link NorwegianLightStemmer#BOKMAAL}, 
+   *                     {@link NorwegianLightStemmer#NYNORSK}, or both.
+   */
+  public NorwegianMinimalStemmer(int flags) {
+    if (flags <= 0 || flags > BOKMAAL + NYNORSK) {
+      throw new IllegalArgumentException("invalid flags");
+    }
+    useBokmaal = (flags & BOKMAAL) != 0;
+    useNynorsk = (flags & NYNORSK) != 0;
+  }
+
+  public int stem(char s[], int len) { 
     // Remove genitiv s
     if (len > 4 && s[len-1] == 's')
       len--;
     
     if (len > 5 &&
-         endsWith(s, len, "ene")    // masc/fem/neutr pl definite (hus-ene)
-        )
+         (endsWith(s, len, "ene") ||  // masc/fem/neutr pl definite (hus-ene)
+          (endsWith(s, len, "ane") &&
+           useNynorsk                 // masc pl definite (gut-ane)
+        )))
       return len - 3;
-    
+
     if (len > 4 &&
-        (endsWith(s, len, "er") ||  // masc/fem indefinite
-         endsWith(s, len, "en") ||  // masc/fem definite
-         endsWith(s, len, "et")     // neutr definite
-        ))
+        (endsWith(s, len, "er") ||   // masc/fem indefinite
+         endsWith(s, len, "en") ||   // masc/fem definite
+         endsWith(s, len, "et") ||   // neutr definite
+         (endsWith(s, len, "ar") &&
+          useNynorsk                 // masc pl indefinite
+        )))
       return len - 2;
-    
+
     if (len > 3)
       switch(s[len-1]) {
         case 'a':     // fem definite

@@ -19,6 +19,7 @@ package org.apache.lucene.search.spans;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -116,7 +117,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     doc.add(newTextField(PayloadHelper.FIELD, "one two three one four three", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     
 
     checkSpans(MultiSpansWrapper.wrap(reader.getContext(), snq), 1,new int[]{2});
@@ -261,7 +262,7 @@ public class TestPayloadSpans extends LuceneTestCase {
 
     IndexReader reader = writer.getReader();
     IndexSearcher is = newSearcher(reader);
-    writer.close();
+    writer.shutdown();
 
     SpanTermQuery stq1 = new SpanTermQuery(new Term("content", "a"));
     SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));
@@ -270,13 +271,13 @@ public class TestPayloadSpans extends LuceneTestCase {
     Spans spans = MultiSpansWrapper.wrap(is.getTopReaderContext(), snq);
 
     TopDocs topDocs = is.search(snq, 1);
-    Set<String> payloadSet = new HashSet<String>();
+    Set<String> payloadSet = new HashSet<>();
     for (int i = 0; i < topDocs.scoreDocs.length; i++) {
       while (spans.next()) {
         Collection<byte[]> payloads = spans.getPayload();
 
         for (final byte [] payload : payloads) {
-          payloadSet.add(new String(payload, "UTF-8"));
+          payloadSet.add(new String(payload, StandardCharsets.UTF_8));
         }
       }
     }
@@ -297,7 +298,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     IndexSearcher is = newSearcher(reader);
-    writer.close();
+    writer.shutdown();
 
     SpanTermQuery stq1 = new SpanTermQuery(new Term("content", "a"));
     SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));
@@ -306,12 +307,12 @@ public class TestPayloadSpans extends LuceneTestCase {
     Spans spans =  MultiSpansWrapper.wrap(is.getTopReaderContext(), snq);
 
     TopDocs topDocs = is.search(snq, 1);
-    Set<String> payloadSet = new HashSet<String>();
+    Set<String> payloadSet = new HashSet<>();
     for (int i = 0; i < topDocs.scoreDocs.length; i++) {
       while (spans.next()) {
         Collection<byte[]> payloads = spans.getPayload();
         for (final byte[] payload : payloads) {
-          payloadSet.add(new String(payload, "UTF-8"));
+          payloadSet.add(new String(payload, StandardCharsets.UTF_8));
         }
       }
     }
@@ -332,7 +333,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     IndexSearcher is = newSearcher(reader);
-    writer.close();
+    writer.shutdown();
 
     SpanTermQuery stq1 = new SpanTermQuery(new Term("content", "a"));
     SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));
@@ -341,13 +342,13 @@ public class TestPayloadSpans extends LuceneTestCase {
     Spans spans =  MultiSpansWrapper.wrap(is.getTopReaderContext(), snq);
 
     TopDocs topDocs = is.search(snq, 1);
-    Set<String> payloadSet = new HashSet<String>();
+    Set<String> payloadSet = new HashSet<>();
     for (int i = 0; i < topDocs.scoreDocs.length; i++) {
       while (spans.next()) {
         Collection<byte[]> payloads = spans.getPayload();
 
         for (final byte [] payload : payloads) {
-          payloadSet.add(new String(payload, "UTF-8"));
+          payloadSet.add(new String(payload, StandardCharsets.UTF_8));
         }
       }
     }
@@ -373,17 +374,17 @@ public class TestPayloadSpans extends LuceneTestCase {
     writer.addDocument(doc);
   
     IndexReader reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     IndexSearcher searcher = newSearcher(reader);
 
     PayloadSpanUtil psu = new PayloadSpanUtil(searcher.getTopReaderContext());
     
     Collection<byte[]> payloads = psu.getPayloadsForQuery(new TermQuery(new Term(PayloadHelper.FIELD, "rr")));
-    if(VERBOSE)
+    if(VERBOSE) {
       System.out.println("Num payloads:" + payloads.size());
-    for (final byte [] bytes : payloads) {
-      if(VERBOSE)
-        System.out.println(new String(bytes, "UTF-8"));
+      for (final byte [] bytes : payloads) {
+        System.out.println(new String(bytes, StandardCharsets.UTF_8));
+      }
     }
     reader.close();
     directory.close();
@@ -437,7 +438,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     }
 
     closeIndexReader = writer.getReader();
-    writer.close();
+    writer.shutdown();
 
     IndexSearcher searcher = newSearcher(closeIndexReader);
     return searcher;
@@ -451,12 +452,12 @@ public class TestPayloadSpans extends LuceneTestCase {
         System.out.println("\nSpans Dump --");
       if (spans.isPayloadAvailable()) {
         Collection<byte[]> payload = spans.getPayload();
-        if(VERBOSE)
+        if(VERBOSE) {
           System.out.println("payloads for span:" + payload.size());
-        for (final byte [] bytes : payload) {
-          if(VERBOSE)
+          for (final byte [] bytes : payload) {
             System.out.println("doc:" + spans.doc() + " s:" + spans.start() + " e:" + spans.end() + " "
-              + new String(bytes, "UTF-8"));
+              + new String(bytes, StandardCharsets.UTF_8));
+          }
         }
 
         assertEquals(numPayloads[cnt],payload.size());
@@ -472,15 +473,15 @@ public class TestPayloadSpans extends LuceneTestCase {
   final class PayloadAnalyzer extends Analyzer {
 
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer result = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+    public TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer result = new MockTokenizer(MockTokenizer.SIMPLE, true);
       return new TokenStreamComponents(result, new PayloadFilter(result));
     }
   }
 
   final class PayloadFilter extends TokenFilter {
-    Set<String> entities = new HashSet<String>();
-    Set<String> nopayload = new HashSet<String>();
+    Set<String> entities = new HashSet<>();
+    Set<String> nopayload = new HashSet<>();
     int pos;
     PayloadAttribute payloadAtt;
     CharTermAttribute termAtt;
@@ -526,8 +527,8 @@ public class TestPayloadSpans extends LuceneTestCase {
   public final class TestPayloadAnalyzer extends Analyzer {
 
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer result = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+    public TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer result = new MockTokenizer(MockTokenizer.SIMPLE, true);
       return new TokenStreamComponents(result, new PayloadFilter(result));
     }
   }

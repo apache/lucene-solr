@@ -1,40 +1,5 @@
 package org.apache.lucene.demo.facet;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.facet.associations.AssociationFloatSumFacetRequest;
-import org.apache.lucene.facet.associations.AssociationIntSumFacetRequest;
-import org.apache.lucene.facet.associations.AssociationsFacetFields;
-import org.apache.lucene.facet.associations.CategoryAssociation;
-import org.apache.lucene.facet.associations.CategoryAssociationsContainer;
-import org.apache.lucene.facet.associations.CategoryFloatAssociation;
-import org.apache.lucene.facet.associations.CategoryIntAssociation;
-import org.apache.lucene.facet.associations.MultiAssociationsFacetsAggregator;
-import org.apache.lucene.facet.associations.SumFloatAssociationFacetsAggregator;
-import org.apache.lucene.facet.associations.SumIntAssociationFacetsAggregator;
-import org.apache.lucene.facet.index.FacetFields;
-import org.apache.lucene.facet.params.FacetSearchParams;
-import org.apache.lucene.facet.search.FacetResult;
-import org.apache.lucene.facet.search.FacetsAccumulator;
-import org.apache.lucene.facet.search.FacetsAggregator;
-import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -52,78 +17,76 @@ import org.apache.lucene.store.RAMDirectory;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.facet.DrillDownQuery;
+import org.apache.lucene.facet.FacetResult;
+import org.apache.lucene.facet.Facets;
+import org.apache.lucene.facet.FacetsCollector;
+import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.facet.taxonomy.FloatAssociationFacetField;
+import org.apache.lucene.facet.taxonomy.IntAssociationFacetField;
+import org.apache.lucene.facet.taxonomy.TaxonomyFacetSumFloatAssociations;
+import org.apache.lucene.facet.taxonomy.TaxonomyFacetSumIntAssociations;
+import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
+
 /** Shows example usage of category associations. */
 public class AssociationsFacetsExample {
 
-  /**
-   * Categories per document, {@link #ASSOCIATIONS} hold the association value
-   * for each category.
-   */
-  public static CategoryPath[][] CATEGORIES = {
-    // Doc #1
-    { new CategoryPath("tags", "lucene") , 
-      new CategoryPath("genre", "computing")
-    },
-        
-    // Doc #2
-    { new CategoryPath("tags", "lucene"),  
-      new CategoryPath("tags", "solr"),
-      new CategoryPath("genre", "computing"),
-      new CategoryPath("genre", "software")
-    }
-  };
-
-  /** Association values for each category. */
-  public static CategoryAssociation[][] ASSOCIATIONS = {
-    // Doc #1 associations
-    {
-      /* 3 occurrences for tag 'lucene' */
-      new CategoryIntAssociation(3), 
-      /* 87% confidence level of genre 'computing' */
-      new CategoryFloatAssociation(0.87f)
-    },
-    
-    // Doc #2 associations
-    {
-      /* 1 occurrence for tag 'lucene' */
-      new CategoryIntAssociation(1),
-      /* 2 occurrences for tag 'solr' */
-      new CategoryIntAssociation(2),
-      /* 75% confidence level of genre 'computing' */
-      new CategoryFloatAssociation(0.75f),
-      /* 34% confidence level of genre 'software' */
-      new CategoryFloatAssociation(0.34f),
-    }
-  };
-
   private final Directory indexDir = new RAMDirectory();
   private final Directory taxoDir = new RAMDirectory();
+  private final FacetsConfig config;
 
   /** Empty constructor */
-  public AssociationsFacetsExample() {}
+  public AssociationsFacetsExample() {
+    config = new FacetsConfig();
+    config.setMultiValued("tags", true);
+    config.setIndexFieldName("tags", "$tags");
+    config.setMultiValued("genre", true);
+    config.setIndexFieldName("genre", "$genre");
+  }
   
   /** Build the example index. */
   private void index() throws IOException {
-    IndexWriter indexWriter = new IndexWriter(indexDir, new IndexWriterConfig(FacetExamples.EXAMPLES_VER, 
-        new WhitespaceAnalyzer(FacetExamples.EXAMPLES_VER)));
+    IndexWriterConfig iwc = new IndexWriterConfig(FacetExamples.EXAMPLES_VER, 
+                                                  new WhitespaceAnalyzer(FacetExamples.EXAMPLES_VER));
+    IndexWriter indexWriter = new IndexWriter(indexDir, iwc);
 
     // Writes facet ords to a separate directory from the main index
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
 
-    // Reused across documents, to add the necessary facet fields
-    FacetFields facetFields = new AssociationsFacetFields(taxoWriter);
-    
-    for (int i = 0; i < CATEGORIES.length; i++) {
-      Document doc = new Document();
-      CategoryAssociationsContainer associations = new CategoryAssociationsContainer();
-      for (int j = 0; j < CATEGORIES[i].length; j++) {
-        associations.setAssociation(CATEGORIES[i][j], ASSOCIATIONS[i][j]);
-      }
-      facetFields.addFields(doc, associations);
-      indexWriter.addDocument(doc);
-    }
-    
-    indexWriter.close();
+    Document doc = new Document();
+    // 3 occurrences for tag 'lucene'
+    doc.add(new IntAssociationFacetField(3, "tags", "lucene"));
+    // 87% confidence level of genre 'computing'
+    doc.add(new FloatAssociationFacetField(0.87f, "genre", "computing"));
+    indexWriter.addDocument(config.build(taxoWriter, doc));
+
+    doc = new Document();
+    // 1 occurrence for tag 'lucene'
+    doc.add(new IntAssociationFacetField(1, "tags", "lucene"));
+    // 2 occurrence for tag 'solr'
+    doc.add(new IntAssociationFacetField(2, "tags", "solr"));
+    // 75% confidence level of genre 'computing'
+    doc.add(new FloatAssociationFacetField(0.75f, "genre", "computing"));
+    // 34% confidence level of genre 'software'
+    doc.add(new FloatAssociationFacetField(0.34f, "genre", "software"));
+    indexWriter.addDocument(config.build(taxoWriter, doc));
+
+    indexWriter.shutdown();
     taxoWriter.close();
   }
 
@@ -133,38 +96,50 @@ public class AssociationsFacetsExample {
     IndexSearcher searcher = new IndexSearcher(indexReader);
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
     
-    CategoryPath tags = new CategoryPath("tags");
-    CategoryPath genre = new CategoryPath("genre");
-    FacetSearchParams fsp = new FacetSearchParams(
-        new AssociationIntSumFacetRequest(tags, 10), 
-        new AssociationFloatSumFacetRequest(genre, 10));
-  
-    // every category has a different type of association, so use chain their
-    // respective aggregators.
-    final Map<CategoryPath,FacetsAggregator> aggregators = new HashMap<CategoryPath,FacetsAggregator>();
-    aggregators.put(tags, new SumIntAssociationFacetsAggregator());
-    aggregators.put(genre, new SumFloatAssociationFacetsAggregator());
-    FacetsAccumulator fa = new FacetsAccumulator(fsp, indexReader, taxoReader) {
-      @Override
-      public FacetsAggregator getAggregator() {
-        return new MultiAssociationsFacetsAggregator(aggregators);
-      }
-    };
-    FacetsCollector fc = FacetsCollector.create(fa);
+    FacetsCollector fc = new FacetsCollector();
     
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
-    // you'd use a "normal" query, and use MultiCollector to
-    // wrap collecting the "normal" hits and also facets:
-    searcher.search(new MatchAllDocsQuery(), fc);
+    // you'd use a "normal" query:
+    FacetsCollector.search(searcher, new MatchAllDocsQuery(), 10, fc);
     
+    Facets tags = new TaxonomyFacetSumIntAssociations("$tags", taxoReader, config, fc);
+    Facets genre = new TaxonomyFacetSumFloatAssociations("$genre", taxoReader, config, fc);
+
     // Retrieve results
-    List<FacetResult> facetResults = fc.getFacetResults();
-    
+    List<FacetResult> results = new ArrayList<>();
+    results.add(tags.getTopChildren(10, "tags"));
+    results.add(genre.getTopChildren(10, "genre"));
+
     indexReader.close();
     taxoReader.close();
     
-    return facetResults;
+    return results;
+  }
+  
+  /** User drills down on 'tags/solr'. */
+  private FacetResult drillDown() throws IOException {
+    DirectoryReader indexReader = DirectoryReader.open(indexDir);
+    IndexSearcher searcher = new IndexSearcher(indexReader);
+    TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
+
+    // Passing no baseQuery means we drill down on all
+    // documents ("browse only"):
+    DrillDownQuery q = new DrillDownQuery(config);
+
+    // Now user drills down on Publish Date/2010:
+    q.add("tags", "solr");
+    FacetsCollector fc = new FacetsCollector();
+    FacetsCollector.search(searcher, q, 10, fc);
+
+    // Retrieve results
+    Facets facets = new TaxonomyFacetSumFloatAssociations("$genre", taxoReader, config, fc);
+    FacetResult result = facets.getTopChildren(10, "genre");
+
+    indexReader.close();
+    taxoReader.close();
+    
+    return result;
   }
   
   /** Runs summing association example. */
@@ -173,14 +148,18 @@ public class AssociationsFacetsExample {
     return sumAssociations();
   }
   
+  /** Runs the drill-down example. */
+  public FacetResult runDrillDown() throws IOException {
+    index();
+    return drillDown();
+  }
+
   /** Runs the sum int/float associations examples and prints the results. */
   public static void main(String[] args) throws Exception {
     System.out.println("Sum associations example:");
     System.out.println("-------------------------");
     List<FacetResult> results = new AssociationsFacetsExample().runSumAssociations();
-    for (FacetResult res : results) {
-      System.out.println(res);
-    }
+    System.out.println("tags: " + results.get(0));
+    System.out.println("genre: " + results.get(1));
   }
-  
 }

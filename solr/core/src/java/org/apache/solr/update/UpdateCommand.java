@@ -17,7 +17,6 @@
 
 package org.apache.solr.update;
 
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.request.SolrQueryRequest;
 
 

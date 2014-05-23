@@ -19,83 +19,92 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.codecs.FieldsConsumer;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CollectionUtil;
 import org.apache.lucene.util.IOUtils;
 
-final class FreqProxTermsWriter extends TermsHashConsumer {
+final class FreqProxTermsWriter extends TermsHash {
+
+  public FreqProxTermsWriter(DocumentsWriterPerThread docWriter, TermsHash termVectors) {
+    super(docWriter, true, termVectors);
+  }
+
+  private void applyDeletes(SegmentWriteState state, Fields fields) throws IOException {
+
+    // Process any pending Term deletes for this newly
+    // flushed segment:
+    if (state.segUpdates != null && state.segUpdates.terms.size() > 0) {
+      Map<Term,Integer> segDeletes = state.segUpdates.terms;
+      List<Term> deleteTerms = new ArrayList<>(segDeletes.keySet());
+      Collections.sort(deleteTerms);
+      String lastField = null;
+      TermsEnum termsEnum = null;
+      DocsEnum docsEnum = null;
+      for(Term deleteTerm : deleteTerms) {
+        if (deleteTerm.field().equals(lastField) == false) {
+          lastField = deleteTerm.field();
+          Terms terms = fields.terms(lastField);
+          if (terms != null) {
+            termsEnum = terms.iterator(termsEnum);
+          } else {
+            termsEnum = null;
+          }
+        }
+
+        if (termsEnum != null && termsEnum.seekExact(deleteTerm.bytes())) {
+          docsEnum = termsEnum.docs(null, docsEnum, 0);
+          int delDocLimit = segDeletes.get(deleteTerm);
+          assert delDocLimit < DocsEnum.NO_MORE_DOCS;
+          while (true) {
+            int doc = docsEnum.nextDoc();
+            if (doc < delDocLimit) {
+              if (state.liveDocs == null) {
+                state.liveDocs = state.segmentInfo.getCodec().liveDocsFormat().newLiveDocs(state.segmentInfo.getDocCount());
+              }
+              if (state.liveDocs.get(doc)) {
+                state.delCountOnFlush++;
+                state.liveDocs.clear(doc);
+              }
+            } else {
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
 
   @Override
-  void abort() {}
+  public void flush(Map<String,TermsHashPerField> fieldsToFlush, final SegmentWriteState state) throws IOException {
+    super.flush(fieldsToFlush, state);
 
-  // TODO: would be nice to factor out more of this, eg the
-  // FreqProxFieldMergeState, and code to visit all Fields
-  // under the same FieldInfo together, up into TermsHash*.
-  // Other writers would presumably share alot of this...
+    // Gather all fields that saw any postings:
+    List<FreqProxTermsWriterPerField> allFields = new ArrayList<>();
 
-  @Override
-  public void flush(Map<String,TermsHashConsumerPerField> fieldsToFlush, final SegmentWriteState state) throws IOException {
-
-    // Gather all FieldData's that have postings, across all
-    // ThreadStates
-    List<FreqProxTermsWriterPerField> allFields = new ArrayList<FreqProxTermsWriterPerField>();
-
-    for (TermsHashConsumerPerField f : fieldsToFlush.values()) {
+    for (TermsHashPerField f : fieldsToFlush.values()) {
       final FreqProxTermsWriterPerField perField = (FreqProxTermsWriterPerField) f;
-      if (perField.termsHashPerField.bytesHash.size() > 0) {
+      if (perField.bytesHash.size() > 0) {
+        perField.sortPostings();
+        assert perField.fieldInfo.isIndexed();
         allFields.add(perField);
       }
     }
 
-    final int numAllFields = allFields.size();
-
     // Sort by field name
     CollectionUtil.introSort(allFields);
 
-    final FieldsConsumer consumer = state.segmentInfo.getCodec().postingsFormat().fieldsConsumer(state);
+    Fields fields = new FreqProxFields(allFields);
 
+    applyDeletes(state, fields);
+
+    FieldsConsumer consumer = state.segmentInfo.getCodec().postingsFormat().fieldsConsumer(state);
     boolean success = false;
-
     try {
-      TermsHash termsHash = null;
-      
-      /*
-    Current writer chain:
-      FieldsConsumer
-        -> IMPL: FormatPostingsTermsDictWriter
-          -> TermsConsumer
-            -> IMPL: FormatPostingsTermsDictWriter.TermsWriter
-              -> DocsConsumer
-                -> IMPL: FormatPostingsDocsWriter
-                  -> PositionsConsumer
-                    -> IMPL: FormatPostingsPositionsWriter
-       */
-      
-      for (int fieldNumber = 0; fieldNumber < numAllFields; fieldNumber++) {
-        final FieldInfo fieldInfo = allFields.get(fieldNumber).fieldInfo;
-        
-        final FreqProxTermsWriterPerField fieldWriter = allFields.get(fieldNumber);
-
-        // If this field has postings then add them to the
-        // segment
-        fieldWriter.flush(fieldInfo.name, consumer, state);
-        
-        TermsHashPerField perField = fieldWriter.termsHashPerField;
-        assert termsHash == null || termsHash == perField.termsHash;
-        termsHash = perField.termsHash;
-        int numPostings = perField.bytesHash.size();
-        perField.reset();
-        perField.shrinkHash(numPostings);
-        fieldWriter.reset();
-      }
-      
-      if (termsHash != null) {
-        termsHash.reset();
-      }
+      consumer.write(fields);
       success = true;
     } finally {
       if (success) {
@@ -104,20 +113,11 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
         IOUtils.closeWhileHandlingException(consumer);
       }
     }
-  }
 
-  BytesRef payload;
-
-  @Override
-  public TermsHashConsumerPerField addField(TermsHashPerField termsHashPerField, FieldInfo fieldInfo) {
-    return new FreqProxTermsWriterPerField(termsHashPerField, this, fieldInfo);
   }
 
   @Override
-  void finishDocument(TermsHash termsHash) {
-  }
-
-  @Override
-  void startDocument() {
+  public TermsHashPerField addField(FieldInvertState invertState, FieldInfo fieldInfo) {
+    return new FreqProxTermsWriterPerField(invertState, this, fieldInfo, nextTermsHash.addField(invertState, fieldInfo));
   }
 }

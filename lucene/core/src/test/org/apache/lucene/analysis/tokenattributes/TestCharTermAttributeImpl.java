@@ -17,10 +17,11 @@ package org.apache.lucene.analysis.tokenattributes;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.TestToken;
+import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+
 import java.nio.CharBuffer;
 import java.util.HashMap;
 import java.util.Formatter;
@@ -94,7 +95,7 @@ public class TestCharTermAttributeImpl extends LuceneTestCase {
     char[] content = "hello".toCharArray();
     t.copyBuffer(content, 0, 5);
     char[] buf = t.buffer();
-    CharTermAttributeImpl copy = TestToken.assertCloneIsEqual(t);
+    CharTermAttributeImpl copy = assertCloneIsEqual(t);
     assertEquals(t.toString(), copy.toString());
     assertNotSame(buf, copy.buffer());
   }
@@ -116,7 +117,7 @@ public class TestCharTermAttributeImpl extends LuceneTestCase {
   
   public void testCopyTo() throws Exception {
     CharTermAttributeImpl t = new CharTermAttributeImpl();
-    CharTermAttributeImpl copy = TestToken.assertCopyIsEqual(t);
+    CharTermAttributeImpl copy = assertCopyIsEqual(t);
     assertEquals("", t.toString());
     assertEquals("", copy.toString());
 
@@ -124,7 +125,7 @@ public class TestCharTermAttributeImpl extends LuceneTestCase {
     char[] content = "hello".toCharArray();
     t.copyBuffer(content, 0, 5);
     char[] buf = t.buffer();
-    copy = TestToken.assertCopyIsEqual(t);
+    copy = assertCopyIsEqual(t);
     assertEquals(t.toString(), copy.toString());
     assertNotSame(buf, copy.buffer());
   }
@@ -132,7 +133,7 @@ public class TestCharTermAttributeImpl extends LuceneTestCase {
   public void testAttributeReflection() throws Exception {
     CharTermAttributeImpl t = new CharTermAttributeImpl();
     t.append("foobar");
-    _TestUtil.assertAttributeReflection(t, new HashMap<String,Object>() {{
+    TestUtil.assertAttributeReflection(t, new HashMap<String, Object>() {{
       put(CharTermAttribute.class.getName() + "#term", "foobar");
       put(TermToBytesRefAttribute.class.getName() + "#bytes", new BytesRef("foobar"));
     }});
@@ -283,6 +284,23 @@ public class TestCharTermAttributeImpl extends LuceneTestCase {
     }
   }
 
+  public static <T extends AttributeImpl> T assertCloneIsEqual(T att) {
+    @SuppressWarnings("unchecked")
+    T clone = (T) att.clone();
+    assertEquals("Clone must be equal", att, clone);
+    assertEquals("Clone's hashcode must be equal", att.hashCode(), clone.hashCode());
+    return clone;
+  }
+
+  public static <T extends AttributeImpl> T assertCopyIsEqual(T att) throws Exception {
+    @SuppressWarnings("unchecked")
+    T copy = (T) att.getClass().newInstance();
+    att.copyTo(copy);
+    assertEquals("Copied instance must be equal", att, copy);
+    assertEquals("Copied instance's hashcode must be equal", att.hashCode(), copy.hashCode());
+    return copy;
+  }
+  
   /*
   
   // test speed of the dynamic instanceof checks in append(CharSequence),

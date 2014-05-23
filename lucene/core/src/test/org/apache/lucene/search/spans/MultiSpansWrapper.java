@@ -56,11 +56,11 @@ public class MultiSpansWrapper extends Spans { // can't be package private due t
   }
   
   public static Spans wrap(IndexReaderContext topLevelReaderContext, SpanQuery query) throws IOException {
-    Map<Term,TermContext> termContexts = new HashMap<Term,TermContext>();
-    TreeSet<Term> terms = new TreeSet<Term>();
+    Map<Term,TermContext> termContexts = new HashMap<>();
+    TreeSet<Term> terms = new TreeSet<>();
     query.extractTerms(terms);
     for (Term term : terms) {
-      termContexts.put(term, TermContext.build(topLevelReaderContext, term, true));
+      termContexts.put(term, TermContext.build(topLevelReaderContext, term));
     }
     final List<AtomicReaderContext> leaves = topLevelReaderContext.leaves();
     if(leaves.size() == 1) {

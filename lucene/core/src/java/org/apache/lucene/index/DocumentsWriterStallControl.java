@@ -42,7 +42,7 @@ final class DocumentsWriterStallControl {
   private volatile boolean stalled;
   private int numWaiting; // only with assert
   private boolean wasStalled; // only with assert
-  private final Map<Thread, Boolean> waiting = new IdentityHashMap<Thread, Boolean>(); // only with assert
+  private final Map<Thread, Boolean> waiting = new IdentityHashMap<>(); // only with assert
   
   /**
    * Update the stalled flag status. This method will set the stalled flag to

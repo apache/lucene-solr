@@ -44,11 +44,8 @@
     <url>${vc-browse-base-url}/${module-directory}</url>
   </scm>
   <dependencies>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>lucene-core</artifactId>
-      <version>${project.version}</version>
-    </dependency>
+@lucene-codecs.internal.dependencies@
+@lucene-codecs.external.dependencies@
   </dependencies>
   <build>
     <sourceDirectory>${module-path}</sourceDirectory>

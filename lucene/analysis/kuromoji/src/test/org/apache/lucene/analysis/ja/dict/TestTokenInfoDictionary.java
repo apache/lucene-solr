@@ -37,7 +37,7 @@ public class TestTokenInfoDictionary extends LuceneTestCase {
     TokenInfoDictionary tid = TokenInfoDictionary.getInstance();
     ConnectionCosts matrix = ConnectionCosts.getInstance();
     FST<Long> fst = tid.getFST().getInternalFST();
-    IntsRefFSTEnum<Long> fstEnum = new IntsRefFSTEnum<Long>(fst);
+    IntsRefFSTEnum<Long> fstEnum = new IntsRefFSTEnum<>(fst);
     InputOutput<Long> mapping;
     IntsRef scratch = new IntsRef();
     while ((mapping = fstEnum.next()) != null) {

@@ -43,7 +43,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
   private EntityProcessor delegate;
   private Entity entity;
   private DataSource datasource;
-  private List<EntityProcessorWrapper> children = new ArrayList<EntityProcessorWrapper>();
+  private List<EntityProcessorWrapper> children = new ArrayList<>();
   private DocBuilder docBuilder;
   private boolean initalized;
   private String onError;
@@ -176,7 +176,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
       if (stopTransform) break;
       try {
         if (rows != null) {
-          List<Map<String, Object>> tmpRows = new ArrayList<Map<String, Object>>();
+          List<Map<String, Object>> tmpRows = new ArrayList<>();
           for (Map<String, Object> map : rows) {
             resolver.addNamespace(entityName, map);
             Object o = t.transformRow(map, context);

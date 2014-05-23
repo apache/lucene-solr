@@ -65,7 +65,7 @@ public class SpatialPointVectorFieldType extends AbstractSpatialFieldType<PointV
 
     //Just set these, delegate everything else to the field type
     final int p = (INDEXED | TOKENIZED | OMIT_NORMS | OMIT_TF_POSITIONS);
-    List<SchemaField> newFields = new ArrayList<SchemaField>();
+    List<SchemaField> newFields = new ArrayList<>();
     for( SchemaField sf : schema.getFields().values() ) {
       if( sf.getType() == this ) {
         String name = sf.getName();

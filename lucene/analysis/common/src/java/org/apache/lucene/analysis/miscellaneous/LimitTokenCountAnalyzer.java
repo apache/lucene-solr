@@ -46,6 +46,7 @@ public final class LimitTokenCountAnalyzer extends AnalyzerWrapper {
    * @param consumeAllTokens whether all tokens from the delegate should be consumed even if maxTokenCount is reached.
    */
   public LimitTokenCountAnalyzer(Analyzer delegate, int maxTokenCount, boolean consumeAllTokens) {
+    super(delegate.getReuseStrategy());
     this.delegate = delegate;
     this.maxTokenCount = maxTokenCount;
     this.consumeAllTokens = consumeAllTokens;

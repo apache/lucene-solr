@@ -32,66 +32,29 @@ import java.util.Collections;
  * several places, however all they have in hand is a {@link Scorer} object, and
  * might end up computing the score of a document more than once.
  */
-public class ScoreCachingWrappingScorer extends Scorer {
+public class ScoreCachingWrappingScorer extends FilterScorer {
 
-  private final Scorer scorer;
   private int curDoc = -1;
   private float curScore;
-  
+
   /** Creates a new instance by wrapping the given scorer. */
   public ScoreCachingWrappingScorer(Scorer scorer) {
-    super(scorer.weight);
-    this.scorer = scorer;
+    super(scorer);
   }
 
   @Override
-  public boolean score(Collector collector, int max, int firstDocID) throws IOException {
-    return scorer.score(collector, max, firstDocID);
-  }
-  
-  @Override
   public float score() throws IOException {
-    int doc = scorer.docID();
+    int doc = in.docID();
     if (doc != curDoc) {
-      curScore = scorer.score();
+      curScore = in.score();
       curDoc = doc;
     }
-    
+
     return curScore;
   }
 
   @Override
-  public int freq() throws IOException {
-    return scorer.freq();
-  }
-
-  @Override
-  public int docID() {
-    return scorer.docID();
-  }
-
-  @Override
-  public int nextDoc() throws IOException {
-    return scorer.nextDoc();
-  }
-  
-  @Override
-  public void score(Collector collector) throws IOException {
-    scorer.score(collector);
-  }
-  
-  @Override
-  public int advance(int target) throws IOException {
-    return scorer.advance(target);
-  }
-
-  @Override
   public Collection<ChildScorer> getChildren() {
-    return Collections.singleton(new ChildScorer(scorer, "CACHED"));
-  }
-
-  @Override
-  public long cost() {
-    return scorer.cost();
+    return Collections.singleton(new ChildScorer(in, "CACHED"));
   }
 }

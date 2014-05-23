@@ -74,20 +74,20 @@ public class TestUtils extends LuceneTestCase {
 
   public void testNamedLists()
   {
-    SimpleOrderedMap<Integer> map = new SimpleOrderedMap<Integer>();
+    SimpleOrderedMap<Integer> map = new SimpleOrderedMap<>();
     map.add( "test", 10 );
     SimpleOrderedMap<Integer> clone = map.clone();
     assertEquals( map.toString(), clone.toString() );
     assertEquals( new Integer(10), clone.get( "test" ) );
   
-    Map<String,Integer> realMap = new HashMap<String, Integer>();
+    Map<String,Integer> realMap = new HashMap<>();
     realMap.put( "one", 1 );
     realMap.put( "two", 2 );
     realMap.put( "three", 3 );
-    map = new SimpleOrderedMap<Integer>();
+    map = new SimpleOrderedMap<>();
     map.addAll( realMap );
     assertEquals( 3, map.size() );
-    map = new SimpleOrderedMap<Integer>();
+    map = new SimpleOrderedMap<>();
     map.add( "one", 1 );
     map.add( "two", 2 );
     map.add( "three", 3 );
@@ -101,7 +101,7 @@ public class TestUtils extends LuceneTestCase {
     assertEquals( 4, map.indexOf( null, 1 ) );
     assertEquals( null, map.get( null, 1 ) );
 
-    map = new SimpleOrderedMap<Integer>();
+    map = new SimpleOrderedMap<>();
     map.add( "one", 1 );
     map.add( "two", 2 );
     Iterator<Map.Entry<String, Integer>> iter = map.iterator();

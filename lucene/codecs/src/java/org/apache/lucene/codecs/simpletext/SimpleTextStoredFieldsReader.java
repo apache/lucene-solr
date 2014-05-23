@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.simpletext;
  */
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.index.FieldInfo;
@@ -26,6 +27,8 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.BufferedChecksumIndexInput;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -78,28 +81,29 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
   // stored fields file in entirety up-front and save the offsets 
   // so we can seek to the documents later.
   private void readIndex(int size) throws IOException {
+    ChecksumIndexInput input = new BufferedChecksumIndexInput(in);
     offsets = new long[size];
     int upto = 0;
     while (!scratch.equals(END)) {
-      readLine();
+      SimpleTextUtil.readLine(input, scratch);
       if (StringHelper.startsWith(scratch, DOC)) {
-        offsets[upto] = in.getFilePointer();
+        offsets[upto] = input.getFilePointer();
         upto++;
       }
     }
+    SimpleTextUtil.checkFooter(input);
     assert upto == offsets.length;
   }
   
   @Override
   public void visitDocument(int n, StoredFieldVisitor visitor) throws IOException {
     in.seek(offsets[n]);
-    readLine();
-    assert StringHelper.startsWith(scratch, NUM);
-    int numFields = parseIntAt(NUM.length);
     
-    for (int i = 0; i < numFields; i++) {
+    while (true) {
       readLine();
-      assert StringHelper.startsWith(scratch, FIELD);
+      if (StringHelper.startsWith(scratch, FIELD) == false) {
+        break;
+      }
       int fieldNumber = parseIntAt(FIELD.length);
       FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldNumber);
       readLine();
@@ -141,7 +145,7 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
     readLine();
     assert StringHelper.startsWith(scratch, VALUE);
     if (type == TYPE_STRING) {
-      visitor.stringField(fieldInfo, new String(scratch.bytes, scratch.offset+VALUE.length, scratch.length-VALUE.length, "UTF-8"));
+      visitor.stringField(fieldInfo, new String(scratch.bytes, scratch.offset+VALUE.length, scratch.length-VALUE.length, StandardCharsets.UTF_8));
     } else if (type == TYPE_BINARY) {
       byte[] copy = new byte[scratch.length-VALUE.length];
       System.arraycopy(scratch.bytes, scratch.offset+VALUE.length, copy, 0, copy.length);
@@ -192,4 +196,12 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
     return a.length == b.length - bOffset && 
         ArrayUtil.equals(a.bytes, a.offset, b.bytes, b.offset + bOffset, b.length - bOffset);
   }
+
+  @Override
+  public long ramBytesUsed() {
+    return 0;
+  }
+
+  @Override
+  public void checkIntegrity() throws IOException {}
 }

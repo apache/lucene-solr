@@ -76,7 +76,7 @@ public class Explanation {
   /** Adds a sub-node to this explanation node. */
   public void addDetail(Explanation detail) {
     if (details == null)
-      details = new ArrayList<Explanation>();
+      details = new ArrayList<>();
     details.add(detail);
   }
 

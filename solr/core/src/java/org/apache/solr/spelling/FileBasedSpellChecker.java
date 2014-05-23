@@ -96,7 +96,7 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
 
         IndexWriter writer = new IndexWriter(
             ramDir,
-            new IndexWriterConfig(core.getSolrConfig().luceneMatchVersion, fieldType.getAnalyzer()).
+            new IndexWriterConfig(core.getSolrConfig().luceneMatchVersion, fieldType.getIndexAnalyzer()).
                 setMaxBufferedDocs(150).
                 setMergePolicy(mp).
                 setOpenMode(IndexWriterConfig.OpenMode.CREATE)
@@ -112,7 +112,7 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
           writer.addDocument(d);
         }
         writer.forceMerge(1);
-        writer.close();
+        writer.shutdown();
 
         dictionary = new HighFrequencyDictionary(DirectoryReader.open(ramDir),
                 WORD_FIELD_NAME, 0.0f);

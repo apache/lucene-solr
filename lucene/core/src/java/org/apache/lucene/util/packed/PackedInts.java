@@ -18,12 +18,15 @@ package org.apache.lucene.util.packed;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.LongsRef;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Simplistic compression for array of unsigned long values.
@@ -212,6 +215,11 @@ public class PackedInts {
     public FormatAndBits(Format format, int bitsPerValue) {
       this.format = format;
       this.bitsPerValue = bitsPerValue;
+    }
+
+    @Override
+    public String toString() {
+      return "FormatAndBits(format=" + format + " bitsPerValue=" + bitsPerValue + ")";
     }
   }
 
@@ -444,19 +452,24 @@ public class PackedInts {
    * A read-only random access array of positive integers.
    * @lucene.internal
    */
-  public static interface Reader {
-    /**
-     * @param index the position of the wanted value.
-     * @return the value at the stated index.
-     */
-    long get(int index);
+  public static abstract class Reader extends NumericDocValues {
 
     /**
      * Bulk get: read at least one and at most <code>len</code> longs starting
      * from <code>index</code> into <code>arr[off:off+len]</code> and return
      * the actual number of values that have been read.
      */
-    int get(int index, long[] arr, int off, int len);
+    public int get(int index, long[] arr, int off, int len) {
+      assert len > 0 : "len must be > 0 (got " + len + ")";
+      assert index >= 0 && index < size();
+      assert off + len <= arr.length;
+
+      final int gets = Math.min(size() - index, len);
+      for (int i = index, o = off, end = index + gets; i < end; ++i, ++o) {
+        arr[o] = get(i);
+      }
+      return gets;
+    }
 
     /**
      * @return the number of bits used to store any given value.
@@ -464,17 +477,17 @@ public class PackedInts {
      *         {@code bitsPerValue * #values} as implementations are free to
      *         use non-space-optimal packing of bits.
      */
-    int getBitsPerValue();
+    public abstract int getBitsPerValue();
 
     /**
      * @return the number of values.
      */
-    int size();
+    public abstract int size();
 
     /**
      * Return the in-memory size in bytes.
      */
-    long ramBytesUsed();
+    public abstract long ramBytesUsed();
 
     /**
      * Expert: if the bit-width of this reader matches one of
@@ -485,7 +498,10 @@ public class PackedInts {
      * interpret the full value as unsigned.  Ie,
      * bytes[idx]&0xFF, shorts[idx]&0xFFFF, etc.
      */
-    Object getArray();
+    public Object getArray() {
+      assert !hasArray();
+      return null;
+    }
 
     /**
      * Returns true if this implementation is backed by a
@@ -493,7 +509,9 @@ public class PackedInts {
      *
      * @see #getArray
      */
-    boolean hasArray();
+    public boolean hasArray() {
+      return false;
+    }
 
   }
 
@@ -551,14 +569,14 @@ public class PackedInts {
    * A packed integer array that can be modified.
    * @lucene.internal
    */
-  public static interface Mutable extends Reader {
+  public static abstract class Mutable extends Reader {
 
     /**
      * Set the value at the given index in the array.
      * @param index where the value should be positioned.
      * @param value a value conforming to the constraints set by the array.
      */
-    void set(int index, long value);
+    public abstract void set(int index, long value);
 
     /**
      * Bulk set: set at least one and at most <code>len</code> longs starting
@@ -566,25 +584,55 @@ public class PackedInts {
      * <code>index</code>. Returns the actual number of values that have been
      * set.
      */
-    int set(int index, long[] arr, int off, int len);
+    public int set(int index, long[] arr, int off, int len) {
+      assert len > 0 : "len must be > 0 (got " + len + ")";
+      assert index >= 0 && index < size();
+      len = Math.min(len, size() - index);
+      assert off + len <= arr.length;
+
+      for (int i = index, o = off, end = index + len; i < end; ++i, ++o) {
+        set(i, arr[o]);
+      }
+      return len;
+    }
 
     /**
      * Fill the mutable from <code>fromIndex</code> (inclusive) to
      * <code>toIndex</code> (exclusive) with <code>val</code>.
      */
-    void fill(int fromIndex, int toIndex, long val);
+    public void fill(int fromIndex, int toIndex, long val) {
+      assert val <= maxValue(getBitsPerValue());
+      assert fromIndex <= toIndex;
+      for (int i = fromIndex; i < toIndex; ++i) {
+        set(i, val);
+      }
+    }
 
     /**
      * Sets all values to 0.
      */
-    void clear();
+    public void clear() {
+      fill(0, size(), 0);
+    }
 
     /**
      * Save this mutable into <code>out</code>. Instantiating a reader from
      * the generated data will return a reader with the same number of bits
      * per value.
      */
-    void save(DataOutput out) throws IOException;
+    public void save(DataOutput out) throws IOException {
+      Writer writer = getWriterNoHeader(out, getFormat(), size(), getBitsPerValue(), DEFAULT_BUFFER_SIZE);
+      writer.writeHeader();
+      for (int i = 0; i < size(); ++i) {
+        writer.add(get(i));
+      }
+      writer.finish();
+    }
+
+    /** The underlying format. */
+    Format getFormat() {
+      return Format.PACKED;
+    }
 
   }
 
@@ -592,7 +640,7 @@ public class PackedInts {
    * A simple base for Readers that keeps track of valueCount and bitsPerValue.
    * @lucene.internal
    */
-  static abstract class ReaderImpl implements Reader {
+  static abstract class ReaderImpl extends Reader {
     protected final int bitsPerValue;
     protected final int valueCount;
 
@@ -603,86 +651,45 @@ public class PackedInts {
     }
 
     @Override
-    public int getBitsPerValue() {
+    public abstract long get(int index);
+
+    @Override
+    public final int getBitsPerValue() {
       return bitsPerValue;
     }
 
     @Override
-    public int size() {
+    public final int size() {
       return valueCount;
     }
 
-    @Override
-    public Object getArray() {
-      return null;
-    }
-
-    @Override
-    public boolean hasArray() {
-      return false;
-    }
-
-    @Override
-    public int get(int index, long[] arr, int off, int len) {
-      assert len > 0 : "len must be > 0 (got " + len + ")";
-      assert index >= 0 && index < valueCount;
-      assert off + len <= arr.length;
-
-      final int gets = Math.min(valueCount - index, len);
-      for (int i = index, o = off, end = index + gets; i < end; ++i, ++o) {
-        arr[o] = get(i);
-      }
-      return gets;
-    }
-
   }
 
-  static abstract class MutableImpl extends ReaderImpl implements Mutable {
+  static abstract class MutableImpl extends Mutable {
+
+    protected final int valueCount;
+    protected final int bitsPerValue;
 
     protected MutableImpl(int valueCount, int bitsPerValue) {
-      super(valueCount, bitsPerValue);
+      this.valueCount = valueCount;
+      assert bitsPerValue > 0 && bitsPerValue <= 64 : "bitsPerValue=" + bitsPerValue;
+      this.bitsPerValue = bitsPerValue;
     }
 
     @Override
-    public int set(int index, long[] arr, int off, int len) {
-      assert len > 0 : "len must be > 0 (got " + len + ")";
-      assert index >= 0 && index < valueCount;
-      len = Math.min(len, valueCount - index);
-      assert off + len <= arr.length;
-
-      for (int i = index, o = off, end = index + len; i < end; ++i, ++o) {
-        set(i, arr[o]);
-      }
-      return len;
+    public final int getBitsPerValue() {
+      return bitsPerValue;
     }
 
     @Override
-    public void fill(int fromIndex, int toIndex, long val) {
-      assert val <= maxValue(bitsPerValue);
-      assert fromIndex <= toIndex;
-      for (int i = fromIndex; i < toIndex; ++i) {
-        set(i, val);
-      }
+    public final int size() {
+      return valueCount;
     }
 
-    protected Format getFormat() {
-      return Format.PACKED;
-    }
-
-    @Override
-    public void save(DataOutput out) throws IOException {
-      Writer writer = getWriterNoHeader(out, getFormat(),
-          valueCount, bitsPerValue, DEFAULT_BUFFER_SIZE);
-      writer.writeHeader();
-      for (int i = 0; i < valueCount; ++i) {
-        writer.add(get(i));
-      }
-      writer.finish();
-    }
   }
 
   /** A {@link Reader} which has all its values equal to 0 (bitsPerValue = 0). */
-  public static final class NullReader implements Reader {
+  public static final class NullReader extends Reader {
 
     private final int valueCount;
 
@@ -698,7 +705,11 @@ public class PackedInts {
 
     @Override
     public int get(int index, long[] arr, int off, int len) {
-      return 0;
+      assert len > 0 : "len must be > 0 (got " + len + ")";
+      assert index >= 0 && index < valueCount;
+      len = Math.min(len, valueCount - index);
+      Arrays.fill(arr, off, off + len, 0);
+      return len;
     }
 
     @Override
@@ -713,17 +724,7 @@ public class PackedInts {
 
     @Override
     public long ramBytesUsed() {
-      return 0;
-    }
-
-    @Override
-    public Object getArray() {
-      return null;
-    }
-
-    @Override
-    public boolean hasArray() {
-      return false;
+      return RamUsageEstimator.alignObjectSize(RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + RamUsageEstimator.NUM_BYTES_INT);
     }
 
   }
@@ -1036,14 +1037,21 @@ public class PackedInts {
    */
   public static Mutable getMutable(int valueCount,
       int bitsPerValue, float acceptableOverheadRatio) {
-    assert valueCount >= 0;
-
     final FormatAndBits formatAndBits = fastestFormatAndBits(valueCount, bitsPerValue, acceptableOverheadRatio);
-    switch (formatAndBits.format) {
+    return getMutable(valueCount, formatAndBits.bitsPerValue, formatAndBits.format);
+  }
+
+  /** Same as {@link #getMutable(int, int, float)} with a pre-computed number
+   *  of bits per value and format.
+   *  @lucene.internal */
+  public static Mutable getMutable(int valueCount,
+      int bitsPerValue, PackedInts.Format format) {
+    assert valueCount >= 0;
+    switch (format) {
       case PACKED_SINGLE_BLOCK:
-        return Packed64SingleBlock.create(valueCount, formatAndBits.bitsPerValue);
+        return Packed64SingleBlock.create(valueCount, bitsPerValue);
       case PACKED:
-        switch (formatAndBits.bitsPerValue) {
+        switch (bitsPerValue) {
           case 8:
             return new Direct8(valueCount);
           case 16:
@@ -1063,7 +1071,7 @@ public class PackedInts {
             }
             break;
         }
-        return new Packed64(valueCount, formatAndBits.bitsPerValue);
+        return new Packed64(valueCount, bitsPerValue);
       default:
         throw new AssertionError();
     }
@@ -1198,33 +1206,39 @@ public class PackedInts {
       for (int i = 0; i < len; ++i) {
         dest.set(destPos++, src.get(srcPos++));
       }
-    } else {
+    } else if (len > 0) {
       // use bulk operations
-      long[] buf = new long[Math.min(capacity, len)];
-      int remaining = 0;
-      while (len > 0) {
-        final int read = src.get(srcPos, buf, remaining, Math.min(len, buf.length - remaining));
-        assert read > 0;
-        srcPos += read;
-        len -= read;
-        remaining += read;
-        final int written = dest.set(destPos, buf, 0, remaining);
-        assert written > 0;
-        destPos += written;
-        if (written < remaining) {
-          System.arraycopy(buf, written, buf, 0, remaining - written);
-        }
-        remaining -= written;
-      }
-      while (remaining > 0) {
-        final int written = dest.set(destPos, buf, 0, remaining);
-        destPos += written;
-        remaining -= written;
-        System.arraycopy(buf, written, buf, 0, remaining);
-      }
+      final long[] buf = new long[Math.min(capacity, len)];
+      copy(src, srcPos, dest, destPos, len, buf);
     }
   }
-  
+
+  /** Same as {@link #copy(Reader, int, Mutable, int, int, int)} but using a pre-allocated buffer. */
+  static void copy(Reader src, int srcPos, Mutable dest, int destPos, int len, long[] buf) {
+    assert buf.length > 0;
+    int remaining = 0;
+    while (len > 0) {
+      final int read = src.get(srcPos, buf, remaining, Math.min(len, buf.length - remaining));
+      assert read > 0;
+      srcPos += read;
+      len -= read;
+      remaining += read;
+      final int written = dest.set(destPos, buf, 0, remaining);
+      assert written > 0;
+      destPos += written;
+      if (written < remaining) {
+        System.arraycopy(buf, written, buf, 0, remaining - written);
+      }
+      remaining -= written;
+    }
+    while (remaining > 0) {
+      final int written = dest.set(destPos, buf, 0, remaining);
+      destPos += written;
+      remaining -= written;
+      System.arraycopy(buf, written, buf, 0, remaining);
+    }
+  }
+
   /**
    * Expert: reads only the metadata from a stream. This is useful to later
    * restore a stream or open a direct reader via 
@@ -1259,6 +1273,28 @@ public class PackedInts {
       this.bitsPerValue = bitsPerValue;
       this.version = version;
     }    
+  }
+
+  /** Check that the block size is a power of 2, in the right bounds, and return
+   *  its log in base 2. */
+  static int checkBlockSize(int blockSize, int minBlockSize, int maxBlockSize) {
+    if (blockSize < minBlockSize || blockSize > maxBlockSize) {
+      throw new IllegalArgumentException("blockSize must be >= " + minBlockSize + " and <= " + maxBlockSize + ", got " + blockSize);
+    }
+    if ((blockSize & (blockSize - 1)) != 0) {
+      throw new IllegalArgumentException("blockSize must be a power of two, got " + blockSize);
+    }
+    return Integer.numberOfTrailingZeros(blockSize);
+  }
+
+  /** Return the number of blocks required to store <code>size</code> values on
+   *  <code>blockSize</code>. */
+  static int numBlocks(long size, int blockSize) {
+    final int numBlocks = (int) (size / blockSize) + (size % blockSize == 0 ? 0 : 1);
+    if ((long) numBlocks * blockSize < size) {
+      throw new IllegalArgumentException("size is too large for this block size");
+    }
+    return numBlocks;
   }
 
 }

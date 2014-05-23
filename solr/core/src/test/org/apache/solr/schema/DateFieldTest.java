@@ -17,66 +17,79 @@
 
 package org.apache.solr.schema;
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.StorableField;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.DateMathParser;
 
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 
+import java.io.File;
+import java.text.ParseException;
+import java.util.Collections;
 import java.util.Date;
 import java.util.TimeZone;
 import java.util.Locale;
 
-public class DateFieldTest extends LuceneTestCase {
+public class DateFieldTest extends SolrTestCaseJ4 {
   public static TimeZone UTC = TimeZone.getTimeZone("UTC");
-  protected DateField f = null;
-  protected DateMathParser p = new DateMathParser(UTC, Locale.ROOT);
+  private final String testInstanceDir = TEST_HOME() + File.separator + "collection1";
+  private final String testConfHome = testInstanceDir + File.separator + "conf"+ File.separator;
+  private TrieDateField f = null;
+  private DateMathParser p = new DateMathParser(UTC, Locale.ROOT);
 
   @Override
   public void setUp()  throws Exception {
     super.setUp();
-    f = new DateField();
+    // set some system properties for use by tests
+    System.setProperty("solr.test.sys.prop1", "propone");
+    System.setProperty("solr.test.sys.prop2", "proptwo");
+    SolrConfig config = new SolrConfig
+        (new SolrResourceLoader(testInstanceDir), testConfHome + "solrconfig.xml", null);
+    IndexSchema schema = IndexSchemaFactory.buildIndexSchema(testConfHome + "schema.xml", config);
+    f = new TrieDateField();
+    f.init(schema, Collections.<String,String>emptyMap());
   }
 
-  public void assertToI(String expected, String input) {
-    assertEquals("Input: " + input, expected, f.toInternal(input));
+  public void assertFormatParsed(String expected, String input) throws ParseException {
+    assertEquals("Input: " + input, expected, f.formatDate(f.parseMath(new Date(), input)));
   }
   
-  public void assertToI(String expected, long input) {
-    assertEquals("Input: " + input, expected, f.toInternal(new Date(input)));
+  public void assertFormatDate(String expected, long input) {
+    assertEquals("Input: " + input, expected, f.formatDate(new Date(input)));
   }
 
   public void testToInternal() throws Exception {
-    assertToI("1995-12-31T23:59:59.999", "1995-12-31T23:59:59.999666Z");
-    assertToI("1995-12-31T23:59:59.999", "1995-12-31T23:59:59.999Z");
-    assertToI("1995-12-31T23:59:59.99",  "1995-12-31T23:59:59.99Z");
-    assertToI("1995-12-31T23:59:59.9",   "1995-12-31T23:59:59.9Z");
-    assertToI("1995-12-31T23:59:59",     "1995-12-31T23:59:59Z");
+    assertFormatParsed("1995-12-31T23:59:59.999", "1995-12-31T23:59:59.999666Z");
+    assertFormatParsed("1995-12-31T23:59:59.999", "1995-12-31T23:59:59.999Z");
+    assertFormatParsed("1995-12-31T23:59:59.99", "1995-12-31T23:59:59.99Z");
+    assertFormatParsed("1995-12-31T23:59:59.9", "1995-12-31T23:59:59.9Z");
+    assertFormatParsed("1995-12-31T23:59:59", "1995-12-31T23:59:59Z");
 
     // here the input isn't in the canonical form, but we should be forgiving
-    assertToI("1995-12-31T23:59:59.99",  "1995-12-31T23:59:59.990Z");
-    assertToI("1995-12-31T23:59:59.9",   "1995-12-31T23:59:59.900Z");
-    assertToI("1995-12-31T23:59:59.9",   "1995-12-31T23:59:59.90Z");
-    assertToI("1995-12-31T23:59:59",     "1995-12-31T23:59:59.000Z");
-    assertToI("1995-12-31T23:59:59",     "1995-12-31T23:59:59.00Z");
-    assertToI("1995-12-31T23:59:59",     "1995-12-31T23:59:59.0Z");
+    assertFormatParsed("1995-12-31T23:59:59.99", "1995-12-31T23:59:59.990Z");
+    assertFormatParsed("1995-12-31T23:59:59.9", "1995-12-31T23:59:59.900Z");
+    assertFormatParsed("1995-12-31T23:59:59.9", "1995-12-31T23:59:59.90Z");
+    assertFormatParsed("1995-12-31T23:59:59", "1995-12-31T23:59:59.000Z");
+    assertFormatParsed("1995-12-31T23:59:59", "1995-12-31T23:59:59.00Z");
+    assertFormatParsed("1995-12-31T23:59:59", "1995-12-31T23:59:59.0Z");
 
     // kind of kludgy, but we have other tests for the actual date math
-    assertToI(f.toInternal(p.parseMath("/DAY")), "NOW/DAY");
+    assertFormatParsed(f.formatDate(p.parseMath("/DAY")), "NOW/DAY");
 
     // as of Solr 1.3
-    assertToI("1995-12-31T00:00:00", "1995-12-31T23:59:59Z/DAY");
-    assertToI("1995-12-31T00:00:00", "1995-12-31T23:59:59.123Z/DAY");
-    assertToI("1995-12-31T00:00:00", "1995-12-31T23:59:59.123999Z/DAY");
+    assertFormatParsed("1995-12-31T00:00:00", "1995-12-31T23:59:59Z/DAY");
+    assertFormatParsed("1995-12-31T00:00:00", "1995-12-31T23:59:59.123Z/DAY");
+    assertFormatParsed("1995-12-31T00:00:00", "1995-12-31T23:59:59.123999Z/DAY");
   }
   
   public void testToInternalObj() throws Exception {
-    assertToI("1995-12-31T23:59:59.999", 820454399999l);
-    assertToI("1995-12-31T23:59:59.99",  820454399990l);
-    assertToI("1995-12-31T23:59:59.9",   820454399900l);
-    assertToI("1995-12-31T23:59:59",     820454399000l);
+    assertFormatDate("1995-12-31T23:59:59.999", 820454399999l);
+    assertFormatDate("1995-12-31T23:59:59.99", 820454399990l);
+    assertFormatDate("1995-12-31T23:59:59.9", 820454399900l);
+    assertFormatDate("1995-12-31T23:59:59", 820454399000l);
   }
     
   public void assertParseMath(long expected, String input) {
@@ -98,42 +111,6 @@ public class DateFieldTest extends LuceneTestCase {
     assertParseMath(194918400000l, "1976-03-06T03:06:00.000Z/DAY");
   }
 
-  public void assertToObject(long expected, String input) throws Exception {
-    assertEquals("Input: "+input, expected, f.toObject(input).getTime());
-  }
-  
-  // as of Solr1.3
-  public void testToObject() throws Exception {
-
-    // just after epoch
-    assertToObject(  5L, "1970-01-01T00:00:00.005Z");
-    assertToObject(  0L, "1970-01-01T00:00:00Z");
-    assertToObject(370L, "1970-01-01T00:00:00.37Z");
-    assertToObject(900L, "1970-01-01T00:00:00.9Z");
-
-    // well after epoch
-    assertToObject(820454399987l, "1995-12-31T23:59:59.987666Z");
-    assertToObject(820454399987l, "1995-12-31T23:59:59.987Z");
-    assertToObject(820454399980l, "1995-12-31T23:59:59.98Z");
-    assertToObject(820454399900l, "1995-12-31T23:59:59.9Z");
-    assertToObject(820454399000l, "1995-12-31T23:59:59Z");
-
-    // waaaay after epoch
-    assertToObject(327434918399005L, "12345-12-31T23:59:59.005Z");
-    assertToObject(327434918399000L, "12345-12-31T23:59:59Z");
-    assertToObject(327434918399370L, "12345-12-31T23:59:59.37Z");
-    assertToObject(327434918399900L, "12345-12-31T23:59:59.9Z");
-
-    // well before epoch
-    assertToObject(-52700112001000L, "0299-12-31T23:59:59Z");
-    assertToObject(-52700112000877L, "0299-12-31T23:59:59.123Z");
-    assertToObject(-52700112000910L, "0299-12-31T23:59:59.09Z");
-
-    // flexible in parsing years less then 4 digits
-    assertToObject(-52700112001000L,  "299-12-31T23:59:59Z");
-
-  }
-  
   public void testFormatter() {
     // just after epoch
     assertFormat("1970-01-01T00:00:00.005", 5L);
@@ -198,8 +175,8 @@ public class DateFieldTest extends LuceneTestCase {
   }
 
   protected void assertRoundTrip(String canonicalDate) throws Exception {
-    Date d = DateField.parseDate(canonicalDate);
-    String result = DateField.formatExternal(d);
+    Date d = TrieDateField.parseDate(canonicalDate);
+    String result = TrieDateField.formatExternal(d);
     assertEquals("d:" + d.getTime(), canonicalDate, result);
 
   }

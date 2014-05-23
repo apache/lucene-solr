@@ -51,7 +51,7 @@
     <core name="00018_core" instanceDir="00018_core" schema="schema-tiny.xml" config="solrconfig-minimal.xml" transient="true" loadOnStartup="false" />
     <core name="00019_core" instanceDir="00019_core" schema="schema-tiny.xml" config="solrconfig-minimal.xml" transient="true" loadOnStartup="false" />
     <shardHandlerFactory name="shardHandlerFactory" class="HttpShardHandlerFactory">
-      <int name="socketTimeout">${socketTimeout:120000}</int>
+      <int name="socketTimeout">${socketTimeout:90000}</int>
       <int name="connTimeout">${connTimeout:15000}</int>
     </shardHandlerFactory>
   </cores>

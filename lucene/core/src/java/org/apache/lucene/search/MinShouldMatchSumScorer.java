@@ -59,6 +59,8 @@ class MinShouldMatchSumScorer extends Scorer {
   /** The number of subscorers that provide the current match. */
   protected int nrMatchers = -1;
   private double score = Float.NaN;
+  
+  private final float coord[];
 
   /**
    * Construct a <code>MinShouldMatchSumScorer</code>.
@@ -72,7 +74,7 @@ class MinShouldMatchSumScorer extends Scorer {
    * <br>When minimumNrMatchers equals the number of subScorers,
    * it is more efficient to use <code>ConjunctionScorer</code>.
    */
-  public MinShouldMatchSumScorer(Weight weight, List<Scorer> subScorers, int minimumNrMatchers) throws IOException {
+  public MinShouldMatchSumScorer(Weight weight, List<Scorer> subScorers, int minimumNrMatchers, float coord[]) throws IOException {
     super(weight);
     this.nrInHeap = this.numScorers = subScorers.size();
 
@@ -105,21 +107,14 @@ class MinShouldMatchSumScorer extends Scorer {
     for (int i = 0; i < nrInHeap; i++) {
       this.subScorers[i] = this.sortedSubScorers[mm-1+i];
     }
+    this.coord = coord;
     minheapHeapify();
     assert minheapCheck();
-  }
-  
-  /**
-   * Construct a <code>DisjunctionScorer</code>, using one as the minimum number
-   * of matching subscorers.
-   */
-  public MinShouldMatchSumScorer(Weight weight, List<Scorer> subScorers) throws IOException {
-    this(weight, subScorers, 1);
   }
 
   @Override
   public final Collection<ChildScorer> getChildren() {
-    ArrayList<ChildScorer> children = new ArrayList<ChildScorer>(numScorers);
+    ArrayList<ChildScorer> children = new ArrayList<>(numScorers);
     for (int i = 0; i < numScorers; i++) {
       children.add(new ChildScorer(subScorers[i], "SHOULD"));
     }
@@ -223,7 +218,7 @@ class MinShouldMatchSumScorer extends Scorer {
    */
   @Override
   public float score() throws IOException {
-    return (float) score;
+    return coord[nrMatchers] * (float) score;
   }
 
   @Override

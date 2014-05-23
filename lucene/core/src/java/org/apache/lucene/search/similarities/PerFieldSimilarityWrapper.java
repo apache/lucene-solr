@@ -54,15 +54,9 @@ public abstract class PerFieldSimilarityWrapper extends Similarity {
   }
 
   @Override
-  public final ExactSimScorer exactSimScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
+  public final SimScorer simScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
     PerFieldSimWeight perFieldWeight = (PerFieldSimWeight) weight;
-    return perFieldWeight.delegate.exactSimScorer(perFieldWeight.delegateWeight, context);
-  }
-
-  @Override
-  public final SloppySimScorer sloppySimScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
-    PerFieldSimWeight perFieldWeight = (PerFieldSimWeight) weight;
-    return perFieldWeight.delegate.sloppySimScorer(perFieldWeight.delegateWeight, context);
+    return perFieldWeight.delegate.simScorer(perFieldWeight.delegateWeight, context);
   }
   
   /** 

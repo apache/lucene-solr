@@ -26,6 +26,9 @@
     <import file="../module-build.xml"/>
     <property name="working.dir" location="work"/>
 
+    <!-- benchmark creates lots of sysout stuff, so dont run forbidden! -->
+    <target name="-check-forbidden-sysout"/>
+
     <target name="check-files">
         <available file="temp/news20.tar.gz" property="news20.exists"/>
 
@@ -37,6 +40,8 @@
         <available file="temp/20news-18828.tar.gz" property="20news-18828.exists"/>
         <available file="${working.dir}/20news-18828" property="20news-18828.expanded"/>
         <available file="${working.dir}/mini_newsgroups" property="mini.expanded"/>
+        <available file="temp/allCountries.txt.bz2" property="geonames.exists"/>
+        <available file="${working.dir}/geonames" property="geonames.expanded"/>
         
         <available file="temp/enwiki-20070527-pages-articles.xml.bz2" property="enwiki.exists"/>
         <available file="temp/enwiki-20070527-pages-articles.xml" property="enwiki.expanded"/>
@@ -60,6 +65,25 @@
 
     <target name="expand-enwiki"  unless="enwiki.expanded">
         <bunzip2 src="temp/enwiki-20070527-pages-articles.xml.bz2" dest="temp"/>
+    </target>
+
+    <target name="geonames-files" depends="check-files" description="Get data for spatial.alg">
+        <mkdir dir="temp"/>
+        <antcall target="get-geonames"/>
+        <antcall target="expand-geonames"/>
+    </target>
+
+    <target name="get-geonames" unless="geonames.exists">
+        <!-- note: latest data is at: http://download.geonames.org/export/dump/allCountries.zip
+         and then randomize with: gsort -R -S 1500M file.txt > file_random.txt
+         and then compress with: bzip2 -9 -k file_random.txt -->
+        <get src="http://people.apache.org/~dsmiley/data/geonames_20130921_randomOrder_allCountries.txt.bz2"
+             dest="temp/allCountries.txt.bz2"/>
+    </target>
+
+    <target name="expand-geonames" unless="geonames.expanded">
+        <mkdir dir="${working.dir}/geonames"/>
+        <bunzip2 src="temp/allCountries.txt.bz2" dest="${working.dir}/geonames"/>
     </target>
 
     <target name="get-news-20" unless="20news-18828.exists">
@@ -147,8 +171,8 @@
       <pathelement path="${analyzers-common.jar}"/>
       <pathelement path="${queryparser.jar}"/>
       <pathelement path="${facet.jar}"/>
+      <pathelement path="${spatial.jar}"/>
       <pathelement path="${queries.jar}"/>
-      <fileset dir="${common.dir}/analysis/icu/lib"/>
       <path refid="base.classpath"/>
       <fileset dir="lib"/>
     </path>
@@ -158,7 +182,8 @@
         <pathelement path="${benchmark.ext.classpath}"/>
     </path>
 
-    <target name="javadocs" depends="javadocs-memory,javadocs-highlighter,javadocs-analyzers-common,javadocs-queryparser,javadocs-facet,compile-core">
+    <target name="javadocs" depends="javadocs-memory,javadocs-highlighter,javadocs-analyzers-common,
+      javadocs-queryparser,javadocs-facet,javadocs-spatial,compile-core">
     <invoke-module-javadoc>
       <links>
         <link href="../memory"/>
@@ -166,6 +191,7 @@
         <link href="../analyzers-common"/>
         <link href="../queryparser"/>
         <link href="../facet"/>
+        <link href="../spatial"/>
       </links>
     </invoke-module-javadoc>
     </target>
@@ -202,7 +228,6 @@
 	<path id="collation.runtime.classpath">
 	  <path refid="run.classpath"/>
       <pathelement path="${analyzers-icu.jar}"/>
-      <fileset dir="${common.dir}/analysis/icu/lib"/>
 	</path>
 	
 	<target name="collation" depends="compile,jar-analyzers-icu,top-100k-wiki-word-files">
@@ -249,14 +274,7 @@
       <echo>Benchmark output in JIRA table format is in file: ${shingle.jira.output.file}</echo>
     </target>
 
-    <!-- we don't actually need to compile this thing, we just want its lib -->
-    <target name="resolve-icu">
-       <ant dir="${common.dir}/analysis/icu/" target="resolve" inheritAll="false">
-         <propertyset refid="uptodate.and.compiled.properties"/>
-      </ant>
-    </target>
-
-    <target name="init" depends="module-build.init,resolve-icu,jar-memory,jar-highlighter,jar-analyzers-common,jar-queryparser,jar-facet"/>
+    <target name="init" depends="module-build.init,jar-memory,jar-highlighter,jar-analyzers-common,jar-queryparser,jar-facet,jar-spatial"/>
   
     <target name="compile-test" depends="copy-alg-files-for-testing,module-build.compile-test"/>
     <target name="copy-alg-files-for-testing" description="copy .alg files as resources for testing">

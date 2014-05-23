@@ -50,7 +50,7 @@ public class TestSearch extends LuceneTestCase {
         d.add(newTextField("foo", "bar", Field.Store.YES));
         writer.addDocument(d);
       } finally {
-        writer.close();
+        writer.shutdown();
       }
       
       IndexReader reader = DirectoryReader.open(directory);
@@ -92,7 +92,7 @@ public class TestSearch extends LuceneTestCase {
       doTestSearch(random(), pw, false);
       pw.close();
       sw.close();
-      String multiFileOutput = sw.getBuffer().toString();
+      String multiFileOutput = sw.toString();
       //System.out.println(multiFileOutput);
 
       sw = new StringWriter();
@@ -100,7 +100,7 @@ public class TestSearch extends LuceneTestCase {
       doTestSearch(random(), pw, true);
       pw.close();
       sw.close();
-      String singleFileOutput = sw.getBuffer().toString();
+      String singleFileOutput = sw.toString();
 
       assertEquals(multiFileOutput, singleFileOutput);
     }
@@ -112,10 +112,7 @@ public class TestSearch extends LuceneTestCase {
       Analyzer analyzer = new MockAnalyzer(random);
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
       MergePolicy mp = conf.getMergePolicy();
-      if (mp instanceof LogMergePolicy) {
-        ((LogMergePolicy) mp).setUseCompoundFile(useCompoundFile);
-      }
-      
+      mp.setNoCFSRatio(useCompoundFile ? 1.0 : 0.0);
       IndexWriter writer = new IndexWriter(directory, conf);
 
       String[] docs = {
@@ -130,10 +127,10 @@ public class TestSearch extends LuceneTestCase {
       for (int j = 0; j < docs.length; j++) {
         Document d = new Document();
         d.add(newTextField("contents", docs[j], Field.Store.YES));
-        d.add(newStringField("id", ""+j, Field.Store.NO));
+        d.add(new IntField("id", j, Field.Store.NO));
         writer.addDocument(d);
       }
-      writer.close();
+      writer.shutdown();
 
       IndexReader reader = DirectoryReader.open(directory);
       IndexSearcher searcher = newSearcher(reader);
@@ -162,7 +159,7 @@ public class TestSearch extends LuceneTestCase {
   }
 
   private List<Query> buildQueries() {
-    List<Query> queries = new ArrayList<Query>();
+    List<Query> queries = new ArrayList<>();
 
     BooleanQuery booleanAB = new BooleanQuery();
     booleanAB.add(new TermQuery(new Term("contents", "a")), BooleanClause.Occur.SHOULD);

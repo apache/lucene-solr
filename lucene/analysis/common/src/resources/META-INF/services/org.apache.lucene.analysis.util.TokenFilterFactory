@@ -13,12 +13,15 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+org.apache.lucene.analysis.tr.ApostropheFilterFactory
 org.apache.lucene.analysis.ar.ArabicNormalizationFilterFactory
 org.apache.lucene.analysis.ar.ArabicStemFilterFactory
 org.apache.lucene.analysis.bg.BulgarianStemFilterFactory
 org.apache.lucene.analysis.br.BrazilianStemFilterFactory
 org.apache.lucene.analysis.cjk.CJKBigramFilterFactory
 org.apache.lucene.analysis.cjk.CJKWidthFilterFactory
+org.apache.lucene.analysis.ckb.SoraniNormalizationFilterFactory
+org.apache.lucene.analysis.ckb.SoraniStemFilterFactory
 org.apache.lucene.analysis.commongrams.CommonGramsFilterFactory
 org.apache.lucene.analysis.commongrams.CommonGramsQueryFilterFactory
 org.apache.lucene.analysis.compound.DictionaryCompoundWordTokenFilterFactory
@@ -26,6 +29,7 @@ org.apache.lucene.analysis.compound.HyphenationCompoundWordTokenFilterFactory
 org.apache.lucene.analysis.core.LowerCaseFilterFactory
 org.apache.lucene.analysis.core.StopFilterFactory
 org.apache.lucene.analysis.core.TypeTokenFilterFactory
+org.apache.lucene.analysis.core.UpperCaseFilterFactory
 org.apache.lucene.analysis.cz.CzechStemFilterFactory
 org.apache.lucene.analysis.de.GermanLightStemFilterFactory
 org.apache.lucene.analysis.de.GermanMinimalStemFilterFactory
@@ -55,6 +59,7 @@ org.apache.lucene.analysis.it.ItalianLightStemFilterFactory
 org.apache.lucene.analysis.lv.LatvianStemFilterFactory
 org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilterFactory
 org.apache.lucene.analysis.miscellaneous.CapitalizationFilterFactory
+org.apache.lucene.analysis.miscellaneous.CodepointCountFilterFactory
 org.apache.lucene.analysis.miscellaneous.HyphenatedWordsFilterFactory
 org.apache.lucene.analysis.miscellaneous.KeepWordFilterFactory
 org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilterFactory
@@ -65,7 +70,10 @@ org.apache.lucene.analysis.miscellaneous.LimitTokenPositionFilterFactory
 org.apache.lucene.analysis.miscellaneous.RemoveDuplicatesTokenFilterFactory
 org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilterFactory
 org.apache.lucene.analysis.miscellaneous.TrimFilterFactory
+org.apache.lucene.analysis.miscellaneous.TruncateTokenFilterFactory
 org.apache.lucene.analysis.miscellaneous.WordDelimiterFilterFactory
+org.apache.lucene.analysis.miscellaneous.ScandinavianFoldingFilterFactory
+org.apache.lucene.analysis.miscellaneous.ScandinavianNormalizationFilterFactory
 org.apache.lucene.analysis.ngram.EdgeNGramFilterFactory
 org.apache.lucene.analysis.ngram.NGramFilterFactory
 org.apache.lucene.analysis.no.NorwegianLightStemFilterFactory

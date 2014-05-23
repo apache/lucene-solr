@@ -1,3 +1,22 @@
+/*
+
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
 #content #query
 {
   background-image: url( ../../img/div.gif );
@@ -30,6 +49,44 @@
 #content #query #form textarea
 {
   width: 98%;
+}
+
+#content #query #form .multiple input
+{
+  float: left;
+  width: 80%
+}
+
+#content #query #form .multiple .buttons
+{
+  float: right;
+  width: 16%;
+}
+
+
+#content #query #form .multiple a
+{
+  background-position: 50% 50%;
+  display: block;
+  height: 25px;
+  width: 49%;
+}
+
+#content #query #form .multiple a span
+{
+  display: none;
+}
+
+#content #query #form .multiple a.add
+{
+  background-image: url( ../../img/ico/plus-button.png );
+  float: right;
+}
+
+#content #query #form .multiple a.rem
+{
+  background-image: url( ../../img/ico/minus-button.png );
+  float: left;
 }
 
 #content #query #form #start
@@ -109,33 +166,6 @@
   display: none;
   float: right;
   width: 77%;
-}
-
-#content #query #result #url
-{
-  margin-bottom: 10px;
-  background-image: url( ../../img/ico/ui-address-bar.png );
-  background-position: 5px 50%;
-  border: 1px solid #f0f0f0;
-  box-shadow: 1px 1px 0 #f0f0f0;
-  -moz-box-shadow: 1px 1px 0 #f0f0f0;
-  -webkit-box-shadow: 1px 1px 0 #f0f0f0;
-  color: #c0c0c0;
-  display: block;
-  overflow: hidden;
-  padding: 5px;
-  padding-left: 26px;
-  white-space: nowrap;
-}
-
-#content #query #result #url:focus,
-#content #query #result #url:hover
-{
-  border-color: #c0c0c0;
-  box-shadow: 1px 1px 0 #d8d8d8;
-  -moz-box-shadow: 1px 1px 0 #d8d8d8;
-  -webkit-box-shadow: 1px 1px 0 #d8d8d8;
-  color: #333;
 }
 
 #content #query #result #response

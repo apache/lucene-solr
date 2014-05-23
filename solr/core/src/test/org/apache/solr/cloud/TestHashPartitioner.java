@@ -146,8 +146,8 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
 
     List<String> expectedShardStr = StrUtils.splitSmart(expectedShards, ",", true);
 
-    HashSet<String> expectedSet = new HashSet<String>(expectedShardStr);
-    HashSet<String> obtainedSet = new HashSet<String>();
+    HashSet<String> expectedSet = new HashSet<>(expectedShardStr);
+    HashSet<String> obtainedSet = new HashSet<>();
     for (Slice slice : slices) {
       obtainedSet.add(slice.getName());
     }
@@ -222,7 +222,7 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
   DocCollection createCollection(int nSlices, DocRouter router) {
     List<Range> ranges = router.partitionRange(nSlices, router.fullRange());
 
-    Map<String,Slice> slices = new HashMap<String,Slice>();
+    Map<String,Slice> slices = new HashMap<>();
     for (int i=0; i<ranges.size(); i++) {
       Range range = ranges.get(i);
       Slice slice = new Slice("shard"+(i+1), null, map("range",range));

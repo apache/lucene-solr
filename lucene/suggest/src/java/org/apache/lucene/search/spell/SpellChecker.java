@@ -173,7 +173,7 @@ public class SpellChecker implements java.io.Closeable {
           IndexWriter writer = new IndexWriter(spellIndexDir,
             new IndexWriterConfig(Version.LUCENE_CURRENT,
                 null));
-          writer.close();
+          writer.shutdown();
       }
       swapSearcher(spellIndexDir);
     }
@@ -460,7 +460,7 @@ public class SpellChecker implements java.io.Closeable {
           Version.LUCENE_CURRENT,
           null)
           .setOpenMode(OpenMode.CREATE));
-      writer.close();
+      writer.shutdown();
       swapSearcher(dir);
     }
   }
@@ -498,7 +498,7 @@ public class SpellChecker implements java.io.Closeable {
       final Directory dir = this.spellIndex;
       final IndexWriter writer = new IndexWriter(dir, config);
       IndexSearcher indexSearcher = obtainSearcher();
-      final List<TermsEnum> termsEnums = new ArrayList<TermsEnum>();
+      final List<TermsEnum> termsEnums = new ArrayList<>();
 
       final IndexReader reader = searcher.getIndexReader();
       if (reader.maxDoc() > 0) {
@@ -512,7 +512,7 @@ public class SpellChecker implements java.io.Closeable {
       boolean isEmpty = termsEnums.isEmpty();
 
       try { 
-        BytesRefIterator iter = dict.getWordsIterator();
+        BytesRefIterator iter = dict.getEntryIterator();
         BytesRef currentTerm;
         
         terms: while ((currentTerm = iter.next()) != null) {
@@ -525,7 +525,7 @@ public class SpellChecker implements java.io.Closeable {
   
           if (!isEmpty) {
             for (TermsEnum te : termsEnums) {
-              if (te.seekExact(currentTerm, false)) {
+              if (te.seekExact(currentTerm)) {
                 continue terms;
               }
             }
@@ -542,7 +542,7 @@ public class SpellChecker implements java.io.Closeable {
         writer.forceMerge(1);
       }
       // close writer
-      writer.close();
+      writer.shutdown();
       // TODO: this isn't that great, maybe in the future SpellChecker should take
       // IWC in its ctor / keep its writer open?
       

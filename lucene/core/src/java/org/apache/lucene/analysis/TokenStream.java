@@ -21,10 +21,13 @@ import java.io.IOException;
 import java.io.Closeable;
 import java.lang.reflect.Modifier;
 
+import org.apache.lucene.analysis.tokenattributes.PackedTokenAttributeImpl;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.Attribute;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeSource;
 
@@ -83,12 +86,16 @@ import org.apache.lucene.util.AttributeSource;
  * assertions are enabled.
  */
 public abstract class TokenStream extends AttributeSource implements Closeable {
+  
+  /** Default {@link AttributeFactory} instance that should be used for TokenStreams. */
+  public static final AttributeFactory DEFAULT_TOKEN_ATTRIBUTE_FACTORY =
+    AttributeFactory.getStaticImplementation(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, PackedTokenAttributeImpl.class);
 
   /**
    * A TokenStream using the default attribute factory.
    */
   protected TokenStream() {
-    super();
+    super(DEFAULT_TOKEN_ATTRIBUTE_FACTORY);
     assert assertFinal();
   }
   
@@ -159,23 +166,42 @@ public abstract class TokenStream extends AttributeSource implements Closeable {
    * setting the final offset of a stream. The final offset of a stream might
    * differ from the offset of the last token eg in case one or more whitespaces
    * followed after the last token, but a WhitespaceTokenizer was used.
+   * <p>
+   * Additionally any skipped positions (such as those removed by a stopfilter)
+   * can be applied to the position increment, or any adjustment of other
+   * attributes where the end-of-stream value may be important.
+   * <p>
+   * If you override this method, always call {@code super.end()}.
    * 
    * @throws IOException If an I/O error occurs
    */
   public void end() throws IOException {
-    // do nothing by default
+    clearAttributes(); // LUCENE-3849: don't consume dirty atts
+    PositionIncrementAttribute posIncAtt = getAttribute(PositionIncrementAttribute.class);
+    if (posIncAtt != null) {
+      posIncAtt.setPositionIncrement(0);
+    }
   }
 
   /**
    * This method is called by a consumer before it begins consumption using
    * {@link #incrementToken()}.
-   * <p/>
+   * <p>
    * Resets this stream to a clean state. Stateful implementations must implement
    * this method so that they can be reused, just as if they had been created fresh.
+   * <p>
+   * If you override this method, always call {@code super.reset()}, otherwise
+   * some internal state will not be correctly reset (e.g., {@link Tokenizer} will
+   * throw {@link IllegalStateException} on further usage).
    */
   public void reset() throws IOException {}
   
-  /** Releases resources associated with this stream. */
+  /** Releases resources associated with this stream.
+   * <p>
+   * If you override this method, always call {@code super.close()}, otherwise
+   * some internal state will not be correctly reset (e.g., {@link Tokenizer} will
+   * throw {@link IllegalStateException} on reuse).
+   */
   @Override
   public void close() throws IOException {}
   

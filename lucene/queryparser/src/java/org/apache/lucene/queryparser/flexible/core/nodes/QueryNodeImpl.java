@@ -19,6 +19,7 @@ package org.apache.lucene.queryparser.flexible.core.nodes;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -40,14 +41,14 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
 
   private boolean isLeaf = true;
 
-  private Hashtable<String, Object> tags = new Hashtable<String, Object>();
+  private Hashtable<String, Object> tags = new Hashtable<>();
 
   private List<QueryNode> clauses = null;
 
   protected void allocate() {
 
     if (this.clauses == null) {
-      this.clauses = new ArrayList<QueryNode>();
+      this.clauses = new ArrayList<>();
 
     } else {
       this.clauses.clear();
@@ -102,18 +103,19 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
 
     // reset parent value
     for (QueryNode child : children) {
-
-      ((QueryNodeImpl) child).setParent(null);
-
+      child.removeFromParent();
     }
-
+    
+    ArrayList<QueryNode> existingChildren = new ArrayList<>(getChildren());
+    for (QueryNode existingChild : existingChildren) {
+      existingChild.removeFromParent();
+    }
+    
     // allocate new children list
     allocate();
-
+    
     // add new children and set parent
-    for (QueryNode child : children) {
-      add(child);
-    }
+    add(children);
   }
 
   @Override
@@ -122,11 +124,11 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
     clone.isLeaf = this.isLeaf;
 
     // Reset all tags
-    clone.tags = new Hashtable<String, Object>();
+    clone.tags = new Hashtable<>();
 
     // copy children
     if (this.clauses != null) {
-      List<QueryNode> localClauses = new ArrayList<QueryNode>();
+      List<QueryNode> localClauses = new ArrayList<>();
       for (QueryNode clause : this.clauses) {
         localClauses.add(clause.cloneTree());
       }
@@ -154,7 +156,7 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
     if (isLeaf() || this.clauses == null) {
       return null;
     }
-    return this.clauses;
+    return new ArrayList<>(this.clauses);
   }
 
   @Override
@@ -181,7 +183,10 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
   private QueryNode parent = null;
 
   private void setParent(QueryNode parent) {
-    this.parent = parent;
+    if (this.parent != parent) {
+      this.removeFromParent();
+      this.parent = parent;
+    }
   }
 
   @Override
@@ -240,6 +245,22 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
   @SuppressWarnings("unchecked")
   public Map<String, Object> getTagMap() {
     return (Map<String, Object>) this.tags.clone();
+  }
+  
+  @Override
+  public void removeFromParent() {
+    if (this.parent != null) {
+      List<QueryNode> parentChildren = this.parent.getChildren();
+      Iterator<QueryNode> it = parentChildren.iterator();
+      
+      while (it.hasNext()) {
+        if (it.next() == this) {
+          it.remove();
+        }
+      }
+      
+      this.parent = null;
+    }
   }
 
 } // end class QueryNodeImpl

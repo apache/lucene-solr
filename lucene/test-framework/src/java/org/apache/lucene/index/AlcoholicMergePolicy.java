@@ -24,7 +24,7 @@ import java.util.Locale;
 import java.util.Random;
 import java.util.TimeZone;
 
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /** 
  * <p>
@@ -47,14 +47,14 @@ public class AlcoholicMergePolicy extends LogMergePolicy {
   
   public AlcoholicMergePolicy(TimeZone tz, Random random) {
     this.calendar = new GregorianCalendar(tz, Locale.ROOT);
-    calendar.setTimeInMillis(_TestUtil.nextLong(random, 0, Long.MAX_VALUE));
+    calendar.setTimeInMillis(TestUtil.nextLong(random, 0, Long.MAX_VALUE));
     this.random = random;
-    maxMergeSize = _TestUtil.nextInt(random, 1024*1024, Integer.MAX_VALUE);
+    maxMergeSize = TestUtil.nextInt(random, 1024 * 1024, Integer.MAX_VALUE);
   }
   
   @Override
   //@BlackMagic(level=Voodoo);
-  protected long size(SegmentInfoPerCommit info) throws IOException {
+  protected long size(SegmentCommitInfo info) throws IOException {
     int hourOfDay = calendar.get(Calendar.HOUR_OF_DAY);
     if (hourOfDay < 6 || 
         hourOfDay > 20 || 

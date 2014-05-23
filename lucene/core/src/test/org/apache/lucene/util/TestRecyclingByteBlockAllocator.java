@@ -45,7 +45,7 @@ public class TestRecyclingByteBlockAllocator extends LuceneTestCase {
   @Test
   public void testAllocate() {
     RecyclingByteBlockAllocator allocator = newAllocator();
-    HashSet<byte[]> set = new HashSet<byte[]>();
+    HashSet<byte[]> set = new HashSet<>();
     byte[] block = allocator.getByteBlock();
     set.add(block);
     assertNotNull(block);
@@ -65,7 +65,7 @@ public class TestRecyclingByteBlockAllocator extends LuceneTestCase {
   @Test
   public void testAllocateAndRecycle() {
     RecyclingByteBlockAllocator allocator = newAllocator();
-    HashSet<byte[]> allocated = new HashSet<byte[]>();
+    HashSet<byte[]> allocated = new HashSet<>();
 
     byte[] block = allocator.getByteBlock();
     allocated.add(block);
@@ -86,7 +86,7 @@ public class TestRecyclingByteBlockAllocator extends LuceneTestCase {
       byte[][] array = allocated.toArray(new byte[0][]);
       int begin = random().nextInt(array.length);
       int end = begin + random().nextInt(array.length - begin);
-      List<byte[]> selected = new ArrayList<byte[]>();
+      List<byte[]> selected = new ArrayList<>();
       for (int j = begin; j < end; j++) {
         selected.add(array[j]);
       }
@@ -102,7 +102,7 @@ public class TestRecyclingByteBlockAllocator extends LuceneTestCase {
   @Test
   public void testAllocateAndFree() {
     RecyclingByteBlockAllocator allocator = newAllocator();
-    HashSet<byte[]> allocated = new HashSet<byte[]>();
+    HashSet<byte[]> allocated = new HashSet<>();
     int freeButAllocated = 0;
     byte[] block = allocator.getByteBlock();
     allocated.add(block);

@@ -19,14 +19,14 @@ package org.apache.lucene.codecs.pulsing;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.BlockTreeTermsReader;
-import org.apache.lucene.codecs.BlockTreeTermsWriter;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsBaseFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.PostingsWriterBase;
+import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
+import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.IOUtils;
@@ -79,7 +79,7 @@ public abstract class PulsingPostingsFormat extends PostingsFormat {
 
       // Terms that have <= freqCutoff number of docs are
       // "pulsed" (inlined):
-      pulsingWriter = new PulsingPostingsWriter(freqCutoff, docsWriter);
+      pulsingWriter = new PulsingPostingsWriter(state, freqCutoff, docsWriter);
       FieldsConsumer ret = new BlockTreeTermsWriter(state, pulsingWriter, minBlockSize, maxBlockSize);
       success = true;
       return ret;
@@ -98,13 +98,12 @@ public abstract class PulsingPostingsFormat extends PostingsFormat {
     boolean success = false;
     try {
       docsReader = wrappedPostingsBaseFormat.postingsReaderBase(state);
-      pulsingReader = new PulsingPostingsReader(docsReader);
+      pulsingReader = new PulsingPostingsReader(state, docsReader);
       FieldsProducer ret = new BlockTreeTermsReader(
                                                     state.directory, state.fieldInfos, state.segmentInfo,
                                                     pulsingReader,
                                                     state.context,
-                                                    state.segmentSuffix,
-                                                    state.termsIndexDivisor);
+                                                    state.segmentSuffix);
       success = true;
       return ret;
     } finally {

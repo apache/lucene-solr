@@ -17,9 +17,6 @@
 package org.apache.lucene.document;
 
 import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.Map;
@@ -28,7 +25,6 @@ import java.io.IOException;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.*;
-import org.apache.lucene.document.*;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
@@ -75,7 +71,7 @@ public class TestLazyDocument extends LuceneTestCase {
         writer.addDocument(d);
       }
     } finally {
-      writer.close();
+      writer.shutdown();
     }
   }
 
@@ -94,7 +90,7 @@ public class TestLazyDocument extends LuceneTestCase {
       StoredDocument d = visitor.doc;
 
       int numFieldValues = 0;
-      Map<String,Integer> fieldValueCounts = new HashMap<String,Integer>();
+      Map<String,Integer> fieldValueCounts = new HashMap<>();
 
       // at this point, all FIELDS should be Lazy and unrealized
       for (StorableField f : d) {
@@ -118,7 +114,7 @@ public class TestLazyDocument extends LuceneTestCase {
           assertFalse(f.name() + " is loaded", lf.hasBeenLoaded());
         }
       }
-      System.out.println("numFieldValues == " + numFieldValues);
+      if (VERBOSE) System.out.println("numFieldValues == " + numFieldValues);
       assertEquals("numFieldValues", 1 + (NUM_VALUES * FIELDS.length), 
                    numFieldValues);
         
@@ -195,7 +191,7 @@ public class TestLazyDocument extends LuceneTestCase {
 
     LazyTestingStoredFieldVisitor(LazyDocument l, String... fields) {
       lazyDoc = l;
-      lazyFieldNames = new HashSet<String>(Arrays.asList(fields));
+      lazyFieldNames = new HashSet<>(Arrays.asList(fields));
     }
 
     @Override

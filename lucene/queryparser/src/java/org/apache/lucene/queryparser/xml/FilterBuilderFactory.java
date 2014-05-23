@@ -29,7 +29,7 @@ import java.util.HashMap;
  */
 public class FilterBuilderFactory implements FilterBuilder {
 
-  HashMap<String, FilterBuilder> builders = new HashMap<String, FilterBuilder>();
+  HashMap<String, FilterBuilder> builders = new HashMap<>();
 
   @Override
   public Filter getFilter(Element n) throws ParserException {

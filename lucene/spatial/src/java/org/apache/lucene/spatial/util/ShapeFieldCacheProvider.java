@@ -39,7 +39,7 @@ public abstract class ShapeFieldCacheProvider<T extends Shape> {
   private Logger log = Logger.getLogger(getClass().getName());
 
   // it may be a List<T> or T
-  WeakHashMap<IndexReader, ShapeFieldCache<T>> sidx = new WeakHashMap<IndexReader, ShapeFieldCache<T>>();
+  WeakHashMap<IndexReader, ShapeFieldCache<T>> sidx = new WeakHashMap<>();
 
   protected final int defaultSize;
   protected final String shapeField;
@@ -59,7 +59,7 @@ public abstract class ShapeFieldCacheProvider<T extends Shape> {
     long startTime = System.currentTimeMillis();
 
     log.fine("Building Cache [" + reader.maxDoc() + "]");
-    idx = new ShapeFieldCache<T>(reader.maxDoc(),defaultSize);
+    idx = new ShapeFieldCache<>(reader.maxDoc(),defaultSize);
     int count = 0;
     DocsEnum docs = null;
     Terms terms = reader.terms(shapeField);

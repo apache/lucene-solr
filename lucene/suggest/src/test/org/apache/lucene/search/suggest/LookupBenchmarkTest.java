@@ -22,6 +22,7 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -30,18 +31,18 @@ import java.util.Locale;
 import java.util.Random;
 import java.util.concurrent.Callable;
 
-import org.apache.lucene.util.*;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.search.suggest.Lookup; // javadocs
+import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester;
 import org.apache.lucene.search.suggest.analyzing.AnalyzingSuggester;
 import org.apache.lucene.search.suggest.analyzing.FuzzySuggester;
 import org.apache.lucene.search.suggest.fst.FSTCompletionLookup;
 import org.apache.lucene.search.suggest.fst.WFSTCompletionLookup;
 import org.apache.lucene.search.suggest.jaspell.JaspellLookup;
 import org.apache.lucene.search.suggest.tst.TSTLookup;
-
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.*;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 
@@ -54,11 +55,11 @@ public class LookupBenchmarkTest extends LuceneTestCase {
   private final List<Class<? extends Lookup>> benchmarkClasses = Arrays.asList(
       FuzzySuggester.class,
       AnalyzingSuggester.class,
+      AnalyzingInfixSuggester.class,
       JaspellLookup.class, 
       TSTLookup.class,
       FSTCompletionLookup.class,
       WFSTCompletionLookup.class
-      
       );
 
   private final static int rounds = 15;
@@ -72,12 +73,12 @@ public class LookupBenchmarkTest extends LuceneTestCase {
   /**
    * Input term/weight pairs.
    */
-  private static TermFreq [] dictionaryInput;
+  private static Input [] dictionaryInput;
 
   /**
    * Benchmark term/weight pairs (randomized order).
    */
-  private static List<TermFreq> benchmarkInput;
+  private static List<Input> benchmarkInput;
 
   /**
    * Loads terms and frequencies from Wikipedia (cached).
@@ -85,20 +86,20 @@ public class LookupBenchmarkTest extends LuceneTestCase {
   @BeforeClass
   public static void setup() throws Exception {
     assert false : "disable assertions before running benchmarks!";
-    List<TermFreq> input = readTop50KWiki();
+    List<Input> input = readTop50KWiki();
     Collections.shuffle(input, random);
-    LookupBenchmarkTest.dictionaryInput = input.toArray(new TermFreq [input.size()]);
+    LookupBenchmarkTest.dictionaryInput = input.toArray(new Input [input.size()]);
     Collections.shuffle(input, random);
     LookupBenchmarkTest.benchmarkInput = input;
   }
 
-  static final Charset UTF_8 = Charset.forName("UTF-8");
+  static final Charset UTF_8 = StandardCharsets.UTF_8;
 
   /**
    * Collect the multilingual input for benchmarks/ tests.
    */
-  public static List<TermFreq> readTop50KWiki() throws Exception {
-    List<TermFreq> input = new ArrayList<TermFreq>();
+  public static List<Input> readTop50KWiki() throws Exception {
+    List<Input> input = new ArrayList<>();
     URL resource = LookupBenchmarkTest.class.getResource("Top50KWiki.utf8");
     assert resource != null : "Resource missing: Top50KWiki.utf8";
 
@@ -109,7 +110,7 @@ public class LookupBenchmarkTest extends LuceneTestCase {
       assertTrue("No | separator?: " + line, tab >= 0);
       int weight = Integer.parseInt(line.substring(tab + 1));
       String key = line.substring(0, tab);
-      input.add(new TermFreq(key, weight));
+      input.add(new Input(key, weight));
     }
     br.close();
     return input;
@@ -144,15 +145,7 @@ public class LookupBenchmarkTest extends LuceneTestCase {
     System.err.println("-- RAM consumption");
     for (Class<? extends Lookup> cls : benchmarkClasses) {
       Lookup lookup = buildLookup(cls, dictionaryInput);
-      long sizeInBytes;
-      if (lookup instanceof AnalyzingSuggester) {
-        // Just get size of FST: else we are also measuring
-        // size of MockAnalyzer which is non-trivial and
-        // varies depending on test seed:
-        sizeInBytes = ((AnalyzingSuggester) lookup).sizeInBytes();
-      } else {
-        sizeInBytes = RamUsageEstimator.sizeOf(lookup);
-      }
+      long sizeInBytes = lookup.sizeInBytes();
       System.err.println(
           String.format(Locale.ROOT, "%-15s size[B]:%,13d",
               lookup.getClass().getSimpleName(), 
@@ -163,15 +156,20 @@ public class LookupBenchmarkTest extends LuceneTestCase {
   /**
    * Create {@link Lookup} instance and populate it. 
    */
-  private Lookup buildLookup(Class<? extends Lookup> cls, TermFreq[] input) throws Exception {
+  private Lookup buildLookup(Class<? extends Lookup> cls, Input[] input) throws Exception {
     Lookup lookup = null;
     try {
       lookup = cls.newInstance();
     } catch (InstantiationException e) {
-      Constructor<? extends Lookup> ctor = cls.getConstructor(Analyzer.class);
-      lookup = ctor.newInstance(new MockAnalyzer(random, MockTokenizer.KEYWORD, false));
+      Analyzer a = new MockAnalyzer(random, MockTokenizer.KEYWORD, false);
+      if (cls == AnalyzingInfixSuggester.class) {
+        lookup = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, FSDirectory.open(createTempDir("LookupBenchmarkTest")), a);
+      } else {
+        Constructor<? extends Lookup> ctor = cls.getConstructor(Analyzer.class);
+        lookup = ctor.newInstance(a);
+      }
     }
-    lookup.build(new TermFreqArrayIterator(input));
+    lookup.build(new InputArrayIterator(input));
     return lookup;
   }
 
@@ -214,8 +212,8 @@ public class LookupBenchmarkTest extends LuceneTestCase {
     for (Class<? extends Lookup> cls : benchmarkClasses) {
       final Lookup lookup = buildLookup(cls, dictionaryInput);
 
-      final List<String> input = new ArrayList<String>(benchmarkInput.size());
-      for (TermFreq tf : benchmarkInput) {
+      final List<String> input = new ArrayList<>(benchmarkInput.size());
+      for (Input tf : benchmarkInput) {
         String s = tf.term.utf8ToString();
         String sub = s.substring(0, Math.min(s.length(), 
             minPrefixLen + random.nextInt(maxPrefixLen - minPrefixLen + 1)));
@@ -249,7 +247,7 @@ public class LookupBenchmarkTest extends LuceneTestCase {
     final double NANOS_PER_MS = 1000000;
 
     try {
-      List<Double> times = new ArrayList<Double>();
+      List<Double> times = new ArrayList<>();
       for (int i = 0; i < warmup + rounds; i++) {
           final long start = System.nanoTime();
           guard = callable.call().intValue();

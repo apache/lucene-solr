@@ -35,9 +35,19 @@ import org.slf4j.LoggerFactory;
 /**
  * An updated processor that applies a configured regex to any 
  * CharSequence values found in the selected fields, and replaces 
- * any matches with the configured replacement string
+ * any matches with the configured replacement string.
+ *
  * <p>
  * By default this processor applies itself to no fields.
+ * </p>
+ *
+ * <p>
+ * By default, <code>literalReplacement</code> is set to true, in which
+ * case, the <code>replacement</code> string will be treated literally by
+ * quoting via {@link Matcher#quoteReplacement(String)}. And hence, '\'
+ * and '$' signs will not be processed. When <code>literalReplacement</code>
+ * is set to false, one can perform backreference operations and capture
+ * group substitutions.
  * </p>
  *
  * <p>
@@ -52,8 +62,9 @@ import org.slf4j.LoggerFactory;
  *   &lt;str name="fieldName"&gt;title&lt;/str&gt;
  *   &lt;str name="pattern"&gt;\s+&lt;/str&gt;
  *   &lt;str name="replacement"&gt; &lt;/str&gt;
+ *   &lt;bool name="literalReplacement"&gt;true&lt;/bool&gt;
  * &lt;/processor&gt;</pre>
- * 
+ *
  * @see java.util.regex.Pattern
  */
 public final class RegexReplaceProcessorFactory extends FieldMutatingUpdateProcessorFactory {
@@ -62,9 +73,12 @@ public final class RegexReplaceProcessorFactory extends FieldMutatingUpdateProce
 
   private static final String REPLACEMENT_PARAM = "replacement";
   private static final String PATTERN_PARAM = "pattern";
+  private static final String LITERAL_REPLACEMENT_PARAM = "literalReplacement";
   
   private Pattern pattern;
   private String replacement;
+  // by default, literalReplacementEnabled is set to true to allow backward compatibility
+  private boolean literalReplacementEnabled = true;
 
   @SuppressWarnings("unchecked")
   @Override
@@ -72,7 +86,7 @@ public final class RegexReplaceProcessorFactory extends FieldMutatingUpdateProce
 
     Object patternParam = args.remove(PATTERN_PARAM);
 
-    if(patternParam == null) {
+    if (patternParam == null) {
       throw new SolrException(ErrorCode.SERVER_ERROR, 
                               "Missing required init parameter: " + PATTERN_PARAM);
     }
@@ -85,11 +99,22 @@ public final class RegexReplaceProcessorFactory extends FieldMutatingUpdateProce
     }                                
 
     Object replacementParam = args.remove(REPLACEMENT_PARAM);
-    if(replacementParam == null) {
+    if (replacementParam == null) {
       throw new SolrException(ErrorCode.SERVER_ERROR, 
                               "Missing required init parameter: " + REPLACEMENT_PARAM);
     }
-    replacement = Matcher.quoteReplacement(replacementParam.toString());
+
+    Boolean literalReplacement = args.removeBooleanArg(LITERAL_REPLACEMENT_PARAM);
+
+    if (literalReplacement != null) {
+      literalReplacementEnabled = literalReplacement;
+    }
+
+    if (literalReplacementEnabled) {
+      replacement = Matcher.quoteReplacement(replacementParam.toString());
+    } else {
+      replacement = replacementParam.toString();
+    }
 
     super.init(args);
   }

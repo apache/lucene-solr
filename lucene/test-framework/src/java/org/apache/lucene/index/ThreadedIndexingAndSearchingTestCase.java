@@ -37,15 +37,16 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FailOnNonBulkMergesInfoStream;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.PrintStreamInfoStream;
+import org.apache.lucene.util.TestUtil;
 
 // TODO
 //   - mix in forceMerge, addIndexes
@@ -60,7 +61,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
   protected final AtomicInteger delCount = new AtomicInteger();
   protected final AtomicInteger packCount = new AtomicInteger();
 
-  protected MockDirectoryWrapper dir;
+  protected Directory dir;
   protected IndexWriter writer;
 
   private static class SubDocs {
@@ -124,8 +125,8 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
           @Override
           public void run() {
             // TODO: would be better if this were cross thread, so that we make sure one thread deleting anothers added docs works:
-            final List<String> toDeleteIDs = new ArrayList<String>();
-            final List<SubDocs> toDeleteSubDocs = new ArrayList<SubDocs>();
+            final List<String> toDeleteIDs = new ArrayList<>();
+            final List<SubDocs> toDeleteSubDocs = new ArrayList<>();
             while(System.currentTimeMillis() < stopTime && !failed.get()) {
               try {
 
@@ -135,12 +136,12 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
                   if (VERBOSE) {
                     System.out.println(Thread.currentThread().getName() + ": now long sleep");
                   }
-                  Thread.sleep(_TestUtil.nextInt(random(), 50, 500));
+                  Thread.sleep(TestUtil.nextInt(random(), 50, 500));
                 }
 
                 // Rate limit ingest rate:
                 if (random().nextInt(7) == 5) {
-                  Thread.sleep(_TestUtil.nextInt(random(), 1, 10));
+                  Thread.sleep(TestUtil.nextInt(random(), 1, 10));
                   if (VERBOSE) {
                     System.out.println(Thread.currentThread().getName() + ": done sleep");
                   }
@@ -179,22 +180,22 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
                     }
 
                     final Field packIDField = newStringField("packID", packID, Field.Store.YES);
-                    final List<String> docIDs = new ArrayList<String>();
+                    final List<String> docIDs = new ArrayList<>();
                     final SubDocs subDocs = new SubDocs(packID, docIDs);
-                    final List<Document> docsList = new ArrayList<Document>();
+                    final List<Document> docsList = new ArrayList<>();
 
                     allSubDocs.add(subDocs);
                     doc.add(packIDField);
-                    docsList.add(_TestUtil.cloneDocument(doc));
+                    docsList.add(TestUtil.cloneDocument(doc));
                     docIDs.add(doc.get("docid"));
 
-                    final int maxDocCount = _TestUtil.nextInt(random(), 1, 10);
+                    final int maxDocCount = TestUtil.nextInt(random(), 1, 10);
                     while(docsList.size() < maxDocCount) {
                       doc = docs.nextDoc();
                       if (doc == null) {
                         break;
                       }
-                      docsList.add(_TestUtil.cloneDocument(doc));
+                      docsList.add(TestUtil.cloneDocument(doc));
                       docIDs.add(doc.get("docid"));
                     }
                     addCount.addAndGet(docsList.size());
@@ -315,7 +316,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
   }
 
   protected void runSearchThreads(final long stopTimeMS) throws Exception {
-    final int numThreads = _TestUtil.nextInt(random(), 1, 5);
+    final int numThreads = TestUtil.nextInt(random(), 1, 5);
     final Thread[] searchThreads = new Thread[numThreads];
     final AtomicInteger totHits = new AtomicInteger();
 
@@ -327,6 +328,9 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
       searchThreads[thread] = new Thread() {
           @Override
           public void run() {
+            if (VERBOSE) {
+              System.out.println(Thread.currentThread().getName() + ": launch search thread");
+            }
             while (System.currentTimeMillis() < stopTimeMS) {
               try {
                 final IndexSearcher s = getCurrentSearcher();
@@ -431,11 +435,18 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
 
     Random random = new Random(random().nextLong());
     final LineFileDocs docs = new LineFileDocs(random, true);
-    final File tempDir = _TestUtil.getTempDir(testName);
-    dir = newMockFSDirectory(tempDir); // some subclasses rely on this being MDW
-    dir.setCheckIndexOnClose(false); // don't double-checkIndex, we do it ourselves.
-    final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, 
-        new MockAnalyzer(random())).setInfoStream(new FailOnNonBulkMergesInfoStream());
+    final File tempDir = createTempDir(testName);
+    dir = getDirectory(newMockFSDirectory(tempDir)); // some subclasses rely on this being MDW
+    if (dir instanceof BaseDirectoryWrapper) {
+      ((BaseDirectoryWrapper) dir).setCheckIndexOnClose(false); // don't double-checkIndex, we do it ourselves.
+    }
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
+    final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setInfoStream(new FailOnNonBulkMergesInfoStream());
+    if (conf.getMergePolicy() instanceof MockRandomMergePolicy) {
+      ((MockRandomMergePolicy)conf.getMergePolicy()).setDoNonBulkMerges(false);
+    }
 
     if (LuceneTestCase.TEST_NIGHTLY) {
       // newIWConfig makes smallish max seg size, which
@@ -478,14 +489,25 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
       }
       });
 
+    if (VERBOSE) {
+      conf.setInfoStream(new PrintStreamInfoStream(System.out) {
+          @Override
+          public void message(String component, String message) {
+            if ("TP".equals(component)) {
+              return; // ignore test points!
+            }
+            super.message(component, message);
+          }
+        });
+    }
     writer = new IndexWriter(dir, conf);
-    _TestUtil.reduceOpenFiles(writer);
+    TestUtil.reduceOpenFiles(writer);
 
     final ExecutorService es = random().nextBoolean() ? null : Executors.newCachedThreadPool(new NamedThreadFactory(testName));
 
     doAfterWriter(es);
 
-    final int NUM_INDEX_THREADS = _TestUtil.nextInt(random(), 2, 4);
+    final int NUM_INDEX_THREADS = TestUtil.nextInt(random(), 2, 4);
 
     final int RUN_TIME_SEC = LuceneTestCase.TEST_NIGHTLY ? 300 : RANDOM_MULTIPLIER;
 
@@ -498,7 +520,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
     final Thread[] indexThreads = launchIndexingThreads(docs, NUM_INDEX_THREADS, stopTime, delIDs, delPackIDs, allSubDocs);
 
     if (VERBOSE) {
-      System.out.println("TEST: DONE start indexing threads [" + (System.currentTimeMillis()-t0) + " ms]");
+      System.out.println("TEST: DONE start " + NUM_INDEX_THREADS + " indexing threads [" + (System.currentTimeMillis()-t0) + " ms]");
     }
 
     // Let index build up a bit
@@ -599,7 +621,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
       if (!delIDs.contains(stringID)) {
         final TopDocs hits = s.search(new TermQuery(new Term("docid", stringID)), 1);
         if (hits.totalHits != 1) {
-          System.out.println("doc id=" + stringID + " is not supposed to be deleted, but got hitCount=" + hits.totalHits);
+          System.out.println("doc id=" + stringID + " is not supposed to be deleted, but got hitCount=" + hits.totalHits + "; delIDs=" + delIDs);
           doFail = true;
         }
       }
@@ -614,7 +636,8 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
     assertEquals("index=" + writer.segString() + " addCount=" + addCount + " delCount=" + delCount, addCount.get() - delCount.get(), writer.numDocs());
 
     doClose();
-    writer.close(false);
+
+    writer.shutdown(false);
 
     // Cannot shutdown until after writer is closed because
     // writer has merged segment warmer that uses IS to run
@@ -624,9 +647,9 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
       es.awaitTermination(1, TimeUnit.SECONDS);
     }
 
-    _TestUtil.checkIndex(dir);
+    TestUtil.checkIndex(dir);
     dir.close();
-    _TestUtil.rmDir(tempDir);
+    TestUtil.rm(tempDir);
 
     if (VERBOSE) {
       System.out.println("TEST: done [" + (System.currentTimeMillis()-t0) + " ms]");

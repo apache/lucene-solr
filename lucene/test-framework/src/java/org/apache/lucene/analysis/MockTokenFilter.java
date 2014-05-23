@@ -58,7 +58,8 @@ public final class MockTokenFilter extends TokenFilter {
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
-  
+  private int skippedPositions;
+
   /**
    * Create a new MockTokenFilter.
    * 
@@ -76,7 +77,7 @@ public final class MockTokenFilter extends TokenFilter {
     // initial token with posInc=0 ever
     
     // return the first non-stop word found
-    int skippedPositions = 0;
+    skippedPositions = 0;
     while (input.incrementToken()) {
       if (!filter.run(termAtt.buffer(), 0, termAtt.length())) {
         posIncrAtt.setPositionIncrement(posIncrAtt.getPositionIncrement() + skippedPositions);
@@ -86,5 +87,17 @@ public final class MockTokenFilter extends TokenFilter {
     }
     // reached EOS -- return false
     return false;
+  }
+
+  @Override
+  public void end() throws IOException {
+    super.end();
+    posIncrAtt.setPositionIncrement(posIncrAtt.getPositionIncrement() + skippedPositions);
+  }
+
+  @Override
+  public void reset() throws IOException {
+    super.reset();
+    skippedPositions = 0;
   }
 }

@@ -28,16 +28,16 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 public class TestCJKBigramFilter extends BaseTokenStreamTestCase {
   Analyzer analyzer = new Analyzer() {
     @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer t = new StandardTokenizer(TEST_VERSION_CURRENT, reader);
+    protected TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer t = new StandardTokenizer(TEST_VERSION_CURRENT);
       return new TokenStreamComponents(t, new CJKBigramFilter(t));
     }
   };
   
   Analyzer unibiAnalyzer = new Analyzer() {
     @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer t = new StandardTokenizer(TEST_VERSION_CURRENT, reader);
+    protected TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer t = new StandardTokenizer(TEST_VERSION_CURRENT);
       return new TokenStreamComponents(t, 
           new CJKBigramFilter(t, 0xff, true));
     }
@@ -66,8 +66,8 @@ public class TestCJKBigramFilter extends BaseTokenStreamTestCase {
   public void testHanOnly() throws Exception {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer t = new StandardTokenizer(TEST_VERSION_CURRENT, reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer t = new StandardTokenizer(TEST_VERSION_CURRENT);
         return new TokenStreamComponents(t, new CJKBigramFilter(t, CJKBigramFilter.HAN));
       }
     };
@@ -84,8 +84,8 @@ public class TestCJKBigramFilter extends BaseTokenStreamTestCase {
   public void testAllScripts() throws Exception {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer t = new StandardTokenizer(TEST_VERSION_CURRENT, reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer t = new StandardTokenizer(TEST_VERSION_CURRENT);
         return new TokenStreamComponents(t, 
             new CJKBigramFilter(t, 0xff, false));
       }
@@ -118,8 +118,8 @@ public class TestCJKBigramFilter extends BaseTokenStreamTestCase {
   public void testUnigramsAndBigramsHanOnly() throws Exception {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer t = new StandardTokenizer(TEST_VERSION_CURRENT, reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer t = new StandardTokenizer(TEST_VERSION_CURRENT);
         return new TokenStreamComponents(t, new CJKBigramFilter(t, CJKBigramFilter.HAN, true));
       }
     };

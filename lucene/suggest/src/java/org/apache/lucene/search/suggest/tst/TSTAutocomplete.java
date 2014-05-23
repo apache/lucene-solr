@@ -114,7 +114,7 @@ public class TSTAutocomplete {
           CharSequence s, int x) {
 
     TernaryTreeNode p = root;
-    ArrayList<TernaryTreeNode> suggest = new ArrayList<TernaryTreeNode>();
+    ArrayList<TernaryTreeNode> suggest = new ArrayList<>();
 
     while (p != null) {
       if (s.charAt(x) < p.splitchar) {
@@ -143,7 +143,7 @@ public class TSTAutocomplete {
     }
     p = p.eqKid;
 
-    Stack<TernaryTreeNode> st = new Stack<TernaryTreeNode>();
+    Stack<TernaryTreeNode> st = new Stack<>();
     st.push(p);
     while (!st.empty()) {
       TernaryTreeNode top = st.peek();

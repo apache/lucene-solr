@@ -87,9 +87,6 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
     @Override
     public Query rewrite(IndexReader reader, MultiTermQuery query) throws IOException {
       final BooleanQuery bq = SCORING_BOOLEAN_QUERY_REWRITE.rewrite(reader, query);
-      // TODO: if empty boolean query return NullQuery?
-      if (bq.clauses().isEmpty())
-        return bq;
       // strip the scores off
       final Query result = new ConstantScoreQuery(bq);
       result.setBoost(query.getBoost());
@@ -109,7 +106,7 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
     
     final int size = col.terms.size();
     if (size > 0) {
-      final int sort[] = col.terms.sort(col.termsEnum.getComparator());
+      final int sort[] = col.terms.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
       final float[] boost = col.array.boost;
       final TermContext[] termStates = col.array.termState;
       for (int i = 0; i < size; i++) {

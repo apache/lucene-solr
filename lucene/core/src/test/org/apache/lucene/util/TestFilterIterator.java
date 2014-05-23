@@ -25,7 +25,7 @@ import java.util.NoSuchElementException;
 
 public class TestFilterIterator extends LuceneTestCase {
 
-  private static final Set<String> set = new TreeSet<String>(Arrays.asList("a", "b", "c"));
+  private static final Set<String> set = new TreeSet<>(Arrays.asList("a", "b", "c"));
 
   private static void assertNoMore(Iterator<?> it) {
     assertFalse(it.hasNext());

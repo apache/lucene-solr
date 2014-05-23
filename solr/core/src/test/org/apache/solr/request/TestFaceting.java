@@ -22,12 +22,18 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 
-import org.apache.lucene.index.DocTermOrds;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.uninverting.DocTermOrds;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.FacetParams;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.RefCounted;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -79,12 +85,11 @@ public class TestFaceting extends SolrTestCaseJ4 {
     createIndex(size);
     req = lrf.makeRequest("q","*:*");
 
-    UnInvertedField uif = new UnInvertedField(proto.field(), req.getSearcher());
+    SortedSetDocValues dv = DocValues.getSortedSet(req.getSearcher().getAtomicReader(), proto.field());
 
-    assertEquals(size, uif.getNumTerms());
+    assertEquals(size, dv.getValueCount());
 
-    TermsEnum te = uif.getOrdTermsEnum(req.getSearcher().getAtomicReader());
-    assertEquals(size == 0, te == null);
+    TermsEnum te = dv.termsEnum();
 
     Random r = new Random(size);
     // test seeking by term string
@@ -112,7 +117,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
 
     // test seeking before term
     if (size>0) {
-      assertEquals(size>0, te.seekCeil(new BytesRef("000"), true) != TermsEnum.SeekStatus.END);
+      assertEquals(size>0, te.seekCeil(new BytesRef("000")) != TermsEnum.SeekStatus.END);
       assertEquals(0, te.ord());
       assertEquals(t(0), te.term().utf8ToString());
     }
@@ -270,7 +275,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
   public void testTrieFields() {
     // make sure that terms are correctly filtered even for trie fields that index several
     // terms for a single value
-    List<String> fields = new ArrayList<String>();
+    List<String> fields = new ArrayList<>();
     fields.add("id");
     fields.add("7");
     final String[] suffixes = new String[] {"ti", "tis", "tf", "tfs", "tl", "tls", "td", "tds"};
@@ -321,7 +326,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
   }
 
 
-
+  @Test
   public void testDateFacetsWithMultipleConfigurationForSameField() {
     clearIndex();
     final String f = "bday_dt";
@@ -612,6 +617,367 @@ public class TestFaceting extends SolrTestCaseJ4 {
 
       clearIndex();
       assertU(commit());
+  }
+
+  private void add50ocs() {
+    // Gimme 50 docs with 10 facet fields each
+    for (int idx = 0; idx < 50; ++idx) {
+      String f0 = (idx % 2 == 0) ? "zero_2" : "zero_1";
+      String f1 = (idx % 3 == 0) ? "one_3" : "one_1";
+      String f2 = (idx % 4 == 0) ? "two_4" : "two_1";
+      String f3 = (idx % 5 == 0) ? "three_5" : "three_1";
+      String f4 = (idx % 6 == 0) ? "four_6" : "four_1";
+      String f5 = (idx % 7 == 0) ? "five_7" : "five_1";
+      String f6 = (idx % 8 == 0) ? "six_8" : "six_1";
+      String f7 = (idx % 9 == 0) ? "seven_9" : "seven_1";
+      String f8 = (idx % 10 == 0) ? "eight_10" : "eight_1";
+      String f9 = (idx % 11 == 0) ? "nine_11" : "nine_1";
+      assertU(adoc("id", Integer.toString(idx),
+          "f0_ws", f0,
+          "f1_ws", f1,
+          "f2_ws", f2,
+          "f3_ws", f3,
+          "f4_ws", f4,
+          "f5_ws", f5,
+          "f6_ws", f6,
+          "f7_ws", f7,
+          "f8_ws", f8,
+          "f9_ws", f9
+      ));
+    }
+
+    assertU(commit());
+
+  }
+
+  @Test
+  public void testThreadWait() throws Exception {
+
+    add50ocs();
+    // All I really care about here is the chance to fire off a bunch of threads to the UnIninvertedField.get method
+    // to insure that we get into/out of the lock. Again, it's not entirely deterministic, but it might catch bad
+    // stuff occasionally...
+    assertQ("check threading, more threads than fields",
+        req("q", "id:*", "indent", "true", "fl", "id", "rows", "1"
+            , "facet", "true"
+            , "facet.field", "f0_ws"
+            , "facet.field", "f0_ws"
+            , "facet.field", "f0_ws"
+            , "facet.field", "f0_ws"
+            , "facet.field", "f0_ws"
+            , "facet.field", "f1_ws"
+            , "facet.field", "f1_ws"
+            , "facet.field", "f1_ws"
+            , "facet.field", "f1_ws"
+            , "facet.field", "f1_ws"
+            , "facet.field", "f2_ws"
+            , "facet.field", "f2_ws"
+            , "facet.field", "f2_ws"
+            , "facet.field", "f2_ws"
+            , "facet.field", "f2_ws"
+            , "facet.field", "f3_ws"
+            , "facet.field", "f3_ws"
+            , "facet.field", "f3_ws"
+            , "facet.field", "f3_ws"
+            , "facet.field", "f3_ws"
+            , "facet.field", "f4_ws"
+            , "facet.field", "f4_ws"
+            , "facet.field", "f4_ws"
+            , "facet.field", "f4_ws"
+            , "facet.field", "f4_ws"
+            , "facet.field", "f5_ws"
+            , "facet.field", "f5_ws"
+            , "facet.field", "f5_ws"
+            , "facet.field", "f5_ws"
+            , "facet.field", "f5_ws"
+            , "facet.field", "f6_ws"
+            , "facet.field", "f6_ws"
+            , "facet.field", "f6_ws"
+            , "facet.field", "f6_ws"
+            , "facet.field", "f6_ws"
+            , "facet.field", "f7_ws"
+            , "facet.field", "f7_ws"
+            , "facet.field", "f7_ws"
+            , "facet.field", "f7_ws"
+            , "facet.field", "f7_ws"
+            , "facet.field", "f8_ws"
+            , "facet.field", "f8_ws"
+            , "facet.field", "f8_ws"
+            , "facet.field", "f8_ws"
+            , "facet.field", "f8_ws"
+            , "facet.field", "f9_ws"
+            , "facet.field", "f9_ws"
+            , "facet.field", "f9_ws"
+            , "facet.field", "f9_ws"
+            , "facet.field", "f9_ws"
+            , "facet.threads", "1000"
+            , "facet.limit", "-1"
+        )
+        , "*[count(//lst[@name='facet_fields']/lst)=50]"
+        , "*[count(//lst[@name='facet_fields']/lst/int)=100]"
+    );
+
+  }
+
+  @Test
+  public void testMultiThreadedFacets() throws Exception {
+    add50ocs();
+    assertQ("check no threading, threads == 0",
+        req("q", "id:*", "indent", "true", "fl", "id", "rows", "1"
+            , "facet", "true"
+            , "facet.field", "f0_ws"
+            , "facet.field", "f1_ws"
+            , "facet.field", "f2_ws"
+            , "facet.field", "f3_ws"
+            , "facet.field", "f4_ws"
+            , "facet.field", "f5_ws"
+            , "facet.field", "f6_ws"
+            , "facet.field", "f7_ws"
+            , "facet.field", "f8_ws"
+            , "facet.field", "f9_ws"
+            , "facet.threads", "0"
+            , "facet.limit", "-1"
+        )
+        , "*[count(//lst[@name='facet_fields']/lst)=10]"
+        , "*[count(//lst[@name='facet_fields']/lst/int)=20]"
+        , "//lst[@name='f0_ws']/int[@name='zero_1'][.='25']"
+        , "//lst[@name='f0_ws']/int[@name='zero_2'][.='25']"
+        , "//lst[@name='f1_ws']/int[@name='one_1'][.='33']"
+        , "//lst[@name='f1_ws']/int[@name='one_3'][.='17']"
+        , "//lst[@name='f2_ws']/int[@name='two_1'][.='37']"
+        , "//lst[@name='f2_ws']/int[@name='two_4'][.='13']"
+        , "//lst[@name='f3_ws']/int[@name='three_1'][.='40']"
+        , "//lst[@name='f3_ws']/int[@name='three_5'][.='10']"
+        , "//lst[@name='f4_ws']/int[@name='four_1'][.='41']"
+        , "//lst[@name='f4_ws']/int[@name='four_6'][.='9']"
+        , "//lst[@name='f5_ws']/int[@name='five_1'][.='42']"
+        , "//lst[@name='f5_ws']/int[@name='five_7'][.='8']"
+        , "//lst[@name='f6_ws']/int[@name='six_1'][.='43']"
+        , "//lst[@name='f6_ws']/int[@name='six_8'][.='7']"
+        , "//lst[@name='f7_ws']/int[@name='seven_1'][.='44']"
+        , "//lst[@name='f7_ws']/int[@name='seven_9'][.='6']"
+        , "//lst[@name='f8_ws']/int[@name='eight_1'][.='45']"
+        , "//lst[@name='f8_ws']/int[@name='eight_10'][.='5']"
+        , "//lst[@name='f9_ws']/int[@name='nine_1'][.='45']"
+        , "//lst[@name='f9_ws']/int[@name='nine_11'][.='5']"
+
+    );
+
+    RefCounted<SolrIndexSearcher> currentSearcherRef = h.getCore().getSearcher();
+    try {
+      SolrIndexSearcher currentSearcher = currentSearcherRef.get();
+      SortedSetDocValues ui0 = DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f0_ws");
+      SortedSetDocValues ui1 = DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f1_ws");
+      SortedSetDocValues ui2 = DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f2_ws");
+      SortedSetDocValues ui3 = DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f3_ws");
+      SortedSetDocValues ui4 = DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f4_ws");
+      SortedSetDocValues ui5 = DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f5_ws");
+      SortedSetDocValues ui6 = DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f6_ws");
+      SortedSetDocValues ui7 = DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f7_ws");
+      SortedSetDocValues ui8 = DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f8_ws");
+      SortedSetDocValues ui9 = DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f9_ws");
+
+      assertQ("check threading, more threads than fields",
+          req("q", "id:*", "indent", "true", "fl", "id", "rows", "1"
+              , "facet", "true"
+              , "facet.field", "f0_ws"
+              , "facet.field", "f1_ws"
+              , "facet.field", "f2_ws"
+              , "facet.field", "f3_ws"
+              , "facet.field", "f4_ws"
+              , "facet.field", "f5_ws"
+              , "facet.field", "f6_ws"
+              , "facet.field", "f7_ws"
+              , "facet.field", "f8_ws"
+              , "facet.field", "f9_ws"
+              , "facet.threads", "1000"
+              , "facet.limit", "-1"
+          )
+          , "*[count(//lst[@name='facet_fields']/lst)=10]"
+          , "*[count(//lst[@name='facet_fields']/lst/int)=20]"
+          , "//lst[@name='f0_ws']/int[@name='zero_1'][.='25']"
+          , "//lst[@name='f0_ws']/int[@name='zero_2'][.='25']"
+          , "//lst[@name='f1_ws']/int[@name='one_1'][.='33']"
+          , "//lst[@name='f1_ws']/int[@name='one_3'][.='17']"
+          , "//lst[@name='f2_ws']/int[@name='two_1'][.='37']"
+          , "//lst[@name='f2_ws']/int[@name='two_4'][.='13']"
+          , "//lst[@name='f3_ws']/int[@name='three_1'][.='40']"
+          , "//lst[@name='f3_ws']/int[@name='three_5'][.='10']"
+          , "//lst[@name='f4_ws']/int[@name='four_1'][.='41']"
+          , "//lst[@name='f4_ws']/int[@name='four_6'][.='9']"
+          , "//lst[@name='f5_ws']/int[@name='five_1'][.='42']"
+          , "//lst[@name='f5_ws']/int[@name='five_7'][.='8']"
+          , "//lst[@name='f6_ws']/int[@name='six_1'][.='43']"
+          , "//lst[@name='f6_ws']/int[@name='six_8'][.='7']"
+          , "//lst[@name='f7_ws']/int[@name='seven_1'][.='44']"
+          , "//lst[@name='f7_ws']/int[@name='seven_9'][.='6']"
+          , "//lst[@name='f8_ws']/int[@name='eight_1'][.='45']"
+          , "//lst[@name='f8_ws']/int[@name='eight_10'][.='5']"
+          , "//lst[@name='f9_ws']/int[@name='nine_1'][.='45']"
+          , "//lst[@name='f9_ws']/int[@name='nine_11'][.='5']"
+
+      );
+      assertQ("check threading, fewer threads than fields",
+          req("q", "id:*", "indent", "true", "fl", "id", "rows", "1"
+              , "facet", "true"
+              , "facet.field", "f0_ws"
+              , "facet.field", "f1_ws"
+              , "facet.field", "f2_ws"
+              , "facet.field", "f3_ws"
+              , "facet.field", "f4_ws"
+              , "facet.field", "f5_ws"
+              , "facet.field", "f6_ws"
+              , "facet.field", "f7_ws"
+              , "facet.field", "f8_ws"
+              , "facet.field", "f9_ws"
+              , "facet.threads", "3"
+              , "facet.limit", "-1"
+          )
+          , "*[count(//lst[@name='facet_fields']/lst)=10]"
+          , "*[count(//lst[@name='facet_fields']/lst/int)=20]"
+          , "//lst[@name='f0_ws']/int[@name='zero_1'][.='25']"
+          , "//lst[@name='f0_ws']/int[@name='zero_2'][.='25']"
+          , "//lst[@name='f1_ws']/int[@name='one_1'][.='33']"
+          , "//lst[@name='f1_ws']/int[@name='one_3'][.='17']"
+          , "//lst[@name='f2_ws']/int[@name='two_1'][.='37']"
+          , "//lst[@name='f2_ws']/int[@name='two_4'][.='13']"
+          , "//lst[@name='f3_ws']/int[@name='three_1'][.='40']"
+          , "//lst[@name='f3_ws']/int[@name='three_5'][.='10']"
+          , "//lst[@name='f4_ws']/int[@name='four_1'][.='41']"
+          , "//lst[@name='f4_ws']/int[@name='four_6'][.='9']"
+          , "//lst[@name='f5_ws']/int[@name='five_1'][.='42']"
+          , "//lst[@name='f5_ws']/int[@name='five_7'][.='8']"
+          , "//lst[@name='f6_ws']/int[@name='six_1'][.='43']"
+          , "//lst[@name='f6_ws']/int[@name='six_8'][.='7']"
+          , "//lst[@name='f7_ws']/int[@name='seven_1'][.='44']"
+          , "//lst[@name='f7_ws']/int[@name='seven_9'][.='6']"
+          , "//lst[@name='f8_ws']/int[@name='eight_1'][.='45']"
+          , "//lst[@name='f8_ws']/int[@name='eight_10'][.='5']"
+          , "//lst[@name='f9_ws']/int[@name='nine_1'][.='45']"
+          , "//lst[@name='f9_ws']/int[@name='nine_11'][.='5']"
+
+      );
+
+      // After this all, the uninverted fields should be exactly the same as they were the first time, even if we
+      // blast a whole bunch of identical fields at the facet code. Which, BTW, doesn't detect
+      // if you've asked for the same field more than once.
+      // The way fetching the uninverted field is written, all this is really testing is if the cache is working.
+      // It's NOT testing whether the pending/sleep is actually functioning, I had to do that by hand since I don't
+      // see how to make sure that uninverting the field multiple times actually happens to hit the wait state.
+      assertQ("check threading, more threads than fields",
+          req("q", "id:*", "indent", "true", "fl", "id", "rows", "1"
+              , "facet", "true"
+              , "facet.field", "f0_ws"
+              , "facet.field", "f0_ws"
+              , "facet.field", "f0_ws"
+              , "facet.field", "f0_ws"
+              , "facet.field", "f0_ws"
+              , "facet.field", "f1_ws"
+              , "facet.field", "f1_ws"
+              , "facet.field", "f1_ws"
+              , "facet.field", "f1_ws"
+              , "facet.field", "f1_ws"
+              , "facet.field", "f2_ws"
+              , "facet.field", "f2_ws"
+              , "facet.field", "f2_ws"
+              , "facet.field", "f2_ws"
+              , "facet.field", "f2_ws"
+              , "facet.field", "f3_ws"
+              , "facet.field", "f3_ws"
+              , "facet.field", "f3_ws"
+              , "facet.field", "f3_ws"
+              , "facet.field", "f3_ws"
+              , "facet.field", "f4_ws"
+              , "facet.field", "f4_ws"
+              , "facet.field", "f4_ws"
+              , "facet.field", "f4_ws"
+              , "facet.field", "f4_ws"
+              , "facet.field", "f5_ws"
+              , "facet.field", "f5_ws"
+              , "facet.field", "f5_ws"
+              , "facet.field", "f5_ws"
+              , "facet.field", "f5_ws"
+              , "facet.field", "f6_ws"
+              , "facet.field", "f6_ws"
+              , "facet.field", "f6_ws"
+              , "facet.field", "f6_ws"
+              , "facet.field", "f6_ws"
+              , "facet.field", "f7_ws"
+              , "facet.field", "f7_ws"
+              , "facet.field", "f7_ws"
+              , "facet.field", "f7_ws"
+              , "facet.field", "f7_ws"
+              , "facet.field", "f8_ws"
+              , "facet.field", "f8_ws"
+              , "facet.field", "f8_ws"
+              , "facet.field", "f8_ws"
+              , "facet.field", "f8_ws"
+              , "facet.field", "f9_ws"
+              , "facet.field", "f9_ws"
+              , "facet.field", "f9_ws"
+              , "facet.field", "f9_ws"
+              , "facet.field", "f9_ws"
+              , "facet.threads", "1000"
+              , "facet.limit", "-1"
+          )
+          , "*[count(//lst[@name='facet_fields']/lst)=50]"
+          , "*[count(//lst[@name='facet_fields']/lst/int)=100]"
+      );
+
+      // Now, are all the UnInvertedFields still the same? Meaning they weren't re-fetched even when a bunch were
+      // requested at the same time?
+      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
+          ui0, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f0_ws"));
+      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
+          ui1, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f1_ws"));
+      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
+          ui2, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f2_ws"));
+      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
+          ui3, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f3_ws"));
+      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
+          ui4, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f4_ws"));
+      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
+          ui5, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f5_ws"));
+      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
+          ui6, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f6_ws"));
+      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
+          ui7, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f7_ws"));
+      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
+          ui8, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f8_ws"));
+      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
+          ui9, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f9_ws"));
+    } finally {
+      currentSearcherRef.decref();
+    }
+  }
+  
+  // assert same instance: either same object, or both wrapping same single-valued object
+  private void assertEquals(String msg, SortedSetDocValues dv1, SortedSetDocValues dv2) {
+    SortedDocValues singleton1 = DocValues.unwrapSingleton(dv1);
+    SortedDocValues singleton2 = DocValues.unwrapSingleton(dv2);
+    if (singleton1 == null || singleton2 == null) {
+      // actually a multi-valued field
+      if (dv1 instanceof MultiDocValues.MultiSortedSetDocValues) {
+        // if we produced more than one segment, ensure the core ordinal map is the same object
+        assertTrue(dv2 instanceof MultiDocValues.MultiSortedSetDocValues);
+        assertSame(((MultiDocValues.MultiSortedSetDocValues) dv1).mapping, 
+                   ((MultiDocValues.MultiSortedSetDocValues) dv2).mapping);
+      } else {
+        // otherwise, same atomic instance
+        assertSame(dv1, dv2);
+      }
+    } else {
+      // just wrapping a field that is actually single-valued
+      if (singleton1 instanceof MultiDocValues.MultiSortedDocValues) {
+        // if we produced more than one segment, ensure the core ordinal map is the same object
+        assertTrue(singleton2 instanceof MultiDocValues.MultiSortedDocValues);
+        assertSame(((MultiDocValues.MultiSortedDocValues) singleton1).mapping, 
+                   ((MultiDocValues.MultiSortedDocValues) singleton2).mapping);
+      } else {
+        // otherwise, same atomic instance
+        assertSame(singleton1, singleton2);
+      }
+    }
   }
 }
 

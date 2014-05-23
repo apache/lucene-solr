@@ -20,11 +20,13 @@ package org.apache.lucene.search;
 import java.util.Arrays;
 
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.StoredDocument;
@@ -63,7 +65,7 @@ public class TestDateSort extends LuceneTestCase {
     writer.addDocument(createDocument("Document 5", 1192209943000L));
 
     reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
   }
 
   @Override
@@ -110,6 +112,7 @@ public class TestDateSort extends LuceneTestCase {
     String dateTimeString = DateTools.timeToString(time, DateTools.Resolution.SECOND);
     Field dateTimeField = newStringField(DATE_TIME_FIELD, dateTimeString, Field.Store.YES);
     document.add(dateTimeField);
+    document.add(new SortedDocValuesField(DATE_TIME_FIELD, new BytesRef(dateTimeString)));
 
     return document;
   }

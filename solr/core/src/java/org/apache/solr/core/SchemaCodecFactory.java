@@ -3,7 +3,7 @@ package org.apache.solr.core;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene42.Lucene42Codec;
+import org.apache.lucene.codecs.lucene46.Lucene46Codec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -51,28 +51,26 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
   @Override
   public void init(NamedList args) {
     super.init(args);
-    codec = new Lucene42Codec() {
+    codec = new Lucene46Codec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
-        final SchemaField fieldOrNull = core.getLatestSchema().getFieldOrNull(field);
-        if (fieldOrNull == null) {
-          throw new IllegalArgumentException("no such field " + field);
-        }
-        String postingsFormatName = fieldOrNull.getType().getPostingsFormat();
-        if (postingsFormatName != null) {
-          return PostingsFormat.forName(postingsFormatName);
+        final SchemaField schemaField = core.getLatestSchema().getFieldOrNull(field);
+        if (schemaField != null) {
+          String postingsFormatName = schemaField.getType().getPostingsFormat();
+          if (postingsFormatName != null) {
+            return PostingsFormat.forName(postingsFormatName);
+          }
         }
         return super.getPostingsFormatForField(field);
       }
       @Override
       public DocValuesFormat getDocValuesFormatForField(String field) {
-        final SchemaField fieldOrNull = core.getLatestSchema().getFieldOrNull(field);
-        if (fieldOrNull == null) {
-          throw new IllegalArgumentException("no such field " + field);
-        }
-        String docValuesFormatName = fieldOrNull.getType().getDocValuesFormat();
-        if (docValuesFormatName != null) {
-          return DocValuesFormat.forName(docValuesFormatName);
+        final SchemaField schemaField = core.getLatestSchema().getFieldOrNull(field);
+        if (schemaField != null) {
+          String docValuesFormatName = schemaField.getType().getDocValuesFormat();
+          if (docValuesFormatName != null) {
+            return DocValuesFormat.forName(docValuesFormatName);
+          }
         }
         return super.getDocValuesFormatForField(field);
       }

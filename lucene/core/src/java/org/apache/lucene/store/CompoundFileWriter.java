@@ -54,16 +54,17 @@ final class CompoundFileWriter implements Closeable{
   // versioning for the .cfs file
   static final String DATA_CODEC = "CompoundFileWriterData";
   static final int VERSION_START = 0;
-  static final int VERSION_CURRENT = VERSION_START;
+  static final int VERSION_CHECKSUM = 1;
+  static final int VERSION_CURRENT = VERSION_CHECKSUM;
 
   // versioning for the .cfe file
   static final String ENTRY_CODEC = "CompoundFileWriterEntries";
 
   private final Directory directory;
-  private final Map<String, FileEntry> entries = new HashMap<String, FileEntry>();
-  private final Set<String> seenIDs = new HashSet<String>();
+  private final Map<String, FileEntry> entries = new HashMap<>();
+  private final Set<String> seenIDs = new HashSet<>();
   // all entries that are written to a sep. file but not yet moved into CFS
-  private final Queue<FileEntry> pendingEntries = new LinkedList<FileEntry>();
+  private final Queue<FileEntry> pendingEntries = new LinkedList<>();
   private boolean closed = false;
   private IndexOutput dataOut;
   private final AtomicBoolean outputTaken = new AtomicBoolean(false);
@@ -128,10 +129,10 @@ final class CompoundFileWriter implements Closeable{
     if (closed) {
       return;
     }
-    IOException priorException = null;
     IndexOutput entryTableOut = null;
     // TODO this code should clean up after itself
     // (remove partial .cfs/.cfe)
+    boolean success = false;
     try {
       if (!pendingEntries.isEmpty() || outputTaken.get()) {
         throw new IllegalStateException("CFS has pending open files");
@@ -140,18 +141,26 @@ final class CompoundFileWriter implements Closeable{
       // open the compound stream
       getOutput();
       assert dataOut != null;
-    } catch (IOException e) {
-      priorException = e;
+      CodecUtil.writeFooter(dataOut);
+      success = true;
     } finally {
-      IOUtils.closeWhileHandlingException(priorException, dataOut);
+      if (success) {
+        IOUtils.close(dataOut);
+      } else {
+        IOUtils.closeWhileHandlingException(dataOut);
+      }
     }
+    success = false;
     try {
       entryTableOut = directory.createOutput(entryTableName, IOContext.DEFAULT);
       writeEntryTable(entries.values(), entryTableOut);
-    } catch (IOException e) {
-      priorException = e;
+      success = true;
     } finally {
-      IOUtils.closeWhileHandlingException(priorException, entryTableOut);
+      if (success) {
+        IOUtils.close(entryTableOut);
+      } else {
+        IOUtils.closeWhileHandlingException(entryTableOut);
+      }
     }
   }
 
@@ -202,6 +211,7 @@ final class CompoundFileWriter implements Closeable{
       entryOut.writeLong(fe.offset);
       entryOut.writeLong(fe.length);
     }
+    CodecUtil.writeFooter(entryOut);
   }
 
   IndexOutput createOutput(String name, IOContext context) throws IOException {
@@ -225,9 +235,6 @@ final class CompoundFileWriter implements Closeable{
         out = new DirectCFSIndexOutput(getOutput(), entry, false);
       } else {
         entry.dir = this.directory;
-        if (directory.fileExists(name)) {
-          throw new IllegalArgumentException("File " + name + " already exists");
-        }
         out = new DirectCFSIndexOutput(directory.createOutput(name, context), entry,
             true);
       }
@@ -299,11 +306,6 @@ final class CompoundFileWriter implements Closeable{
     }
 
     @Override
-    public void flush() throws IOException {
-      delegate.flush();
-    }
-
-    @Override
     public void close() throws IOException {
       if (!closed) {
         closed = true;
@@ -327,12 +329,6 @@ final class CompoundFileWriter implements Closeable{
     }
 
     @Override
-    public long length() throws IOException {
-      assert !closed;
-      return delegate.length() - offset;
-    }
-
-    @Override
     public void writeByte(byte b) throws IOException {
       assert !closed;
       writtenBytes++;
@@ -344,6 +340,11 @@ final class CompoundFileWriter implements Closeable{
       assert !closed;
       writtenBytes += length;
       delegate.writeBytes(b, offset, length);
+    }
+
+    @Override
+    public long getChecksum() throws IOException {
+      return delegate.getChecksum();
     }
   }
 

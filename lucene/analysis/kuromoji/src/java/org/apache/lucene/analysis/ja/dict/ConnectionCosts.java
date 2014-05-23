@@ -24,6 +24,7 @@ import java.io.InputStream;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.InputStreamDataInput;
+import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -38,9 +39,9 @@ public final class ConnectionCosts {
   private final short[][] costs; // array is backward IDs first since get is called using the same backward ID consecutively. maybe doesn't matter.
   
   private ConnectionCosts() throws IOException {
-    IOException priorE = null;
     InputStream is = null;
     short[][] costs = null;
+    boolean success = false;
     try {
       is = BinaryDictionary.getClassResource(getClass(), FILENAME_SUFFIX);
       is = new BufferedInputStream(is);
@@ -53,15 +54,17 @@ public final class ConnectionCosts {
       for (int j = 0; j < costs.length; j++) {
         final short[] a = costs[j];
         for (int i = 0; i < a.length; i++) {
-          int raw = in.readVInt();
-          accum += (raw >>> 1) ^ -(raw & 1);
+          accum += BitUtil.zigZagDecode(in.readVInt());
           a[i] = (short)accum;
         }
       }
-    } catch (IOException ioe) {
-      priorE = ioe;
+      success = true;
     } finally {
-      IOUtils.closeWhileHandlingException(priorE, is);
+      if (success) {
+        IOUtils.close(is);
+      } else {
+        IOUtils.closeWhileHandlingException(is);
+      }
     }
     
     this.costs = costs;

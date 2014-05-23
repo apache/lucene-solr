@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 import java.util.Map;
 
 /**
- * Factory for {@link JapaneseKatakanaStemFilterFactory}.
+ * Factory for {@link JapaneseKatakanaStemFilter}.
  * <pre class="prettyprint">
  * &lt;fieldType name="text_ja" class="solr.TextField"&gt;
  *   &lt;analyzer&gt;

@@ -84,7 +84,7 @@ public class FunctionQParser extends QParser {
       consumeArgumentDelimiter();
 
       if (lst == null) {
-        lst = new ArrayList<ValueSource>(2);
+        lst = new ArrayList<>(2);
         lst.add(valsource);
       }
     }
@@ -208,7 +208,7 @@ public class FunctionQParser extends QParser {
    * @return List&lt;ValueSource&gt;
    */
   public List<ValueSource> parseValueSourceList() throws SyntaxError {
-    List<ValueSource> sources = new ArrayList<ValueSource>(3);
+    List<ValueSource> sources = new ArrayList<>(3);
     while (hasMoreArguments()) {
       sources.add(parseValueSource(true));
     }

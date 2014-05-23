@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -48,16 +47,10 @@ import org.apache.solr.common.util.NamedList;
 public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
   String t1="a_t";
-  String i1="a_si";
+  String i1="a_i1";
   String nint = "n_i";
   String tint = "n_ti";
-  String nfloat = "n_f";
-  String tfloat = "n_tf";
-  String ndouble = "n_d";
-  String tdouble = "n_td";
-  String nlong = "n_l";
   String tlong = "other_tl1";
-  String ndate = "n_dt";
   String tdate_a = "a_n_tdt";
   String tdate_b = "b_n_tdt";
   
@@ -105,6 +98,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
            t1,"no eggs on wall, lesson learned", 
            oddField, "odd man out");
 
+    indexr(id, "1001", "lowerfilt", "toyota"); // for spellcheck
+
     indexr(id, 14, "SubjectTerms_mfacet", new String[]  {"mathematical models", "mathematical analysis"});
     indexr(id, 15, "SubjectTerms_mfacet", new String[]  {"test 1", "test 2", "test3"});
     indexr(id, 16, "SubjectTerms_mfacet", new String[]  {"test 1", "test 2", "test3"});
@@ -113,6 +108,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       vals[i] = "test " + i;
     }
     indexr(id, 17, "SubjectTerms_mfacet", vals);
+    
+    
 
     for (int i=100; i<150; i++) {
       indexr(id, i);      
@@ -123,6 +120,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     handle.clear();
     handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
+    handle.put("_version_", SKIPVAL); // not a cloud test, but may use updateLog
 
     // random value sort
     for (String f : fieldNames) {
@@ -224,6 +222,9 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     query("q","*:*", "fl", "id", "fl",nint, "fl",tint,"sort",i1 + " desc");
     query("q","*:*", "fl",nint, "fl", "id", "fl",tint,"sort",i1 + " desc");
 
+    // basic spellcheck testing
+    query("q", "toyata", "fl", "id,lowerfilt", "spellcheck", true, "spellcheck.q", "toyata", "qt", "spellCheckCompRH_Direct", "shards.qt", "spellCheckCompRH_Direct");
+
     stress=0;  // turn off stress... we want to tex max combos in min time
     for (int i=0; i<25*RANDOM_MULTIPLIER; i++) {
       String f = fieldNames[random().nextInt(fieldNames.length)];
@@ -262,7 +263,17 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     // test field that is valid in schema and missing in some shards
     query("q","*:*", "rows",100, "facet","true", "facet.field",oddField, "facet.mincount",2);
 
+    query("q","*:*", "sort",i1+" desc", "stats", "true", "stats.field", "stats_dt");
     query("q","*:*", "sort",i1+" desc", "stats", "true", "stats.field", i1);
+    query("q","*:*", "sort",i1+" desc", "stats", "true", "stats.field", tdate_a);
+    query("q","*:*", "sort",i1+" desc", "stats", "true", "stats.field", tdate_b);
+
+    handle.put("stats_fields", UNORDERED);
+    query("q","*:*", "sort",i1+" desc", "stats", "true", 
+          "stats.field", "stats_dt", 
+          "stats.field", i1, 
+          "stats.field", tdate_a, 
+          "stats.field", tdate_b);
 
     /*** TODO: the failure may come back in "exception"
     try {
@@ -314,6 +325,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     handle.put("explain", SKIPVAL);  // internal docids differ, idf differs w/o global idf
     handle.put("debug", UNORDERED);
     handle.put("time", SKIPVAL);
+    handle.put("track", SKIP); //track is not included in single node search
     query("q","now their fox sat had put","fl","*,score",CommonParams.DEBUG_QUERY, "true");
     query("q", "id:[1 TO 5]", CommonParams.DEBUG_QUERY, "true");
     query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.TIMING);
@@ -332,14 +344,14 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     
     assertNotNull("missing shard info", sinfo);
     assertEquals("should have an entry for each shard ["+sinfo+"] "+shards, cnt, sinfo.size());
-    
+
     // test shards.tolerant=true
     for(int numDownServers = 0; numDownServers < jettys.size()-1; numDownServers++)
     {
-      List<JettySolrRunner> upJettys = new ArrayList<JettySolrRunner>(jettys);
-      List<SolrServer> upClients = new ArrayList<SolrServer>(clients);
-      List<JettySolrRunner> downJettys = new ArrayList<JettySolrRunner>();
-      List<String> upShards = new ArrayList<String>(Arrays.asList(shardsArr));
+      List<JettySolrRunner> upJettys = new ArrayList<>(jettys);
+      List<SolrServer> upClients = new ArrayList<>(clients);
+      List<JettySolrRunner> downJettys = new ArrayList<>();
+      List<String> upShards = new ArrayList<>(Arrays.asList(shardsArr));
       for(int i=0; i<numDownServers; i++)
       {
         // shut down some of the jettys
@@ -350,7 +362,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
         ChaosMonkey.stop(downJetty);
         downJettys.add(downJetty);
       }
-      
+
       queryPartialResults(upShards, upClients, 
           "q","*:*",
           "facet","true", 
@@ -358,7 +370,43 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           "facet.limit",5,
           ShardParams.SHARDS_INFO,"true",
           ShardParams.SHARDS_TOLERANT,"true");
-      
+
+      queryPartialResults(upShards, upClients,
+          "q", "*:*",
+          "facet", "true",
+          "facet.query", i1 + ":[1 TO 50]",
+          ShardParams.SHARDS_INFO, "true",
+          ShardParams.SHARDS_TOLERANT, "true");
+
+      // test group query
+      queryPartialResults(upShards, upClients,
+          "q", "*:*",
+          "rows", 100,
+          "fl", "id," + i1,
+          "group", "true",
+          "group.query", t1 + ":kings OR " + t1 + ":eggs",
+          "group.limit", 10,
+          "sort", i1 + " asc, id asc",
+          CommonParams.TIME_ALLOWED, 1,
+          ShardParams.SHARDS_INFO, "true",
+          ShardParams.SHARDS_TOLERANT, "true");
+
+      queryPartialResults(upShards, upClients,
+          "q", "*:*",
+          "stats", "true",
+          "stats.field", i1,
+          ShardParams.SHARDS_INFO, "true",
+          ShardParams.SHARDS_TOLERANT, "true");
+
+      queryPartialResults(upShards, upClients,
+          "q", "toyata",
+          "spellcheck", "true",
+          "spellcheck.q", "toyata",
+          "qt", "spellCheckCompRH_Direct",
+          "shards.qt", "spellCheckCompRH_Direct",
+          ShardParams.SHARDS_INFO, "true",
+          ShardParams.SHARDS_TOLERANT, "true");
+
       // restart the jettys
       for (JettySolrRunner downJetty : downJettys) {
         downJetty.start();
@@ -373,10 +421,22 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     
     // Thread.sleep(10000000000L);
 
-    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity
+    del("*:*"); // delete all docs and test stats request
+    commit();
+    try {
+      query("q", "*:*", "stats", "true", 
+            "stats.field", "stats_dt", 
+            "stats.field", i1, 
+            "stats.field", tdate_a, 
+            "stats.field", tdate_b,
+            "stats.calcdistinct", "true");
+    } catch (Exception e) {
+      log.error("Exception on distrib stats request on empty index", e);
+      fail("NullPointerException with stats request on empty index");
+    }
   }
   
-  protected void queryPartialResults(final List<String> upShards, 
+  protected void queryPartialResults(final List<String> upShards,
                                      final List<SolrServer> upClients, 
                                      Object... q) throws Exception {
     
@@ -388,7 +448,10 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     // TODO: look into why passing true causes fails
     params.set("distrib", "false");
     final QueryResponse controlRsp = controlClient.query(params);
-    validateControlData(controlRsp);
+    // if time.allowed is specified then even a control response can return a partialResults header
+    if (params.get(CommonParams.TIME_ALLOWED) == null)  {
+      validateControlData(controlRsp);
+    }
 
     params.remove("distrib");
     setDistributedParams(params);
@@ -453,8 +516,10 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           // make sure that it responded if it's up
           if (upShards.contains(s)) {
             assertTrue("Expected to find numFound in the up shard info",info.get("numFound") != null);
+            assertTrue("Expected to find shardAddress in the up shard info",info.get("shardAddress") != null);
           }
           else {
+            assertEquals("Expected to find the partialResults header set if a shard is down", Boolean.TRUE, rsp.getHeader().get("partialResults"));
             assertTrue("Expected to find error in the down shard info",info.get("error") != null);
           }
         }
@@ -463,4 +528,9 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     }
   }
   
+  @Override
+  public void validateControlData(QueryResponse control) throws Exception {
+    super.validateControlData(control);
+    assertNull("Expected the partialResults header to be null", control.getHeader().get("partialResults"));
+  }
 }

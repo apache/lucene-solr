@@ -48,6 +48,9 @@ public interface CommonParams {
   /** query string */
   public static final String Q ="q";
   
+  /** distrib string */
+  public static final String DISTRIB = "distrib";
+  
   /** sort order */
   public static final String SORT ="sort";
   
@@ -59,15 +62,24 @@ public interface CommonParams {
   
   /** number of documents to return starting at "start" */
   public static final String ROWS ="rows";
+
+  // SOLR-4228 start
+  /** handler value for SolrPing */
+  public static final String PING_HANDLER = "/admin/ping";
   
-  //Issue 1726 start
-  /** score of the last document of the previous page */
-  public static final String PAGESCORE ="pageScore";
+  /** "action" parameter for SolrPing */
+  public static final String ACTION = "action";
   
-  /** docid of the last document of the previous page */
-  public static final String PAGEDOC ="pageDoc";
-  //Issue 1726 end
+  /** "disable" value for SolrPing action */
+  public static final String DISABLE = "disable";
   
+  /** "enable" value for SolrPing action */
+  public static final String ENABLE = "enable";
+  
+  /** "ping" value for SolrPing action */
+  public static final String PING = "ping";
+  // SOLR-4228 end
+
   /** stylesheet to apply to XML results */
   public static final String XSL ="xsl";
   
@@ -105,7 +117,10 @@ public interface CommonParams {
    * {@link #DEBUG} value indicating an interest in debug output related to the Query (parsing, etc.)
    */
   public static final String QUERY = "query";
-  
+  /**
+   * {@link #DEBUG} value indicating an interest in debug output related to the distributed tracking
+   */
+  public static final String TRACK = "track";
   /** 
    * boolean indicating whether score explanations should structured (true), 
    * or plain text (false)
@@ -169,6 +184,9 @@ public interface CommonParams {
     }
   };
 
+  /** which parameters to log (if not supplied all parameters will be logged) **/
+  public static final String LOG_PARAMS_LIST = "logParamsList";
+
   public static final String EXCLUDE = "ex";
   public static final String TAG = "tag";
   public static final String TERMS = "terms";
@@ -188,6 +206,16 @@ public interface CommonParams {
    * smallest cost to largest. If cost>=100 and the query implements PostFilter, then that interface will be used to do post query filtering.
    */
   public static final String COST = "cost";
+
+  /**
+   * Request ID parameter added to the request when using debug=track
+   */
+  public static final String REQUEST_ID = "rid";
+
+  /**
+   * Request Purpose parameter added to each internal shard request when using debug=track
+   */
+  public static final String REQUEST_PURPOSE = "requestPurpose";
 
 }
 

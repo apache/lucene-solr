@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="Solr morphlines cell library">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/solr/contrib/morphlines-cell/lib" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+    <jarDirectory url="file://$PROJECT_DIR$/solr/contrib/morphlines-cell/lib" recursive="false" />
+  </library>
+</component>

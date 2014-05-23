@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.MergedIterator;
 
 /**
  * Exposes flex API, merged from flex API of sub-segments.
@@ -48,7 +49,7 @@ import org.apache.lucene.util.BytesRef;
 public final class MultiFields extends Fields {
   private final Fields[] subs;
   private final ReaderSlice[] subSlices;
-  private final Map<String,Terms> terms = new ConcurrentHashMap<String,Terms>();
+  private final Map<String,Terms> terms = new ConcurrentHashMap<>();
 
   /** Returns a single {@link Fields} instance for this
    *  reader, merging fields/terms/docs/positions on the
@@ -68,8 +69,8 @@ public final class MultiFields extends Fields {
         // already an atomic reader / reader with one leave
         return leaves.get(0).reader().fields();
       default:
-        final List<Fields> fields = new ArrayList<Fields>();
-        final List<ReaderSlice> slices = new ArrayList<ReaderSlice>();
+        final List<Fields> fields = new ArrayList<>();
+        final List<ReaderSlice> slices = new ArrayList<>();
         for (final AtomicReaderContext ctx : leaves) {
           final AtomicReader r = ctx.reader();
           final Fields f = r.fields();
@@ -150,7 +151,7 @@ public final class MultiFields extends Fields {
     final Terms terms = getTerms(r, field);
     if (terms != null) {
       final TermsEnum termsEnum = terms.iterator(null);
-      if (termsEnum.seekExact(term, true)) {
+      if (termsEnum.seekExact(term)) {
         return termsEnum.docs(liveDocs, null, flags);
       }
     }
@@ -178,7 +179,7 @@ public final class MultiFields extends Fields {
     final Terms terms = getTerms(r, field);
     if (terms != null) {
       final TermsEnum termsEnum = terms.iterator(null);
-      if (termsEnum.seekExact(term, true)) {
+      if (termsEnum.seekExact(term)) {
         return termsEnum.docsAndPositions(liveDocs, null, flags);
       }
     }
@@ -202,7 +203,7 @@ public final class MultiFields extends Fields {
     for(int i=0;i<subs.length;i++) {
       subIterators[i] = subs[i].iterator();
     }
-    return new MergedIterator<String>(subIterators);
+    return new MergedIterator<>(subIterators);
   }
 
   @Override
@@ -214,8 +215,8 @@ public final class MultiFields extends Fields {
 
     // Lazy init: first time this field is requested, we
     // create & add to terms:
-    final List<Terms> subs2 = new ArrayList<Terms>();
-    final List<ReaderSlice> slices2 = new ArrayList<ReaderSlice>();
+    final List<Terms> subs2 = new ArrayList<>();
+    final List<ReaderSlice> slices2 = new ArrayList<>();
 
     // Gather all sub-readers that share this field
     for(int i=0;i<subs.length;i++) {
@@ -268,7 +269,7 @@ public final class MultiFields extends Fields {
    *  will be unavailable.
    */
   public static Collection<String> getIndexedFields(IndexReader reader) {
-    final Collection<String> fields = new HashSet<String>();
+    final Collection<String> fields = new HashSet<>();
     for(final FieldInfo fieldInfo : getMergedFieldInfos(reader)) {
       if (fieldInfo.isIndexed()) {
         fields.add(fieldInfo.name);

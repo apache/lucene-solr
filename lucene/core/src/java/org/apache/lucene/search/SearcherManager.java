@@ -128,6 +128,11 @@ public final class SearcherManager extends ReferenceManager<IndexSearcher> {
     return reference.getIndexReader().tryIncRef();
   }
 
+  @Override
+  protected int getRefCount(IndexSearcher reference) {
+    return reference.getIndexReader().getRefCount();
+  }
+
   /**
    * Returns <code>true</code> if no changes have occured since this searcher
    * ie. reader was opened, otherwise <code>false</code>.

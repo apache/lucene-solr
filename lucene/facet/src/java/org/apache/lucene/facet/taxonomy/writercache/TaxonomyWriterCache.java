@@ -1,6 +1,6 @@
 package org.apache.lucene.facet.taxonomy.writercache;
 
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
 /*
@@ -37,7 +37,7 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
  * <p>
  * However, if it does so, it should clear out large parts of the cache at once,
  * because the user will typically need to work hard to recover from every cache
- * cleanup (see {@link #put(CategoryPath, int)}'s return value).
+ * cleanup (see {@link #put(FacetLabel, int)}'s return value).
  * <p>
  * <b>NOTE:</b> the cache may be accessed concurrently by multiple threads,
  * therefore cache implementations should take this into consideration.
@@ -62,7 +62,7 @@ public interface TaxonomyWriterCache {
    * it means the category does not exist. Otherwise, the category might
    * still exist, but just be missing from the cache.
    */
-  public int get(CategoryPath categoryPath);
+  public int get(FacetLabel categoryPath);
 
   /**
    * Add a category to the cache, with the given ordinal as the value.
@@ -82,7 +82,7 @@ public interface TaxonomyWriterCache {
    * It doesn't really matter, because normally the next thing we do after
    * finding that a category does not exist is to add it.
    */
-  public boolean put(CategoryPath categoryPath, int ordinal);
+  public boolean put(FacetLabel categoryPath, int ordinal);
 
   /**
    * Returns true if the cache is full, such that the next {@link #put} will

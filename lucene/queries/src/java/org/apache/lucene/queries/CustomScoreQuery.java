@@ -58,7 +58,7 @@ public class CustomScoreQuery extends Query {
    * @param subQuery the sub query whose scored is being customized. Must not be null. 
    */
   public CustomScoreQuery(Query subQuery) {
-    this(subQuery, new Query[0]);
+    this(subQuery, new FunctionQuery[0]);
   }
 
   /**
@@ -67,9 +67,9 @@ public class CustomScoreQuery extends Query {
    * @param scoringQuery a value source query whose scores are used in the custom score
    * computation.  This parameter is optional - it can be null.
    */
-  public CustomScoreQuery(Query subQuery, Query scoringQuery) {
+  public CustomScoreQuery(Query subQuery, FunctionQuery scoringQuery) {
     this(subQuery, scoringQuery!=null ? // don't want an array that contains a single null..
-        new Query[] {scoringQuery} : new Query[0]);
+        new FunctionQuery[] {scoringQuery} : new FunctionQuery[0]);
   }
 
   /**
@@ -78,7 +78,7 @@ public class CustomScoreQuery extends Query {
    * @param scoringQueries value source queries whose scores are used in the custom score
    * computation.  This parameter is optional - it can be null or even an empty array.
    */
-  public CustomScoreQuery(Query subQuery, Query... scoringQueries) {
+  public CustomScoreQuery(Query subQuery, FunctionQuery... scoringQueries) {
     this.subQuery = subQuery;
     this.scoringQueries = scoringQueries !=null?
         scoringQueries : new Query[0];
@@ -234,20 +234,14 @@ public class CustomScoreQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, Bits acceptDocs) throws IOException {
-      // Pass true for "scoresDocsInOrder", because we
-      // require in-order scoring, even if caller does not,
-      // since we call advance on the valSrcScorers.  Pass
-      // false for "topScorer" because we will not invoke
-      // score(Collector) on these scorers:
-      Scorer subQueryScorer = subQueryWeight.scorer(context, true, false, acceptDocs);
+    public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+      Scorer subQueryScorer = subQueryWeight.scorer(context, acceptDocs);
       if (subQueryScorer == null) {
         return null;
       }
       Scorer[] valSrcScorers = new Scorer[valSrcWeights.length];
       for(int i = 0; i < valSrcScorers.length; i++) {
-         valSrcScorers[i] = valSrcWeights[i].scorer(context, true, topScorer, acceptDocs);
+         valSrcScorers[i] = valSrcWeights[i].scorer(context, acceptDocs);
       }
       return new CustomScorer(CustomScoreQuery.this.getCustomScoreProvider(context), this, queryWeight, subQueryScorer, valSrcScorers);
     }

@@ -30,6 +30,7 @@ import org.apache.lucene.util.IOUtils;
 //   - let subclass dictate policy...?
 //   - rename to MergeCacheingDir?  NRTCachingDir
 
+// :Post-Release-Update-Version.LUCENE_X_Y: (in <pre> block in javadoc below)
 /**
  * Wraps a {@link RAMDirectory}
  * around any provided delegate directory, to
@@ -50,7 +51,7 @@ import org.apache.lucene.util.IOUtils;
  * <pre class="prettyprint">
  *   Directory fsDir = FSDirectory.open(new File("/path/to/index"));
  *   NRTCachingDirectory cachedFSDir = new NRTCachingDirectory(fsDir, 5.0, 60.0);
- *   IndexWriterConfig conf = new IndexWriterConfig(Version.LUCENE_32, analyzer);
+ *   IndexWriterConfig conf = new IndexWriterConfig(Version.LUCENE_5_0, analyzer);
  *   IndexWriter writer = new IndexWriter(cachedFSDir, conf);
  * </pre>
  *
@@ -120,7 +121,7 @@ public class NRTCachingDirectory extends Directory {
 
   @Override
   public synchronized String[] listAll() throws IOException {
-    final Set<String> files = new HashSet<String>();
+    final Set<String> files = new HashSet<>();
     for(String f : cache.listAll()) {
       files.add(f);
     }
@@ -152,17 +153,11 @@ public class NRTCachingDirectory extends Directory {
   }
 
   @Override
-  public synchronized boolean fileExists(String name) throws IOException {
-    return cache.fileExists(name) || delegate.fileExists(name);
-  }
-
-  @Override
   public synchronized void deleteFile(String name) throws IOException {
     if (VERBOSE) {
       System.out.println("nrtdir.deleteFile name=" + name);
     }
-    if (cache.fileExists(name)) {
-      assert !delegate.fileExists(name): "name=" + name;
+    if (cache.fileNameExists(name)) {
       cache.deleteFile(name);
     } else {
       delegate.deleteFile(name);
@@ -171,7 +166,7 @@ public class NRTCachingDirectory extends Directory {
 
   @Override
   public synchronized long fileLength(String name) throws IOException {
-    if (cache.fileExists(name)) {
+    if (cache.fileNameExists(name)) {
       return cache.fileLength(name);
     } else {
       return delegate.fileLength(name);
@@ -223,29 +218,13 @@ public class NRTCachingDirectory extends Directory {
     if (VERBOSE) {
       System.out.println("nrtdir.openInput name=" + name);
     }
-    if (cache.fileExists(name)) {
+    if (cache.fileNameExists(name)) {
       if (VERBOSE) {
         System.out.println("  from cache");
       }
       return cache.openInput(name, context);
     } else {
       return delegate.openInput(name, context);
-    }
-  }
-
-  @Override
-  public synchronized IndexInputSlicer createSlicer(final String name, final IOContext context) throws IOException {
-    ensureOpen();
-    if (VERBOSE) {
-      System.out.println("nrtdir.openInput name=" + name);
-    }
-    if (cache.fileExists(name)) {
-      if (VERBOSE) {
-        System.out.println("  from cache");
-      }
-      return cache.createSlicer(name, context);
-    } else {
-      return delegate.createSlicer(name, context);
     }
   }
   
@@ -289,12 +268,9 @@ public class NRTCachingDirectory extends Directory {
       if (VERBOSE) {
         System.out.println("nrtdir.unCache name=" + fileName);
       }
-      if (!cache.fileExists(fileName)) {
+      if (!cache.fileNameExists(fileName)) {
         // Another thread beat us...
         return;
-      }
-      if (delegate.fileExists(fileName)) {
-        throw new IOException("cannot uncache file=\"" + fileName + "\": it was separately also created in the delegate directory");
       }
       final IOContext context = IOContext.DEFAULT;
       final IndexOutput out = delegate.createOutput(fileName, context);
@@ -309,7 +285,7 @@ public class NRTCachingDirectory extends Directory {
       // Lock order: uncacheLock -> this
       synchronized(this) {
         // Must sync here because other sync methods have
-        // if (cache.fileExists(name)) { ... } else { ... }:
+        // if (cache.fileNameExists(name)) { ... } else { ... }:
         cache.deleteFile(fileName);
       }
     }

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.SocketAddress;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -30,7 +31,7 @@ import org.apache.zookeeper.ZooKeeper;
 
 // we use this class to expose nasty stuff for tests
 public class SolrZooKeeper extends ZooKeeper {
-  final Set<Thread> spawnedThreads = new CopyOnWriteArraySet<Thread>();
+  final Set<Thread> spawnedThreads = new CopyOnWriteArraySet<>();
   
   // for test debug
   //static Map<SolrZooKeeper,Exception> clients = new ConcurrentHashMap<SolrZooKeeper,Exception>();
@@ -43,6 +44,10 @@ public class SolrZooKeeper extends ZooKeeper {
   
   public ClientCnxn getConnection() {
     return cnxn;
+  }
+  
+  public SocketAddress getSocketAddress() {
+    return testableLocalSocketAddress();
   }
   
   /**

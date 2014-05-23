@@ -162,7 +162,7 @@ public class PathQueryNode extends QueryNodeImpl {
    * @return a List QueryText element from position startIndex
    */
   public List<QueryText> getPathElements(int startIndex) {
-    List<PathQueryNode.QueryText> rValues = new ArrayList<PathQueryNode.QueryText>();
+    List<PathQueryNode.QueryText> rValues = new ArrayList<>();
     for (int i = startIndex; i < this.values.size(); i++) {
       try {
         rValues.add(this.values.get(i).clone());
@@ -209,7 +209,7 @@ public class PathQueryNode extends QueryNodeImpl {
 
     // copy children
     if (this.values != null) {
-      List<QueryText> localValues = new ArrayList<QueryText>();
+      List<QueryText> localValues = new ArrayList<>();
       for (QueryText value : this.values) {
         localValues.add(value.clone());
       }

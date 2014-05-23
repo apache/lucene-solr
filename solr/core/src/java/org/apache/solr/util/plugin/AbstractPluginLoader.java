@@ -135,7 +135,7 @@ public abstract class AbstractPluginLoader<T>
    */
   public T load( SolrResourceLoader loader, NodeList nodes )
   {
-    List<PluginInitInfo> info = new ArrayList<PluginInitInfo>();
+    List<PluginInitInfo> info = new ArrayList<>();
     T defaultPlugin = null;
     
     if (nodes !=null ) {
@@ -218,7 +218,7 @@ public abstract class AbstractPluginLoader<T>
    * 
    */
   public T loadSingle(SolrResourceLoader loader, Node node) {
-    List<PluginInitInfo> info = new ArrayList<PluginInitInfo>();
+    List<PluginInitInfo> info = new ArrayList<>();
     T plugin = null;
 
     try {

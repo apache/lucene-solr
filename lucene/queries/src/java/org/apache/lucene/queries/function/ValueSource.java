@@ -131,6 +131,7 @@ public abstract class ValueSource {
     private FunctionValues docVals;
     private double bottom;
     private final Map fcontext;
+    private double topValue;
 
     ValueSourceComparator(Map fcontext, int numHits) {
       this.fcontext = fcontext;
@@ -164,15 +165,19 @@ public abstract class ValueSource {
     }
 
     @Override
+    public void setTopValue(final Double value) {
+      this.topValue = value.doubleValue();
+    }
+
+    @Override
     public Double value(int slot) {
       return values[slot];
     }
 
     @Override
-    public int compareDocToValue(int doc, Double valueObj) {
-      final double value = valueObj;
+    public int compareTop(int doc) {
       final double docValue = docVals.doubleVal(doc);
-      return Double.compare(docValue, value);
+      return Double.compare(topValue, docValue);
     }
   }
 }

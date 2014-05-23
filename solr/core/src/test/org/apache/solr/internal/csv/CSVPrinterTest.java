@@ -156,11 +156,11 @@ public class CSVPrinterTest extends TestCase {
   }
 
   public static String printable(String s) {
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     for (int i=0; i<s.length(); i++) {
       char ch = s.charAt(i);
       if (ch<=' ' || ch>=128) {
-        sb.append("(" + (int)ch + ")");
+        sb.append("(").append((int)ch).append(")");
       } else {
         sb.append(ch);
       }

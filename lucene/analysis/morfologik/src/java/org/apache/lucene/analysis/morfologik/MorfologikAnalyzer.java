@@ -26,38 +26,35 @@ import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.util.Version;
 
-import morfologik.stemming.PolishStemmer.DICTIONARY;
-
 /**
  * {@link org.apache.lucene.analysis.Analyzer} using Morfologik library.
  * @see <a href="http://morfologik.blogspot.com/">Morfologik project page</a>
  */
 public class MorfologikAnalyzer extends Analyzer {
-
-  private final DICTIONARY dictionary;
+  private final String dictionary;
   private final Version version;
 
   /**
-   * Builds an analyzer for a given PolishStemmer.DICTIONARY enum.
+   * Builds an analyzer with an explicit dictionary resource.
    * 
-   * @param vers
-   *          lucene compatibility version
-   * @param dict
-   *          A constant specifying which dictionary to choose. See the
-   *          Morfologik documentation for details or use the default.
+   * @param version Lucene compatibility version
+   * @param dictionaryResource A constant specifying which dictionary to choose. The
+   * dictionary resource must be named <code>morfologik/dictionaries/{dictionaryResource}.dict</code>
+   * and have an associated <code>.info</code> metadata file. See the Morfologik project
+   * for details.
+   * 
+   * @see "http://morfologik.blogspot.com/"
    */
-  public MorfologikAnalyzer(final Version vers, final DICTIONARY dict) {
-    this.version = vers;
-    this.dictionary = dict;
+  public MorfologikAnalyzer(final Version version, final String dictionaryResource) {
+    this.version = version;
+      this.dictionary = dictionaryResource;
   }
-
+  
   /**
-   * Builds an analyzer for an original MORFOLOGIK dictionary.
-   * 
-   * @param vers         lucene compatibility version
+   * Builds an analyzer with the default Morfologik's Polish dictionary.
    */
-  public MorfologikAnalyzer(final Version vers) {
-    this(vers, DICTIONARY.MORFOLOGIK);
+  public MorfologikAnalyzer(final Version version) {
+    this(version, MorfologikFilterFactory.DEFAULT_DICTIONARY_RESOURCE);
   }
 
   /**
@@ -66,19 +63,16 @@ public class MorfologikAnalyzer extends Analyzer {
    * which tokenizes all the text in the provided {@link Reader}.
    * 
    * @param field ignored field name
-   * @param reader source of tokens
-   * 
-   * @return A
-   *         {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
+   * @return A {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    *         built from an {@link StandardTokenizer} filtered with
    *         {@link StandardFilter} and {@link MorfologikFilter}.
    */
   @Override
-  protected TokenStreamComponents createComponents(final String field, final Reader reader) {
-    final Tokenizer src = new StandardTokenizer(this.version, reader);
+  protected TokenStreamComponents createComponents(final String field) {
+    final Tokenizer src = new StandardTokenizer(this.version);
     
     return new TokenStreamComponents(
-      src,
-      new MorfologikFilter(new StandardFilter(this.version, src), this.dictionary, this.version));
+        src, 
+        new MorfologikFilter(new StandardFilter(this.version, src), dictionary, this.version));
   }
 }

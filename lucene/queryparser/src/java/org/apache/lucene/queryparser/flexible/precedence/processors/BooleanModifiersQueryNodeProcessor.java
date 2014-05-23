@@ -46,7 +46,7 @@ import org.apache.lucene.queryparser.flexible.core.nodes.ModifierQueryNode.Modif
  */
 public class BooleanModifiersQueryNodeProcessor extends QueryNodeProcessorImpl {
 
-  private ArrayList<QueryNode> childrenBuffer = new ArrayList<QueryNode>();
+  private ArrayList<QueryNode> childrenBuffer = new ArrayList<>();
 
   private Boolean usingAnd = false;
 

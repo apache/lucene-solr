@@ -20,7 +20,8 @@ package org.apache.lucene.search;
 import java.util.Random;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * random sloppy phrase query tests
@@ -186,17 +187,17 @@ public class TestSloppyPhraseQuery2 extends SearchEquivalenceTestBase {
   
   private MultiPhraseQuery randomPhraseQuery(long seed) {
     Random random = new Random(seed);
-    int length = _TestUtil.nextInt(random, 2, 5);
+    int length = TestUtil.nextInt(random, 2, 5);
     MultiPhraseQuery pq = new MultiPhraseQuery();
     int position = 0;
     for (int i = 0; i < length; i++) {
-      int depth = _TestUtil.nextInt(random, 1, 3);
+      int depth = TestUtil.nextInt(random, 1, 3);
       Term terms[] = new Term[depth];
       for (int j = 0; j < depth; j++) {
-        terms[j] = new Term("field", "" + (char) _TestUtil.nextInt(random, 'a', 'z'));
+        terms[j] = new Term("field", "" + (char) TestUtil.nextInt(random, 'a', 'z'));
       }
       pq.add(terms, position);
-      position += _TestUtil.nextInt(random, 1, 3);
+      position += TestUtil.nextInt(random, 1, 3);
     }
     return pq;
   }

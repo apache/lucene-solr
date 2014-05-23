@@ -60,7 +60,7 @@ public class PivotFacetHelper extends SimpleFacets
     if (!rb.doFacets || pivots == null) 
       return null;
 
-    SimpleOrderedMap<List<NamedList<Object>>> pivotResponse = new SimpleOrderedMap<List<NamedList<Object>>>();
+    SimpleOrderedMap<List<NamedList<Object>>> pivotResponse = new SimpleOrderedMap<>();
     for (String pivot : pivots) {
       //ex: pivot == "features,cat" or even "{!ex=mytag}features,cat"
       try {
@@ -79,7 +79,7 @@ public class PivotFacetHelper extends SimpleFacets
 
       String field = fields[0];
       String subField = fields[1];
-      Deque<String> fnames = new LinkedList<String>();
+      Deque<String> fnames = new LinkedList<>();
       for( int i=fields.length-1; i>1; i-- ) {
         fnames.push( fields[i] );
       }
@@ -106,7 +106,7 @@ public class PivotFacetHelper extends SimpleFacets
 
     String nextField = fnames.poll();
 
-    List<NamedList<Object>> values = new ArrayList<NamedList<Object>>( superFacets.size() );
+    List<NamedList<Object>> values = new ArrayList<>( superFacets.size() );
     for (Map.Entry<String, Integer> kv : superFacets) {
       // Only sub-facet if parent facet has positive count - still may not be any values for the sub-field though
       if (kv.getValue() >= minMatch) {
@@ -118,7 +118,7 @@ public class PivotFacetHelper extends SimpleFacets
         // constructing Term objects used in TermQueries that may be cached.
         BytesRef termval = null;
 
-        SimpleOrderedMap<Object> pivot = new SimpleOrderedMap<Object>();
+        SimpleOrderedMap<Object> pivot = new SimpleOrderedMap<>();
         pivot.add( "field", field );
         if (null == fieldValue) {
           pivot.add( "value", null );

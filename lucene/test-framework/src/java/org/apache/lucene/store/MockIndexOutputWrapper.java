@@ -74,7 +74,7 @@ public class MockIndexOutputWrapper extends IndexOutput {
       if (realUsage > dir.maxUsedSize) {
         dir.maxUsedSize = realUsage;
       }
-      String message = "fake disk full at " + dir.getRecomputedActualSizeInBytes() + " bytes when writing " + name + " (file length=" + delegate.length();
+      String message = "fake disk full at " + dir.getRecomputedActualSizeInBytes() + " bytes when writing " + name + " (file length=" + delegate.getFilePointer();
       if (freeSpace > 0) {
         message += "; wrote " + freeSpace + " of " + len + " bytes";
       }
@@ -103,12 +103,6 @@ public class MockIndexOutputWrapper extends IndexOutput {
       }
       dir.removeIndexOutput(this, name);
     }
-  }
-
-  @Override
-  public void flush() throws IOException {
-    dir.maybeThrowDeterministicException();
-    delegate.flush();
   }
 
   @Override
@@ -147,22 +141,17 @@ public class MockIndexOutputWrapper extends IndexOutput {
   }
 
   @Override
-  public long length() throws IOException {
-    return delegate.length();
-  }
-
-  @Override
-  public void setLength(long length) throws IOException {
-    delegate.setLength(length);
-  }
-
-  @Override
   public void copyBytes(DataInput input, long numBytes) throws IOException {
     checkCrashed();
     checkDiskFull(null, 0, input, numBytes);
     
     delegate.copyBytes(input, numBytes);
     dir.maybeThrowDeterministicException();
+  }
+
+  @Override
+  public long getChecksum() throws IOException {
+    return delegate.getChecksum();
   }
 
   @Override

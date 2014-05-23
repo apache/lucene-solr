@@ -53,7 +53,7 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
   private static final String host = "host";
   private static final String protocol = "imaps";
 
-  private static Map<String, String> paramMap = new HashMap<String, String>();
+  private static Map<String, String> paramMap = new HashMap<>();
 
   @Test
   @Ignore("Needs a Mock Mail Server to work")
@@ -172,7 +172,7 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
   }
 
   static class SolrWriterImpl extends SolrWriter {
-    List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
+    List<SolrInputDocument> docs = new ArrayList<>();
     Boolean deleteAllCalled;
     Boolean commitCalled;
 

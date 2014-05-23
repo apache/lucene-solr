@@ -21,9 +21,11 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.util.AttributeFactory;
 
 /**
  * This tokenizer uses regex pattern matching to construct distinct tokens
@@ -64,13 +66,13 @@ public final class PatternTokenizer extends Tokenizer {
   private final Matcher matcher;
 
   /** creates a new PatternTokenizer returning tokens from group (-1 for split functionality) */
-  public PatternTokenizer(Reader input, Pattern pattern, int group) {
-    this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, input, pattern, group);
+  public PatternTokenizer(Pattern pattern, int group) {
+    this(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, pattern, group);
   }
 
   /** creates a new PatternTokenizer returning tokens from group (-1 for split functionality) */
-  public PatternTokenizer(AttributeFactory factory, Reader input, Pattern pattern, int group) {
-    super(factory, input);
+  public PatternTokenizer(AttributeFactory factory, Pattern pattern, int group) {
+    super(factory);
     this.group = group;
 
     // Use "" instead of str so don't consume chars
@@ -130,13 +132,15 @@ public final class PatternTokenizer extends Tokenizer {
   }
 
   @Override
-  public void end() {
+  public void end() throws IOException {
+    super.end();
     final int ofs = correctOffset(str.length());
     offsetAtt.setOffset(ofs, ofs);
   }
 
   @Override
   public void reset() throws IOException {
+    super.reset();
     fillBuffer(str, input);
     matcher.reset(str);
     index = 0;

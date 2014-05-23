@@ -23,6 +23,19 @@
     Index tools and other miscellaneous code
   </description>
 
+  <property name="forbidden-sysout-excludes" value="
+    org/apache/lucene/index/CompoundFileExtractor.class
+    org/apache/lucene/index/IndexSplitter.class
+    org/apache/lucene/index/MultiPassIndexSplitter.class
+    org/apache/lucene/misc/GetTermInfo.class
+    org/apache/lucene/misc/HighFreqTerms.class
+    org/apache/lucene/misc/IndexMergeTool.class
+  "/>
+
+  <property name="forbidden-rue-excludes" value="
+    org/apache/lucene/uninverting/FieldCache$CacheEntry.class
+  "/>
+
   <import file="../module-build.xml"/>
 
   <target name="install-cpptasks" unless="cpptasks.uptodate" depends="ivy-availability-check,ivy-fail,ivy-configure">
@@ -35,7 +48,7 @@
   <target name="build-native-unix" depends="install-cpptasks">
     <mkdir dir="${common.build.dir}/native"/>
 
-    <cc outtype="shared" subsystem="console" outfile="${common.build.dir}/native/NativePosixUtil" >
+    <cc outtype="shared" name="c++" subsystem="console" outfile="${common.build.dir}/native/NativePosixUtil" >
       <fileset file="${src.dir}/org/apache/lucene/store/NativePosixUtil.cpp" />  
       <includepath>
         <pathelement location="${java.home}/../include"/>
@@ -45,7 +58,7 @@
       </includepath>
 
       <compilerarg value="-fPIC" />
-      <linkerarg value="-lstdc++" />
+      <syslibset libs="stdc++"/>
     </cc>
   </target>
 

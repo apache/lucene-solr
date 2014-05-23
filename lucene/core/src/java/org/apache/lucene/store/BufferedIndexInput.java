@@ -23,7 +23,7 @@ import java.io.IOException;
 /** Base implementation class for buffered {@link IndexInput}. */
 public abstract class BufferedIndexInput extends IndexInput {
 
-  /** Default buffer size set to 1024*/
+  /** Default buffer size set to {@value #BUFFER_SIZE}. */
   public static final int BUFFER_SIZE = 1024;
   
   // The normal read buffer size defaults to 1024, but
@@ -33,7 +33,7 @@ public abstract class BufferedIndexInput extends IndexInput {
   // BufferedIndexInputs created during merging.  See
   // LUCENE-888 for details.
   /**
-   * A buffer size for merges set to 4096
+   * A buffer size for merges set to {@value #MERGE_BUFFER_SIZE}.
    */
   public static final int MERGE_BUFFER_SIZE = 4096;
 
@@ -115,15 +115,14 @@ public abstract class BufferedIndexInput extends IndexInput {
 
   @Override
   public final void readBytes(byte[] b, int offset, int len, boolean useBuffer) throws IOException {
-
-    if(len <= (bufferLength-bufferPosition)){
+    int available = bufferLength - bufferPosition;
+    if(len <= available){
       // the buffer contains enough data to satisfy this request
       if(len>0) // to allow b to be null if len is 0...
         System.arraycopy(buffer, bufferPosition, b, offset, len);
       bufferPosition+=len;
     } else {
       // the buffer does not have enough data. First serve all we've got.
-      int available = bufferLength - bufferPosition;
       if(available > 0){
         System.arraycopy(buffer, bufferPosition, b, offset, available);
         offset += available;
@@ -316,6 +315,11 @@ public abstract class BufferedIndexInput extends IndexInput {
 
     return clone;
   }
+  
+  @Override
+  public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
+    return wrap("SlicedIndexInput(" + sliceDescription + " in " + this + ")", this, offset, length);
+  }
 
   /**
    * Flushes the in-memory buffer to the given output, copying at most
@@ -350,4 +354,62 @@ public abstract class BufferedIndexInput extends IndexInput {
     }
   }
   
+  /** 
+   * Wraps a portion of a file with buffering. 
+   */
+  public static BufferedIndexInput wrap(String description, IndexInput other, long offset, long length) {
+    return new SlicedIndexInput(description, other, offset, length);
+  }
+  
+  /** 
+   * Implementation of an IndexInput that reads from a portion of a file.
+   */
+  private static final class SlicedIndexInput extends BufferedIndexInput {
+    IndexInput base;
+    long fileOffset;
+    long length;
+    
+    SlicedIndexInput(String sliceDescription, IndexInput base, long offset, long length) {
+      super("SlicedIndexInput(" + sliceDescription + " in " + base + " slice=" + offset + ":" + (offset+length) + ")", BufferedIndexInput.BUFFER_SIZE);
+      if (offset < 0 || length < 0) {
+        throw new IllegalArgumentException();
+      }
+      assert offset + length <= base.length();
+      this.base = base.clone();
+      this.fileOffset = offset;
+      this.length = length;
+    }
+    
+    @Override
+    public SlicedIndexInput clone() {
+      SlicedIndexInput clone = (SlicedIndexInput)super.clone();
+      clone.base = base.clone();
+      clone.fileOffset = fileOffset;
+      clone.length = length;
+      return clone;
+    }
+    
+    @Override
+    protected void readInternal(byte[] b, int offset, int len) throws IOException {
+      long start = getFilePointer();
+      if (start + len > length) {
+        throw new EOFException("read past EOF: " + this);
+      }
+      base.seek(fileOffset + start);
+      base.readBytes(b, offset, len, false);
+    }
+    
+    @Override
+    protected void seekInternal(long pos) {}
+    
+    @Override
+    public void close() throws IOException {
+      base.close();
+    }
+    
+    @Override
+    public long length() {
+      return length;
+    }
+  }
 }

@@ -221,7 +221,7 @@ public class TestNumericUtils extends LuceneTestCase {
     final boolean useBitSet, final Iterable<Long> expectedBounds, final Iterable<Integer> expectedShifts
   ) {
     // Cannot use FixedBitSet since the range could be long:
-    final OpenBitSet bits=useBitSet ? new OpenBitSet(upper-lower+1) : null;
+    final LongBitSet bits=useBitSet ? new LongBitSet(upper-lower+1) : null;
     final Iterator<Long> neededBounds = (expectedBounds == null) ? null : expectedBounds.iterator();
     final Iterator<Integer> neededShifts = (expectedShifts == null) ? null : expectedShifts.iterator();
 

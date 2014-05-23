@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.simpletext;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedMap;
@@ -34,6 +33,8 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.BufferedChecksumIndexInput;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -83,21 +84,23 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
   // vectors file in entirety up-front and save the offsets 
   // so we can seek to the data later.
   private void readIndex(int maxDoc) throws IOException {
+    ChecksumIndexInput input = new BufferedChecksumIndexInput(in);
     offsets = new long[maxDoc];
     int upto = 0;
     while (!scratch.equals(END)) {
-      readLine();
+      SimpleTextUtil.readLine(input, scratch);
       if (StringHelper.startsWith(scratch, DOC)) {
-        offsets[upto] = in.getFilePointer();
+        offsets[upto] = input.getFilePointer();
         upto++;
       }
     }
+    SimpleTextUtil.checkFooter(input);
     assert upto == offsets.length;
   }
   
   @Override
   public Fields get(int doc) throws IOException {
-    SortedMap<String,SimpleTVTerms> fields = new TreeMap<String,SimpleTVTerms>();
+    SortedMap<String,SimpleTVTerms> fields = new TreeMap<>();
     in.seek(offsets[doc]);
     readLine();
     assert StringHelper.startsWith(scratch, NUMFIELDS);
@@ -262,18 +265,13 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
       this.hasOffsets = hasOffsets;
       this.hasPositions = hasPositions;
       this.hasPayloads = hasPayloads;
-      terms = new TreeMap<BytesRef,SimpleTVPostings>();
+      terms = new TreeMap<>();
     }
     
     @Override
     public TermsEnum iterator(TermsEnum reuse) throws IOException {
       // TODO: reuse
       return new SimpleTVTermsEnum(terms);
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
     }
 
     @Override
@@ -294,6 +292,11 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     @Override
     public int getDocCount() throws IOException {
       return 1;
+    }
+
+    @Override
+    public boolean hasFreqs() {
+      return true;
     }
 
     @Override
@@ -331,7 +334,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     }
     
     @Override
-    public SeekStatus seekCeil(BytesRef text, boolean useCache) throws IOException {
+    public SeekStatus seekCeil(BytesRef text) throws IOException {
       iterator = terms.tailMap(text).entrySet().iterator();
       if (!iterator.hasNext()) {
         return SeekStatus.END;
@@ -393,11 +396,6 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
       SimpleTVDocsAndPositionsEnum e = new SimpleTVDocsAndPositionsEnum();
       e.reset(liveDocs, postings.positions, postings.startOffsets, postings.endOffsets, postings.payloads);
       return e;
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
     }
   }
   
@@ -538,4 +536,12 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
       return 1;
     }
   }
+
+  @Override
+  public long ramBytesUsed() {
+    return 0;
+  }
+
+  @Override
+  public void checkIntegrity() throws IOException {}
 }

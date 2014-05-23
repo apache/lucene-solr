@@ -37,7 +37,7 @@ public abstract class CharTokenizerStage extends Stage {
   private final OffsetAttribute offsetAtt;
   private final ArcAttribute arcAtt;
 
-  private final CharacterUtils charUtils = CharacterUtils.getInstance(Version.LUCENE_50);
+  private final CharacterUtils charUtils = CharacterUtils.getInstance(Version.LUCENE_5_0);
   private final CharacterBuffer ioBuffer = CharacterUtils.newCharacterBuffer(IO_BUFFER_SIZE);
 
   // Where we are in the current chunk we are working on:
@@ -92,7 +92,7 @@ public abstract class CharTokenizerStage extends Stage {
         bufferIndex = 0;
       }
       // use CharacterUtils here to support < 3.1 UTF-16 code unit behavior if the char based methods are gone
-      final int c = charUtils.codePointAt(ioBuffer.getBuffer(), bufferIndex);
+      final int c = charUtils.codePointAt(ioBuffer.getBuffer(), bufferIndex, ioBuffer.getLength());
       bufferIndex += Character.charCount(c);
 
       if (isTokenChar(c)) {               // if it's a token char

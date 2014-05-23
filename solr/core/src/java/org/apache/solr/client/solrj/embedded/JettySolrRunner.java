@@ -18,17 +18,14 @@
 package org.apache.solr.client.solrj.embedded;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.EnumSet;
 import java.util.LinkedList;
-import java.util.Map;
 import java.util.Random;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
-
-import java.net.URL;
-import java.net.MalformedURLException;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
@@ -43,24 +40,21 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.bio.SocketConnector;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.server.ssl.SslConnector;
-import org.eclipse.jetty.server.ssl.SslSocketConnector;
-import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.server.handler.GzipHandler;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
+import org.eclipse.jetty.server.ssl.SslConnector;
+import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
+import org.eclipse.jetty.server.ssl.SslSocketConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /**
  * Run solr using jetty
@@ -85,6 +79,7 @@ public class JettySolrRunner {
   private String shards;
 
   private String dataDir;
+  private String solrUlogDir;
   
   private volatile boolean startedBefore = false;
 
@@ -95,7 +90,13 @@ public class JettySolrRunner {
   private String coreNodeName;
 
   /** Maps servlet holders (i.e. factories: class + init params) to path specs */
-  private SortedMap<ServletHolder,String> extraServlets = new TreeMap<ServletHolder,String>();
+  private SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
+  private SortedMap<Class,String> extraRequestFilters;
+  private LinkedList<FilterHolder> extraFilters;
+
+  private SSLConfig sslConfig;
+  
+  private int proxyPort = -1;
 
   public static class DebugFilter implements Filter {
     public int requestsToKeep = 10;
@@ -107,7 +108,7 @@ public class JettySolrRunner {
     }
 
     // TODO: keep track of certain number of last requests
-    private LinkedList<HttpServletRequest> requests = new LinkedList<HttpServletRequest>();
+    private LinkedList<HttpServletRequest> requests = new LinkedList<>();
 
 
     @Override
@@ -168,12 +169,37 @@ public class JettySolrRunner {
   public JettySolrRunner(String solrHome, String context, int port,
       String solrConfigFilename, String schemaFileName, boolean stopAtShutdown,
       SortedMap<ServletHolder,String> extraServlets) {
-    if (null != extraServlets) { this.extraServlets.putAll(extraServlets); }
-    this.init(solrHome, context, port, stopAtShutdown);
-    this.solrConfigFilename = solrConfigFilename;
-    this.schemaFilename = schemaFileName;
+    this (solrHome, context, port, solrConfigFilename, schemaFileName,
+      stopAtShutdown, extraServlets, null, null);
+  }
+  
+  public JettySolrRunner(String solrHome, String context, int port,
+      String solrConfigFilename, String schemaFileName, boolean stopAtShutdown,
+      SortedMap<ServletHolder,String> extraServlets, SSLConfig sslConfig) {
+    this (solrHome, context, port, solrConfigFilename, schemaFileName,
+      stopAtShutdown, extraServlets, sslConfig, null);
   }
 
+  /**
+   * Constructor taking an ordered list of additional (filter holder -> path spec) mappings.
+   * Filters are placed after the DebugFilter but before the SolrDispatchFilter.
+   */
+  public JettySolrRunner(String solrHome, String context, int port,
+      String solrConfigFilename, String schemaFileName, boolean stopAtShutdown,
+      SortedMap<ServletHolder,String> extraServlets, SSLConfig sslConfig,
+      SortedMap<Class,String> extraRequestFilters) {
+    if (null != extraServlets) { this.extraServlets.putAll(extraServlets); }
+    if (null != extraRequestFilters) {
+      this.extraRequestFilters = new TreeMap<>(extraRequestFilters.comparator());
+      this.extraRequestFilters.putAll(extraRequestFilters);
+    }
+    this.solrConfigFilename = solrConfigFilename;
+    this.schemaFilename = schemaFileName;
+    this.sslConfig = sslConfig;
+
+    this.init(solrHome, context, port, stopAtShutdown);
+  }
+  
   private void init(String solrHome, String context, int port, boolean stopAtShutdown) {
     this.context = context;
     server = new Server(port);
@@ -190,34 +216,16 @@ public class JettySolrRunner {
 
       // if this property is true, then jetty will be configured to use SSL
       // leveraging the same system properties as java to specify
-      // the keystore/truststore if they are set
+      // the keystore/truststore if they are set unless specific config
+      // is passed via the constructor.
       //
       // This means we will use the same truststore, keystore (and keys) for
       // the server as well as any client actions taken by this JVM in
       // talking to that server, but for the purposes of testing that should 
       // be good enough
-      final boolean useSsl = Boolean.getBoolean("tests.jettySsl");
+      final boolean useSsl = sslConfig == null ? false : sslConfig.isSSLMode();
       final SslContextFactory sslcontext = new SslContextFactory(false);
-
-      if (useSsl) {
-        if (null != System.getProperty("javax.net.ssl.keyStore")) {
-          sslcontext.setKeyStorePath
-            (System.getProperty("javax.net.ssl.keyStore"));
-        }
-        if (null != System.getProperty("javax.net.ssl.keyStorePassword")) {
-          sslcontext.setKeyStorePassword
-            (System.getProperty("javax.net.ssl.keyStorePassword"));
-        }
-        if (null != System.getProperty("javax.net.ssl.trustStore")) {
-          sslcontext.setTrustStore
-            (System.getProperty("javax.net.ssl.trustStore"));
-        }
-        if (null != System.getProperty("javax.net.ssl.trustStorePassword")) {
-          sslcontext.setTrustStorePassword
-            (System.getProperty("javax.net.ssl.trustStorePassword"));
-        }
-        sslcontext.setNeedClientAuth(Boolean.getBoolean("tests.jettySsl.clientAuth"));
-      }
+      sslInit(useSsl, sslcontext);
 
       final Connector connector;
       final QueuedThreadPool threadPool;
@@ -227,6 +235,7 @@ public class JettySolrRunner {
           : new SelectChannelConnector();
         c.setReuseAddress(true);
         c.setLowResourcesMaxIdleTime(1500);
+        c.setSoLingerTime(0);
         connector = c;
         threadPool = (QueuedThreadPool) c.getThreadPool();
       } else if ("Socket".equals(connectorName)) {
@@ -234,6 +243,7 @@ public class JettySolrRunner {
           ? new SslSocketConnector(sslcontext)
           : new SocketConnector();
         c.setReuseAddress(true);
+        c.setSoLingerTime(0);
         connector = c;
         threadPool = (QueuedThreadPool) c.getThreadPool();
       } else {
@@ -307,6 +317,13 @@ public class JettySolrRunner {
 //        SolrDispatchFilter filter = new SolrDispatchFilter();
 //        FilterHolder fh = new FilterHolder(filter);
         debugFilter = root.addFilter(DebugFilter.class, "*", EnumSet.of(DispatcherType.REQUEST) );
+        if (extraRequestFilters != null) {
+          extraFilters = new LinkedList<>();
+          for (Class filterClass : extraRequestFilters.keySet()) {
+            extraFilters.add(root.addFilter(filterClass, extraRequestFilters.get(filterClass),
+              EnumSet.of(DispatcherType.REQUEST)));
+          }
+        }
         dispatchFilter = root.addFilter(SolrDispatchFilter.class, "*", EnumSet.of(DispatcherType.REQUEST) );
         for (ServletHolder servletHolder : extraServlets.keySet()) {
           String pathSpec = extraServlets.get(servletHolder);
@@ -326,6 +343,47 @@ public class JettySolrRunner {
     // for some reason, there must be a servlet for this to get applied
     root.addServlet(Servlet404.class, "/*");
 
+  }
+
+  private void sslInit(final boolean useSsl, final SslContextFactory sslcontext) {
+    if (useSsl && sslConfig != null) {
+      if (null != sslConfig.getKeyStore()) {
+        sslcontext.setKeyStorePath(sslConfig.getKeyStore());
+      }
+      if (null != sslConfig.getKeyStorePassword()) {
+        sslcontext.setKeyStorePassword(sslConfig.getKeyStorePassword());
+      }
+      if (null != sslConfig.getTrustStore()) {
+        sslcontext.setTrustStore(System
+            .getProperty(sslConfig.getTrustStore()));
+      }
+      if (null != sslConfig.getTrustStorePassword()) {
+        sslcontext.setTrustStorePassword(sslConfig.getTrustStorePassword());
+      }
+      sslcontext.setNeedClientAuth(sslConfig.isClientAuthMode());
+    } else {
+      boolean jettySsl = Boolean.getBoolean(System.getProperty("tests.jettySsl"));
+
+      if (jettySsl) {
+        if (null != System.getProperty("javax.net.ssl.keyStore")) {
+          sslcontext.setKeyStorePath
+            (System.getProperty("javax.net.ssl.keyStore"));
+        }
+        if (null != System.getProperty("javax.net.ssl.keyStorePassword")) {
+          sslcontext.setKeyStorePassword
+            (System.getProperty("javax.net.ssl.keyStorePassword"));
+        }
+        if (null != System.getProperty("javax.net.ssl.trustStore")) {
+          sslcontext.setTrustStore
+            (System.getProperty("javax.net.ssl.trustStore"));
+        }
+        if (null != System.getProperty("javax.net.ssl.trustStorePassword")) {
+          sslcontext.setTrustStorePassword
+            (System.getProperty("javax.net.ssl.trustStorePassword"));
+        }
+        sslcontext.setNeedClientAuth(Boolean.getBoolean("tests.jettySsl.clientAuth"));
+      }
+    }
   }
 
   public FilterHolder getDispatchFilter() {
@@ -356,32 +414,40 @@ public class JettySolrRunner {
       startedBefore = true;
     }
     
-    if( dataDir != null) {
+    if (dataDir != null) {
       System.setProperty("solr.data.dir", dataDir);
     }
-    if(shards != null) {
+    if (solrUlogDir != null) {
+      System.setProperty("solr.ulog.dir", solrUlogDir);
+    }
+    if (shards != null) {
       System.setProperty("shard", shards);
     }
     if (coreNodeName != null) {
       System.setProperty("coreNodeName", coreNodeName);
     }
-    
-    if (!server.isRunning()) {
-      server.start();
-    }
-    synchronized (JettySolrRunner.this) {
-      int cnt = 0;
-      while (!waitOnSolr) {
-        this.wait(100);
-        if (cnt++ == 5) {
-          throw new RuntimeException("Jetty/Solr unresponsive");
+    try {
+      
+      if (!server.isRunning()) {
+        server.start();
+      }
+      synchronized (JettySolrRunner.this) {
+        int cnt = 0;
+        while (!waitOnSolr) {
+          this.wait(100);
+          if (cnt++ == 5) {
+            throw new RuntimeException("Jetty/Solr unresponsive");
+          }
         }
       }
+    } finally {
+      
+      System.clearProperty("shard");
+      System.clearProperty("solr.data.dir");
+      System.clearProperty("coreNodeName");
+      System.clearProperty("solr.ulog.dir");
     }
     
-    System.clearProperty("shard");
-    System.clearProperty("solr.data.dir");
-    System.clearProperty("coreNodeName");
   }
 
   public void stop() throws Exception {
@@ -393,6 +459,11 @@ public class JettySolrRunner {
     //server.destroy();
     if (server.getState().equals(Server.FAILED)) {
       filter.destroy();
+      if (extraFilters != null) {
+        for (FilterHolder f : extraFilters) {
+          f.getFilter().destroy();
+        }
+      }
     }
     
     server.join();
@@ -408,7 +479,7 @@ public class JettySolrRunner {
     if (0 == conns.length) {
       throw new RuntimeException("Jetty Server has no Connectors");
     }
-    return conns[0].getLocalPort();
+    return (proxyPort != -1) ? proxyPort : conns[0].getLocalPort();
   }
   
   /**
@@ -420,7 +491,16 @@ public class JettySolrRunner {
     if (lastPort == -1) {
       throw new IllegalStateException("You cannot get the port until this instance has started");
     }
-    return lastPort;
+    return (proxyPort != -1) ? proxyPort : lastPort;
+  }
+  
+  /**
+   * Sets the port of a local socket proxy that sits infront of this server; if set
+   * then all client traffic will flow through the proxy, giving us the ability to
+   * simulate network partitions very easily.
+   */
+  public void setProxyPort(int proxyPort) {
+    this.proxyPort = proxyPort;
   }
 
   /**
@@ -485,9 +565,17 @@ public class JettySolrRunner {
   public void setDataDir(String dataDir) {
     this.dataDir = dataDir;
   }
+  
+  public void setUlogDir(String ulogDir) {
+    this.solrUlogDir = ulogDir;
+  }
 
   public void setCoreNodeName(String coreNodeName) {
     this.coreNodeName = coreNodeName;
+  }
+
+  public String getSolrHome() {
+    return solrHome;
   }
 }
 

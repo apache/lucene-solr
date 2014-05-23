@@ -47,7 +47,7 @@ public class ClobTransformer extends Transformer {
       Object o = aRow.get(srcCol);
       if (o instanceof List) {
         List<Clob> inputs = (List<Clob>) o;
-        List<String> results = new ArrayList<String>();
+        List<String> results = new ArrayList<>();
         for (Object input : inputs) {
           if (input instanceof Clob) {
             Clob clob = (Clob) input;

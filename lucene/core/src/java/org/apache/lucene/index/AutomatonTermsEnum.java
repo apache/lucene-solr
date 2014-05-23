@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
@@ -65,7 +64,6 @@ class AutomatonTermsEnum extends FilteredTermsEnum {
   // of terms where we should simply do sequential reads instead.
   private boolean linear = false;
   private final BytesRef linearUpperBound = new BytesRef(10);
-  private final Comparator<BytesRef> termComp;
 
   /**
    * Construct an enumerator based upon an automaton, enumerating the specified
@@ -85,8 +83,6 @@ class AutomatonTermsEnum extends FilteredTermsEnum {
 
     // used for path tracking, where each bit is a numbered state.
     visited = new long[runAutomaton.getSize()];
-
-    termComp = getComparator();
   }
   
   /**
@@ -99,10 +95,10 @@ class AutomatonTermsEnum extends FilteredTermsEnum {
       if (runAutomaton.run(term.bytes, term.offset, term.length))
         return linear ? AcceptStatus.YES : AcceptStatus.YES_AND_SEEK;
       else
-        return (linear && termComp.compare(term, linearUpperBound) < 0) ? 
+        return (linear && term.compareTo(linearUpperBound) < 0) ? 
             AcceptStatus.NO : AcceptStatus.NO_AND_SEEK;
     } else {
-      return (linear && termComp.compare(term, linearUpperBound) < 0) ? 
+      return (linear && term.compareTo(linearUpperBound) < 0) ? 
           AcceptStatus.NO : AcceptStatus.NO_AND_SEEK;
     }
   }

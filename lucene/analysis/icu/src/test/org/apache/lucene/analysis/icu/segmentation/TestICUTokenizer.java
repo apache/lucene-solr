@@ -28,10 +28,10 @@ import org.apache.lucene.analysis.icu.tokenattributes.ScriptAttribute;
 import com.ibm.icu.lang.UScript;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 import java.util.Arrays;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 
 public class TestICUTokenizer extends BaseTokenStreamTestCase {
   
@@ -42,7 +42,8 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
     sb.append(whitespace);
     sb.append("testing 1234");
     String input = sb.toString();
-    ICUTokenizer tokenizer = new ICUTokenizer(new StringReader(input));
+    ICUTokenizer tokenizer = new ICUTokenizer(newAttributeFactory(), new DefaultICUTokenizerConfig(false));
+    tokenizer.setReader(new StringReader(input));
     assertTokenStreamContents(tokenizer, new String[] { "testing", "1234" });
   }
   
@@ -52,7 +53,8 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
       sb.append('a');
     }
     String input = sb.toString();
-    ICUTokenizer tokenizer = new ICUTokenizer(new StringReader(input));
+    ICUTokenizer tokenizer = new ICUTokenizer(newAttributeFactory(), new DefaultICUTokenizerConfig(false));
+    tokenizer.setReader(new StringReader(input));
     char token[] = new char[4096];
     Arrays.fill(token, 'a');
     String expectedToken = new String(token);
@@ -67,9 +69,8 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
   
   private Analyzer a = new Analyzer() {
     @Override
-    protected TokenStreamComponents createComponents(String fieldName,
-        Reader reader) {
-      Tokenizer tokenizer = new ICUTokenizer(reader);
+    protected TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer tokenizer = new ICUTokenizer(newAttributeFactory(), new DefaultICUTokenizerConfig(false));
       TokenFilter filter = new ICUNormalizer2Filter(tokenizer);
       return new TokenStreamComponents(tokenizer, filter);
     }
@@ -118,6 +119,7 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
   
   public void testLao() throws Exception {
     assertAnalyzesTo(a, "ກວ່າດອກ", new String[] { "ກວ່າ", "ດອກ" });
+    assertAnalyzesTo(a, "ພາສາລາວ", new String[] { "ພາສາ", "ລາວ"}, new String[] { "<ALPHANUM>", "<ALPHANUM>" });
   }
   
   public void testThai() throws Exception {
@@ -136,6 +138,13 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
   public void testChinese() throws Exception {
     assertAnalyzesTo(a, "我是中国人。 １２３４ Ｔｅｓｔｓ ",
         new String[] { "我", "是", "中", "国", "人", "1234", "tests"});
+  }
+  
+  public void testHebrew() throws Exception {
+    assertAnalyzesTo(a, "דנקנר תקף את הדו\"ח",
+        new String[] { "דנקנר", "תקף", "את", "הדו\"ח" });
+    assertAnalyzesTo(a, "חברת בת של מודי'ס",
+        new String[] { "חברת", "בת", "של", "מודי'ס" });
   }
   
   public void testEmpty() throws Exception {
@@ -207,7 +216,7 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
   }
   
   public void testReusableTokenStream() throws Exception {
-    assertAnalyzesToReuse(a, "སྣོན་མཛོད་དང་ལས་འདིས་བོད་ཡིག་མི་ཉམས་གོང་འཕེལ་དུ་གཏོང་བར་ཧ་ཅང་དགེ་མཚན་མཆིས་སོ། །",
+    assertAnalyzesTo(a, "སྣོན་མཛོད་དང་ལས་འདིས་བོད་ཡིག་མི་ཉམས་གོང་འཕེལ་དུ་གཏོང་བར་ཧ་ཅང་དགེ་མཚན་མཆིས་སོ། །",
         new String[] { "སྣོན", "མཛོད", "དང", "ལས", "འདིས", "བོད", "ཡིག", "མི", "ཉམས", "གོང", 
                       "འཕེལ", "དུ", "གཏོང", "བར", "ཧ", "ཅང", "དགེ", "མཚན", "མཆིས", "སོ" });
   }
@@ -249,16 +258,55 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
   }
   
   public void testTokenAttributes() throws Exception {
-    TokenStream ts = a.tokenStream("dummy", new StringReader("This is a test"));
-    ScriptAttribute scriptAtt = ts.addAttribute(ScriptAttribute.class);
-    ts.reset();
-    while (ts.incrementToken()) {
-      assertEquals(UScript.LATIN, scriptAtt.getCode());
-      assertEquals(UScript.getName(UScript.LATIN), scriptAtt.getName());
-      assertEquals(UScript.getShortName(UScript.LATIN), scriptAtt.getShortName());
-      assertTrue(ts.reflectAsString(false).contains("script=Latin"));
+    try (TokenStream ts = a.tokenStream("dummy", "This is a test")) {
+      ScriptAttribute scriptAtt = ts.addAttribute(ScriptAttribute.class);
+      ts.reset();
+      while (ts.incrementToken()) {
+        assertEquals(UScript.LATIN, scriptAtt.getCode());
+        assertEquals(UScript.getName(UScript.LATIN), scriptAtt.getName());
+        assertEquals(UScript.getShortName(UScript.LATIN), scriptAtt.getShortName());
+        assertTrue(ts.reflectAsString(false).contains("script=Latin"));
+      }
+      ts.end();
     }
-    ts.end();
-    ts.close();
+  }
+  
+  /** test for bugs like http://bugs.icu-project.org/trac/ticket/10767 */
+  public void testICUConcurrency() throws Exception {
+    int numThreads = 8;
+    final CountDownLatch startingGun = new CountDownLatch(1);
+    Thread threads[] = new Thread[numThreads];
+    for (int i = 0; i < threads.length; i++) {
+      threads[i] = new Thread() {
+        @Override
+        public void run() {
+          try {
+            startingGun.await();
+            long tokenCount = 0;
+            final String contents = "英 เบียร์ ビール ເບຍ abc";
+            for (int i = 0; i < 1000; i++) {
+              try (Tokenizer tokenizer = new ICUTokenizer()) {
+                tokenizer.setReader(new StringReader(contents));
+                tokenizer.reset();
+                while (tokenizer.incrementToken()) {
+                  tokenCount++;
+                }
+                tokenizer.end();
+              }
+            }
+            if (VERBOSE) {
+              System.out.println(tokenCount);
+            }
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        } 
+      };
+      threads[i].start();
+    }
+    startingGun.countDown();
+    for (int i = 0; i < threads.length; i++) {
+      threads[i].join();
+    }
   }
 }

@@ -36,7 +36,7 @@ abstract class FSTEnum<T> {
 
   protected final T NO_OUTPUT;
   protected final FST.BytesReader fstReader;
-  protected final FST.Arc<T> scratchArc = new FST.Arc<T>();
+  protected final FST.Arc<T> scratchArc = new FST.Arc<>();
 
   protected int upto;
   protected int targetLength;
@@ -522,7 +522,7 @@ abstract class FSTEnum<T> {
 
   private FST.Arc<T> getArc(int idx) {
     if (arcs[idx] == null) {
-      arcs[idx] = new FST.Arc<T>();
+      arcs[idx] = new FST.Arc<>();
     }
     return arcs[idx];
   }

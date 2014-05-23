@@ -33,7 +33,7 @@ import java.util.Map;
  * 
  * <pre class="prettyprint">
  * {@code
- * Map<String,Analyzer> analyzerPerField = new HashMap<String,Analyzer>();
+ * Map<String,Analyzer> analyzerPerField = new HashMap<>();
  * analyzerPerField.put("firstname", new KeywordAnalyzer());
  * analyzerPerField.put("lastname", new KeywordAnalyzer());
  *
@@ -73,6 +73,7 @@ public final class PerFieldAnalyzerWrapper extends AnalyzerWrapper {
    */
   public PerFieldAnalyzerWrapper(Analyzer defaultAnalyzer,
       Map<String, Analyzer> fieldAnalyzers) {
+    super(PER_FIELD_REUSE_STRATEGY);
     this.defaultAnalyzer = defaultAnalyzer;
     this.fieldAnalyzers = (fieldAnalyzers != null) ? fieldAnalyzers : Collections.<String, Analyzer>emptyMap();
   }
@@ -83,11 +84,6 @@ public final class PerFieldAnalyzerWrapper extends AnalyzerWrapper {
     return (analyzer != null) ? analyzer : defaultAnalyzer;
   }
 
-  @Override
-  protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
-    return components;
-  }
-  
   @Override
   public String toString() {
     return "PerFieldAnalyzerWrapper(" + fieldAnalyzers + ", default=" + defaultAnalyzer + ")";

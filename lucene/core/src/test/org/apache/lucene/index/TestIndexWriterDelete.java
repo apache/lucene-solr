@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -30,7 +29,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -42,8 +43,9 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestIndexWriterDelete extends LuceneTestCase {
 
@@ -87,7 +89,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     hitCount = getHitCount(dir, term);
     assertEquals(0, hitCount);
 
-    modifier.close();
+    modifier.shutdown();
     dir.close();
   }
 
@@ -122,7 +124,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     reader = DirectoryReader.open(dir);
     assertEquals(0, reader.numDocs());
     reader.close();
-    modifier.close();
+    modifier.shutdown();
     dir.close();
   }
 
@@ -136,7 +138,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     writer.deleteDocuments(new Term("foobar", "1"));
     writer.deleteDocuments(new Term("foobar", "1"));
     assertEquals(3, writer.getFlushDeletesCount());
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
   
@@ -177,7 +179,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       int hitCount = getHitCount(dir, new Term("id", String.valueOf(id)));
       assertEquals(1, hitCount);
       reader.close();
-      modifier.close();
+      modifier.shutdown();
       dir.close();
     }
   }
@@ -211,7 +213,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     IndexReader reader = DirectoryReader.open(dir);
     assertEquals(5, reader.numDocs());
-    modifier.close();
+    modifier.shutdown();
     reader.close();
     dir.close();
   }
@@ -255,7 +257,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     assertEquals(2, reader.numDocs());
     reader.close();
 
-    modifier.close();
+    modifier.shutdown();
     dir.close();
   }
 
@@ -301,7 +303,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     assertEquals(2, reader.numDocs());
     reader.close();
 
-    modifier.close();
+    modifier.shutdown();
     dir.close();
   }
   
@@ -322,7 +324,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
           int value = 100;
           try {
             latch.await();
-            for (int i = 0; i < 1000; i++) {
+            for (int j = 0; j < 1000; j++) {
               Document doc = new Document();
               doc.add(newTextField("content", "aaa", Field.Store.NO));
               doc.add(newStringField("id", String.valueOf(id++), Field.Store.YES));
@@ -358,7 +360,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       thread.join();
     }
     
-    modifier.close();
+    modifier.shutdown();
     DirectoryReader reader = DirectoryReader.open(dir);
     assertEquals(reader.maxDoc(), 0);
     assertEquals(reader.numDocs(), 0);
@@ -394,7 +396,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     // Roll it back
     modifier.rollback();
-    modifier.close();
 
     // Validate that the docs are still there
     reader = DirectoryReader.open(dir);
@@ -437,7 +438,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     // Roll it back
     modifier.rollback();
-    modifier.close();
 
     // Validate that the docs are still there
     reader = DirectoryReader.open(dir);
@@ -507,7 +507,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       d.add(new NumericDocValuesField("dv", i));
       writer.addDocument(d);
     }
-    writer.close();
+    writer.shutdown();
 
     long diskUsage = startDir.sizeInBytes();
     long diskFree = diskUsage + 10;
@@ -523,6 +523,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       }
       MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new RAMDirectory(startDir, newIOContext(random())));
       dir.setPreventDoubleWrite(false);
+      dir.setAllowRandomFileNotFoundException(false);
       IndexWriter modifier = new IndexWriter(dir,
                                              newIndexWriterConfig(
                                                                   TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false))
@@ -593,8 +594,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
               }
               docId += 12;
             }
+            modifier.shutdown();
           }
-          modifier.close();
           success = true;
           if (0 == x) {
             done = true;
@@ -629,7 +630,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         // If the close() succeeded, make sure there are
         // no unreferenced files.
         if (success) {
-          _TestUtil.checkIndex(dir);
+          TestUtil.checkIndex(dir);
           TestIndexWriter.assertNoUnreferencedFiles(dir, "after writer.close");
         }
         dir.setRandomIOExceptionRate(randomIOExceptionRate);
@@ -692,7 +693,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         }
       }
       dir.close();
-      modifier.close();
 
       // Try again with 10 more bytes of free space:
       diskFree += 10;
@@ -725,7 +725,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
             boolean seen = false;
             StackTraceElement[] trace = new Exception().getStackTrace();
             for (int i = 0; i < trace.length; i++) {
-              if ("applyDeletes".equals(trace[i].getMethodName())) {
+              if ("applyDeletesAndUpdates".equals(trace[i].getMethodName()) ||
+                  "slowFileExists".equals(trace[i].getMethodName())) {
                 seen = true;
                 break;
               }
@@ -743,7 +744,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
           if (!failed) {
             StackTraceElement[] trace = new Exception().getStackTrace();
             for (int i = 0; i < trace.length; i++) {
-              if ("applyDeletes".equals(trace[i].getMethodName())) {
+              if ("applyDeletesAndUpdates".equals(trace[i].getMethodName())) {
                 if (VERBOSE) {
                   System.out.println("TEST: mock failure: saw applyDeletes");
                   new Throwable().printStackTrace(System.out);
@@ -768,8 +769,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     IndexWriter modifier = new IndexWriter(dir, newIndexWriterConfig(
                                                                      TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)).setMaxBufferedDeleteTerms(2).setReaderPooling(false).setMergePolicy(newLogMergePolicy()));
 
-    LogMergePolicy lmp = (LogMergePolicy) modifier.getConfig().getMergePolicy();
-    lmp.setUseCompoundFile(true);
+    MergePolicy lmp = modifier.getConfig().getMergePolicy();
+    lmp.setNoCFSRatio(1.0);
 
     dir.failOn(failure.reset());
 
@@ -856,7 +857,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     // Make sure the delete was successfully flushed:
     assertEquals(0, hitCount);
 
-    modifier.close();
+    modifier.shutdown();
     dir.close();
   }
 
@@ -913,7 +914,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       }
     }
 
-    modifier.close();
+    modifier.shutdown();
     TestIndexWriter.assertNoUnreferencedFiles(dir, "docsWriter.abort() failed to delete unreferenced files");
     dir.close();
   }
@@ -929,7 +930,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     modifier.deleteDocuments(new TermQuery(new Term("nada", "nada")));
     modifier.commit();
     assertEquals(5, modifier.numDocs());
-    modifier.close();
+    modifier.shutdown();
     dir.close();
   }
   
@@ -937,7 +938,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     final Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     final int NUM_DOCS = atLeast(1000);
-    final List<Integer> ids = new ArrayList<Integer>(NUM_DOCS);
+    final List<Integer> ids = new ArrayList<>(NUM_DOCS);
     for(int id=0;id<NUM_DOCS;id++) {
       ids.add(id);
     }
@@ -951,7 +952,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     int upto = 0;
     while(upto < ids.size()) {
       final int left = ids.size() - upto;
-      final int inc = Math.min(left, _TestUtil.nextInt(random(), 1, 20));
+      final int inc = Math.min(left, TestUtil.nextInt(random(), 1, 20));
       final int limit = upto + inc;
       while(upto < limit) {
         w.deleteDocuments(new Term("id", ""+ids.get(upto++)));
@@ -961,14 +962,14 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       r.close();
     }
 
-    w.close();
+    w.shutdown();
     dir.close();
   }
   
   public void testIndexingThenDeleting() throws Exception {
     // TODO: move this test to its own class and just @SuppressCodecs?
     // TODO: is it enough to just use newFSDirectory?
-    final String fieldFormat = _TestUtil.getPostingsFormat("field");
+    final String fieldFormat = TestUtil.getPostingsFormat("field");
     assumeFalse("This test cannot run with Memory codec", fieldFormat.equals("Memory"));
     assumeFalse("This test cannot run with SimpleText codec", fieldFormat.equals("SimpleText"));
     assumeFalse("This test cannot run with Direct codec", fieldFormat.equals("Direct"));
@@ -977,8 +978,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     // note this test explicitly disables payloads
     final Analyzer analyzer = new Analyzer() {
       @Override
-      public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        return new TokenStreamComponents(new MockTokenizer(reader, MockTokenizer.WHITESPACE, true));
+      public TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new MockTokenizer(MockTokenizer.WHITESPACE, true));
       }
     };
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer).setRAMBufferSizeMB(1.0).setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH).setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH));
@@ -1009,7 +1010,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       }
       assertTrue("flush happened too quickly during " + (doIndexing ? "indexing" : "deleting") + " count=" + count, count > 2500);
     }
-    w.close();
+    w.shutdown();
     dir.close();
   }
 
@@ -1023,7 +1024,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     // note: tiny rambuffer used, as with a 1MB buffer the test is too slow (flush @ 128,999)
     IndexWriter w = new IndexWriter(dir,
                                     newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
-                                    .setRAMBufferSizeMB(0.1f).setMaxBufferedDocs(1000).setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES).setReaderPooling(false));
+                                    .setRAMBufferSizeMB(0.1f).setMaxBufferedDocs(1000).setMergePolicy(NoMergePolicy.INSTANCE).setReaderPooling(false));
     int count = 0;
     while(true) {
       Document doc = new Document();
@@ -1040,7 +1041,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       w.updateDocument(delTerm, doc);
       // Eventually segment 0 should get a del docs:
       // TODO: fix this test
-      if (dir.fileExists("_0_1.del") || dir.fileExists("_0_1.liv") ) {
+      if (slowFileExists(dir, "_0_1.del") || slowFileExists(dir, "_0_1.liv") ) {
         if (VERBOSE) {
           System.out.println("TEST: deletes created @ count=" + count);
         }
@@ -1055,7 +1056,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         fail("delete's were not applied");
       }
     }
-    w.close();
+    w.shutdown();
     dir.close();
   }
 
@@ -1069,7 +1070,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     final int flushAtDelCount = atLeast(1020);
     IndexWriter w = new IndexWriter(dir,
                                     newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
-                                    setMaxBufferedDeleteTerms(flushAtDelCount).setMaxBufferedDocs(1000).setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH).setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES).setReaderPooling(false));
+                                    setMaxBufferedDeleteTerms(flushAtDelCount).setMaxBufferedDocs(1000).setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH).setMergePolicy(NoMergePolicy.INSTANCE).setReaderPooling(false));
     int count = 0;
     while(true) {
       Document doc = new Document();
@@ -1086,7 +1087,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       w.updateDocument(delTerm, doc);
       // Eventually segment 0 should get a del docs:
       // TODO: fix this test
-      if (dir.fileExists("_0_1.del") || dir.fileExists("_0_1.liv")) {
+      if (slowFileExists(dir, "_0_1.del") || slowFileExists(dir, "_0_1.liv")) {
         break;
       }
       count++;
@@ -1094,7 +1095,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         fail("delete's were not applied at count=" + flushAtDelCount);
       }
     }
-    w.close();
+    w.shutdown();
     dir.close();
   }
 
@@ -1110,7 +1111,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     final AtomicBoolean sawAfterFlush = new AtomicBoolean();
     IndexWriter w = new IndexWriter(dir,
                                     newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
-                                    setRAMBufferSizeMB(0.5).setMaxBufferedDocs(-1).setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES).setReaderPooling(false)) {
+                                    setRAMBufferSizeMB(0.5).setMaxBufferedDocs(-1).setMergePolicy(NoMergePolicy.INSTANCE).setReaderPooling(false)) {
         @Override
         public void doAfterFlush() {
           assertTrue("only " + docsInSegment.get() + " in segment", closing.get() || docsInSegment.get() >= 7);
@@ -1122,7 +1123,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     while(true) {
       StringBuilder sb = new StringBuilder();
       for(int termIDX=0;termIDX<100;termIDX++) {
-        sb.append(' ').append(_TestUtil.randomRealisticUnicodeString(random()));
+        sb.append(' ').append(TestUtil.randomRealisticUnicodeString(random()));
       }
       if (id == 500) {
         w.deleteDocuments(new Term("id", "0"));
@@ -1133,7 +1134,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       w.updateDocument(new Term("id", ""+id), doc);
       docsInSegment.incrementAndGet();
       // TODO: fix this test
-      if (dir.fileExists("_0_1.del") || dir.fileExists("_0_1.liv")) {
+      if (slowFileExists(dir, "_0_1.del") || slowFileExists(dir, "_0_1.liv")) {
         if (VERBOSE) {
           System.out.println("TEST: deletes created @ id=" + id);
         }
@@ -1143,7 +1144,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     }
     closing.set(true);
     assertTrue(sawAfterFlush.get());
-    w.close();
+    w.shutdown();
     dir.close();
   }
 
@@ -1152,7 +1153,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwc.setMaxBufferedDocs(2);
-    IndexWriter w = new IndexWriter(dir, iwc);
+    IndexWriter w = new IndexWriter(dir, iwc.clone());
     Document doc = new Document();
     doc.add(newField("field", "0", StringField.TYPE_NOT_STORED));
     w.addDocument(doc);
@@ -1166,26 +1167,26 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     w.deleteDocuments(new Term("field", "0"));
     w.commit();
     assertEquals(1, w.getSegmentCount());
-    w.close();
+    w.shutdown();
 
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     CheckIndex checker = new CheckIndex(dir);
-    checker.setInfoStream(new PrintStream(bos, false, "UTF-8"), false);
+    checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8), false);
     CheckIndex.Status indexStatus = checker.checkIndex(null);
     assertTrue(indexStatus.clean);
-    String s = bos.toString("UTF-8");
+    String s = bos.toString(IOUtils.UTF_8);
 
     // Segment should have deletions:
     assertTrue(s.contains("has deletions"));
-    w = new IndexWriter(dir, iwc);
+    w = new IndexWriter(dir, iwc.clone());
     w.forceMerge(1);
-    w.close();
+    w.shutdown();
 
     bos = new ByteArrayOutputStream(1024);
-    checker.setInfoStream(new PrintStream(bos, false, "UTF-8"), false);
+    checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8), false);
     indexStatus = checker.checkIndex(null);
     assertTrue(indexStatus.clean);
-    s = bos.toString("UTF-8");
+    s = bos.toString(IOUtils.UTF_8);
     assertFalse(s.contains("has deletions"));
     dir.close();
   }
@@ -1200,7 +1201,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     w.addDocument(doc);
     w.addDocument(doc);
     w.addDocument(doc);
-    w.close();
+    w.shutdown();
 
     iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwc.setOpenMode(IndexWriterConfig.OpenMode.APPEND);
@@ -1209,7 +1210,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     assertTrue(w.tryDeleteDocument(r, 1));
     assertTrue(w.tryDeleteDocument(r.leaves().get(0).reader(), 0));
     r.close();
-    w.close();
+    w.shutdown();
 
     r = DirectoryReader.open(d);
     assertEquals(2, r.numDeletedDocs());

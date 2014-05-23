@@ -45,7 +45,7 @@ public class ConjunctionSolrSpellChecker extends SolrSpellChecker {
   private Float accuracy = null;
   private String dictionaryName = null;
   private Analyzer queryAnalyzer = null;
-  private List<SolrSpellChecker> checkers = new ArrayList<SolrSpellChecker>();
+  private List<SolrSpellChecker> checkers = new ArrayList<>();
   private boolean initalized = false;
   
   public void addChecker(SolrSpellChecker checker) {
@@ -136,8 +136,8 @@ public class ConjunctionSolrSpellChecker extends SolrSpellChecker {
   //TODO: This just interleaves the results.  In the future, we might want to let users give each checker its
   //      own weight and use that in combination to score & frequency to sort the results ?
   private SpellingResult mergeCheckers(SpellingResult[] results, int numSug) {
-    Map<Token, Integer> combinedTokenFrequency = new HashMap<Token, Integer>();
-    Map<Token, List<LinkedHashMap<String, Integer>>> allSuggestions = new LinkedHashMap<Token, List<LinkedHashMap<String, Integer>>>();
+    Map<Token, Integer> combinedTokenFrequency = new HashMap<>();
+    Map<Token, List<LinkedHashMap<String, Integer>>> allSuggestions = new LinkedHashMap<>();
     for(SpellingResult result : results) {
       if(result.getTokenFrequency()!=null) {
         combinedTokenFrequency.putAll(result.getTokenFrequency());
@@ -145,7 +145,7 @@ public class ConjunctionSolrSpellChecker extends SolrSpellChecker {
       for(Map.Entry<Token, LinkedHashMap<String, Integer>> entry : result.getSuggestions().entrySet()) {
         List<LinkedHashMap<String, Integer>> allForThisToken = allSuggestions.get(entry.getKey());
         if(allForThisToken==null) {
-          allForThisToken = new ArrayList<LinkedHashMap<String, Integer>>();
+          allForThisToken = new ArrayList<>();
           allSuggestions.put(entry.getKey(), allForThisToken);
         }
         allForThisToken.add(entry.getValue());
@@ -154,7 +154,7 @@ public class ConjunctionSolrSpellChecker extends SolrSpellChecker {
     SpellingResult combinedResult = new SpellingResult();    
     for(Map.Entry<Token, List<LinkedHashMap<String, Integer>>> entry : allSuggestions.entrySet()) {
       Token original = entry.getKey();      
-      List<Iterator<Map.Entry<String,Integer>>> corrIters = new ArrayList<Iterator<Map.Entry<String,Integer>>>(entry.getValue().size());
+      List<Iterator<Map.Entry<String,Integer>>> corrIters = new ArrayList<>(entry.getValue().size());
       for(LinkedHashMap<String, Integer> corrections : entry.getValue()) {
         corrIters.add(corrections.entrySet().iterator());
       }        

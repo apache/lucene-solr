@@ -28,7 +28,7 @@ import org.apache.solr.common.SolrException;
 public class SolrParamTest extends LuceneTestCase 
 {  
   public void testGetParams() {
-    Map<String,String> pmap = new HashMap<String, String>();
+    Map<String,String> pmap = new HashMap<>();
     pmap.put( "str"        , "string"   );
     pmap.put( "bool"       , "true"     );
     pmap.put( "true-0"     , "true"     );
@@ -161,7 +161,7 @@ public class SolrParamTest extends LuceneTestCase
         required.getInt( "f.bad.nnnn", pint ) );
     
     // Check default SolrParams
-    Map<String,String> dmap = new HashMap<String, String>();
+    Map<String,String> dmap = new HashMap<>();
     // these are not defined in params
     dmap.put( "dstr"               , "default"   );
     dmap.put( "dint"               , "123"       );

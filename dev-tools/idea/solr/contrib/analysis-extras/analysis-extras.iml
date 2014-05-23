@@ -27,6 +27,16 @@
     <orderEntry type="library" scope="TEST" name="JUnit" level="project" />
     <orderEntry type="module" scope="TEST" module-name="solr-test-framework" />
     <orderEntry type="module" scope="TEST" module-name="lucene-test-framework" />
+    <orderEntry type="module-library" scope="TEST">
+      <library>
+        <CLASSES>
+          <root url="file://$MODULE_DIR$/test-lib" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+        <jarDirectory url="file://$MODULE_DIR$/test-lib" recursive="false" />
+      </library>
+    </orderEntry>
     <orderEntry type="module" module-name="morfologik" />
     <orderEntry type="module" module-name="icu" />
     <orderEntry type="module" module-name="smartcn" />
@@ -35,5 +45,6 @@
     <orderEntry type="module" module-name="stempel" />
     <orderEntry type="module" module-name="analysis-common" />
     <orderEntry type="module" module-name="lucene-core" />
+    <orderEntry type="module" module-name="misc" />
   </component>
 </module>

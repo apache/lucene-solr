@@ -61,7 +61,7 @@ public abstract class FieldProperties {
           "storeOffsetsWithPositions", "docValues"
   };
 
-  static final Map<String,Integer> propertyMap = new HashMap<String,Integer>();
+  static final Map<String,Integer> propertyMap = new HashMap<>();
   static {
     for (String prop : propertyNames) {
       propertyMap.put(prop, propertyNameToInt(prop, true));

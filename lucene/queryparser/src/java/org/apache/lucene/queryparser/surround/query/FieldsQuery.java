@@ -39,7 +39,7 @@ public class FieldsQuery extends SrndQuery { /* mostly untested */
   
   public FieldsQuery(SrndQuery q, String fieldName, char fieldOp) {
     this.q = q;
-    fieldNames = new ArrayList<String>();
+    fieldNames = new ArrayList<>();
     fieldNames.add(fieldName);
     this.fieldOp = fieldOp;
   }
@@ -53,7 +53,7 @@ public class FieldsQuery extends SrndQuery { /* mostly untested */
     if (fieldNames.size() == 1) { /* single field name: no new queries needed */
       return q.makeLuceneQueryFieldNoBoost(fieldNames.get(0), qf);
     } else { /* OR query over the fields */
-      List<SrndQuery> queries = new ArrayList<SrndQuery>();
+      List<SrndQuery> queries = new ArrayList<>();
       Iterator<String> fni = getFieldNames().listIterator();
       SrndQuery qc;
       while (fni.hasNext()) {

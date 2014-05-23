@@ -41,13 +41,9 @@ Files included in an Apache Solr binary distribution
 
 example/
   A self-contained example Solr instance, complete with a sample
-  configuration, documents to index, and the Jetty Servlet container.
+  configuration and documents to index.
   Please see example/README.txt for information about running this
   example.
-
-dist/solr-XX.war
-  The Apache Solr Application.  Deploy this WAR file to any servlet
-  container to run Apache Solr.
 
 dist/solr-<component>-XX.jar
   The Apache Solr libraries.  To compile Apache Solr Plugins,

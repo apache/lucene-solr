@@ -20,19 +20,18 @@ package org.apache.lucene.benchmark.byTask.tasks;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.LogMergePolicy;
-import org.apache.lucene.index.TieredMergePolicy;
-import org.apache.lucene.index.MergeScheduler;
-import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.NoDeletionPolicy;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.NoMergeScheduler;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.util.Version;
 
 import java.io.BufferedOutputStream;
@@ -97,7 +96,8 @@ public class CreateIndexTask extends PerfTask {
   }
   
   public static IndexWriterConfig createWriterConfig(Config config, PerfRunData runData, OpenMode mode, IndexCommit commit) {
-    Version version = Version.valueOf(config.get("writer.version", Version.LUCENE_40.toString()));
+    @SuppressWarnings("deprecation")
+    Version version = Version.parseLeniently(config.get("writer.version", Version.LUCENE_CURRENT.toString()));
     IndexWriterConfig iwConf = new IndexWriterConfig(version, runData.getAnalyzer());
     iwConf.setOpenMode(mode);
     IndexDeletionPolicy indexDeletionPolicy = getIndexDeletionPolicy(config);
@@ -119,14 +119,9 @@ public class CreateIndexTask extends PerfTask {
       
       if (mergeScheduler.equals("org.apache.lucene.index.ConcurrentMergeScheduler")) {
         ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler) iwConf.getMergeScheduler();
-        int v = config.get("concurrent.merge.scheduler.max.thread.count", -1);
-        if (v != -1) {
-          cms.setMaxThreadCount(v);
-        }
-        v = config.get("concurrent.merge.scheduler.max.merge.count", -1);
-        if (v != -1) {
-          cms.setMaxMergeCount(v);
-        }
+        int maxThreadCount = config.get("concurrent.merge.scheduler.max.thread.count", ConcurrentMergeScheduler.DEFAULT_MAX_THREAD_COUNT);
+        int maxMergeCount = config.get("concurrent.merge.scheduler.max.merge.count", ConcurrentMergeScheduler.DEFAULT_MAX_MERGE_COUNT);
+        cms.setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
       }
     }
 
@@ -134,7 +129,7 @@ public class CreateIndexTask extends PerfTask {
     if (defaultCodec != null) {
       try {
         Class<? extends Codec> clazz = Class.forName(defaultCodec).asSubclass(Codec.class);
-        Codec.setDefault(clazz.newInstance());
+        iwConf.setCodec(clazz.newInstance());
       } catch (Exception e) {
         throw new RuntimeException("Couldn't instantiate Codec: " + defaultCodec, e);
       }
@@ -143,21 +138,19 @@ public class CreateIndexTask extends PerfTask {
     final String mergePolicy = config.get("merge.policy",
                                           "org.apache.lucene.index.LogByteSizeMergePolicy");
     boolean isCompound = config.get("compound", true);
+    iwConf.setUseCompoundFile(isCompound);
     if (mergePolicy.equals(NoMergePolicy.class.getName())) {
-      iwConf.setMergePolicy(isCompound ? NoMergePolicy.COMPOUND_FILES : NoMergePolicy.NO_COMPOUND_FILES);
+      iwConf.setMergePolicy(NoMergePolicy.INSTANCE);
     } else {
       try {
         iwConf.setMergePolicy(Class.forName(mergePolicy).asSubclass(MergePolicy.class).newInstance());
       } catch (Exception e) {
         throw new RuntimeException("unable to instantiate class '" + mergePolicy + "' as merge policy", e);
       }
-      if(iwConf.getMergePolicy() instanceof LogMergePolicy) {
+      iwConf.getMergePolicy().setNoCFSRatio(isCompound ? 1.0 : 0.0);
+      if (iwConf.getMergePolicy() instanceof LogMergePolicy) {
         LogMergePolicy logMergePolicy = (LogMergePolicy) iwConf.getMergePolicy();
-        logMergePolicy.setUseCompoundFile(isCompound);
         logMergePolicy.setMergeFactor(config.get("merge.factor",OpenIndexTask.DEFAULT_MERGE_PFACTOR));
-      } else if(iwConf.getMergePolicy() instanceof TieredMergePolicy) {
-        TieredMergePolicy tieredMergePolicy = (TieredMergePolicy) iwConf.getMergePolicy();
-        tieredMergePolicy.setUseCompoundFile(isCompound);
       }
     }
     final double ramBuffer = config.get("ram.flush.mb",OpenIndexTask.DEFAULT_RAM_FLUSH_MB);

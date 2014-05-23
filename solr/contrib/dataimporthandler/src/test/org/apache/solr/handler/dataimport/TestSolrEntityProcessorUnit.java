@@ -46,8 +46,8 @@ public class TestSolrEntityProcessorUnit extends AbstractDataImportHandlerTestCa
   }
 
   public void testMultiValuedFields() {
-    List<Doc> docs = new ArrayList<Doc>();
-    List<FldType> types = new ArrayList<FldType>();
+    List<Doc> docs = new ArrayList<>();
+    List<FldType> types = new ArrayList<>();
     types.add(new FldType(ID, ONE_ONE, new SVal('A', 'Z', 4, 4)));
     types.add(new FldType("description", new IRange(3, 3), new SVal('a', 'c', 1, 1)));
     Doc testDoc = createDoc(types);
@@ -66,12 +66,12 @@ public class TestSolrEntityProcessorUnit extends AbstractDataImportHandlerTestCa
   }
 
   private List<Doc> generateUniqueDocs(int numDocs) {
-    List<FldType> types = new ArrayList<FldType>();
+    List<FldType> types = new ArrayList<>();
     types.add(new FldType(ID, ONE_ONE, new SVal('A', 'Z', 4, 40)));
     types.add(new FldType("description", new IRange(1, 3), new SVal('a', 'c', 1, 1)));
 
-    Set<Comparable> previousIds = new HashSet<Comparable>();
-    List<Doc> docs = new ArrayList<Doc>(numDocs);
+    Set<Comparable> previousIds = new HashSet<>();
+    List<Doc> docs = new ArrayList<>(numDocs);
     for (int i = 0; i < numDocs; i++) {
       Doc doc = createDoc(types);
       while (previousIds.contains(doc.id)) {

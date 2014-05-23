@@ -118,12 +118,20 @@ import org.apache.lucene.util.packed.PackedInts;
  *        {@code BYTES_VAR_DEREF BYTES_VAR_DEREF} it doesn't apply deduplication of the document values.
  *    </li>
  * </ul>
+ * <p>
+ * Limitations:
+ * <ul>
+ *   <li> Binary doc values can be at most {@link #MAX_BINARY_FIELD_LENGTH} in length.
+ * </ul>
  * @deprecated Only for reading old 4.0 and 4.1 segments
  */
 @Deprecated
 // NOTE: not registered in SPI, doesnt respect segment suffix, etc
 // for back compat only!
 public class Lucene40DocValuesFormat extends DocValuesFormat {
+  
+  /** Maximum length for each binary doc values field. */
+  public static final int MAX_BINARY_FIELD_LENGTH = (1 << 15) - 2;
   
   /** Sole constructor. */
   public Lucene40DocValuesFormat() {

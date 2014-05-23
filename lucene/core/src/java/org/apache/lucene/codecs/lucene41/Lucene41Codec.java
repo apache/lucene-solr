@@ -101,7 +101,7 @@ public class Lucene41Codec extends Codec {
   }
   
   @Override
-  public final SegmentInfoFormat segmentInfoFormat() {
+  public SegmentInfoFormat segmentInfoFormat() {
     return infosFormat;
   }
   

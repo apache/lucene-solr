@@ -28,6 +28,7 @@ import org.apache.lucene.document.LongField; // for javadocs
 import org.apache.lucene.search.NumericRangeFilter; // for javadocs
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.util.Attribute;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.BytesRef;
@@ -159,16 +160,12 @@ public final class NumericTokenStream extends TokenStream {
     }
     
     @Override
-    public int fillBytesRef() {
-      try {
-        assert valueSize == 64 || valueSize == 32;
-        return (valueSize == 64) ? 
-          NumericUtils.longToPrefixCoded(value, shift, bytes) :
-          NumericUtils.intToPrefixCoded((int) value, shift, bytes);
-      } catch (IllegalArgumentException iae) {
-        // return empty token before first or after last
-        bytes.length = 0;
-        return 0;
+    public void fillBytesRef() {
+      assert valueSize == 64 || valueSize == 32;
+      if (valueSize == 64) {
+        NumericUtils.longToPrefixCoded(value, shift, bytes);
+      } else {
+        NumericUtils.intToPrefixCoded((int) value, shift, bytes);
       }
     }
 
@@ -218,7 +215,7 @@ public final class NumericTokenStream extends TokenStream {
   
   /**
    * Creates a token stream for numeric values using the default <code>precisionStep</code>
-   * {@link NumericUtils#PRECISION_STEP_DEFAULT} (4). The stream is not yet initialized,
+   * {@link NumericUtils#PRECISION_STEP_DEFAULT} (16). The stream is not yet initialized,
    * before using set a value using the various set<em>???</em>Value() methods.
    */
   public NumericTokenStream() {
@@ -237,7 +234,7 @@ public final class NumericTokenStream extends TokenStream {
   /**
    * Expert: Creates a token stream for numeric values with the specified
    * <code>precisionStep</code> using the given
-   * {@link org.apache.lucene.util.AttributeSource.AttributeFactory}.
+   * {@link org.apache.lucene.util.AttributeFactory}.
    * The stream is not yet initialized,
    * before using set a value using the various set<em>???</em>Value() methods.
    */

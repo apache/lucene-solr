@@ -17,6 +17,20 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.core.CoreContainer;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -26,22 +40,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.xml.parsers.ParserConfigurationException;
-
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoreContainer.Initializer;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xml.sax.SAXException;
 
 @Slow
 public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
@@ -59,9 +57,9 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
   
   protected String zkDir;
   
-  private Map<Integer,CoreContainer> containerMap = new HashMap<Integer,CoreContainer>();
+  private Map<Integer,CoreContainer> containerMap = new HashMap<>();
   
-  private Map<String,Set<Integer>> shardPorts = new HashMap<String,Set<Integer>>();
+  private Map<String,Set<Integer>> shardPorts = new HashMap<>();
   
   private SolrZkClient zkClient;
 
@@ -75,14 +73,13 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    createTempDir();
+
     ignoreException("No UpdateLog found - cannot sync");
     ignoreException("No UpdateLog found - cannot recover");
     
     System.setProperty("zkClientTimeout", "8000");
     
-    zkDir = dataDir.getAbsolutePath() + File.separator
-        + "zookeeper" + System.currentTimeMillis() + "/server1/data";
+    zkDir = createTempDir("zkData").getAbsolutePath();
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     System.setProperty("zkHost", zkServer.getZkAddress());
@@ -135,21 +132,20 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
      
   private void setupContainer(int port, String shard) throws IOException,
       ParserConfigurationException, SAXException {
-    File data = new File(dataDir + File.separator + "data_" + port);
-    data.mkdirs();
+    File data = createTempDir();
     
     System.setProperty("hostPort", Integer.toString(port));
     System.setProperty("shard", shard);
-    Initializer init = new CoreContainer.Initializer();
     System.setProperty("solr.data.dir", data.getAbsolutePath());
     System.setProperty("solr.solr.home", TEST_HOME());
     Set<Integer> ports = shardPorts.get(shard);
     if (ports == null) {
-      ports = new HashSet<Integer>();
+      ports = new HashSet<>();
       shardPorts.put(shard, ports);
     }
     ports.add(port);
-    CoreContainer container = init.initialize();
+    CoreContainer container = new CoreContainer();
+    container.load();
     assertTrue("Container " + port + " has no cores!", container.getCores()
         .size() > 0);
     containerMap.put(port, container);

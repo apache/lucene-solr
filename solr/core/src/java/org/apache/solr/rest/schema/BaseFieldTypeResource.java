@@ -18,6 +18,7 @@ package org.apache.solr.rest.schema;
  */
 
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.rest.BaseSolrResource;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.restlet.resource.ResourceException;
@@ -27,7 +28,7 @@ import java.util.List;
 /**
  * Base class for the FieldType resource classes.
  */
-abstract class BaseFieldTypeResource extends BaseSchemaResource {
+abstract class BaseFieldTypeResource extends BaseSolrResource {
   private boolean showDefaults;
 
   protected BaseFieldTypeResource() {

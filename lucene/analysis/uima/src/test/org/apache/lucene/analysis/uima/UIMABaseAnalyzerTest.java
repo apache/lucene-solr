@@ -31,11 +31,11 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -62,7 +62,7 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
 
   @Test
   public void baseUIMAAnalyzerStreamTest() throws Exception {
-    TokenStream ts = analyzer.tokenStream("text", new StringReader("the big brown fox jumped on the wood"));
+    TokenStream ts = analyzer.tokenStream("text", "the big brown fox jumped on the wood");
     assertTokenStreamContents(ts, new String[]{"the", "big", "brown", "fox", "jumped", "on", "the", "wood"});
   }
 
@@ -115,7 +115,7 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
     indexSearcher = newSearcher(directoryReader);
     result = indexSearcher.search(new MatchAllDocsQuery(), 2);
     assertEquals(2, result.totalHits);
-    writer.close();
+    writer.shutdown();
     indexSearcher.getIndexReader().close();
     dir.close();
   }
@@ -128,7 +128,7 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
 
   @Test
   public void testRandomStringsWithConfigurationParameters() throws Exception {
-    Map<String, Object> cp = new HashMap<String, Object>();
+    Map<String, Object> cp = new HashMap<>();
     cp.put("line-end", "\r");
     checkRandomData(random(), new UIMABaseAnalyzer("/uima/TestWSTokenizerAE.xml", "org.apache.lucene.uima.ts.TokenAnnotation", cp),
         100 * RANDOM_MULTIPLIER);

@@ -70,9 +70,8 @@ public class TestSnowballVocab extends LuceneTestCase {
     
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName,
-          Reader reader) {
-        Tokenizer t = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer t = new KeywordTokenizer();
         return new TokenStreamComponents(t, new SnowballFilter(t, snowballLanguage));
       }  
     };

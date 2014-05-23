@@ -26,7 +26,7 @@ import org.apache.solr.request.SolrQueryRequest;
  * <br>Example: <code>q=foo {!maxscore v=$myq}&myq=A OR B OR C</code>
  */
 public class MaxScoreQParserPlugin extends LuceneQParserPlugin {
-  public static String NAME = "maxscore";
+  public static final String NAME = "maxscore";
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {

@@ -48,7 +48,7 @@ public class TestSimilarity2 extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    sims = new ArrayList<Similarity>();
+    sims = new ArrayList<>();
     sims.add(new DefaultSimilarity());
     sims.add(new BM25Similarity());
     // TODO: not great that we dup this all with TestSimilarityBase
@@ -78,7 +78,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     IndexReader ir = iw.getReader();
-    iw.close();
+    iw.shutdown();
     IndexSearcher is = newSearcher(ir);
     
     for (Similarity sim : sims) {
@@ -97,7 +97,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     doc.add(newTextField("foo", "bar", Field.Store.NO));
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
-    iw.close();
+    iw.shutdown();
     IndexSearcher is = newSearcher(ir);
     
     for (Similarity sim : sims) {
@@ -119,7 +119,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     doc.add(newTextField("foo", "bar", Field.Store.NO));
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
-    iw.close();
+    iw.shutdown();
     IndexSearcher is = newSearcher(ir);
     
     for (Similarity sim : sims) {
@@ -144,7 +144,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     doc.add(newField("foo", "bar", ft));
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
-    iw.close();
+    iw.shutdown();
     IndexSearcher is = newSearcher(ir);
     
     for (Similarity sim : sims) {
@@ -169,7 +169,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     doc.add(f);
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
-    iw.close();
+    iw.shutdown();
     IndexSearcher is = newSearcher(ir);
     
     for (Similarity sim : sims) {
@@ -195,7 +195,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     doc.add(f);
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
-    iw.close();
+    iw.shutdown();
     IndexSearcher is = newSearcher(ir);
     
     for (Similarity sim : sims) {
@@ -221,7 +221,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     doc.add(newField("foo", "bar", ft));
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
-    iw.close();
+    iw.shutdown();
     IndexSearcher is = newSearcher(ir);
     
     for (Similarity sim : sims) {

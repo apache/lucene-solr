@@ -56,22 +56,19 @@ public class StreamUtils {
       try {
         return csfType==null ? in : new CompressorStreamFactory().createCompressorInputStream(csfType, in);
       } catch (CompressorException e) {
-        IOException ioe = new IOException(e.getMessage());
-        ioe.initCause(e);
-        throw ioe;      }
+        throw new IOException(e.getMessage(), e);
+      }
     }
     private OutputStream outputStream(OutputStream os) throws IOException {
       try {
         return csfType==null ? os : new CompressorStreamFactory().createCompressorOutputStream(csfType, os);
       } catch (CompressorException e) {
-        IOException ioe = new IOException(e.getMessage());
-        ioe.initCause(e);
-        throw ioe;
+        throw new IOException(e.getMessage(), e);
       }
     }
   }
 
-  private static final Map<String,Type> extensionToType = new HashMap<String,Type>();
+  private static final Map<String,Type> extensionToType = new HashMap<>();
   static {
     // these in are lower case, we will lower case at the test as well
     extensionToType.put(".bz2", Type.BZIP2);

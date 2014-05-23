@@ -18,8 +18,7 @@ package org.apache.lucene.index;
 
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.lucene.index.FieldInfos.FieldNumbers;
-import org.apache.lucene.util.SetOnce;
+import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
  * {@link DocumentsWriterPerThreadPool} controls {@link ThreadState} instances
@@ -36,7 +35,7 @@ import org.apache.lucene.util.SetOnce;
  * new {@link DocumentsWriterPerThread} instance.
  * </p>
  */
-abstract class DocumentsWriterPerThreadPool implements Cloneable {
+final class DocumentsWriterPerThreadPool implements Cloneable {
   
   /**
    * {@link ThreadState} references and guards a
@@ -71,12 +70,16 @@ abstract class DocumentsWriterPerThreadPool implements Cloneable {
      * for indexing anymore.
      * @see #isActive()  
      */
-    private void resetWriter(DocumentsWriterPerThread dwpt) {
+  
+    private void deactivate() {
       assert this.isHeldByCurrentThread();
-      if (dwpt == null) {
-        isActive = false;
-      }
-      this.dwpt = dwpt;
+      isActive = false;
+      reset();
+    }
+    
+    private void reset() {
+      assert this.isHeldByCurrentThread();
+      this.dwpt = null;
       this.bytesUsed = 0;
       this.flushPending = false;
     }
@@ -89,6 +92,11 @@ abstract class DocumentsWriterPerThreadPool implements Cloneable {
     boolean isActive() {
       assert this.isHeldByCurrentThread();
       return isActive;
+    }
+    
+    boolean isInitialized() {
+      assert this.isHeldByCurrentThread();
+      return isActive() && dwpt != null;
     }
     
     /**
@@ -119,11 +127,12 @@ abstract class DocumentsWriterPerThreadPool implements Cloneable {
     }
   }
 
-  private ThreadState[] threadStates;
+  private final ThreadState[] threadStates;
   private volatile int numThreadStatesActive;
-  private SetOnce<FieldNumbers> globalFieldMap = new SetOnce<FieldNumbers>();
-  private SetOnce<DocumentsWriter> documentsWriter = new SetOnce<DocumentsWriter>();
-  
+
+  private final ThreadState[] freeList;
+  private int freeCount;
+
   /**
    * Creates a new {@link DocumentsWriterPerThreadPool} with a given maximum of {@link ThreadState}s.
    */
@@ -133,32 +142,20 @@ abstract class DocumentsWriterPerThreadPool implements Cloneable {
     }
     threadStates = new ThreadState[maxNumThreadStates];
     numThreadStatesActive = 0;
-  }
-
-  void initialize(DocumentsWriter documentsWriter, FieldNumbers globalFieldMap, LiveIndexWriterConfig config) {
-    this.documentsWriter.set(documentsWriter); // thread pool is bound to DW
-    this.globalFieldMap.set(globalFieldMap);
     for (int i = 0; i < threadStates.length; i++) {
-      final FieldInfos.Builder infos = new FieldInfos.Builder(globalFieldMap);
-      threadStates[i] = new ThreadState(new DocumentsWriterPerThread(documentsWriter.directory, documentsWriter, infos, documentsWriter.chain));
+      threadStates[i] = new ThreadState(null);
     }
+    freeList = new ThreadState[maxNumThreadStates];
   }
 
   @Override
   public DocumentsWriterPerThreadPool clone() {
     // We should only be cloned before being used:
-    assert numThreadStatesActive == 0;
-    DocumentsWriterPerThreadPool clone;
-    try {
-      clone = (DocumentsWriterPerThreadPool) super.clone();
-    } catch (CloneNotSupportedException e) {
-      // should not happen
-      throw new RuntimeException(e);
+    if (numThreadStatesActive != 0) {
+      throw new IllegalStateException("clone this object before it is used!");
     }
-    clone.documentsWriter = new SetOnce<DocumentsWriter>();
-    clone.globalFieldMap = new SetOnce<FieldNumbers>();
-    clone.threadStates = new ThreadState[threadStates.length];
-    return clone;
+
+    return new DocumentsWriterPerThreadPool(threadStates.length);
   }
   
   /**
@@ -175,6 +172,7 @@ abstract class DocumentsWriterPerThreadPool implements Cloneable {
   int getActiveThreadState() {
     return numThreadStatesActive;
   }
+  
 
   /**
    * Returns a new {@link ThreadState} iff any new state is available otherwise
@@ -186,38 +184,36 @@ abstract class DocumentsWriterPerThreadPool implements Cloneable {
    * @return a new {@link ThreadState} iff any new state is available otherwise
    *         <code>null</code>
    */
-  synchronized ThreadState newThreadState() {
-    if (numThreadStatesActive < threadStates.length) {
-      final ThreadState threadState = threadStates[numThreadStatesActive];
-      threadState.lock(); // lock so nobody else will get this ThreadState
-      boolean unlock = true;
-      try {
-        if (threadState.isActive()) {
-          // unreleased thread states are deactivated during DW#close()
-          numThreadStatesActive++; // increment will publish the ThreadState
-          assert threadState.dwpt != null;
-          threadState.dwpt.initialize();
-          unlock = false;
-          return threadState;
-        }
-        // unlock since the threadstate is not active anymore - we are closed!
-        assert assertUnreleasedThreadStatesInactive();
-        return null;
-      } finally {
-        if (unlock) {
-          // in any case make sure we unlock if we fail 
-          threadState.unlock();
-        }
+  private ThreadState newThreadState() {
+    assert numThreadStatesActive < threadStates.length;
+    final ThreadState threadState = threadStates[numThreadStatesActive];
+    threadState.lock(); // lock so nobody else will get this ThreadState
+    boolean unlock = true;
+    try {
+      if (threadState.isActive()) {
+        // unreleased thread states are deactivated during DW#close()
+        numThreadStatesActive++; // increment will publish the ThreadState
+        //System.out.println("activeCount=" + numThreadStatesActive);
+        assert threadState.dwpt == null;
+        unlock = false;
+        return threadState;
+      }
+      // we are closed: unlock since the threadstate is not active anymore
+      assert assertUnreleasedThreadStatesInactive();
+      return null;
+    } finally {
+      if (unlock) {
+        // in any case make sure we unlock if we fail 
+        threadState.unlock();
       }
     }
-    return null;
   }
   
   private synchronized boolean assertUnreleasedThreadStatesInactive() {
     for (int i = numThreadStatesActive; i < threadStates.length; i++) {
       assert threadStates[i].tryLock() : "unreleased threadstate should not be locked";
       try {
-        assert !threadStates[i].isActive() : "expected unreleased thread state to be inactive";
+        assert !threadStates[i].isInitialized() : "expected unreleased thread state to be inactive";
       } finally {
         threadStates[i].unlock();
       }
@@ -233,24 +229,23 @@ abstract class DocumentsWriterPerThreadPool implements Cloneable {
       final ThreadState threadState = threadStates[i];
       threadState.lock();
       try {
-        threadState.resetWriter(null);
+        threadState.deactivate();
       } finally {
         threadState.unlock();
       }
     }
+    
+    // In case any threads are waiting for indexing:
+    notifyAll();
   }
   
-  DocumentsWriterPerThread replaceForFlush(ThreadState threadState, boolean closed) {
+  DocumentsWriterPerThread reset(ThreadState threadState, boolean closed) {
     assert threadState.isHeldByCurrentThread();
-    assert globalFieldMap.get() != null;
     final DocumentsWriterPerThread dwpt = threadState.dwpt;
     if (!closed) {
-      final FieldInfos.Builder infos = new FieldInfos.Builder(globalFieldMap.get());
-      final DocumentsWriterPerThread newDwpt = new DocumentsWriterPerThread(dwpt, infos);
-      newDwpt.initialize();
-      threadState.resetWriter(newDwpt);
+      threadState.reset();
     } else {
-      threadState.resetWriter(null);
+      threadState.deactivate();
     }
     return dwpt;
   }
@@ -258,11 +253,69 @@ abstract class DocumentsWriterPerThreadPool implements Cloneable {
   void recycle(DocumentsWriterPerThread dwpt) {
     // don't recycle DWPT by default
   }
-  
-  // you cannot subclass this without being in o.a.l.index package anyway, so
-  // the class is already pkg-private... fix me: see LUCENE-4013
-  abstract ThreadState getAndLock(Thread requestingThread, DocumentsWriter documentsWriter);
 
+  /** This method is used by DocumentsWriter/FlushControl to obtain a ThreadState to do an indexing operation (add/updateDocument). */
+  ThreadState getAndLock(Thread requestingThread, DocumentsWriter documentsWriter) {
+    ThreadState threadState = null;
+    synchronized (this) {
+      while (true) {
+        if (freeCount > 0) {
+          // Important that we are LIFO here! This way if number of concurrent indexing threads was once high, but has now reduced, we only use a
+          // limited number of thread states:
+          threadState = freeList[freeCount-1];
+
+          if (threadState.dwpt == null) {
+            // This thread-state is not initialized, e.g. it
+            // was just flushed. See if we can instead find
+            // another free thread state that already has docs
+            // indexed. This way if incoming thread concurrency
+            // has decreased, we don't leave docs
+            // indefinitely buffered, tying up RAM.  This
+            // will instead get those thread states flushed,
+            // freeing up RAM for larger segment flushes:
+            for(int i=0;i<freeCount;i++) {
+              if (freeList[i].dwpt != null) {
+                // Use this one instead, and swap it with
+                // the un-initialized one:
+                ThreadState ts = freeList[i];
+                freeList[i] = threadState;
+                threadState = ts;
+                break;
+              }
+            }
+          }
+          freeCount--;
+          break;
+        } else if (numThreadStatesActive < threadStates.length) {
+          // ThreadState is already locked before return by this method:
+          return newThreadState();
+        } else {
+          // Wait until a thread state frees up:
+          try {
+            wait();
+          } catch (InterruptedException ie) {
+            throw new ThreadInterruptedException(ie);
+          }
+        }
+      }
+    }
+
+    // This could take time, e.g. if the threadState is [briefly] checked for flushing:
+    threadState.lock();
+
+    return threadState;
+  }
+
+  void release(ThreadState state) {
+    state.unlock();
+    synchronized (this) {
+      assert freeCount < freeList.length;
+      freeList[freeCount++] = state;
+      // In case any thread is waiting, wake one of them up since we just released a thread state; notify() should be sufficient but we do
+      // notifyAll defensively:
+      notifyAll();
+    }
+  }
   
   /**
    * Returns the <i>i</i>th active {@link ThreadState} where <i>i</i> is the
@@ -306,9 +359,9 @@ abstract class DocumentsWriterPerThreadPool implements Cloneable {
       final ThreadState threadState = threadStates[i];
       threadState.lock();
       try {
-       if (!threadState.isActive) {
-         count++;
-       }
+        if (!threadState.isActive) {
+          count++;
+        }
       } finally {
         threadState.unlock();
       }
@@ -325,18 +378,6 @@ abstract class DocumentsWriterPerThreadPool implements Cloneable {
    */
   void deactivateThreadState(ThreadState threadState) {
     assert threadState.isActive();
-    threadState.resetWriter(null);
-  }
-
-  /**
-   * Reinitialized an active {@link ThreadState}. A {@link ThreadState} should
-   * only be reinitialized if it is active without any pending documents.
-   * 
-   * @param threadState the state to reinitialize
-   */
-  void reinitThreadState(ThreadState threadState) {
-    assert threadState.isActive;
-    assert threadState.dwpt.getNumDocsInRAM() == 0;
-    threadState.dwpt.initialize();
+    threadState.deactivate();
   }
 }

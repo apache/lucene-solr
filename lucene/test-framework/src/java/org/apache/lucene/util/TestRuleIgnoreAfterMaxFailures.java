@@ -40,11 +40,6 @@ public final class TestRuleIgnoreAfterMaxFailures implements TestRule {
    * Maximum failures. Package scope for tests.
    */
   int maxFailures;
-
-  /**
-   * Current count of failures. Package scope for tests.
-   */
-  int failuresSoFar;
   
   /**
    * @param maxFailures
@@ -61,19 +56,13 @@ public final class TestRuleIgnoreAfterMaxFailures implements TestRule {
     return new Statement() {
       @Override
       public void evaluate() throws Throwable {
+        int failuresSoFar = FailureMarker.getFailures();
         if (failuresSoFar >= maxFailures) {
           RandomizedTest.assumeTrue("Ignored, failures limit reached (" + 
               failuresSoFar + " >= " + maxFailures + ").", false);
         }
 
-        try {
-          s.evaluate();
-        } catch (Throwable t) {
-          if (!TestRuleMarkFailure.isAssumption(t)) {
-            failuresSoFar++;
-          }
-          throw t;
-        }
+        s.evaluate();
       }
     };
   }

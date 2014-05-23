@@ -34,6 +34,7 @@ public abstract class FilteringTokenFilter extends TokenFilter {
 
   protected final Version version;
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+  private int skippedPositions;
 
   /**
    * Create a new {@link FilteringTokenFilter}.
@@ -50,7 +51,7 @@ public abstract class FilteringTokenFilter extends TokenFilter {
 
   @Override
   public final boolean incrementToken() throws IOException {
-    int skippedPositions = 0;
+    skippedPositions = 0;
     while (input.incrementToken()) {
       if (accept()) {
         if (skippedPositions != 0) {
@@ -68,6 +69,12 @@ public abstract class FilteringTokenFilter extends TokenFilter {
   @Override
   public void reset() throws IOException {
     super.reset();
+    skippedPositions = 0;
   }
 
+  @Override
+  public void end() throws IOException {
+    super.end();
+    posIncrAtt.setPositionIncrement(posIncrAtt.getPositionIncrement() + skippedPositions);
+  }
 }

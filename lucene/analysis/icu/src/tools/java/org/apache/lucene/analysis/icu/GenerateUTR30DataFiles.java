@@ -35,6 +35,7 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -62,7 +63,7 @@ import java.util.regex.Pattern;
 public class GenerateUTR30DataFiles {
   private static final String ICU_SVN_TAG_URL
       = "http://source.icu-project.org/repos/icu/icu/tags";
-  private static final String ICU_RELEASE_TAG = "release-49-1-2";
+  private static final String ICU_RELEASE_TAG = "release-52-1";
   private static final String ICU_DATA_NORM2_PATH = "source/data/unidata/norm2";
   private static final String NFC_TXT = "nfc.txt";
   private static final String NFKC_TXT = "nfkc.txt";
@@ -106,7 +107,7 @@ public class GenerateUTR30DataFiles {
 
   private static void expandDataFileRules(File file) throws IOException {
     final FileInputStream stream = new FileInputStream(file);
-    final InputStreamReader reader = new InputStreamReader(stream, "UTF-8");
+    final InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
     final BufferedReader bufferedReader = new BufferedReader(reader);
     StringBuilder builder = new StringBuilder();
     String line;
@@ -154,7 +155,7 @@ public class GenerateUTR30DataFiles {
     if (modified) {
       System.err.println("Expanding rules in and overwriting " + file.getName());
       final FileOutputStream out = new FileOutputStream(file, false);
-      Writer writer = new OutputStreamWriter(out, "UTF-8");
+      Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);
       try {
         writer.write(builder.toString());
       } finally {
@@ -178,8 +179,8 @@ public class GenerateUTR30DataFiles {
     System.err.print("Downloading " + NFKC_CF_TXT + " and making diacritic rules one-way ... ");
     URLConnection connection = openConnection(new URL(norm2url, NFC_TXT));
     BufferedReader reader = new BufferedReader
-        (new InputStreamReader(connection.getInputStream(), "UTF-8"));
-    Writer writer = new OutputStreamWriter(new FileOutputStream(NFC_TXT), "UTF-8");
+        (new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
+    Writer writer = new OutputStreamWriter(new FileOutputStream(NFC_TXT), StandardCharsets.UTF_8);
     try {
       String line;
 
@@ -188,7 +189,7 @@ public class GenerateUTR30DataFiles {
         if (matcher.matches()) {
           final String leftHandSide = matcher.group(1);
           final String rightHandSide = matcher.group(2).trim();
-          List<String> diacritics = new ArrayList<String>();
+          List<String> diacritics = new ArrayList<>();
           for (String outputCodePoint : rightHandSide.split("\\s+")) {
             int ch = Integer.parseInt(outputCodePoint, 16);
             if (UCharacter.hasBinaryProperty(ch, UProperty.DIACRITIC)

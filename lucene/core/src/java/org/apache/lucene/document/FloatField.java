@@ -18,8 +18,8 @@ package org.apache.lucene.document;
  */
 
 import org.apache.lucene.analysis.NumericTokenStream; // javadocs
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.search.FieldCache; // javadocs
 import org.apache.lucene.search.NumericRangeFilter; // javadocs
 import org.apache.lucene.search.NumericRangeQuery; // javadocs
 import org.apache.lucene.util.NumericUtils;
@@ -57,7 +57,7 @@ import org.apache.lucene.util.NumericUtils;
  * NumericRangeFilter}.  To sort according to a
  * <code>FloatField</code>, use the normal numeric sort types, eg
  * {@link org.apache.lucene.search.SortField.Type#FLOAT}. <code>FloatField</code> 
- * values can also be loaded directly from {@link FieldCache}.</p>
+ * values can also be loaded directly from {@link AtomicReader#getNumericDocValues}.</p>
  *
  * <p>You may add the same field name as an <code>FloatField</code> to
  * the same document more than once.  Range querying and
@@ -125,6 +125,7 @@ public final class FloatField extends Field {
     TYPE_NOT_STORED.setOmitNorms(true);
     TYPE_NOT_STORED.setIndexOptions(IndexOptions.DOCS_ONLY);
     TYPE_NOT_STORED.setNumericType(FieldType.NumericType.FLOAT);
+    TYPE_NOT_STORED.setNumericPrecisionStep(NumericUtils.PRECISION_STEP_DEFAULT_32);
     TYPE_NOT_STORED.freeze();
   }
 
@@ -139,13 +140,14 @@ public final class FloatField extends Field {
     TYPE_STORED.setOmitNorms(true);
     TYPE_STORED.setIndexOptions(IndexOptions.DOCS_ONLY);
     TYPE_STORED.setNumericType(FieldType.NumericType.FLOAT);
+    TYPE_STORED.setNumericPrecisionStep(NumericUtils.PRECISION_STEP_DEFAULT_32);
     TYPE_STORED.setStored(true);
     TYPE_STORED.freeze();
   }
 
   /** Creates a stored or un-stored FloatField with the provided value
    *  and default <code>precisionStep</code> {@link
-   *  NumericUtils#PRECISION_STEP_DEFAULT} (4). 
+   *  NumericUtils#PRECISION_STEP_DEFAULT_32} (8). 
    *  @param name field name
    *  @param value 32-bit double value
    *  @param stored Store.YES if the content should also be stored

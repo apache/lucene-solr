@@ -43,7 +43,7 @@ public class LogByteSizeMergePolicy extends LogMergePolicy {
   }
   
   @Override
-  protected long size(SegmentInfoPerCommit info) throws IOException {
+  protected long size(SegmentCommitInfo info) throws IOException {
     return sizeBytes(info);
   }
 

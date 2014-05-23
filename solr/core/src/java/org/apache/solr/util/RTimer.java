@@ -47,7 +47,7 @@ public class RTimer {
   public RTimer() {
     time = 0;
     culmTime = 0;
-    children = new SimpleOrderedMap<RTimer>();
+    children = new SimpleOrderedMap<>();
     startTime = now();
     state = STARTED;
   }
@@ -116,7 +116,7 @@ public class RTimer {
   }
 
   public NamedList asNamedList() {
-    NamedList<Object> m = new SimpleOrderedMap<Object>();
+    NamedList<Object> m = new SimpleOrderedMap<>();
     m.add( "time", time );
     if( children.size() > 0 ) {
       for( Map.Entry<String, RTimer> entry : children ) {

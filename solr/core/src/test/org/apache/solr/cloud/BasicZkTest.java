@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
  */
 
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -58,16 +57,12 @@ public class BasicZkTest extends AbstractZkTestCase {
     h.getCoreContainer().getZkController().getZkStateReader().getLeaderUrl("collection1", "shard1", 30000);
     
     ZkController zkController = h.getCoreContainer().getZkController();
-    
-    // test merge factor picked up
+
     SolrCore core = h.getCore();
 
-    RefCounted<IndexWriter> iw = ((DirectUpdateHandler2)core.getUpdateHandler()).getSolrCoreState().getIndexWriter(core);
-    try {
-      assertEquals("Mergefactor was not picked up", 8, ((LogMergePolicy)iw.get().getConfig().getMergePolicy()).getMergeFactor());
-    } finally {
-      iw.decref();
-    }
+    // test that we got the expected config, not just hardcoded defaults
+    assertNotNull(core.getRequestHandler("mock"));
+
     lrf.args.put(CommonParams.VERSION, "2.2");
     assertQ("test query on empty index", request("qlkciyopsbgzyvkylsjhchghjrdf"),
         "//result[@numFound='0']");

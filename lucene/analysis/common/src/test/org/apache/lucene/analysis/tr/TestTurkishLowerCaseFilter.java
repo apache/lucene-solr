@@ -37,8 +37,7 @@ public class TestTurkishLowerCaseFilter extends BaseTokenStreamTestCase {
    * Test composed forms
    */
   public void testTurkishLowerCaseFilter() throws Exception {
-    TokenStream stream = new MockTokenizer(new StringReader(
-        "\u0130STANBUL \u0130ZM\u0130R ISPARTA"), MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer("\u0130STANBUL \u0130ZM\u0130R ISPARTA");
     TurkishLowerCaseFilter filter = new TurkishLowerCaseFilter(stream);
     assertTokenStreamContents(filter, new String[] {"istanbul", "izmir",
         "\u0131sparta",});
@@ -48,8 +47,7 @@ public class TestTurkishLowerCaseFilter extends BaseTokenStreamTestCase {
    * Test decomposed forms
    */
   public void testDecomposed() throws Exception {
-    TokenStream stream = new MockTokenizer(new StringReader(
-        "\u0049\u0307STANBUL \u0049\u0307ZM\u0049\u0307R ISPARTA"), MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer("\u0049\u0307STANBUL \u0049\u0307ZM\u0049\u0307R ISPARTA");
     TurkishLowerCaseFilter filter = new TurkishLowerCaseFilter(stream);
     assertTokenStreamContents(filter, new String[] {"istanbul", "izmir",
         "\u0131sparta",});
@@ -61,16 +59,14 @@ public class TestTurkishLowerCaseFilter extends BaseTokenStreamTestCase {
    * to U+0130 + U+0316, and is lowercased the same way.
    */
   public void testDecomposed2() throws Exception {
-    TokenStream stream = new MockTokenizer(new StringReader(
-        "\u0049\u0316\u0307STANBUL \u0049\u0307ZM\u0049\u0307R I\u0316SPARTA"), MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer("\u0049\u0316\u0307STANBUL \u0049\u0307ZM\u0049\u0307R I\u0316SPARTA");
     TurkishLowerCaseFilter filter = new TurkishLowerCaseFilter(stream);
     assertTokenStreamContents(filter, new String[] {"i\u0316stanbul", "izmir",
         "\u0131\u0316sparta",});
   }
   
   public void testDecomposed3() throws Exception {
-    TokenStream stream = new MockTokenizer(new StringReader(
-        "\u0049\u0307"), MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer("\u0049\u0307");
     TurkishLowerCaseFilter filter = new TurkishLowerCaseFilter(stream);
     assertTokenStreamContents(filter, new String[] {"i"});
   }
@@ -78,11 +74,11 @@ public class TestTurkishLowerCaseFilter extends BaseTokenStreamTestCase {
   public void testEmptyTerm() throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, new TurkishLowerCaseFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

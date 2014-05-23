@@ -66,7 +66,7 @@ public final class QueryNodeOperation {
       QueryNode result = null;
       switch (op) {
       case NONE:
-        List<QueryNode> children = new ArrayList<QueryNode>();
+        List<QueryNode> children = new ArrayList<>();
         children.add(q1.cloneTree());
         children.add(q2.cloneTree());
         result = new AndQueryNode(children);

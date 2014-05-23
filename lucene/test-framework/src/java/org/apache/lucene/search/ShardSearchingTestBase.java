@@ -36,7 +36,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.PrintStreamInfoStream;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 // TODO
 //   - doc blocks?  so we can test joins/grouping...
@@ -178,14 +178,14 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
   // term stats from remote node
   Map<Term,TermStatistics> getNodeTermStats(Set<Term> terms, int nodeID, long version) throws IOException {
     final NodeState node = nodes[nodeID];
-    final Map<Term,TermStatistics> stats = new HashMap<Term,TermStatistics>();
+    final Map<Term,TermStatistics> stats = new HashMap<>();
     final IndexSearcher s = node.searchers.acquire(version);
     if (s == null) {
       throw new SearcherExpiredException("node=" + nodeID + " version=" + version);
     }
     try {
       for(Term term : terms) {
-        final TermContext termContext = TermContext.build(s.getIndexReader().getContext(), term, false);
+        final TermContext termContext = TermContext.build(s.getIndexReader().getContext(), term);
         stats.put(term, s.termStatistics(term, termContext));
       }
     } finally {
@@ -207,8 +207,8 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
     // local cache...?  And still LRU otherwise (for the
     // still-live searchers).
 
-    private final Map<FieldAndShardVersion,CollectionStatistics> collectionStatsCache = new ConcurrentHashMap<FieldAndShardVersion,CollectionStatistics>();
-    private final Map<TermAndShardVersion,TermStatistics> termStatsCache = new ConcurrentHashMap<TermAndShardVersion,TermStatistics>();
+    private final Map<FieldAndShardVersion,CollectionStatistics> collectionStatsCache = new ConcurrentHashMap<>();
+    private final Map<TermAndShardVersion,TermStatistics> termStatsCache = new ConcurrentHashMap<>();
 
     /** Matches docs in the local shard but scores based on
      *  aggregated stats ("mock distributed scoring") from all
@@ -229,7 +229,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
       @Override
       public Query rewrite(Query original) throws IOException {
         final Query rewritten = super.rewrite(original);
-        final Set<Term> terms = new HashSet<Term>();
+        final Set<Term> terms = new HashSet<>();
         rewritten.extractTerms(terms);
 
         // Make a single request to remote nodes for term
@@ -239,7 +239,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
             continue;
           }
 
-          final Set<Term> missing = new HashSet<Term>();
+          final Set<Term> missing = new HashSet<>();
           for(Term term : terms) {
             final TermAndShardVersion key = new TermAndShardVersion(nodeID, nodeVersions[nodeID], term);
             if (!termStatsCache.containsKey(key)) {
@@ -370,20 +370,35 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
       @Override
       public TopDocs searchAfter(ScoreDoc after, Query query, int numHits) throws IOException {
         final TopDocs[] shardHits = new TopDocs[nodeVersions.length];
+        // results are merged in that order: score, shardIndex, doc. therefore we set
+        // after to after.score and depending on the nodeID we set doc to either:
+        // - not collect any more documents with that score (only with worse score)
+        // - collect more documents with that score (and worse) following the last collected document
+        // - collect all documents with that score (and worse)
         ScoreDoc shardAfter = new ScoreDoc(after.doc, after.score);
-        for(int nodeID=0;nodeID<nodeVersions.length;nodeID++) {
+        for (int nodeID = 0; nodeID < nodeVersions.length; nodeID++) {
           if (nodeID < after.shardIndex) {
-            // If score is tied then no docs in this shard
-            // should be collected:
-            shardAfter.doc = Integer.MAX_VALUE;
+            // all documents with after.score were already collected, so collect
+            // only documents with worse scores.
+            final NodeState.ShardIndexSearcher s = nodes[nodeID].acquire(nodeVersions);
+            try {
+              // Setting after.doc to reader.maxDoc-1 is a way to tell
+              // TopScoreDocCollector that no more docs with that score should
+              // be collected. note that in practice the shard which sends the
+              // request to a remote shard won't have reader.maxDoc at hand, so
+              // it will send some arbitrary value which will be fixed on the
+              // other end.
+              shardAfter.doc = s.getIndexReader().maxDoc() - 1;
+            } finally {
+              nodes[nodeID].release(s);
+            }
           } else if (nodeID == after.shardIndex) {
-            // If score is tied then we break according to
-            // docID (like normal):  
+            // collect all documents following the last collected doc with
+            // after.score + documents with worse scores.  
             shardAfter.doc = after.doc;
           } else {
-            // If score is tied then all docs in this shard
-            // should be collected, because they come after
-            // the previous bottom:
+            // all documents with after.score (and worse) should be collected
+            // because they didn't make it to top-N in the previous round.
             shardAfter.doc = -1;
           }
           if (nodeID == myNodeID) {
@@ -432,9 +447,11 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
 
     public NodeState(Random random, int nodeID, int numNodes) throws IOException {
       myNodeID = nodeID;
-      dir = newFSDirectory(_TestUtil.getTempDir("ShardSearchingTestBase"));
+      dir = newFSDirectory(createTempDir("ShardSearchingTestBase"));
       // TODO: set warmer
-      IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+      MockAnalyzer analyzer = new MockAnalyzer(random());
+      analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
+      IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
       iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
       if (VERBOSE) {
         iwc.setInfoStream(new PrintStreamInfoStream(System.out));
@@ -520,7 +537,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
       }
       searchers.close();
       mgr.close();
-      writer.close();
+      writer.shutdown();
       dir.close();
     }
   }

@@ -30,12 +30,13 @@ import org.apache.lucene.util.Version;
  */
 public final class ShingleAnalyzerWrapper extends AnalyzerWrapper {
 
-  private final Analyzer defaultAnalyzer;
+  private final Analyzer delegate;
   private final int maxShingleSize;
   private final int minShingleSize;
   private final String tokenSeparator;
   private final boolean outputUnigrams;
   private final boolean outputUnigramsIfNoShingles;
+  private final String fillerToken;
 
   public ShingleAnalyzerWrapper(Analyzer defaultAnalyzer) {
     this(defaultAnalyzer, ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE);
@@ -46,13 +47,14 @@ public final class ShingleAnalyzerWrapper extends AnalyzerWrapper {
   }
 
   public ShingleAnalyzerWrapper(Analyzer defaultAnalyzer, int minShingleSize, int maxShingleSize) {
-    this(defaultAnalyzer, minShingleSize, maxShingleSize, ShingleFilter.TOKEN_SEPARATOR, true, false);
+    this(defaultAnalyzer, minShingleSize, maxShingleSize, ShingleFilter.DEFAULT_TOKEN_SEPARATOR,
+         true, false, ShingleFilter.DEFAULT_FILLER_TOKEN);
   }
 
   /**
    * Creates a new ShingleAnalyzerWrapper
    *
-   * @param defaultAnalyzer Analyzer whose TokenStream is to be filtered
+   * @param delegate Analyzer whose TokenStream is to be filtered
    * @param minShingleSize Min shingle (token ngram) size
    * @param maxShingleSize Max shingle size
    * @param tokenSeparator Used to separate input stream tokens in output shingles
@@ -63,15 +65,18 @@ public final class ShingleAnalyzerWrapper extends AnalyzerWrapper {
    *        minShingleSize tokens in the input stream)?
    *        Note that if outputUnigrams==true, then unigrams are always output,
    *        regardless of whether any shingles are available.
+   * @param fillerToken filler token to use when positionIncrement is more than 1
    */
   public ShingleAnalyzerWrapper(
-      Analyzer defaultAnalyzer,
+      Analyzer delegate,
       int minShingleSize,
       int maxShingleSize,
       String tokenSeparator,
       boolean outputUnigrams,
-      boolean outputUnigramsIfNoShingles) {
-    this.defaultAnalyzer = defaultAnalyzer;
+      boolean outputUnigramsIfNoShingles,
+      String fillerToken) {
+    super(delegate.getReuseStrategy());
+    this.delegate = delegate;
 
     if (maxShingleSize < 2) {
       throw new IllegalArgumentException("Max shingle size must be >= 2");
@@ -90,6 +95,7 @@ public final class ShingleAnalyzerWrapper extends AnalyzerWrapper {
     this.tokenSeparator = (tokenSeparator == null ? "" : tokenSeparator);
     this.outputUnigrams = outputUnigrams;
     this.outputUnigramsIfNoShingles = outputUnigramsIfNoShingles;
+    this.fillerToken = fillerToken;
   }
 
   /**
@@ -136,9 +142,13 @@ public final class ShingleAnalyzerWrapper extends AnalyzerWrapper {
     return outputUnigramsIfNoShingles;
   }
 
+  public String getFillerToken() {
+    return fillerToken;
+  }
+
   @Override
-  protected Analyzer getWrappedAnalyzer(String fieldName) {
-    return defaultAnalyzer;
+  public final Analyzer getWrappedAnalyzer(String fieldName) {
+    return delegate;
   }
 
   @Override
@@ -149,6 +159,7 @@ public final class ShingleAnalyzerWrapper extends AnalyzerWrapper {
     filter.setTokenSeparator(tokenSeparator);
     filter.setOutputUnigrams(outputUnigrams);
     filter.setOutputUnigramsIfNoShingles(outputUnigramsIfNoShingles);
+    filter.setFillerToken(fillerToken);
     return new TokenStreamComponents(components.getTokenizer(), filter);
   }
 }

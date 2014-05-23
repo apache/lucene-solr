@@ -116,7 +116,7 @@ public final class FieldTypePluginLoader
     }
 
     if (null != analyzer) {
-      ft.setAnalyzer(analyzer);
+      ft.setIndexAnalyzer(analyzer);
       ft.setQueryAnalyzer(queryAnalyzer);
       if (ft instanceof TextField) {
         if (null == multiAnalyzer) {
@@ -185,7 +185,7 @@ public final class FieldTypePluginLoader
     static final KeywordTokenizerFactory keyFactory = new KeywordTokenizerFactory(new HashMap<String,String>());
 
     ArrayList<CharFilterFactory> charFilters = null;
-    ArrayList<TokenFilterFactory> filters = new ArrayList<TokenFilterFactory>(2);
+    ArrayList<TokenFilterFactory> filters = new ArrayList<>(2);
     TokenizerFactory tokenizer = keyFactory;
 
     public void add(Object current) {
@@ -193,14 +193,14 @@ public final class FieldTypePluginLoader
       AbstractAnalysisFactory newComponent = ((MultiTermAwareComponent)current).getMultiTermComponent();
       if (newComponent instanceof TokenFilterFactory) {
         if (filters == null) {
-          filters = new ArrayList<TokenFilterFactory>(2);
+          filters = new ArrayList<>(2);
         }
         filters.add((TokenFilterFactory)newComponent);
       } else if (newComponent instanceof TokenizerFactory) {
         tokenizer = (TokenizerFactory)newComponent;
       } else if (newComponent instanceof CharFilterFactory) {
         if (charFilters == null) {
-          charFilters = new ArrayList<CharFilterFactory>(1);
+          charFilters = new ArrayList<>(1);
         }
         charFilters.add( (CharFilterFactory)newComponent);
 
@@ -293,7 +293,7 @@ public final class FieldTypePluginLoader
     // Load the CharFilters
 
     final ArrayList<CharFilterFactory> charFilters 
-      = new ArrayList<CharFilterFactory>();
+      = new ArrayList<>();
     AbstractPluginLoader<CharFilterFactory> charFilterLoader =
       new AbstractPluginLoader<CharFilterFactory>
       ("[schema.xml] analyzer/charFilter", CharFilterFactory.class, false, false) {
@@ -329,7 +329,7 @@ public final class FieldTypePluginLoader
     // the configuration is ok
 
     final ArrayList<TokenizerFactory> tokenizers 
-      = new ArrayList<TokenizerFactory>(1);
+      = new ArrayList<>(1);
     AbstractPluginLoader<TokenizerFactory> tokenizerLoader =
       new AbstractPluginLoader<TokenizerFactory>
       ("[schema.xml] analyzer/tokenizer", TokenizerFactory.class, false, false) {
@@ -369,7 +369,7 @@ public final class FieldTypePluginLoader
     // Load the Filters
 
     final ArrayList<TokenFilterFactory> filters 
-      = new ArrayList<TokenFilterFactory>();
+      = new ArrayList<>();
 
     AbstractPluginLoader<TokenFilterFactory> filterLoader = 
       new AbstractPluginLoader<TokenFilterFactory>("[schema.xml] analyzer/filter", TokenFilterFactory.class, false, false)
@@ -407,7 +407,7 @@ public final class FieldTypePluginLoader
     Version version = (configuredVersion != null) ?
             Config.parseLuceneVersionString(configuredVersion) : schema.getDefaultLuceneMatchVersion();
 
-    if (!version.onOrAfter(Version.LUCENE_40)) {
+    if (!version.onOrAfter(Version.LUCENE_4_0)) {
       log.warn(pluginClassName + " is using deprecated " + version +
         " emulation. You should at some point declare and reindex to at least 4.0, because " +
         "3.x emulation is deprecated and will be removed in 5.0");

@@ -20,66 +20,70 @@ package org.apache.solr.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.FilterLeafCollector;
+import org.apache.lucene.search.FilterCollector;
 /**
  * <p>
- *  A wrapper {@link Collector} that throws {@link EarlyTerminatingCollectorException}) 
+ *  A wrapper {@link Collector} that throws {@link EarlyTerminatingCollectorException})
  *  once a specified maximum number of documents are collected.
  * </p>
  */
-public class EarlyTerminatingCollector extends Collector {
-  private int numCollected;
-  private int lastDocId = -1;
-  private int maxDocsToCollect;
-  private Collector delegate;
-  
+public class EarlyTerminatingCollector extends FilterCollector {
+
+  private final int maxDocsToCollect;
+
+  private int numCollected = 0;
+  private int prevReaderCumulativeSize = 0;
+  private int currentReaderSize = 0;
+
   /**
    * <p>
-   *  Wraps a {@link Collector}, throwing {@link EarlyTerminatingCollectorException} 
+   *  Wraps a {@link Collector}, throwing {@link EarlyTerminatingCollectorException}
    *  once the specified maximum is reached.
    * </p>
    * @param delegate - the Collector to wrap.
    * @param maxDocsToCollect - the maximum number of documents to Collect
-   * 
+   *
    */
   public EarlyTerminatingCollector(Collector delegate, int maxDocsToCollect) {
-    this.delegate = delegate;
+    super(delegate);
+    assert 0 < maxDocsToCollect;
+    assert null != delegate;
+
     this.maxDocsToCollect = maxDocsToCollect;
   }
 
   @Override
-  public boolean acceptsDocsOutOfOrder() {
-    return delegate.acceptsDocsOutOfOrder();
+  public LeafCollector getLeafCollector(AtomicReaderContext context)
+      throws IOException {
+    prevReaderCumulativeSize += currentReaderSize; // not current any more
+    currentReaderSize = context.reader().maxDoc() - 1;
+
+    return new FilterLeafCollector(super.getLeafCollector(context)) {
+
+      /**
+       * This collector requires that docs be collected in order, otherwise
+       * the computed number of scanned docs in the resulting
+       * {@link EarlyTerminatingCollectorException} will be meaningless.
+       */
+      @Override
+      public boolean acceptsDocsOutOfOrder() {
+        return false;
+      }
+
+      @Override
+      public void collect(int doc) throws IOException {
+        super.collect(doc);
+        numCollected++;
+        if (maxDocsToCollect <= numCollected) {
+          throw new EarlyTerminatingCollectorException
+            (numCollected, prevReaderCumulativeSize + (doc + 1));
+        }
+      }
+
+    };
   }
 
-  @Override
-  public void collect(int doc) throws IOException {
-    delegate.collect(doc);
-    lastDocId = doc;    
-    numCollected++;  
-    if(numCollected==maxDocsToCollect) {
-      throw new EarlyTerminatingCollectorException(numCollected, lastDocId);
-    }
-  }
-  @Override
-  public void setNextReader(AtomicReaderContext context) throws IOException {
-    delegate.setNextReader(context);    
-  }
-  @Override
-  public void setScorer(Scorer scorer) throws IOException {
-    delegate.setScorer(scorer);    
-  }
-  public int getNumCollected() {
-    return numCollected;
-  }
-  public void setNumCollected(int numCollected) {
-    this.numCollected = numCollected;
-  }
-  public int getLastDocId() {
-    return lastDocId;
-  }
-  public void setLastDocId(int lastDocId) {
-    this.lastDocId = lastDocId;
-  }
 }

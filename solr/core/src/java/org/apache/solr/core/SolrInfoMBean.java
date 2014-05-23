@@ -30,7 +30,7 @@ import org.apache.solr.common.util.NamedList;
  */
 public interface SolrInfoMBean {
 
-  public enum Category { CORE, QUERYHANDLER, UPDATEHANDLER, CACHE, HIGHLIGHTING, OTHER };
+  public enum Category { CORE, QUERYHANDLER, UPDATEHANDLER, CACHE, HIGHLIGHTING, QUERYPARSER, OTHER };
 
   /**
    * Simple common usage name, e.g. BasicQueryHandler,

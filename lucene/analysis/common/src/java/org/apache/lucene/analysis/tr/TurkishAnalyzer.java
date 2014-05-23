@@ -119,10 +119,11 @@ public final class TurkishAnalyzer extends StopwordAnalyzerBase {
    *         exclusion set is provided and {@link SnowballFilter}.
    */
   @Override
-  protected TokenStreamComponents createComponents(String fieldName,
-      Reader reader) {
-    final Tokenizer source = new StandardTokenizer(matchVersion, reader);
+  protected TokenStreamComponents createComponents(String fieldName) {
+    final Tokenizer source = new StandardTokenizer(matchVersion);
     TokenStream result = new StandardFilter(matchVersion, source);
+    if(matchVersion.onOrAfter(Version.LUCENE_4_8))
+      result = new ApostropheFilter(result);
     result = new TurkishLowerCaseFilter(result);
     result = new StopFilter(matchVersion, result, stopwords);
     if(!stemExclusionSet.isEmpty())

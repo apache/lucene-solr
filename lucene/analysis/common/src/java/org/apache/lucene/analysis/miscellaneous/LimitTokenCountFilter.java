@@ -61,6 +61,9 @@ public final class LimitTokenCountFilter extends TokenFilter {
    */
   public LimitTokenCountFilter(TokenStream in, int maxTokenCount, boolean consumeAllTokens) {
     super(in);
+    if (maxTokenCount < 1) {
+      throw new IllegalArgumentException("maxTokenCount must be greater than zero");
+    }
     this.maxTokenCount = maxTokenCount;
     this.consumeAllTokens = consumeAllTokens;
   }

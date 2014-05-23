@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A request for the org.apache.solr.handler.FieldAnalysisRequestHandler.
@@ -102,10 +103,11 @@ public class FieldAnalysisRequest extends SolrRequest {
     if (fieldValue == null) {
       throw new IllegalStateException("The field value must be set");
     }
-    long startTime = System.currentTimeMillis();
+    long startTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
     FieldAnalysisResponse res = new FieldAnalysisResponse();
     res.setResponse(server.request(this));
-    res.setElapsedTime(System.currentTimeMillis() - startTime);
+    long endTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
+    res.setElapsedTime(endTime - startTime);
     return res;
   }
 
@@ -210,7 +212,7 @@ public class FieldAnalysisRequest extends SolrRequest {
    */
   public FieldAnalysisRequest addFieldName(String fieldName) {
     if (fieldNames == null) {
-      fieldNames = new LinkedList<String>();
+      fieldNames = new LinkedList<>();
     }
     fieldNames.add(fieldName);
     return this;
@@ -247,7 +249,7 @@ public class FieldAnalysisRequest extends SolrRequest {
    */
   public FieldAnalysisRequest addFieldType(String fieldTypeName) {
     if (fieldTypes == null) {
-      fieldTypes = new LinkedList<String>();
+      fieldTypes = new LinkedList<>();
     }
     fieldTypes.add(fieldTypeName);
     return this;

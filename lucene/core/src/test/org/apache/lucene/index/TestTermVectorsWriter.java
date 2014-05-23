@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CachingTokenFilter;
@@ -29,6 +28,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -57,7 +57,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     doc.add(f2);
     doc.add(f);
     w.addDocument(doc);
-    w.close();
+    w.shutdown();
 
     IndexReader r = DirectoryReader.open(dir);
     Terms vector = r.getTermVectors(0).terms("field");
@@ -113,7 +113,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     doc.add(f);
     doc.add(f);
     w.addDocument(doc);
-    w.close();
+    w.shutdown();
 
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
@@ -148,7 +148,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     doc.add(f);
     doc.add(f);
     w.addDocument(doc);
-    w.close();
+    w.shutdown();
 
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
@@ -176,18 +176,19 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
-    TokenStream stream = analyzer.tokenStream("field", new StringReader("abcd   "));
-    stream.reset(); // TODO: weird to reset before wrapping with CachingTokenFilter... correct?
-    stream = new CachingTokenFilter(stream);
-    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-    customType.setStoreTermVectors(true);
-    customType.setStoreTermVectorPositions(true);
-    customType.setStoreTermVectorOffsets(true);
-    Field f = new Field("field", stream, customType);
-    doc.add(f);
-    doc.add(f);
-    w.addDocument(doc);
-    w.close();
+    try (TokenStream stream = analyzer.tokenStream("field", "abcd   ")) {
+      stream.reset(); // TODO: weird to reset before wrapping with CachingTokenFilter... correct?
+      TokenStream cachedStream = new CachingTokenFilter(stream);
+      FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
+      customType.setStoreTermVectors(true);
+      customType.setStoreTermVectorPositions(true);
+      customType.setStoreTermVectorOffsets(true);
+      Field f = new Field("field", cachedStream, customType);
+      doc.add(f);
+      doc.add(f);
+      w.addDocument(doc);
+    }
+    w.shutdown();
 
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
@@ -223,7 +224,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     doc.add(f);
     doc.add(f);
     w.addDocument(doc);
-    w.close();
+    w.shutdown();
 
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
@@ -260,7 +261,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     doc.add(f);
     doc.add(f2);
     w.addDocument(doc);
-    w.close();
+    w.shutdown();
 
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
@@ -305,7 +306,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     doc.add(f);
     doc.add(f2);
     w.addDocument(doc);
-    w.close();
+    w.shutdown();
 
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
@@ -348,7 +349,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     doc.add(f2);
 
     w.addDocument(doc);
-    w.close();
+    w.shutdown();
 
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
@@ -405,7 +406,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
       document.add(termVectorField);
       writer.addDocument(document);
       writer.forceMerge(1);
-      writer.close();
+      writer.shutdown();
 
       IndexReader reader = DirectoryReader.open(dir);
       for(int i=0;i<reader.numDocs();i++) {
@@ -423,7 +424,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
       Directory[] indexDirs = {new MockDirectoryWrapper(random(), new RAMDirectory(dir, newIOContext(random())))};
       writer.addIndexes(indexDirs);
       writer.forceMerge(1);
-      writer.close();
+      writer.shutdown();
     }
     dir.close();
   }
@@ -459,7 +460,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
       document.add(termVectorField);
       writer.addDocument(document);
       writer.forceMerge(1);
-      writer.close();
+      writer.shutdown();
 
       IndexReader reader = DirectoryReader.open(dir);
       assertNull(reader.getTermVectors(0));
@@ -493,7 +494,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     document.add(termVectorField);
     for(int i=0;i<10;i++)
       writer.addDocument(document);
-    writer.close();
+    writer.shutdown();
 
     writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT,
         new MockAnalyzer(random())).setMaxBufferedDocs(2)
@@ -504,7 +505,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
       writer.addDocument(document);
 
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
 
     IndexReader reader = DirectoryReader.open(dir);
     for(int i=0;i<10;i++) {
@@ -535,13 +536,14 @@ public class TestTermVectorsWriter extends LuceneTestCase {
 
     FieldType customType = new FieldType(StringField.TYPE_NOT_STORED);
     customType.setStoreTermVectors(true);
+    document = new Document();
     document.add(newField("tvtest", "a b c", customType));
     iw.addDocument(document);
     // Make 2nd segment
     iw.commit();
 
     iw.forceMerge(1);
-    iw.close();
+    iw.shutdown();
     dir.close();
   }
 
@@ -568,12 +570,124 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     FieldType customType2 = new FieldType(StringField.TYPE_NOT_STORED);
     customType2.setStoreTermVectors(true);
     document.add(newField("tvtest", "a b c", customType2));
+    document = new Document();
     iw.addDocument(document);
     // Make 2nd segment
     iw.commit();
     iw.forceMerge(1);
 
+    iw.shutdown();
+    dir.close();
+  }
+  
+  /** 
+   * In a single doc, for the same field, mix the term vectors up 
+   */
+  public void testInconsistentTermVectorOptions() throws IOException {
+    FieldType a, b;
+    
+    // no vectors + vectors
+    a = new FieldType(TextField.TYPE_NOT_STORED);   
+    b = new FieldType(TextField.TYPE_NOT_STORED);
+    b.setStoreTermVectors(true);
+    doTestMixup(a, b);
+    
+    // vectors + vectors with pos
+    a = new FieldType(TextField.TYPE_NOT_STORED);   
+    a.setStoreTermVectors(true);
+    b = new FieldType(TextField.TYPE_NOT_STORED);
+    b.setStoreTermVectors(true);
+    b.setStoreTermVectorPositions(true);
+    doTestMixup(a, b);
+    
+    // vectors + vectors with off
+    a = new FieldType(TextField.TYPE_NOT_STORED);   
+    a.setStoreTermVectors(true);
+    b = new FieldType(TextField.TYPE_NOT_STORED);
+    b.setStoreTermVectors(true);
+    b.setStoreTermVectorOffsets(true);
+    doTestMixup(a, b);
+    
+    // vectors with pos + vectors with pos + off
+    a = new FieldType(TextField.TYPE_NOT_STORED);   
+    a.setStoreTermVectors(true);
+    a.setStoreTermVectorPositions(true);
+    b = new FieldType(TextField.TYPE_NOT_STORED);
+    b.setStoreTermVectors(true);
+    b.setStoreTermVectorPositions(true);
+    b.setStoreTermVectorOffsets(true);
+    doTestMixup(a, b);
+    
+    // vectors with pos + vectors with pos + pay
+    a = new FieldType(TextField.TYPE_NOT_STORED);   
+    a.setStoreTermVectors(true);
+    a.setStoreTermVectorPositions(true);
+    b = new FieldType(TextField.TYPE_NOT_STORED);
+    b.setStoreTermVectors(true);
+    b.setStoreTermVectorPositions(true);
+    b.setStoreTermVectorPayloads(true);
+    doTestMixup(a, b);
+  }
+  
+  private void doTestMixup(FieldType ft1, FieldType ft2) throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    
+    // add 3 good docs
+    for (int i = 0; i < 3; i++) {
+      Document doc = new Document();
+      doc.add(new StringField("id", Integer.toString(i), Field.Store.NO));
+      iw.addDocument(doc);
+    }
+    
+    // add broken doc
+    Document doc = new Document();
+    doc.add(new Field("field", "value1", ft1));
+    doc.add(new Field("field", "value2", ft2));
+    
+    // ensure broken doc hits exception
+    try {
+      iw.addDocument(doc);
+      fail("didn't hit expected exception");
+    } catch (IllegalArgumentException iae) {
+      assertNotNull(iae.getMessage());
+      assertTrue(iae.getMessage().startsWith("all instances of a given field name must have the same term vectors settings"));
+    }
+    
+    // ensure good docs are still ok
+    IndexReader ir = iw.getReader();
+    assertEquals(3, ir.numDocs());
+    
+    ir.close();
     iw.close();
+    dir.close();
+  }
+
+  // LUCENE-5611: don't abort segment when term vector settings are wrong
+  public void testNoAbortOnBadTVSettings() throws Exception {
+    Directory dir = newDirectory();
+    // Don't use RandomIndexWriter because we want to be sure both docs go to 1 seg:
+    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriter iw = new IndexWriter(dir, iwc);
+
+    Document doc = new Document();
+    iw.addDocument(doc);
+    FieldType ft = new FieldType(StoredField.TYPE);
+    ft.setStoreTermVectors(true);
+    ft.freeze();
+    doc.add(new Field("field", "value", ft));
+    try {
+      iw.addDocument(doc);
+      fail("should have hit exc");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    IndexReader r = DirectoryReader.open(iw, true);
+
+    // Make sure the exc didn't lose our first document:
+    assertEquals(1, r.numDocs());
+    iw.close();
+    r.close();
     dir.close();
   }
 }

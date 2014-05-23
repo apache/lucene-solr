@@ -148,4 +148,8 @@ public class RequiredSolrParams extends SolrParams {
   public String getFieldParam(String field, String param, String def) {
     return params.getFieldParam(field, param, def);
   }
+
+  public void check(String... params){
+    for (String param : params) get(param);
+  }
 }

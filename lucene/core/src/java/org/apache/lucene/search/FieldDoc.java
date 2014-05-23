@@ -17,6 +17,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.util.Arrays;
+
 /**
  * Expert: A ScoreDoc which also contains information about
  * how to sort the referenced document.  In addition to the
@@ -69,14 +71,10 @@ public class FieldDoc extends ScoreDoc {
   @Override
   public String toString() {
     // super.toString returns the doc and score information, so just add the
-          // fields information
+    // fields information
     StringBuilder sb = new StringBuilder(super.toString());
-    sb.append("[");
-    for (int i = 0; i < fields.length; i++) {
-            sb.append(fields[i]).append(", ");
-          }
-    sb.setLength(sb.length() - 2); // discard last ", "
-    sb.append("]");
+    sb.append(" fields=");
+    sb.append(Arrays.toString(fields));
     return sb.toString();
   }
 }

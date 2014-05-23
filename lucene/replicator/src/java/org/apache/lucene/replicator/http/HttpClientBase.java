@@ -29,14 +29,15 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
-import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.conn.ClientConnectionManager;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.conn.HttpClientConnectionManager;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * Base class for Http clients.
@@ -45,18 +46,10 @@ import org.apache.lucene.store.AlreadyClosedException;
  * */
 public abstract class HttpClientBase implements Closeable {
   
-  /**
-   * Default connection timeout for this client, in milliseconds.
-   * 
-   * @see #setConnectionTimeout(int)
-   */
+  /** Default connection timeout for this client, in milliseconds. */
   public static final int DEFAULT_CONNECTION_TIMEOUT = 1000;
   
-  /**
-   * Default socket timeout for this client, in milliseconds.
-   * 
-   * @see #setSoTimeout(int)
-   */
+  /** Default socket timeout for this client, in milliseconds. */
   public static final int DEFAULT_SO_TIMEOUT = 60000;
   
   // TODO compression?
@@ -66,38 +59,29 @@ public abstract class HttpClientBase implements Closeable {
   
   private volatile boolean closed = false;
   
-  private final HttpClient httpc;
+  private final CloseableHttpClient httpc;
+  private final RequestConfig defaultConfig;
   
   /**
-   * @param conMgr connection manager to use for this http client.
-   *        <b>NOTE:</b>The provided {@link ClientConnectionManager} will not be
-   *        {@link ClientConnectionManager#shutdown()} by this class.
+   * @param conMgr
+   *          connection manager to use for this http client. <b>NOTE:</b>The
+   *          provided {@link HttpClientConnectionManager} will not be
+   *          {@link HttpClientConnectionManager#shutdown()} by this class.
+   * @param defaultConfig
+   *          the default {@link RequestConfig} to set on the client. If
+   *          {@code null} a default config is created w/ the default connection
+   *          and socket timeouts.
    */
-  protected HttpClientBase(String host, int port, String path, ClientConnectionManager conMgr) {
+  protected HttpClientBase(String host, int port, String path, HttpClientConnectionManager conMgr, RequestConfig defaultConfig) {
     url = normalizedURL(host, port, path);
-    httpc = new DefaultHttpClient(conMgr);
-    setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
-    setSoTimeout(DEFAULT_SO_TIMEOUT);
-  }
-  
-  /**
-   * Set the connection timeout for this client, in milliseconds. This setting
-   * is used to modify {@link HttpConnectionParams#setConnectionTimeout}.
-   * 
-   * @param timeout timeout to set, in millisecopnds
-   */
-  public void setConnectionTimeout(int timeout) {
-    HttpConnectionParams.setConnectionTimeout(httpc.getParams(), timeout);
-  }
-  
-  /**
-   * Set the socket timeout for this client, in milliseconds. This setting
-   * is used to modify {@link HttpConnectionParams#setSoTimeout}.
-   * 
-   * @param timeout timeout to set, in millisecopnds
-   */
-  public void setSoTimeout(int timeout) {
-    HttpConnectionParams.setSoTimeout(httpc.getParams(), timeout);
+    if (defaultConfig == null) {
+      this.defaultConfig = RequestConfig.custom()
+          .setConnectionRequestTimeout(DEFAULT_CONNECTION_TIMEOUT)
+          .setSocketTimeout(DEFAULT_SO_TIMEOUT).build();
+    } else {
+      this.defaultConfig = defaultConfig;
+    }
+    httpc = HttpClientBuilder.create().setConnectionManager(conMgr).setDefaultRequestConfig(this.defaultConfig).build();
   }
   
   /** Throws {@link AlreadyClosedException} if this client is already closed. */
@@ -124,7 +108,11 @@ public abstract class HttpClientBase implements Closeable {
   protected void verifyStatus(HttpResponse response) throws IOException {
     StatusLine statusLine = response.getStatusLine();
     if (statusLine.getStatusCode() != HttpStatus.SC_OK) {
-      throwKnownError(response, statusLine); 
+      try {
+        throwKnownError(response, statusLine); 
+      } finally {
+        EntityUtils.consumeQuietly(response.getEntity());
+      }
     }
   }
   
@@ -132,27 +120,20 @@ public abstract class HttpClientBase implements Closeable {
     ObjectInputStream in = null;
     try {
       in = new ObjectInputStream(response.getEntity().getContent());
-    } catch (Exception e) {
+    } catch (Throwable t) {
       // the response stream is not an exception - could be an error in servlet.init().
-      throw new RuntimeException("Uknown error: " + statusLine);
+      throw new RuntimeException("Unknown error: " + statusLine, t);
     }
     
     Throwable t;
     try {
       t = (Throwable) in.readObject();
-    } catch (Exception e) { 
-      //not likely
-      throw new RuntimeException("Failed to read exception object: " + statusLine, e);
+    } catch (Throwable th) { 
+      throw new RuntimeException("Failed to read exception object: " + statusLine, th);
     } finally {
       in.close();
     }
-    if (t instanceof IOException) {
-      throw (IOException) t;
-    }
-    if (t instanceof RuntimeException) {
-      throw (RuntimeException) t;
-    }
-    throw new RuntimeException("unknown exception "+statusLine,t);
+    IOUtils.reThrow(t);
   }
   
   /**
@@ -216,23 +197,23 @@ public abstract class HttpClientBase implements Closeable {
       }
       @Override
       public void close() throws IOException {
-        super.close();
+        in.close();
         consume(-1);
       }
       @Override
       public int read(byte[] b) throws IOException {
-        final int res = super.read(b);
+        final int res = in.read(b);
         consume(res);
         return res;
       }
       @Override
       public int read(byte[] b, int off, int len) throws IOException {
-        final int res = super.read(b, off, len);
+        final int res = in.read(b, off, len);
         consume(res);
         return res;
       }
       private void consume(int minusOne) {
-        if (!consumed && minusOne==-1) {
+        if (!consumed && minusOne == -1) {
           try {
             EntityUtils.consume(entity);
           } catch (Exception e) {
@@ -266,31 +247,28 @@ public abstract class HttpClientBase implements Closeable {
    * release the response at exit, depending on <code>consume</code> parameter.
    */
   protected <T> T doAction(HttpResponse response, boolean consume, Callable<T> call) throws IOException {
-    IOException error = null;
+    Throwable th = null;
     try {
       return call.call();
-    } catch (IOException e) {
-      error = e;
-    } catch (Exception e) {
-      error = new IOException(e);
+    } catch (Throwable t) {
+      th = t;
     } finally {
       try {
         verifyStatus(response);
       } finally {
         if (consume) {
-          try {
-            EntityUtils.consume(response.getEntity());
-          } catch (Exception e) {
-            // ignoring on purpose
-          }
+          EntityUtils.consumeQuietly(response.getEntity());
         }
       }
     }
-    throw error; // should not get here
+    assert th != null; // extra safety - if we get here, it means the callable failed
+    IOUtils.reThrow(th);
+    return null; // silly, if we're here, IOUtils.reThrow always throws an exception 
   }
   
   @Override
   public void close() throws IOException {
+    httpc.close();
     closed = true;
   }
   

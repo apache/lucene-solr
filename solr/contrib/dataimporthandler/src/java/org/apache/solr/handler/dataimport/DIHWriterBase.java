@@ -27,7 +27,7 @@ public abstract class DIHWriterBase implements DIHWriter {
   
   @Override
   public void setDeltaKeys(Set<Map<String,Object>> passedInDeltaKeys) {
-    deltaKeys = new HashSet<Object>();
+    deltaKeys = new HashSet<>();
     for (Map<String,Object> aMap : passedInDeltaKeys) {
       if (aMap.size() > 0) {
         Object key = null;

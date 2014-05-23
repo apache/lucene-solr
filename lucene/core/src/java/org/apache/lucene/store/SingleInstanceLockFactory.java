@@ -33,7 +33,7 @@ import java.util.HashSet;
 
 public class SingleInstanceLockFactory extends LockFactory {
 
-  private HashSet<String> locks = new HashSet<String>();
+  private HashSet<String> locks = new HashSet<>();
 
   @Override
   public Lock makeLock(String lockName) {
@@ -71,7 +71,7 @@ class SingleInstanceLock extends Lock {
   }
 
   @Override
-  public void release() {
+  public void close() {
     synchronized(locks) {
       locks.remove(lockName);
     }

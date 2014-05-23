@@ -37,13 +37,13 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestStressNRT extends LuceneTestCase {
   volatile DirectoryReader reader;
 
-  final ConcurrentHashMap<Integer,Long> model = new ConcurrentHashMap<Integer,Long>();
-  Map<Integer,Long> committedModel = new HashMap<Integer,Long>();
+  final ConcurrentHashMap<Integer,Long> model = new ConcurrentHashMap<>();
+  Map<Integer,Long> committedModel = new HashMap<>();
   long snapshotCount;
   long committedModelClock;
   volatile int lastId;
@@ -71,15 +71,15 @@ public class TestStressNRT extends LuceneTestCase {
     final int deletePercent = random().nextInt(50);
     final int deleteByQueryPercent = random().nextInt(25);
     final int ndocs = atLeast(50);
-    final int nWriteThreads = _TestUtil.nextInt(random(), 1, TEST_NIGHTLY ? 10 : 5);
-    final int maxConcurrentCommits = _TestUtil.nextInt(random(), 1, TEST_NIGHTLY ? 10 : 5);   // number of committers at a time... needed if we want to avoid commit errors due to exceeding the max
+    final int nWriteThreads = TestUtil.nextInt(random(), 1, TEST_NIGHTLY ? 10 : 5);
+    final int maxConcurrentCommits = TestUtil.nextInt(random(), 1, TEST_NIGHTLY ? 10 : 5);   // number of committers at a time... needed if we want to avoid commit errors due to exceeding the max
     
     final boolean tombstones = random().nextBoolean();
 
     // query variables
     final AtomicLong operations = new AtomicLong(atLeast(10000));  // number of query operations to perform in total
 
-    final int nReadThreads = _TestUtil.nextInt(random(), 1, TEST_NIGHTLY ? 10 : 5);
+    final int nReadThreads = TestUtil.nextInt(random(), 1, TEST_NIGHTLY ? 10 : 5);
     initModel(ndocs);
 
     final FieldType storedOnlyType = new FieldType();
@@ -102,7 +102,7 @@ public class TestStressNRT extends LuceneTestCase {
 
     final AtomicInteger numCommitting = new AtomicInteger();
 
-    List<Thread> threads = new ArrayList<Thread>();
+    List<Thread> threads = new ArrayList<>();
 
     Directory dir = newDirectory();
 
@@ -128,7 +128,7 @@ public class TestStressNRT extends LuceneTestCase {
                   DirectoryReader oldReader;
 
                   synchronized(TestStressNRT.this) {
-                    newCommittedModel = new HashMap<Integer,Long>(model);  // take a snapshot
+                    newCommittedModel = new HashMap<>(model);  // take a snapshot
                     version = snapshotCount++;
                     oldReader = reader;
                     oldReader.incRef();  // increment the reference since we will use this for reopening
@@ -390,7 +390,7 @@ public class TestStressNRT extends LuceneTestCase {
       thread.join();
     }
 
-    writer.close();
+    writer.shutdown();
     if (VERBOSE) {
       System.out.println("TEST: close reader=" + reader);
     }

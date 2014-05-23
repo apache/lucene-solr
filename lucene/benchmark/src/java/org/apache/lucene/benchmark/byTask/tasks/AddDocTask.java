@@ -17,7 +17,6 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
-import java.text.NumberFormat;
 import java.util.Locale;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;

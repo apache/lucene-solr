@@ -32,6 +32,12 @@ public interface FacetParams {
    */
   public static final String FACET = "facet";
 
+  /**
+   * Numeric option indicating the maximum number of threads to be used
+   * in counting facet field vales 
+   */
+  public static final String FACET_THREADS = FACET + ".threads";
+
   /** What method should be used to do the faceting */
   public static final String FACET_METHOD = FACET + ".method";
 

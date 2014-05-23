@@ -34,16 +34,6 @@
          behavior of the fieldtype.
       -->
 
-    <!-- numeric field types that store and index the text
-         value verbatim (and hence don't sort correctly or support range queries.)
-         These are provided more for backward compatability, allowing one
-         to create a schema that matches an existing lucene index.
-    -->
-    <fieldType name="pint" class="solr.IntField"/>
-    <fieldType name="plong" class="solr.LongField"/>
-    <fieldtype name="pfloat" class="solr.FloatField"/>
-    <fieldType name="pdouble" class="solr.DoubleField"/>
-
     <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
@@ -53,25 +43,6 @@
     <fieldType name="tfloat" class="solr.TrieFloatField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="tlong" class="solr.TrieLongField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="tdouble" class="solr.TrieDoubleField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
-
-    <!-- numeric field types that manipulate the value into
-       a string value that isn't human readable in it's internal form,
-       but sorts correctly and supports range queries.
-
-         If sortMissingLast="true" then a sort on this field will cause documents
-       without the field to come after documents with the field,
-       regardless of the requested sort order.
-         If sortMissingFirst="true" then a sort on this field will cause documents
-       without the field to come before documents with the field,
-       regardless of the requested sort order.
-         If sortMissingLast="false" and sortMissingFirst="false" (the default),
-       then default lucene sorting will be used which places docs without the field
-       first in an ascending sort and last in a descending sort.
-    -->
-    <fieldtype name="sint" class="solr.SortableIntField" sortMissingLast="true" omitNorms="true" />
-    <fieldtype name="slong" class="solr.SortableLongField" sortMissingLast="true" omitNorms="true"/>
-    <fieldtype name="sfloat" class="solr.SortableFloatField" sortMissingLast="true" omitNorms="true"/>
-    <fieldtype name="sdouble" class="solr.SortableDoubleField" sortMissingLast="true" omitNorms="true"/>
 
     <!-- Field type demonstrating an Analyzer failure -->
     <fieldtype name="failtype1" class="solr.TextField">
@@ -111,7 +82,6 @@
       -->
     <fieldtype name="date" class="solr.TrieDateField" sortMissingLast="true"/>
     <fieldtype name="tdate" class="solr.TrieDateField" sortMissingLast="true" precisionStep="6"/>
-    <fieldtype name="pdate" class="solr.DateField" sortMissingLast="true"/>
 
   <fieldType name="text" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="true" >
       <analyzer type="index">
@@ -539,13 +509,9 @@
    <field name="uniq3" type="string" indexed="true" stored="true"/>
    <field name="nouniq" type="string" indexed="true" stored="true" multiValued="true"/>
 
+   <field name="_version_" type="long" indexed="true" stored="true" multiValued="false" />
+
    <dynamicField name="*_coordinate"  type="tdouble" indexed="true"  stored="false"/>
-
-
-   <dynamicField name="*_si"  type="sint"  indexed="true"  stored="true"/>
-   <dynamicField name="*_sl"  type="slong"  indexed="true"  stored="true"/>
-   <dynamicField name="*_sf"  type="sfloat"  indexed="true"  stored="true"/>
-   <dynamicField name="*_sd"  type="sdouble"  indexed="true"  stored="true"/>
 
    <dynamicField name="*_sI" type="string"  indexed="true"  stored="false"/>
    <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>
@@ -579,13 +545,6 @@
    <dynamicField name="*_tf" type="tfloat"  indexed="true"  stored="true"/>
    <dynamicField name="*_td" type="tdouble" indexed="true"  stored="true"/>
    <dynamicField name="*_tdt" type="tdate"  indexed="true"  stored="true"/>
-
-   <dynamicField name="*_pi"  type="pint"    indexed="true"  stored="true"/>
-   <dynamicField name="*_pf"  type="pfloat"  indexed="true"  stored="true"/>
-   <dynamicField name="*_pl"  type="plong"   indexed="true"  stored="true"/>
-   <dynamicField name="*_pd"  type="pdouble" indexed="true"  stored="true"/>
-   <dynamicField name="*_pdt"  type="pdate" indexed="true"  stored="true"/>
-
 
    <dynamicField name="ignored_*" type="ignored" multiValued="true"/>
    <dynamicField name="attr_*" type="text" indexed="true" stored="true" multiValued="true"/>

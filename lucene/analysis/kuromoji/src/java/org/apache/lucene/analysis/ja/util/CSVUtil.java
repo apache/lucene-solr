@@ -42,7 +42,7 @@ public final class CSVUtil {
    */
   public static String[] parse(String line) {
     boolean insideQuote = false;
-    ArrayList<String> result = new ArrayList<String>();
+    ArrayList<String> result = new ArrayList<>();
     int quoteCount = 0;
     StringBuilder sb = new StringBuilder();
     for(int i = 0; i < line.length(); i++) {

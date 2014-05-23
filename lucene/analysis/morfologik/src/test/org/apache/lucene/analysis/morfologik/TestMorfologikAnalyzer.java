@@ -18,11 +18,18 @@ package org.apache.lucene.analysis.morfologik;
  */
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.TreeSet;
 
-import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
+import org.apache.lucene.analysis.standard.StandardFilter;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.util.Version;
 
 /**
  * TODO: The tests below rely on the order of returned lemmas, which is probably not good. 
@@ -36,16 +43,16 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
   /** Test stemming of single tokens with Morfologik library. */
   public final void testSingleTokens() throws IOException {
     Analyzer a = getTestAnalyzer();
-    assertAnalyzesToReuse(a, "a", new String[] { "a" });
-    assertAnalyzesToReuse(a, "liście", new String[] { "liście", "liść", "list", "lista" });
-    assertAnalyzesToReuse(a, "danych", new String[] { "dany", "dana", "dane", "dać" });
-    assertAnalyzesToReuse(a, "ęóąśłżźćń", new String[] { "ęóąśłżźćń" });
+    assertAnalyzesTo(a, "a", new String[] { "a" });
+    assertAnalyzesTo(a, "liście", new String[] { "liście", "liść", "list", "lista" });
+    assertAnalyzesTo(a, "danych", new String[] { "dany", "dana", "dane", "dać" });
+    assertAnalyzesTo(a, "ęóąśłżźćń", new String[] { "ęóąśłżźćń" });
   }
 
   /** Test stemming of multiple tokens and proper term metrics. */
   public final void testMultipleTokens() throws IOException {
     Analyzer a = getTestAnalyzer();
-    assertAnalyzesToReuse(
+    assertAnalyzesTo(
       a,
       "liście danych",
       new String[] { "liście", "liść", "list", "lista", "dany", "dana", "dane", "dać" },
@@ -53,57 +60,71 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
       new int[] { 6, 6, 6, 6, 13, 13, 13, 13 },
       new int[] { 1, 0, 0, 0, 1, 0, 0, 0 });
 
-    assertAnalyzesToReuse(
+    assertAnalyzesTo(
         a,
         "T. Gl\u00FCcksberg",
-        new String[] { "to", "tom", "tona", "Gl\u00FCcksberg" },
-        new int[] { 0, 0, 0, 3  },
-        new int[] { 1, 1, 1, 13 },
-        new int[] { 1, 0, 0, 1  });
+        new String[] { "tom", "tona", "Gl\u00FCcksberg" },
+        new int[] { 0, 0, 3  },
+        new int[] { 1, 1, 13 },
+        new int[] { 1, 0, 1  });
+  }
+
+  @SuppressWarnings("unused")
+  private void dumpTokens(String input) throws IOException {
+    try (TokenStream ts = getTestAnalyzer().tokenStream("dummy", input)) {
+      ts.reset();
+
+      MorphosyntacticTagsAttribute attribute = ts.getAttribute(MorphosyntacticTagsAttribute.class);
+      CharTermAttribute charTerm = ts.getAttribute(CharTermAttribute.class);
+      while (ts.incrementToken()) {
+        System.out.println(charTerm.toString() + " => " + attribute.getTags());
+      }
+      ts.end();
+    }
   }
 
   /** Test reuse of MorfologikFilter with leftover stems. */
   public final void testLeftoverStems() throws IOException {
     Analyzer a = getTestAnalyzer();
-    TokenStream ts_1 = a.tokenStream("dummy", new StringReader("liście"));
-    CharTermAttribute termAtt_1 = ts_1.getAttribute(CharTermAttribute.class);
-    ts_1.reset();
-    ts_1.incrementToken();
-    assertEquals("first stream", "liście", termAtt_1.toString());
-    ts_1.end();
-    ts_1.close();
+    try (TokenStream ts_1 = a.tokenStream("dummy", "liście")) {
+      CharTermAttribute termAtt_1 = ts_1.getAttribute(CharTermAttribute.class);
+      ts_1.reset();
+      ts_1.incrementToken();
+      assertEquals("first stream", "liście", termAtt_1.toString());
+      ts_1.end();
+    }
 
-    TokenStream ts_2 = a.tokenStream("dummy", new StringReader("danych"));
-    CharTermAttribute termAtt_2 = ts_2.getAttribute(CharTermAttribute.class);
-    ts_2.reset();
-    ts_2.incrementToken();
-    assertEquals("second stream", "dany", termAtt_2.toString());
-    ts_2.end();
-    ts_2.close();
+    try (TokenStream ts_2 = a.tokenStream("dummy", "danych")) {
+      CharTermAttribute termAtt_2 = ts_2.getAttribute(CharTermAttribute.class);
+      ts_2.reset();
+      ts_2.incrementToken();
+      assertEquals("second stream", "dany", termAtt_2.toString());
+      ts_2.end();
+    }
   }
 
   /** Test stemming of mixed-case tokens. */
   public final void testCase() throws IOException {
     Analyzer a = getTestAnalyzer();
 
-    assertAnalyzesToReuse(a, "AGD",      new String[] { "AGD", "artykuły gospodarstwa domowego" });
-    assertAnalyzesToReuse(a, "agd",      new String[] { "artykuły gospodarstwa domowego" });
+    assertAnalyzesTo(a, "AGD",      new String[] { "AGD", "artykuły gospodarstwa domowego" });
+    assertAnalyzesTo(a, "agd",      new String[] { "artykuły gospodarstwa domowego" });
 
-    assertAnalyzesToReuse(a, "Poznania", new String[] { "Poznań" });
-    assertAnalyzesToReuse(a, "poznania", new String[] { "poznanie", "poznać" });
+    assertAnalyzesTo(a, "Poznania", new String[] { "Poznań" });
+    assertAnalyzesTo(a, "poznania", new String[] { "poznanie", "poznać" });
 
-    assertAnalyzesToReuse(a, "Aarona",   new String[] { "Aaron" });
-    assertAnalyzesToReuse(a, "aarona",   new String[] { "aarona" });
+    assertAnalyzesTo(a, "Aarona",   new String[] { "Aaron" });
+    assertAnalyzesTo(a, "aarona",   new String[] { "aarona" });
 
-    assertAnalyzesToReuse(a, "Liście",   new String[] { "liście", "liść", "list", "lista" });
+    assertAnalyzesTo(a, "Liście",   new String[] { "liście", "liść", "list", "lista" });
   }
 
   private void assertPOSToken(TokenStream ts, String term, String... tags) throws IOException {
     ts.incrementToken();
     assertEquals(term, ts.getAttribute(CharTermAttribute.class).toString());
     
-    TreeSet<String> actual = new TreeSet<String>();
-    TreeSet<String> expected = new TreeSet<String>();
+    TreeSet<String> actual = new TreeSet<>();
+    TreeSet<String> expected = new TreeSet<>();
     for (StringBuilder b : ts.getAttribute(MorphosyntacticTagsAttribute.class).getTags()) {
       actual.add(b.toString());
     }
@@ -120,28 +141,55 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
 
   /** Test morphosyntactic annotations. */
   public final void testPOSAttribute() throws IOException {
-    TokenStream ts = getTestAnalyzer().tokenStream("dummy", new StringReader("liście"));
-
-    ts.reset();
-    assertPOSToken(ts, "liście",  
+    try (TokenStream ts = getTestAnalyzer().tokenStream("dummy", "liście")) {
+      ts.reset();
+      assertPOSToken(ts, "liście",  
         "subst:sg:acc:n2",
         "subst:sg:nom:n2",
         "subst:sg:voc:n2");
 
-    assertPOSToken(ts, "liść",  
+      assertPOSToken(ts, "liść",  
         "subst:pl:acc:m3",
         "subst:pl:nom:m3",
         "subst:pl:voc:m3");
 
-    assertPOSToken(ts, "list",  
+      assertPOSToken(ts, "list",  
         "subst:sg:loc:m3",
         "subst:sg:voc:m3");
 
-    assertPOSToken(ts, "lista", 
+      assertPOSToken(ts, "lista", 
         "subst:sg:dat:f",
         "subst:sg:loc:f");
-    ts.end();
-    ts.close();
+      ts.end();
+    }
+  }
+
+  /** */
+  public final void testKeywordAttrTokens() throws IOException {
+    final Version version = TEST_VERSION_CURRENT;
+
+    Analyzer a = new MorfologikAnalyzer(version) {
+      @Override
+      protected TokenStreamComponents createComponents(String field) {
+        final CharArraySet keywords = new CharArraySet(version, 1, false);
+        keywords.add("liście");
+
+        final Tokenizer src = new StandardTokenizer(TEST_VERSION_CURRENT);
+        TokenStream result = new StandardFilter(TEST_VERSION_CURRENT, src);
+        result = new SetKeywordMarkerFilter(result, keywords);
+        result = new MorfologikFilter(result, TEST_VERSION_CURRENT); 
+
+        return new TokenStreamComponents(src, result);
+      }
+    };
+
+    assertAnalyzesTo(
+      a,
+      "liście danych",
+      new String[] { "liście", "dany", "dana", "dane", "dać" },
+      new int[] { 0, 7, 7, 7, 7 },
+      new int[] { 6, 13, 13, 13, 13 },
+      new int[] { 1, 1, 0, 0, 0 });
   }
 
   /** blast some random strings through the analyzer */

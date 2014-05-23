@@ -25,8 +25,8 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestCharArrayMap extends LuceneTestCase {
   public void doRandom(int iter, boolean ignoreCase) {
-    CharArrayMap<Integer> map = new CharArrayMap<Integer>(TEST_VERSION_CURRENT, 1, ignoreCase);
-    HashMap<String,Integer> hmap = new HashMap<String,Integer>();
+    CharArrayMap<Integer> map = new CharArrayMap<>(TEST_VERSION_CURRENT, 1, ignoreCase);
+    HashMap<String,Integer> hmap = new HashMap<>();
 
     char[] key;
     for (int i=0; i<iter; i++) {
@@ -64,8 +64,8 @@ public class TestCharArrayMap extends LuceneTestCase {
   }
 
   public void testMethods() {
-    CharArrayMap<Integer> cm = new CharArrayMap<Integer>(TEST_VERSION_CURRENT, 2, false);
-    HashMap<String,Integer> hm = new HashMap<String,Integer>();
+    CharArrayMap<Integer> cm = new CharArrayMap<>(TEST_VERSION_CURRENT, 2, false);
+    HashMap<String,Integer> hm = new HashMap<>();
     hm.put("foo",1);
     hm.put("bar",2);
     cm.putAll(hm);
@@ -133,7 +133,7 @@ public class TestCharArrayMap extends LuceneTestCase {
   }
 
   public void testModifyOnUnmodifiable(){
-    CharArrayMap<Integer> map = new CharArrayMap<Integer>(TEST_VERSION_CURRENT, 2, false);
+    CharArrayMap<Integer> map = new CharArrayMap<>(TEST_VERSION_CURRENT, 2, false);
     map.put("foo",1);
     map.put("bar",2);
     final int size = map.size();
@@ -230,7 +230,7 @@ public class TestCharArrayMap extends LuceneTestCase {
   }
   
   public void testToString() {
-    CharArrayMap<Integer> cm = new CharArrayMap<Integer>(TEST_VERSION_CURRENT, Collections.singletonMap("test",1), false);
+    CharArrayMap<Integer> cm = new CharArrayMap<>(TEST_VERSION_CURRENT, Collections.singletonMap("test",1), false);
     assertEquals("[test]",cm.keySet().toString());
     assertEquals("[1]",cm.values().toString());
     assertEquals("[test=1]",cm.entrySet().toString());

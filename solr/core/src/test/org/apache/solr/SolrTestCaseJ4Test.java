@@ -17,12 +17,12 @@ package org.apache.solr;
  * limitations under the License.
  */
 
+import java.io.File;
+
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.File;
 
 
 public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
@@ -31,17 +31,16 @@ public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-
     // Create a temporary directory that holds a core NOT named "collection1". Use the smallest configuration sets
     // we can so we don't copy that much junk around.
-    createTempDir();
-    tmpSolrHome = TEMP_DIR + File.separator + SolrTestCaseJ4Test.class.getSimpleName() + System.currentTimeMillis();
+    tmpSolrHome = createTempDir().getAbsolutePath();
 
     File subHome = new File(new File(tmpSolrHome, "core0"), "conf");
     assertTrue("Failed to make subdirectory ", subHome.mkdirs());
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
     FileUtils.copyFile(new File(top, "schema-tiny.xml"), new File(subHome, "schema-tiny.xml"));
     FileUtils.copyFile(new File(top, "solrconfig-minimal.xml"), new File(subHome, "solrconfig-minimal.xml"));
+    FileUtils.copyFile(new File(top, "solrconfig.snippet.randomindexconfig.xml"), new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
 
     FileUtils.copyDirectory(new File(tmpSolrHome, "core0"), new File(tmpSolrHome, "core1"));
 
@@ -52,7 +51,7 @@ public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void AfterClass() throws Exception {
-    FileUtils.deleteDirectory(new File(tmpSolrHome).getAbsoluteFile());
+
   }
 
   @Test

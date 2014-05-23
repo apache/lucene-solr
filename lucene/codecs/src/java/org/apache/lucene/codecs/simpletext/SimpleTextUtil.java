@@ -18,15 +18,21 @@ package org.apache.lucene.codecs.simpletext;
  */
 
 import java.io.IOException;
+import java.util.Locale;
 
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
 
 class SimpleTextUtil {
   public final static byte NEWLINE = 10;
   public final static byte ESCAPE = 92;
+  final static BytesRef CHECKSUM = new BytesRef("checksum ");
   
   public static void write(DataOutput out, String s, BytesRef scratch) throws IOException {
     UnicodeUtil.UTF16toUTF8(s, 0, s.length(), scratch);
@@ -66,5 +72,31 @@ class SimpleTextUtil {
     }
     scratch.offset = 0;
     scratch.length = upto;
+  }
+
+  public static void writeChecksum(IndexOutput out, BytesRef scratch) throws IOException {
+    // Pad with zeros so different checksum values use the
+    // same number of bytes
+    // (BaseIndexFileFormatTestCase.testMergeStability cares):
+    String checksum = String.format(Locale.ROOT, "%020d", out.getChecksum());
+    SimpleTextUtil.write(out, CHECKSUM);
+    SimpleTextUtil.write(out, checksum, scratch);
+    SimpleTextUtil.writeNewline(out);
+  }
+  
+  public static void checkFooter(ChecksumIndexInput input) throws IOException {
+    BytesRef scratch = new BytesRef();
+    String expectedChecksum = String.format(Locale.ROOT, "%020d", input.getChecksum());
+    SimpleTextUtil.readLine(input, scratch);
+    if (StringHelper.startsWith(scratch, CHECKSUM) == false) {
+      throw new CorruptIndexException("SimpleText failure: expected checksum line but got " + scratch.utf8ToString() + " (resource=" + input + ")");
+    }
+    String actualChecksum = new BytesRef(scratch.bytes, CHECKSUM.length, scratch.length - CHECKSUM.length).utf8ToString();
+    if (!expectedChecksum.equals(actualChecksum)) {
+      throw new CorruptIndexException("SimpleText checksum failure: " + actualChecksum + " != " + expectedChecksum + " (resource=" + input + ")");
+    }
+    if (input.length() != input.getFilePointer()) {
+      throw new CorruptIndexException("Unexpected stuff at the end of file, please be careful with your text editor! (resource=" + input + ")");
+    }
   }
 }

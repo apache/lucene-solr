@@ -26,6 +26,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -34,6 +35,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Test that quality run does its job.
@@ -62,11 +64,11 @@ public class TestQualityRun extends BenchmarkTestCase {
     // prepare topics
     InputStream topics = getClass().getResourceAsStream("trecTopics.txt");
     TrecTopicsReader qReader = new TrecTopicsReader();
-    QualityQuery qqs[] = qReader.readQueries(new BufferedReader(new InputStreamReader(topics, "UTF-8")));
+    QualityQuery qqs[] = qReader.readQueries(new BufferedReader(new InputStreamReader(topics, StandardCharsets.UTF_8)));
     
     // prepare judge
     InputStream qrels = getClass().getResourceAsStream("trecQRels.txt");
-    Judge judge = new TrecJudge(new BufferedReader(new InputStreamReader(qrels, "UTF-8")));
+    Judge judge = new TrecJudge(new BufferedReader(new InputStreamReader(qrels, StandardCharsets.UTF_8)));
     
     // validate topics & judgments match each other
     judge.validateData(qqs, logger);
@@ -147,7 +149,7 @@ public class TestQualityRun extends BenchmarkTestCase {
     InputStream topicsFile = getClass().getResourceAsStream("trecTopics.txt");
     TrecTopicsReader qReader = new TrecTopicsReader();
     QualityQuery qqs[] = qReader.readQueries(
-        new BufferedReader(new InputStreamReader(topicsFile, "UTF-8")));
+        new BufferedReader(new InputStreamReader(topicsFile, StandardCharsets.UTF_8)));
     
     assertEquals(20, qqs.length);
     

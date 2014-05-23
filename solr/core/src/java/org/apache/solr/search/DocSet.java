@@ -18,7 +18,6 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.util.OpenBitSet;
 import org.apache.solr.common.SolrException;
 
 /**
@@ -28,7 +27,6 @@ import org.apache.solr.common.SolrException;
  * WARNING: Any DocSet returned from SolrIndexSearcher should <b>not</b> be modified as it may have been retrieved from
  * a cache and could be shared.
  * </p>
- *
  *
  * @since solr 0.9
  */
@@ -76,16 +74,6 @@ public interface DocSet /* extends Collection<Integer> */ {
    * </p>
    */
   public DocIterator iterator();
-
-  /**
-   * Returns a BitSet view of the DocSet.  Any changes to this BitSet <b>may</b>
-   * be reflected in the DocSet, hence if the DocSet is shared or was returned from
-   * a SolrIndexSearcher method, it's not safe to modify the BitSet.
-   *
-   * @return
-   * An OpenBitSet with the bit number of every docid set in the set.
-   */
-  public OpenBitSet getBits();
 
   /**
    * Returns the approximate amount of memory taken by this DocSet.
@@ -145,10 +133,11 @@ public interface DocSet /* extends Collection<Integer> */ {
   public Filter getTopFilter();
 
   /**
-   * Takes the docs from this set and sets those bits on the target OpenBitSet.
-   * The target should be sized large enough to accommodate all of the documents before calling this method.
+   * Adds all the docs from this set to the target set. The target should be
+   * sized large enough to accommodate all of the documents before calling this
+   * method.
    */
-  public void setBitsOn(OpenBitSet target);
+  public void addAllTo(DocSet target);
 
   public static DocSet EMPTY = new SortedIntDocSet(new int[0], 0);
 }

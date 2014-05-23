@@ -46,11 +46,11 @@ public class TestTrimFilter extends BaseTokenStreamTestCase {
     char[] whitespace = "   ".toCharArray();
     char[] empty = "".toCharArray();
 
-    TokenStream ts = new IterTokenStream(new Token(a, 0, a.length, 1, 5),
-                    new Token(b, 0, b.length, 6, 10),
-                    new Token(ccc, 0, ccc.length, 11, 15),
-                    new Token(whitespace, 0, whitespace.length, 16, 20),
-                    new Token(empty, 0, empty.length, 21, 21));
+    TokenStream ts = new IterTokenStream(new Token(new String(a, 0, a.length), 1, 5),
+                    new Token(new String(b, 0, b.length), 6, 10),
+                    new Token(new String(ccc, 0, ccc.length), 11, 15),
+                    new Token(new String(whitespace, 0, whitespace.length), 16, 20),
+                    new Token(new String(empty, 0, empty.length), 21, 21));
     ts = new TrimFilter(TEST_VERSION_CURRENT, ts);
 
     assertTokenStreamContents(ts, new String[] { "a", "b", "cCc", "", ""});
@@ -98,8 +98,8 @@ public class TestTrimFilter extends BaseTokenStreamTestCase {
     Analyzer a = new Analyzer() {
 
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.KEYWORD, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.KEYWORD, false);
         return new TokenStreamComponents(tokenizer, new TrimFilter(TEST_VERSION_CURRENT, tokenizer));
       } 
     };
@@ -109,12 +109,12 @@ public class TestTrimFilter extends BaseTokenStreamTestCase {
   public void testEmptyTerm() throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         final Version version = TEST_VERSION_CURRENT;
         return new TokenStreamComponents(tokenizer, new TrimFilter(version, tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

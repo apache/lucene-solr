@@ -59,14 +59,23 @@ public  class LeaderElector {
   
   private final static Pattern LEADER_SEQ = Pattern.compile(".*?/?.*?-n_(\\d+)");
   private final static Pattern SESSION_ID = Pattern.compile(".*?/?(.*?-.*?)-n_\\d+");
-  
+  private final static Pattern  NODE_NAME = Pattern.compile(".*?/?(.*?-)(.*?)-n_\\d+");
+
   protected SolrZkClient zkClient;
   
   private ZkCmdExecutor zkCmdExecutor;
-  
+
+  private volatile ElectionContext context;
+
+  private ElectionWatcher watcher;
+
   public LeaderElector(SolrZkClient zkClient) {
     this.zkClient = zkClient;
-    zkCmdExecutor = new ZkCmdExecutor((int) (zkClient.getZkClientTimeout()/1000.0 + 3000));
+    zkCmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
+  }
+  
+  public ElectionContext getContext() {
+    return context;
   }
   
   /**
@@ -79,10 +88,11 @@ public  class LeaderElector {
    */
   private void checkIfIamLeader(final int seq, final ElectionContext context, boolean replacement) throws KeeperException,
       InterruptedException, IOException {
+    context.checkIfIamLeaderFired();
     // get all other numbers...
     final String holdElectionPath = context.electionPath + ELECTION_NODE;
     List<String> seqs = zkClient.getChildren(holdElectionPath, null, true);
-    
+
     sortSeqs(seqs);
     List<Integer> intSeqs = getSeqs(seqs);
     if (intSeqs.size() == 0) {
@@ -114,31 +124,7 @@ public  class LeaderElector {
         return;
       }
       try {
-        zkClient.getData(holdElectionPath + "/" + seqs.get(index),
-            new Watcher() {
-              
-              @Override
-              public void process(WatchedEvent event) {
-                // session events are not change events,
-                // and do not remove the watcher
-                if (EventType.None.equals(event.getType())) {
-                  return;
-                }
-                // am I the next leader?
-                try {
-                  checkIfIamLeader(seq, context, true);
-                } catch (InterruptedException e) {
-                  // Restore the interrupted status
-                  Thread.currentThread().interrupt();
-                  log.warn("", e);
-                } catch (IOException e) {
-                  log.warn("", e);
-                } catch (Exception e) {
-                  log.warn("", e);
-                }
-              }
-              
-            }, null, true);
+        zkClient.getData(holdElectionPath + "/" + seqs.get(index), watcher = new ElectionWatcher(context.leaderSeqPath , seq, context) , null, true);
       } catch (KeeperException.SessionExpiredException e) {
         throw e;
       } catch (KeeperException e) {
@@ -153,7 +139,7 @@ public  class LeaderElector {
   // TODO: get this core param out of here
   protected void runIamLeaderProcess(final ElectionContext context, boolean weAreReplacement) throws KeeperException,
       InterruptedException, IOException {
-    context.runLeaderProcess(weAreReplacement);
+    context.runLeaderProcess(weAreReplacement,0);
   }
   
   /**
@@ -161,7 +147,7 @@ public  class LeaderElector {
    * 
    * @return sequence number
    */
-  private int getSeq(String nStringSequence) {
+  public static int getSeq(String nStringSequence) {
     int seq = 0;
     Matcher m = LEADER_SEQ.matcher(nStringSequence);
     if (m.matches()) {
@@ -184,6 +170,19 @@ public  class LeaderElector {
     }
     return id;
   }
+
+  public static String getNodeName(String nStringSequence){
+    String result;
+    Matcher m = NODE_NAME.matcher(nStringSequence);
+    if (m.matches()) {
+      result = m.group(2);
+    } else {
+      throw new IllegalStateException("Could not find regex match in:"
+          + nStringSequence);
+    }
+    return result;
+
+  }
   
   /**
    * Returns int list given list of form n_0000000001, n_0000000003, etc.
@@ -191,7 +190,7 @@ public  class LeaderElector {
    * @return int seqs
    */
   private List<Integer> getSeqs(List<String> seqs) {
-    List<Integer> intSeqs = new ArrayList<Integer>(seqs.size());
+    List<Integer> intSeqs = new ArrayList<>(seqs.size());
     for (String seq : seqs) {
       intSeqs.add(getSeq(seq));
     }
@@ -208,6 +207,8 @@ public  class LeaderElector {
    * @return sequential node number
    */
   public int joinElection(ElectionContext context, boolean replacement) throws KeeperException, InterruptedException, IOException {
+    context.joinedElectionFired();
+    
     final String shardsElectZkPath = context.electionPath + LeaderElector.ELECTION_NODE;
     
     long sessionId = zkClient.getSolrZooKeeper().getSessionId();
@@ -267,12 +268,57 @@ public  class LeaderElector {
     
     return seq;
   }
+
+  private class ElectionWatcher implements Watcher {
+    final String leaderSeqPath;
+    final int seq;
+    final ElectionContext context;
+
+    private boolean canceled = false;
+
+    private ElectionWatcher(String leaderSeqPath, int seq, ElectionContext context) {
+      this.leaderSeqPath = leaderSeqPath;
+      this.seq = seq;
+      this.context = context;
+    }
+
+    void cancel(String leaderSeqPath){
+      canceled = true;
+
+    }
+
+    @Override
+    public void process(WatchedEvent event) {
+      // session events are not change events,
+      // and do not remove the watcher
+      if (EventType.None.equals(event.getType())) {
+        return;
+      }
+      if(canceled) {
+        log.info("This watcher is not active anymore {}", leaderSeqPath);
+        return;
+      }
+      try {
+        // am I the next leader?
+        checkIfIamLeader(seq, context, true);
+      } catch (InterruptedException e) {
+        // Restore the interrupted status
+        Thread.currentThread().interrupt();
+        log.warn("", e);
+      } catch (IOException e) {
+        log.warn("", e);
+      } catch (Exception e) {
+        log.warn("", e);
+      }
+    }
+  }
   
   /**
    * Set up any ZooKeeper nodes needed for leader election.
    */
   public void setup(final ElectionContext context) throws InterruptedException,
       KeeperException {
+    this.context = context;
     String electZKPath = context.electionPath + LeaderElector.ELECTION_NODE;
     
     zkCmdExecutor.ensureExists(electZKPath, zkClient);
@@ -281,7 +327,7 @@ public  class LeaderElector {
   /**
    * Sort n string sequence list.
    */
-  private void sortSeqs(List<String> seqs) {
+  public static void sortSeqs(List<String> seqs) {
     Collections.sort(seqs, new Comparator<String>() {
       
       @Override
@@ -290,5 +336,12 @@ public  class LeaderElector {
             Integer.valueOf(getSeq(o2)));
       }
     });
+  }
+  
+  void retryElection() throws KeeperException, InterruptedException, IOException {
+    context.cancelElection();
+    ElectionWatcher watcher = this.watcher;
+    if(watcher!= null) watcher.cancel(context.leaderSeqPath);
+    joinElection(context, true);
   }
 }

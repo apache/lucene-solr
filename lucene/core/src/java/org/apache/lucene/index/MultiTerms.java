@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.util.BytesRef;
@@ -36,7 +35,7 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
 public final class MultiTerms extends Terms {
   private final Terms[] subs;
   private final ReaderSlice[] subSlices;
-  private final Comparator<BytesRef> termComp;
+  private final boolean hasFreqs;
   private final boolean hasOffsets;
   private final boolean hasPositions;
   private final boolean hasPayloads;
@@ -51,28 +50,19 @@ public final class MultiTerms extends Terms {
     this.subs = subs;
     this.subSlices = subSlices;
     
-    Comparator<BytesRef> _termComp = null;
     assert subs.length > 0 : "inefficient: don't use MultiTerms over one sub";
+    boolean _hasFreqs = true;
     boolean _hasOffsets = true;
     boolean _hasPositions = true;
     boolean _hasPayloads = false;
     for(int i=0;i<subs.length;i++) {
-      if (_termComp == null) {
-        _termComp = subs[i].getComparator();
-      } else {
-        // We cannot merge sub-readers that have
-        // different TermComps
-        final Comparator<BytesRef> subTermComp = subs[i].getComparator();
-        if (subTermComp != null && !subTermComp.equals(_termComp)) {
-          throw new IllegalStateException("sub-readers have different BytesRef.Comparators; cannot merge");
-        }
-      }
+      _hasFreqs &= subs[i].hasFreqs();
       _hasOffsets &= subs[i].hasOffsets();
       _hasPositions &= subs[i].hasPositions();
       _hasPayloads |= subs[i].hasPayloads();
     }
 
-    termComp = _termComp;
+    hasFreqs = _hasFreqs;
     hasOffsets = _hasOffsets;
     hasPositions = _hasPositions;
     hasPayloads = hasPositions && _hasPayloads; // if all subs have pos, and at least one has payloads.
@@ -80,7 +70,7 @@ public final class MultiTerms extends Terms {
 
   @Override
   public TermsEnum intersect(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
-    final List<MultiTermsEnum.TermsEnumIndex> termsEnums = new ArrayList<MultiTermsEnum.TermsEnumIndex>();
+    final List<MultiTermsEnum.TermsEnumIndex> termsEnums = new ArrayList<>();
     for(int i=0;i<subs.length;i++) {
       final TermsEnum termsEnum = subs[i].intersect(compiled, startTerm);
       if (termsEnum != null) {
@@ -94,11 +84,37 @@ public final class MultiTerms extends Terms {
       return TermsEnum.EMPTY;
     }
   }
+  
+  @Override
+  public BytesRef getMin() throws IOException {
+    BytesRef minTerm = null;
+    for(Terms terms : subs) {
+      BytesRef term = terms.getMin();
+      if (minTerm == null || term.compareTo(minTerm) < 0) {
+        minTerm = term;
+      }
+    }
+
+    return minTerm;
+  }
+
+  @Override
+  public BytesRef getMax() throws IOException {
+    BytesRef maxTerm = null;
+    for(Terms terms : subs) {
+      BytesRef term = terms.getMax();
+      if (maxTerm == null || term.compareTo(maxTerm) > 0) {
+        maxTerm = term;
+      }
+    }
+
+    return maxTerm;
+  }
 
   @Override
   public TermsEnum iterator(TermsEnum reuse) throws IOException {
 
-    final List<MultiTermsEnum.TermsEnumIndex> termsEnums = new ArrayList<MultiTermsEnum.TermsEnumIndex>();
+    final List<MultiTermsEnum.TermsEnumIndex> termsEnums = new ArrayList<>();
     for(int i=0;i<subs.length;i++) {
       final TermsEnum termsEnum = subs[i].iterator(null);
       if (termsEnum != null) {
@@ -158,8 +174,8 @@ public final class MultiTerms extends Terms {
   }
 
   @Override
-  public Comparator<BytesRef> getComparator() {
-    return termComp;
+  public boolean hasFreqs() {
+    return hasFreqs;
   }
 
   @Override

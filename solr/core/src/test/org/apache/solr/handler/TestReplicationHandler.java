@@ -28,11 +28,12 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Set;
-import java.util.Date;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -44,23 +45,25 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.SimpleFSDirectory;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
-import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CachingDirectoryFactory;
@@ -69,8 +72,10 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.StandardDirectoryFactory;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.util.FileUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -80,6 +85,7 @@ import org.junit.Test;
  * @since 1.4
  */
 @Slow
+@SuppressSSL     // Currently unknown why SSL does not work with this test
 public class TestReplicationHandler extends SolrTestCaseJ4 {
 
 
@@ -96,20 +102,24 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   // number of docs to index... decremented for each test case to tell if we accidentally reuse
   // index from previous test method
   static int nDocs = 500;
+  
+  @BeforeClass
+  public static void beforeClass() {
 
-
+  }
+  
   @Before
   public void setUp() throws Exception {
     super.setUp();
 //    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     // For manual testing only
-    // useFactory(null); // force an FS factory
-    master = new SolrInstance("master", null);
+    // useFactory(null); // force an FS factory.
+    master = new SolrInstance(createTempDir("solr-instance"), "master", null);
     master.setUp();
     masterJetty = createJetty(master);
     masterClient = createNewSolrServer(masterJetty.getLocalPort());
 
-    slave = new SolrInstance("slave", masterJetty.getLocalPort());
+    slave = new SolrInstance(createTempDir("solr-instance"), "slave", masterJetty.getLocalPort());
     slave.setUp();
     slaveJetty = createJetty(slave);
     slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
@@ -134,12 +144,14 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slave.tearDown();
     masterJetty = slaveJetty = null;
     master = slave = null;
+    masterClient.shutdown();
+    slaveClient.shutdown();
     masterClient = slaveClient = null;
   }
 
   private static JettySolrRunner createJetty(SolrInstance instance) throws Exception {
     System.setProperty("solr.data.dir", instance.getDataDir());
-
+    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(instance.getHomeDir(), "solr.xml"));
     JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), "/solr", 0);
 
     jetty.start();
@@ -149,8 +161,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   private static SolrServer createNewSolrServer(int port) {
     try {
       // setup the server...
-      String url = "http://127.0.0.1:" + port + context;
-      HttpSolrServer s = new HttpSolrServer(url);
+      HttpSolrServer s = new HttpSolrServer(buildUrl(port));
       s.setConnectionTimeout(15000);
       s.setSoTimeout(60000);
       s.setDefaultMaxConnectionsPerHost(100);
@@ -312,7 +323,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     JettySolrRunner repeaterJetty = null;
     SolrServer repeaterClient = null;
     try {
-      repeater = new SolrInstance("repeater", masterJetty.getLocalPort());
+      repeater = new SolrInstance(createTempDir("solr-instance"), "repeater", masterJetty.getLocalPort());
       repeater.setUp();
       repeaterJetty = createJetty(repeater);
       repeaterClient = createNewSolrServer(repeaterJetty.getLocalPort());
@@ -336,7 +347,48 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       try { 
         if (repeater != null) repeater.tearDown();
       } catch (Exception e) { /* :NOOP: */ }
+      if (repeaterClient != null) repeaterClient.shutdown();
     }
+  }
+
+
+  /**
+   * Verify that things still work if an IW has not been opened (and hence the CommitPoints have not been communicated to the deletion policy)
+   */
+  public void testNoWriter() throws Exception {
+    useFactory(null);    // force a persistent directory
+
+    // read-only setting (no opening from indexwriter)
+    System.setProperty("solr.tests.nrtMode", "false");
+    try {
+    // stop and start so they see the new directory setting
+    slaveJetty.stop();
+    masterJetty.stop();
+    slaveJetty.start(true);
+    masterJetty.start(true);
+
+    index(slaveClient, "id", "123456");
+    slaveClient.commit();
+    slaveJetty.stop();
+    slaveJetty.start(true);
+    } finally {
+      System.clearProperty("solr.tests.nrtMode"); // dont mess with other tests
+    }
+
+    // Currently we open a writer on-demand.  This is to test that we are correctly testing
+    // the code path when SolrDeletionPolicy.getLatestCommit() returns null.
+    // When we are using an ephemeral directory, an IW will always be opened to create the index and hence
+    // getLatestCommit will always be non-null.
+    CoreContainer cores = ((SolrDispatchFilter) slaveJetty.getDispatchFilter().getFilter()).getCores();
+    Collection<SolrCore> theCores = cores.getCores();
+    assertEquals(1, theCores.size());
+    SolrCore core = (SolrCore)theCores.toArray()[0];
+    assertNull( core.getDeletionPolicy().getLatestCommit() );
+
+
+    pullFromMasterToSlave();  // this will cause SnapPuller to be invoked and we will test when SolrDeletionPolicy.getLatestCommit() returns null
+
+    resetFactory();
   }
 
   /**
@@ -443,7 +495,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   //jetty servers.
   private void invokeReplicationCommand(int pJettyPort, String pCommand) throws IOException
   {
-    String masterUrl = "http://127.0.0.1:" + pJettyPort + "/solr/replication?command=" + pCommand;
+    String masterUrl = buildUrl(pJettyPort) + "/replication?command=" + pCommand;
     try {
       URL u = new URL(masterUrl);
       InputStream stream = u.openStream();
@@ -488,6 +540,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     masterJetty.stop();
 
     masterJetty = createJetty(master);
+    masterClient.shutdown();
     masterClient = createNewSolrServer(masterJetty.getLocalPort());
 
     slave.setTestPort(masterJetty.getLocalPort());
@@ -506,6 +559,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertFalse(slaveXsltDir.exists());
 
     slaveJetty = createJetty(slave);
+    slaveClient.shutdown();
     slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
 
     //add a doc with new field and commit on master to trigger snappull from slave.
@@ -583,6 +637,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slave.copyConfigFile(CONF_DIR + "solrconfig-slave1.xml", "solrconfig.xml");
     slaveJetty.stop();
     slaveJetty = createJetty(slave);
+    slaveClient.shutdown();
     slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
 
     masterClient.deleteByQuery("*:*");
@@ -596,7 +651,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     
     // todo: make SolrJ easier to pass arbitrary params to
     // TODO: precommit WILL screw with the rest of this test
-    String masterUrl = "http://127.0.0.1:" + masterJetty.getLocalPort() + "/solr/update?prepareCommit=true";
+    String masterUrl = buildUrl(masterJetty.getLocalPort()) + "/update?prepareCommit=true";
     URL url = new URL(masterUrl);
 //    InputStream stream = url.openStream();
 //    try {
@@ -612,8 +667,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(nDocs, masterQueryResult.getNumFound());
 
     // snappull
-    masterUrl = "http://127.0.0.1:" + slaveJetty.getLocalPort() + "/solr/replication?command=fetchindex&masterUrl=";
-    masterUrl += "http://127.0.0.1:" + masterJetty.getLocalPort() + "/solr/replication";
+    masterUrl = buildUrl(slaveJetty.getLocalPort()) + "/replication?command=fetchindex&masterUrl=";
+    masterUrl += buildUrl(masterJetty.getLocalPort()) + "/replication";
     url = new URL(masterUrl);
     InputStream stream = url.openStream();
     try {
@@ -709,7 +764,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
   
   
-  @Test
+  @Test 
   public void doTestStressReplication() throws Exception {
     // change solrconfig on slave
     // this has no entry for pollinginterval
@@ -730,12 +785,14 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       slave.copyConfigFile(CONF_DIR +slaveSchema, "schema.xml");
       slaveJetty.stop();
       slaveJetty = createJetty(slave);
+      slaveClient.shutdown();
       slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
 
       master.copyConfigFile(CONF_DIR + "solrconfig-master3.xml",
           "solrconfig.xml");
       masterJetty.stop();
       masterJetty = createJetty(master);
+      masterClient.shutdown();
       masterClient = createNewSolrServer(masterJetty.getLocalPort());
       
       masterClient.deleteByQuery("*:*");
@@ -757,7 +814,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
           master.copyConfigFile(CONF_DIR + slaveSchema, "schema.xml");
         }
         
-        int docs = random().nextInt(maxDocs);
+        int docs = random().nextInt(maxDocs) + 1;
         for (int i = 0; i < docs; i++) {
           index(masterClient, "id", id++, "name", "name = " + i);
         }
@@ -850,14 +907,18 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slave.copyConfigFile(CONF_DIR + "solrconfig-slave1.xml", "solrconfig.xml");
     slaveJetty.stop();
     slaveJetty = createJetty(slave);
+    slaveClient.shutdown();
     slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
 
     try {
-      repeater = new SolrInstance("repeater", null);
+      repeater = new SolrInstance(createTempDir("solr-instance"), "repeater", null);
       repeater.setUp();
       repeater.copyConfigFile(CONF_DIR + "solrconfig-repeater.xml",
           "solrconfig.xml");
       repeaterJetty = createJetty(repeater);
+      if (repeaterClient != null) {
+        repeaterClient.shutdown();
+      }
       repeaterClient = createNewSolrServer(repeaterJetty.getLocalPort());
       
       for (int i = 0; i < 3; i++)
@@ -960,10 +1021,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     String masterUrl;
     URL url;
     InputStream stream;
-    masterUrl = "http://127.0.0.1:" + to.getLocalPort()
-        + "/solr/replication?wait=true&command=fetchindex&masterUrl=";
-    masterUrl += "http://127.0.0.1:" + from.getLocalPort()
-        + "/solr/replication";
+    masterUrl = buildUrl(to.getLocalPort())
+        + "/replication?wait=true&command=fetchindex&masterUrl="
+        + buildUrl(from.getLocalPort()) + "/replication";
     url = new URL(masterUrl);
     stream = url.openStream();
     try {
@@ -992,6 +1052,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     masterJetty.stop();
 
     masterJetty = createJetty(master);
+    masterClient.shutdown();
     masterClient = createNewSolrServer(masterJetty.getLocalPort());
     
     for (int i = 0; i < nDocs; i++)
@@ -1009,6 +1070,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     //start slave
     slaveJetty = createJetty(slave);
+    slaveClient.shutdown();
     slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
 
     //get docs from slave and check if number is equal to master
@@ -1042,6 +1104,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       masterJetty.stop();
       
       masterJetty = createJetty(master);
+      masterClient.shutdown();
       masterClient = createNewSolrServer(masterJetty.getLocalPort());
       
       for (int i = 0; i < nDocs; i++)
@@ -1067,6 +1130,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       
       // start slave
       slaveJetty = createJetty(slave);
+      slaveClient.shutdown();
       slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
       
       // get docs from slave and check if number is equal to master
@@ -1100,6 +1164,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     masterJetty.stop();
 
     masterJetty = createJetty(master);
+    masterClient.shutdown();
     masterClient = createNewSolrServer(masterJetty.getLocalPort());
 
     masterClient.deleteByQuery("*:*");
@@ -1117,6 +1182,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     //start slave
     slaveJetty = createJetty(slave);
+    slaveClient.shutdown();
     slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
     
     //get docs from slave and check if number is equal to master
@@ -1197,6 +1263,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     masterJetty.stop();
 
     masterJetty = createJetty(master);
+    masterClient.shutdown();
     masterClient = createNewSolrServer(masterJetty.getLocalPort());
 
     slave.setTestPort(masterJetty.getLocalPort());
@@ -1204,6 +1271,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     slaveJetty.stop();
     slaveJetty = createJetty(slave);
+    slaveClient.shutdown();
     slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
 
     slaveClient.deleteByQuery("*:*");
@@ -1251,12 +1319,13 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       addNumberToKeepInRequest = false;
       backupKeepParamName = ReplicationHandler.NUMBER_BACKUPS_TO_KEEP_INIT_PARAM;
     }
-    
+
     masterJetty.stop();
-    master.copyConfigFile(CONF_DIR + configFile, 
+    master.copyConfigFile(CONF_DIR + configFile,
                           "solrconfig.xml");
 
     masterJetty = createJetty(master);
+    masterClient.shutdown();
     masterClient = createNewSolrServer(masterJetty.getLocalPort());
 
     nDocs--;
@@ -1265,20 +1334,34 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       index(masterClient, "id", i, "name", "name = " + i);
 
     masterClient.commit();
-   
+
     class BackupThread extends Thread {
       volatile String fail = null;
       final boolean addNumberToKeepInRequest;
       String backupKeepParamName;
-      BackupThread(boolean addNumberToKeepInRequest, String backupKeepParamName) {
+      String backupName;
+      String cmd;
+      BackupThread(boolean addNumberToKeepInRequest, String backupKeepParamName, String command) {
         this.addNumberToKeepInRequest = addNumberToKeepInRequest;
         this.backupKeepParamName = backupKeepParamName;
+        this.cmd = command;
+      }
+      BackupThread(String backupName, String command) {
+        this.backupName = backupName;
+        addNumberToKeepInRequest = false;
+        this.cmd = command;
       }
       @Override
       public void run() {
-        String masterUrl = 
-          "http://127.0.0.1:" + masterJetty.getLocalPort() + "/solr/replication?command=" + ReplicationHandler.CMD_BACKUP + 
-          (addNumberToKeepInRequest ? "&" + backupKeepParamName + "=1" : "");
+        String masterUrl = null;
+        if(backupName != null) {
+          masterUrl = buildUrl(masterJetty.getLocalPort()) + "/replication?command=" + cmd +
+              "&name=" +  backupName;
+        } else {
+          masterUrl = buildUrl(masterJetty.getLocalPort()) + "/replication?command=" + cmd +
+              (addNumberToKeepInRequest ? "&" + backupKeepParamName + "=1" : "");
+        }
+
         URL url;
         InputStream stream = null;
         try {
@@ -1293,21 +1376,46 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
       };
     };
-    
-    class CheckStatus extends Thread {
-      volatile String fail = null;
-      volatile String response = null;
-      volatile boolean success = false;
-      volatile String backupTimestamp = null;
+
+    class CheckDeleteBackupStatus {
+      String response = null;
+      boolean success = false;
+      String fail = null;
+
+      public void fetchStatus() {
+        String masterUrl = buildUrl(masterJetty.getLocalPort()) + "/replication?command=" + ReplicationHandler.CMD_DETAILS;
+        URL url;
+        InputStream stream = null;
+        try {
+          url = new URL(masterUrl);
+          stream = url.openStream();
+          response = IOUtils.toString(stream, "UTF-8");
+          if(response.contains("<str name=\"status\">success</str>")) {
+            success = true;
+          }
+          stream.close();
+        } catch (Exception e) {
+          fail = e.getMessage();
+        } finally {
+          IOUtils.closeQuietly(stream);
+        }
+      };
+    }
+
+    class CheckBackupStatus {
+      String fail = null;
+      String response = null;
+      boolean success = false;
+      String backupTimestamp = null;
       final String lastBackupTimestamp;
       final Pattern p = Pattern.compile("<str name=\"snapshotCompletedAt\">(.*?)</str>");
-      
-      CheckStatus(String lastBackupTimestamp) {
+
+      CheckBackupStatus(String lastBackupTimestamp) {
         this.lastBackupTimestamp = lastBackupTimestamp;
       }
-      @Override
-      public void run() {
-        String masterUrl = "http://127.0.0.1:" + masterJetty.getLocalPort() + "/solr/replication?command=" + ReplicationHandler.CMD_DETAILS;
+
+      public void fetchStatus() {
+        String masterUrl = buildUrl(masterJetty.getLocalPort()) + "/replication?command=" + ReplicationHandler.CMD_DETAILS;
         URL url;
         InputStream stream = null;
         try {
@@ -1319,7 +1427,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
             if(!m.find()) {
               fail("could not find the completed timestamp in response.");
             }
-            backupTimestamp = m.group(1);   
+            backupTimestamp = m.group(1);
             if(!backupTimestamp.equals(lastBackupTimestamp)) {
               success = true;
             }
@@ -1333,67 +1441,119 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
       };
     };
-    
+
     File[] snapDir = new File[2];
-    String firstBackupTimestamp = null;
-    for(int i=0 ; i<2 ; i++) {
-      BackupThread backupThread = new BackupThread(addNumberToKeepInRequest, backupKeepParamName);
-      backupThread.start();
-      
-      File dataDir = new File(master.getDataDir());
-      
-      int waitCnt = 0;
-      CheckStatus checkStatus = new CheckStatus(firstBackupTimestamp);
-      while(true) {
-        checkStatus.run();
-        if(checkStatus.fail != null) {
-          fail(checkStatus.fail);
+    try {
+      String firstBackupTimestamp = null;
+      boolean namedBackup = true;
+      String[] backupNames = null;
+      if (namedBackup) {
+        backupNames = new String[2];
+      }
+      for (int i = 0; i < 2; i++) {
+        BackupThread backupThread;
+        final String backupName = TestUtil.randomSimpleString(random(), 1, 20);
+        if (!namedBackup) {
+          backupThread = new BackupThread(addNumberToKeepInRequest, backupKeepParamName, ReplicationHandler.CMD_BACKUP);
+        } else {
+          backupThread = new BackupThread(backupName, ReplicationHandler.CMD_BACKUP);
+          backupNames[i] = backupName;
         }
-        if(checkStatus.success) {
-          if(i==0) {
-            firstBackupTimestamp = checkStatus.backupTimestamp;
-            Thread.sleep(1000); //ensure the next backup will have a different timestamp.
+        backupThread.start();
+
+        File dataDir = new File(master.getDataDir());
+
+        int waitCnt = 0;
+        CheckBackupStatus checkBackupStatus = new CheckBackupStatus(firstBackupTimestamp);
+        while (true) {
+          checkBackupStatus.fetchStatus();
+          if (checkBackupStatus.fail != null) {
+            fail(checkBackupStatus.fail);
           }
-          break;
-        }
-        Thread.sleep(200);
-        if(waitCnt == 20) {
-          fail("Backup success not detected:" + checkStatus.response);
-        }
-        waitCnt++;
-      }
-      
-      if(backupThread.fail != null) {
-        fail(backupThread.fail);
-      }
-  
-      File[] files = dataDir.listFiles(new FilenameFilter() {
-        
-          @Override
-          public boolean accept(File dir, String name) {
-            if(name.startsWith("snapshot")) {
-              return true;
+          if (checkBackupStatus.success) {
+            if (i == 0) {
+              firstBackupTimestamp = checkBackupStatus.backupTimestamp;
+              Thread.sleep(1000); //ensure the next backup will have a different timestamp.
             }
-            return false;
+            break;
           }
-        });
-      assertEquals(1, files.length);
-      snapDir[i] = files[0];
-      Directory dir = new SimpleFSDirectory(snapDir[i].getAbsoluteFile());
-      IndexReader reader = DirectoryReader.open(dir);
-      IndexSearcher searcher = new IndexSearcher(reader);
-      TopDocs hits = searcher.search(new MatchAllDocsQuery(), 1);
-      assertEquals(nDocs, hits.totalHits);
-      reader.close();
-      dir.close();
-    }
-    if(snapDir[0].exists()) {
-      fail("The first backup should have been cleaned up because " + backupKeepParamName + " was set to 1.");
+          Thread.sleep(200);
+          if (waitCnt == 20) {
+            fail("Backup success not detected:" + checkBackupStatus.response);
+          }
+          waitCnt++;
+        }
+
+        if (backupThread.fail != null) {
+          fail(backupThread.fail);
+        }
+        File[] files = null;
+        if (!namedBackup) {
+          files = dataDir.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+              if (name.startsWith("snapshot")) {
+                return true;
+              }
+              return false;
+            }
+          });
+        } else {
+          files = dataDir.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+              if (name.startsWith("snapshot." + backupName)) {
+                return true;
+              }
+              return false;
+            }
+          });
+        }
+        assertEquals(1, files.length);
+        snapDir[i] = files[0];
+        Directory dir = new SimpleFSDirectory(snapDir[i].getAbsoluteFile());
+        IndexReader reader = DirectoryReader.open(dir);
+        IndexSearcher searcher = new IndexSearcher(reader);
+        TopDocs hits = searcher.search(new MatchAllDocsQuery(), 1);
+        assertEquals(nDocs, hits.totalHits);
+        reader.close();
+        dir.close();
+
+        if (!namedBackup && snapDir[0].exists()) {
+          fail("The first backup should have been cleaned up because " + backupKeepParamName + " was set to 1.");
+        }
+      }
+
+      for (int i = 0; i < 2; i++) {
+        //Test Deletion of named backup
+        BackupThread deleteBackupThread = new BackupThread(backupNames[i], ReplicationHandler.CMD_DELETE_BACKUP);
+        deleteBackupThread.start();
+        int waitCnt = 0;
+        CheckDeleteBackupStatus checkDeleteBackupStatus = new CheckDeleteBackupStatus();
+        while (true) {
+          checkDeleteBackupStatus.fetchStatus();
+          if (checkDeleteBackupStatus.fail != null) {
+            fail(checkDeleteBackupStatus.fail);
+          }
+          if (checkDeleteBackupStatus.success) {
+            break;
+          }
+          Thread.sleep(200);
+          if (waitCnt == 20) {
+            fail("Delete Backup success not detected:" + checkDeleteBackupStatus.response);
+          }
+          waitCnt++;
+        }
+
+        if (deleteBackupThread.fail != null) {
+          fail(deleteBackupThread.fail);
+        }
+      }
+    }finally {
+      for (File dir : snapDir) if(dir !=null) AbstractSolrTestCase.recurseDelete(dir);
     }
     
-    for(int i=0 ; i< snapDir.length ; i++) {
-      AbstractSolrTestCase.recurseDelete(snapDir[i]); // clean up the snap dir
-    }
+
   }
 
   /* character copy of file using UTF-8 */
@@ -1405,8 +1565,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
    * character copy of file using UTF-8. If port is non-null, will be substituted any time "TEST_PORT" is found.
    */
   private static void copyFile(File src, File dst, Integer port, boolean internalCompression) throws IOException {
-    BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(src), "UTF-8"));
-    Writer out = new OutputStreamWriter(new FileOutputStream(dst), "UTF-8");
+    BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(src), StandardCharsets.UTF_8));
+    Writer out = new OutputStreamWriter(new FileOutputStream(dst), StandardCharsets.UTF_8);
 
     for (String line = in.readLine(); null != line; line = in.readLine()) {
 
@@ -1473,6 +1633,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     fail("timed out waiting for collection1 startAt time to exceed: " + min);
     return min; // compilation neccessity
   }
+  
+  private static String buildUrl(int port) {
+    return buildUrl(port, context);
+  }
 
   private static class SolrInstance {
 
@@ -1483,13 +1647,15 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     private File dataDir;
 
     /**
-     * @param name used to pick new solr home dir, as well as which 
+     * @param homeDir Base directory to build solr configuration and index in
+     * @param name used to pick which
      *        "solrconfig-${name}.xml" file gets copied
      *        to solrconfig.xml in new conf dir.
      * @param testPort if not null, used as a replacement for
      *        TEST_PORT in the cloned config files.
      */
-    public SolrInstance(String name, Integer testPort) {
+    public SolrInstance(File homeDir, String name, Integer testPort) {
+      this.homeDir = homeDir;
       this.name = name;
       this.testPort = testPort;
     }
@@ -1507,7 +1673,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     }
 
     public String getDataDir() {
-      return dataDir.toString();
+      return dataDir.getAbsolutePath();
     }
 
     public String getSolrConfigFile() {
@@ -1523,12 +1689,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       System.setProperty("solr.test.sys.prop1", "propone");
       System.setProperty("solr.test.sys.prop2", "proptwo");
 
-      File home = new File(TEMP_DIR, 
-                           getClass().getName() + "-" + 
-                           System.currentTimeMillis());
-                           
-
-      homeDir = new File(home, name);
       dataDir = new File(homeDir + "/collection1", "data");
       confDir = new File(homeDir + "/collection1", "conf");
 
@@ -1538,6 +1698,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
       copyConfigFile(getSolrConfigFile(), "solrconfig.xml");
       copyConfigFile(getSchemaFile(), "schema.xml");
+      copyConfigFile(CONF_DIR + "solrconfig.snippet.randomindexconfig.xml", 
+                     "solrconfig.snippet.randomindexconfig.xml");
     }
 
     public void tearDown() throws Exception {

@@ -23,7 +23,7 @@ import java.util.Locale;
 /**
  * @since solr 1.3
  */
-public interface CoreAdminParams 
+public abstract class CoreAdminParams
 {
   /** What Core are we talking about **/
   public final static String CORE = "core";
@@ -37,9 +37,10 @@ public interface CoreAdminParams
   /** If you rename something, what is the new name **/
   public final static String NAME = "name";
 
-  /** If you rename something, what is the new name **/
+  /** Core data directory **/
   public final static String DATA_DIR = "dataDir";
-  
+
+  /** Core updatelog directory **/
   public final static String ULOG_DIR = "ulogDir";
 
   /** Name of the other core in actions involving 2 cores **/
@@ -50,6 +51,9 @@ public interface CoreAdminParams
   
   /** If you specify a schema, what is its name **/
   public final static String SCHEMA = "schema";
+
+  /** If you specify a configset, what is its name **/
+  public final static String CONFIGSET = "configSet";
   
   /** If you specify a config, what is its name **/
   public final static String CONFIG = "config";
@@ -80,12 +84,20 @@ public interface CoreAdminParams
   /** The shard range in solr cloud */
   public final static String SHARD_STATE = "shard.state";
 
+  /** The parent shard if applicable */
+  public final static String SHARD_PARENT = "shard.parent";
+
   /** The target core to which a split index should be written to
    * Multiple targetCores can be specified by multiple targetCore parameters */
   public final static String TARGET_CORE = "targetCore";
+
+  /** The hash ranges to be used to split a shard or an index */
+  public final static String RANGES = "ranges";
   
   public static final String ROLES = "roles";
-  
+
+  public static final String REQUESTID = "requestid";
+
   public static final String CORE_NODE_NAME = "coreNodeName";
   
   /** Prefix for core property name=value pair **/
@@ -118,9 +130,12 @@ public interface CoreAdminParams
     REQUESTSYNCSHARD,
     CREATEALIAS,
     DELETEALIAS,
+    REQUESTBUFFERUPDATES,
     REQUESTAPPLYUPDATES,
     LOAD_ON_STARTUP,
-    TRANSIENT;
+    TRANSIENT,
+    OVERSEEROP,
+    REQUESTSTATUS;
     
     public static CoreAdminAction get( String p )
     {

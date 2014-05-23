@@ -19,6 +19,7 @@ package org.apache.solr.request;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -92,7 +93,7 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
 
     rsp.add("byte", Byte.valueOf((byte)-3));
     rsp.add("short", Short.valueOf((short)-4));
-    rsp.add("bytes", "abc".getBytes("UTF-8"));
+    rsp.add("bytes", "abc".getBytes(StandardCharsets.UTF_8));
 
     w.write(buf, req, rsp);
     jsonEq("{\"nl\":[[\"data1\",\"he\\u2028llo\\u2029!\"],[null,42]],\"byte\":-3,\"short\":-4,\"bytes\":\"YWJj\"}", buf.toString());

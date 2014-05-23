@@ -26,7 +26,7 @@ import org.apache.lucene.search.similarities.Similarity;
  */
 final class TermScorer extends Scorer {
   private final DocsEnum docsEnum;
-  private final Similarity.ExactSimScorer docScorer;
+  private final Similarity.SimScorer docScorer;
   
   /**
    * Construct a <code>TermScorer</code>.
@@ -36,10 +36,10 @@ final class TermScorer extends Scorer {
    * @param td
    *          An iterator over the documents matching the <code>Term</code>.
    * @param docScorer
-   *          The </code>Similarity.ExactSimScorer</code> implementation 
+   *          The </code>Similarity.SimScorer</code> implementation 
    *          to be used for score computations.
    */
-  TermScorer(Weight weight, DocsEnum td, Similarity.ExactSimScorer docScorer) {
+  TermScorer(Weight weight, DocsEnum td, Similarity.SimScorer docScorer) {
     super(weight);
     this.docScorer = docScorer;
     this.docsEnum = td;

@@ -28,7 +28,25 @@ public interface CollectionParams
 
 
   public enum CollectionAction {
-    CREATE, DELETE, RELOAD, SYNCSHARD, CREATEALIAS, DELETEALIAS, SPLITSHARD;
+    CREATE,
+    DELETE,
+    RELOAD,
+    SYNCSHARD,
+    CREATEALIAS,
+    DELETEALIAS,
+    SPLITSHARD,
+    DELETESHARD,
+    CREATESHARD,
+    DELETEREPLICA,
+    MIGRATE,
+    ADDROLE,
+    REMOVEROLE,
+    CLUSTERPROP,
+    REQUESTSTATUS,
+    ADDREPLICA,
+    OVERSEERSTATUS,
+    LIST,
+    CLUSTERSTATUS;
     
     public static CollectionAction get( String p )
     {
@@ -40,5 +58,13 @@ public interface CollectionParams
       }
       return null; 
     }
+    public boolean isEqual(String s){
+      if(s == null) return false;
+      return toString().equals(s.toUpperCase(Locale.ROOT));
+    }
+    public String toLower(){
+      return toString().toLowerCase(Locale.ROOT);
+    }
+
   }
 }

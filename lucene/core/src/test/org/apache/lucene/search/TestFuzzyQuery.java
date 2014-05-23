@@ -51,7 +51,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
 
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    writer.close();
+    writer.shutdown();
 
     FuzzyQuery query = new FuzzyQuery(new Term("field", "aaaaa"), FuzzyQuery.defaultMaxEdits, 0);   
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
@@ -214,7 +214,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
 
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    writer.close();
+    writer.shutdown();
 
     FuzzyQuery query = new FuzzyQuery(new Term("field", "WEBER"), 2, 1);
     //query.setRewriteMethod(FuzzyQuery.SCORING_BOOLEAN_QUERY_REWRITE);
@@ -260,8 +260,8 @@ public class TestFuzzyQuery extends LuceneTestCase {
     mr.close();
     ir1.close();
     ir2.close();
-    writer.close();
-    writer2.close();
+    writer.shutdown();
+    writer2.shutdown();
     directory.close();
     directory2.close(); 
   }
@@ -276,7 +276,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
 
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    writer.close();
+    writer.shutdown();
     
     FuzzyQuery query = new FuzzyQuery(new Term("field", "lucene"));
     query.setRewriteMethod(new MultiTermQuery.TopTermsBoostOnlyBooleanQueryRewrite(50));
@@ -314,7 +314,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     addDoc("Brute willis", w);
     addDoc("B. willis", w);
     IndexReader r = w.getReader();
-    w.close();
+    w.shutdown();
 
     Query q = new FuzzyQuery(new Term("field", "giga"), 0);
 
@@ -335,7 +335,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     addDoc("working", w);
     IndexReader reader = w.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    w.close();
+    w.shutdown();
     
     FuzzyQuery q = new FuzzyQuery(new Term("field", "fouba"), 2);
     ScoreDoc[] hits = searcher.search(q, 10).scoreDocs;

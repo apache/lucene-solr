@@ -121,8 +121,8 @@ class PHPSerializedWriter extends JSONWriter {
   {
     writeKey(idx, false);
     
-    LinkedHashMap <String,Object> single = new LinkedHashMap<String, Object>();
-    LinkedHashMap <String,Object> multi = new LinkedHashMap<String, Object>();
+    LinkedHashMap <String,Object> single = new LinkedHashMap<>();
+    LinkedHashMap <String,Object> multi = new LinkedHashMap<>();
 
     for (String fname : doc.getFieldNames()) {
       if(!returnFields.wantsField(fname)){

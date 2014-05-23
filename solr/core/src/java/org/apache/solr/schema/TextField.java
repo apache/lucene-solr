@@ -18,24 +18,22 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.lucene.search.*;
 import org.apache.lucene.index.StorableField;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.QueryBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.Sorting;
 
 import java.util.Map;
-import java.util.List;
-import java.util.ArrayList;
 import java.io.IOException;
-import java.io.StringReader;
 
 /** <code>TextField</code> is the basic type for configurable text analysis.
  * Analyzers for field types using this implementation should be defined in the schema.
@@ -47,7 +45,7 @@ public class TextField extends FieldType {
   /**
    * Analyzer set by schema for text types to use when searching fields
    * of this type, subclasses can set analyzer themselves or override
-   * getAnalyzer()
+   * getIndexAnalyzer()
    * This analyzer is used to process wildcard, prefix, regex and other multiterm queries. It
    * assembles a list of tokenizer +filters that "make sense" for this, primarily accent folding and
    * lowercasing filters, and charfilters.
@@ -82,7 +80,7 @@ public class TextField extends FieldType {
    * <p>
    * This method may be called many times, at any time.
    * </p>
-   * @see #getAnalyzer
+   * @see #getIndexAnalyzer
    */
   public Analyzer getMultiTermAnalyzer() {
     return multiTermAnalyzer;
@@ -99,7 +97,18 @@ public class TextField extends FieldType {
   @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
     /* :TODO: maybe warn if isTokenized(), but doesn't use LimitTokenCountFilter in it's chain? */
-    return getStringSort(field, reverse);
+    field.checkSortability();
+    return Sorting.getTextSortField(field.getName(), reverse, field.sortMissingLast(), field.sortMissingFirst());
+  }
+  
+  @Override
+  public ValueSource getValueSource(SchemaField field, QParser parser) {
+    return new SortedSetFieldSource(field.getName());
+  }
+  
+  @Override
+  public Type getUninversionType(SchemaField sf) {
+    return Type.SORTED_SET_BINARY;
   }
 
   @Override
@@ -118,15 +127,9 @@ public class TextField extends FieldType {
   }
 
   @Override
-  public void setAnalyzer(Analyzer analyzer) {
-    this.analyzer = analyzer;
+  protected boolean supportsAnalyzers() {
+    return true;
   }
-
-  @Override
-  public void setQueryAnalyzer(Analyzer analyzer) {
-    this.queryAnalyzer = analyzer;
-  }
-
 
   @Override
   public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
@@ -139,195 +142,29 @@ public class TextField extends FieldType {
   public static BytesRef analyzeMultiTerm(String field, String part, Analyzer analyzerIn) {
     if (part == null || analyzerIn == null) return null;
 
-    TokenStream source;
-    try {
-      source = analyzerIn.tokenStream(field, new StringReader(part));
+    try (TokenStream source = analyzerIn.tokenStream(field, part)){
       source.reset();
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to initialize TokenStream to analyze multiTerm term: " + part, e);
-    }
 
-    TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
-    BytesRef bytes = termAtt.getBytesRef();
+      TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
+      BytesRef bytes = termAtt.getBytesRef();
 
-    try {
       if (!source.incrementToken())
         throw  new SolrException(SolrException.ErrorCode.BAD_REQUEST,"analyzer returned no terms for multiTerm term: " + part);
       termAtt.fillBytesRef();
       if (source.incrementToken())
         throw  new SolrException(SolrException.ErrorCode.BAD_REQUEST,"analyzer returned too many terms for multiTerm term: " + part);
+
+      source.end();
+      return BytesRef.deepCopyOf(bytes);
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"error analyzing range part: " + part, e);
     }
-
-    try {
-      source.end();
-      source.close();
-    } catch (IOException e) {
-      throw new RuntimeException("Unable to end & close TokenStream after analyzing multiTerm term: " + part, e);
-    }
-
-    return BytesRef.deepCopyOf(bytes);
   }
 
 
   static Query parseFieldQuery(QParser parser, Analyzer analyzer, String field, String queryText) {
-    int phraseSlop = 0;
-
-    // most of the following code is taken from the Lucene QueryParser
-
-    // Use the analyzer to get all the tokens, and then build a TermQuery,
-    // PhraseQuery, or nothing based on the term count
-
-    TokenStream source;
-    try {
-      source = analyzer.tokenStream(field, new StringReader(queryText));
-      source.reset();
-    } catch (IOException e) {
-      throw new RuntimeException("Unable to initialize TokenStream to analyze query text", e);
-    }
-    CachingTokenFilter buffer = new CachingTokenFilter(source);
-    CharTermAttribute termAtt = null;
-    PositionIncrementAttribute posIncrAtt = null;
-    int numTokens = 0;
-
-    buffer.reset();
-
-    if (buffer.hasAttribute(CharTermAttribute.class)) {
-      termAtt = buffer.getAttribute(CharTermAttribute.class);
-    }
-    if (buffer.hasAttribute(PositionIncrementAttribute.class)) {
-      posIncrAtt = buffer.getAttribute(PositionIncrementAttribute.class);
-    }
-
-    int positionCount = 0;
-    boolean severalTokensAtSamePosition = false;
-
-    boolean hasMoreTokens = false;
-    if (termAtt != null) {
-      try {
-        hasMoreTokens = buffer.incrementToken();
-        while (hasMoreTokens) {
-          numTokens++;
-          int positionIncrement = (posIncrAtt != null) ? posIncrAtt.getPositionIncrement() : 1;
-          if (positionIncrement != 0) {
-            positionCount += positionIncrement;
-          } else {
-            severalTokensAtSamePosition = true;
-          }
-          hasMoreTokens = buffer.incrementToken();
-        }
-      } catch (IOException e) {
-        // ignore
-      }
-    }
-    try {
-      // rewind the buffer stream
-      buffer.reset();
-
-      // close original stream - all tokens buffered
-      source.close();
-    }
-    catch (IOException e) {
-      // ignore
-    }
-
-    if (numTokens == 0)
-      return null;
-    else if (numTokens == 1) {
-      String term = null;
-      try {
-        boolean hasNext = buffer.incrementToken();
-        assert hasNext == true;
-        term = termAtt.toString();
-      } catch (IOException e) {
-        // safe to ignore, because we know the number of tokens
-      }
-      // return newTermQuery(new Term(field, term));
-      return new TermQuery(new Term(field, term));
-    } else {
-      if (severalTokensAtSamePosition) {
-        if (positionCount == 1) {
-          // no phrase query:
-          // BooleanQuery q = newBooleanQuery(true);
-          BooleanQuery q = new BooleanQuery(true);
-          for (int i = 0; i < numTokens; i++) {
-            String term = null;
-            try {
-              boolean hasNext = buffer.incrementToken();
-              assert hasNext == true;
-              term = termAtt.toString();
-            } catch (IOException e) {
-              // safe to ignore, because we know the number of tokens
-            }
-
-            // Query currentQuery = newTermQuery(new Term(field, term));
-            Query currentQuery = new TermQuery(new Term(field, term));
-            q.add(currentQuery, BooleanClause.Occur.SHOULD);
-          }
-          return q;
-        }
-        else {
-          // phrase query:
-          // MultiPhraseQuery mpq = newMultiPhraseQuery();
-          MultiPhraseQuery mpq = new MultiPhraseQuery();
-          mpq.setSlop(phraseSlop);
-          List multiTerms = new ArrayList();
-          int position = -1;
-          for (int i = 0; i < numTokens; i++) {
-            String term = null;
-            int positionIncrement = 1;
-            try {
-              boolean hasNext = buffer.incrementToken();
-              assert hasNext == true;
-              term = termAtt.toString();
-              if (posIncrAtt != null) {
-                positionIncrement = posIncrAtt.getPositionIncrement();
-              }
-            } catch (IOException e) {
-              // safe to ignore, because we know the number of tokens
-            }
-
-            if (positionIncrement > 0 && multiTerms.size() > 0) {
-              mpq.add((Term[])multiTerms.toArray(new Term[multiTerms.size()]),position);
-              multiTerms.clear();
-            }
-            position += positionIncrement;
-            multiTerms.add(new Term(field, term));
-          }
-          mpq.add((Term[])multiTerms.toArray(new Term[multiTerms.size()]),position);
-          return mpq;
-        }
-      }
-      else {
-        // PhraseQuery pq = newPhraseQuery();
-        PhraseQuery pq = new PhraseQuery();
-        pq.setSlop(phraseSlop);
-        int position = -1;
-
-
-        for (int i = 0; i < numTokens; i++) {
-          String term = null;
-          int positionIncrement = 1;
-
-          try {
-            boolean hasNext = buffer.incrementToken();
-            assert hasNext == true;
-            term = termAtt.toString();
-            if (posIncrAtt != null) {
-              positionIncrement = posIncrAtt.getPositionIncrement();
-            }
-          } catch (IOException e) {
-            // safe to ignore, because we know the number of tokens
-          }
-
-          position += positionIncrement;
-          pq.add(new Term(field, term),position);
-        }
-        return pq;
-      }
-    }
-
+    // note, this method always worked this way (but nothing calls it?) because it has no idea of quotes...
+    return new QueryBuilder(analyzer).createPhraseQuery(field, queryText);
   }
 
   public void setIsExplicitMultiTermAnalyzer(boolean isExplicitMultiTermAnalyzer) {
@@ -336,5 +173,15 @@ public class TextField extends FieldType {
 
   public boolean isExplicitMultiTermAnalyzer() {
     return isExplicitMultiTermAnalyzer;
+  }
+
+  @Override
+  public Object marshalSortValue(Object value) {
+    return marshalStringSortValue(value);
+  }
+
+  @Override
+  public Object unmarshalSortValue(Object value) {
+    return unmarshalStringSortValue(value);
   }
 }

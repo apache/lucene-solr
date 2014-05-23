@@ -29,6 +29,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
@@ -36,6 +37,7 @@ import java.util.zip.GZIPInputStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
@@ -132,7 +134,7 @@ public class LineFileDocs implements Closeable {
       } while (b >= 0 && b != 13 && b != 10);
     }
     
-    CharsetDecoder decoder = IOUtils.CHARSET_UTF_8.newDecoder()
+    CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
         .onMalformedInput(CodingErrorAction.REPORT)
         .onUnmappableCharacter(CodingErrorAction.REPORT);
     reader = new BufferedReader(new InputStreamReader(is, decoder), BUFFER_SIZE);
@@ -158,6 +160,7 @@ public class LineFileDocs implements Closeable {
     final Field titleDV;
     final Field body;
     final Field id;
+    final Field idNum;
     final Field date;
 
     public DocState(boolean useDocValues) {
@@ -180,6 +183,9 @@ public class LineFileDocs implements Closeable {
       id = new StringField("docid", "", Field.Store.YES);
       doc.add(id);
 
+      idNum = new IntField("docid_int", 0, Field.Store.NO);
+      doc.add(idNum);
+
       date = new StringField("date", "", Field.Store.YES);
       doc.add(date);
 
@@ -192,7 +198,7 @@ public class LineFileDocs implements Closeable {
     }
   }
 
-  private final ThreadLocal<DocState> threadDocs = new ThreadLocal<DocState>();
+  private final ThreadLocal<DocState> threadDocs = new ThreadLocal<>();
 
   /** Note: Document instance is re-used per-thread */
   public Document nextDoc() throws IOException {
@@ -233,7 +239,9 @@ public class LineFileDocs implements Closeable {
     }
     docState.titleTokenized.setStringValue(title);
     docState.date.setStringValue(line.substring(1+spot, spot2));
-    docState.id.setStringValue(Integer.toString(id.getAndIncrement()));
+    final int i = id.getAndIncrement();
+    docState.id.setStringValue(Integer.toString(i));
+    docState.idNum.setIntValue(i);
     return docState.doc;
   }
 }

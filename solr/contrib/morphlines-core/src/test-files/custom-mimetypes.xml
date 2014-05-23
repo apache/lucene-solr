@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Licensed to the Apache Software Foundation (ASF) under one or more contributor
+  license agreements. See the NOTICE file distributed with this work for additional
+  information regarding copyright ownership. The ASF licenses this file to
+  You under the Apache License, Version 2.0 (the "License"); you may not use
+  this file except in compliance with the License. You may obtain a copy of
+  the License at http://www.apache.org/licenses/LICENSE-2.0 Unless required
+  by applicable law or agreed to in writing, software distributed under the
+  License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS
+  OF ANY KIND, either express or implied. See the License for the specific
+  language governing permissions and limitations under the License. -->
+
+<mime-info>
+
+  <mime-type type="text/space-separated-values">
+    <glob pattern="*.ssv"/>
+  </mime-type>
+
+  <mime-type type="avro/binary">
+    <magic priority="50">
+      <match value="0x4f626a01" type="string" offset="0"/>       
+    </magic>
+    <glob pattern="*.avro"/>
+  </mime-type>
+
+  <mime-type type="mytwittertest/json+delimited+length">
+    <magic priority="50">
+      <match value="[0-9]+(\r)?\n\\{&quot;" type="regex" offset="0:16"/>       
+    </magic>
+  </mime-type>
+  
+  <mime-type type="application/hadoop-sequence-file">
+    <magic priority="50">
+      <match value="SEQ[\0-\6]" type="regex" offset="0"/>
+    </magic>
+  </mime-type>
+  
+</mime-info>

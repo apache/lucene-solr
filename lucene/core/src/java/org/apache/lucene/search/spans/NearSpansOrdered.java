@@ -22,6 +22,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.InPlaceMergeSorter;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -72,13 +73,19 @@ public class NearSpansOrdered extends Spans {
   private List<byte[]> matchPayload;
 
   private final Spans[] subSpansByDoc;
-  private final Comparator<Spans> spanDocComparator = new Comparator<Spans>() {
+  // Even though the array is probably almost sorted, InPlaceMergeSorter will likely
+  // perform better since it has a lower overhead than TimSorter for small arrays
+  private final InPlaceMergeSorter sorter = new InPlaceMergeSorter() {
     @Override
-    public int compare(Spans o1, Spans o2) {
-      return o1.doc() - o2.doc();
+    protected void swap(int i, int j) {
+      ArrayUtil.swap(subSpansByDoc, i, j);
+    }
+    @Override
+    protected int compare(int i, int j) {
+      return subSpansByDoc[i].doc() - subSpansByDoc[j].doc();
     }
   };
-  
+
   private SpanNearQuery query;
   private boolean collectPayloads = true;
   
@@ -96,7 +103,7 @@ public class NearSpansOrdered extends Spans {
     allowedSlop = spanNearQuery.getSlop();
     SpanQuery[] clauses = spanNearQuery.getClauses();
     subSpans = new Spans[clauses.length];
-    matchPayload = new LinkedList<byte[]>();
+    matchPayload = new LinkedList<>();
     subSpansByDoc = new Spans[clauses.length];
     for (int i = 0; i < clauses.length; i++) {
       subSpans[i] = clauses[i].getSpans(context, acceptDocs, termContexts);
@@ -204,7 +211,7 @@ public class NearSpansOrdered extends Spans {
 
   /** Advance the subSpans to the same document */
   private boolean toSameDoc() throws IOException {
-    ArrayUtil.timSort(subSpansByDoc, spanDocComparator);
+    sorter.sort(0, subSpansByDoc.length);
     int firstIndex = 0;
     int maxDoc = subSpansByDoc[subSpansByDoc.length - 1].doc();
     while (subSpansByDoc[firstIndex].doc() != maxDoc) {
@@ -275,7 +282,7 @@ public class NearSpansOrdered extends Spans {
   private boolean shrinkToAfterShortestMatch() throws IOException {
     matchStart = subSpans[subSpans.length - 1].start();
     matchEnd = subSpans[subSpans.length - 1].end();
-    Set<byte[]> possibleMatchPayloads = new HashSet<byte[]>();
+    Set<byte[]> possibleMatchPayloads = new HashSet<>();
     if (subSpans[subSpans.length - 1].isPayloadAvailable()) {
       possibleMatchPayloads.addAll(subSpans[subSpans.length - 1].getPayload());
     }
@@ -289,7 +296,7 @@ public class NearSpansOrdered extends Spans {
       Spans prevSpans = subSpans[i];
       if (collectPayloads && prevSpans.isPayloadAvailable()) {
         Collection<byte[]> payload = prevSpans.getPayload();
-        possiblePayload = new ArrayList<byte[]>(payload.size());
+        possiblePayload = new ArrayList<>(payload.size());
         possiblePayload.addAll(payload);
       }
       
@@ -313,7 +320,7 @@ public class NearSpansOrdered extends Spans {
             prevEnd = ppEnd;
             if (collectPayloads && prevSpans.isPayloadAvailable()) {
               Collection<byte[]> payload = prevSpans.getPayload();
-              possiblePayload = new ArrayList<byte[]>(payload.size());
+              possiblePayload = new ArrayList<>(payload.size());
               possiblePayload.addAll(payload);
             }
           }

@@ -102,4 +102,80 @@ public class TestMathUtil extends LuceneTestCase {
     assertEquals(Long.MIN_VALUE, MathUtil.gcd(Long.MIN_VALUE, Long.MIN_VALUE));
   }
 
+  public void testAcoshMethod() {
+    // acosh(NaN) == NaN
+    assertTrue(Double.isNaN(MathUtil.acosh(Double.NaN)));
+    // acosh(1) == +0
+    assertEquals(0, Double.doubleToLongBits(MathUtil.acosh(1D)));
+    // acosh(POSITIVE_INFINITY) == POSITIVE_INFINITY
+    assertEquals(Double.doubleToLongBits(Double.POSITIVE_INFINITY),
+        Double.doubleToLongBits(MathUtil.acosh(Double.POSITIVE_INFINITY)));
+    // acosh(x) : x < 1 == NaN
+    assertTrue(Double.isNaN(MathUtil.acosh(0.9D)));                      // x < 1
+    assertTrue(Double.isNaN(MathUtil.acosh(0D)));                        // x == 0
+    assertTrue(Double.isNaN(MathUtil.acosh(-0D)));                       // x == -0
+    assertTrue(Double.isNaN(MathUtil.acosh(-0.9D)));                     // x < 0
+    assertTrue(Double.isNaN(MathUtil.acosh(-1D)));                       // x == -1
+    assertTrue(Double.isNaN(MathUtil.acosh(-10D)));                      // x < -1
+    assertTrue(Double.isNaN(MathUtil.acosh(Double.NEGATIVE_INFINITY)));  // x == -Inf
+
+    double epsilon = 0.000001;
+    assertEquals(0, MathUtil.acosh(1), epsilon);
+    assertEquals(1.5667992369724109, MathUtil.acosh(2.5), epsilon);
+    assertEquals(14.719378760739708, MathUtil.acosh(1234567.89), epsilon);
+  }
+
+  public void testAsinhMethod() {
+
+    // asinh(NaN) == NaN
+    assertTrue(Double.isNaN(MathUtil.asinh(Double.NaN)));
+    // asinh(+0) == +0
+    assertEquals(0, Double.doubleToLongBits(MathUtil.asinh(0D)));
+    // asinh(-0) == -0
+    assertEquals(Double.doubleToLongBits(-0D), Double.doubleToLongBits(MathUtil.asinh(-0D)));
+    // asinh(POSITIVE_INFINITY) == POSITIVE_INFINITY
+    assertEquals(Double.doubleToLongBits(Double.POSITIVE_INFINITY),
+        Double.doubleToLongBits(MathUtil.asinh(Double.POSITIVE_INFINITY)));
+    // asinh(NEGATIVE_INFINITY) == NEGATIVE_INFINITY
+    assertEquals(Double.doubleToLongBits(Double.NEGATIVE_INFINITY),
+        Double.doubleToLongBits(MathUtil.asinh(Double.NEGATIVE_INFINITY)));
+
+    double epsilon = 0.000001;
+    assertEquals(-14.719378760740035, MathUtil.asinh(-1234567.89), epsilon);
+    assertEquals(-1.6472311463710958, MathUtil.asinh(-2.5), epsilon);
+    assertEquals(-0.8813735870195429, MathUtil.asinh(-1), epsilon);
+    assertEquals(0, MathUtil.asinh(0), 0);
+    assertEquals(0.8813735870195429, MathUtil.asinh(1), epsilon);
+    assertEquals(1.6472311463710958, MathUtil.asinh(2.5), epsilon);
+    assertEquals(14.719378760740035, MathUtil.asinh(1234567.89), epsilon  );
+  }
+
+  public void testAtanhMethod() {
+    // atanh(NaN) == NaN
+    assertTrue(Double.isNaN(MathUtil.atanh(Double.NaN)));
+    // atanh(+0) == +0
+    assertEquals(0, Double.doubleToLongBits(MathUtil.atanh(0D)));
+    // atanh(-0) == -0
+    assertEquals(Double.doubleToLongBits(-0D),
+        Double.doubleToLongBits(MathUtil.atanh(-0D)));
+    // atanh(1) == POSITIVE_INFINITY
+    assertEquals(Double.doubleToLongBits(Double.POSITIVE_INFINITY),
+        Double.doubleToLongBits(MathUtil.atanh(1D)));
+    // atanh(-1) == NEGATIVE_INFINITY
+    assertEquals(Double.doubleToLongBits(Double.NEGATIVE_INFINITY),
+        Double.doubleToLongBits(MathUtil.atanh(-1D)));
+    // atanh(x) : Math.abs(x) > 1 == NaN
+    assertTrue(Double.isNaN(MathUtil.atanh(1.1D)));                      // x > 1
+    assertTrue(Double.isNaN(MathUtil.atanh(Double.POSITIVE_INFINITY)));  // x == Inf
+    assertTrue(Double.isNaN(MathUtil.atanh(-1.1D)));                     // x < -1
+    assertTrue(Double.isNaN(MathUtil.atanh(Double.NEGATIVE_INFINITY)));  // x == -Inf
+
+    double epsilon = 0.000001;
+    assertEquals(Double.NEGATIVE_INFINITY, MathUtil.atanh(-1), 0);
+    assertEquals(-0.5493061443340549, MathUtil.atanh(-0.5), epsilon);
+    assertEquals(0, MathUtil.atanh(0), 0);
+    assertEquals(0.5493061443340549, MathUtil.atanh(0.5), epsilon);
+    assertEquals(Double.POSITIVE_INFINITY, MathUtil.atanh(1), 0);
+  }
+
 }

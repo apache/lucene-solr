@@ -62,7 +62,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @lucene.internal
  */
 public final class WeakIdentityMap<K,V> {
-  private final ReferenceQueue<Object> queue = new ReferenceQueue<Object>();
+  private final ReferenceQueue<Object> queue = new ReferenceQueue<>();
   private final Map<IdentityWeakReference, V> backingStore;
   private final boolean reapOnRead;
 
@@ -80,7 +80,7 @@ public final class WeakIdentityMap<K,V> {
    * @param reapOnRead controls if the map <a href="#reapInfo">cleans up the reference queue on every read operation</a>.
    */
   public static <K,V> WeakIdentityMap<K,V> newHashMap(boolean reapOnRead) {
-    return new WeakIdentityMap<K,V>(new HashMap<IdentityWeakReference,V>(), reapOnRead);
+    return new WeakIdentityMap<>(new HashMap<IdentityWeakReference,V>(), reapOnRead);
   }
 
   /**
@@ -96,7 +96,7 @@ public final class WeakIdentityMap<K,V> {
    * @param reapOnRead controls if the map <a href="#reapInfo">cleans up the reference queue on every read operation</a>.
    */
   public static <K,V> WeakIdentityMap<K,V> newConcurrentHashMap(boolean reapOnRead) {
-    return new WeakIdentityMap<K,V>(new ConcurrentHashMap<IdentityWeakReference,V>(), reapOnRead);
+    return new WeakIdentityMap<>(new ConcurrentHashMap<IdentityWeakReference,V>(), reapOnRead);
   }
 
   /** Private only constructor, to create use the static factory methods. */

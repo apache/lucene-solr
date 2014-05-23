@@ -34,7 +34,8 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.*;
 
 public class TestTermsEnum2 extends LuceneTestCase {
@@ -53,15 +54,15 @@ public class TestTermsEnum2 extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT,
             new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
-            .setMaxBufferedDocs(_TestUtil.nextInt(random(), 50, 1000)));
+            .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
     Document doc = new Document();
     Field field = newStringField("field", "", Field.Store.YES);
     doc.add(field);
-    terms = new TreeSet<BytesRef>();
+    terms = new TreeSet<>();
  
     int num = atLeast(200);
     for (int i = 0; i < num; i++) {
-      String s = _TestUtil.randomUnicodeString(random());
+      String s = TestUtil.randomUnicodeString(random());
       field.setStringValue(s);
       terms.add(new BytesRef(s));
       writer.addDocument(doc);
@@ -71,7 +72,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
     
     reader = writer.getReader();
     searcher = newSearcher(reader);
-    writer.close();
+    writer.shutdown();
   }
   
   @Override
@@ -86,7 +87,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
     for (int i = 0; i < numIterations; i++) {
       String reg = AutomatonTestUtil.randomRegexp(random());
       Automaton automaton = new RegExp(reg, RegExp.NONE).toAutomaton();
-      final List<BytesRef> matchedTerms = new ArrayList<BytesRef>();
+      final List<BytesRef> matchedTerms = new ArrayList<>();
       for(BytesRef t : terms) {
         if (BasicOperations.run(automaton, t.utf8ToString())) {
           matchedTerms.add(t);
@@ -109,7 +110,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
       String reg = AutomatonTestUtil.randomRegexp(random());
       Automaton automaton = new RegExp(reg, RegExp.NONE).toAutomaton();
       TermsEnum te = MultiFields.getTerms(reader, "field").iterator(null);
-      ArrayList<BytesRef> unsortedTerms = new ArrayList<BytesRef>(terms);
+      ArrayList<BytesRef> unsortedTerms = new ArrayList<>(terms);
       Collections.shuffle(unsortedTerms, random());
 
       for (BytesRef term : unsortedTerms) {
@@ -117,10 +118,10 @@ public class TestTermsEnum2 extends LuceneTestCase {
           // term is accepted
           if (random().nextBoolean()) {
             // seek exact
-            assertTrue(te.seekExact(term, random().nextBoolean()));
+            assertTrue(te.seekExact(term));
           } else {
             // seek ceil
-            assertEquals(SeekStatus.FOUND, te.seekCeil(term, random().nextBoolean()));
+            assertEquals(SeekStatus.FOUND, te.seekCeil(term));
             assertEquals(term, te.term());
           }
         }
@@ -138,10 +139,10 @@ public class TestTermsEnum2 extends LuceneTestCase {
         if (c == 0) {
           assertEquals(term, te.next());
         } else if (c == 1) {
-          assertEquals(SeekStatus.FOUND, te.seekCeil(term, random().nextBoolean()));
+          assertEquals(SeekStatus.FOUND, te.seekCeil(term));
           assertEquals(term, te.term());
         } else {
-          assertTrue(te.seekExact(term, random().nextBoolean()));
+          assertTrue(te.seekExact(term));
         }
       }
     }
@@ -155,7 +156,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
       CompiledAutomaton ca = new CompiledAutomaton(automaton, SpecialOperations.isFinite(automaton), false);
       TermsEnum te = MultiFields.getTerms(reader, "field").intersect(ca, null);
       Automaton expected = BasicOperations.intersection(termsAutomaton, automaton);
-      TreeSet<BytesRef> found = new TreeSet<BytesRef>();
+      TreeSet<BytesRef> found = new TreeSet<>();
       while (te.next() != null) {
         found.add(BytesRef.deepCopyOf(te.term()));
       }

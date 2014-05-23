@@ -34,8 +34,8 @@ public class TestDanishAnalyzer extends BaseTokenStreamTestCase {
   public void testBasics() throws IOException {
     Analyzer a = new DanishAnalyzer(TEST_VERSION_CURRENT);
     // stemming
-    checkOneTermReuse(a, "undersøg", "undersøg");
-    checkOneTermReuse(a, "undersøgelse", "undersøg");
+    checkOneTerm(a, "undersøg", "undersøg");
+    checkOneTerm(a, "undersøgelse", "undersøg");
     // stopword
     assertAnalyzesTo(a, "på", new String[] {});
   }
@@ -45,8 +45,8 @@ public class TestDanishAnalyzer extends BaseTokenStreamTestCase {
     CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("undersøgelse"), false);
     Analyzer a = new DanishAnalyzer(TEST_VERSION_CURRENT, 
         DanishAnalyzer.getDefaultStopSet(), exclusionSet);
-    checkOneTermReuse(a, "undersøgelse", "undersøgelse");
-    checkOneTermReuse(a, "undersøg", "undersøg");
+    checkOneTerm(a, "undersøgelse", "undersøgelse");
+    checkOneTerm(a, "undersøg", "undersøg");
   }
   
   /** blast some random strings through the analyzer */

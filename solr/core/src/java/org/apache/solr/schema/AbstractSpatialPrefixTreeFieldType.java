@@ -43,7 +43,7 @@ public abstract class AbstractSpatialPrefixTreeFieldType<T extends PrefixTreeStr
     super.init(schema, args);
 
     //Solr expects us to remove the parameters we've used.
-    MapListener<String, String> argsWrap = new MapListener<String, String>(args);
+    MapListener<String, String> argsWrap = new MapListener<>(args);
     grid = SpatialPrefixTreeFactory.makeSPT(argsWrap, schema.getResourceLoader().getClassLoader(), ctx);
     args.keySet().removeAll(argsWrap.getSeenKeys());
 

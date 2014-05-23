@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -75,7 +76,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
     String file = collectionZkPath + "/" + resource;
     try {
       if (zkController.pathExists(file)) {
-        byte[] bytes = zkController.getZkClient().getData(collectionZkPath + "/" + resource, null, null, true);
+        byte[] bytes = zkController.getZkClient().getData(file, null, null, true);
         return new ByteArrayInputStream(bytes);
       }
     } catch (Exception e) {
@@ -83,7 +84,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
     }
     try {
       // delegate to the class loader (looking into $INSTANCE_DIR/lib jars)
-      is = classLoader.getResourceAsStream(resource);
+      is = classLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'));
     } catch (Exception e) {
       throw new IOException("Error opening " + resource, e);
     }

@@ -27,13 +27,16 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.index.BaseStoredFieldsFormatTestCase;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
+@Repeat(iterations=5) // give it a chance to test various compression modes with different chunk sizes
 public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTestCase {
 
   @Override
@@ -49,7 +52,10 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
     iwConf.setCodec(CompressingCodec.randomInstance(random()));
     // disable CFS because this test checks file names
     iwConf.setMergePolicy(newLogMergePolicy(false));
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConf);
+    iwConf.setUseCompoundFile(false);
+
+    // Cannot use RIW because this test wants CFS to stay off:
+    IndexWriter iw = new IndexWriter(dir, iwConf);
 
     final Document validDoc = new Document();
     validDoc.add(new IntField("id", 0, Store.YES));
@@ -64,6 +70,8 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
       
       @Override
       public String stringValue() {
+        // TODO: really bad & scary that this causes IW to
+        // abort the segment!!  We should fix this.
         return null;
       }
       
@@ -82,7 +90,7 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
       }
       // Only one .fdt and one .fdx files must have been found
       assertEquals(2, counter);
-      iw.close();
+      iw.shutdown();
       dir.close();
     }
   }

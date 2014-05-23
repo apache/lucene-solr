@@ -18,14 +18,11 @@
 
 package org.apache.solr.cloud;
 
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.TreeMap;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
+import org.apache.solr.util.stats.TimerContext;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -34,6 +31,12 @@ import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * A distributed queue from zk recipes.
@@ -52,11 +55,17 @@ public class DistributedQueue {
   private final String prefix = "qn-";
   
   private final String response_prefix = "qnr-" ;
+
+  private final Overseer.Stats stats;
   
   public DistributedQueue(SolrZkClient zookeeper, String dir, List<ACL> acl) {
+    this(zookeeper, dir, acl, new Overseer.Stats());
+  }
+
+  public DistributedQueue(SolrZkClient zookeeper, String dir, List<ACL> acl, Overseer.Stats stats) {
     this.dir = dir;
-    
-    ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(30);
+
+    ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(zookeeper.getZkClientTimeout());
     try {
       cmdExecutor.ensureExists(dir, zookeeper);
     } catch (KeeperException e) {
@@ -65,12 +74,12 @@ public class DistributedQueue {
       Thread.currentThread().interrupt();
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
-    
+
     if (acl != null) {
       this.acl = acl;
     }
     this.zookeeper = zookeeper;
-    
+    this.stats = stats;
   }
   
   /**
@@ -82,7 +91,7 @@ public class DistributedQueue {
    */
   private TreeMap<Long,String> orderedChildren(Watcher watcher)
       throws KeeperException, InterruptedException {
-    TreeMap<Long,String> orderedChildren = new TreeMap<Long,String>();
+    TreeMap<Long,String> orderedChildren = new TreeMap<>();
     
     List<String> childNames = null;
     try {
@@ -115,7 +124,7 @@ public class DistributedQueue {
    * 
    * @return the data at the head of the queue.
    */
-  private QueueEvent element() throws NoSuchElementException, KeeperException,
+  private QueueEvent element() throws KeeperException,
       InterruptedException {
     TreeMap<Long,String> orderedChildren;
     
@@ -130,9 +139,9 @@ public class DistributedQueue {
       try {
         orderedChildren = orderedChildren(null);
       } catch (KeeperException.NoNodeException e) {
-        throw new NoSuchElementException();
+        return null;
       }
-      if (orderedChildren.size() == 0) throw new NoSuchElementException();
+      if (orderedChildren.size() == 0) return null;
       
       for (String headNode : orderedChildren.values()) {
         if (headNode != null) {
@@ -155,25 +164,30 @@ public class DistributedQueue {
       InterruptedException {
     TreeMap<Long,String> orderedChildren;
     // Same as for element. Should refactor this.
-    while (true) {
-      try {
-        orderedChildren = orderedChildren(null);
-      } catch (KeeperException.NoNodeException e) {
-        throw new NoSuchElementException();
-      }
-      if (orderedChildren.size() == 0) throw new NoSuchElementException();
-      
-      for (String headNode : orderedChildren.values()) {
-        String path = dir + "/" + headNode;
+    TimerContext time = stats.time(dir + "_remove");
+    try {
+      while (true) {
         try {
-          byte[] data = zookeeper.getData(path, null, null, true);
-          zookeeper.delete(path, -1, true);
-          return data;
+          orderedChildren = orderedChildren(null);
         } catch (KeeperException.NoNodeException e) {
-          // Another client deleted the node first.
+          throw new NoSuchElementException();
         }
+        if (orderedChildren.size() == 0) throw new NoSuchElementException();
+
+        for (String headNode : orderedChildren.values()) {
+          String path = dir + "/" + headNode;
+          try {
+            byte[] data = zookeeper.getData(path, null, null, true);
+            zookeeper.delete(path, -1, true);
+            return data;
+          } catch (KeeperException.NoNodeException e) {
+            // Another client deleted the node first.
+          }
+        }
+
       }
-      
+    } finally {
+      time.stop();
     }
   }
   
@@ -183,15 +197,20 @@ public class DistributedQueue {
    */
   public byte[] remove(QueueEvent event) throws KeeperException,
       InterruptedException {
-    String path = event.getId();
-    String responsePath = dir + "/" + response_prefix
-        + path.substring(path.lastIndexOf("-") + 1);
-    if (zookeeper.exists(responsePath, true)) {
-      zookeeper.setData(responsePath, event.getBytes(), true);
+    TimerContext time = stats.time(dir + "_remove_event");
+    try {
+      String path = event.getId();
+      String responsePath = dir + "/" + response_prefix
+          + path.substring(path.lastIndexOf("-") + 1);
+      if (zookeeper.exists(responsePath, true)) {
+        zookeeper.setData(responsePath, event.getBytes(), true);
+      }
+      byte[] data = zookeeper.getData(path, null, null, true);
+      zookeeper.delete(path, -1, true);
+      return data;
+    } finally {
+      time.stop();
     }
-    byte[] data = zookeeper.getData(path, null, null, true);
-    zookeeper.delete(path, -1, true);
-    return data;
   }
   
   
@@ -208,7 +227,7 @@ public class DistributedQueue {
     
     @Override
     public void process(WatchedEvent event) {
-      LOG.info("Watcher fired on path: " + event.getPath() + " state: "
+      LOG.info("LatchChildWatcher fired on path: " + event.getPath() + " state: "
           + event.getState() + " type " + event.getType());
       synchronized (lock) {
         this.event = event;
@@ -235,29 +254,34 @@ public class DistributedQueue {
   public byte[] take() throws KeeperException, InterruptedException {
     TreeMap<Long,String> orderedChildren;
     // Same as for element. Should refactor this.
-    while (true) {
-      LatchChildWatcher childWatcher = new LatchChildWatcher();
-      try {
-        orderedChildren = orderedChildren(childWatcher);
-      } catch (KeeperException.NoNodeException e) {
-        zookeeper.create(dir, new byte[0], acl, CreateMode.PERSISTENT, true);
-        continue;
-      }
-      if (orderedChildren.size() == 0) {
-        childWatcher.await(DEFAULT_TIMEOUT);
-        continue;
-      }
-      
-      for (String headNode : orderedChildren.values()) {
-        String path = dir + "/" + headNode;
+    TimerContext timer = stats.time(dir + "_take");
+    try {
+      while (true) {
+        LatchChildWatcher childWatcher = new LatchChildWatcher();
         try {
-          byte[] data = zookeeper.getData(path, null, null, true);
-          zookeeper.delete(path, -1, true);
-          return data;
+          orderedChildren = orderedChildren(childWatcher);
         } catch (KeeperException.NoNodeException e) {
-          // Another client deleted the node first.
+          zookeeper.create(dir, new byte[0], acl, CreateMode.PERSISTENT, true);
+          continue;
+        }
+        if (orderedChildren.size() == 0) {
+          childWatcher.await(DEFAULT_TIMEOUT);
+          continue;
+        }
+
+        for (String headNode : orderedChildren.values()) {
+          String path = dir + "/" + headNode;
+          try {
+            byte[] data = zookeeper.getData(path, null, null, true);
+            zookeeper.delete(path, -1, true);
+            return data;
+          } catch (KeeperException.NoNodeException e) {
+            // Another client deleted the node first.
+          }
         }
       }
+    } finally {
+      timer.stop();
     }
   }
   
@@ -268,8 +292,13 @@ public class DistributedQueue {
    */
   public boolean offer(byte[] data) throws KeeperException,
       InterruptedException {
-    return createData(dir + "/" + prefix, data,
-        CreateMode.PERSISTENT_SEQUENTIAL) != null;
+    TimerContext time = stats.time(dir + "_offer");
+    try {
+      return createData(dir + "/" + prefix, data,
+          CreateMode.PERSISTENT_SEQUENTIAL) != null;
+    } finally {
+      time.stop();
+    }
   }
   
   /**
@@ -298,21 +327,26 @@ public class DistributedQueue {
    */
   public QueueEvent offer(byte[] data, long timeout) throws KeeperException,
       InterruptedException {
-    String path = createData(dir + "/" + prefix, data,
-        CreateMode.PERSISTENT_SEQUENTIAL);
-    String watchID = createData(
-        dir + "/" + response_prefix + path.substring(path.lastIndexOf("-") + 1),
-        null, CreateMode.EPHEMERAL);
-    Object lock = new Object();
-    LatchChildWatcher watcher = new LatchChildWatcher(lock);
-    synchronized (lock) {
-      if (zookeeper.exists(watchID, watcher, true) != null) {
-        watcher.await(timeout);
+    TimerContext time = stats.time(dir + "_offer");
+    try {
+      String path = createData(dir + "/" + prefix, data,
+          CreateMode.PERSISTENT_SEQUENTIAL);
+      String watchID = createData(
+          dir + "/" + response_prefix + path.substring(path.lastIndexOf("-") + 1),
+          null, CreateMode.EPHEMERAL);
+      Object lock = new Object();
+      LatchChildWatcher watcher = new LatchChildWatcher(lock);
+      synchronized (lock) {
+        if (zookeeper.exists(watchID, watcher, true) != null) {
+          watcher.await(timeout);
+        }
       }
+      byte[] bytes = zookeeper.getData(watchID, null, null, true);
+      zookeeper.delete(watchID, -1, true);
+      return new QueueEvent(watchID, bytes, watcher.getWatchedEvent());
+    } finally {
+      time.stop();
     }
-    byte[] bytes = zookeeper.getData(watchID, null, null, true);
-    zookeeper.delete(watchID, -1, true);
-    return new QueueEvent(watchID, bytes, watcher.getWatchedEvent());
   }
   
   /**
@@ -322,11 +356,111 @@ public class DistributedQueue {
    * @return data at the first element of the queue, or null.
    */
   public byte[] peek() throws KeeperException, InterruptedException {
+    TimerContext time = stats.time(dir + "_peek");
     try {
-      return element().getBytes();
-    } catch (NoSuchElementException e) {
-      return null;
+      QueueEvent element = element();
+      if (element == null) return null;
+      return element.getBytes();
+    } finally {
+      time.stop();
     }
+  }
+  
+  public List<QueueEvent> peekTopN(int n, Set<String> excludeSet, Long wait)
+      throws KeeperException, InterruptedException {
+    ArrayList<QueueEvent> topN = new ArrayList<>();
+
+    LOG.debug("Peeking for top {} elements. ExcludeSet: " + excludeSet.toString());
+    boolean waitedEnough = false;
+    TimerContext time = null;
+    if (wait == Long.MAX_VALUE) time = stats.time(dir + "_peekTopN_wait_forever");
+    else time = stats.time(dir + "_peekTopN_wait" + wait);
+
+    try {
+      TreeMap<Long, String> orderedChildren;
+      while (true) {
+        LatchChildWatcher childWatcher = new LatchChildWatcher();
+        try {
+          orderedChildren = orderedChildren(childWatcher);
+        } catch (KeeperException.NoNodeException e) {
+          zookeeper.create(dir, new byte[0], acl, CreateMode.PERSISTENT, true);
+          continue;
+        }
+
+        if (orderedChildren.size() == 0) {
+          if(waitedEnough) return null;
+          childWatcher.await(wait == Long.MAX_VALUE ? DEFAULT_TIMEOUT : wait);
+          waitedEnough = wait != Long.MAX_VALUE;
+          continue;
+        }
+
+        for (String headNode : orderedChildren.values()) {
+          if (headNode != null && topN.size() < n) {
+            try {
+              String id = dir + "/" + headNode;
+              if (excludeSet != null && excludeSet.contains(id)) continue;
+              QueueEvent queueEvent = new QueueEvent(id,
+                  zookeeper.getData(dir + "/" + headNode, null, null, true), null);
+              topN.add(queueEvent);
+            } catch (KeeperException.NoNodeException e) {
+              // Another client removed the node first, try next
+            }
+          } else {
+            if (topN.size() >= 1) {
+              printQueueEventsListElementIds(topN);
+              return topN;
+            }
+          }
+        }
+
+        if (topN.size() > 0 ) {
+          printQueueEventsListElementIds(topN);
+          return topN;
+        }
+        if (waitedEnough) {
+          LOG.debug("Waited enough, returning null after peekTopN");
+          return null;
+        }
+        childWatcher.await(wait == Long.MAX_VALUE ? DEFAULT_TIMEOUT : wait);
+        waitedEnough = wait != Long.MAX_VALUE;
+      }
+    } finally {
+      time.stop();
+    }
+  }
+
+  private void printQueueEventsListElementIds(ArrayList<QueueEvent> topN) {
+    if(LOG.isDebugEnabled()) {
+      StringBuffer sb = new StringBuffer("[");
+      for(QueueEvent queueEvent: topN) {
+        sb.append(queueEvent.getId()).append(", ");
+      }
+      sb.append("]");
+      LOG.debug("Returning topN elements: {}", sb.toString());
+    }
+  }
+
+
+  /**
+   *
+   * Gets last element of the Queue without removing it.
+   */
+  public String getTailId() throws KeeperException, InterruptedException {
+    TreeMap<Long, String> orderedChildren = null;
+    orderedChildren = orderedChildren(null);
+    if(orderedChildren == null || orderedChildren.isEmpty()) return null;
+
+    for(String headNode : orderedChildren.descendingMap().values())
+      if (headNode != null) {
+        try {
+          QueueEvent queueEvent = new QueueEvent(dir + "/" + headNode, zookeeper.getData(dir + "/" + headNode,
+              null, null, true), null);
+          return queueEvent.getId();
+        } catch (KeeperException.NoNodeException e) {
+          // Another client removed the node first, try next
+        }
+      }
+    return null;
   }
   
   public static class QueueEvent {
@@ -384,38 +518,65 @@ public class DistributedQueue {
   
   /**
    * Returns the data at the first element of the queue, or null if the queue is
-   * empty.
+   * empty and block is false.
    * 
+   * @param block if true, blocks until an element enters the queue
    * @return data at the first element of the queue, or null.
    */
   public QueueEvent peek(boolean block) throws KeeperException, InterruptedException {
-    if (!block) {
-      return element();
+    return peek(block ? Long.MAX_VALUE : 0);
+  }
+  
+  /**
+   * Returns the data at the first element of the queue, or null if the queue is
+   * empty after wait ms.
+   * 
+   * @param wait max wait time in ms.
+   * @return data at the first element of the queue, or null.
+   */
+  public QueueEvent peek(long wait) throws KeeperException, InterruptedException {
+    TimerContext time = null;
+    if (wait == Long.MAX_VALUE) {
+      time = stats.time(dir + "_peek_wait_forever");
+    } else {
+      time = stats.time(dir + "_peek_wait" + wait);
     }
-    
-    TreeMap<Long,String> orderedChildren;
-    while (true) {
-      LatchChildWatcher childWatcher = new LatchChildWatcher();
-      try {
-        orderedChildren = orderedChildren(childWatcher);
-      } catch (KeeperException.NoNodeException e) {
-        zookeeper.create(dir, new byte[0], acl, CreateMode.PERSISTENT, true);
-        continue;
+    try {
+      if (wait == 0) {
+        return element();
       }
-      if (orderedChildren.size() == 0) {
-        childWatcher.await(DEFAULT_TIMEOUT);
-        continue;
-      }
-      
-      for (String headNode : orderedChildren.values()) {
-        String path = dir + "/" + headNode;
+
+      TreeMap<Long, String> orderedChildren;
+      boolean waitedEnough = false;
+      while (true) {
+        LatchChildWatcher childWatcher = new LatchChildWatcher();
         try {
-          byte[] data = zookeeper.getData(path, null, null, true);
-          return new QueueEvent(path, data, childWatcher.getWatchedEvent());
+          orderedChildren = orderedChildren(childWatcher);
         } catch (KeeperException.NoNodeException e) {
-          // Another client deleted the node first.
+          zookeeper.create(dir, new byte[0], acl, CreateMode.PERSISTENT, true);
+          continue;
+        }
+        if (waitedEnough) {
+          if (orderedChildren.isEmpty()) return null;
+        }
+        if (orderedChildren.size() == 0) {
+          childWatcher.await(wait == Long.MAX_VALUE ? DEFAULT_TIMEOUT : wait);
+          waitedEnough = wait != Long.MAX_VALUE;
+          continue;
+        }
+
+        for (String headNode : orderedChildren.values()) {
+          String path = dir + "/" + headNode;
+          try {
+            byte[] data = zookeeper.getData(path, null, null, true);
+            return new QueueEvent(path, data, childWatcher.getWatchedEvent());
+          } catch (KeeperException.NoNodeException e) {
+            // Another client deleted the node first.
+          }
         }
       }
+    } finally {
+      time.stop();
     }
   }
   
@@ -426,11 +587,17 @@ public class DistributedQueue {
    * @return Head of the queue or null.
    */
   public byte[] poll() throws KeeperException, InterruptedException {
+    TimerContext time = stats.time(dir + "_poll");
     try {
       return remove();
     } catch (NoSuchElementException e) {
       return null;
+    } finally {
+      time.stop();
     }
   }
-  
+
+  public Overseer.Stats getStats() {
+    return stats;
+  }
 }

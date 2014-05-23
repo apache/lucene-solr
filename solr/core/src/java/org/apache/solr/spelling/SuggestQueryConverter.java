@@ -18,7 +18,6 @@ package org.apache.solr.spelling;
  */
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,9 +35,9 @@ public class SuggestQueryConverter extends SpellingQueryConverter {
       return Collections.emptyList();
     }
 
-    Collection<Token> result = new ArrayList<Token>();
+    Collection<Token> result = new ArrayList<>();
     try {
-      analyze(result, new StringReader(original), 0, 0);
+      analyze(result, original, 0, 0);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

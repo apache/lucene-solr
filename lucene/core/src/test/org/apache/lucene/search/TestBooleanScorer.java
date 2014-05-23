@@ -17,8 +17,10 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
@@ -30,10 +32,10 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanQuery.BooleanWeight;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TestBooleanScorer extends LuceneTestCase
-{
+public class TestBooleanScorer extends LuceneTestCase {
   private static final String FIELD = "category";
   
   public void testMethod() throws Exception {
@@ -48,7 +50,7 @@ public class TestBooleanScorer extends LuceneTestCase
       writer.addDocument(doc);
     }
     IndexReader ir = writer.getReader();
-    writer.close();
+    writer.shutdown();
 
     BooleanQuery booleanQuery1 = new BooleanQuery();
     booleanQuery1.add(new TermQuery(new Term(FIELD, "1")), BooleanClause.Occur.SHOULD);
@@ -75,33 +77,29 @@ public class TestBooleanScorer extends LuceneTestCase
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     writer.commit();
     IndexReader ir = writer.getReader();
-    writer.close();
+    writer.shutdown();
     IndexSearcher searcher = newSearcher(ir);
     BooleanWeight weight = (BooleanWeight) new BooleanQuery().createWeight(searcher);
-    Scorer[] scorers = new Scorer[] {new Scorer(weight) {
+    BulkScorer[] scorers = new BulkScorer[] {new BulkScorer() {
       private int doc = -1;
-      @Override public float score() { return 0; }
-      @Override public int freq()  { return 0; }
-      @Override public int docID() { return doc; }
-      
-      @Override public int nextDoc() {
-        return doc = doc == -1 ? 3000 : NO_MORE_DOCS;
-      }
 
-      @Override public int advance(int target) {
-        return doc = target <= 3000 ? 3000 : NO_MORE_DOCS;
-      }
-      
       @Override
-      public long cost() {
-        return 1;
+      public boolean score(LeafCollector c, int maxDoc) throws IOException {
+        assert doc == -1;
+        doc = 3000;
+        FakeScorer fs = new FakeScorer();
+        fs.doc = doc;
+        fs.score = 1.0f;
+        c.setScorer(fs);
+        c.collect(3000);
+        return false;
       }
     }};
     
-    BooleanScorer bs = new BooleanScorer(weight, false, 1, Arrays.asList(scorers), null, scorers.length);
+    BooleanScorer bs = new BooleanScorer(weight, false, 1, Arrays.asList(scorers), Collections.<BulkScorer>emptyList(), scorers.length);
 
-    final List<Integer> hits = new ArrayList<Integer>();
-    bs.score(new Collector() {
+    final List<Integer> hits = new ArrayList<>();
+    bs.score(new SimpleCollector() {
       int docBase;
       @Override
       public void setScorer(Scorer scorer) {
@@ -113,7 +111,7 @@ public class TestBooleanScorer extends LuceneTestCase
       }
       
       @Override
-      public void setNextReader(AtomicReaderContext context) {
+      protected void doSetNextReader(AtomicReaderContext context) throws IOException {
         docBase = context.docBase;
       }
       
@@ -139,8 +137,9 @@ public class TestBooleanScorer extends LuceneTestCase
     doc.add(new TextField("field", "33", Field.Store.NO));
     w.addDocument(doc);
     final IndexReader r = w.getReader();
-    w.close();
-    final IndexSearcher s = newSearcher(r);
+    w.shutdown();
+    // we don't wrap with AssertingIndexSearcher in order to have the original scorer in setScorer.
+    final IndexSearcher s = newSearcher(r, true, false);
 
     final BooleanQuery q = new BooleanQuery();
     for(int term=0;term<33;term++) {
@@ -151,22 +150,18 @@ public class TestBooleanScorer extends LuceneTestCase
                             BooleanClause.Occur.SHOULD));
                             
     final int[] count = new int[1];
-    s.search(q, new Collector() {
+    s.search(q, new SimpleCollector() {
     
       @Override
       public void setScorer(Scorer scorer) {
         // Make sure we got BooleanScorer:
-        final Class<?> clazz = scorer instanceof AssertingScorer ? ((AssertingScorer) scorer).getIn().getClass() : scorer.getClass();
-        assertEquals("Scorer is implemented by wrong class", BooleanScorer.class.getName() + "$BucketScorer", clazz.getName());
+        final Class<?> clazz = scorer.getClass();
+        assertEquals("Scorer is implemented by wrong class", FakeScorer.class.getName(), clazz.getName());
       }
       
       @Override
       public void collect(int doc) {
         count[0]++;
-      }
-      
-      @Override
-      public void setNextReader(AtomicReaderContext context) {
       }
       
       @Override
@@ -179,5 +174,81 @@ public class TestBooleanScorer extends LuceneTestCase
     
     r.close();
     d.close();
+  }
+
+  /** Throws UOE if Weight.scorer is called */
+  private static class CrazyMustUseBulkScorerQuery extends Query {
+
+    @Override
+    public String toString(String field) {
+      return "MustUseBulkScorerQuery";
+    }
+
+    @Override
+    public Weight createWeight(IndexSearcher searcher) throws IOException {
+      return new Weight() {
+        @Override
+        public Explanation explain(AtomicReaderContext context, int doc) {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Query getQuery() {
+          return CrazyMustUseBulkScorerQuery.this;
+        }
+
+        @Override
+        public float getValueForNormalization() {
+          return 1.0f;
+        }
+
+        @Override
+        public void normalize(float norm, float topLevelBoost) {
+        }
+
+        @Override
+        public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public BulkScorer bulkScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) {
+          return new BulkScorer() {
+
+            @Override
+            public boolean score(LeafCollector collector, int max) throws IOException {
+              collector.setScorer(new FakeScorer());
+              collector.collect(0);
+              return false;
+            }
+          };
+        }
+      };
+    }
+  }
+
+  /** Make sure BooleanScorer can embed another
+   *  BooleanScorer. */
+  public void testEmbeddedBooleanScorer() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newTextField("field", "doctors are people who prescribe medicines of which they know little, to cure diseases of which they know less, in human beings of whom they know nothing", Field.Store.NO));
+    w.addDocument(doc);
+    IndexReader r = w.getReader();
+    w.shutdown();
+
+    IndexSearcher s = newSearcher(r);
+    BooleanQuery q1 = new BooleanQuery();
+    q1.add(new TermQuery(new Term("field", "little")), BooleanClause.Occur.SHOULD);
+    q1.add(new TermQuery(new Term("field", "diseases")), BooleanClause.Occur.SHOULD);
+
+    BooleanQuery q2 = new BooleanQuery();
+    q2.add(q1, BooleanClause.Occur.SHOULD);
+    q2.add(new CrazyMustUseBulkScorerQuery(), BooleanClause.Occur.SHOULD);
+
+    assertEquals(1, s.search(q2, 10).totalHits);
+    r.close();
+    dir.close();
   }
 }

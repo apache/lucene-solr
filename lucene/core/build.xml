@@ -22,7 +22,23 @@
 
   <property name="build.dir" location="../build/core"/>
 
+  <property name="forbidden-sysout-excludes" value="
+    org/apache/lucene/index/CheckIndex.class
+    org/apache/lucene/index/IndexUpgrader.class
+    org/apache/lucene/store/LockVerifyServer.class
+    org/apache/lucene/store/LockStressTest.class
+    org/apache/lucene/util/PrintStreamInfoStream.class
+  "/>
+
+  <property name="forbidden-rue-excludes" value="
+    org/apache/lucene/util/RamUsageEstimator.class
+    org/apache/lucene/search/CachingWrapperFilter.class
+  "/>
+
   <import file="../common-build.xml"/>
+
+  <property name="moman.commit-hash" value="5c5c2a1e4dea" />
+  <property name="moman.url" value="https://bitbucket.org/jpbarrette/moman/get/${moman.commit-hash}.zip" />
 
   <path id="classpath"/>
   
@@ -56,7 +72,7 @@
     </sequential>
   </target>
 
-  <target name="dist-maven" depends="dist-maven-src-java"/>
+  <target name="-dist-maven" depends="-dist-maven-src-java"/>
 
   <macrodef name="createLevAutomaton">
   	<attribute name="n"/>
@@ -109,36 +125,112 @@
     <fixcrlf srcdir="src/java/org/apache/lucene/util/packed" includes="BulkOperation*.java,Direct*.java,Packed64SingleBlock.java,Packed*ThreeBlocks.py" encoding="UTF-8"/>
   </target>
 
-  <target name="createLevAutomata" depends="check-moman,clone-moman,pull-moman">
+  <target name="createLevAutomata" depends="check-moman,download-moman">
     <createLevAutomaton n="1"/>
     <createLevAutomaton n="2"/>
   </target>
   
   <target name="check-moman">
-    <condition property="moman.cloned">
-      <available file="${build.dir}/moman"/>
-    </condition>
+    <available file="${build.dir}/moman" property="moman.downloaded"/>
   </target>
 
-  <target name="clone-moman" unless="moman.cloned">
-    <mkdir dir="${build.dir}"/>
-    <exec dir="${build.dir}" 
-          executable="${hg.exe}" failonerror="true">
-      <arg value="clone"/>
-      <arg value="-r"/>
-      <arg value="${moman.rev}"/>
-      <arg value="${moman.url}"/>
-      <arg value="moman"/>
-    </exec>
+  <target name="download-moman" unless="moman.downloaded">
+    <mkdir dir="${build.dir}/moman"/>
+    <get src="${moman.url}" dest="${build.dir}/moman.zip"/>
+    <unzip dest="${build.dir}/moman" src="${build.dir}/moman.zip">
+      <cutdirsmapper dirs="1"/>
+    </unzip>
+    <delete file="${build.dir}/moman.zip"/>
   </target>
 
-  <target name="pull-moman" if="moman.cloned">
-    <exec dir="${build.dir}/moman" 
-          executable="${hg.exe}" failonerror="true">
-      <arg value="pull"/>
-      <arg value="-f"/>
-      <arg value="-r"/>
-      <arg value="${moman.rev}"/>
-    </exec>
+  <target name="regenerate" depends="createLevAutomata,createPackedIntSources"/>
+  
+  <macrodef name="startLockStressTestClient">
+    <attribute name="clientId"/>
+    <attribute name="lockFactoryImpl"/>
+    <attribute name="lockFactoryDir"/>
+    <sequential>
+      <local name="lockverifyserver.port"/>
+      <groovy><![CDATA[
+        String port;
+        while ((port = System.getProperty("lockverifyserver.port")) == null) {
+          Thread.sleep(10L);
+        }
+        properties["lockverifyserver.port"] = port;
+      ]]></groovy>
+      <java taskname="lockStressTest@{clientId}" fork="true" classpathref="test-lock.classpath" classname="org.apache.lucene.store.LockStressTest" failOnError="true"> 
+        <arg value="@{clientId}"/>
+        <arg value="${lockverifyserver.host}"/>
+        <arg value="${lockverifyserver.port}"/>
+        <arg value="@{lockFactoryImpl}"/>
+        <arg value="@{lockFactoryDir}"/>
+        <arg value="${lockverify.delay}"/>
+        <arg value="${lockverify.count}"/>
+      </java>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="testLockFactory">
+    <attribute name="lockFactoryImpl"/>
+    <attribute name="lockFactoryDir"/>
+    <sequential>
+      <echo taskname="testLockFactory" message="Testing @{lockFactoryImpl}..."/>
+      <mkdir dir="@{lockFactoryDir}"/>
+      <parallel threadCount="3" failonany="false">
+        <sequential>
+          <!-- the server runs in-process, so we can wait for the sysproperty -->
+          <java taskname="lockVerifyServer" fork="false" classpathref="test-lock.classpath" classname="org.apache.lucene.store.LockVerifyServer" failOnError="true">
+            <arg value="${lockverifyserver.host}"/>
+            <arg value="2"/>
+          </java>
+        </sequential>
+        <sequential>
+          <startLockStressTestClient clientId="1" lockFactoryImpl="@{lockFactoryImpl}" lockFactoryDir="@{lockFactoryDir}" />
+        </sequential>
+        <sequential>
+          <startLockStressTestClient clientId="2" lockFactoryImpl="@{lockFactoryImpl}" lockFactoryDir="@{lockFactoryDir}" />
+        </sequential>
+      </parallel>
+    </sequential>
+  </macrodef>
+  
+  <condition property="-ignore-test-lock-factory">
+    <or>
+      <!-- We ignore our ant-based lock factory test, if user applies test filtering: -->
+      <isset property="tests.class" />
+      <isset property="tests.method" />
+      <!-- Clover seems to deadlock if running instrumented code inside the Ant JVM: -->
+      <isset property="run.clover" />
+    </or>
+  </condition>
+  
+  <target name="test-lock-factory" depends="resolve-groovy,compile-core" unless="-ignore-test-lock-factory"
+    description="Run LockStressTest with multiple JVMs">
+    <property name="lockverifyserver.host" value="127.0.0.1"/>
+    <property name="lockverify.delay" value="1"/>
+    <groovy taskname="lockVerifySetup"><![CDATA[
+      System.clearProperty("lockverifyserver.port"); // make sure it is undefined
+      
+      if (!properties["lockverify.count"]) {
+        int count = Boolean.parseBoolean(properties["tests.nightly"]) ?
+          30000 : 2000;
+        count *= Integer.parseInt(properties["tests.multiplier"]);
+        properties["lockverify.count"] = count;
+      }
+      
+      task.log("Configuration properties:");
+      ["lockverify.delay", "lockverify.count"].each {
+        k -> task.log(" " + k + "=" + properties[k]);
+      }
+    ]]></groovy>
+    <path id="test-lock.classpath">
+      <path refid="classpath"/>
+      <pathelement location="${build.dir}/classes/java"/>
+    </path>
+    <testLockFactory lockFactoryImpl="org.apache.lucene.store.NativeFSLockFactory" lockFactoryDir="${build.dir}/lockfactorytest/native" />
+    <testLockFactory lockFactoryImpl="org.apache.lucene.store.SimpleFSLockFactory" lockFactoryDir="${build.dir}/lockfactorytest/simple" />
   </target>
+  
+  <target name="test" depends="common.test, test-lock-factory"/>
+
 </project>

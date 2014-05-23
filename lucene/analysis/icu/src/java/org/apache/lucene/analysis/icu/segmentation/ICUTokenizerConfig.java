@@ -36,4 +36,6 @@ public abstract class ICUTokenizerConfig {
   /** Return a token type value for a given script and BreakIterator
    *  rule status. */
   public abstract String getType(int script, int ruleStatus);
+  /** true if Han, Hiragana, and Katakana scripts should all be returned as Japanese */
+  public abstract boolean combineCJ();
 }

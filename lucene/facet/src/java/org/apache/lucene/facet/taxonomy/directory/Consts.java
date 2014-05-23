@@ -23,23 +23,8 @@ import org.apache.lucene.util.BytesRef;
  * @lucene.experimental
  */
 abstract class Consts {
-
   static final String FULL = "$full_path$";
   static final String FIELD_PAYLOADS = "$payloads$";
   static final String PAYLOAD_PARENT = "p";
   static final BytesRef PAYLOAD_PARENT_BYTES_REF = new BytesRef(PAYLOAD_PARENT);
-
-  /**
-   * Delimiter used for creating the full path of a category from the list of
-   * its labels from root. It is forbidden for labels to contain this
-   * character.
-   * <P>
-   * Originally, we used \uFFFE, officially a "unicode noncharacter" (invalid
-   * unicode character) for this purpose. Recently, we switched to the
-   * "private-use" character \uF749.  Even more recently, we
-   * switched to \U001F (INFORMATION_SEPARATOR).
-   */
-  //static final char DEFAULT_DELIMITER = '\uFFFE';
-  //static final char DEFAULT_DELIMITER = '\uF749';
-  static final char DEFAULT_DELIMITER = '\u001F';
 }

@@ -33,23 +33,29 @@ import java.util.Map;
 public class DocCollection extends ZkNodeProps {
   public static final String DOC_ROUTER = "router";
   public static final String SHARDS = "shards";
+  private int version;
 
   private final String name;
   private final Map<String, Slice> slices;
   private final Map<String, Slice> activeSlices;
   private final DocRouter router;
 
+  public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
+    this(name, slices, props, router, -1);
+  }
+
   /**
    * @param name  The name of the collection
    * @param slices The logical shards of the collection.  This is used directly and a copy is not made.
    * @param props  The properties of the slice.  This is used directly and a copy is not made.
    */
-  public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
-    super( props==null ? Collections.<String,Object>emptyMap() : props);
+  public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router, int zkVersion) {
+    super( props==null ? props = new HashMap<String,Object>() : props);
+    this.version = zkVersion;
     this.name = name;
 
     this.slices = slices;
-    this.activeSlices = new HashMap<String, Slice>();
+    this.activeSlices = new HashMap<>();
 
     Iterator<Map.Entry<String, Slice>> iter = slices.entrySet().iterator();
 
@@ -104,6 +110,12 @@ public class DocCollection extends ZkNodeProps {
     return activeSlices;
   }
 
+  public int getVersion(){
+    return version;
+
+  }
+
+
   public DocRouter getRouter() {
     return router;
   }
@@ -115,7 +127,7 @@ public class DocCollection extends ZkNodeProps {
 
   @Override
   public void write(JSONWriter jsonWriter) {
-    LinkedHashMap<String, Object> all = new LinkedHashMap<String, Object>(slices.size() + 1);
+    LinkedHashMap<String, Object> all = new LinkedHashMap<>(slices.size() + 1);
     all.putAll(propMap);
     all.put(SHARDS, slices);
     jsonWriter.write(all);

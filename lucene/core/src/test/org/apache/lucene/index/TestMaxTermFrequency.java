@@ -26,10 +26,11 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Tests the maxTermFrequency statistic in FieldInvertState
@@ -38,7 +39,7 @@ public class TestMaxTermFrequency extends LuceneTestCase {
   Directory dir;
   IndexReader reader;
   /* expected maxTermFrequency values for our documents */
-  ArrayList<Integer> expected = new ArrayList<Integer>();
+  ArrayList<Integer> expected = new ArrayList<>();
   
   @Override
   public void setUp() throws Exception {
@@ -56,7 +57,7 @@ public class TestMaxTermFrequency extends LuceneTestCase {
       writer.addDocument(doc);
     }
     reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
   }
   
   @Override
@@ -80,11 +81,11 @@ public class TestMaxTermFrequency extends LuceneTestCase {
    * puts the max-frequency term into expected, to be checked against the norm.
    */
   private String addValue() {
-    List<String> terms = new ArrayList<String>();
-    int maxCeiling = _TestUtil.nextInt(random(), 0, 255);
+    List<String> terms = new ArrayList<>();
+    int maxCeiling = TestUtil.nextInt(random(), 0, 255);
     int max = 0;
     for (char ch = 'a'; ch <= 'z'; ch++) {
-      int num = _TestUtil.nextInt(random(), 0, maxCeiling);
+      int num = TestUtil.nextInt(random(), 0, maxCeiling);
       for (int i = 0; i < num; i++)
         terms.add(Character.toString(ch));
       max = Math.max(max, num);
@@ -97,21 +98,28 @@ public class TestMaxTermFrequency extends LuceneTestCase {
   /**
    * Simple similarity that encodes maxTermFrequency directly as a byte
    */
-  class TestSimilarity extends DefaultSimilarity {
-
-    @Override
-    public byte encodeNormValue(float f) {
-      return (byte) f;
-    }
-    
-    @Override
-    public float decodeNormValue(byte b) {
-      return (float) b;
-    }
+  class TestSimilarity extends TFIDFSimilarity {
 
     @Override
     public float lengthNorm(FieldInvertState state) {
       return state.getMaxTermFrequency();
     }
+
+    @Override
+    public long encodeNormValue(float f) {
+      return (byte) f;
+    }
+
+    @Override
+    public float decodeNormValue(long norm) {
+      return norm;
+    }
+
+    @Override public float coord(int overlap, int maxOverlap) { return 0; }
+    @Override public float queryNorm(float sumOfSquaredWeights) { return 0; }
+    @Override public float tf(float freq) { return 0; }
+    @Override public float idf(long docFreq, long numDocs) { return 0; }
+    @Override public float sloppyFreq(int distance) { return 0; }
+    @Override public float scorePayload(int doc, int start, int end, BytesRef payload) { return 0; }
   }
 }

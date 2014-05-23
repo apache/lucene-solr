@@ -65,7 +65,7 @@ public class NewLocaleTask extends PerfTask {
     getRunData().setLocale(locale);
     System.out.println("Changed Locale to: " + 
         (locale == null ? "null" : 
-        (locale.getDisplayName().length() == 0) ? "root locale" : locale));
+        (locale.getDisplayName(Locale.ENGLISH).length() == 0) ? "root locale" : locale));
     return 1;
   }
   

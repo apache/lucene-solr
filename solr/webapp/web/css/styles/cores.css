@@ -1,3 +1,22 @@
+/*
+
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
 #content #cores
 {
   position: relative;
@@ -12,6 +31,11 @@
   left: -5px;
   top: 35px;
   width: 500px;
+}
+
+#content #cores.empty .requires-core
+{
+  display: none;
 }
 
 #content #cores #frame
@@ -34,6 +58,7 @@
 #content #cores #frame .actions
 {
   margin-bottom: 20px;
+  min-height: 30px;
 }
 
 #content #cores .actions div.action
@@ -46,9 +71,19 @@
   display: none;
 }
 
+#content #cores .actions form .directory-note
+{
+  background-image: url( ../../img/ico/information-white.png );
+  background-position: 22% 1px;
+  color: #c0c0c0;
+}
+
 #content #cores .actions form .error
 {
-  color: #800;
+  background-image: url( ../../img/ico/cross-button.png );
+  background-position: 22% 1px;
+  color: #c00;
+  font-weight: bold;
   display: none;
 }
 
@@ -69,10 +104,16 @@
 #content #cores .actions form input,
 #content #cores .actions form select,
 #content #cores .actions form .buttons,
-#content #cores .actions form .error span
+#content #cores .actions form .note span
 {
   float: right;
-  width: 73%;
+  width: 71%;
+}
+
+#content #cores .actions form .note span
+{
+  padding-left: 3px;
+  padding-right: 3px;
 }
 
 #content #cores .actions form .buttons
@@ -151,7 +192,7 @@
   display: none;
   position: absolute;
   left: -50px;
-  top: 40;
+  top: 40px;
   padding: 10px;
 }
 

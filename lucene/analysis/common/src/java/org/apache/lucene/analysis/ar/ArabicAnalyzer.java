@@ -135,9 +135,8 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
    *         if a stem exclusion set is provided and {@link ArabicStemFilter}.
    */
   @Override
-  protected TokenStreamComponents createComponents(String fieldName,
-      Reader reader) {
-    final Tokenizer source = new StandardTokenizer(matchVersion, reader);
+  protected TokenStreamComponents createComponents(String fieldName) {
+    final Tokenizer source = new StandardTokenizer(matchVersion);
     TokenStream result = new LowerCaseFilter(matchVersion, source);
     // the order here is important: the stopword list is not normalized!
     result = new StopFilter( matchVersion, result, stopwords);

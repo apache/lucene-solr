@@ -27,9 +27,9 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Version;
-import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 /**
  * This class implements Word Break rules from the Unicode Text Segmentation 
@@ -76,12 +76,17 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
     "<URL>",
     "<EMAIL>",
   };
+  
+  private int skippedPositions;
 
   private int maxTokenLength = StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH;
 
   /** Set the max allowed token length.  Any token longer
    *  than this is skipped. */
   public void setMaxTokenLength(int length) {
+    if (length < 1) {
+      throw new IllegalArgumentException("maxTokenLength must be greater than zero");
+    }
     this.maxTokenLength = length;
   }
 
@@ -93,24 +98,22 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
   /**
    * Creates a new instance of the UAX29URLEmailTokenizer.  Attaches
    * the <code>input</code> to the newly created JFlex scanner.
-   *
-   * @param input The input reader
+
    */
-  public UAX29URLEmailTokenizer(Version matchVersion, Reader input) {
-    super(input);
+  public UAX29URLEmailTokenizer(Version matchVersion) {
     this.scanner = getScannerFor(matchVersion);
   }
 
   /**
    * Creates a new UAX29URLEmailTokenizer with a given {@link AttributeFactory} 
    */
-  public UAX29URLEmailTokenizer(Version matchVersion, AttributeFactory factory, Reader input) {
-    super(factory, input);
+  public UAX29URLEmailTokenizer(Version matchVersion, AttributeFactory factory) {
+    super(factory);
     this.scanner = getScannerFor(matchVersion);
   }
 
-  private static StandardTokenizerInterface getScannerFor(Version matchVersion) {
-    return new UAX29URLEmailTokenizerImpl(null); // best effort NPE if you dont call reset
+  private StandardTokenizerInterface getScannerFor(Version matchVersion) {
+    return new UAX29URLEmailTokenizerImpl(input);
   }
 
   // this tokenizer generates three attributes:
@@ -123,7 +126,7 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
   @Override
   public final boolean incrementToken() throws IOException {
     clearAttributes();
-    int posIncr = 1;
+    skippedPositions = 0;
 
     while(true) {
       int tokenType = scanner.getNextToken();
@@ -133,7 +136,7 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
       }
 
       if (scanner.yylength() <= maxTokenLength) {
-        posIncrAtt.setPositionIncrement(posIncr);
+        posIncrAtt.setPositionIncrement(skippedPositions+1);
         scanner.getText(termAtt);
         final int start = scanner.yychar();
         offsetAtt.setOffset(correctOffset(start), correctOffset(start+termAtt.length()));
@@ -142,19 +145,30 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
       } else
         // When we skip a too-long term, we still increment the
         // position increment
-        posIncr++;
+        skippedPositions++;
     }
   }
   
   @Override
-  public final void end() {
+  public final void end() throws IOException {
+    super.end();
     // set final offset
     int finalOffset = correctOffset(scanner.yychar() + scanner.yylength());
     offsetAtt.setOffset(finalOffset, finalOffset);
+    // adjust any skipped tokens
+    posIncrAtt.setPositionIncrement(posIncrAtt.getPositionIncrement()+skippedPositions);
+  }
+  
+  @Override
+  public void close() throws IOException {
+    super.close();
+    scanner.yyreset(input);
   }
 
   @Override
   public void reset() throws IOException {
+    super.reset();
     scanner.yyreset(input);
+    skippedPositions = 0;
   }
 }

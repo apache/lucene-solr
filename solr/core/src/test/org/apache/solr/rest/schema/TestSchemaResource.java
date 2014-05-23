@@ -160,17 +160,17 @@ public class TestSchemaResource extends SolrRestletTestBase {
             "/schema/uniqueKey = 'id'",
             "/schema/defaultSearchField = 'text'",
 
-            "(/schema/types/fieldType)[1]/@name = 'HTMLstandardtok'",
-            "(/schema/types/fieldType)[2]/@name = 'HTMLwhitetok'",
-            "(/schema/types/fieldType)[3]/@name = 'boolean'",
+            "(/schema/fieldType)[1]/@name = 'HTMLstandardtok'",
+            "(/schema/fieldType)[2]/@name = 'HTMLwhitetok'",
+            "(/schema/fieldType)[3]/@name = 'boolean'",
 
-            "(/schema/fields/field)[1]/@name = 'HTMLstandardtok'",
-            "(/schema/fields/field)[2]/@name = 'HTMLwhitetok'",
-            "(/schema/fields/field)[3]/@name = '_version_'",
+            "(/schema/field)[1]/@name = 'HTMLstandardtok'",
+            "(/schema/field)[2]/@name = 'HTMLwhitetok'",
+            "(/schema/field)[3]/@name = '_version_'",
 
-            "(/schema/fields/dynamicField)[1]/@name = '*_coordinate'",
-            "(/schema/fields/dynamicField)[2]/@name = 'ignored_*'",
-            "(/schema/fields/dynamicField)[3]/@name = '*_mfacet'",
+            "(/schema/dynamicField)[1]/@name = '*_coordinate'",
+            "(/schema/dynamicField)[2]/@name = 'ignored_*'",
+            "(/schema/dynamicField)[3]/@name = '*_mfacet'",
 
             "/schema/copyField[@source='title'][@dest='title_stemmed'][@maxChars='200']",
             "/schema/copyField[@source='title'][@dest='dest_sub_no_ast_s']",

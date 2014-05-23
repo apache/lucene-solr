@@ -30,7 +30,7 @@ import org.apache.lucene.util.BytesRef;
 
 public final class BytesRefFSTEnum<T> extends FSTEnum<T> {
   private final BytesRef current = new BytesRef(10);
-  private final InputOutput<T> result = new InputOutput<T>();
+  private final InputOutput<T> result = new InputOutput<>();
   private BytesRef target;
 
   /** Holds a single input (BytesRef) + output pair. */

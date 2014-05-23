@@ -21,28 +21,33 @@
 <body>
 	<h1>Taxonomy of Categories</h1>
 	
-	Facets are defined using a hierarchy of categories, known as a
-	<i>Taxonomy</i>.
-	
-	<br>
-	For example, in a book store application, a Taxonomy could have the
-	following hierarchy:
-	<p>
+	Facets are defined using a hierarchy of categories, known as a <i>Taxonomy</i>.
+	For example, the taxonomy of a book store application might have the following structure:
 	<ul>
-		<li>Author</li>
-		<ul>
-		<li>Mark Twain</li>
-		<li>J. K. Rowling</li>
-		</ul>
+		<li>Author
+			<ul>
+			<li>Mark Twain</li>
+			<li>J. K. Rowling</li>
+			</ul>
+		</li>
 	</ul>
 	<ul>
-		<li>Date</li>
-		<ul>
-		<li>2010</li>
-		<li>2009</li>
-		</ul>
+		<li>Date
+			<ul>
+			<li>2010
+				<ul>
+				<li>March</li>
+				<li>April</li>
+				</ul>
+			</li>
+			<li>2009</li>
+			</ul>
+		</li>
 	</ul>
 	
-	The <i>Taxonomy</i> translates category-paths into category-ordinal and vice versa.
+	The <i>Taxonomy</i> translates category-paths into interger identifiers (often termed <i>ordinals</i>) and vice versa.
+	The category <code>Author/Mark Twain</code> adds two nodes to the taxonomy: <code>Author</code> and 
+	<code>Author/Mark Twain</code>, each is assigned a different ordinal. The taxonomy maintains the invariant that a 
+	node always has an ordinal that is &lt; all its children.
 </body>
 </html>

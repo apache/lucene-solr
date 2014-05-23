@@ -17,8 +17,11 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.util.concurrent.CountDownLatch;
+
 import org.apache.lucene.util.junitcompat.WithNestedTests;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.Description;
@@ -27,8 +30,13 @@ import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunListener;
 
-import com.carrotsearch.randomizedtesting.SysGlobals;
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Consequence;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesInvariantRule;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
@@ -66,48 +74,118 @@ public class TestMaxFailuresRule extends WithNestedTests {
 
   @Test
   public void testMaxFailures() {
-    TestRuleIgnoreAfterMaxFailures newRule = new TestRuleIgnoreAfterMaxFailures(2);
-    TestRuleIgnoreAfterMaxFailures prevRule = LuceneTestCase.replaceMaxFailureRule(newRule);
-    System.clearProperty(SysGlobals.SYSPROP_ITERATIONS());
-    try {
-      JUnitCore core = new JUnitCore();
-      final StringBuilder results = new StringBuilder();
-      core.addListener(new RunListener() {
-        char lastTest;
+    LuceneTestCase.replaceMaxFailureRule(new TestRuleIgnoreAfterMaxFailures(2));
+    JUnitCore core = new JUnitCore();
+    final StringBuilder results = new StringBuilder();
+    core.addListener(new RunListener() {
+      char lastTest;
 
-        @Override
-        public void testStarted(Description description) throws Exception {
-          lastTest = 'S'; // success.
-        }
+      @Override
+      public void testStarted(Description description) throws Exception {
+        lastTest = 'S'; // success.
+      }
 
-        @Override
-        public void testAssumptionFailure(Failure failure) {
-          lastTest = 'A'; // assumption failure.
-        }
+      @Override
+      public void testAssumptionFailure(Failure failure) {
+        lastTest = 'A'; // assumption failure.
+      }
 
-        @Override
-        public void testFailure(Failure failure) throws Exception {
-          lastTest = 'F'; // failure
-        }
+      @Override
+      public void testFailure(Failure failure) throws Exception {
+        lastTest = 'F'; // failure
+      }
 
-        @Override
-        public void testFinished(Description description) throws Exception {
-          results.append(lastTest);
-        }
-      });
+      @Override
+      public void testFinished(Description description) throws Exception {
+        results.append(lastTest);
+      }
+    });
 
-      Result result = core.run(Nested.class);
-      Assert.assertEquals(500, result.getRunCount());
-      Assert.assertEquals(0, result.getIgnoreCount());
-      Assert.assertEquals(2, result.getFailureCount());
+    Result result = core.run(Nested.class);
+    Assert.assertEquals(500, result.getRunCount());
+    Assert.assertEquals(0, result.getIgnoreCount());
+    Assert.assertEquals(2, result.getFailureCount());
 
-      // Make sure we had exactly two failures followed by assumption-failures
-      // resulting from ignored tests.
-      Assert.assertTrue(results.toString(), 
-          results.toString().matches("(S*F){2}A+"));
+    // Make sure we had exactly two failures followed by assumption-failures
+    // resulting from ignored tests.
+    Assert.assertTrue(results.toString(), 
+        results.toString().matches("(S*F){2}A+"));
+  }
 
-    } finally {
-      LuceneTestCase.replaceMaxFailureRule(prevRule);
+  @ThreadLeakZombies(Consequence.IGNORE_REMAINING_TESTS)
+  @ThreadLeakAction({ThreadLeakAction.Action.WARN})
+  @ThreadLeakScope(Scope.TEST)
+  @ThreadLeakLingering(linger = 500)
+  public static class Nested2 extends WithNestedTests.AbstractNestedTest {
+    public static final int TOTAL_ITERS = 10;
+    public static CountDownLatch die;
+    public static Thread zombie;
+    public static int testNum;
+    
+    @BeforeClass
+    public static void setup() {
+      assert zombie == null;
+      die = new CountDownLatch(1);
+      testNum = 0;
+    }
+
+    @Repeat(iterations = TOTAL_ITERS)
+    public void testLeaveZombie() {
+      if (++testNum == 2) {
+        zombie = new Thread() {
+          @Override
+          public void run() {
+            while (true) {
+              try {
+                die.await();
+                return;
+              } catch (Exception e) { /* ignore */ }
+            }
+          }
+        };
+        zombie.start();
+      }
     }
   }
+
+  @Test
+  public void testZombieThreadFailures() throws Exception {
+    LuceneTestCase.replaceMaxFailureRule(new TestRuleIgnoreAfterMaxFailures(1));
+    JUnitCore core = new JUnitCore();
+    final StringBuilder results = new StringBuilder();
+    core.addListener(new RunListener() {
+      char lastTest;
+
+      @Override
+      public void testStarted(Description description) throws Exception {
+        lastTest = 'S'; // success.
+      }
+
+      @Override
+      public void testAssumptionFailure(Failure failure) {
+        lastTest = 'A'; // assumption failure.
+      }
+
+      @Override
+      public void testFailure(Failure failure) throws Exception {
+        lastTest = 'F'; // failure
+        System.out.println(failure.getMessage());
+      }
+
+      @Override
+      public void testFinished(Description description) throws Exception {
+        results.append(lastTest);
+      }
+    });
+
+    Result result = core.run(Nested2.class);
+    if (Nested2.die != null) {
+      Nested2.die.countDown();
+      Nested2.zombie.join();
+    }
+    
+    super.prevSysOut.println(results.toString());
+    Assert.assertEquals(Nested2.TOTAL_ITERS, result.getRunCount());
+    Assert.assertEquals(results.toString(), "SFAAAAAAAA", results.toString());
+  }  
 }

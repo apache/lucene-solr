@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.File;
-import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
@@ -25,18 +24,7 @@ import org.apache.lucene.store.*;
 import org.apache.lucene.util.*;
 
 public class TestAtomicUpdate extends LuceneTestCase {
-  private static final class MockIndexWriter extends IndexWriter {
-    public MockIndexWriter(Directory dir, IndexWriterConfig conf) throws IOException {
-      super(dir, conf);
-    }
-
-    @Override
-    boolean testPoint(String name) {
-      if (LuceneTestCase.random().nextInt(4) == 2)
-        Thread.yield();
-      return true;
-    }
-  }
+  
 
   private static abstract class TimedThread extends Thread {
     volatile boolean failed;
@@ -124,7 +112,7 @@ public class TestAtomicUpdate extends LuceneTestCase {
         TEST_VERSION_CURRENT, new MockAnalyzer(random()))
         .setMaxBufferedDocs(7);
     ((TieredMergePolicy) conf.getMergePolicy()).setMaxMergeAtOnce(3);
-    IndexWriter writer = new MockIndexWriter(directory, conf);
+    IndexWriter writer = RandomIndexWriter.mockIndexWriter(directory, conf, random());
 
     // Establish a base index of 100 docs:
     for(int i=0;i<100;i++) {
@@ -163,7 +151,7 @@ public class TestAtomicUpdate extends LuceneTestCase {
     searcherThread1.join();
     searcherThread2.join();
 
-    writer.close();
+    writer.shutdown();
 
     assertTrue("hit unexpected exception in indexer", !indexerThread.failed);
     assertTrue("hit unexpected exception in indexer2", !indexerThread2.failed);
@@ -187,10 +175,10 @@ public class TestAtomicUpdate extends LuceneTestCase {
     directory.close();
 
     // Second in an FSDirectory:
-    File dirPath = _TestUtil.getTempDir("lucene.test.atomic");
+    File dirPath = createTempDir("lucene.test.atomic");
     directory = newFSDirectory(dirPath);
     runTest(directory);
     directory.close();
-    _TestUtil.rmDir(dirPath);
+    TestUtil.rm(dirPath);
   }
 }

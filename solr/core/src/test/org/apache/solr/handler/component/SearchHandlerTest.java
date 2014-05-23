@@ -43,7 +43,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
     
     // Build an explicit list
     //-----------------------------------------------
-    List<String> names0 = new ArrayList<String>();
+    List<String> names0 = new ArrayList<>();
     names0.add( MoreLikeThisComponent.COMPONENT_NAME );
     
     NamedList args = new NamedList();
@@ -58,7 +58,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
 
     // Build an explicit list that includes the debug comp.
     //-----------------------------------------------
-    names0 = new ArrayList<String>();
+    names0 = new ArrayList<>();
     names0.add( FacetComponent.COMPONENT_NAME );
     names0.add( DebugComponent.COMPONENT_NAME );
     names0.add( MoreLikeThisComponent.COMPONENT_NAME );
@@ -80,10 +80,10 @@ public class SearchHandlerTest extends SolrTestCaseJ4
 
     // First/Last list
     //-----------------------------------------------
-    names0 = new ArrayList<String>();
+    names0 = new ArrayList<>();
     names0.add( MoreLikeThisComponent.COMPONENT_NAME );
     
-    List<String> names1 = new ArrayList<String>();
+    List<String> names1 = new ArrayList<>();
     names1.add( FacetComponent.COMPONENT_NAME );
     
     args = new NamedList();

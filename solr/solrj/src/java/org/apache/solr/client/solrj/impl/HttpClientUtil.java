@@ -33,12 +33,16 @@ import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.params.ClientParamBean;
+import org.apache.http.conn.ClientConnectionManager;
+import org.apache.http.conn.scheme.Scheme;
+import org.apache.http.conn.ssl.SSLSocketFactory;
+import org.apache.http.conn.ssl.X509HostnameVerifier;
 import org.apache.http.entity.HttpEntityWrapper;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.client.SystemDefaultHttpClient;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager; // jdoc
+import org.apache.http.impl.client.SystemDefaultHttpClient;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
+import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager; // jdoc
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.protocol.HttpContext;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -74,6 +78,8 @@ public class HttpClientUtil {
   // Basic auth password 
   public static final String PROP_BASIC_AUTH_PASS = "httpBasicAuthPassword";
   
+  public static final String SYS_PROP_CHECK_PEER_NAME = "solr.ssl.checkPeerName";
+  
   private static final Logger logger = LoggerFactory
       .getLogger(HttpClientUtil.class);
   
@@ -91,6 +97,11 @@ public class HttpClientUtil {
   public static void setConfigurer(HttpClientConfigurer newConfigurer) {
     configurer = newConfigurer;
   }
+  
+  public static HttpClientConfigurer getConfigurer() {
+    return configurer;
+  }
+  
   /**
    * Creates new http client by using the provided configuration.
    * 
@@ -100,8 +111,24 @@ public class HttpClientUtil {
    */
   public static HttpClient createClient(final SolrParams params) {
     final ModifiableSolrParams config = new ModifiableSolrParams(params);
-    logger.info("Creating new http client, config:" + config);
+    if (logger.isDebugEnabled()) {
+      logger.debug("Creating new http client, config:" + config);
+    }
     final DefaultHttpClient httpClient = new SystemDefaultHttpClient();
+    configureClient(httpClient, config);
+    return httpClient;
+  }
+  
+  /**
+   * Creates new http client by using the provided configuration.
+   * 
+   */
+  public static HttpClient createClient(final SolrParams params, ClientConnectionManager cm) {
+    final ModifiableSolrParams config = new ModifiableSolrParams(params);
+    if (logger.isDebugEnabled()) {
+      logger.debug("Creating new http client, config:" + config);
+    }
+    final DefaultHttpClient httpClient = new DefaultHttpClient(cm);
     configureClient(httpClient, config);
     return httpClient;
   }
@@ -233,6 +260,15 @@ public class HttpClientUtil {
     new ClientParamBean(httpClient.getParams()).setHandleRedirects(followRedirects);
   }
 
+  public static void setHostNameVerifier(DefaultHttpClient httpClient,
+      X509HostnameVerifier hostNameVerifier) {
+    Scheme httpsScheme = httpClient.getConnectionManager().getSchemeRegistry().get("https");
+    if (httpsScheme != null) {
+      SSLSocketFactory sslSocketFactory = (SSLSocketFactory) httpsScheme.getSchemeSocketFactory();
+      sslSocketFactory.setHostnameVerifier(hostNameVerifier);
+    }
+  }
+  
   private static class UseCompressionRequestInterceptor implements
       HttpRequestInterceptor {
     

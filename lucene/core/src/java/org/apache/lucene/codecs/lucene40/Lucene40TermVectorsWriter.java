@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.lucene40;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TermVectorsReader;
@@ -242,8 +241,8 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
       if (payloads) {
         tvf.writeBytes(payloadData.bytes, payloadData.offset, payloadData.length);
       }
-      for (int i = 0; i < bufferedIndex; i++) {
-        if (offsets) {
+      if (offsets) {
+        for (int i = 0; i < bufferedIndex; i++) {
           tvf.writeVInt(offsetStartBuffer[i] - lastOffset);
           tvf.writeVInt(offsetEndBuffer[i] - offsetStartBuffer[i]);
           lastOffset = offsetEndBuffer[i];
@@ -426,13 +425,14 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
   
   @Override
   public void finish(FieldInfos fis, int numDocs) {
-    if (HEADER_LENGTH_INDEX+((long) numDocs)*16 != tvx.getFilePointer())
+    long indexFP = tvx.getFilePointer();
+    if (HEADER_LENGTH_INDEX+((long) numDocs)*16 != indexFP)
       // This is most likely a bug in Sun JRE 1.6.0_04/_05;
       // we detect that the bug has struck, here, and
       // throw an exception to prevent the corruption from
       // entering the index.  See LUCENE-1282 for
       // details.
-      throw new RuntimeException("tvx size mismatch: mergedDocs is " + numDocs + " but tvx size is " + tvx.getFilePointer() + " file=" + tvx.toString() + "; now aborting this merge to prevent index corruption");
+      throw new RuntimeException("tvx size mismatch: mergedDocs is " + numDocs + " but tvx size is " + indexFP + " (wrote numDocs=" + ((indexFP - HEADER_LENGTH_INDEX)/16.0) + " file=" + tvx.toString() + "; now aborting this merge to prevent index corruption");
   }
 
   /** Close all streams. */
@@ -442,10 +442,5 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
     // the first exception encountered in this process
     IOUtils.close(tvx, tvd, tvf);
     tvx = tvd = tvf = null;
-  }
-
-  @Override
-  public Comparator<BytesRef> getComparator() {
-    return BytesRef.getUTF8SortedAsUnicodeComparator();
   }
 }

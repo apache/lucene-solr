@@ -46,7 +46,7 @@ public class SolrInfoMBeanTest extends SolrTestCaseJ4
    * a name, description, etc...
    */
   public void testCallMBeanInfo() throws Exception {
-    List<Class> classes = new ArrayList<Class>();
+    List<Class> classes = new ArrayList<>();
     classes.addAll(getClassesForPackage(StandardRequestHandler.class.getPackage().getName()));
     classes.addAll(getClassesForPackage(SearchHandler.class.getPackage().getName()));
     classes.addAll(getClassesForPackage(SearchComponent.class.getPackage().getName()));
@@ -90,7 +90,7 @@ public class SolrInfoMBeanTest extends SolrTestCaseJ4
   }
   
   private static List<Class> getClassesForPackage(String pckgname) throws Exception {
-    ArrayList<File> directories = new ArrayList<File>();
+    ArrayList<File> directories = new ArrayList<>();
     ClassLoader cld = h.getCore().getResourceLoader().getClassLoader();
     String path = pckgname.replace('.', '/');
     Enumeration<URL> resources = cld.getResources(path);
@@ -102,7 +102,7 @@ public class SolrInfoMBeanTest extends SolrTestCaseJ4
       directories.add(f);
     }
       
-    ArrayList<Class> classes = new ArrayList<Class>();
+    ArrayList<Class> classes = new ArrayList<>();
     for (File directory : directories) {
       if (directory.exists()) {
         String[] files = directory.list();

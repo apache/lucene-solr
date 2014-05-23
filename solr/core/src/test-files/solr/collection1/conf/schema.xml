@@ -34,54 +34,16 @@
          behavior of the fieldtype.
       -->
 
-    <!-- numeric field types that store and index the text
-         value verbatim (and hence don't sort correctly or support range queries.)
-         These are provided more for backward compatability, allowing one
-         to create a schema that matches an existing lucene index.
-    -->
-    <fieldType name="pint" class="solr.IntField"/>
-    <fieldType name="plong" class="solr.LongField"/>
-    <fieldtype name="pfloat" class="solr.FloatField"/>
-    <fieldType name="pdouble" class="solr.DoubleField"/>
-
     <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="byte" class="solr.ByteField" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="short" class="solr.ShortField" omitNorms="true" positionIncrementGap="0"/>
 
 
     <fieldType name="tint" class="solr.TrieIntField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="tfloat" class="solr.TrieFloatField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="tlong" class="solr.TrieLongField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="tdouble" class="solr.TrieDoubleField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
-
-    <!-- numeric field types that manipulate the value into
-       a string value that isn't human readable in it's internal form,
-       but sorts correctly and supports range queries.
-
-         If sortMissingLast="true" then a sort on this field will cause documents
-       without the field to come after documents with the field,
-       regardless of the requested sort order.
-         If sortMissingFirst="true" then a sort on this field will cause documents
-       without the field to come before documents with the field,
-       regardless of the requested sort order.
-         If sortMissingLast="false" and sortMissingFirst="false" (the default),
-       then default lucene sorting will be used which places docs without the field
-       first in an ascending sort and last in a descending sort.
-    -->
-    <fieldtype name="sint" class="solr.SortableIntField" sortMissingLast="true"/>
-    <fieldtype name="slong" class="solr.SortableLongField" sortMissingLast="true"/>
-    <fieldtype name="sfloat" class="solr.SortableFloatField" sortMissingLast="true"/>
-    <fieldtype name="sdouble" class="solr.SortableDoubleField" sortMissingLast="true"/>
-
-    <!-- bcd versions of sortable numeric type may provide smaller
-         storage space and support very large numbers.
-    -->
-    <fieldtype name="bcdint" class="solr.BCDIntField" sortMissingLast="true"/>
-    <fieldtype name="bcdlong" class="solr.BCDLongField" sortMissingLast="true"/>
-    <fieldtype name="bcdstr" class="solr.BCDStrField" sortMissingLast="true"/>
 
     <!-- Field type demonstrating an Analyzer failure -->
     <fieldtype name="failtype1" class="solr.TextField">
@@ -121,7 +83,6 @@
       -->
     <fieldtype name="date" class="solr.TrieDateField" precisionStep="0"/>
     <fieldtype name="tdate" class="solr.TrieDateField" precisionStep="6"/>
-    <fieldtype name="pdate" class="solr.DateField" sortMissingLast="true"/>
 
 
     <!-- solr.TextField allows the specification of custom
@@ -443,6 +404,8 @@
 
  <fields>
    <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+   <field name="_root_" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+
    <field name="signatureField" type="string" indexed="true" stored="false"/>
    <field name="uuid" type="uuid" stored="true" />
    <field name="name" type="nametext" indexed="true" stored="true"/>
@@ -501,24 +464,6 @@
    <field name="test_posofftv" type="text" termVectors="true"
      termPositions="true" termOffsets="true"/>
 
-   <!-- test valid combinations of indexed settings, 
-        see also BadIndexSchemaTest -->
-   <!-- indexed=false should not prevent omit___=true -->
-   <field name="pint_i_norm" type="pint" omitNorms="true"
-          indexed="false" />
-   <field name="pint_i_tf"   type="pint" omitTermFreqAndPositions="true"
-          indexed="false" />
-   <field name="pint_i_pos"  type="pint" omitPositions="true"
-          indexed="false" />
-   <field name="pint_i_all"  type="pint" 
-          indexed="false" 
-          omitNorms="true"
-          omitTermFreqAndPositions="true"
-          omitPositions="true" />
-   <!-- omitTermFreqAndPositions=false and omitPositions=true are ok -->
-   <field name="pint_tf_pos" type="pint" indexed="true" 
-          omitTermFreqAndPositions="false" omitPositions="true" />
-
    <!-- test highlit field settings -->
    <field name="test_hlt" type="highlittext" indexed="true"/>
    <field name="test_hlt_off" type="highlittext" indexed="true"/>
@@ -555,7 +500,7 @@
 
 
    <field name="cat" type="string" indexed="true" stored="true" multiValued="true"/>
-   <field name="price"  type="float" indexed="true" stored="true"/>
+   <field name="price"  type="float" indexed="true" stored="true" multiValued="false"/>
    <field name="inStock" type="boolean" indexed="true" stored="true" />
 
    <field name="subword" type="subword" indexed="true" stored="true"/>
@@ -583,6 +528,7 @@
    <field name="store" type="location" indexed="true" stored="true" omitNorms="false"/>
 
    <field name="lower" type="lowertok" indexed="false" stored="true" multiValued="true" />
+   <field name="_route_" type="string" indexed="true" stored="true" multiValued="false" />
 
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
         will be used if the name matches any of the patterns.
@@ -593,7 +539,7 @@
         both match, the first appearing in the schema will be used.
    -->
    <dynamicField name="*_i"  type="int"    indexed="true"  stored="true"/>
-   <dynamicField name="*_i1"  type="int"    indexed="true" stored="true" multiValued="false"/>
+   <dynamicField name="*_i1"  type="int"    indexed="true" stored="true" multiValued="false" sortMissingLast="true"/>
                  
    <dynamicField name="*_s"  type="string"  indexed="true"  stored="true"/>
    <dynamicField name="*_s1"  type="string"  indexed="true"  stored="true" multiValued="false"/>
@@ -608,11 +554,6 @@
    <dynamicField name="*_d1"  type="double" indexed="true"  stored="true" multiValued="false"/>
    <dynamicField name="*_dt" type="date"    indexed="true"  stored="true"/>
    <dynamicField name="*_dt1" type="date"    indexed="true"  stored="true" multiValued="false"/>
-   <dynamicField name="*_bcd" type="bcdstr" indexed="true"  stored="true"/>
-   <dynamicField name="*_by"  type="byte"  indexed="true" stored="true"/>
-   <dynamicField name="*_by1" type="byte"  indexed="true" stored="true" multiValued="false"/>
-   <dynamicField name="*_sh" type="short"  indexed="true" stored="true"/>
-   <dynamicField name="*_sh1" type="short"  indexed="true" stored="true" multiValued="false"/>
 
 
       <!-- some trie-coded dynamic fields for faster range queries -->
@@ -627,20 +568,6 @@
    <dynamicField name="*_tds" type="tdouble" indexed="true" stored="true" multiValued="false"/>
    <dynamicField name="*_tdt" type="tdate"  indexed="true"  stored="true"/>
    <dynamicField name="*_tdt1" type="tdate"  indexed="true"  stored="true" multiValued="false"/>
-
-   <dynamicField name="*_si"  type="sint"  indexed="true"  stored="true" multiValued="false"/>
-   <dynamicField name="*_sl"  type="slong"  indexed="true"  stored="true"/>
-   <dynamicField name="*_sf"  type="sfloat"  indexed="true"  stored="true"/>
-   <dynamicField name="*_sf1"  type="sfloat"  indexed="true"  stored="true" multiValued="false"/>
-   <dynamicField name="*_sd"  type="sdouble"  indexed="true"  stored="true"/>
-   <dynamicField name="*_sd1"  type="sdouble"  indexed="true"  stored="true" multiValued="false"/>
-
-   <dynamicField name="*_pi"  type="pint"    indexed="true"  stored="true"/>
-   <dynamicField name="*_pf"  type="pfloat"  indexed="true"  stored="true"/>
-   <dynamicField name="*_pl"  type="plong"   indexed="true"  stored="true"/>
-   <dynamicField name="*_pd"  type="pdouble" indexed="true"  stored="true"/>
-   <dynamicField name="*_pdt"  type="pdate" indexed="true"  stored="true"/>
-
 
    <dynamicField name="*_sI" type="string"  indexed="true"  stored="false"/>
    <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>
@@ -660,7 +587,7 @@
 
    <!-- for testing to ensure that longer patterns are matched first -->
    <dynamicField name="*aa"  type="string"  indexed="true" stored="true"/>
-   <dynamicField name="*aaa" type="pint" indexed="false" stored="true"/>
+   <dynamicField name="*aaa" type="int" indexed="false" stored="true"/>
 
    <!-- ignored becuase not stored or indexed -->
    <dynamicField name="*_ignored" type="text" indexed="false" stored="false"/>
@@ -694,15 +621,8 @@
 
 	 <copyField source="*_t" dest="text"/>
 
-	 <copyField source="id"            dest="range_facet_si"/>
 	 <copyField source="id"            dest="range_facet_l"/>
-	 <copyField source="id"            dest="range_facet_sl"/>
-	 <copyField source="range_facet_f" dest="range_facet_sf"/>
 	 <copyField source="range_facet_f" dest="range_facet_d"/>
-	 <copyField source="range_facet_f" dest="range_facet_sd"/>
-
-	 <copyField source="bday" dest="bday_pdt"/>
-	 <copyField source="a_tdt" dest="a_pdt"/>
 
    <!-- dynamic destination -->
    <copyField source="*_dynamic" dest="dynamic_*"/>

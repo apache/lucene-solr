@@ -101,7 +101,7 @@ public class SearchGroup<GROUP_VALUE_TYPE> {
     public final T groupValue;
 
     public Object[] topValues;
-    public final List<ShardIter<T>> shards = new ArrayList<ShardIter<T>>();
+    public final List<ShardIter<T>> shards = new ArrayList<>();
     public int minShardIndex;
     public boolean processed;
     public boolean inQueue;
@@ -214,7 +214,7 @@ public class SearchGroup<GROUP_VALUE_TYPE> {
         if (isNew) {
           // Start a new group:
           //System.out.println("      new");
-          mergedGroup = new MergedGroup<T>(group.groupValue);
+          mergedGroup = new MergedGroup<>(group.groupValue);
           mergedGroup.minShardIndex = shard.shardIndex;
           assert group.sortValues != null;
           mergedGroup.topValues = group.sortValues;
@@ -281,12 +281,12 @@ public class SearchGroup<GROUP_VALUE_TYPE> {
         final Collection<SearchGroup<T>> shard = shards.get(shardIDX);
         if (!shard.isEmpty()) {
           //System.out.println("  insert shard=" + shardIDX);
-          updateNextGroup(maxQueueSize, new ShardIter<T>(shard, shardIDX));
+          updateNextGroup(maxQueueSize, new ShardIter<>(shard, shardIDX));
         }
       }
 
       // Pull merged topN groups:
-      final List<SearchGroup<T>> newTopGroups = new ArrayList<SearchGroup<T>>();
+      final List<SearchGroup<T>> newTopGroups = new ArrayList<>();
 
       int count = 0;
 
@@ -295,7 +295,7 @@ public class SearchGroup<GROUP_VALUE_TYPE> {
         group.processed = true;
         //System.out.println("  pop: shards=" + group.shards + " group=" + (group.groupValue == null ? "null" : (((BytesRef) group.groupValue).utf8ToString())) + " sortValues=" + Arrays.toString(group.topValues));
         if (count++ >= offset) {
-          final SearchGroup<T> newGroup = new SearchGroup<T>();
+          final SearchGroup<T> newGroup = new SearchGroup<>();
           newGroup.groupValue = group.groupValue;
           newGroup.sortValues = group.topValues;
           newTopGroups.add(newGroup);

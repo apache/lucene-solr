@@ -74,7 +74,7 @@ public class ReutersQueryMaker extends AbstractQueryMaker implements QueryMaker 
    */
   private static Query[] createQueries(List<Object> qs, Analyzer a) {
     QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, DocMaker.BODY_FIELD, a);
-    List<Object> queries = new ArrayList<Object>();
+    List<Object> queries = new ArrayList<>();
     for (int i = 0; i < qs.size(); i++)  {
       try {
         
@@ -108,7 +108,7 @@ public class ReutersQueryMaker extends AbstractQueryMaker implements QueryMaker 
     Analyzer anlzr= NewAnalyzerTask.createAnalyzer(config.get("analyzer",
     "org.apache.lucene.analysis.standard.StandardAnalyzer")); 
     
-    List<Object> queryList = new ArrayList<Object>(20);
+    List<Object> queryList = new ArrayList<>(20);
     queryList.addAll(Arrays.asList(STANDARD_QUERIES));
     queryList.addAll(Arrays.asList(getPrebuiltQueries(DocMaker.BODY_FIELD)));
     return createQueries(queryList, anlzr);

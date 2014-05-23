@@ -38,10 +38,10 @@ public class DumpRequestHandler extends RequestHandlerBase
         
     // Write the streams...
     if( req.getContentStreams() != null ) {
-      ArrayList<NamedList<Object>> streams = new ArrayList<NamedList<Object>>();
+      ArrayList<NamedList<Object>> streams = new ArrayList<>();
       // Cycle through each stream
       for( ContentStream content : req.getContentStreams() ) {
-        NamedList<Object> stream = new SimpleOrderedMap<Object>();
+        NamedList<Object> stream = new SimpleOrderedMap<>();
         stream.add( "name", content.getName() );
         stream.add( "sourceInfo", content.getSourceInfo() );
         stream.add( "size", content.getSize() );

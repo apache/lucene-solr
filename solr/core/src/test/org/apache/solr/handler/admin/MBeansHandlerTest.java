@@ -43,7 +43,7 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
         "stats","true",
         CommonParams.WT,"xml"
      ));
-    List<ContentStream> streams = new ArrayList<ContentStream>();
+    List<ContentStream> streams = new ArrayList<>();
     streams.add(new ContentStreamBase.StringStream(xml));
     
     LocalSolrQueryRequest req = lrf.makeRequest(

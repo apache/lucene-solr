@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat; // javadocs
 import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -41,9 +40,7 @@ public class LiveIndexWriterConfig {
   private volatile int maxBufferedDocs;
   private volatile double ramBufferSizeMB;
   private volatile int maxBufferedDeleteTerms;
-  private volatile int readerTermsIndexDivisor;
   private volatile IndexReaderWarmer mergedSegmentWarmer;
-  private volatile int termIndexInterval; // TODO: this should be private to the codec, not settable here
 
   // modified by IndexWriterConfig
   /** {@link IndexDeletionPolicy} controlling when commit
@@ -98,6 +95,12 @@ public class LiveIndexWriterConfig {
   /** {@link Version} that {@link IndexWriter} should emulate. */
   protected final Version matchVersion;
 
+  /** True if segment flushes should use compound file format */
+  protected volatile boolean useCompoundFile = IndexWriterConfig.DEFAULT_USE_COMPOUND_FILE_SYSTEM;
+  
+  /** True if merging should check integrity of segments before merge */
+  protected volatile boolean checkIntegrityAtMerge = IndexWriterConfig.DEFAULT_CHECK_INTEGRITY_AT_MERGE;
+
   // used by IndexWriterConfig
   LiveIndexWriterConfig(Analyzer analyzer, Version matchVersion) {
     this.analyzer = analyzer;
@@ -105,11 +108,10 @@ public class LiveIndexWriterConfig {
     ramBufferSizeMB = IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB;
     maxBufferedDocs = IndexWriterConfig.DEFAULT_MAX_BUFFERED_DOCS;
     maxBufferedDeleteTerms = IndexWriterConfig.DEFAULT_MAX_BUFFERED_DELETE_TERMS;
-    readerTermsIndexDivisor = IndexWriterConfig.DEFAULT_READER_TERMS_INDEX_DIVISOR;
     mergedSegmentWarmer = null;
-    termIndexInterval = IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL; // TODO: this should be private to the codec, not settable here
     delPolicy = new KeepOnlyLastCommitDeletionPolicy();
     commit = null;
+    useCompoundFile = IndexWriterConfig.DEFAULT_USE_COMPOUND_FILE_SYSTEM;
     openMode = OpenMode.CREATE_OR_APPEND;
     similarity = IndexSearcher.getDefaultSimilarity();
     mergeScheduler = new ConcurrentMergeScheduler();
@@ -123,7 +125,7 @@ public class LiveIndexWriterConfig {
     mergePolicy = new TieredMergePolicy();
     flushPolicy = new FlushByRamOrCountsPolicy();
     readerPooling = IndexWriterConfig.DEFAULT_READER_POOLING;
-    indexerThreadPool = new ThreadAffinityDocumentsWriterThreadPool(IndexWriterConfig.DEFAULT_MAX_THREAD_STATES);
+    indexerThreadPool = new DocumentsWriterPerThreadPool(IndexWriterConfig.DEFAULT_MAX_THREAD_STATES);
     perThreadHardLimitMB = IndexWriterConfig.DEFAULT_RAM_PER_THREAD_HARD_LIMIT_MB;
   }
   
@@ -136,8 +138,6 @@ public class LiveIndexWriterConfig {
     maxBufferedDocs = config.getMaxBufferedDocs();
     mergedSegmentWarmer = config.getMergedSegmentWarmer();
     ramBufferSizeMB = config.getRAMBufferSizeMB();
-    readerTermsIndexDivisor = config.getReaderTermsIndexDivisor();
-    termIndexInterval = config.getTermIndexInterval();
     matchVersion = config.matchVersion;
     analyzer = config.getAnalyzer();
     delPolicy = config.getIndexDeletionPolicy();
@@ -154,79 +154,19 @@ public class LiveIndexWriterConfig {
     readerPooling = config.getReaderPooling();
     flushPolicy = config.getFlushPolicy();
     perThreadHardLimitMB = config.getRAMPerThreadHardLimitMB();
+    useCompoundFile = config.getUseCompoundFile();
+    checkIntegrityAtMerge = config.getCheckIntegrityAtMerge();
   }
 
   /** Returns the default analyzer to use for indexing documents. */
   public Analyzer getAnalyzer() {
     return analyzer;
   }
-  
-  /**
-   * Expert: set the interval between indexed terms. Large values cause less
-   * memory to be used by IndexReader, but slow random-access to terms. Small
-   * values cause more memory to be used by an IndexReader, and speed
-   * random-access to terms.
-   * <p>
-   * This parameter determines the amount of computation required per query
-   * term, regardless of the number of documents that contain that term. In
-   * particular, it is the maximum number of other terms that must be scanned
-   * before a term is located and its frequency and position information may be
-   * processed. In a large index with user-entered query terms, query processing
-   * time is likely to be dominated not by term lookup but rather by the
-   * processing of frequency and positional data. In a small index or when many
-   * uncommon query terms are generated (e.g., by wildcard queries) term lookup
-   * may become a dominant cost.
-   * <p>
-   * In particular, <code>numUniqueTerms/interval</code> terms are read into
-   * memory by an IndexReader, and, on average, <code>interval/2</code> terms
-   * must be scanned for each random term access.
-   * 
-   * <p>
-   * Takes effect immediately, but only applies to newly flushed/merged
-   * segments.
-   * 
-   * <p>
-   * <b>NOTE:</b> This parameter does not apply to all PostingsFormat implementations,
-   * including the default one in this release. It only makes sense for term indexes
-   * that are implemented as a fixed gap between terms. For example, 
-   * {@link Lucene41PostingsFormat} implements the term index instead based upon how
-   * terms share prefixes. To configure its parameters (the minimum and maximum size
-   * for a block), you would instead use  {@link Lucene41PostingsFormat#Lucene41PostingsFormat(int, int)}.
-   * which can also be configured on a per-field basis:
-   * <pre class="prettyprint">
-   * //customize Lucene41PostingsFormat, passing minBlockSize=50, maxBlockSize=100
-   * final PostingsFormat tweakedPostings = new Lucene41PostingsFormat(50, 100);
-   * iwc.setCodec(new Lucene42Codec() {
-   *   &#64;Override
-   *   public PostingsFormat getPostingsFormatForField(String field) {
-   *     if (field.equals("fieldWithTonsOfTerms"))
-   *       return tweakedPostings;
-   *     else
-   *       return super.getPostingsFormatForField(field);
-   *   }
-   * });
-   * </pre>
-   * Note that other implementations may have their own parameters, or no parameters at all.
-   * 
-   * @see IndexWriterConfig#DEFAULT_TERM_INDEX_INTERVAL
-   */
-  public LiveIndexWriterConfig setTermIndexInterval(int interval) { // TODO: this should be private to the codec, not settable here
-    this.termIndexInterval = interval;
-    return this;
-  }
 
   /**
-   * Returns the interval between indexed terms.
-   *
-   * @see #setTermIndexInterval(int)
-   */
-  public int getTermIndexInterval() { // TODO: this should be private to the codec, not settable here
-    return termIndexInterval;
-  }
-
-  /**
-   * Determines the minimal number of delete terms required before the buffered
-   * in-memory delete terms and queries are applied and flushed.
+   * Determines the maximum number of delete-by-term operations that will be
+   * buffered before both the buffered in-memory delete terms and queries are
+   * applied and flushed.
    * <p>
    * Disabled by default (writer flushes by RAM usage).
    * <p>
@@ -234,7 +174,8 @@ public class LiveIndexWriterConfig {
    * 
    * <p>
    * Takes effect immediately, but only the next time a document is added,
-   * updated or deleted.
+   * updated or deleted. Also, if you only delete-by-query, this setting has no
+   * effect, i.e. delete queries are buffered until the next segment is flushed.
    * 
    * @throws IllegalArgumentException
    *           if maxBufferedDeleteTerms is enabled but smaller than 1
@@ -307,7 +248,7 @@ public class LiveIndexWriterConfig {
    *           if ramBufferSize is enabled but non-positive, or it disables
    *           ramBufferSize when maxBufferedDocs is already disabled
    */
-  public LiveIndexWriterConfig setRAMBufferSizeMB(double ramBufferSizeMB) {
+  public synchronized LiveIndexWriterConfig setRAMBufferSizeMB(double ramBufferSizeMB) {
     if (ramBufferSizeMB != IndexWriterConfig.DISABLE_AUTO_FLUSH && ramBufferSizeMB <= 0.0) {
       throw new IllegalArgumentException("ramBufferSize should be > 0.0 MB when enabled");
     }
@@ -348,7 +289,7 @@ public class LiveIndexWriterConfig {
    *           if maxBufferedDocs is enabled but smaller than 2, or it disables
    *           maxBufferedDocs when ramBufferSize is already disabled
    */
-  public LiveIndexWriterConfig setMaxBufferedDocs(int maxBufferedDocs) {
+  public synchronized LiveIndexWriterConfig setMaxBufferedDocs(int maxBufferedDocs) {
     if (maxBufferedDocs != IndexWriterConfig.DISABLE_AUTO_FLUSH && maxBufferedDocs < 2) {
       throw new IllegalArgumentException("maxBufferedDocs must at least be 2 when enabled");
     }
@@ -384,37 +325,6 @@ public class LiveIndexWriterConfig {
   /** Returns the current merged segment warmer. See {@link IndexReaderWarmer}. */
   public IndexReaderWarmer getMergedSegmentWarmer() {
     return mergedSegmentWarmer;
-  }
-
-  /**
-   * Sets the termsIndexDivisor passed to any readers that IndexWriter opens,
-   * for example when applying deletes or creating a near-real-time reader in
-   * {@link DirectoryReader#open(IndexWriter, boolean)}. If you pass -1, the
-   * terms index won't be loaded by the readers. This is only useful in advanced
-   * situations when you will only .next() through all terms; attempts to seek
-   * will hit an exception.
-   * 
-   * <p>
-   * Takes effect immediately, but only applies to readers opened after this
-   * call
-   * <p>
-   * <b>NOTE:</b> divisor settings &gt; 1 do not apply to all PostingsFormat
-   * implementations, including the default one in this release. It only makes
-   * sense for terms indexes that can efficiently re-sample terms at load time.
-   */
-  public LiveIndexWriterConfig setReaderTermsIndexDivisor(int divisor) {
-    if (divisor <= 0 && divisor != -1) {
-      throw new IllegalArgumentException("divisor must be >= 1, or -1 (got " + divisor + ")");
-    }
-    readerTermsIndexDivisor = divisor;
-    return this;
-  }
-
-  /** Returns the {@code termInfosIndexDivisor}.
-   * 
-   * @see #setReaderTermsIndexDivisor(int) */
-  public int getReaderTermsIndexDivisor() {
-    return readerTermsIndexDivisor;
   }
   
   /** Returns the {@link OpenMode} set by {@link IndexWriterConfig#setOpenMode(OpenMode)}. */
@@ -494,11 +404,7 @@ public class LiveIndexWriterConfig {
    * documents at once in IndexWriter.
    */
   public int getMaxThreadStates() {
-    try {
-      return ((ThreadAffinityDocumentsWriterThreadPool) indexerThreadPool).getMaxThreadStates();
-    } catch (ClassCastException cce) {
-      throw new IllegalStateException(cce);
-    }
+    return indexerThreadPool.getMaxThreadStates();
   }
 
   /**
@@ -542,6 +448,53 @@ public class LiveIndexWriterConfig {
     return infoStream;
   }
   
+  /**
+   * Sets if the {@link IndexWriter} should pack newly written segments in a
+   * compound file. Default is <code>true</code>.
+   * <p>
+   * Use <code>false</code> for batch indexing with very large ram buffer
+   * settings.
+   * </p>
+   * <p>
+   * <b>Note: To control compound file usage during segment merges see
+   * {@link MergePolicy#setNoCFSRatio(double)} and
+   * {@link MergePolicy#setMaxCFSSegmentSizeMB(double)}. This setting only
+   * applies to newly created segments.</b>
+   * </p>
+   */
+  public LiveIndexWriterConfig setUseCompoundFile(boolean useCompoundFile) {
+    this.useCompoundFile = useCompoundFile;
+    return this;
+  }
+  
+  /**
+   * Returns <code>true</code> iff the {@link IndexWriter} packs
+   * newly written segments in a compound file. Default is <code>true</code>.
+   */
+  public boolean getUseCompoundFile() {
+    return useCompoundFile ;
+  }
+  
+  /**
+   * Sets if {@link IndexWriter} should call {@link AtomicReader#checkIntegrity()}
+   * on existing segments before merging them into a new one.
+   * <p>
+   * Use <code>true</code> to enable this safety check, which can help
+   * reduce the risk of propagating index corruption from older segments 
+   * into new ones, at the expense of slower merging.
+   * </p>
+   */
+  public LiveIndexWriterConfig setCheckIntegrityAtMerge(boolean checkIntegrityAtMerge) {
+    this.checkIntegrityAtMerge = checkIntegrityAtMerge;
+    return this;
+  }
+  
+  /** Returns true if {@link AtomicReader#checkIntegrity()} is called before 
+   *  merging segments. */
+  public boolean getCheckIntegrityAtMerge() {
+    return checkIntegrityAtMerge;
+  }
+  
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
@@ -551,8 +504,6 @@ public class LiveIndexWriterConfig {
     sb.append("maxBufferedDocs=").append(getMaxBufferedDocs()).append("\n");
     sb.append("maxBufferedDeleteTerms=").append(getMaxBufferedDeleteTerms()).append("\n");
     sb.append("mergedSegmentWarmer=").append(getMergedSegmentWarmer()).append("\n");
-    sb.append("readerTermsIndexDivisor=").append(getReaderTermsIndexDivisor()).append("\n");
-    sb.append("termIndexInterval=").append(getTermIndexInterval()).append("\n"); // TODO: this should be private to the codec, not settable here
     sb.append("delPolicy=").append(getIndexDeletionPolicy().getClass().getName()).append("\n");
     IndexCommit commit = getIndexCommit();
     sb.append("commit=").append(commit == null ? "null" : commit).append("\n");
@@ -567,7 +518,14 @@ public class LiveIndexWriterConfig {
     sb.append("indexerThreadPool=").append(getIndexerThreadPool()).append("\n");
     sb.append("readerPooling=").append(getReaderPooling()).append("\n");
     sb.append("perThreadHardLimitMB=").append(getRAMPerThreadHardLimitMB()).append("\n");
+    sb.append("useCompoundFile=").append(getUseCompoundFile()).append("\n");
+    sb.append("checkIntegrityAtMerge=").append(getCheckIntegrityAtMerge()).append("\n");
     return sb.toString();
   }
 
+  /** Returns the {@code matchVersion} that was provided to
+   *  the constructor. */
+  public Version getMatchVersion() {
+    return matchVersion;
+  }
 }

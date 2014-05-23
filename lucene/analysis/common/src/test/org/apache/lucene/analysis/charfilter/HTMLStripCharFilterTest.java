@@ -18,28 +18,29 @@ package org.apache.lucene.analysis.charfilter;
  */
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
   static private Analyzer newTestAnalyzer() {
     return new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
 
@@ -52,33 +53,20 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
   //this is some text  here is a  link  and another  link . This is an entity: & plus a <.  Here is an &
   //
-  public void test() throws IOException {
+  public void test() throws Exception {
     String html = "<div class=\"foo\">this is some text</div> here is a <a href=\"#bar\">link</a> and " +
             "another <a href=\"http://lucene.apache.org/\">link</a>. " +
             "This is an entity: &amp; plus a &lt;.  Here is an &. <!-- is a comment -->";
     String gold = "\nthis is some text\n here is a link and " +
             "another link. " +
             "This is an entity: & plus a <.  Here is an &. ";
-    HTMLStripCharFilter reader = new HTMLStripCharFilter(new StringReader(html));
-    StringBuilder builder = new StringBuilder();
-    int ch = -1;
-    char [] goldArray = gold.toCharArray();
-    int position = 0;
-    while ((ch = reader.read()) != -1){
-      char theChar = (char) ch;
-      builder.append(theChar);
-      assertTrue("\"" + theChar + "\"" + " at position: " + position + " does not equal: " + goldArray[position]
-              + " Buffer so far: " + builder + "<EOB>", theChar == goldArray[position]);
-      position++;
-    }
-    assertEquals("'" + builder.toString() + "' is not equal to '" + gold + "'",
-                 gold, builder.toString());
+    assertHTMLStripsTo(html, gold, null);
   }
 
   //Some sanity checks, but not a full-fledged check
   public void testHTML() throws Exception {
     InputStream stream = getClass().getResourceAsStream("htmlStripReaderTest.html");
-    HTMLStripCharFilter reader = new HTMLStripCharFilter(new InputStreamReader(stream, "UTF-8"));
+    HTMLStripCharFilter reader = new HTMLStripCharFilter(new InputStreamReader(stream, StandardCharsets.UTF_8));
     StringBuilder builder = new StringBuilder();
     int ch = -1;
     while ((ch = reader.read()) != -1){
@@ -95,70 +83,37 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
   public void testMSWord14GeneratedHTML() throws Exception {
     InputStream stream = getClass().getResourceAsStream("MS-Word 14 generated.htm");
-    HTMLStripCharFilter reader = new HTMLStripCharFilter(new InputStreamReader(stream, "UTF-8"));
+    HTMLStripCharFilter reader = new HTMLStripCharFilter(new InputStreamReader(stream, StandardCharsets.UTF_8));
     String gold = "This is a test";
-    StringBuilder builder = new StringBuilder();
-    int ch = 0;
-    try {
-      while ((ch = reader.read()) != -1){
-        builder.append((char)ch);
-      }
-    } finally {
-      // System.out.println("String: " + builder.toString());
-    }
-    assertEquals("'" + builder.toString().trim() + "' is not equal to '" + gold + "'",
-                 gold, builder.toString().trim());
-  }
-  
-  
-  public void testGamma() throws Exception {
-    String test = "&Gamma;";
-    String gold = "\u0393";
-    Set<String> set = new HashSet<String>();
-    set.add("reserved");
-    Reader reader = new HTMLStripCharFilter(new StringReader(test), set);
     StringBuilder builder = new StringBuilder();
     int ch = 0;
     while ((ch = reader.read()) != -1){
       builder.append((char)ch);
     }
-    String result = builder.toString();
-    assertEquals("'" + result + "' is not equal to '" + gold + "<EOS>'", gold, result);
+    // Compare trim()'d output to gold
+    assertEquals("'" + builder.toString().trim() + "' is not equal to '" + gold + "'",
+                 gold, builder.toString().trim());
+  }
+
+  public void testGamma() throws Exception {
+    assertHTMLStripsTo("&Gamma;", "\u0393", new HashSet<>(Arrays.asList("reserved")));
   }
 
   public void testEntities() throws Exception {
     String test = "&nbsp; &lt;foo&gt; &Uuml;bermensch &#61; &Gamma; bar &#x393;";
     String gold = "  <foo> \u00DCbermensch = \u0393 bar \u0393";
-    Set<String> set = new HashSet<String>();
-    set.add("reserved");
-    Reader reader = new HTMLStripCharFilter(new StringReader(test), set);
-    StringBuilder builder = new StringBuilder();
-    int ch = 0;
-    while ((ch = reader.read()) != -1){
-      builder.append((char)ch);
-    }
-    String result = builder.toString();
-    assertEquals("'" + result + "' is not equal to '" + gold + "<EOS>'", gold, result);
+    assertHTMLStripsTo(test, gold, new HashSet<>(Arrays.asList("reserved")));
   }
 
   public void testMoreEntities() throws Exception {
     String test = "&nbsp; &lt;junk/&gt; &nbsp; &#33; &#64; and &#8217;";
     String gold = "  <junk/>   ! @ and ’";
-    Set<String> set = new HashSet<String>();
-    set.add("reserved");
-    Reader reader = new HTMLStripCharFilter(new StringReader(test), set);
-    StringBuilder builder = new StringBuilder();
-    int ch = 0;
-    while ((ch = reader.read()) != -1){
-      builder.append((char)ch);
-    }
-    String result = builder.toString();
-    assertEquals("'" + result + "' is not equal to '" + gold + "<EOS>'", gold, result);
+    assertHTMLStripsTo(test, gold, new HashSet<>(Arrays.asList("reserved")));
   }
 
   public void testReserved() throws Exception {
     String test = "aaa bbb <reserved ccc=\"ddddd\"> eeee </reserved> ffff <reserved ggg=\"hhhh\"/> <other/>";
-    Set<String> set = new HashSet<String>();
+    Set<String> set = new HashSet<>();
     set.add("reserved");
     Reader reader = new HTMLStripCharFilter(new StringReader(test), set);
     StringBuilder builder = new StringBuilder();
@@ -343,16 +298,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
         "\n\n\n\n\n\n\n\n",
     };
     for (int i = 0 ; i < testGold.length ; i += 2) {
-      String test = testGold[i];
-      String gold = testGold[i + 1];
-      Reader reader = new HTMLStripCharFilter(new StringReader(test));
-      StringBuilder builder = new StringBuilder();
-      int ch = 0;
-      while ((ch = reader.read()) != -1){
-        builder.append((char)ch);
-      }
-      String result = builder.toString();
-      assertEquals("Test: '" + test + "'", gold, result);
+      assertHTMLStripsTo(testGold[i], testGold[i + 1], null);
     }
   }
 
@@ -361,7 +307,9 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
     StringBuilder testBuilder = new StringBuilder(HTMLStripCharFilter.getInitialBufferSize() + 50);
     testBuilder.append("ah<?> ??????");
     appendChars(testBuilder, HTMLStripCharFilter.getInitialBufferSize() + 500);
-    processBuffer(testBuilder.toString(), "Failed on pseudo proc. instr.");//processing instructions
+    Reader reader = new HTMLStripCharFilter
+        (new BufferedReader(new StringReader(testBuilder.toString()))); //force the use of BufferedReader
+    assertHTMLStripsTo(reader, testBuilder.toString(), null);
 
     testBuilder.setLength(0);
     testBuilder.append("<!--");//comments
@@ -369,54 +317,21 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
     testBuilder.append("-->foo");
     String gold = "foo";
-    Reader reader = new HTMLStripCharFilter(new StringReader(testBuilder.toString()));
-    int ch = 0;
-    StringBuilder builder = new StringBuilder();
-    try {
-      while ((ch = reader.read()) != -1){
-        builder.append((char)ch);
-      }
-    } finally {
-      // System.out.println("String: " + builder.toString());
-    }
-    assertEquals("'" + builder.toString() + "' is not equal to '" + gold + "'",
-                 gold, builder.toString());
+    assertHTMLStripsTo(testBuilder.toString(), gold, null);
 
     testBuilder.setLength(0);
     testBuilder.append("<?");
     appendChars(testBuilder, HTMLStripCharFilter.getInitialBufferSize() + 500);
     testBuilder.append("?>");
     gold = "";
-    reader = new HTMLStripCharFilter(new StringReader(testBuilder.toString()));
-    ch = 0;
-    builder = new StringBuilder();
-    try {
-      while ((ch = reader.read()) != -1){
-        builder.append((char)ch);
-      }
-    } finally {
-      // System.out.println("String: " + builder.toString());
-    }
-    assertEquals("'" + builder.toString() + "' is not equal to '" + gold + "'",
-                 gold, builder.toString());
-    
+    assertHTMLStripsTo(testBuilder.toString(), gold, null);
+
     testBuilder.setLength(0);
     testBuilder.append("<b ");
     appendChars(testBuilder, HTMLStripCharFilter.getInitialBufferSize() + 500);
     testBuilder.append("/>");
     gold = "";
-    reader = new HTMLStripCharFilter(new StringReader(testBuilder.toString()));
-    ch = 0;
-    builder = new StringBuilder();
-    try {
-      while ((ch = reader.read()) != -1){
-        builder.append((char)ch);
-      }
-    } finally {
-      // System.out.println("String: " + builder.toString());
-    }
-    assertEquals("'" + builder.toString() + "' is not equal to '" + gold + "'",
-                 gold, builder.toString());
+    assertHTMLStripsTo(testBuilder.toString(), gold, null);
   }
 
   private void appendChars(StringBuilder testBuilder, int numChars) {
@@ -426,39 +341,19 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
     }
   }  
 
-
-  private void processBuffer(String test, String assertMsg) throws IOException {
-    // System.out.println("-------------------processBuffer----------");
-    Reader reader = new HTMLStripCharFilter(new BufferedReader(new StringReader(test)));//force the use of BufferedReader
-    int ch = 0;
-    StringBuilder builder = new StringBuilder();
-    try {
-      while ((ch = reader.read()) != -1){
-        builder.append((char)ch);
-      }
-    } finally {
-      // System.out.println("String (trimmed): " + builder.toString().trim() + "<EOS>");
-    }
-    assertEquals(assertMsg + "::: " + builder.toString() + " is not equal to " + test,
-        test, builder.toString());
-  }
-
   public void testComment() throws Exception {
-
     String test = "<!--- three dashes, still a valid comment ---> ";
     String gold = " ";
-    Reader reader = new HTMLStripCharFilter(new BufferedReader(new StringReader(test)));//force the use of BufferedReader
-    int ch = 0;
-    StringBuilder builder = new StringBuilder();
-    try {
-      while ((ch = reader.read()) != -1){
-        builder.append((char)ch);
-      }
-    } finally {
-      // System.out.println("String: " + builder.toString());
-    }
-    assertEquals("'" + builder.toString() + "' is not equal to '" + gold + "'",
-                 gold, builder.toString());
+    assertHTMLStripsTo(test, gold, null);
+
+    test = "<! -- blah > "; // should not be recognized as a comment
+    gold = " ";
+    assertHTMLStripsTo(test, gold, null);
+
+    StringBuilder testBuilder = new StringBuilder("<!--");
+    appendChars(testBuilder, TestUtil.nextInt(random(), 0, 1000));
+    gold = "";
+    assertHTMLStripsTo(testBuilder.toString(), gold, null);
   }
 
 
@@ -525,83 +420,28 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
         + " alt =  \"Alt: <!--#echo var='${IMAGE_CAPTION:<!--comment-->\\'Comment\\'}'  -->\"\n\n"
         + " title=\"Title: <!--#echo var=\"IMAGE_CAPTION\"-->\">two";
     String gold = "onetwo";
-    Reader reader = new HTMLStripCharFilter(new StringReader(test));
-    int ch = 0;
-    StringBuilder builder = new StringBuilder();
-    try {
-      while ((ch = reader.read()) != -1){
-        builder.append((char)ch);
-      }
-    } finally {
-      // System.out.println("String: " + builder.toString());
-    }
-    assertTrue(builder.toString() + " is not equal to " + gold, builder.toString().equals(gold));
+    assertHTMLStripsTo(test, gold, null);
 
     test = "one<script><!-- <!--#config comment=\"<!-- \\\"comment\\\"-->\"--> --></script>two";
     gold = "one\ntwo";
-    reader = new HTMLStripCharFilter(new StringReader(test));
-    ch = 0;
-    builder = new StringBuilder();
-    try {
-      while ((ch = reader.read()) != -1){
-        builder.append((char)ch);
-      }
-    } finally {
-      // System.out.println("String: " + builder.toString());
-    }
-    assertEquals("'" + builder.toString() + "' is not equal to '" + gold + "'",
-                 gold, builder.toString());
+    assertHTMLStripsTo(test, gold, null);
   }
 
   public void testScriptQuotes() throws Exception {
     String test = "one<script attr= bare><!-- action('<!-- comment -->', \"\\\"-->\\\"\"); --></script>two";
     String gold = "one\ntwo";
-    Reader reader = new HTMLStripCharFilter(new StringReader(test));
-    int ch = 0;
-    StringBuilder builder = new StringBuilder();
-    try {
-      while ((ch = reader.read()) != -1){
-        builder.append((char)ch);
-      }
-    } finally {
-      // System.out.println("String: " + builder.toString());
-    }
-    assertEquals("'" + builder.toString() + "' is not equal to '" + gold + "'",
-        gold, builder.toString());
+    assertHTMLStripsTo(test, gold, null);
 
     test = "hello<script><!-- f('<!--internal--></script>'); --></script>";
     gold = "hello\n";
-    reader = new HTMLStripCharFilter(new StringReader(test));
-    ch = 0;
-    builder = new StringBuilder();
-    try {
-      while ((ch = reader.read()) != -1){
-        builder.append((char)ch);
-      }
-    } finally {
-      // System.out.println("String: " + builder.toString());
-    }
-    assertEquals("'" + builder.toString() + "' is not equal to '" + gold + "'",
-                 gold, builder.toString());
+    assertHTMLStripsTo(test, gold, null);
   }
 
   public void testEscapeScript() throws Exception {
     String test = "one<script no-value-attr>callSomeMethod();</script>two";
     String gold = "one<script no-value-attr></script>two";
-    Set<String> escapedTags = new HashSet<String>(Arrays.asList("SCRIPT"));
-    Reader reader = new HTMLStripCharFilter
-        (new StringReader(test), escapedTags);
-    int ch = 0;
-    StringBuilder builder = new StringBuilder();
-    try {
-      while ((ch = reader.read()) != -1){
-        builder.append((char)ch);
-      }
-    } finally {
-      // System.out.println("String: " + builder.toString());
-    }
-    assertEquals("'" + builder.toString() + "' is not equal to '" + gold + "'",
-                 gold, builder.toString());
+    Set<String> escapedTags = new HashSet<>(Arrays.asList("SCRIPT"));
+    assertHTMLStripsTo(test, gold, escapedTags);
   }
 
   public void testStyle() throws Exception {
@@ -611,37 +451,14 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
                 + "-->\n"
                 + "</style>two";
     String gold = "one\ntwo";
-    Reader reader = new HTMLStripCharFilter(new StringReader(test));
-    int ch = 0;
-    StringBuilder builder = new StringBuilder();
-    try {
-      while ((ch = reader.read()) != -1){
-        builder.append((char)ch);
-      }
-    } finally {
-      // System.out.println("String: " + builder.toString());
-    }
-    assertEquals("'" + builder.toString() + "' is not equal to '" + gold + "'",
-        gold, builder.toString());
+    assertHTMLStripsTo(test, gold, null);
   }
 
   public void testEscapeStyle() throws Exception {
     String test = "one<style type=\"text/css\"> body,font,a { font-family:arial; } </style>two";
     String gold = "one<style type=\"text/css\"></style>two";
-    Set<String> escapedTags = new HashSet<String>(Arrays.asList("STYLE"));
-    Reader reader = new HTMLStripCharFilter
-        (new StringReader(test), escapedTags);
-    int ch = 0;
-    StringBuilder builder = new StringBuilder();
-    try {
-      while ((ch = reader.read()) != -1){
-        builder.append((char)ch);
-      }
-    } finally {
-      // System.out.println("String: " + builder.toString());
-    }
-    assertEquals("'" + builder.toString() + "' is not equal to '" + gold + "'",
-        gold, builder.toString());
+    Set<String> escapedTags = new HashSet<>(Arrays.asList("STYLE"));
+    assertHTMLStripsTo(test, gold, escapedTags);
   }
 
   public void testBR() throws Exception {
@@ -653,140 +470,85 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
         "one\ntwo\n",
     };
     for (int i = 0 ; i < testGold.length ; i += 2) {
-      String test = testGold[i];
-      String gold = testGold[i + 1];
-      Reader reader = new HTMLStripCharFilter(new StringReader(test));
-      StringBuilder builder = new StringBuilder();
-      int ch = 0;
-      while ((ch = reader.read()) != -1){
-        builder.append((char)ch);
-      }
-      String result = builder.toString();
-      assertEquals("Test: '" + test + "'", gold, result);
+      assertHTMLStripsTo(testGold[i], testGold[i + 1], null);
     }
   }
   public void testEscapeBR() throws Exception {
     String test = "one<BR class='whatever'>two</\nBR\n>";
     String gold = "one<BR class='whatever'>two</\nBR\n>";
-    Set<String> escapedTags = new HashSet<String>(Arrays.asList("BR"));
-    Reader reader = new HTMLStripCharFilter
-        (new StringReader(test), escapedTags);
-    int ch = 0;
-    StringBuilder builder = new StringBuilder();
-    try {
-      while ((ch = reader.read()) != -1){
-        builder.append((char)ch);
-      }
-    } finally {
-      // System.out.println("String: " + builder.toString());
-    }
-    assertEquals("'" + builder.toString() + "' is not equal to '" + gold + "'",
-                 gold, builder.toString());
+    Set<String> escapedTags = new HashSet<>(Arrays.asList("BR"));
+    assertHTMLStripsTo(test, gold, escapedTags);
   }
   
   public void testInlineTagsNoSpace() throws Exception {
     String test = "one<sPAn class=\"invisible\">two<sup>2<sup>e</sup></sup>.</SpaN>three";
     String gold = "onetwo2e.three";
-    Reader reader = new HTMLStripCharFilter(new StringReader(test));
-    int ch = 0;
-    StringBuilder builder = new StringBuilder();
-    try {
-      while ((ch = reader.read()) != -1){
-        builder.append((char)ch);
-      }
-    } finally {
-      // System.out.println("String: " + builder.toString());
-    }
-    assertEquals("'" + builder.toString() + "' is not equal to '" + gold + "'",
-                 gold, builder.toString());
+    assertHTMLStripsTo(test, gold, null);
   }
 
   public void testCDATA() throws Exception {
-    String test = "one<![CDATA[<one><two>three<four></four></two></one>]]>two";
-    String gold = "one<one><two>three<four></four></two></one>two";
-    Reader reader = new HTMLStripCharFilter(new StringReader(test));
-    int ch = 0;
-    StringBuilder builder = new StringBuilder();
-    try {
-      while ((ch = reader.read()) != -1){
-        builder.append((char)ch);
-      }
-    } finally {
-      // System.out.println("String: " + builder.toString());
-    }
-    assertEquals("'" + builder.toString() + "' is not equal to '" + gold + "'",
-                 gold, builder.toString());
+    int maxNumElems = 100;
+    String randomHtmlishString1 // Don't create a comment (disallow "<!--") and don't include a closing ">"
+        = TestUtil.randomHtmlishString(random(), maxNumElems).replaceAll(">", " ").replaceFirst("^--","__");
+    String closedAngleBangNonCDATA = "<!" + randomHtmlishString1 +"-[CDATA[&]]>";
 
-    test = "one<![CDATA[two<![CDATA[three]]]]><![CDATA[>four]]>five";
-    gold = "onetwo<![CDATA[three]]>fourfive";
-    reader = new HTMLStripCharFilter(new StringReader(test));
-    ch = 0;
-    builder = new StringBuilder();
-    try {
-      while ((ch = reader.read()) != -1){
-        builder.append((char)ch);
-      }
-    } finally {
-      // System.out.println("String: " + builder.toString());
+    String randomHtmlishString2 // Don't create a comment (disallow "<!--") and don't include a closing ">"
+        = TestUtil.randomHtmlishString(random(), maxNumElems).replaceAll(">", " ").replaceFirst("^--","__");
+    String unclosedAngleBangNonCDATA = "<!" + randomHtmlishString1 +"-[CDATA[";
+
+    String[] testGold = {
+        "one<![CDATA[<one><two>three<four></four></two></one>]]>two",
+        "one<one><two>three<four></four></two></one>two",
+
+        "one<![CDATA[two<![CDATA[three]]]]><![CDATA[>four]]>five",
+        "onetwo<![CDATA[three]]>fourfive",
+
+        "<! [CDATA[&]]>", "",
+        "<! [CDATA[&] ] >", "",
+        "<! [CDATA[&]]", "<! [CDATA[&]]", // unclosed angle bang - all input is output
+        "<!\u2009[CDATA[&]]>", "",
+        "<!\u2009[CDATA[&]\u2009]\u2009>", "",
+        "<!\u2009[CDATA[&]\u2009]\u2009", "<!\u2009[CDATA[&]\u2009]\u2009", // unclosed angle bang - all input is output
+        closedAngleBangNonCDATA, "",
+        "<![CDATA[", "",
+        "<![CDATA[<br>", "<br>",
+        "<![CDATA[<br>]]", "<br>]]",
+        "<![CDATA[<br>]]>", "<br>",
+        "<![CDATA[<br>] ] >", "<br>] ] >",
+        "<![CDATA[<br>]\u2009]\u2009>", "<br>]\u2009]\u2009>",
+        "<!\u2009[CDATA[", "<!\u2009[CDATA[",
+        unclosedAngleBangNonCDATA, unclosedAngleBangNonCDATA
+    };
+    for (int i = 0 ; i < testGold.length ; i += 2) {
+      assertHTMLStripsTo(testGold[i], testGold[i + 1], null);
     }
-    assertEquals("'" + builder.toString() + "' is not equal to '" + gold + "'",
-                 gold, builder.toString());
+  }
+
+  public void testUnclosedAngleBang() throws Exception {
+    assertHTMLStripsTo("<![endif]", "<![endif]", null);
   }
 
   public void testUppercaseCharacterEntityVariants() throws Exception {
     String test = " &QUOT;-&COPY;&GT;>&LT;<&REG;&AMP;";
     String gold = " \"-\u00A9>><<\u00AE&";
-    Reader reader = new HTMLStripCharFilter(new StringReader(test));
-    int ch = 0;
-    StringBuilder builder = new StringBuilder();
-    try {
-      while ((ch = reader.read()) != -1){
-        builder.append((char)ch);
-      }
-    } finally {
-      // System.out.println("String: " + builder.toString());
-    }
-    assertEquals("'" + builder.toString() + "' is not equal to '" + gold + "'",
-                 gold, builder.toString());
+    assertHTMLStripsTo(test, gold, null);
   }
   
   public void testMSWordMalformedProcessingInstruction() throws Exception {
     String test = "one<?xml:namespace prefix = o ns = \"urn:schemas-microsoft-com:office:office\" />two";
     String gold = "onetwo";
-    Reader reader = new HTMLStripCharFilter(new StringReader(test));
-    int ch = 0;
-    StringBuilder builder = new StringBuilder();
-    try {
-      while ((ch = reader.read()) != -1){
-        builder.append((char)ch);
-      }
-    } finally {
-      // System.out.println("String: " + builder.toString());
-    }
-    assertEquals("'" + builder.toString() + "' is not equal to '" + gold + "'",
-                 gold, builder.toString());
+    assertHTMLStripsTo(test, gold, null);
   }
 
   public void testSupplementaryCharsInTags() throws Exception {
     String test = "one<𩬅艱鍟䇹愯瀛>two<瀛愯𩬅>three 瀛愯𩬅</瀛愯𩬅>four</𩬅艱鍟䇹愯瀛>five<𠀀𠀀>six<𠀀𠀀/>seven";
     String gold = "one\ntwo\nthree 瀛愯𩬅\nfour\nfive\nsix\nseven";
-    Reader reader = new HTMLStripCharFilter(new StringReader(test));
-    int ch = 0;
-    StringBuilder builder = new StringBuilder();
-    try {
-      while ((ch = reader.read()) != -1){
-        builder.append((char)ch);
-      }
-    } finally {
-      // System.out.println("String: " + builder.toString());
-    }
-    assertEquals("'" + builder.toString() + "' is not equal to '" + gold + "'",
-        gold, builder.toString());
+    assertHTMLStripsTo(test, gold, null);
   }
 
   public void testRandomBrokenHTML() throws Exception {
     int maxNumElements = 10000;
-    String text = _TestUtil.randomHtmlishString(random(), maxNumElements);
+    String text = TestUtil.randomHtmlishString(random(), maxNumElements);
     checkAnalysisConsistency(random(), newTestAnalyzer(), random().nextBoolean(), text);
   }
 
@@ -796,18 +558,18 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
     int maxNumWords = 10000;
     int minWordLength = 3;
     int maxWordLength = 20;
-    int numWords = _TestUtil.nextInt(random(), minNumWords, maxNumWords);
-    switch (_TestUtil.nextInt(random(), 0, 4)) {
+    int numWords = TestUtil.nextInt(random(), minNumWords, maxNumWords);
+    switch (TestUtil.nextInt(random(), 0, 4)) {
       case 0: {
         for (int wordNum = 0 ; wordNum < numWords ; ++wordNum) {
-          text.append(_TestUtil.randomUnicodeString(random(), maxWordLength));
+          text.append(TestUtil.randomUnicodeString(random(), maxWordLength));
           text.append(' ');
         }
         break;
       }
       case 1: {
         for (int wordNum = 0 ; wordNum < numWords ; ++wordNum) {
-          text.append(_TestUtil.randomRealisticUnicodeString
+          text.append(TestUtil.randomRealisticUnicodeString
               (random(), minWordLength, maxWordLength));
           text.append(' ');
         }
@@ -815,7 +577,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
       }
       default: { // ASCII 50% of the time
         for (int wordNum = 0 ; wordNum < numWords ; ++wordNum) {
-          text.append(_TestUtil.randomSimpleString(random()));
+          text.append(TestUtil.randomSimpleString(random()));
           text.append(' ');
         }
       }
@@ -855,5 +617,34 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
     assertAnalyzesTo(analyzer, " &#57209;", new String[] { "\uFFFD" } );
     assertAnalyzesTo(analyzer, " &#57209", new String[] { "\uFFFD" } );
     assertAnalyzesTo(analyzer, " &#57209<br>", new String[] { "&#57209" } );
+  }
+
+
+  public static void assertHTMLStripsTo(String input, String gold, Set<String> escapedTags) throws Exception {
+    assertHTMLStripsTo(new StringReader(input), gold, escapedTags);
+  }
+
+  public static void assertHTMLStripsTo(Reader input, String gold, Set<String> escapedTags) throws Exception {
+    HTMLStripCharFilter reader;
+    if (null == escapedTags) {
+      reader = new HTMLStripCharFilter(input);
+    } else {
+      reader = new HTMLStripCharFilter(input, escapedTags);
+    }
+    int ch = 0;
+    StringBuilder builder = new StringBuilder();
+    try {
+      while ((ch = reader.read()) != -1) {
+        builder.append((char)ch);
+      }
+    } catch (Exception e) {
+      if (gold.equals(builder.toString())) {
+        throw e;
+      }
+      throw new Exception
+          ("('" + builder.toString() + "' is not equal to '" + gold + "').  " + e.getMessage(), e);
+    }
+    assertEquals("'" + builder.toString() + "' is not equal to '" + gold + "'",
+                 gold, builder.toString());
   }
 }

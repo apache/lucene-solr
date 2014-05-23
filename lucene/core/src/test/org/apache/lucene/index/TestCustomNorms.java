@@ -30,6 +30,7 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * 
@@ -41,8 +42,11 @@ public class TestCustomNorms extends LuceneTestCase {
   public void testFloatNorms() throws IOException {
 
     Directory dir = newDirectory();
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
+
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random()));
+        analyzer);
     Similarity provider = new MySimProvider();
     config.setSimilarity(provider);
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
@@ -62,7 +66,7 @@ public class TestCustomNorms extends LuceneTestCase {
       }
     }
     writer.commit();
-    writer.close();
+    writer.shutdown();
     AtomicReader open = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
     NumericDocValues norms = open.getNormValues(floatTestField);
     assertNotNull(norms);
@@ -112,12 +116,7 @@ public class TestCustomNorms extends LuceneTestCase {
     }
 
     @Override
-    public ExactSimScorer exactSimScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public SloppySimScorer sloppySimScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
+    public SimScorer simScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
       throw new UnsupportedOperationException();
     }
   }

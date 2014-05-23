@@ -17,13 +17,10 @@
 
 package org.apache.solr.search;
 
-import org.apache.solr.search.BitDocSet;
-import org.apache.solr.search.HashDocSet;
-import org.apache.solr.search.DocSet;
-import org.apache.lucene.util.OpenBitSet;
-
-import java.util.Random;
 import java.util.BitSet;
+import java.util.Random;
+
+import org.apache.lucene.util.FixedBitSet;
 
 /**
  */
@@ -38,21 +35,20 @@ public class DocSetPerf {
 
   static Random rand = new Random();
 
-
-  static OpenBitSet bs;
+  static FixedBitSet bs;
   static BitDocSet bds;
   static HashDocSet hds;
   static int[] ids; // not unique
 
   static void generate(int maxSize, int bitsToSet) {
-    bs = new OpenBitSet(maxSize);
+    bs = new FixedBitSet(maxSize);
     ids = new int[bitsToSet];
     int count=0;
     if (maxSize>0) {
       for (int i=0; i<bitsToSet; i++) {
         int id=rand.nextInt(maxSize);
         if (!bs.get(id)) {
-          bs.fastSet(id);
+          bs.set(id);
           ids[count++]=id;
         }
       }
@@ -80,7 +76,7 @@ public class DocSetPerf {
 
     int ret=0;
 
-    OpenBitSet[] sets = new OpenBitSet[numSets];
+    FixedBitSet[] sets = new FixedBitSet[numSets];
     DocSet[] bset = new DocSet[numSets];
     DocSet[] hset = new DocSet[numSets];
     BitSet scratch=new BitSet();
@@ -97,14 +93,14 @@ public class DocSetPerf {
     if ("test".equals(test)) {
       for (int it=0; it<iter; it++) {
         generate(randSize ? rand.nextInt(bitSetSize) : bitSetSize, numBitsSet);
-        OpenBitSet bs1=bs;
+        FixedBitSet bs1=bs;
         BitDocSet bds1=bds;
         HashDocSet hds1=hds;
         generate(randSize ? rand.nextInt(bitSetSize) : bitSetSize, numBitsSet);
 
-        OpenBitSet res = ((OpenBitSet)bs1.clone());
+        FixedBitSet res = bs1.clone();
         res.and(bs);
-        int icount = (int)res.cardinality();
+        int icount = res.cardinality();
 
         test(bds1.intersection(bds).size() == icount);
         test(bds1.intersectionSize(bds) == icount);
@@ -167,15 +163,11 @@ public class DocSetPerf {
       }
     }
 
-
-
     long end = System.currentTimeMillis();
     System.out.println("TIME="+(end-start));
 
     // System.out.println("ret="+ret + " scratchsize="+scratch.size());
     System.out.println("ret="+ret);
   }
-
-
 
 }

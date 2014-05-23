@@ -38,7 +38,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     doc.add(newTextField("field", "value", Field.Store.NO));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
 
     TermQuery termQuery = new TermQuery(new Term("field", "value"));
 
@@ -88,7 +88,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     final RandomIndexWriter w = new RandomIndexWriter(random(), d);
     w.w.getConfig().setMaxBufferedDocs(17);
     final int numDocs = atLeast(100);
-    final Set<String> aDocs = new HashSet<String>();
+    final Set<String> aDocs = new HashSet<>();
     for(int i=0;i<numDocs;i++) {
       final Document doc = new Document();
       final String v;
@@ -112,7 +112,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     }
 
     final IndexReader r = w.getReader();
-    w.close();
+    w.shutdown();
     final TopDocs hits = newSearcher(r).search(new MatchAllDocsQuery(),
                                                      new QueryWrapperFilter(new TermQuery(new Term("field", "a"))),
                                                      numDocs);
@@ -134,7 +134,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     }
     
     IndexReader reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     
     IndexSearcher searcher = newSearcher(reader);
     

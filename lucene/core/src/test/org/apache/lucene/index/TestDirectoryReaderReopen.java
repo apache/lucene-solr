@@ -28,17 +28,22 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestDirectoryReaderReopen extends LuceneTestCase {
   
@@ -142,7 +147,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
         }
       }
     } finally {
-      iwriter.close();
+      iwriter.shutdown();
       reader.close();
     }
   }
@@ -196,14 +201,14 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
   public void testThreadSafety() throws Exception {
     final Directory dir = newDirectory();
     // NOTE: this also controls the number of threads!
-    final int n = _TestUtil.nextInt(random(), 20, 40);
+    final int n = TestUtil.nextInt(random(), 20, 40);
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     for (int i = 0; i < n; i++) {
       writer.addDocument(createDocument(i, 3));
     }
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
 
     final TestReopen test = new TestReopen() {      
       @Override
@@ -211,7 +216,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
        IndexWriter modifier = new IndexWriter(dir, new IndexWriterConfig(
          TEST_VERSION_CURRENT, new MockAnalyzer(random())));
        modifier.addDocument(createDocument(n + i, 6));
-       modifier.close();
+       modifier.shutdown();
       }
 
       @Override
@@ -275,7 +280,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
                 }
               }
               synchronized(this) {
-                wait(_TestUtil.nextInt(random(), 1, 100));
+                wait(TestUtil.nextInt(random(), 1, 100));
               }
             }
           }
@@ -294,7 +299,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
               }
               
               synchronized(this) {
-                wait(_TestUtil.nextInt(random(), 1, 100));
+                wait(TestUtil.nextInt(random(), 1, 100));
               }
             }
           }
@@ -444,7 +449,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
       w.forceMerge(1);
     }
     
-    w.close();
+    w.shutdown();
 
     DirectoryReader r = DirectoryReader.open(dir);
     if (multiSegment) {
@@ -485,13 +490,13 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
         IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
         w.deleteDocuments(new Term("field2", "a11"));
         w.deleteDocuments(new Term("field2", "b30"));
-        w.close();
+        w.shutdown();
         break;
       }
       case 1: {
         IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
         w.forceMerge(1);
-        w.close();
+        w.shutdown();
         break;
       }
       case 2: {
@@ -500,13 +505,13 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
         w.forceMerge(1);
         w.addDocument(createDocument(102, 4));
         w.addDocument(createDocument(103, 4));
-        w.close();
+        w.shutdown();
         break;
       }
       case 3: {
         IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
         w.addDocument(createDocument(101, 4));
-        w.close();
+        w.shutdown();
         break;
       }
     }
@@ -552,19 +557,19 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newStringField("id", ""+i, Field.Store.NO));
       writer.addDocument(doc);
-      Map<String,String> data = new HashMap<String,String>();
+      Map<String,String> data = new HashMap<>();
       data.put("index", i+"");
       writer.setCommitData(data);
       writer.commit();
     }
     for(int i=0;i<4;i++) {
       writer.deleteDocuments(new Term("id", ""+i));
-      Map<String,String> data = new HashMap<String,String>();
+      Map<String,String> data = new HashMap<>();
       data.put("index", (4+i)+"");
       writer.setCommitData(data);
       writer.commit();
     }
-    writer.close();
+    writer.shutdown();
 
     DirectoryReader r = DirectoryReader.open(dir);
     assertEquals(0, r.numDocs());
@@ -614,8 +619,173 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     assertNotNull(r2);
     r.close();
     assertEquals(1, r2.numDocs());
-    w.close();
+    w.shutdown();
     r2.close();
+    dir.close();
+  }
+
+  public void testOverDecRefDuringReopen() throws Exception {
+    MockDirectoryWrapper dir = newMockDirectory();
+
+    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setCodec(Codec.forName("Lucene46"));
+    IndexWriter w = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    doc.add(newStringField("id", "id", Field.Store.NO));
+    w.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("id", "id2", Field.Store.NO));
+    w.addDocument(doc);
+    w.commit();
+
+    // Open reader w/ one segment w/ 2 docs:
+    DirectoryReader r = DirectoryReader.open(dir);
+
+    // Delete 1 doc from the segment:
+    //System.out.println("TEST: now delete");
+    w.deleteDocuments(new Term("id", "id"));
+    //System.out.println("TEST: now commit");
+    w.commit();
+
+    // Fail when reopen tries to open the live docs file:
+    dir.failOn(new MockDirectoryWrapper.Failure() {
+
+      int failCount;
+
+      @Override
+      public void eval(MockDirectoryWrapper dir) throws IOException {
+        // Need to throw exc three times so the logic in
+        // SegmentInfos.FindSegmentsFile "really believes" us:
+        if (failCount >= 3) {
+          return;
+        }
+        //System.out.println("failOn: ");
+        //new Throwable().printStackTrace(System.out);
+        StackTraceElement[] trace = new Exception().getStackTrace();
+        for (int i = 0; i < trace.length; i++) {
+          if ("readLiveDocs".equals(trace[i].getMethodName())) {
+            if (VERBOSE) {
+              System.out.println("TEST: now fail; exc:");
+              new Throwable().printStackTrace(System.out);
+            }
+            failCount++;
+            throw new FakeIOException();
+          }
+        }
+      }
+    });
+
+    // Now reopen:
+    //System.out.println("TEST: now reopen");
+    try {
+      IndexReader r2 = DirectoryReader.openIfChanged(r);
+      //System.out.println("got " + r2);
+      fail("didn't hit exception");
+    } catch (FakeIOException fio) {
+      // expected
+    }
+    
+    IndexSearcher s = newSearcher(r);
+    assertEquals(1, s.search(new TermQuery(new Term("id", "id")), 1).totalHits);
+
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testNPEAfterInvalidReindex1() throws Exception {
+    Directory dir = new RAMDirectory();
+
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    Document doc = new Document();
+    doc.add(newStringField("id", "id", Field.Store.NO));
+    w.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("id", "id2", Field.Store.NO));
+    w.addDocument(doc);
+    w.deleteDocuments(new Term("id", "id"));
+    w.commit();
+    w.close();
+
+    // Open reader w/ one segment w/ 2 docs, 1 deleted:
+    DirectoryReader r = DirectoryReader.open(dir);
+
+    // Blow away the index:
+    for(String fileName : dir.listAll()) {
+      dir.deleteFile(fileName);
+    }
+
+    w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    doc = new Document();
+    doc.add(newStringField("id", "id", Field.Store.NO));
+    doc.add(new NumericDocValuesField("ndv", 13));
+    w.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("id", "id2", Field.Store.NO));
+    w.addDocument(doc);
+    w.commit();
+    doc = new Document();
+    doc.add(newStringField("id", "id2", Field.Store.NO));
+    w.addDocument(doc);
+    w.updateNumericDocValue(new Term("id", "id"), "ndv", 17L);
+    w.commit();
+    w.close();
+
+    try {
+      DirectoryReader.openIfChanged(r);
+      fail("didn't hit expected exception");
+    } catch (IllegalStateException ise) {
+      // expected
+    }
+
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testNPEAfterInvalidReindex2() throws Exception {
+    Directory dir = new RAMDirectory();
+
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    Document doc = new Document();
+    doc.add(newStringField("id", "id", Field.Store.NO));
+    w.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("id", "id2", Field.Store.NO));
+    w.addDocument(doc);
+    w.deleteDocuments(new Term("id", "id"));
+    w.commit();
+    w.close();
+
+    // Open reader w/ one segment w/ 2 docs, 1 deleted:
+    DirectoryReader r = DirectoryReader.open(dir);
+
+    // Blow away the index:
+    for(String fileName : dir.listAll()) {
+      dir.deleteFile(fileName);
+    }
+
+    w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    doc = new Document();
+    doc.add(newStringField("id", "id", Field.Store.NO));
+    doc.add(new NumericDocValuesField("ndv", 13));
+    w.addDocument(doc);
+    w.commit();
+    doc = new Document();
+    doc.add(newStringField("id", "id2", Field.Store.NO));
+    w.addDocument(doc);
+    w.commit();
+    w.close();
+
+    try {
+      DirectoryReader.openIfChanged(r);
+      fail("didn't hit expected exception");
+    } catch (IllegalStateException ise) {
+      // expected
+    }
+
+    r.close();
+    w.close();
     dir.close();
   }
 }

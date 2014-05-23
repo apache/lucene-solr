@@ -182,12 +182,17 @@ public class JmxMonitoredMap<K, V> extends
 
   private ObjectName getObjectName(String key, SolrInfoMBean infoBean)
           throws MalformedObjectNameException {
-    Hashtable<String, String> map = new Hashtable<String, String>();
+    Hashtable<String, String> map = new Hashtable<>();
     map.put("type", key);
     if (infoBean.getName() != null && !"".equals(infoBean.getName())) {
       map.put("id", infoBean.getName());
     }
     return ObjectName.getInstance(jmxRootName, map);
+  }
+
+  /** For test verification */
+  public MBeanServer getServer() {
+    return server;
   }
 
   /**
@@ -203,21 +208,20 @@ public class JmxMonitoredMap<K, V> extends
 
     public SolrDynamicMBean(String coreHashCode, SolrInfoMBean managedResource) {
       this.infoBean = managedResource;
-      staticStats = new HashSet<String>();
+      staticStats = new HashSet<>();
 
       // For which getters are already available in SolrInfoMBean
       staticStats.add("name");
       staticStats.add("version");
       staticStats.add("description");
       staticStats.add("category");
-      staticStats.add("sourceId");
       staticStats.add("source");
       this.coreHashCode = coreHashCode;
     }
 
     @Override
     public MBeanInfo getMBeanInfo() {
-      ArrayList<MBeanAttributeInfo> attrInfoList = new ArrayList<MBeanAttributeInfo>();
+      ArrayList<MBeanAttributeInfo> attrInfoList = new ArrayList<>();
 
       for (String stat : staticStats) {
         attrInfoList.add(new MBeanAttributeInfo(stat, String.class.getName(),
@@ -316,7 +320,7 @@ public class JmxMonitoredMap<K, V> extends
         try {
           list.add(new Attribute(attribute, getAttribute(attribute)));
         } catch (Exception e) {
-          LOG.warn("Could not get attibute " + attribute);
+          LOG.warn("Could not get attribute " + attribute);
         }
       }
 

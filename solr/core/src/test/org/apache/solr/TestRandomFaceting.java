@@ -17,8 +17,7 @@
 
 package org.apache.solr;
 
-import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -37,6 +36,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
+    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml","schema12.xml");
   }
 
@@ -52,14 +52,17 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
     model = null;
     indexSize = rand.nextBoolean() ? (rand.nextInt(10) + 1) : (rand.nextInt(100) + 10);
 
-    types = new ArrayList<FldType>();
+    types = new ArrayList<>();
     types.add(new FldType("id",ONE_ONE, new SVal('A','Z',4,4)));
     types.add(new FldType("score_f",ONE_ONE, new FVal(1,100)));
     types.add(new FldType("small_f",ONE_ONE, new FVal(-4,5)));
     types.add(new FldType("small_d",ONE_ONE, new FVal(-4,5)));
     types.add(new FldType("foo_i",ZERO_ONE, new IRange(-2,indexSize)));
-    types.add(new FldType("small_s",ZERO_ONE, new SVal('a',(char)('c'+indexSize/3),1,1)));
-    types.add(new FldType("small2_s",ZERO_ONE, new SVal('a',(char)('c'+indexSize/3),1,1)));
+    types.add(new FldType("rare_s1",new IValsPercent(95,0,5,1), new SVal('a','b',1,5)));
+    types.add(new FldType("str_s1",ZERO_ONE, new SVal('a','z',1,2)));
+    types.add(new FldType("long_s1",ZERO_ONE, new SVal('a','b',1,5)));
+    types.add(new FldType("small_s1",ZERO_ONE, new SVal('a',(char)('c'+indexSize/3),1,1)));
+    types.add(new FldType("small2_s1",ZERO_ONE, new SVal('a',(char)('c'+indexSize/3),1,1)));
     types.add(new FldType("small2_ss",ZERO_TWO, new SVal('a',(char)('c'+indexSize/3),1,1)));
     types.add(new FldType("small3_ss",new IRange(0,25), new SVal('A','z',1,1)));
     types.add(new FldType("small_i",ZERO_ONE, new IRange(-2,5+indexSize/3)));
@@ -69,7 +72,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
 
     types.add(new FldType("missing_i",new IRange(0,0), new IRange(0,100)));
     types.add(new FldType("missing_is",new IRange(0,0), new IRange(0,100)));
-    types.add(new FldType("missing_s",new IRange(0,0), new SVal('a','b',1,1)));
+    types.add(new FldType("missing_s1",new IRange(0,0), new SVal('a','b',1,1)));
     types.add(new FldType("missing_ss",new IRange(0,0), new SVal('a','b',1,1)));
 
     // TODO: doubles, multi-floats, ints with precisionStep>0, booleans
@@ -83,7 +86,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
     Random rand = random();
     int percent = rand.nextInt(100);
     if (model == null) return;
-    ArrayList<String> ids = new ArrayList<String>(model.size());
+    ArrayList<String> ids = new ArrayList<>(model.size());
     for (Comparable id : model.keySet()) {
       if (rand.nextInt(100) < percent) {
         ids.add(id.toString());
@@ -91,7 +94,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
     }
     if (ids.size() == 0) return;
 
-    StringBuffer sb = new StringBuffer("id:(");
+    StringBuilder sb = new StringBuilder("id:(");
     for (String id : ids) {
       sb.append(id).append(' ');
       model.remove(id);
@@ -109,27 +112,23 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
 
   @Test
   public void testRandomFaceting() throws Exception {
-    try {
-      Random rand = random();
-      int iter = atLeast(100);
-      init();
-      addMoreDocs(0);
-
-      for (int i=0; i<iter; i++) {
-        doFacetTests();
-
-        if (rand.nextInt(100) < 5) {
-          init();
-        }
-
-        addMoreDocs(rand.nextInt(indexSize) + 1);
-
-        if (rand.nextInt(100) < 50) {
-          deleteSomeDocs();
-        }
+    Random rand = random();
+    int iter = atLeast(100);
+    init();
+    addMoreDocs(0);
+    
+    for (int i=0; i<iter; i++) {
+      doFacetTests();
+      
+      if (rand.nextInt(100) < 5) {
+        init();
       }
-    } finally {
-      FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity
+      
+      addMoreDocs(rand.nextInt(indexSize) + 1);
+      
+      if (rand.nextInt(100) < 50) {
+        deleteSomeDocs();
+      }
     }
   }
 
@@ -181,7 +180,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
       if ((ftype.vals instanceof SVal) && rand.nextInt(100) < 20) {
         // validate = false;
         String prefix = ftype.createValue().toString();
-        if (rand.nextInt(100) < 5) prefix =  _TestUtil.randomUnicodeString(rand);
+        if (rand.nextInt(100) < 5) prefix =  TestUtil.randomUnicodeString(rand);
         else if (rand.nextInt(100) < 10) prefix = Character.toString((char)rand.nextInt(256));
         else if (prefix.length() > 0) prefix = prefix.substring(0, rand.nextInt(prefix.length()));
         params.add("facet.prefix", prefix);
@@ -205,7 +204,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
       params.set("facet.field", facet_field);
 
       List<String> methods = multiValued ? multiValuedMethods : singleValuedMethods;
-      List<String> responses = new ArrayList<String>(methods.size());
+      List<String> responses = new ArrayList<>(methods.size());
       for (String method : methods) {
         // params.add("facet.field", "{!key="+method+"}" + ftype.fname);
         // TODO: allow method to be passed on local params?

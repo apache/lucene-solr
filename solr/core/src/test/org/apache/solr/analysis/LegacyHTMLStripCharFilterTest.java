@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -30,7 +31,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.Ignore;
 
 public class LegacyHTMLStripCharFilterTest extends BaseTokenStreamTestCase {
@@ -62,7 +63,7 @@ public class LegacyHTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   //Some sanity checks, but not a full-fledged check
   public void testHTML() throws Exception {
     InputStream stream = getClass().getResourceAsStream("htmlStripReaderTest.html");
-    LegacyHTMLStripCharFilter reader = new LegacyHTMLStripCharFilter(new InputStreamReader(stream, "UTF-8"));
+    LegacyHTMLStripCharFilter reader = new LegacyHTMLStripCharFilter(new InputStreamReader(stream, StandardCharsets.UTF_8));
     StringBuilder builder = new StringBuilder();
     int ch = -1;
     while ((ch = reader.read()) != -1){
@@ -80,7 +81,7 @@ public class LegacyHTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   public void testGamma() throws Exception {
     String test = "&Gamma;";
     String gold = "\u0393";
-    Set<String> set = new HashSet<String>();
+    Set<String> set = new HashSet<>();
     set.add("reserved");
     Reader reader = new LegacyHTMLStripCharFilter(new StringReader(test), set);
     StringBuilder builder = new StringBuilder();
@@ -97,7 +98,7 @@ public class LegacyHTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   public void testEntities() throws Exception {
     String test = "&nbsp; &lt;foo&gt; &Uuml;bermensch &#61; &Gamma; bar &#x393;";
     String gold = "  <foo> \u00DCbermensch = \u0393 bar \u0393";
-    Set<String> set = new HashSet<String>();
+    Set<String> set = new HashSet<>();
     set.add("reserved");
     Reader reader = new LegacyHTMLStripCharFilter(new StringReader(test), set);
     StringBuilder builder = new StringBuilder();
@@ -114,7 +115,7 @@ public class LegacyHTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   public void testMoreEntities() throws Exception {
     String test = "&nbsp; &lt;junk/&gt; &nbsp; &#33; &#64; and &#8217;";
     String gold = "  <junk/>   ! @ and ’";
-    Set<String> set = new HashSet<String>();
+    Set<String> set = new HashSet<>();
     set.add("reserved");
     Reader reader = new LegacyHTMLStripCharFilter(new StringReader(test), set);
     StringBuilder builder = new StringBuilder();
@@ -130,7 +131,7 @@ public class LegacyHTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
   public void testReserved() throws Exception {
     String test = "aaa bbb <reserved ccc=\"ddddd\"> eeee </reserved> ffff <reserved ggg=\"hhhh\"/> <other/>";
-    Set<String> set = new HashSet<String>();
+    Set<String> set = new HashSet<>();
     set.add("reserved");
     Reader reader = new LegacyHTMLStripCharFilter(new StringReader(test), set);
     StringBuilder builder = new StringBuilder();
@@ -260,8 +261,8 @@ public class LegacyHTMLStripCharFilterTest extends BaseTokenStreamTestCase {
     Analyzer analyzer = new Analyzer() {
 
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
 
@@ -277,7 +278,7 @@ public class LegacyHTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
   public void testRandomBrokenHTML() throws Exception {
     int maxNumElements = 10000;
-    String text = _TestUtil.randomHtmlishString(random(), maxNumElements);
+    String text = TestUtil.randomHtmlishString(random(), maxNumElements);
     Reader reader
         = new LegacyHTMLStripCharFilter(new StringReader(text));
     while (reader.read() != -1);
@@ -289,18 +290,18 @@ public class LegacyHTMLStripCharFilterTest extends BaseTokenStreamTestCase {
     int maxNumWords = 10000;
     int minWordLength = 3;
     int maxWordLength = 20;
-    int numWords = _TestUtil.nextInt(random(), minNumWords, maxNumWords);
-    switch (_TestUtil.nextInt(random(), 0, 4)) {
+    int numWords = TestUtil.nextInt(random(), minNumWords, maxNumWords);
+    switch (TestUtil.nextInt(random(), 0, 4)) {
       case 0: {
         for (int wordNum = 0 ; wordNum < numWords ; ++wordNum) {
-          text.append(_TestUtil.randomUnicodeString(random(), maxWordLength));
+          text.append(TestUtil.randomUnicodeString(random(), maxWordLength));
           text.append(' ');
         }
         break;
       }
       case 1: {
         for (int wordNum = 0 ; wordNum < numWords ; ++wordNum) {
-          text.append(_TestUtil.randomRealisticUnicodeString
+          text.append(TestUtil.randomRealisticUnicodeString
               (random(), minWordLength, maxWordLength));
           text.append(' ');
         }
@@ -308,7 +309,7 @@ public class LegacyHTMLStripCharFilterTest extends BaseTokenStreamTestCase {
       }
       default: { // ASCII 50% of the time
         for (int wordNum = 0 ; wordNum < numWords ; ++wordNum) {
-          text.append(_TestUtil.randomSimpleString(random()));
+          text.append(TestUtil.randomSimpleString(random()));
           text.append(' ');
         }
       }

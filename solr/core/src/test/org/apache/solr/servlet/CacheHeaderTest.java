@@ -16,10 +16,13 @@
  */
 package org.apache.solr.servlet;
 
+
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Date;
 
@@ -28,22 +31,27 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.cookie.DateUtils;
 import org.apache.solr.common.params.CommonParams;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import org.apache.lucene.util._TestUtil;
 
 /**
  * A test case for the several HTTP cache headers emitted by Solr
  */
 public class CacheHeaderTest extends CacheHeaderTestBase {
-
+  private static File solrHomeDirectory;
+    
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createJetty("solr/", null, null);
+    solrHomeDirectory = createTempDir();
+    setupJettyTestHome(solrHomeDirectory, "collection1");
+    createJetty(solrHomeDirectory.getAbsolutePath(), null, null);
   }
 
-  protected static final String CHARSET = "UTF-8";
+  @AfterClass
+  public static void afterTest() throws Exception {
+
+  }
 
   protected static final String CONTENTS = "id\n100\n101\n102";
 
@@ -241,12 +249,12 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
   }
 
   protected File makeFile(String contents) {
-    return makeFile(contents, CHARSET);
+    return makeFile(contents, StandardCharsets.UTF_8.name());
   }
 
   protected File makeFile(String contents, String charset) {
     try {
-      File f = _TestUtil.createTempFile("cachetest_csv", null, TEMP_DIR);
+      File f = new File(initCoreDataDir, "cachetest_csv");
       Writer out = new OutputStreamWriter(new FileOutputStream(f), charset);
       out.write(contents);
       out.close();

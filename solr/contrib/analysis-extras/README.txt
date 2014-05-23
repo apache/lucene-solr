@@ -4,16 +4,13 @@ upon large dependencies/dictionaries.
 It includes integration with ICU for multilingual support, and 
 analyzers for Chinese and Polish.
 
-Relies upon the following lucene components (in lucene-libs/):
+ICU relies upon lucene-libs/lucene-analyzers-icu-X.Y.jar
+and lib/icu4j-X.Y.jar
 
- * lucene-analyzers-icu-X.Y.jar
- * lucene-analyzers-smartcn-X.Y.jar
- * lucene-analyzers-stempel-X.Y.jar
- * lucene-analyzers-morfologik-X.Y.jar
- * lucene-analyzers-smartcn-X.Y.jar
+Smartcn relies upon lucene-libs/lucene-analyzers-smartcn-X.Y.jar
 
-And the following third-party library (in lib/):
+Stempel relies on lucene-libs/lucene-analyzers-stempel-X.Y.jar
 
- * icu4j-X.Y.jar
- * morfologik-*.jar
+Morfologik relies on lucene-libs/lucene-analyzers-morfologik-X.Y.jar
+and lib/morfologik-*.jar
  

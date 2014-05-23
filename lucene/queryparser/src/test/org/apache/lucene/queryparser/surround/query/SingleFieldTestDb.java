@@ -48,7 +48,7 @@ public class SingleFieldTestDb {
         d.add(new TextField(fieldName, docs[j], Field.Store.NO));
         writer.addDocument(d);
       }
-      writer.close();
+      writer.shutdown();
     } catch (java.io.IOException ioe) {
       throw new Error(ioe);
     }

@@ -18,6 +18,8 @@ package org.apache.solr.client.solrj.impl;
 
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.*;
+import org.apache.solr.client.solrj.request.IsUpdateRequest;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -26,6 +28,7 @@ import org.apache.solr.common.SolrException;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
@@ -73,14 +76,21 @@ import java.util.*;
  * @since solr 1.4
  */
 public class LBHttpSolrServer extends SolrServer {
+  private static Set<Integer> RETRY_CODES = new HashSet<>(4);
 
+  static {
+    RETRY_CODES.add(404);
+    RETRY_CODES.add(403);
+    RETRY_CODES.add(503);
+    RETRY_CODES.add(500);
+  }
 
   // keys to the maps are currently of the form "http://localhost:8983/solr"
-  // which should be equivalent to CommonsHttpSolrServer.getBaseURL()
-  private final Map<String, ServerWrapper> aliveServers = new LinkedHashMap<String, ServerWrapper>();
+  // which should be equivalent to HttpSolrServer.getBaseURL()
+  private final Map<String, ServerWrapper> aliveServers = new LinkedHashMap<>();
   // access to aliveServers should be synchronized on itself
   
-  protected final Map<String, ServerWrapper> zombieServers = new ConcurrentHashMap<String, ServerWrapper>();
+  protected final Map<String, ServerWrapper> zombieServers = new ConcurrentHashMap<>();
 
   // changes to aliveServers are reflected in this array, no need to synchronize
   private volatile ServerWrapper[] aliveServerList = new ServerWrapper[0];
@@ -93,10 +103,23 @@ public class LBHttpSolrServer extends SolrServer {
   private final AtomicInteger counter = new AtomicInteger(-1);
 
   private static final SolrQuery solrQuery = new SolrQuery("*:*");
-  private final ResponseParser parser;
+  private volatile ResponseParser parser;
+  private volatile RequestWriter requestWriter;
+
+  private Set<String> queryParams;
 
   static {
     solrQuery.setRows(0);
+    /**
+     * Default sort (if we don't supply a sort) is by score and since
+     * we request 0 rows any sorting and scoring is not necessary.
+     * SolrQuery.DOCID schema-independently specifies a non-scoring sort.
+     * <code>_docid_ asc</code> sort is efficient,
+     * <code>_docid_ desc</code> sort is not, so choose ascending DOCID sort.
+     */
+    solrQuery.setSort(SolrQuery.DOCID, SolrQuery.ORDER.asc);
+    // not a top-level request, we are interested only in the server being sent to i.e. it need not distribute our request to further servers    
+    solrQuery.setDistrib(false);
   }
 
   protected static class ServerWrapper {
@@ -188,14 +211,12 @@ public class LBHttpSolrServer extends SolrServer {
   }
   
   /** The provided httpClient should use a multi-threaded connection manager */ 
-  public LBHttpSolrServer(HttpClient httpClient, String... solrServerUrl)
-          throws MalformedURLException {
+  public LBHttpSolrServer(HttpClient httpClient, String... solrServerUrl) {
     this(httpClient, new BinaryResponseParser(), solrServerUrl);
   }
 
   /** The provided httpClient should use a multi-threaded connection manager */  
-  public LBHttpSolrServer(HttpClient httpClient, ResponseParser parser, String... solrServerUrl)
-          throws MalformedURLException {
+  public LBHttpSolrServer(HttpClient httpClient, ResponseParser parser, String... solrServerUrl) {
     clientIsInternal = (httpClient == null);
     this.parser = parser;
     if (httpClient == null) {
@@ -211,6 +232,18 @@ public class LBHttpSolrServer extends SolrServer {
     }
     updateAliveList();
   }
+  
+  public Set<String> getQueryParams() {
+    return queryParams;
+  }
+
+  /**
+   * Expert Method.
+   * @param queryParams set of param keys to only send via the query string
+   */
+  public void setQueryParams(Set<String> queryParams) {
+    this.queryParams = queryParams;
+  }
 
   public static String normalize(String server) {
     if (server.endsWith("/"))
@@ -218,11 +251,16 @@ public class LBHttpSolrServer extends SolrServer {
     return server;
   }
 
-  protected HttpSolrServer makeServer(String server) throws MalformedURLException {
-    return new HttpSolrServer(server, httpClient, parser);
+  protected HttpSolrServer makeServer(String server) {
+    HttpSolrServer s = new HttpSolrServer(server, httpClient, parser);
+    if (requestWriter != null) {
+      s.setRequestWriter(requestWriter);
+    }
+    if (queryParams != null) {
+      s.setQueryParams(queryParams);
+    }
+    return s;
   }
-
-
 
   /**
    * Tries to query a live server from the list provided in Req. Servers in the dead pool are skipped.
@@ -244,8 +282,8 @@ public class LBHttpSolrServer extends SolrServer {
   public Rsp request(Req req) throws SolrServerException, IOException {
     Rsp rsp = new Rsp();
     Exception ex = null;
-
-    List<ServerWrapper> skipped = new ArrayList<ServerWrapper>(req.getNumDeadServersToTry());
+    boolean isUpdate = req.request instanceof IsUpdateRequest;
+    List<ServerWrapper> skipped = new ArrayList<>(req.getNumDeadServersToTry());
 
     for (String serverStr : req.getServers()) {
       serverStr = normalize(serverStr);
@@ -260,69 +298,17 @@ public class LBHttpSolrServer extends SolrServer {
       rsp.server = serverStr;
       HttpSolrServer server = makeServer(serverStr);
 
-      try {
-        rsp.rsp = server.request(req.getRequest());
+      ex = doRequest(server, req, rsp, isUpdate, false, null);
+      if (ex == null) {
         return rsp; // SUCCESS
-      } catch (SolrException e) {
-        // we retry on 404 or 403 or 503 - you can see this on solr shutdown
-        if (e.code() == 404 || e.code() == 403 || e.code() == 503 || e.code() == 500) {
-          ex = addZombie(server, e);
-        } else {
-          // Server is alive but the request was likely malformed or invalid
-          throw e;
-        }
-       
-       // TODO: consider using below above - currently does cause a problem with distrib updates:
-       // seems to match up against a failed forward to leader exception as well...
-       //     || e.getMessage().contains("java.net.SocketException")
-       //     || e.getMessage().contains("java.net.ConnectException")
-      } catch (SocketException e) {
-        ex = addZombie(server, e);
-      } catch (SocketTimeoutException e) {
-        ex = addZombie(server, e);
-      } catch (SolrServerException e) {
-        Throwable rootCause = e.getRootCause();
-        if (rootCause instanceof IOException) {
-          ex = addZombie(server, e);
-        } else {
-          throw e;
-        }
-      } catch (Exception e) {
-        throw new SolrServerException(e);
       }
     }
 
     // try the servers we previously skipped
     for (ServerWrapper wrapper : skipped) {
-      try {
-        rsp.rsp = wrapper.solrServer.request(req.getRequest());
-        zombieServers.remove(wrapper.getKey());
-        return rsp; // SUCCESS
-      } catch (SolrException e) {
-        // we retry on 404 or 403 or 503 - you can see this on solr shutdown
-        if (e.code() == 404 || e.code() == 403 || e.code() == 503 || e.code() == 500) {
-          ex = e;
-          // already a zombie, no need to re-add
-        } else {
-          // Server is alive but the request was malformed or invalid
-          zombieServers.remove(wrapper.getKey());
-          throw e;
-        }
-
-      } catch (SocketException e) {
-        ex = e;
-      } catch (SocketTimeoutException e) {
-        ex = e;
-      } catch (SolrServerException e) {
-        Throwable rootCause = e.getRootCause();
-        if (rootCause instanceof IOException) {
-          ex = e;
-          // already a zombie, no need to re-add
-        } else {
-          throw e;
-        }
-      } catch (Exception e) {
-        throw new SolrServerException(e);
+      ex = doRequest(wrapper.solrServer, req, rsp, isUpdate, true, wrapper.getKey());
+      if (ex == null) {
+         return rsp; // SUCCESS
       }
     }
 
@@ -347,7 +333,53 @@ public class LBHttpSolrServer extends SolrServer {
     return e;
   }  
 
+  protected Exception doRequest(HttpSolrServer server, Req req, Rsp rsp, boolean isUpdate,
+      boolean isZombie, String zombieKey) throws SolrServerException, IOException {
+    Exception ex = null;
+    try {
+      rsp.rsp = server.request(req.getRequest());
+      if (isZombie) {
+        zombieServers.remove(zombieKey);
+      }
+    } catch (SolrException e) {
+      // we retry on 404 or 403 or 503 or 500
+      // unless it's an update - then we only retry on connect exception
+      if (!isUpdate && RETRY_CODES.contains(e.code())) {
+        ex = (!isZombie) ? addZombie(server, e) : e;
+      } else {
+        // Server is alive but the request was likely malformed or invalid
+        if (isZombie) {
+          zombieServers.remove(zombieKey);
+        }
+        throw e;
+      }
+    } catch (SocketException e) {
+      if (!isUpdate || e instanceof ConnectException) {
+        ex = (!isZombie) ? addZombie(server, e) : e;
+      } else {
+        throw e;
+      }
+    } catch (SocketTimeoutException e) {
+      if (!isUpdate) {
+        ex = (!isZombie) ? addZombie(server, e) : e;
+      } else {
+        throw e;
+      }
+    } catch (SolrServerException e) {
+      Throwable rootCause = e.getRootCause();
+      if (!isUpdate && rootCause instanceof IOException) {
+        ex = (!isZombie) ? addZombie(server, e) : e;
+      } else if (isUpdate && rootCause instanceof ConnectException) {
+        ex = (!isZombie) ? addZombie(server, e) : e;
+      } else {
+        throw e;
+      }
+    } catch (Exception e) {
+      throw new SolrServerException(e);
+    }
 
+    return ex;
+  }
 
   private void updateAliveList() {
     synchronized (aliveServers) {
@@ -451,7 +483,7 @@ public class LBHttpSolrServer extends SolrServer {
         if (e.getRootCause() instanceof IOException) {
           ex = e;
           moveAliveToDead(wrapper);
-          if (justFailed == null) justFailed = new HashMap<String,ServerWrapper>();
+          if (justFailed == null) justFailed = new HashMap<>();
           justFailed.put(wrapper.getKey(), wrapper);
         } else {
           throw e;
@@ -565,7 +597,7 @@ public class LBHttpSolrServer extends SolrServer {
           aliveCheckExecutor = Executors.newSingleThreadScheduledExecutor(
               new SolrjNamedThreadFactory("aliveCheckExecutor"));
           aliveCheckExecutor.scheduleAtFixedRate(
-                  getAliveCheckRunner(new WeakReference<LBHttpSolrServer>(this)),
+                  getAliveCheckRunner(new WeakReference<>(this)),
                   this.interval, this.interval, TimeUnit.MILLISECONDS);
         }
       }
@@ -590,6 +622,22 @@ public class LBHttpSolrServer extends SolrServer {
     return httpClient;
   }
 
+  public ResponseParser getParser() {
+    return parser;
+  }
+  
+  public void setParser(ResponseParser parser) {
+    this.parser = parser;
+  }
+  
+  public void setRequestWriter(RequestWriter requestWriter) {
+    this.requestWriter = requestWriter;
+  }
+  
+  public RequestWriter getRequestWriter() {
+    return requestWriter;
+  }
+  
   @Override
   protected void finalize() throws Throwable {
     try {
@@ -603,4 +651,5 @@ public class LBHttpSolrServer extends SolrServer {
   // defaults
   private static final int CHECK_INTERVAL = 60 * 1000; //1 minute between checks
   private static final int NONSTANDARD_PING_LIMIT = 5;  // number of times we'll ping dead servers not in the server list
+
 }

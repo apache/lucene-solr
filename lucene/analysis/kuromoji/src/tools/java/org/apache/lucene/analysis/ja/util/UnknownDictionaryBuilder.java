@@ -66,7 +66,7 @@ public class UnknownDictionaryBuilder {
     
     dictionary.put(CSVUtil.parse(NGRAM_DICTIONARY_ENTRY));
     
-    List<String[]> lines = new ArrayList<String[]>();
+    List<String[]> lines = new ArrayList<>();
     String line = null;
     while ((line = lineReader.readLine()) != null) {
       // note: unk.def only has 10 fields, it simplifies the writer to just append empty reading and pronunciation,

@@ -91,7 +91,6 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
   }
 
 // This makes sure that there is no garbage after the query string
-  @Override
   final public Query TopLevelQuery(String field) throws ParseException, SyntaxError {
   Query q;
     q = Query(field);
@@ -101,7 +100,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
   }
 
   final public Query Query(String field) throws ParseException, SyntaxError {
-  List<BooleanClause> clauses = new ArrayList<BooleanClause>();
+  List<BooleanClause> clauses = new ArrayList<>();
   Query q, firstQuery=null;
   int conj, mods;
     mods = Modifiers();
@@ -479,7 +478,6 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
   }
 
   /** Reinitialise. */
-  @Override
   public void ReInit(CharStream stream) {
     token_source.ReInit(stream);
     token = new Token();
@@ -583,7 +581,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
       return (jj_ntk = jj_nt.kind);
   }
 
-  private java.util.List<int[]> jj_expentries = new java.util.ArrayList<int[]>();
+  private java.util.List<int[]> jj_expentries = new java.util.ArrayList<>();
   private int[] jj_expentry;
   private int jj_kind = -1;
   private int[] jj_lasttokens = new int[100];

@@ -34,7 +34,11 @@ public abstract class SpanQuery extends Query {
    * to search for spans. */
   public abstract Spans getSpans(AtomicReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) throws IOException;
 
-  /** Returns the name of the field matched by this query.*/
+  /** 
+   * Returns the name of the field matched by this query.
+   * <p>
+   * Note that this may return null if the query matches no terms.
+   */
   public abstract String getField();
 
   @Override

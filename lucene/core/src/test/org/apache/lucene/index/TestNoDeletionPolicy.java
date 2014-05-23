@@ -80,7 +80,7 @@ public class TestNoDeletionPolicy extends LuceneTestCase {
       writer.commit();
       assertEquals("wrong number of commits !", i + 1, DirectoryReader.listCommits(dir).size());
     }
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
   

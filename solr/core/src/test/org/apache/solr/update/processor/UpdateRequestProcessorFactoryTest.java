@@ -78,7 +78,7 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
       assertNotNull(name, chain);
 
       // either explicitly, or because of injection
-      assertEquals(name + " chain length", 4,
+      assertEquals(name + " chain length", 5,
                    chain.getFactories().length);
 
       // Custom comes first in all three of our chains
@@ -93,7 +93,20 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
       assertFalse(name + " post distrib proc should not be a CustomUpdateRequestProcessor: " 
                  + proc.getClass().getName(),
                  proc instanceof CustomUpdateRequestProcessor);
-      
+
+      int n=0;
+      boolean foundLog = false;
+      for (;;) {
+        n++;
+        if (proc instanceof LogUpdateProcessor) {
+          foundLog = true;
+        }
+        proc = proc.next;
+        if (proc == null) break;
+      }
+
+      assertTrue( n < chain.getFactories().length );   // some processors should have been dropped
+      assertTrue( foundLog );  // make sure the marker interface was successful in keeping the log processor
 
     }
 

@@ -41,8 +41,7 @@ import org.apache.lucene.spatial.query.SpatialArgs;
  *   <li>What types of query shapes can be used?</li>
  *   <li>What types of query operations are supported?
  *   This might vary per shape.</li>
- *   <li>Does it use the {@link org.apache.lucene.search.FieldCache},
- *   or some other type of cache?  When?
+ *   <li>Does it use some type of cache?  When?
  * </ul>
  * If a strategy only supports certain shapes at index or query time, then in
  * general it will throw an exception if given an incompatible one.  It will not
@@ -102,11 +101,20 @@ public abstract class SpatialStrategy {
   public abstract Field[] createIndexableFields(Shape shape);
 
   /**
+   * See {@link #makeDistanceValueSource(com.spatial4j.core.shape.Point, double)} called with
+   * a multiplier of 1.0 (i.e. units of degrees).
+   */
+  public ValueSource makeDistanceValueSource(Point queryPoint) {
+    return makeDistanceValueSource(queryPoint, 1.0);
+  }
+
+  /**
    * Make a ValueSource returning the distance between the center of the
    * indexed shape and {@code queryPoint}.  If there are multiple indexed shapes
-   * then the closest one is chosen.
+   * then the closest one is chosen. The result is multiplied by {@code multiplier}, which
+   * conveniently is used to get the desired units.
    */
-  public abstract ValueSource makeDistanceValueSource(Point queryPoint);
+  public abstract ValueSource makeDistanceValueSource(Point queryPoint, double multiplier);
 
   /**
    * Make a Query based principally on {@link org.apache.lucene.spatial.query.SpatialOperation}
@@ -139,7 +147,7 @@ public abstract class SpatialStrategy {
 
   /**
    * Returns a ValueSource with values ranging from 1 to 0, depending inversely
-   * on the distance from {@link #makeDistanceValueSource(com.spatial4j.core.shape.Point)}.
+   * on the distance from {@link #makeDistanceValueSource(com.spatial4j.core.shape.Point,double)}.
    * The formula is {@code c/(d + c)} where 'd' is the distance and 'c' is
    * one tenth the distance to the farthest edge from the center. Thus the
    * scores will be 1 for indexed points at the center of the query shape and as
@@ -151,7 +159,7 @@ public abstract class SpatialStrategy {
         ctx.makePoint(bbox.getMinX(), bbox.getMinY()), bbox.getMaxX(), bbox.getMaxY());
     double distToEdge = diagonalDist * 0.5;
     float c = (float)distToEdge * 0.1f;//one tenth
-    return new ReciprocalFloatFunction(makeDistanceValueSource(queryShape.getCenter()), 1f, c, c);
+    return new ReciprocalFloatFunction(makeDistanceValueSource(queryShape.getCenter(), 1.0), 1f, c, c);
   }
 
   @Override

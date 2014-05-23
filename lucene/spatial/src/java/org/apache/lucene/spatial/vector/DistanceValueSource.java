@@ -21,9 +21,10 @@ import com.spatial4j.core.distance.DistanceCalculator;
 import com.spatial4j.core.shape.Point;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
@@ -39,13 +40,15 @@ public class DistanceValueSource extends ValueSource {
 
   private PointVectorStrategy strategy;
   private final Point from;
+  private final double multiplier;
 
   /**
    * Constructor.
    */
-  public DistanceValueSource(PointVectorStrategy strategy, Point from) {
+  public DistanceValueSource(PointVectorStrategy strategy, Point from, double multiplier) {
     this.strategy = strategy;
     this.from = from;
+    this.multiplier = multiplier;
   }
 
   /**
@@ -63,16 +66,17 @@ public class DistanceValueSource extends ValueSource {
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     AtomicReader reader = readerContext.reader();
 
-    final FieldCache.Doubles ptX = FieldCache.DEFAULT.getDoubles(reader, strategy.getFieldNameX(), true);
-    final FieldCache.Doubles ptY = FieldCache.DEFAULT.getDoubles(reader, strategy.getFieldNameY(), true);
-    final Bits validX =  FieldCache.DEFAULT.getDocsWithField(reader, strategy.getFieldNameX());
-    final Bits validY =  FieldCache.DEFAULT.getDocsWithField(reader, strategy.getFieldNameY());
+    final NumericDocValues ptX = DocValues.getNumeric(reader, strategy.getFieldNameX());
+    final NumericDocValues ptY = DocValues.getNumeric(reader, strategy.getFieldNameY());
+    final Bits validX =  DocValues.getDocsWithField(reader, strategy.getFieldNameX());
+    final Bits validY =  DocValues.getDocsWithField(reader, strategy.getFieldNameY());
 
     return new FunctionValues() {
 
       private final Point from = DistanceValueSource.this.from;
       private final DistanceCalculator calculator = strategy.getSpatialContext().getDistCalc();
-      private final double nullValue = (strategy.getSpatialContext().isGeo() ? 180 : Double.MAX_VALUE);
+      private final double nullValue =
+          (strategy.getSpatialContext().isGeo() ? 180 * multiplier : Double.MAX_VALUE);
 
       @Override
       public float floatVal(int doc) {
@@ -84,7 +88,7 @@ public class DistanceValueSource extends ValueSource {
         // make sure it has minX and area
         if (validX.get(doc)) {
           assert validY.get(doc);
-          return calculator.distance(from, ptX.get(doc), ptY.get(doc));
+          return calculator.distance(from, Double.longBitsToDouble(ptX.get(doc)), Double.longBitsToDouble(ptY.get(doc))) * multiplier;
         }
         return nullValue;
       }
@@ -105,6 +109,7 @@ public class DistanceValueSource extends ValueSource {
 
     if (!from.equals(that.from)) return false;
     if (!strategy.equals(that.strategy)) return false;
+    if (multiplier != that.multiplier) return false;
 
     return true;
   }

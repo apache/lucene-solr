@@ -77,7 +77,7 @@ public class TestDocIdSet extends LuceneTestCase {
       };
 
     DocIdSetIterator iter = filteredSet.iterator();
-    ArrayList<Integer> list = new ArrayList<Integer>();
+    ArrayList<Integer> list = new ArrayList<>();
     int doc = iter.advance(3);
     if (doc != DocIdSetIterator.NO_MORE_DOCS) {
       list.add(Integer.valueOf(doc));
@@ -110,7 +110,7 @@ public class TestDocIdSet extends LuceneTestCase {
     doc.add(newStringField("c", "val", Field.Store.NO));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     
     // First verify the document is searchable.
     IndexSearcher searcher = newSearcher(reader);
@@ -136,7 +136,7 @@ public class TestDocIdSet extends LuceneTestCase {
     doc.add(newStringField("c", "val", Field.Store.NO));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     
     // First verify the document is searchable.
     IndexSearcher searcher = newSearcher(reader);

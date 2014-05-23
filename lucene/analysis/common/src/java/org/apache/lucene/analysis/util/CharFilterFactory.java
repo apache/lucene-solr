@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.CharFilter;
 public abstract class CharFilterFactory extends AbstractAnalysisFactory {
 
   private static final AnalysisSPILoader<CharFilterFactory> loader =
-      new AnalysisSPILoader<CharFilterFactory>(CharFilterFactory.class);
+      new AnalysisSPILoader<>(CharFilterFactory.class);
   
   /** looks up a charfilter by name from context classpath */
   public static CharFilterFactory forName(String name, Map<String,String> args) {

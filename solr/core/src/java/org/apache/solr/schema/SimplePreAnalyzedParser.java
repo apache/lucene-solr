@@ -141,7 +141,7 @@ public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
   
   private static class Tok {
     StringBuilder token = new StringBuilder();
-    Map<String, String> attr = new HashMap<String, String>();
+    Map<String, String> attr = new HashMap<>();
     
     public boolean isEmpty() {
       return token.length() == 0 && attr.size() == 0;
@@ -482,10 +482,10 @@ public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
         String tTerm = null;
         while (it.hasNext()) {
           Class<? extends Attribute> cl = it.next();
-          if (!ts.hasAttribute(cl)) {
+          Attribute att = ts.getAttribute(cl);
+          if (att == null) {
             continue;
           }
-          Attribute att = ts.getAttribute(cl);
           if (cl.isAssignableFrom(CharTermAttribute.class)) {
             CharTermAttribute catt = (CharTermAttribute)att;
             cTerm = escape(catt.buffer(), catt.length());

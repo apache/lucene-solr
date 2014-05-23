@@ -18,20 +18,20 @@ package org.apache.lucene.codecs.simpletext;
  */
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.codecs.FieldInfosReader;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
@@ -47,9 +47,9 @@ import static org.apache.lucene.codecs.simpletext.SimpleTextFieldInfosWriter.*;
 public class SimpleTextFieldInfosReader extends FieldInfosReader {
 
   @Override
-  public FieldInfos read(Directory directory, String segmentName, IOContext iocontext) throws IOException {
-    final String fileName = IndexFileNames.segmentFileName(segmentName, "", FIELD_INFOS_EXTENSION);
-    IndexInput input = directory.openInput(fileName, iocontext);
+  public FieldInfos read(Directory directory, String segmentName, String segmentSuffix, IOContext iocontext) throws IOException {
+    final String fileName = IndexFileNames.segmentFileName(segmentName, segmentSuffix, FIELD_INFOS_EXTENSION);
+    ChecksumIndexInput input = directory.openChecksumInput(fileName, iocontext);
     BytesRef scratch = new BytesRef();
     
     boolean success = false;
@@ -105,9 +105,13 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
         final DocValuesType docValuesType = docValuesType(dvType);
         
         SimpleTextUtil.readLine(input, scratch);
+        assert StringHelper.startsWith(scratch, DOCVALUES_GEN);
+        final long dvGen = Long.parseLong(readString(DOCVALUES_GEN.length, scratch));
+        
+        SimpleTextUtil.readLine(input, scratch);
         assert StringHelper.startsWith(scratch, NUM_ATTS);
         int numAtts = Integer.parseInt(readString(NUM_ATTS.length, scratch));
-        Map<String,String> atts = new HashMap<String,String>();
+        Map<String,String> atts = new HashMap<>();
 
         for (int j = 0; j < numAtts; j++) {
           SimpleTextUtil.readLine(input, scratch);
@@ -121,12 +125,10 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
         }
 
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
-          omitNorms, storePayloads, indexOptions, docValuesType, normsType, Collections.unmodifiableMap(atts));
+          omitNorms, storePayloads, indexOptions, docValuesType, normsType, dvGen, Collections.unmodifiableMap(atts));
       }
 
-      if (input.getFilePointer() != input.length()) {
-        throw new CorruptIndexException("did not read all bytes from file \"" + fileName + "\": read " + input.getFilePointer() + " vs size " + input.length() + " (resource: " + input + ")");
-      }
+      SimpleTextUtil.checkFooter(input);
       
       FieldInfos fieldInfos = new FieldInfos(infos);
       success = true;
@@ -149,6 +151,6 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
   }
   
   private String readString(int offset, BytesRef scratch) {
-    return new String(scratch.bytes, scratch.offset+offset, scratch.length-offset, IOUtils.CHARSET_UTF_8);
+    return new String(scratch.bytes, scratch.offset+offset, scratch.length-offset, StandardCharsets.UTF_8);
   }
 }

@@ -34,13 +34,13 @@ import java.util.Set;
 public class SliceStateTest extends SolrTestCaseJ4 {
   @Test
   public void testDefaultSliceState() throws Exception {
-    Map<String, DocCollection> collectionStates = new HashMap<String, DocCollection>();
-    Set<String> liveNodes = new HashSet<String>();
+    Map<String, DocCollection> collectionStates = new HashMap<>();
+    Set<String> liveNodes = new HashSet<>();
     liveNodes.add("node1");
 
-    Map<String, Slice> slices = new HashMap<String, Slice>();
-    Map<String, Replica> sliceToProps = new HashMap<String, Replica>();
-    Map<String, Object> props = new HashMap<String, Object>();
+    Map<String, Slice> slices = new HashMap<>();
+    Map<String, Replica> sliceToProps = new HashMap<>();
+    Map<String, Object> props = new HashMap<>();
 
     Replica replica = new Replica("node1", props);
     sliceToProps.put("node1", replica);
@@ -49,9 +49,10 @@ public class SliceStateTest extends SolrTestCaseJ4 {
     slices.put("shard1", slice);
     collectionStates.put("collection1", new DocCollection("collection1", slices, null, DocRouter.DEFAULT));
 
-    ClusterState clusterState = new ClusterState(liveNodes, collectionStates);
+    ZkStateReader mockZkStateReader = ClusterStateTest.getMockZkStateReader(collectionStates.keySet());
+    ClusterState clusterState = new ClusterState(-1,liveNodes, collectionStates);
     byte[] bytes = ZkStateReader.toJSON(clusterState);
-    ClusterState loadedClusterState = ClusterState.load(null, bytes, liveNodes);
+    ClusterState loadedClusterState = ClusterState.load(-1, bytes, liveNodes);
 
     assertEquals("Default state not set to active", "active", loadedClusterState.getSlice("collection1", "shard1").getState());
   }

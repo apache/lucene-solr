@@ -18,13 +18,13 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.FixedBitSet;
 
 /**
  * <code>SortedIntDocSet</code> represents a sorted set of Lucene Document Ids.
@@ -563,12 +563,11 @@ public class SortedIntDocSet extends DocSetBase {
   }
 
   @Override
-  public void setBitsOn(OpenBitSet target) {
+  public void addAllTo(DocSet target) {
     for (int doc : docs) {
-      target.fastSet(doc);
+      target.add(doc);
     }
   }
-
 
   @Override
   public boolean exists(int doc) {
@@ -630,15 +629,14 @@ public class SortedIntDocSet extends DocSetBase {
   }
   
   @Override
-  public OpenBitSet getBits() {
+  public FixedBitSet getBits() {
     int maxDoc = size() > 0 ? docs[size()-1] : 0;
-    OpenBitSet bs = new OpenBitSet(maxDoc+1);
+    FixedBitSet bs = new FixedBitSet(maxDoc+1);
     for (int doc : docs) {
-      bs.fastSet(doc);
+      bs.set(doc);
     }
     return bs;
   }
-
 
   public static int findIndex(int[] arr, int value, int low, int high) {
     // binary search

@@ -19,10 +19,16 @@
 
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
+  <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
   <queryParser name="foo" class="FooQParserPlugin"/>
   <!-- override the default "lucene" qparser -->
   <queryParser name="lucene" class="org.apache.solr.search.FooQParserPlugin"/>
+  <queryParser name="notfoo" class="solr.LuceneQParserPlugin"/>
 
   <valueSourceParser name="boost" class="org.apache.solr.core.DummyValueSourceParser"/>
+  <valueSourceParser name="countUsage" class="org.apache.solr.core.CountUsageValueSourceParser"/>
+
+  <requestHandler default="true" name="/select" class="solr.SearchHandler" />
+
 </config>

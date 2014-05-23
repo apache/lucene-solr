@@ -17,52 +17,42 @@ package org.apache.solr.search.grouping.collector;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.Scorer;
-import org.apache.solr.search.DocSet;
-
 import java.io.IOException;
+
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.FilterLeafCollector;
+import org.apache.solr.search.DocSet;
 
 /**
  * A collector that filters incoming doc ids that are not in the filter.
  *
  * @lucene.experimental
  */
-public class FilterCollector extends Collector {
+public class FilterCollector extends org.apache.lucene.search.FilterCollector {
 
   private final DocSet filter;
-  private final Collector delegate;
-  private int docBase;
   private int matches;
 
   public FilterCollector(DocSet filter, Collector delegate) {
+    super(delegate);
     this.filter = filter;
-    this.delegate = delegate;
   }
 
   @Override
-  public void setScorer(Scorer scorer) throws IOException {
-    delegate.setScorer(scorer);
-  }
-
-  @Override
-  public void collect(int doc) throws IOException {
-    matches++;
-    if (filter.exists(doc + docBase)) {
-      delegate.collect(doc);
-    }
-  }
-
-  @Override
-  public void setNextReader(AtomicReaderContext context) throws IOException {
-    this.docBase = context.docBase;
-    delegate.setNextReader(context);
-  }
-
-  @Override
-  public boolean acceptsDocsOutOfOrder() {
-    return delegate.acceptsDocsOutOfOrder();
+  public LeafCollector getLeafCollector(AtomicReaderContext context)
+      throws IOException {
+    final int docBase = context.docBase;
+    return new FilterLeafCollector(super.getLeafCollector(context)) {
+      @Override
+      public void collect(int doc) throws IOException {
+        matches++;
+        if (filter.exists(doc + docBase)) {
+          super.collect(doc);
+        }
+      }
+    };
   }
 
   public int getMatches() {
@@ -75,6 +65,6 @@ public class FilterCollector extends Collector {
    * @return the delegate collector
    */
   public Collector getDelegate() {
-    return delegate;
+    return in;
   }
 }

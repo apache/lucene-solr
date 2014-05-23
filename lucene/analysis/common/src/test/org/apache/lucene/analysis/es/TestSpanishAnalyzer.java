@@ -34,8 +34,8 @@ public class TestSpanishAnalyzer extends BaseTokenStreamTestCase {
   public void testBasics() throws IOException {
     Analyzer a = new SpanishAnalyzer(TEST_VERSION_CURRENT);
     // stemming
-    checkOneTermReuse(a, "chicana", "chican");
-    checkOneTermReuse(a, "chicano", "chican");
+    checkOneTerm(a, "chicana", "chican");
+    checkOneTerm(a, "chicano", "chican");
     // stopword
     assertAnalyzesTo(a, "los", new String[] {});
   }
@@ -45,8 +45,8 @@ public class TestSpanishAnalyzer extends BaseTokenStreamTestCase {
     CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("chicano"), false);
     Analyzer a = new SpanishAnalyzer(TEST_VERSION_CURRENT, 
         SpanishAnalyzer.getDefaultStopSet(), exclusionSet);
-    checkOneTermReuse(a, "chicana", "chican");
-    checkOneTermReuse(a, "chicano", "chicano");
+    checkOneTerm(a, "chicana", "chican");
+    checkOneTerm(a, "chicano", "chicano");
   }
   
   /** blast some random strings through the analyzer */

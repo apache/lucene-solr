@@ -20,35 +20,24 @@ package org.apache.lucene.queries.function.valuesource;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSourceScorer;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueLong;
 
 /**
- * Obtains float field values from the {@link org.apache.lucene.search.FieldCache}
- * using <code>getFloats()</code>
- * and makes those values available as other numeric types, casting as needed.
- *
- *
+ * Obtains long field values from {@link AtomicReader#getNumericDocValues} and makes those
+ * values available as other numeric types, casting as needed.
  */
-
 public class LongFieldSource extends FieldCacheSource {
 
-  protected final FieldCache.LongParser parser;
-
   public LongFieldSource(String field) {
-    this(field, null);
-  }
-
-  public LongFieldSource(String field, FieldCache.LongParser parser) {
     super(field);
-    this.parser = parser;
   }
 
   @Override
@@ -70,8 +59,8 @@ public class LongFieldSource extends FieldCacheSource {
 
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final FieldCache.Longs arr = cache.getLongs(readerContext.reader(), field, parser, true);
-    final Bits valid = cache.getDocsWithField(readerContext.reader(), field);
+    final NumericDocValues arr = DocValues.getNumeric(readerContext.reader(), field);
+    final Bits valid = DocValues.getDocsWithField(readerContext.reader(), field);
     
     return new LongDocValues(this) {
       @Override
@@ -81,7 +70,7 @@ public class LongFieldSource extends FieldCacheSource {
 
       @Override
       public boolean exists(int doc) {
-        return valid.get(doc);
+        return arr.get(doc) != 0 || valid.get(doc);
       }
 
       @Override
@@ -95,37 +84,8 @@ public class LongFieldSource extends FieldCacheSource {
       }
 
       @Override
-      public ValueSourceScorer getRangeScorer(IndexReader reader, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
-        long lower,upper;
-
-        // instead of using separate comparison functions, adjust the endpoints.
-
-        if (lowerVal==null) {
-          lower = Long.MIN_VALUE;
-        } else {
-          lower = externalToLong(lowerVal);
-          if (!includeLower && lower < Long.MAX_VALUE) lower++;
-        }
-
-         if (upperVal==null) {
-          upper = Long.MAX_VALUE;
-        } else {
-          upper = externalToLong(upperVal);
-          if (!includeUpper && upper > Long.MIN_VALUE) upper--;
-        }
-
-        final long ll = lower;
-        final long uu = upper;
-
-        return new ValueSourceScorer(reader, this) {
-          @Override
-          public boolean matchesValue(int doc) {
-            long val = arr.get(doc);
-            // only check for deleted if it's the default value
-            // if (val==0 && reader.isDeleted(doc)) return false;
-            return val >= ll && val <= uu;
-          }
-        };
+      protected long externalToLong(String extVal) {
+        return LongFieldSource.this.externalToLong(extVal);
       }
 
       @Override
@@ -141,7 +101,7 @@ public class LongFieldSource extends FieldCacheSource {
           @Override
           public void fillValue(int doc) {
             mval.value = arr.get(doc);
-            mval.exists = valid.get(doc);
+            mval.exists = mval.value != 0 || valid.get(doc);
           }
         };
       }
@@ -157,14 +117,12 @@ public class LongFieldSource extends FieldCacheSource {
   public boolean equals(Object o) {
     if (o.getClass() != this.getClass()) return false;
     LongFieldSource other = (LongFieldSource) o;
-    return super.equals(other)
-      && (this.parser == null ? other.parser == null :
-          this.parser.getClass() == other.parser.getClass());
+    return super.equals(other);
   }
 
   @Override
   public int hashCode() {
-    int h = parser == null ? this.getClass().hashCode() : parser.getClass().hashCode();
+    int h = getClass().hashCode();
     h += super.hashCode();
     return h;
   }

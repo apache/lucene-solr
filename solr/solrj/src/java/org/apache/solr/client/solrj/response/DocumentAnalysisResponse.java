@@ -33,7 +33,7 @@ import java.util.Map;
  */
 public class DocumentAnalysisResponse extends AnalysisResponseBase implements Iterable<Map.Entry<String, DocumentAnalysisResponse.DocumentAnalysis>> {
 
-  private final Map<String, DocumentAnalysis> documentAnalysisByKey = new HashMap<String, DocumentAnalysis>();
+  private final Map<String, DocumentAnalysis> documentAnalysisByKey = new HashMap<>();
 
   /**
    * {@inheritDoc}
@@ -116,7 +116,7 @@ public class DocumentAnalysisResponse extends AnalysisResponseBase implements It
   public static class DocumentAnalysis implements Iterable<Map.Entry<String, FieldAnalysis>> {
 
     private final String documentKey;
-    private Map<String, FieldAnalysis> fieldAnalysisByFieldName = new HashMap<String, FieldAnalysis>();
+    private Map<String, FieldAnalysis> fieldAnalysisByFieldName = new HashMap<>();
 
     private DocumentAnalysis(String documentKey) {
       this.documentKey = documentKey;
@@ -168,7 +168,7 @@ public class DocumentAnalysisResponse extends AnalysisResponseBase implements It
 
     private final String fieldName;
     private List<AnalysisPhase> queryPhases;
-    private Map<String, List<AnalysisPhase>> indexPhasesByFieldValue = new HashMap<String, List<AnalysisPhase>>();
+    private Map<String, List<AnalysisPhase>> indexPhasesByFieldValue = new HashMap<>();
 
     private FieldAnalysis(String fieldName) {
       this.fieldName = fieldName;

@@ -47,5 +47,10 @@ public interface ShardParams {
   public static final String SHARDS_TOLERANT = "shards.tolerant";
 
   /** Should things fail if there is an error? (true/false) */
+  @Deprecated
   public static final String SHARD_KEYS = "shard.keys";
+
+  public static final String _ROUTE_ = "_route_";
+
+
 }

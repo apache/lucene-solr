@@ -69,7 +69,7 @@ public class PlainTextEntityProcessor extends EntityProcessorBase {
       if (len <= 0) break;
       sw.append(new String(buf, 0, len));
     }
-    Map<String, Object> row = new HashMap<String, Object>();
+    Map<String, Object> row = new HashMap<>();
     row.put(PLAIN_TEXT, sw.toString());
     ended = true;
     IOUtils.closeQuietly(r);

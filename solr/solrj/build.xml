@@ -15,8 +15,15 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  -->
-<project name="solr-solrj" default="default">
+<project name="solr-solrj" default="default" xmlns:ivy="antlib:org.apache.ivy.ant">
   <description>Solrj - Solr Java Client</description>
+
+  <property name="test.lib.dir" location="test-lib"/>
+
+  <!-- violates the servlet-api restrictions, but it is safe to do so in this test: -->
+  <property name="forbidden-tests-excludes" value="
+    org/apache/solr/client/solrj/impl/BasicHttpSolrServerTest$DebugServlet.class
+  "/>
 
   <import file="../common-build.xml"/>
 
@@ -27,12 +34,21 @@
 
   <!-- Specialized common-solr.test.classpath, to remove the Solr core test output -->
   <path id="test.classpath">
+    <fileset dir="${test.lib.dir}" includes="*.jar"/>
     <pathelement path="${common-solr.dir}/build/solr-test-framework/classes/java"/>
     <pathelement path="${tests.userdir}"/>
     <path refid="test.base.classpath"/>
     <path refid="solr.base.classpath"/>
     <pathelement path="${example}/resources"/>
   </path>
+
+  <target name="resolve" depends="ivy-availability-check,ivy-fail,ivy-configure">
+    <sequential>
+      <ivy:retrieve conf="compile" type="jar,bundle" sync="${ivy.sync}" log="download-only"/>
+      <ivy:retrieve conf="test" type="jar,bundle,test" sync="${ivy.sync}" log="download-only"
+                    pattern="${test.lib.dir}/[artifact]-[revision](-[classifier]).[ext]"/>
+    </sequential>
+  </target>
 
   <!-- Specialized to depend on nothing -->
   <target name="javadocs" depends="compile-core,define-lucene-javadoc-url">
@@ -70,5 +86,5 @@
     </copy>
   </target>
 
-  <target name="dist-maven" depends="dist-maven-src-java"/>
+  <target name="-dist-maven" depends="-dist-maven-src-java"/>
 </project>

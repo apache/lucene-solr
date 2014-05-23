@@ -26,17 +26,18 @@ import java.io.StringReader;
 
 import org.apache.lucene.benchmark.byTask.Benchmark;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /** Base class for all Benchmark unit tests. */
+@SuppressSysoutChecks(bugUrl = "very noisy")
 public abstract class BenchmarkTestCase extends LuceneTestCase {
   private static File WORKDIR;
   
   @BeforeClass
   public static void beforeClassBenchmarkTestCase() {
-    WORKDIR = _TestUtil.getTempDir("benchmark");
+    WORKDIR = createTempDir("benchmark");
     WORKDIR.delete();
     WORKDIR.mkdirs();
   }

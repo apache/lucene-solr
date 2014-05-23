@@ -28,6 +28,14 @@ import java.util.Comparator;
 
 public final class ArrayUtil {
 
+  /** Maximum length for an array; we set this to "a
+   *  bit" below Integer.MAX_VALUE because the exact max
+   *  allowed byte[] is JVM dependent, so we want to avoid
+   *  a case where a large value worked during indexing on
+   *  one JVM but failed later at search time with a
+   *  different JVM. */
+  public static final int MAX_ARRAY_LENGTH = Integer.MAX_VALUE - 256;
+
   private ArrayUtil() {} // no instance
 
   /*

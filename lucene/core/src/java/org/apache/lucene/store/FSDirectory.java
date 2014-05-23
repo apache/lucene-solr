@@ -17,20 +17,21 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.IOUtils;
+
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FilenameFilter;
+import java.io.FilterOutputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-
 import java.util.Collection;
-import static java.util.Collections.synchronizedSet;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Future;
 
-import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util.Constants;
+import static java.util.Collections.synchronizedSet;
 
 /**
  * Base class for Directory implementations that store index
@@ -109,19 +110,10 @@ import org.apache.lucene.util.Constants;
  *
  * @see Directory
  */
-public abstract class FSDirectory extends Directory {
-
-  /**
-   * Default read chunk size.  This is a conditional default: on 32bit JVMs, it defaults to 100 MB.  On 64bit JVMs, it's
-   * <code>Integer.MAX_VALUE</code>.
-   *
-   * @see #setReadChunkSize
-   */
-  public static final int DEFAULT_READ_CHUNK_SIZE = Constants.JRE_IS_64BIT ? Integer.MAX_VALUE : 100 * 1024 * 1024;
+public abstract class FSDirectory extends BaseDirectory {
 
   protected final File directory; // The underlying filesystem directory
   protected final Set<String> staleFiles = synchronizedSet(new HashSet<String>()); // Files written, but not yet sync'ed
-  private int chunkSize = DEFAULT_READ_CHUNK_SIZE; // LUCENE-1566
 
   // returns the canonical version of the directory, creating it if it doesn't exist.
   private static File getCanonicalPath(File file) throws IOException {
@@ -242,20 +234,6 @@ public abstract class FSDirectory extends Directory {
     return listAll(directory);
   }
 
-  /** Returns true iff a file with the given name exists. */
-  @Override
-  public boolean fileExists(String name) {
-    ensureOpen();
-    File file = new File(directory, name);
-    return file.exists();
-  }
-
-  /** Returns the time the named file was last modified. */
-  public static long fileModified(File directory, String name) {
-    File file = new File(directory, name);
-    return file.lastModified();
-  }
-
   /** Returns the length in bytes of a file in the directory. */
   @Override
   public long fileLength(String name) throws IOException {
@@ -285,7 +263,7 @@ public abstract class FSDirectory extends Directory {
     ensureOpen();
 
     ensureCanWrite(name);
-    return new FSIndexOutput(this, name);
+    return new FSIndexOutput(name);
   }
 
   protected void ensureCanWrite(String name) throws IOException {
@@ -309,12 +287,19 @@ public abstract class FSDirectory extends Directory {
   @Override
   public void sync(Collection<String> names) throws IOException {
     ensureOpen();
-    Set<String> toSync = new HashSet<String>(names);
+    Set<String> toSync = new HashSet<>(names);
     toSync.retainAll(staleFiles);
 
-    for (String name : toSync)
+    for (String name : toSync) {
       fsync(name);
-
+    }
+    
+    // fsync the directory itsself, but only if there was any file fsynced before
+    // (otherwise it can happen that the directory does not yet exist)!
+    if (!toSync.isEmpty()) {
+      IOUtils.fsync(directory, true);
+    }
+    
     staleFiles.removeAll(toSync);
   }
 
@@ -351,139 +336,45 @@ public abstract class FSDirectory extends Directory {
   /** For debug output. */
   @Override
   public String toString() {
-    return this.getClass().getName() + "@" + directory + " lockFactory=" + getLockFactory();
+    return this.getClass().getSimpleName() + "@" + directory + " lockFactory=" + getLockFactory();
   }
 
-  /**
-   * Sets the maximum number of bytes read at once from the
-   * underlying file during {@link IndexInput#readBytes}.
-   * The default value is {@link #DEFAULT_READ_CHUNK_SIZE};
-   *
-   * <p> This was introduced due to <a
-   * href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6478546">Sun
-   * JVM Bug 6478546</a>, which throws an incorrect
-   * OutOfMemoryError when attempting to read too many bytes
-   * at once.  It only happens on 32bit JVMs with a large
-   * maximum heap size.</p>
-   *
-   * <p>Changes to this value will not impact any
-   * already-opened {@link IndexInput}s.  You should call
-   * this before attempting to open an index on the
-   * directory.</p>
-   *
-   * <p> <b>NOTE</b>: This value should be as large as
-   * possible to reduce any possible performance impact.  If
-   * you still encounter an incorrect OutOfMemoryError,
-   * trying lowering the chunk size.</p>
-   */
-  public final void setReadChunkSize(int chunkSize) {
-    // LUCENE-1566
-    if (chunkSize <= 0) {
-      throw new IllegalArgumentException("chunkSize must be positive");
-    }
-    if (!Constants.JRE_IS_64BIT) {
-      this.chunkSize = chunkSize;
-    }
-  }
-
-  /**
-   * The maximum number of bytes to read at once from the
-   * underlying file during {@link IndexInput#readBytes}.
-   * @see #setReadChunkSize
-   */
-  public final int getReadChunkSize() {
-    // LUCENE-1566
-    return chunkSize;
-  }
-
-  /**
-   * Writes output with {@link RandomAccessFile#write(byte[], int, int)}
-   */
-  protected static class FSIndexOutput extends BufferedIndexOutput {
-    private final FSDirectory parent;
-    private final String name;
-    private final RandomAccessFile file;
-    private volatile boolean isOpen; // remember if the file is open, so that we don't try to close it more than once
+  final class FSIndexOutput extends OutputStreamIndexOutput {
+    /**
+     * The maximum chunk size is 8192 bytes, because {@link FileOutputStream} mallocs
+     * a native buffer outside of stack if the write buffer size is larger.
+     */
+    static final int CHUNK_SIZE = 8192;
     
-    public FSIndexOutput(FSDirectory parent, String name) throws IOException {
-      this.parent = parent;
-      this.name = name;
-      file = new RandomAccessFile(new File(parent.directory, name), "rw");
-      isOpen = true;
-    }
+    private final String name;
 
-    /** output methods: */
-    @Override
-    public void flushBuffer(byte[] b, int offset, int size) throws IOException {
-      assert isOpen;
-      file.write(b, offset, size);
+    public FSIndexOutput(String name) throws IOException {
+      super(new FilterOutputStream(new FileOutputStream(new File(directory, name))) {
+        // This implementation ensures, that we never write more than CHUNK_SIZE bytes:
+        @Override
+        public void write(byte[] b, int offset, int length) throws IOException {
+          while (length > 0) {
+            final int chunk = Math.min(length, CHUNK_SIZE);
+            out.write(b, offset, chunk);
+            length -= chunk;
+            offset += chunk;
+          }
+        }
+      }, CHUNK_SIZE);
+      this.name = name;
     }
     
     @Override
     public void close() throws IOException {
-      parent.onIndexOutputClosed(name);
-      // only close the file if it has not been closed yet
-      if (isOpen) {
-        boolean success = false;
-        try {
-          super.close();
-          success = true;
-        } finally {
-          isOpen = false;
-          if (!success) {
-            try {
-              file.close();
-            } catch (Throwable t) {
-              // Suppress so we don't mask original exception
-            }
-          } else {
-            file.close();
-          }
-        }
+      try {
+        onIndexOutputClosed(name);
+      } finally {
+        super.close();
       }
-    }
-
-    @Override
-    public long length() throws IOException {
-      return file.length();
-    }
-
-    @Override
-    public void setLength(long length) throws IOException {
-      file.setLength(length);
     }
   }
 
   protected void fsync(String name) throws IOException {
-    File fullFile = new File(directory, name);
-    boolean success = false;
-    int retryCount = 0;
-    IOException exc = null;
-    while (!success && retryCount < 5) {
-      retryCount++;
-      RandomAccessFile file = null;
-      try {
-        try {
-          file = new RandomAccessFile(fullFile, "rw");
-          file.getFD().sync();
-          success = true;
-        } finally {
-          if (file != null)
-            file.close();
-        }
-      } catch (IOException ioe) {
-        if (exc == null)
-          exc = ioe;
-        try {
-          // Pause 5 msec
-          Thread.sleep(5);
-        } catch (InterruptedException ie) {
-          throw new ThreadInterruptedException(ie);
-        }
-      }
-    }
-    if (!success)
-      // Throw original exception
-      throw exc;
+    IOUtils.fsync(new File(directory, name), false);
   }
 }

@@ -107,7 +107,7 @@ public class TikaEntityProcessor extends EntityProcessorBase {
   @Override
   public Map<String, Object> nextRow() {
     if(done) return null;
-    Map<String, Object> row = new HashMap<String, Object>();
+    Map<String, Object> row = new HashMap<>();
     DataSource<InputStream> dataSource = context.getDataSource();
     InputStream is = dataSource.getData(context.getResolvedEntityAttribute(URL));
     ContentHandler contentHandler = null;

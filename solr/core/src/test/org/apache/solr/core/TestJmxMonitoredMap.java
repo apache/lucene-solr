@@ -83,7 +83,7 @@ public class TestJmxMonitoredMap extends LuceneTestCase {
       AbstractSolrTestCase.log.info("Using port: " + port);
       String url = "service:jmx:rmi:///jndi/rmi://127.0.0.1:"+port+"/solrjmx";
       JmxConfiguration config = new JmxConfiguration(true, null, url, null);
-      monitoredMap = new JmxMonitoredMap<String, SolrInfoMBean>("", "", config);
+      monitoredMap = new JmxMonitoredMap<>("", "", config);
       JMXServiceURL u = new JMXServiceURL(url);
       connector = JMXConnectorFactory.connect(u);
       mbeanServer = connector.getMBeanServerConnection();

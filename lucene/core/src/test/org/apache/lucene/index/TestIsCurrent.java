@@ -50,7 +50,7 @@ public class TestIsCurrent extends LuceneTestCase {
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
-    writer.close();
+    writer.shutdown();
     directory.close();
   }
 

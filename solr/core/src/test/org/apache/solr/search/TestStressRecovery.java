@@ -82,7 +82,7 @@ public class TestStressRecovery extends TestRTGBase {
 
     final AtomicInteger numCommitting = new AtomicInteger();
 
-    List<Thread> threads = new ArrayList<Thread>();
+    List<Thread> threads = new ArrayList<>();
 
 
     final AtomicLong testVersion = new AtomicLong(0);
@@ -119,7 +119,7 @@ public class TestStressRecovery extends TestRTGBase {
                   long version;
 
                   synchronized(globalLock) {
-                    newCommittedModel = new HashMap<Integer,DocInfo>(model);  // take a snapshot
+                    newCommittedModel = new HashMap<>(model);  // take a snapshot
                     version = snapshotCount++;
                   }
 
@@ -348,7 +348,7 @@ public class TestStressRecovery extends TestRTGBase {
       // before we start buffering updates, we want to point
       // visibleModel away from the live model.
 
-      visibleModel = new ConcurrentHashMap<Integer, DocInfo>(model);
+      visibleModel = new ConcurrentHashMap<>(model);
 
       synchronized (stateChangeLock) {
         uLog.bufferUpdates();

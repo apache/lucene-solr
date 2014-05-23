@@ -146,12 +146,12 @@ class CSVWriter extends TextResponseWriter {
     CSVSharedBufPrinter mvPrinter;  // printer used to encode multiple values in a single CSV value
 
     // used to collect values
-    List<IndexableField> values = new ArrayList<IndexableField>(1);  // low starting amount in case there are many fields
+    List<IndexableField> values = new ArrayList<>(1);  // low starting amount in case there are many fields
     int tmp;
   }
 
   int pass;
-  Map<String,CSVField> csvFields = new LinkedHashMap<String,CSVField>();
+  Map<String,CSVField> csvFields = new LinkedHashMap<>();
 
   Calendar cal;  // for formatting date objects
 
@@ -242,7 +242,7 @@ class CSVWriter extends TextResponseWriter {
       if (responseObj instanceof SolrDocumentList) {
         // get the list of fields from the SolrDocumentList
         if(fields==null) {
-          fields = new LinkedHashSet<String>();
+          fields = new LinkedHashSet<>();
         }
         for (SolrDocument sdoc: (SolrDocumentList)responseObj) {
           fields.addAll(sdoc.getFieldNames());

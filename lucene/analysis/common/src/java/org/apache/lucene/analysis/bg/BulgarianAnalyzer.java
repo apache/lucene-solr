@@ -118,8 +118,8 @@ public final class BulgarianAnalyzer extends StopwordAnalyzerBase {
    *         provided and {@link BulgarianStemFilter}.
    */
   @Override
-  public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-    final Tokenizer source = new StandardTokenizer(matchVersion, reader);
+  public TokenStreamComponents createComponents(String fieldName) {
+    final Tokenizer source = new StandardTokenizer(matchVersion);
     TokenStream result = new StandardFilter(matchVersion, source);
     result = new LowerCaseFilter(matchVersion, result);
     result = new StopFilter(matchVersion, result, stopwords);

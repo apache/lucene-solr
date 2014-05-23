@@ -23,13 +23,10 @@ import org.apache.lucene.util.PriorityQueue;
 
 /**
  * Expert: A hit queue for sorting by hits by terms in more than one field.
- * Uses <code>FieldCache.DEFAULT</code> for maintaining
- * internal term lookup tables.
  * 
  * @lucene.experimental
  * @since 2.9
  * @see IndexSearcher#search(Query,Filter,int,Sort)
- * @see FieldCache
  */
 public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> extends PriorityQueue<T> {
 
@@ -168,9 +165,9 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
     }
 
     if (fields.length == 1) {
-      return new OneComparatorFieldValueHitQueue<T>(fields, size);
+      return new OneComparatorFieldValueHitQueue<>(fields, size);
     } else {
-      return new MultiComparatorsFieldValueHitQueue<T>(fields, size);
+      return new MultiComparatorsFieldValueHitQueue<>(fields, size);
     }
   }
   

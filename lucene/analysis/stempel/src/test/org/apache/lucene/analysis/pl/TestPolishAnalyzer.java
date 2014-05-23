@@ -34,8 +34,8 @@ public class TestPolishAnalyzer extends BaseTokenStreamTestCase {
   public void testBasics() throws IOException {
     Analyzer a = new PolishAnalyzer(TEST_VERSION_CURRENT);
     // stemming
-    checkOneTermReuse(a, "studenta", "student");
-    checkOneTermReuse(a, "studenci", "student");
+    checkOneTerm(a, "studenta", "student");
+    checkOneTerm(a, "studenci", "student");
     // stopword
     assertAnalyzesTo(a, "był", new String[] {});
   }
@@ -45,8 +45,8 @@ public class TestPolishAnalyzer extends BaseTokenStreamTestCase {
     CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("studenta"), false);;
     Analyzer a = new PolishAnalyzer(TEST_VERSION_CURRENT, 
         PolishAnalyzer.getDefaultStopSet(), exclusionSet);
-    checkOneTermReuse(a, "studenta", "studenta");
-    checkOneTermReuse(a, "studenci", "student");
+    checkOneTerm(a, "studenta", "studenta");
+    checkOneTerm(a, "studenci", "student");
   }
   
   /** blast some random strings through the analyzer */

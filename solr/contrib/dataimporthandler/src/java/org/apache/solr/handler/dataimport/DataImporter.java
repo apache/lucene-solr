@@ -80,12 +80,12 @@ public class DataImporter {
   private DIHConfiguration config;
   private Date indexStartTime;
   private Properties store = new Properties();
-  private Map<String, Map<String,String>> requestLevelDataSourceProps = new HashMap<String, Map<String,String>>();
+  private Map<String, Map<String,String>> requestLevelDataSourceProps = new HashMap<>();
   private IndexSchema schema;
   public DocBuilder docBuilder;
   public DocBuilder.Statistics cumulativeStatistics = new DocBuilder.Statistics();
   private SolrCore core;  
-  private Map<String, Object> coreScopeSession = new ConcurrentHashMap<String,Object>();
+  private Map<String, Object> coreScopeSession = new ConcurrentHashMap<>();
   private ReentrantLock importLock = new ReentrantLock();
   private boolean isDeltaImportSupported = false;  
   private final String handlerName;  
@@ -131,7 +131,7 @@ public class DataImporter {
           success = true;
         }      
         
-        Map<String,Map<String,String>> dsProps = new HashMap<String,Map<String,String>>();
+        Map<String,Map<String,String>> dsProps = new HashMap<>();
         if(defaultParams!=null) {
           int position = 0;
           while (position < defaultParams.size()) {
@@ -143,7 +143,7 @@ public class DataImporter {
               success = true;
               NamedList dsConfig = (NamedList) defaultParams.getVal(position);
               LOG.info("Getting configuration for Global Datasource...");              
-              Map<String,String> props = new HashMap<String,String>();
+              Map<String,String> props = new HashMap<>();
               for (int i = 0; i < dsConfig.size(); i++) {
                 props.put(dsConfig.getName(i), dsConfig.getVal(i).toString());
               }
@@ -225,9 +225,9 @@ public class DataImporter {
   
   public DIHConfiguration readFromXml(Document xmlDocument) {
     DIHConfiguration config;
-    List<Map<String, String >> functions = new ArrayList<Map<String ,String>>();
+    List<Map<String, String >> functions = new ArrayList<>();
     Script script = null;
-    Map<String, Map<String,String>> dataSources = new HashMap<String, Map<String,String>>();
+    Map<String, Map<String,String>> dataSources = new HashMap<>();
     
     NodeList dataConfigTags = xmlDocument.getElementsByTagName("dataConfig");
     if(dataConfigTags == null || dataConfigTags.getLength() == 0) {
@@ -263,7 +263,7 @@ public class DataImporter {
     List<Element> dataSourceTags = ConfigParseUtil.getChildNodes(e, ConfigNameConstants.DATA_SRC);
     if (!dataSourceTags.isEmpty()) {
       for (Element element : dataSourceTags) {
-        Map<String,String> p = new HashMap<String,String>();
+        Map<String,String> p = new HashMap<>();
         HashMap<String, String> attrs = ConfigParseUtil.getAllAttributes(element);
         for (Map.Entry<String, String> entry : attrs.entrySet()) {
           p.put(entry.getKey(), entry.getValue());
@@ -294,7 +294,7 @@ public class DataImporter {
     } else {
       Element pwElement = propertyWriterTags.get(0);
       String type = null;
-      Map<String,String> params = new HashMap<String,String>();
+      Map<String,String> params = new HashMap<>();
       for (Map.Entry<String,String> entry : ConfigParseUtil.getAllAttributes(
           pwElement).entrySet()) {
         if (TYPE.equals(entry.getKey())) {
@@ -399,10 +399,10 @@ public class DataImporter {
     return importLock.isLocked();
   }
 
-  public void doFullImport(SolrWriter writer, RequestInfo requestParams) {
+  public void doFullImport(DIHWriter writer, RequestInfo requestParams) {
     LOG.info("Starting Full Import");
     setStatus(Status.RUNNING_FULL_DUMP);
-
+    boolean success = false;
     try {
       DIHProperties dihPropWriter = createPropertyWriter();
       setIndexStartTime(dihPropWriter.getCurrentTimestamp());
@@ -411,27 +411,31 @@ public class DataImporter {
       docBuilder.execute();
       if (!requestParams.isDebug())
         cumulativeStatistics.add(docBuilder.importStatistics);
-    } catch (Throwable t) {
-      SolrException.log(LOG, "Full Import failed", t);
-      docBuilder.rollback();
+      success = true;
+    } catch (Exception e) {
+      SolrException.log(LOG, "Full Import failed", e);
     } finally {
+      if (!success) {
+        docBuilder.rollback();
+      }
+      
       setStatus(Status.IDLE);
       DocBuilder.INSTANCE.set(null);
     }
 
   }
 
-  private void checkWritablePersistFile(SolrWriter writer, DIHProperties dihPropWriter) {
+  private void checkWritablePersistFile(DIHWriter writer, DIHProperties dihPropWriter) {
    if (isDeltaImportSupported && !dihPropWriter.isWritable()) {
       throw new DataImportHandlerException(SEVERE,
           "Properties is not writable. Delta imports are supported by data config but will not work.");
     }
   }
 
-  public void doDeltaImport(SolrWriter writer, RequestInfo requestParams) {
+  public void doDeltaImport(DIHWriter writer, RequestInfo requestParams) {
     LOG.info("Starting Delta Import");
     setStatus(Status.RUNNING_DELTA_DUMP);
-
+    boolean success = false;
     try {
       DIHProperties dihPropWriter = createPropertyWriter();
       setIndexStartTime(dihPropWriter.getCurrentTimestamp());
@@ -440,17 +444,20 @@ public class DataImporter {
       docBuilder.execute();
       if (!requestParams.isDebug())
         cumulativeStatistics.add(docBuilder.importStatistics);
-    } catch (Throwable t) {
-      LOG.error("Delta Import Failed", t);
-      docBuilder.rollback();
+      success = true;
+    } catch (Exception e) {
+      LOG.error("Delta Import Failed", e);
     } finally {
+      if (!success) {
+        docBuilder.rollback();
+      }
       setStatus(Status.IDLE);
       DocBuilder.INSTANCE.set(null);
     }
 
   }
 
-  public void runAsync(final RequestInfo reqParams, final SolrWriter sw) {
+  public void runAsync(final RequestInfo reqParams, final DIHWriter sw) {
     new Thread() {
       @Override
       public void run() {
@@ -459,7 +466,7 @@ public class DataImporter {
     }.start();
   }
 
-  void runCmd(RequestInfo reqParams, SolrWriter sw) {
+  void runCmd(RequestInfo reqParams, DIHWriter sw) {
     String command = reqParams.getCommand();
     if (command.equals(ABORT_CMD)) {
       if (docBuilder != null) {
@@ -487,7 +494,7 @@ public class DataImporter {
     //this map object is a Collections.synchronizedMap(new LinkedHashMap()). if we
     // synchronize on the object it must be safe to iterate through the map
     Map statusMessages = (Map) retrieve(STATUS_MSGS);
-    Map<String, String> result = new LinkedHashMap<String, String>();
+    Map<String, String> result = new LinkedHashMap<>();
     if (statusMessages != null) {
       synchronized (statusMessages) {
         for (Object o : statusMessages.entrySet()) {
@@ -513,7 +520,7 @@ public class DataImporter {
    * used by tests.
    */
   Map<String, Evaluator> getEvaluators(List<Map<String,String>> fn) {
-    Map<String, Evaluator> evaluators = new HashMap<String, Evaluator>();
+    Map<String, Evaluator> evaluators = new HashMap<>();
     evaluators.put(Evaluator.DATE_FORMAT_EVALUATOR, new DateFormatEvaluator());
     evaluators.put(Evaluator.SQL_ESCAPE_EVALUATOR, new SqlEscapingEvaluator());
     evaluators.put(Evaluator.URL_ENCODE_EVALUATOR, new UrlEvaluator());

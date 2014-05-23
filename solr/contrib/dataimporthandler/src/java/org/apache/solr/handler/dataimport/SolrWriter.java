@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 
 /**
  * <p> Writes documents to SOLR. </p>
@@ -105,8 +106,8 @@ public class SolrWriter extends DIHWriterBase implements DIHWriter {
     try {
       CommitUpdateCommand commit = new CommitUpdateCommand(req,optimize);
       processor.processCommit(commit);
-    } catch (Throwable t) {
-      log.error("Exception while solr commit.", t);
+    } catch (Exception e) {
+      log.error("Exception while solr commit.", e);
     }
   }
 
@@ -115,8 +116,8 @@ public class SolrWriter extends DIHWriterBase implements DIHWriter {
     try {
       RollbackUpdateCommand rollback = new RollbackUpdateCommand(req);
       processor.processRollback(rollback);
-    } catch (Throwable t) {
-      log.error("Exception while solr rollback.", t);
+    } catch (Exception e) {
+      log.error("Exception while solr rollback.", e);
     }
   }
 
@@ -147,7 +148,7 @@ public class SolrWriter extends DIHWriterBase implements DIHWriter {
 
       }
     }
-    return new String(baos.toByteArray(), "UTF-8");
+    return new String(baos.toByteArray(), StandardCharsets.UTF_8);
   }
 
   static String getDocCount() {

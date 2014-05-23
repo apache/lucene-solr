@@ -32,7 +32,7 @@ public class TestICUFoldingFilterFactory extends BaseTokenStreamTestCase {
   public void test() throws Exception {
     Reader reader = new StringReader("Résumé");
     ICUFoldingFilterFactory factory = new ICUFoldingFilterFactory(new HashMap<String,String>());
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = factory.create(stream);
     assertTokenStreamContents(stream, new String[] { "resume" });
   }

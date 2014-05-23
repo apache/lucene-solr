@@ -22,8 +22,8 @@ package org.apache.lucene.classification;
  */
 public class ClassificationResult<T> {
 
-  private T assignedClass;
-  private double score;
+  private final T assignedClass;
+  private final double score;
 
   /**
    * Constructor

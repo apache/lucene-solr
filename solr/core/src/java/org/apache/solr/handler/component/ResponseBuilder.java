@@ -18,7 +18,6 @@
 package org.apache.solr.handler.component;
 
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.BytesRef;
@@ -30,6 +29,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.CursorMark;
 import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -40,6 +40,7 @@ import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
 
@@ -55,14 +56,16 @@ public class ResponseBuilder
   public SolrQueryResponse rsp;
   public boolean doHighlights;
   public boolean doFacets;
+  public boolean doExpand;
   public boolean doStats;
   public boolean doTerms;
+  public MergeStrategy mergeFieldHandler;
 
   private boolean needDocList = false;
   private boolean needDocSet = false;
   private int fieldFlags = 0;
   //private boolean debug = false;
-  private boolean debugTimings, debugQuery, debugResults;
+  private boolean debugTimings, debugQuery, debugResults, debugTrack;
 
   private QParser qparser = null;
   private String queryString = null;
@@ -70,8 +73,10 @@ public class ResponseBuilder
   private List<Query> filters = null;
   private SortSpec sortSpec = null;
   private GroupingSpecification groupingSpec;
-  //used for handling deep paging
-  private ScoreDoc scoreDoc;
+  private CursorMark cursorMark;
+  private CursorMark nextCursorMark;
+
+  private List<MergeStrategy> mergeStrategies;
 
 
   private DocListAndSet results = null;
@@ -129,7 +134,7 @@ public class ResponseBuilder
   public int shards_start = -1;
   public List<ShardRequest> outgoing;  // requests to be sent
   public List<ShardRequest> finished;  // requests that have received responses from all shards
-
+  public String shortCircuitedURL;
 
   public int getShardNum(String shard) {
     for (int i = 0; i < shards.length; i++) {
@@ -158,6 +163,7 @@ public class ResponseBuilder
   // returned sequence.
   // Only valid after STAGE_EXECUTE_QUERY has completed.
 
+  public boolean onePassDistributedQuery;
 
   public FacetComponent.FacetInfo _facetInfo;
   /* private... components that don't own these shouldn't use them */
@@ -167,12 +173,12 @@ public class ResponseBuilder
   SimpleOrderedMap<List<NamedList<Object>>> _pivots;
 
   // Context fields for grouping
-  public final Map<String, Collection<SearchGroup<BytesRef>>> mergedSearchGroups = new HashMap<String, Collection<SearchGroup<BytesRef>>>();
-  public final Map<String, Integer> mergedGroupCounts = new HashMap<String, Integer>();
-  public final Map<String, Map<SearchGroup<BytesRef>, Set<String>>> searchGroupToShards = new HashMap<String, Map<SearchGroup<BytesRef>, Set<String>>>();
-  public final Map<String, TopGroups<BytesRef>> mergedTopGroups = new HashMap<String, TopGroups<BytesRef>>();
-  public final Map<String, QueryCommandResult> mergedQueryCommandResults = new HashMap<String, QueryCommandResult>();
-  public final Map<Object, SolrDocument> retrievedDocuments = new HashMap<Object, SolrDocument>();
+  public final Map<String, Collection<SearchGroup<BytesRef>>> mergedSearchGroups = new HashMap<>();
+  public final Map<String, Integer> mergedGroupCounts = new HashMap<>();
+  public final Map<String, Map<SearchGroup<BytesRef>, Set<String>>> searchGroupToShards = new HashMap<>();
+  public final Map<String, TopGroups<BytesRef>> mergedTopGroups = new HashMap<>();
+  public final Map<String, QueryCommandResult> mergedQueryCommandResults = new HashMap<>();
+  public final Map<Object, SolrDocument> retrievedDocuments = new HashMap<>();
   public int totalHitCount; // Hit count used when distributed grouping is performed.
   // Used for timeAllowed parameter. First phase elapsed time is subtracted from the time allowed for the second phase.
   public int firstPhaseElapsedTime;
@@ -184,14 +190,14 @@ public class ResponseBuilder
   public void addDebugInfo( String name, Object val )
   {
     if( debugInfo == null ) {
-      debugInfo = new SimpleOrderedMap<Object>();
+      debugInfo = new SimpleOrderedMap<>();
     }
     debugInfo.add( name, val );
   }
 
   public void addDebug(Object val, String... path) {
     if( debugInfo == null ) {
-      debugInfo = new SimpleOrderedMap<Object>();
+      debugInfo = new SimpleOrderedMap<>();
     }
 
     NamedList<Object> target = debugInfo;
@@ -199,7 +205,7 @@ public class ResponseBuilder
       String elem = path[i];
       NamedList<Object> newTarget = (NamedList<Object>)debugInfo.get(elem);
       if (newTarget == null) {
-        newTarget = new SimpleOrderedMap<Object>();
+        newTarget = new SimpleOrderedMap<>();
         target.add(elem, newTarget);
       }
       target = newTarget;
@@ -212,7 +218,7 @@ public class ResponseBuilder
   //-------------------------------------------------------------------------
 
   public boolean isDebug() {
-    return debugQuery || debugTimings || debugResults;
+    return debugQuery || debugTimings || debugResults || debugTrack;
   }
 
   /**
@@ -220,13 +226,38 @@ public class ResponseBuilder
    * @return true if all debugging options are on
    */
   public boolean isDebugAll(){
-    return debugQuery && debugTimings && debugResults;
+    return debugQuery && debugTimings && debugResults && debugTrack;
   }
-  
+
   public void setDebug(boolean dbg){
     debugQuery = dbg;
     debugTimings = dbg;
     debugResults = dbg;
+    debugTrack = dbg;
+  }
+
+  public void addMergeStrategy(MergeStrategy mergeStrategy) {
+    if(mergeStrategies == null) {
+      mergeStrategies = new ArrayList();
+    }
+
+    mergeStrategies.add(mergeStrategy);
+  }
+
+  public List<MergeStrategy> getMergeStrategies() {
+    return this.mergeStrategies;
+  }
+
+  public void setResponseDocs(SolrDocumentList _responseDocs) {
+    this._responseDocs = _responseDocs;
+  }
+
+  public boolean isDebugTrack() {
+    return debugTrack;
+  }
+
+  public void setDebugTrack(boolean debugTrack) {
+    this.debugTrack = debugTrack;
   }
 
   public boolean isDebugTimings() {
@@ -386,7 +417,7 @@ public class ResponseBuilder
             .setLen(getSortSpec().getCount())
             .setFlags(getFieldFlags())
             .setNeedDocSet(isNeedDocSet())
-            .setScoreDoc(getScoreDoc()); //Issue 1726
+            .setCursorMark(getCursorMark());
     return cmd;
   }
 
@@ -398,6 +429,10 @@ public class ResponseBuilder
     if (result.isPartialResults()) {
       rsp.getResponseHeader().add("partialResults", Boolean.TRUE);
     }
+    if (null != cursorMark) {
+      assert null != result.getNextCursorMark() : "using cursor but no next cursor set";
+      this.setNextCursorMark(result.getNextCursorMark());
+    }
   }
   
   public long getNumberDocumentsFound() {
@@ -407,13 +442,17 @@ public class ResponseBuilder
     return _responseDocs.getNumFound();
   }
 
-  public ScoreDoc getScoreDoc()
-  {
-    return scoreDoc;
+  public CursorMark getCursorMark() {
+    return cursorMark;
   }
-  
-  public void setScoreDoc(ScoreDoc scoreDoc)
-  {
-    this.scoreDoc = scoreDoc;
+  public void setCursorMark(CursorMark cursorMark) {
+    this.cursorMark = cursorMark;
+  }
+
+  public CursorMark getNextCursorMark() {
+    return nextCursorMark;
+  }
+  public void setNextCursorMark(CursorMark nextCursorMark) {
+    this.nextCursorMark = nextCursorMark;
   }
 }

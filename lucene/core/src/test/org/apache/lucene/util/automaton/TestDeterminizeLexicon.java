@@ -17,20 +17,21 @@ package org.apache.lucene.util.automaton;
  * limitations under the License.
  */
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Not thorough, but tries to test determinism correctness
  * somewhat randomly, by determinizing a huge random lexicon.
  */
 public class TestDeterminizeLexicon extends LuceneTestCase {
-  private List<Automaton> automata = new ArrayList<Automaton>();
-  private List<String> terms = new ArrayList<String>();
+  private List<Automaton> automata = new ArrayList<>();
+  private List<String> terms = new ArrayList<>();
   
   public void testLexicon() throws Exception {
     int num = atLeast(1);
@@ -38,7 +39,7 @@ public class TestDeterminizeLexicon extends LuceneTestCase {
       automata.clear();
       terms.clear();
       for (int j = 0; j < 5000; j++) {
-        String randomString = _TestUtil.randomUnicodeString(random());
+        String randomString = TestUtil.randomUnicodeString(random());
         terms.add(randomString);
         automata.add(BasicAutomata.makeString(randomString));
       }
@@ -56,7 +57,7 @@ public class TestDeterminizeLexicon extends LuceneTestCase {
     }
     final ByteRunAutomaton lexByte = new ByteRunAutomaton(lex);
     for (String s : terms) {
-      byte bytes[] = s.getBytes("UTF-8");
+      byte bytes[] = s.getBytes(StandardCharsets.UTF_8);
       assertTrue(lexByte.run(bytes, 0, bytes.length));
     }
   }

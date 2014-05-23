@@ -28,6 +28,16 @@ import org.apache.commons.io.IOUtils;
 
 public class TestSystemIdResolver extends LuceneTestCase {
   
+  public void setUp() throws Exception {
+    super.setUp();
+    System.setProperty("solr.allow.unsafe.resourceloading", "true");
+  }
+
+  public void tearDown() throws Exception {
+    System.clearProperty("solr.allow.unsafe.resourceloading");
+    super.tearDown();
+  }
+
   private void assertEntityResolving(SystemIdResolver resolver, String expectedSystemId, String base, String systemId) throws Exception {
     final InputSource is = resolver.resolveEntity(null, null, base, systemId);
     try {

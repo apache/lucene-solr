@@ -1,5 +1,7 @@
 package org.apache.lucene.util;
 
+import java.nio.charset.StandardCharsets;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -88,7 +90,7 @@ package org.apache.lucene.util;
 /**
  * Class to encode java's UTF16 char[] into UTF8 byte[]
  * without always allocating a new byte[] as
- * String.getBytes("UTF-8") does.
+ * String.getBytes(StandardCharsets.UTF_8) does.
  *
  * @lucene.internal
  */
@@ -96,7 +98,7 @@ package org.apache.lucene.util;
 public final class UnicodeUtil {
   
   /** A binary term consisting of a number of 0xff bytes, likely to be bigger than other terms
-   *  one would normally encounter, and definitely bigger than any UTF-8 terms.
+   *  (e.g. collation keys) one would normally encounter, and definitely bigger than any UTF-8 terms.
    *  <p>
    *  WARNING: This is not a valid UTF8 Term  
    **/
@@ -120,62 +122,6 @@ public final class UnicodeUtil {
   private static final int SURROGATE_OFFSET = 
     Character.MIN_SUPPLEMENTARY_CODE_POINT - 
     (UNI_SUR_HIGH_START << HALF_SHIFT) - UNI_SUR_LOW_START;
-
-  /** Encode characters from a char[] source, starting at
-   *  offset for length chars.  Returns a hash of the resulting bytes.  After encoding, result.offset will always be 0. */
-  // TODO: broken if incoming result.offset != 0
-  public static int UTF16toUTF8WithHash(final char[] source, final int offset, final int length, BytesRef result) {
-    int hash = 0;
-    int upto = 0;
-    int i = offset;
-    final int end = offset + length;
-    byte[] out = result.bytes;
-    // Pre-allocate for worst case 4-for-1
-    final int maxLen = length * 4;
-    if (out.length < maxLen)
-      out = result.bytes = new byte[ArrayUtil.oversize(maxLen, 1)];
-    result.offset = 0;
-
-    while(i < end) {
-      
-      final int code = (int) source[i++];
-
-      if (code < 0x80) {
-        hash = 31*hash + (out[upto++] = (byte) code);
-      } else if (code < 0x800) {
-        hash = 31*hash + (out[upto++] = (byte) (0xC0 | (code >> 6)));
-        hash = 31*hash + (out[upto++] = (byte)(0x80 | (code & 0x3F)));
-      } else if (code < 0xD800 || code > 0xDFFF) {
-        hash = 31*hash + (out[upto++] = (byte)(0xE0 | (code >> 12)));
-        hash = 31*hash + (out[upto++] = (byte)(0x80 | ((code >> 6) & 0x3F)));
-        hash = 31*hash + (out[upto++] = (byte)(0x80 | (code & 0x3F)));
-      } else {
-        // surrogate pair
-        // confirm valid high surrogate
-        if (code < 0xDC00 && i < end) {
-          int utf32 = (int) source[i];
-          // confirm valid low surrogate and write pair
-          if (utf32 >= 0xDC00 && utf32 <= 0xDFFF) { 
-            utf32 = (code << 10) + utf32 + SURROGATE_OFFSET;
-            i++;
-            hash = 31*hash + (out[upto++] = (byte)(0xF0 | (utf32 >> 18)));
-            hash = 31*hash + (out[upto++] = (byte)(0x80 | ((utf32 >> 12) & 0x3F)));
-            hash = 31*hash + (out[upto++] = (byte)(0x80 | ((utf32 >> 6) & 0x3F)));
-            hash = 31*hash + (out[upto++] = (byte)(0x80 | (utf32 & 0x3F)));
-            continue;
-          }
-        }
-        // replace unpaired surrogate or out-of-order low surrogate
-        // with substitution character
-        hash = 31*hash + (out[upto++] = (byte) 0xEF);
-        hash = 31*hash + (out[upto++] = (byte) 0xBF);
-        hash = 31*hash + (out[upto++] = (byte) 0xBD);
-      }
-    }
-    //assert matches(source, offset, length, out, upto);
-    result.length = upto;
-    return hash;
-  }
 
   /** Encode characters from a char[] source, starting at
    *  offset for length chars. After encoding, result.offset will always be 0.
@@ -292,7 +238,7 @@ public final class UnicodeUtil {
   private static boolean matches(char[] source, int offset, int length, byte[] result, int upto) {
     try {
       String s1 = new String(source, offset, length);
-      String s2 = new String(result, 0, upto, "UTF-8");
+      String s2 = new String(result, 0, upto, StandardCharsets.UTF_8);
       if (!s1.equals(s2)) {
         //System.out.println("DIFF: s1 len=" + s1.length());
         //for(int i=0;i<s1.length();i++)
@@ -318,7 +264,7 @@ public final class UnicodeUtil {
   private static boolean matches(String source, int offset, int length, byte[] result, int upto) {
     try {
       String s1 = source.substring(offset, offset+length);
-      String s2 = new String(result, 0, upto, "UTF-8");
+      String s2 = new String(result, 0, upto, StandardCharsets.UTF_8);
       if (!s1.equals(s2)) {
         // Allow a difference if s1 is not valid UTF-16
 

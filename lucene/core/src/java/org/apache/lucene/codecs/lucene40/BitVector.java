@@ -21,11 +21,14 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.index.IndexFormatTooOldException;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.MutableBits;
 
@@ -166,7 +169,7 @@ final class BitVector implements Cloneable, MutableBits {
       int c = 0;
       int end = bits.length;
       for (int i = 0; i < end; i++) {
-        c += BYTE_COUNTS[bits[i] & 0xFF];  // sum bits per byte
+        c += BitUtil.bitCount(bits[i]);  // sum bits per byte
       }
       count = c;
     }
@@ -179,29 +182,12 @@ final class BitVector implements Cloneable, MutableBits {
     int c = 0;
     int end = bits.length;
     for (int i = 0; i < end; i++) {
-      c += BYTE_COUNTS[bits[i] & 0xFF];  // sum bits per byte
+      c += BitUtil.bitCount(bits[i]);  // sum bits per byte
     }
     return c;
   }
 
-  private static final byte[] BYTE_COUNTS = {  // table of bits/byte
-    0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
-    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
-    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
-    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
-    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
-    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
-    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
-    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
-    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
-    4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8
-  };
+
 
   private static String CODEC = "BitVector";
 
@@ -214,9 +200,12 @@ final class BitVector implements Cloneable, MutableBits {
   // Changed DGaps to encode gaps between cleared bits, not
   // set:
   public final static int VERSION_DGAPS_CLEARED = 1;
+  
+  // added checksum
+  public final static int VERSION_CHECKSUM = 2;
 
   // Increment version to change it:
-  public final static int VERSION_CURRENT = VERSION_DGAPS_CLEARED;
+  public final static int VERSION_CURRENT = VERSION_CHECKSUM;
 
   public int getVersion() {
     return version;
@@ -237,6 +226,7 @@ final class BitVector implements Cloneable, MutableBits {
       } else {
         writeBits(output);
       }
+      CodecUtil.writeFooter(output);
       assert verifyCount();
     } finally {
       IOUtils.close(output);
@@ -294,7 +284,7 @@ final class BitVector implements Cloneable, MutableBits {
         output.writeVInt(i-last);
         output.writeByte(bits[i]);
         last = i;
-        numCleared -= (8-BYTE_COUNTS[bits[i] & 0xFF]);
+        numCleared -= (8-BitUtil.bitCount(bits[i]));
         assert numCleared >= 0 || (i == (bits.length-1) && numCleared == -(8-(size&7)));
       }
     }
@@ -340,7 +330,7 @@ final class BitVector implements Cloneable, MutableBits {
     <code>d</code>, as written by the {@link #write} method.
     */
   public BitVector(Directory d, String name, IOContext context) throws IOException {
-    IndexInput input = d.openInput(name, context);
+    ChecksumIndexInput input = d.openChecksumInput(name, context);
 
     try {
       final int firstInt = input.readInt();
@@ -350,8 +340,8 @@ final class BitVector implements Cloneable, MutableBits {
         version = CodecUtil.checkHeader(input, CODEC, VERSION_START, VERSION_CURRENT);
         size = input.readInt();
       } else {
-        version = VERSION_PRE;
-        size = firstInt;
+        // we started writing full header well before 4.0
+        throw new IndexFormatTooOldException(input.toString(), Integer.toString(firstInt));
       }
       if (size == -1) {
         if (version >= VERSION_DGAPS_CLEARED) {
@@ -367,6 +357,11 @@ final class BitVector implements Cloneable, MutableBits {
         invertAll();
       }
 
+      if (version >= VERSION_CHECKSUM) {
+        CodecUtil.checkFooter(input);
+      } else {
+        CodecUtil.checkEOF(input);
+      }
       assert verifyCount();
     } finally {
       input.close();
@@ -399,7 +394,7 @@ final class BitVector implements Cloneable, MutableBits {
     while (n>0) {
       last += input.readVInt();
       bits[last] = input.readByte();
-      n -= BYTE_COUNTS[bits[last] & 0xFF];
+      n -= BitUtil.bitCount(bits[last]);
       assert n >= 0;
     }          
   }
@@ -416,7 +411,7 @@ final class BitVector implements Cloneable, MutableBits {
     while (numCleared>0) {
       last += input.readVInt();
       bits[last] = input.readByte();
-      numCleared -= 8-BYTE_COUNTS[bits[last] & 0xFF];
+      numCleared -= 8-BitUtil.bitCount(bits[last]);
       assert numCleared >= 0 || (last == (bits.length-1) && numCleared == -(8-(size&7)));
     }
   }

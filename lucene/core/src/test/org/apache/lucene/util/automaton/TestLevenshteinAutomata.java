@@ -141,7 +141,7 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
    * one character)
    */
   private Automaton insertionsOf(String s) {
-    List<Automaton> list = new ArrayList<Automaton>();
+    List<Automaton> list = new ArrayList<>();
     
     for (int i = 0; i <= s.length(); i++) {
       Automaton a = BasicAutomata.makeString(s.substring(0, i));
@@ -161,7 +161,7 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
    * one character).
    */
   private Automaton deletionsOf(String s) {
-    List<Automaton> list = new ArrayList<Automaton>();
+    List<Automaton> list = new ArrayList<>();
     
     for (int i = 0; i < s.length(); i++) {
       Automaton a = BasicAutomata.makeString(s.substring(0, i));
@@ -181,7 +181,7 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
    * (replacing one character)
    */
   private Automaton substitutionsOf(String s) {
-    List<Automaton> list = new ArrayList<Automaton>();
+    List<Automaton> list = new ArrayList<>();
     
     for (int i = 0; i < s.length(); i++) {
       Automaton a = BasicAutomata.makeString(s.substring(0, i));
@@ -203,7 +203,7 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
   private Automaton transpositionsOf(String s) {
     if (s.length() < 2)
       return BasicAutomata.makeEmpty();
-    List<Automaton> list = new ArrayList<Automaton>();
+    List<Automaton> list = new ArrayList<>();
     for (int i = 0; i < s.length()-1; i++) {
       StringBuilder sb = new StringBuilder();
       sb.append(s.substring(0, i));

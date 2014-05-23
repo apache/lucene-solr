@@ -18,7 +18,7 @@ package org.apache.lucene.search.spans;
  */
 
 import java.io.IOException;
-import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -44,7 +44,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -81,7 +81,7 @@ public class TestBasics extends LuceneTestCase {
     @Override
     public boolean incrementToken() throws IOException {
       if (input.incrementToken()) {
-        payloadAttr.setPayload(new BytesRef(("pos: " + pos).getBytes("UTF-8")));
+        payloadAttr.setPayload(new BytesRef(("pos: " + pos).getBytes(StandardCharsets.UTF_8)));
         pos++;
         return true;
       } else {
@@ -102,8 +102,8 @@ public class TestBasics extends LuceneTestCase {
   public static void beforeClass() throws Exception {
     simplePayloadAnalyzer = new Analyzer() {
         @Override
-        public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+        public TokenStreamComponents createComponents(String fieldName) {
+          Tokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, true);
           return new TokenStreamComponents(tokenizer, new SimplePayloadFilter(tokenizer));
         }
     };
@@ -111,7 +111,7 @@ public class TestBasics extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
         newIndexWriterConfig(TEST_VERSION_CURRENT, simplePayloadAnalyzer)
-                                                     .setMaxBufferedDocs(_TestUtil.nextInt(random(), 100, 1000)).setMergePolicy(newLogMergePolicy()));
+                                                     .setMaxBufferedDocs(TestUtil.nextInt(random(), 100, 1000)).setMergePolicy(newLogMergePolicy()));
     //writer.infoStream = System.out;
     for (int i = 0; i < 2000; i++) {
       Document doc = new Document();
@@ -120,7 +120,7 @@ public class TestBasics extends LuceneTestCase {
     }
     reader = writer.getReader();
     searcher = newSearcher(reader);
-    writer.close();
+    writer.shutdown();
   }
 
   @AfterClass
@@ -364,6 +364,77 @@ public class TestBasics extends LuceneTestCase {
   }
   
   @Test
+  public void testSpanNotWindowOne() throws Exception {
+    SpanTermQuery term1 = new SpanTermQuery(new Term("field", "eight"));
+    SpanTermQuery term2 = new SpanTermQuery(new Term("field", "forty"));
+    SpanNearQuery near = new SpanNearQuery(new SpanQuery[] {term1, term2},
+                                           4, true);
+    SpanTermQuery term3 = new SpanTermQuery(new Term("field", "one"));
+    SpanNotQuery query = new SpanNotQuery(near, term3, 1, 1);
+
+    checkHits(query, new int[]
+      {840, 842, 843, 844, 845, 846, 847, 848, 849,
+          1840, 1842, 1843, 1844, 1845, 1846, 1847, 1848, 1849});
+
+    assertTrue(searcher.explain(query, 840).getValue() > 0.0f);
+    assertTrue(searcher.explain(query, 1842).getValue() > 0.0f);
+  }
+  
+  @Test
+  public void testSpanNotWindowTwoBefore() throws Exception {
+    SpanTermQuery term1 = new SpanTermQuery(new Term("field", "eight"));
+    SpanTermQuery term2 = new SpanTermQuery(new Term("field", "forty"));
+    SpanNearQuery near = new SpanNearQuery(new SpanQuery[] {term1, term2},
+                                           4, true);
+    SpanTermQuery term3 = new SpanTermQuery(new Term("field", "one"));
+    SpanNotQuery query = new SpanNotQuery(near, term3, 2, 0);
+
+    checkHits(query, new int[]
+      {840, 841, 842, 843, 844, 845, 846, 847, 848, 849});
+
+    assertTrue(searcher.explain(query, 840).getValue() > 0.0f);
+    assertTrue(searcher.explain(query, 849).getValue() > 0.0f);
+  }
+
+  @Test
+  public void testSpanNotWindowNeg() throws Exception {
+     //test handling of invalid window < 0
+     SpanTermQuery term1 = new SpanTermQuery(new Term("field", "eight"));
+     SpanTermQuery term2 = new SpanTermQuery(new Term("field", "one"));
+     SpanNearQuery near = new SpanNearQuery(new SpanQuery[] {term1, term2},
+                                            4, true);
+     SpanTermQuery term3 = new SpanTermQuery(new Term("field", "forty"));
+
+     SpanOrQuery or = new SpanOrQuery(term3);
+
+     SpanNotQuery query = new SpanNotQuery(near, or);
+
+     checkHits(query, new int[]
+       {801, 821, 831, 851, 861, 871, 881, 891,
+               1801, 1821, 1831, 1851, 1861, 1871, 1881, 1891});
+
+     assertTrue(searcher.explain(query, 801).getValue() > 0.0f);
+     assertTrue(searcher.explain(query, 891).getValue() > 0.0f);
+  }
+  
+  @Test
+  public void testSpanNotWindowDoubleExcludesBefore() throws Exception {
+     //test hitting two excludes before an include
+     SpanTermQuery term1 = new SpanTermQuery(new Term("field", "forty"));
+     SpanTermQuery term2 = new SpanTermQuery(new Term("field", "two"));
+     SpanNearQuery near = new SpanNearQuery(new SpanTermQuery[]{term1, term2}, 2, true);
+     SpanTermQuery exclude = new SpanTermQuery(new Term("field", "one"));
+
+     SpanNotQuery query = new SpanNotQuery(near, exclude, 4, 1);
+
+     checkHits(query, new int[]
+       {42, 242, 342, 442, 542, 642, 742, 842, 942});
+
+     assertTrue(searcher.explain(query, 242).getValue() > 0.0f);
+     assertTrue(searcher.explain(query, 942).getValue() > 0.0f);
+  }
+  
+  @Test
   public void testSpanFirst() throws Exception {
     SpanTermQuery term1 = new SpanTermQuery(new Term("field", "five"));
     SpanFirstQuery query = new SpanFirstQuery(term1, 1);
@@ -412,7 +483,7 @@ public class TestBasics extends LuceneTestCase {
   @Test
   public void testSpanPayloadCheck() throws Exception {
     SpanTermQuery term1 = new SpanTermQuery(new Term("field", "five"));
-    BytesRef pay = new BytesRef(("pos: " + 5).getBytes("UTF-8"));
+    BytesRef pay = new BytesRef(("pos: " + 5).getBytes(StandardCharsets.UTF_8));
     SpanQuery query = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay.bytes));
     checkHits(query, new int[]
       {1125, 1135, 1145, 1155, 1165, 1175, 1185, 1195, 1225, 1235, 1245, 1255, 1265, 1275, 1285, 1295, 1325, 1335, 1345, 1355, 1365, 1375, 1385, 1395, 1425, 1435, 1445, 1455, 1465, 1475, 1485, 1495, 1525, 1535, 1545, 1555, 1565, 1575, 1585, 1595, 1625, 1635, 1645, 1655, 1665, 1675, 1685, 1695, 1725, 1735, 1745, 1755, 1765, 1775, 1785, 1795, 1825, 1835, 1845, 1855, 1865, 1875, 1885, 1895, 1925, 1935, 1945, 1955, 1965, 1975, 1985, 1995});
@@ -427,9 +498,9 @@ public class TestBasics extends LuceneTestCase {
     clauses[0] = term1;
     clauses[1] = term2;
     snq = new SpanNearQuery(clauses, 0, true);
-    pay = new BytesRef(("pos: " + 0).getBytes("UTF-8"));
-    pay2 = new BytesRef(("pos: " + 1).getBytes("UTF-8"));
-    list = new ArrayList<byte[]>();
+    pay = new BytesRef(("pos: " + 0).getBytes(StandardCharsets.UTF_8));
+    pay2 = new BytesRef(("pos: " + 1).getBytes(StandardCharsets.UTF_8));
+    list = new ArrayList<>();
     list.add(pay.bytes);
     list.add(pay2.bytes);
     query = new SpanNearPayloadCheckQuery(snq, list);
@@ -440,10 +511,10 @@ public class TestBasics extends LuceneTestCase {
     clauses[1] = term2;
     clauses[2] = new SpanTermQuery(new Term("field", "five"));
     snq = new SpanNearQuery(clauses, 0, true);
-    pay = new BytesRef(("pos: " + 0).getBytes("UTF-8"));
-    pay2 = new BytesRef(("pos: " + 1).getBytes("UTF-8"));
-    BytesRef pay3 = new BytesRef(("pos: " + 2).getBytes("UTF-8"));
-    list = new ArrayList<byte[]>();
+    pay = new BytesRef(("pos: " + 0).getBytes(StandardCharsets.UTF_8));
+    pay2 = new BytesRef(("pos: " + 1).getBytes(StandardCharsets.UTF_8));
+    BytesRef pay3 = new BytesRef(("pos: " + 2).getBytes(StandardCharsets.UTF_8));
+    list = new ArrayList<>();
     list.add(pay.bytes);
     list.add(pay2.bytes);
     list.add(pay3.bytes);
@@ -470,11 +541,11 @@ public class TestBasics extends LuceneTestCase {
     query = new SpanPositionRangeQuery(oneThousHunThree, 0, 6);
     checkHits(query, new int[]{1103, 1203,1303,1403,1503,1603,1703,1803,1903});
 
-    Collection<byte[]> payloads = new ArrayList<byte[]>();
-    BytesRef pay = new BytesRef(("pos: " + 0).getBytes("UTF-8"));
-    BytesRef pay2 = new BytesRef(("pos: " + 1).getBytes("UTF-8"));
-    BytesRef pay3 = new BytesRef(("pos: " + 3).getBytes("UTF-8"));
-    BytesRef pay4 = new BytesRef(("pos: " + 4).getBytes("UTF-8"));
+    Collection<byte[]> payloads = new ArrayList<>();
+    BytesRef pay = new BytesRef(("pos: " + 0).getBytes(StandardCharsets.UTF_8));
+    BytesRef pay2 = new BytesRef(("pos: " + 1).getBytes(StandardCharsets.UTF_8));
+    BytesRef pay3 = new BytesRef(("pos: " + 3).getBytes(StandardCharsets.UTF_8));
+    BytesRef pay4 = new BytesRef(("pos: " + 4).getBytes(StandardCharsets.UTF_8));
     payloads.add(pay.bytes);
     payloads.add(pay2.bytes);
     payloads.add(pay3.bytes);

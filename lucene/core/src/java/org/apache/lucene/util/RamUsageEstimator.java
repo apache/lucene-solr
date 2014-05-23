@@ -18,6 +18,7 @@ package org.apache.lucene.util;
  */
 
 import java.lang.management.ManagementFactory;
+import java.lang.management.PlatformManagedObject;
 import java.lang.reflect.*;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -104,7 +105,7 @@ public final class RamUsageEstimator {
    */
   private static final Map<Class<?>,Integer> primitiveSizes;
   static {
-    primitiveSizes = new IdentityHashMap<Class<?>,Integer>();
+    primitiveSizes = new IdentityHashMap<>();
     primitiveSizes.put(boolean.class, Integer.valueOf(NUM_BYTES_BOOLEAN));
     primitiveSizes.put(byte.class, Integer.valueOf(NUM_BYTES_BYTE));
     primitiveSizes.put(char.class, Integer.valueOf(NUM_BYTES_CHAR));
@@ -212,18 +213,17 @@ public final class RamUsageEstimator {
     // regardless of the architecture).
     int objectAlignment = 8;
     try {
-      final Class<?> beanClazz = Class.forName("com.sun.management.HotSpotDiagnosticMXBean");
-      final Object hotSpotBean = ManagementFactory.newPlatformMXBeanProxy(
-        ManagementFactory.getPlatformMBeanServer(),
-        "com.sun.management:type=HotSpotDiagnostic",
-        beanClazz
-      );
-      final Method getVMOptionMethod = beanClazz.getMethod("getVMOption", String.class);
-      final Object vmOption = getVMOptionMethod.invoke(hotSpotBean, "ObjectAlignmentInBytes");
-      objectAlignment = Integer.parseInt(
-          vmOption.getClass().getMethod("getValue").invoke(vmOption).toString()
-      );
-      supportedFeatures.add(JvmFeature.OBJECT_ALIGNMENT);
+      final Class<? extends PlatformManagedObject> beanClazz =
+        Class.forName("com.sun.management.HotSpotDiagnosticMXBean").asSubclass(PlatformManagedObject.class);
+      final Object hotSpotBean = ManagementFactory.getPlatformMXBean(beanClazz);
+      if (hotSpotBean != null) {
+        final Method getVMOptionMethod = beanClazz.getMethod("getVMOption", String.class);
+        final Object vmOption = getVMOptionMethod.invoke(hotSpotBean, "ObjectAlignmentInBytes");
+        objectAlignment = Integer.parseInt(
+            vmOption.getClass().getMethod("getValue").invoke(vmOption).toString()
+        );
+        supportedFeatures.add(JvmFeature.OBJECT_ALIGNMENT);
+      }
     } catch (Exception e) {
       // Ignore.
     }
@@ -403,11 +403,11 @@ public final class RamUsageEstimator {
    */
   private static long measureObjectSize(Object root) {
     // Objects seen so far.
-    final IdentityHashSet<Object> seen = new IdentityHashSet<Object>();
+    final IdentityHashSet<Object> seen = new IdentityHashSet<>();
     // Class cache with reference Field and precalculated shallow size. 
-    final IdentityHashMap<Class<?>, ClassCache> classCache = new IdentityHashMap<Class<?>, ClassCache>();
+    final IdentityHashMap<Class<?>, ClassCache> classCache = new IdentityHashMap<>();
     // Stack of objects pending traversal. Recursion caused stack overflows. 
-    final ArrayList<Object> stack = new ArrayList<Object>();
+    final ArrayList<Object> stack = new ArrayList<>();
     stack.add(root);
 
     long totalSize = 0;
@@ -420,6 +420,7 @@ public final class RamUsageEstimator {
       seen.add(ob);
 
       final Class<?> obClazz = ob.getClass();
+      assert obClazz != null : "jvm bug detected (Object.getClass() == null). please report this to your vendor";
       if (obClazz.isArray()) {
         /*
          * Consider an array, possibly of primitive types. Push any of its references to
@@ -486,7 +487,7 @@ public final class RamUsageEstimator {
   private static ClassCache createCacheEntry(final Class<?> clazz) {
     ClassCache cachedInfo;
     long shallowInstanceSize = NUM_BYTES_OBJECT_HEADER;
-    final ArrayList<Field> referenceFields = new ArrayList<Field>(32);
+    final ArrayList<Field> referenceFields = new ArrayList<>(32);
     for (Class<?> c = clazz; c != null; c = c.getSuperclass()) {
       final Field[] fields = c.getDeclaredFields();
       for (final Field f : fields) {

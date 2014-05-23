@@ -27,6 +27,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 
 import java.util.Collection;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -86,9 +87,10 @@ public class QueryRequest extends SolrRequest
   public QueryResponse process( SolrServer server ) throws SolrServerException 
   {
     try {
-      long startTime = System.currentTimeMillis();
+      long startTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
       QueryResponse res = new QueryResponse( server.request( this ), server );
-      res.setElapsedTime( System.currentTimeMillis()-startTime );
+      long endTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
+      res.setElapsedTime(endTime - startTime);
       return res;
     } catch (SolrServerException e){
       throw e;

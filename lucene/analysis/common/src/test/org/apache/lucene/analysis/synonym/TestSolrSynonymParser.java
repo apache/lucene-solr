@@ -44,13 +44,13 @@ public class TestSolrSynonymParser extends BaseTokenStreamTestCase {
     "this test, that testing";
     
     SolrSynonymParser parser = new SolrSynonymParser(true, true, new MockAnalyzer(random()));
-    parser.add(new StringReader(testFile));
+    parser.parse(new StringReader(testFile));
     final SynonymMap map = parser.build();
     
     Analyzer analyzer = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);
         return new TokenStreamComponents(tokenizer, new SynonymFilter(tokenizer, map, true));
       }
     };
@@ -77,7 +77,7 @@ public class TestSolrSynonymParser extends BaseTokenStreamTestCase {
   public void testInvalidDoubleMap() throws Exception {
     String testFile = "a => b => c"; 
     SolrSynonymParser parser = new SolrSynonymParser(true, true, new MockAnalyzer(random()));
-    parser.add(new StringReader(testFile));
+    parser.parse(new StringReader(testFile));
   }
   
   /** parse a syn file with bad syntax */
@@ -85,7 +85,7 @@ public class TestSolrSynonymParser extends BaseTokenStreamTestCase {
   public void testInvalidAnalyzesToNothingOutput() throws Exception {
     String testFile = "a => 1"; 
     SolrSynonymParser parser = new SolrSynonymParser(true, true, new MockAnalyzer(random(), MockTokenizer.SIMPLE, false));
-    parser.add(new StringReader(testFile));
+    parser.parse(new StringReader(testFile));
   }
   
   /** parse a syn file with bad syntax */
@@ -93,7 +93,7 @@ public class TestSolrSynonymParser extends BaseTokenStreamTestCase {
   public void testInvalidAnalyzesToNothingInput() throws Exception {
     String testFile = "1 => a"; 
     SolrSynonymParser parser = new SolrSynonymParser(true, true, new MockAnalyzer(random(), MockTokenizer.SIMPLE, false));
-    parser.add(new StringReader(testFile));
+    parser.parse(new StringReader(testFile));
   }
   
   /** parse a syn file with bad syntax */
@@ -101,7 +101,7 @@ public class TestSolrSynonymParser extends BaseTokenStreamTestCase {
   public void testInvalidPositionsInput() throws Exception {
     String testFile = "testola => the test";
     SolrSynonymParser parser = new SolrSynonymParser(true, true, new EnglishAnalyzer(TEST_VERSION_CURRENT));
-    parser.add(new StringReader(testFile));
+    parser.parse(new StringReader(testFile));
   }
   
   /** parse a syn file with bad syntax */
@@ -109,7 +109,7 @@ public class TestSolrSynonymParser extends BaseTokenStreamTestCase {
   public void testInvalidPositionsOutput() throws Exception {
     String testFile = "the test => testola";
     SolrSynonymParser parser = new SolrSynonymParser(true, true, new EnglishAnalyzer(TEST_VERSION_CURRENT));
-    parser.add(new StringReader(testFile));
+    parser.parse(new StringReader(testFile));
   }
   
   /** parse a syn file with some escaped syntax chars */
@@ -118,12 +118,12 @@ public class TestSolrSynonymParser extends BaseTokenStreamTestCase {
       "a\\=>a => b\\=>b\n" +
       "a\\,a => b\\,b";
     SolrSynonymParser parser = new SolrSynonymParser(true, true, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false));
-    parser.add(new StringReader(testFile));
+    parser.parse(new StringReader(testFile));
     final SynonymMap map = parser.build();
     Analyzer analyzer = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.KEYWORD, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.KEYWORD, false);
         return new TokenStreamComponents(tokenizer, new SynonymFilter(tokenizer, map, false));
       }
     };

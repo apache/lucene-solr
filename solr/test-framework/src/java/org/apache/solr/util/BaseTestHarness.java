@@ -21,22 +21,25 @@ import org.apache.solr.common.util.XML;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
+import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 
 abstract public class BaseTestHarness {
-  private final ThreadLocal<DocumentBuilder> builderTL = new ThreadLocal<DocumentBuilder>();
-  private final ThreadLocal<XPath> xpathTL = new ThreadLocal<XPath>();
+  private static final ThreadLocal<DocumentBuilder> builderTL = new ThreadLocal<>();
+  private static final ThreadLocal<XPath> xpathTL = new ThreadLocal<>();
 
-  public DocumentBuilder getXmlDocumentBuilder() {
+  public static DocumentBuilder getXmlDocumentBuilder() {
     try {
       DocumentBuilder builder = builderTL.get();
       if (builder == null) {
@@ -49,7 +52,7 @@ abstract public class BaseTestHarness {
     }
   }
 
-  public XPath getXpath() {
+  public static XPath getXpath() {
     try {
       XPath xpath = xpathTL.get();
       if (xpath == null) {
@@ -71,7 +74,7 @@ abstract public class BaseTestHarness {
    * @param tests Array of XPath strings to test (in boolean mode) on the xml
    * @return null if all good, otherwise the first test that fails.
    */
-  public String validateXPath(String xml, String... tests)
+  public static String validateXPath(String xml, String... tests)
       throws XPathExpressionException, SAXException {
 
     if (tests==null || tests.length == 0) return null;
@@ -79,7 +82,7 @@ abstract public class BaseTestHarness {
     Document document = null;
     try {
       document = getXmlDocumentBuilder().parse(new ByteArrayInputStream
-          (xml.getBytes("UTF-8")));
+          (xml.getBytes(StandardCharsets.UTF_8)));
     } catch (UnsupportedEncodingException e1) {
       throw new RuntimeException("Totally weird UTF-8 exception", e1);
     } catch (IOException e2) {
@@ -97,13 +100,31 @@ abstract public class BaseTestHarness {
     return null;
   }
 
+  public static Object evaluateXPath(String xml, String xpath, QName returnType)
+    throws XPathExpressionException, SAXException {
+    if (null == xpath) return null;
+
+    Document document = null;
+    try {
+      document = getXmlDocumentBuilder().parse(new ByteArrayInputStream
+          (xml.getBytes(StandardCharsets.UTF_8)));
+    } catch (UnsupportedEncodingException e1) {
+      throw new RuntimeException("Totally weird UTF-8 exception", e1);
+    } catch (IOException e2) {
+      throw new RuntimeException("Totally weird io exception", e2);
+    }
+
+    xpath = xpath.trim();
+    return getXpath().evaluate(xpath.trim(), document, returnType);
+  }
+
   /**
    * A helper that creates an xml &lt;doc&gt; containing all of the
    * fields and values specified
    *
    * @param fieldsAndValues 0 and Even numbered args are fields names odds are field values.
    */
-  public static StringBuffer makeSimpleDoc(String... fieldsAndValues) {
+  public static String makeSimpleDoc(String... fieldsAndValues) {
 
     try {
       StringWriter w = new StringWriter();
@@ -113,7 +134,7 @@ abstract public class BaseTestHarness {
             fieldsAndValues[i]);
       }
       w.append("</doc>");
-      return w.getBuffer();
+      return w.toString();
     } catch (IOException e) {
       throw new RuntimeException
           ("this should never happen with a StringWriter", e);

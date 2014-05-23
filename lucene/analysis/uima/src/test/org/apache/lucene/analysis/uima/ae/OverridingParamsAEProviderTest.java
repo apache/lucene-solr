@@ -53,7 +53,7 @@ public class OverridingParamsAEProviderTest {
 
   @Test
   public void testOverridingParamsInitialization() throws Exception {
-    Map<String, Object> runtimeParameters = new HashMap<String, Object>();
+    Map<String, Object> runtimeParameters = new HashMap<>();
     runtimeParameters.put("ngramsize", "3");
     AEProvider aeProvider = new OverridingParamsAEProvider("/uima/AggregateSentenceAE.xml", runtimeParameters);
     AnalysisEngine analysisEngine = aeProvider.getAE();

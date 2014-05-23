@@ -28,10 +28,10 @@ import org.apache.solr.update.RollbackUpdateCommand;
 
 public class BufferingRequestProcessor extends UpdateRequestProcessor
 {
-  public List<AddUpdateCommand> addCommands = new ArrayList<AddUpdateCommand>();
-  public List<DeleteUpdateCommand> deleteCommands = new ArrayList<DeleteUpdateCommand>();
-  public List<CommitUpdateCommand> commitCommands = new ArrayList<CommitUpdateCommand>();
-  public List<RollbackUpdateCommand> rollbackCommands = new ArrayList<RollbackUpdateCommand>();
+  public List<AddUpdateCommand> addCommands = new ArrayList<>();
+  public List<DeleteUpdateCommand> deleteCommands = new ArrayList<>();
+  public List<CommitUpdateCommand> commitCommands = new ArrayList<>();
+  public List<RollbackUpdateCommand> rollbackCommands = new ArrayList<>();
   
   public BufferingRequestProcessor(UpdateRequestProcessor next) {
     super(next);

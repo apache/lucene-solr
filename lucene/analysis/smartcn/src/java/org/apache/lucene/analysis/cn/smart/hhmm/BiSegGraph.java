@@ -34,7 +34,7 @@ import org.apache.lucene.analysis.cn.smart.Utility;
  */
 class BiSegGraph {
 
-  private Map<Integer,ArrayList<SegTokenPair>> tokenPairListTable = new HashMap<Integer,ArrayList<SegTokenPair>>();
+  private Map<Integer,ArrayList<SegTokenPair>> tokenPairListTable = new HashMap<>();
 
   private List<SegToken> segTokenList;
 
@@ -144,7 +144,7 @@ class BiSegGraph {
   public void addSegTokenPair(SegTokenPair tokenPair) {
     int to = tokenPair.to;
     if (!isToExist(to)) {
-      ArrayList<SegTokenPair> newlist = new ArrayList<SegTokenPair>();
+      ArrayList<SegTokenPair> newlist = new ArrayList<>();
       newlist.add(tokenPair);
       tokenPairListTable.put(to, newlist);
     } else {
@@ -168,7 +168,7 @@ class BiSegGraph {
   public List<SegToken> getShortPath() {
     int current;
     int nodeCount = getToCount();
-    List<PathNode> path = new ArrayList<PathNode>();
+    List<PathNode> path = new ArrayList<>();
     PathNode zeroPath = new PathNode();
     zeroPath.weight = 0;
     zeroPath.preNode = 0;
@@ -197,8 +197,8 @@ class BiSegGraph {
     int preNode, lastNode;
     lastNode = path.size() - 1;
     current = lastNode;
-    List<Integer> rpath = new ArrayList<Integer>();
-    List<SegToken> resultPath = new ArrayList<SegToken>();
+    List<Integer> rpath = new ArrayList<>();
+    List<SegToken> resultPath = new ArrayList<>();
 
     rpath.add(current);
     while (current != 0) {

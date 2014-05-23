@@ -27,6 +27,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.logging.LogWatcher;
@@ -44,12 +45,22 @@ import org.slf4j.LoggerFactory;
  */
 public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware {
   static final org.slf4j.Logger log = LoggerFactory.getLogger(LoggingHandler.class);
+
+  private LogWatcher watcher;
   
-  LogWatcher watcher = null;
+  public LoggingHandler(CoreContainer cc) {
+    this.watcher = cc.getLogging();
+  }
+  
+  public LoggingHandler() {
+    
+  }
   
   @Override
   public void inform(SolrCore core) {
-    watcher = core.getCoreDescriptor().getCoreContainer().getLogging();
+    if (watcher == null) {
+      watcher = core.getCoreDescriptor().getCoreContainer().getLogging();
+    }
   }
 
   @Override
@@ -107,7 +118,7 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
         return;
       }
       else {
-        SimpleOrderedMap<Object> info = new SimpleOrderedMap<Object>();
+        SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
         if(time>0) {
           info.add("since", time);
           info.add("found", found);
@@ -126,10 +137,10 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
     else {
       rsp.add("levels", watcher.getAllLevels());
   
-      List<LoggerInfo> loggers = new ArrayList<LoggerInfo>(watcher.getAllLoggers());
+      List<LoggerInfo> loggers = new ArrayList<>(watcher.getAllLoggers());
       Collections.sort(loggers);
   
-      List<SimpleOrderedMap<?>> info = new ArrayList<SimpleOrderedMap<?>>();
+      List<SimpleOrderedMap<?>> info = new ArrayList<>();
       for(LoggerInfo wrap:loggers) {
         info.add(wrap.getInfo());
       }

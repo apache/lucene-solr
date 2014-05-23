@@ -19,6 +19,7 @@ package org.apache.lucene.replicator;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
@@ -58,7 +59,8 @@ public class LocalReplicatorTest extends ReplicatorTestCase {
   @After
   @Override
   public void tearDown() throws Exception {
-    IOUtils.close(replicator, sourceWriter, sourceDir);
+    sourceWriter.shutdown();
+    IOUtils.close(replicator, sourceDir);
     super.tearDown();
   }
   
@@ -154,7 +156,7 @@ public class LocalReplicatorTest extends ReplicatorTestCase {
     try {
       replicator.obtainFile(res.id, res.sourceFiles.keySet().iterator().next(), "madeUpFile");
       fail("should have failed obtaining an unrecognized file");
-    } catch (FileNotFoundException e) {
+    } catch (FileNotFoundException | NoSuchFileException e) {
       // expected
     }
   }
@@ -186,11 +188,11 @@ public class LocalReplicatorTest extends ReplicatorTestCase {
   @Test
   public void testRevisionRelease() throws Exception {
     replicator.publish(createRevision(1));
-    assertTrue(sourceDir.fileExists(IndexFileNames.SEGMENTS + "_1"));
+    assertTrue(slowFileExists(sourceDir, IndexFileNames.SEGMENTS + "_1"));
     replicator.publish(createRevision(2));
     // now the files of revision 1 can be deleted
-    assertTrue(sourceDir.fileExists(IndexFileNames.SEGMENTS + "_2"));
-    assertFalse("segments_1 should not be found in index directory after revision is released", sourceDir.fileExists(IndexFileNames.SEGMENTS + "_1"));
+    assertTrue(slowFileExists(sourceDir, IndexFileNames.SEGMENTS + "_2"));
+    assertFalse("segments_1 should not be found in index directory after revision is released", slowFileExists(sourceDir, IndexFileNames.SEGMENTS + "_1"));
   }
   
 }

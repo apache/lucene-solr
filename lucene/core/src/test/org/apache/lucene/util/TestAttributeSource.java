@@ -90,7 +90,9 @@ public class TestAttributeSource extends LuceneTestCase {
     assertFalse("No more attributes", it.hasNext());
     
     final FlagsAttribute flagsAtt2 = clone.getAttribute(FlagsAttribute.class);
+    assertNotNull(flagsAtt2);
     final TypeAttribute typeAtt2 = clone.getAttribute(TypeAttribute.class);
+    assertNotNull(typeAtt2);
     assertNotSame("FlagsAttribute of original and clone must be different instances", flagsAtt2, flagsAtt);
     assertNotSame("TypeAttribute of original and clone must be different instances", typeAtt2, typeAtt);
     assertEquals("FlagsAttribute of original and clone must be equal", flagsAtt2, flagsAtt);

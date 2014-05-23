@@ -71,4 +71,9 @@ public final class TestBloomFilteredLucene41Postings extends PostingsFormat {
       throws IOException {
     return delegate.fieldsProducer(state);
   }
+
+  @Override
+  public String toString() {
+    return "TestBloomFilteredLucene41Postings(" + delegate + ")";
+  }
 }

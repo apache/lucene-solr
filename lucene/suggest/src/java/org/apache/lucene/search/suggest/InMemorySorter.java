@@ -21,6 +21,7 @@ import java.util.Comparator;
 
 import org.apache.lucene.search.suggest.fst.BytesRefSorter;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefArray;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.Counter;
 

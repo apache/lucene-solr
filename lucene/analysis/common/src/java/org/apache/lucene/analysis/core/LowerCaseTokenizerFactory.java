@@ -20,9 +20,8 @@ package org.apache.lucene.analysis.core;
 import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenizerFactory;
-import org.apache.lucene.util.AttributeSource.AttributeFactory;
+import org.apache.lucene.util.AttributeFactory;
 
-import java.io.Reader;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -47,12 +46,12 @@ public class LowerCaseTokenizerFactory extends TokenizerFactory implements Multi
   }
 
   @Override
-  public LowerCaseTokenizer create(AttributeFactory factory, Reader input) {
-    return new LowerCaseTokenizer(luceneMatchVersion, factory, input);
+  public LowerCaseTokenizer create(AttributeFactory factory) {
+    return new LowerCaseTokenizer(luceneMatchVersion, factory);
   }
 
   @Override
   public AbstractAnalysisFactory getMultiTermComponent() {
-    return new LowerCaseFilterFactory(new HashMap<String,String>(getOriginalArgs()));
+    return new LowerCaseFilterFactory(new HashMap<>(getOriginalArgs()));
   }
 }

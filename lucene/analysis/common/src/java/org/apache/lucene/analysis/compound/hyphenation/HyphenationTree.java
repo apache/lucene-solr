@@ -54,7 +54,7 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer {
   private transient TernaryTree ivalues;
 
   public HyphenationTree() {
-    stoplist = new HashMap<String,ArrayList<Object>>(23); // usually a small table
+    stoplist = new HashMap<>(23); // usually a small table
     classmap = new TernaryTree();
     vspace = new ByteVector();
     vspace.alloc(1); // this reserves index 0, which we don't use

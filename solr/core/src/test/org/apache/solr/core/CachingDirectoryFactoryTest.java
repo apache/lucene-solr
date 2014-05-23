@@ -33,7 +33,7 @@ import org.junit.Test;
  */
 
 public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
-  private Map<String,Tracker> dirs = new HashMap<String,Tracker>();
+  private Map<String,Tracker> dirs = new HashMap<>();
   private volatile boolean stop = false;
   
   private class Tracker {
@@ -46,7 +46,7 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
   public void stressTest() throws Exception {
     final CachingDirectoryFactory df = new RAMDirectoryFactory();
     
-    List<Thread> threads = new ArrayList<Thread>();
+    List<Thread> threads = new ArrayList<>();
     int threadCount = 11;
     for (int i = 0; i < threadCount; i++) {
       Thread getDirThread = new GetDirThread(df);
@@ -126,7 +126,7 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
         
         synchronized (dirs) {
           int sz = dirs.size();
-          List<Tracker> dirsList = new ArrayList<Tracker>();
+          List<Tracker> dirsList = new ArrayList<>();
           dirsList.addAll(dirs.values());
           if (sz > 0) {
             Tracker tracker = dirsList.get(Math.min(dirsList.size() - 1,

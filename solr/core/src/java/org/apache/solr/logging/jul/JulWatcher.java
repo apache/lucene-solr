@@ -88,7 +88,7 @@ public class JulWatcher extends LogWatcher<LogRecord> {
     LogManager manager = LogManager.getLogManager();
 
     Logger root = manager.getLogger("");
-    Map<String,LoggerInfo> map = new HashMap<String,LoggerInfo>();
+    Map<String,LoggerInfo> map = new HashMap<>();
     Enumeration<String> names = manager.getLoggerNames();
     while (names.hasMoreElements()) {
       String name = names.nextElement();
@@ -133,7 +133,7 @@ public class JulWatcher extends LogWatcher<LogRecord> {
     if(history!=null) {
       throw new IllegalStateException("History already registered");
     }
-    history = new CircularList<LogRecord>(cfg.size);
+    history = new CircularList<>(cfg.size);
     handler = new RecordHandler(this);
     if(cfg.threshold != null) {
       handler.setLevel(Level.parse(cfg.threshold));

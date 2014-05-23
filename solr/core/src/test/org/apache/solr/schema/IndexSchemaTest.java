@@ -48,7 +48,7 @@ public class IndexSchemaTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "10", "title", "test", "aaa_dynamic", "aaa"));
     assertU(commit());
 
-    Map<String,String> args = new HashMap<String, String>();
+    Map<String,String> args = new HashMap<>();
     args.put( CommonParams.Q, "title:test" );
     args.put( "indent", "true" );
     SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
@@ -58,7 +58,7 @@ public class IndexSchemaTest extends SolrTestCaseJ4 {
             ,"//result/doc[1]/int[@name='id'][.='10']"
             );
 
-    args = new HashMap<String, String>();
+    args = new HashMap<>();
     args.put( CommonParams.Q, "aaa_dynamic:aaa" );
     args.put( "indent", "true" );
     req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
@@ -67,7 +67,7 @@ public class IndexSchemaTest extends SolrTestCaseJ4 {
             ,"//result/doc[1]/int[@name='id'][.='10']"
             );
 
-    args = new HashMap<String, String>();
+    args = new HashMap<>();
     args.put( CommonParams.Q, "dynamic_aaa:aaa" );
     args.put( "indent", "true" );
     req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );

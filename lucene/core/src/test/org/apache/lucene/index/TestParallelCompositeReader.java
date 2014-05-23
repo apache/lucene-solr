@@ -225,7 +225,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
 
     d3.add(newTextField("f3", "v1", Field.Store.YES));
     w2.addDocument(d3);
-    w2.close();
+    w2.shutdown();
     
     DirectoryReader ir1 = DirectoryReader.open(dir1),
         ir2 = DirectoryReader.open(dir2);
@@ -444,7 +444,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     d4.add(newTextField("f3", "v4", Field.Store.YES));
     d4.add(newTextField("f4", "v4", Field.Store.YES));
     w.addDocument(d4);
-    w.close();
+    w.shutdown();
 
     final CompositeReader ir;
     if (compositeComposite) {
@@ -479,7 +479,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
   private Directory getDir1(Random random) throws IOException {
     Directory dir1 = newDirectory();
     IndexWriter w1 = new IndexWriter(dir1, newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random)).setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES));
+        new MockAnalyzer(random)).setMergePolicy(NoMergePolicy.INSTANCE));
     Document d1 = new Document();
     d1.add(newTextField("f1", "v1", Field.Store.YES));
     d1.add(newTextField("f2", "v1", Field.Store.YES));
@@ -498,7 +498,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     d4.add(newTextField("f1", "v4", Field.Store.YES));
     d4.add(newTextField("f2", "v4", Field.Store.YES));
     w1.addDocument(d4);
-    w1.close();
+    w1.shutdown();
     return dir1;
   }
 
@@ -506,7 +506,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
   private Directory getDir2(Random random) throws IOException {
     Directory dir2 = newDirectory();
     IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random)).setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES));
+        new MockAnalyzer(random)).setMergePolicy(NoMergePolicy.INSTANCE));
     Document d1 = new Document();
     d1.add(newTextField("f3", "v1", Field.Store.YES));
     d1.add(newTextField("f4", "v1", Field.Store.YES));
@@ -525,7 +525,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     d4.add(newTextField("f3", "v4", Field.Store.YES));
     d4.add(newTextField("f4", "v4", Field.Store.YES));
     w2.addDocument(d4);
-    w2.close();
+    w2.shutdown();
     return dir2;
   }
 
@@ -533,7 +533,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
   private Directory getInvalidStructuredDir2(Random random) throws IOException {
     Directory dir2 = newDirectory();
     IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random)).setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES));
+        new MockAnalyzer(random)).setMergePolicy(NoMergePolicy.INSTANCE));
     Document d1 = new Document();
     d1.add(newTextField("f3", "v1", Field.Store.YES));
     d1.add(newTextField("f4", "v1", Field.Store.YES));
@@ -552,7 +552,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     d4.add(newTextField("f3", "v4", Field.Store.YES));
     d4.add(newTextField("f4", "v4", Field.Store.YES));
     w2.addDocument(d4);
-    w2.close();
+    w2.shutdown();
     return dir2;
   }
 

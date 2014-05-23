@@ -16,10 +16,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import junit.framework.Assert;
+
 import org.junit.After;
 import org.junit.Before;
-
-import junit.framework.Assert;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -54,12 +54,11 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
   
   @Before
   public void beforeSqlEntitiyProcessorTestCase() throws Exception {
-    File tmpdir = File.createTempFile("test", "tmp", TEMP_DIR);
-    tmpdir.delete();
-    tmpdir.mkdir();
+    File tmpdir = createTempDir();
     fileLocation = tmpdir.getPath();
     fileName = "the.properties";
   } 
+  
   @After
   public void afterSqlEntitiyProcessorTestCase() {
     useSimpleCaches = false;
@@ -81,7 +80,7 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
   }
   
   protected void logPropertiesFile() {
-    Map<String,String> init = new HashMap<String,String>();
+    Map<String,String> init = new HashMap<>();
     init.put("filename", fileName);
     init.put("directory", fileLocation);
     SimplePropertiesWriter spw = new SimplePropertiesWriter();
@@ -339,7 +338,7 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
       conn = newConnection();
       s = conn.createStatement();
       rs = s.executeQuery(query);
-      List<String> results = new ArrayList<String>();
+      List<String> results = new ArrayList<>();
       while (rs.next()) {
         results.add(rs.getString(1));
       }
@@ -409,9 +408,9 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
   public IntChanges modifySomePeople() throws Exception {
     underlyingDataModified = true;
     int numberToChange = random().nextInt(people.length + 1);
-    Set<Integer> changeSet = new HashSet<Integer>();
-    Set<Integer> deleteSet = new HashSet<Integer>();
-    Set<Integer> addSet = new HashSet<Integer>();
+    Set<Integer> changeSet = new HashSet<>();
+    Set<Integer> deleteSet = new HashSet<>();
+    Set<Integer> addSet = new HashSet<>();
     Connection conn = null;
     PreparedStatement change = null;
     PreparedStatement delete = null;
@@ -484,7 +483,7 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
   public String[] modifySomeCountries() throws Exception {
     underlyingDataModified = true;
     int numberToChange = random().nextInt(countries.length + 1);
-    Set<String> changeSet = new HashSet<String>();
+    Set<String> changeSet = new HashSet<>();
     Connection conn = null;
     PreparedStatement change = null;
     // One second in the future ensures a change time after the last import (DIH

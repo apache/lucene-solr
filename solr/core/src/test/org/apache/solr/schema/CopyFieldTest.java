@@ -128,7 +128,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
       assertU(adoc("id", "10", "title", "test copy field", "text_en", "this is a simple test of the copy field functionality"));
       assertU(commit());
       
-      Map<String,String> args = new HashMap<String, String>();
+      Map<String,String> args = new HashMap<>();
       args.put( CommonParams.Q, "text_en:simple" );
       args.put( "indent", "true" );
       SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
@@ -138,7 +138,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
               ,"//result/doc[1]/int[@name='id'][.='10']"
               );
       
-      args = new HashMap<String, String>();
+      args = new HashMap<>();
       args.put( CommonParams.Q, "highlight:simple" );
       args.put( "indent", "true" );
       req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
@@ -148,14 +148,14 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
               ,"//result/doc[1]/arr[@name='highlight']/str[.='this is a simple test of ']"
               );
 
-      args = new HashMap<String, String>();
+      args = new HashMap<>();
       args.put( CommonParams.Q, "text_en:functionality" );
       args.put( "indent", "true" );
       req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
       assertQ("Make sure they got in", req
               ,"//*[@numFound='1']");
       
-      args = new HashMap<String, String>();
+      args = new HashMap<>();
       args.put( CommonParams.Q, "highlight:functionality" );
       args.put( "indent", "true" );
       req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
@@ -186,36 +186,36 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
     assertTrue("'" + dest_sub_no_ast_s + "' should match dynamic field '*_s', but instead matches '" + dynamicPattern2 + "'",
                dynamicPattern2.equals("*_s"));
     
-    assertU(adoc("id", "A5", "sku1", "10-1839ACX-93", "sku2", "AAM46"));
+    assertU(adoc("id", "5", "sku1", "10-1839ACX-93", "sku2", "AAM46"));
     assertU(commit());
 
-    Map<String,String> args = new HashMap<String, String>();
+    Map<String,String> args = new HashMap<>();
     args.put( CommonParams.Q, "text:AAM46" );
     args.put( "indent", "true" );
     SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
     assertQ("sku2 copied to text", req
         ,"//*[@numFound='1']"
-        ,"//result/doc[1]/str[@name='id'][.='A5']"
+        ,"//result/doc[1]/int[@name='id'][.='5']"
     );
 
-    args = new HashMap<String, String>();
+    args = new HashMap<>();
     args.put( CommonParams.Q, "1_s:10-1839ACX-93" );
     args.put( "indent", "true" );
     req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
     assertQ("sku1 copied to dynamic dest *_s", req
         ,"//*[@numFound='1']"
-        ,"//result/doc[1]/str[@name='id'][.='A5']"
+        ,"//result/doc[1]/int[@name='id'][.='5']"
         ,"//result/doc[1]/arr[@name='sku1']/str[.='10-1839ACX-93']"
     );
 
-    args = new HashMap<String, String>();
+    args = new HashMap<>();
     args.put( CommonParams.Q, "1_dest_sub_s:10-1839ACX-93" );
     args.put( "indent", "true" );
     req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
     assertQ("sku1 copied to *_dest_sub_s (*_s subset pattern)", req
         ,"//*[@numFound='1']");
 
-    args = new HashMap<String, String>();
+    args = new HashMap<>();
     args.put( CommonParams.Q, "dest_sub_no_ast_s:AAM46" );
     args.put( "indent", "true" );
     req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
@@ -234,16 +234,16 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
 
     assertTrue("schema should contain dynamic field '*_s'", schema.getDynamicPattern("*_s").equals("*_s"));
 
-    assertU(adoc("id", "A5", "sku1", "10-1839ACX-93", "testing123_s", "AAM46"));
+    assertU(adoc("id", "5", "sku1", "10-1839ACX-93", "testing123_s", "AAM46"));
     assertU(commit());
 
-    Map<String,String> args = new HashMap<String, String>();
+    Map<String,String> args = new HashMap<>();
     args.put( CommonParams.Q, "text:AAM46" );
     args.put( "indent", "true" );
     SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
     assertQ("sku2 copied to text", req
         ,"//*[@numFound='1']"
-        ,"//result/doc[1]/str[@name='id'][.='A5']"
+        ,"//result/doc[1]/int[@name='id'][.='5']"
     );
   }
 
@@ -253,12 +253,12 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
     assertNull("'*' should not be (or match) a dynamic field", 
                schema.getDynamicPattern("*"));
     
-    assertU(adoc("id", "A5", "sku1", "10-1839ACX-93", "testing123_s", "AAM46"));
+    assertU(adoc("id", "5", "sku1", "10-1839ACX-93", "testing123_s", "AAM46"));
     assertU(commit());
-    for (String q : new String[] {"A5", "10-1839ACX-93", "AAM46" }) {
+    for (String q : new String[] {"5", "10-1839ACX-93", "AAM46" }) {
       assertQ(req("q","catchall_t:" + q)
               ,"//*[@numFound='1']"
-              ,"//result/doc[1]/str[@name='id'][.='A5']");
+              ,"//result/doc[1]/int[@name='id'][.='5']");
     }
   }
 }

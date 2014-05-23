@@ -64,9 +64,7 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
     }
   }
 
-  /** Sole constructor, wrapping the provided {@link
-   *  CompositeReader}. */
-  public SlowCompositeReaderWrapper(CompositeReader reader) throws IOException {
+  private SlowCompositeReaderWrapper(CompositeReader reader) throws IOException {
     super();
     in = reader;
     fields = MultiFields.getFields(in);
@@ -89,6 +87,12 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
   public NumericDocValues getNumericDocValues(String field) throws IOException {
     ensureOpen();
     return MultiDocValues.getNumericValues(in, field);
+  }
+
+  @Override
+  public Bits getDocsWithField(String field) throws IOException {
+    ensureOpen();
+    return MultiDocValues.getDocsWithField(in, field);
   }
 
   @Override
@@ -126,7 +130,7 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
       AtomicReaderContext context = in.leaves().get(i);
       SortedDocValues v = context.reader().getSortedDocValues(field);
       if (v == null) {
-        v = SortedDocValues.EMPTY;
+        v = DocValues.EMPTY_SORTED;
       }
       values[i] = v;
       starts[i] = context.docBase;
@@ -165,7 +169,7 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
       AtomicReaderContext context = in.leaves().get(i);
       SortedSetDocValues v = context.reader().getSortedSetDocValues(field);
       if (v == null) {
-        v = SortedSetDocValues.EMPTY;
+        v = DocValues.EMPTY_SORTED_SET;
       }
       values[i] = v;
       starts[i] = context.docBase;
@@ -176,7 +180,7 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
   
   // TODO: this could really be a weak map somewhere else on the coreCacheKey,
   // but do we really need to optimize slow-wrapper any more?
-  private final Map<String,OrdinalMap> cachedOrdMaps = new HashMap<String,OrdinalMap>();
+  private final Map<String,OrdinalMap> cachedOrdMaps = new HashMap<>();
 
   @Override
   public NumericDocValues getNormValues(String field) throws IOException {
@@ -234,5 +238,13 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
   protected void doClose() throws IOException {
     // TODO: as this is a wrapper, should we really close the delegate?
     in.close();
+  }
+
+  @Override
+  public void checkIntegrity() throws IOException {
+    ensureOpen();
+    for (AtomicReaderContext ctx : in.leaves()) {
+      ctx.reader().checkIntegrity();
+    }
   }
 }

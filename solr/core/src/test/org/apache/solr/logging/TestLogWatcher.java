@@ -19,7 +19,6 @@ package org.apache.solr.logging;
 
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.core.ConfigSolr;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -27,24 +26,16 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.easymock.EasyMock.createMock;
-import static org.easymock.EasyMock.expect;
-import static org.easymock.EasyMock.replay;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class TestLogWatcher {
 
-  private ConfigSolr config;
+  private LogWatcherConfig config;
 
   @Before
   public void setUp() {
-    config = createMock(ConfigSolr.class);
-    expect(config.getBool(ConfigSolr.CfgProp.SOLR_LOGGING_ENABLED, true)).andReturn(true);
-    expect(config.getInt(ConfigSolr.CfgProp.SOLR_LOGGING_WATCHER_SIZE, 50)).andReturn(50);
-    expect(config.get(ConfigSolr.CfgProp.SOLR_LOGGING_WATCHER_THRESHOLD, null)).andReturn(null);
-    expect(config.get(ConfigSolr.CfgProp.SOLR_LOGGING_CLASS, null)).andReturn(null);
-    replay(config);
+    config = new LogWatcherConfig(true, null, null, 50);
   }
 
   @Test

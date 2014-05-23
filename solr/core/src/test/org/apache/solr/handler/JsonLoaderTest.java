@@ -18,6 +18,7 @@
 package org.apache.solr.handler;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -30,7 +31,11 @@ import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.xml.sax.SAXException;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.List;
 import java.util.Map;
 
 public class JsonLoaderTest extends SolrTestCaseJ4 {
@@ -39,7 +44,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     initCore("solrconfig.xml","schema.xml");
   }
   
-  static String input = ("{\n" +
+  static String input = json("{\n" +
       "\n" +
       "'add': {\n" +
       "  'doc': {\n" +
@@ -77,7 +82,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
       "'rollback': {}\n" +
       "\n" +
       "}\n" +
-      "").replace('\'', '"');
+      "");
 
 
   public void testParsing() throws Exception
@@ -204,6 +209,54 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     req.close();
   }
 
+  public void testFieldValueOrdering() throws Exception {
+    final String pre = "{'add':[{'id':'1',";
+    final String post = "},{'id':'2'}]}";
+
+    // list
+    checkFieldValueOrdering((pre+ "'f':[45,67,89]" +post)
+                            .replace('\'', '"'),
+                            1.0F);
+    // dup fieldname keys
+    checkFieldValueOrdering((pre+ "'f':45,'f':67,'f':89" +post)
+                            .replace('\'', '"'),
+                            1.0F);
+    // extended w/boost
+    checkFieldValueOrdering((pre+ "'f':{'boost':4.0,'value':[45,67,89]}" +post)
+                            .replace('\'', '"'),
+                            4.0F);
+    // dup keys extended w/ multiplicitive boost
+    checkFieldValueOrdering((pre+ 
+                             "'f':{'boost':2.0,'value':[45,67]}," +
+                             "'f':{'boost':2.0,'value':89}" 
+                             +post)
+                            .replace('\'', '"'),
+                            4.0F);
+
+  }
+  private void checkFieldValueOrdering(String rawJson, float fBoost) throws Exception {
+    SolrQueryRequest req = req();
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    JsonLoader loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(rawJson), p);
+    assertEquals( 2, p.addCommands.size() );
+
+    SolrInputDocument d = p.addCommands.get(0).solrDoc;
+    assertEquals(2, d.getFieldNames().size());
+    assertEquals("1", d.getFieldValue("id"));
+    assertEquals(new Object[] {45L, 67L, 89L} , d.getFieldValues("f").toArray());
+    assertEquals(0.0F, fBoost, d.getField("f").getBoost());
+
+    d = p.addCommands.get(1).solrDoc;
+    assertEquals(1, d.getFieldNames().size());
+    assertEquals("2", d.getFieldValue("id"));
+
+    req.close();
+  }
+
+
+
   public void testExtendedFieldValues() throws Exception {
     String str = "[{'id':'1', 'val_s':{'add':'foo'}}]".replace('\'', '"');
     SolrQueryRequest req = req();
@@ -231,9 +284,205 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
 
   @Test
   public void testNullValues() throws Exception {
-    updateJ("[{'id':'10','foo_s':null,'foo2_s':['hi',null,'there']}]".replace('\'', '"'), params("commit","true"));
+    updateJ( json( "[{'id':'10','foo_s':null,'foo2_s':['hi',null,'there']}]" ), params("commit","true"));
     assertJQ(req("q","id:10", "fl","foo_s,foo2_s")
         ,"/response/docs/[0]=={'foo2_s':['hi','there']}"
+    );
+  }
+  
+  @Test
+  public void testBooleanValuesInAdd() throws Exception {
+    String str = "{'add':[{'id':'1','b1':true,'b2':false,'b3':[false,true]}]}".replace('\'', '"');
+    SolrQueryRequest req = req();
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    JsonLoader loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(str), p);
+
+    assertEquals(1, p.addCommands.size());
+
+    AddUpdateCommand add = p.addCommands.get(0);
+    SolrInputDocument d = add.solrDoc;
+    SolrInputField f = d.getField("b1");
+    assertEquals(Boolean.TRUE, f.getValue());
+    f = d.getField("b2");
+    assertEquals(Boolean.FALSE, f.getValue());
+    f = d.getField("b3");
+    assertEquals(2, ((List)f.getValue()).size());
+    assertEquals(Boolean.FALSE, ((List)f.getValue()).get(0));
+    assertEquals(Boolean.TRUE, ((List)f.getValue()).get(1));
+
+    req.close();
+  }
+
+  @Test
+  public void testIntegerValuesInAdd() throws Exception {
+    String str = "{'add':[{'id':'1','i1':256,'i2':-5123456789,'i3':[0,1]}]}".replace('\'', '"');
+    SolrQueryRequest req = req();
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    JsonLoader loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(str), p);
+
+    assertEquals(1, p.addCommands.size());
+
+    AddUpdateCommand add = p.addCommands.get(0);
+    SolrInputDocument d = add.solrDoc;
+    SolrInputField f = d.getField("i1");
+    assertEquals(256L, f.getValue());
+    f = d.getField("i2");
+    assertEquals(-5123456789L, f.getValue());
+    f = d.getField("i3");
+    assertEquals(2, ((List)f.getValue()).size());
+    assertEquals(0L, ((List)f.getValue()).get(0));
+    assertEquals(1L, ((List)f.getValue()).get(1));
+
+    req.close();
+  }
+
+
+  @Test
+  public void testDecimalValuesInAdd() throws Exception {
+    String str = "{'add':[{'id':'1','d1':256.78,'d2':-5123456789.0,'d3':0.0,'d3':1.0,'d4':1.7E-10}]}".replace('\'', '"');
+    SolrQueryRequest req = req();
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    JsonLoader loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(str), p);
+
+    assertEquals(1, p.addCommands.size());
+
+    AddUpdateCommand add = p.addCommands.get(0);
+    SolrInputDocument d = add.solrDoc;
+    SolrInputField f = d.getField("d1");
+    assertEquals(256.78, f.getValue());
+    f = d.getField("d2");
+    assertEquals(-5123456789.0, f.getValue());
+    f = d.getField("d3");
+    assertEquals(2, ((List)f.getValue()).size());
+    assertTrue(((List)f.getValue()).contains(0.0));
+    assertTrue(((List) f.getValue()).contains(1.0));
+    f = d.getField("d4");
+    assertEquals(1.7E-10, f.getValue());
+
+    req.close();
+  }
+
+  @Test
+  public void testBigDecimalValuesInAdd() throws Exception {
+    String str = ("{'add':[{'id':'1','bd1':0.12345678901234567890123456789012345,"
+                 + "'bd2':12345678901234567890.12345678901234567890,'bd3':0.012345678901234567890123456789012345,"
+                 + "'bd3':123456789012345678900.012345678901234567890}]}").replace('\'', '"');
+    SolrQueryRequest req = req();
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    JsonLoader loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(str), p);
+
+    assertEquals(1, p.addCommands.size());
+
+    AddUpdateCommand add = p.addCommands.get(0);
+    SolrInputDocument d = add.solrDoc;
+    SolrInputField f = d.getField("bd1");                        
+    assertTrue(f.getValue() instanceof String);
+    assertEquals("0.12345678901234567890123456789012345", f.getValue());
+    f = d.getField("bd2");
+    assertTrue(f.getValue() instanceof String);
+    assertEquals("12345678901234567890.12345678901234567890", f.getValue());
+    f = d.getField("bd3");
+    assertEquals(2, ((List)f.getValue()).size());
+    assertTrue(((List)f.getValue()).contains("0.012345678901234567890123456789012345"));
+    assertTrue(((List)f.getValue()).contains("123456789012345678900.012345678901234567890"));
+
+    req.close();
+  }
+
+  @Test
+  public void testBigIntegerValuesInAdd() throws Exception {
+    String str = ("{'add':[{'id':'1','bi1':123456789012345678901,'bi2':1098765432109876543210,"
+                 + "'bi3':[1234567890123456789012,10987654321098765432109]}]}").replace('\'', '"');
+    SolrQueryRequest req = req();
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    JsonLoader loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(str), p);
+
+    assertEquals(1, p.addCommands.size());
+
+    AddUpdateCommand add = p.addCommands.get(0);
+    SolrInputDocument d = add.solrDoc;
+    SolrInputField f = d.getField("bi1");
+    assertTrue(f.getValue() instanceof String);
+    assertEquals("123456789012345678901", f.getValue());
+    f = d.getField("bi2");
+    assertTrue(f.getValue() instanceof String);
+    assertEquals("1098765432109876543210", f.getValue());
+    f = d.getField("bi3");
+    assertEquals(2, ((List)f.getValue()).size());
+    assertTrue(((List)f.getValue()).contains("1234567890123456789012"));
+    assertTrue(((List)f.getValue()).contains("10987654321098765432109"));
+
+    req.close();
+  }
+
+
+  @Test
+  public void testAddNonStringValues() throws Exception {
+    // BigInteger and BigDecimal should be typed as strings, since there is no direct support for them
+    updateJ(json( "[{'id':'1','boolean_b':false,'long_l':19,'double_d':18.6,'big_integer_s':12345678901234567890,"
+        +"      'big_decimal_s':0.1234567890123456789012345}]" ), params("commit","true"));
+    assertJQ(req("q","id:1", "fl","boolean_b,long_l,double_d,big_integer_s,big_decimal_s")
+        ,"/response/docs/[0]=={'boolean_b':[false],'long_l':[19],'double_d':[18.6],"
+                             +"'big_integer_s':['12345678901234567890'],"
+                             +"'big_decimal_s':['0.1234567890123456789012345']}]}"
+    );
+  }
+
+
+  @Test
+  public void testAddBigIntegerValueToTrieField() throws Exception {
+    // Adding a BigInteger to a long field should fail
+    // BigInteger.longValue() returns only the low-order 64 bits.
+
+    ignoreException("big_integer_t");
+
+    try {
+      updateJ(json( "[{'id':'1','big_integer_tl':12345678901234567890}]" ), null);
+      fail("A BigInteger value should overflow a long field");
+    } catch (SolrException e) {
+      if ( ! (e.getCause() instanceof NumberFormatException)) {
+        throw e;
+      }
+    }
+
+    // Adding a BigInteger to an integer field should fail
+    // BigInteger.intValue() returns only the low-order 32 bits.
+    try {
+      updateJ(json( "[{'id':'1','big_integer_ti':12345678901234567890}]" ), null);
+      fail("A BigInteger value should overflow an integer field");
+    } catch (SolrException e) {
+      if ( ! (e.getCause() instanceof NumberFormatException)) {
+        throw e;
+      }
+    }
+
+    unIgnoreException("big_integer_t");
+  }
+
+  @Test
+  public void testAddBigDecimalValueToTrieField() throws Exception {
+    // Adding a BigDecimal to a double field should succeed by reducing precision
+    updateJ(json( "[{'id':'1','big_decimal_td':100000000000000000000000000001234567890.0987654321}]" ),
+            params("commit", "true"));
+    assertJQ(req("q","id:1", "fl","big_decimal_td"), 
+             "/response/docs/[0]=={'big_decimal_td':[1.0E38]}"
+    );
+
+    // Adding a BigDecimal to a float field should succeed by reducing precision
+    updateJ(json( "[{'id':'2','big_decimal_tf':100000000000000000000000000001234567890.0987654321}]" ),
+            params("commit", "true"));
+    assertJQ(req("q","id:2", "fl","big_decimal_tf"),
+             "/response/docs/[0]=={'big_decimal_tf':[1.0E38]}"
     );
   }
 
@@ -296,6 +545,162 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertEquals( delete.getVersion(), 88888L);
 
     req.close();
+  }
+
+  @Test
+  public void testSimpleChildDocs() throws Exception {
+    String str = "{\n" +
+        "    \"add\": {\n" +
+        "        \"doc\": {\n" +
+        "            \"id\": \"1\",\n" +
+        "            \"_childDocuments_\": [\n" +
+        "                {\n" +
+        "                    \"id\": \"2\"\n" +
+        "                },\n" +
+        "                {\n" +
+        "                    \"id\": \"3\",\n" +
+        "                    \"foo_i\": [666,777]\n" +
+        "                }\n" +
+        "            ]\n" +
+        "        }\n" +
+        "    }\n" +
+        "}";
+    checkTwoChildDocs(str);
+  }
+
+  @Test
+  public void testDupKeysChildDocs() throws Exception {
+    String str = "{\n" +
+        "    \"add\": {\n" +
+        "        \"doc\": {\n" +
+        "            \"_childDocuments_\": [\n" +
+        "                {\n" +
+        "                    \"id\": \"2\"\n" +
+        "                }\n" +
+        "            ],\n" +
+        "            \"id\": \"1\",\n" +
+        "            \"_childDocuments_\": [\n" +
+        "                {\n" +
+        "                    \"id\": \"3\",\n" +
+        "                    \"foo_i\": 666,\n" +
+        "                    \"foo_i\": 777\n" +
+        "                }\n" +
+        "            ]\n" +
+        "        }\n" +
+        "    }\n" +
+        "}";
+    checkTwoChildDocs(str);
+  }
+
+  private void checkTwoChildDocs(String rawJsonStr) throws Exception {
+    SolrQueryRequest req = req("commit","true");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    JsonLoader loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(rawJsonStr), p);
+
+    assertEquals( 1, p.addCommands.size() );
+
+    AddUpdateCommand add = p.addCommands.get(0);
+    SolrInputDocument d = add.solrDoc;
+    SolrInputField f = d.getField( "id" );
+    assertEquals("1", f.getValue());
+
+    SolrInputDocument cd = d.getChildDocuments().get(0);
+    SolrInputField cf = cd.getField( "id" );
+    assertEquals("2", cf.getValue());
+
+    cd = d.getChildDocuments().get(1);
+    cf = cd.getField( "id" );
+    assertEquals("3", cf.getValue());
+    cf = cd.getField( "foo_i" );
+    assertEquals(2, cf.getValueCount());
+
+    assertEquals(new Object[] {666L,777L}, cf.getValues().toArray());
+
+    req.close();
+  }
+
+  @Test
+  public void testEmptyChildDocs() throws Exception {
+    String str = "{\n" +
+        "    \"add\": {\n" +
+        "        \"doc\": {\n" +
+        "            \"id\": \"1\",\n" +
+        "            \"_childDocuments_\": []\n" +
+        "        }\n" +
+        "    }\n" +
+        "}";
+    SolrQueryRequest req = req("commit","true");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    JsonLoader loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(str), p);
+
+    assertEquals( 1, p.addCommands.size() );
+
+    AddUpdateCommand add = p.addCommands.get(0);
+    SolrInputDocument d = add.solrDoc;
+    SolrInputField f = d.getField( "id" );
+    assertEquals("1", f.getValue());
+    List<SolrInputDocument> cd = d.getChildDocuments();
+    assertNull(cd);
+
+    req.close();
+  }
+
+  @Test
+  public void testGrandChildDocs() throws Exception {
+    String str = "{\n" +
+        "    \"add\": {\n" +
+        "        \"doc\": {\n" +
+        "            \"id\": \"1\",\n" +
+        "            \"_childDocuments_\": [\n" +
+        "                {\n" +
+        "                    \"id\": \"2\",\n" +
+        "                    \"_childDocuments_\": [\n" +
+        "                        {\n" +
+        "                           \"id\": \"4\",\n" +
+        "                           \"foo_s\": \"Baz\"\n" +
+        "                        }\n" +
+        "                    ],\n" +
+        "                    \"foo_s\": \"Yaz\"\n" +
+        "                },\n" +
+        "                {\n" +
+        "                    \"id\": \"3\",\n" +
+        "                    \"foo_s\": \"Bar\"\n" +
+        "                }\n" +
+        "            ]\n" +
+        "        }\n" +
+        "    }\n" +
+        "}";
+
+    SolrQueryRequest req = req("commit","true");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    JsonLoader loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(str), p);
+
+    assertEquals( 1, p.addCommands.size() );
+
+    AddUpdateCommand add = p.addCommands.get(0);
+    SolrInputDocument one = add.solrDoc;
+    assertEquals("1", one.getFieldValue("id"));
+
+    SolrInputDocument two = one.getChildDocuments().get(0);
+    assertEquals("2", two.getFieldValue("id"));
+    assertEquals("Yaz", two.getFieldValue("foo_s"));
+
+    SolrInputDocument four = two.getChildDocuments().get(0);
+    assertEquals("4", four.getFieldValue("id"));
+    assertEquals("Baz", four.getFieldValue("foo_s"));
+
+    SolrInputDocument three = one.getChildDocuments().get(1);
+    assertEquals("3", three.getFieldValue("id"));
+    assertEquals("Bar", three.getFieldValue("foo_s"));
+
+    req.close();
+
   }
 
 

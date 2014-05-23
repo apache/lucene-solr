@@ -18,14 +18,12 @@ package org.apache.solr.analysis;
 
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.lang.reflect.Field;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.Query;
@@ -44,7 +42,7 @@ import org.junit.Test;
 import static org.apache.lucene.analysis.BaseTokenStreamTestCase.*;
 
 public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
-  Map<String,String> args = new HashMap<String, String>();
+  Map<String,String> args = new HashMap<>();
   IndexSchema schema;
 
   @BeforeClass
@@ -66,7 +64,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
     String text = "simple text";
     args.put("withOriginal", "true");
     ReversedWildcardFilterFactory factory = new ReversedWildcardFilterFactory(args);
-    TokenStream input = factory.create(new MockTokenizer(new StringReader(text), MockTokenizer.WHITESPACE, false));
+    TokenStream input = factory.create(whitespaceMockTokenizer(text));
     assertTokenStreamContents(input, 
         new String[] { "\u0001elpmis", "simple", "\u0001txet", "text" },
         new int[] { 1, 0, 1, 0 });
@@ -74,7 +72,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
     // now without original tokens
     args.put("withOriginal", "false");
     factory = new ReversedWildcardFilterFactory(args);
-    input = factory.create(new MockTokenizer(new StringReader(text), MockTokenizer.WHITESPACE, false));
+    input = factory.create(whitespaceMockTokenizer(text));
     assertTokenStreamContents(input,
         new String[] { "\u0001elpmis", "\u0001txet" },
         new int[] { 1, 1 });
@@ -82,11 +80,11 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
   
   @Test
   public void testIndexingAnalysis() throws Exception {
-    Analyzer a = schema.getAnalyzer();
+    Analyzer a = schema.getIndexAnalyzer();
     String text = "one two three si\uD834\uDD1Ex";
 
     // field one
-    TokenStream input = a.tokenStream("one", new StringReader(text));
+    TokenStream input = a.tokenStream("one", text);
     assertTokenStreamContents(input,
         new String[] { "\u0001eno", "one", "\u0001owt", "two", 
           "\u0001eerht", "three", "\u0001x\uD834\uDD1Eis", "si\uD834\uDD1Ex" },
@@ -95,7 +93,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
         new int[] { 1, 0, 1, 0, 1, 0, 1, 0 }
     );
     // field two
-    input = a.tokenStream("two", new StringReader(text));
+    input = a.tokenStream("two", text);
     assertTokenStreamContents(input,
         new String[] { "\u0001eno", "\u0001owt", 
           "\u0001eerht", "\u0001x\uD834\uDD1Eis" },
@@ -104,7 +102,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
         new int[] { 1, 1, 1, 1 }
     );
     // field three
-    input = a.tokenStream("three", new StringReader(text));
+    input = a.tokenStream("three", text);
     assertTokenStreamContents(input,
         new String[] { "one", "two", "three", "si\uD834\uDD1Ex" },
         new int[] { 0, 4, 8, 14 },

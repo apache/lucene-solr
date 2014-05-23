@@ -22,6 +22,7 @@ import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.PrintStream;
 import java.text.NumberFormat;
@@ -37,7 +38,7 @@ import java.util.Locale;
  *
  * @lucene.experimental
  */
-public class QuadPrefixTree extends SpatialPrefixTree {
+public class QuadPrefixTree extends LegacyPrefixTree {
 
   /**
    * Factory for creating {@link QuadPrefixTree} instances with useful defaults
@@ -114,6 +115,11 @@ public class QuadPrefixTree extends SpatialPrefixTree {
     this(ctx, ctx.getWorldBounds(), maxLevels);
   }
 
+  @Override
+  public Cell getWorldCell() {
+    return new QuadCell(BytesRef.EMPTY_BYTES, 0, 0);
+  }
+
   public void printInfo(PrintStream out) {
     NumberFormat nf = NumberFormat.getNumberInstance(Locale.ROOT);
     nf.setMaximumFractionDigits(5);
@@ -141,19 +147,9 @@ public class QuadPrefixTree extends SpatialPrefixTree {
 
   @Override
   public Cell getCell(Point p, int level) {
-    List<Cell> cells = new ArrayList<Cell>(1);
-    build(xmid, ymid, 0, cells, new StringBuilder(), ctx.makePoint(p.getX(),p.getY()), level);
+    List<Cell> cells = new ArrayList<>(1);
+    build(xmid, ymid, 0, cells, new BytesRef(maxLevels+1), ctx.makePoint(p.getX(),p.getY()), level);
     return cells.get(0);//note cells could be longer if p on edge
-  }
-
-  @Override
-  public Cell getCell(String token) {
-    return new QuadCell(token);
-  }
-
-  @Override
-  public Cell getCell(byte[] bytes, int offset, int len) {
-    return new QuadCell(bytes, offset, len);
   }
 
   private void build(
@@ -161,10 +157,10 @@ public class QuadPrefixTree extends SpatialPrefixTree {
       double y,
       int level,
       List<Cell> matches,
-      StringBuilder str,
+      BytesRef str,
       Shape shape,
       int maxLevel) {
-    assert str.length() == level;
+    assert str.length == level;
     double w = levelW[level] / 2;
     double h = levelH[level] / 2;
 
@@ -187,65 +183,71 @@ public class QuadPrefixTree extends SpatialPrefixTree {
       double cy,
       int level,
       List<Cell> matches,
-      StringBuilder str,
+      BytesRef str,
       Shape shape,
       int maxLevel) {
-    assert str.length() == level;
+    assert str.length == level;
+    assert str.offset == 0;
     double w = levelW[level] / 2;
     double h = levelH[level] / 2;
 
-    int strlen = str.length();
+    int strlen = str.length;
     Rectangle rectangle = ctx.makeRectangle(cx - w, cx + w, cy - h, cy + h);
     SpatialRelation v = shape.relate(rectangle);
     if (SpatialRelation.CONTAINS == v) {
-      str.append(c);
+      str.bytes[str.length++] = (byte)c;//append
       //str.append(SpatialPrefixGrid.COVER);
-      matches.add(new QuadCell(str.toString(),v.transpose()));
+      matches.add(new QuadCell(BytesRef.deepCopyOf(str), v.transpose()));
     } else if (SpatialRelation.DISJOINT == v) {
       // nothing
     } else { // SpatialRelation.WITHIN, SpatialRelation.INTERSECTS
-      str.append(c);
+      str.bytes[str.length++] = (byte)c;//append
 
       int nextLevel = level+1;
       if (nextLevel >= maxLevel) {
         //str.append(SpatialPrefixGrid.INTERSECTS);
-        matches.add(new QuadCell(str.toString(),v.transpose()));
+        matches.add(new QuadCell(BytesRef.deepCopyOf(str), v.transpose()));
       } else {
         build(cx, cy, nextLevel, matches, str, shape, maxLevel);
       }
     }
-    str.setLength(strlen);
+    str.length = strlen;
   }
 
-  class QuadCell extends Cell {
-
-    public QuadCell(String token) {
-      super(token);
-    }
-
-    public QuadCell(String token, SpatialRelation shapeRel) {
-      super(token);
-      this.shapeRel = shapeRel;
-    }
+  private class QuadCell extends LegacyCell {
 
     QuadCell(byte[] bytes, int off, int len) {
       super(bytes, off, len);
     }
 
-    @Override
-    public void reset(byte[] bytes, int off, int len) {
-      super.reset(bytes, off, len);
-      shape = null;
+    QuadCell(BytesRef str, SpatialRelation shapeRel) {
+      this(str.bytes, str.offset, str.length);
+      this.shapeRel = shapeRel;
     }
 
     @Override
-    public Collection<Cell> getSubCells() {
-      List<Cell> cells = new ArrayList<Cell>(4);
-      cells.add(new QuadCell(getTokenString()+"A"));
-      cells.add(new QuadCell(getTokenString()+"B"));
-      cells.add(new QuadCell(getTokenString()+"C"));
-      cells.add(new QuadCell(getTokenString()+"D"));
+    protected QuadPrefixTree getGrid() { return QuadPrefixTree.this; }
+
+    @Override
+    protected Collection<Cell> getSubCells() {
+      BytesRef source = getTokenBytesNoLeaf(null);
+      BytesRef target = new BytesRef();
+
+      List<Cell> cells = new ArrayList<>(4);
+      cells.add(new QuadCell(concat(source, (byte)'A', target), null));
+      cells.add(new QuadCell(concat(source, (byte)'B', target), null));
+      cells.add(new QuadCell(concat(source, (byte)'C', target), null));
+      cells.add(new QuadCell(concat(source, (byte)'D', target), null));
       return cells;
+    }
+
+    private BytesRef concat(BytesRef source, byte b, BytesRef target) {
+      assert target.offset == 0;
+      target.bytes = new byte[source.length + 2];//+2 for new char + potential leaf
+      target.length = 0;
+      target.copyBytes(source);
+      target.bytes[target.length++] = b;
+      return target;
     }
 
     @Override
@@ -254,11 +256,9 @@ public class QuadPrefixTree extends SpatialPrefixTree {
     }
 
     @Override
-    public Cell getSubCell(Point p) {
-      return QuadPrefixTree.this.getCell(p, getLevel() + 1);//not performant!
+    protected QuadCell getSubCell(Point p) {
+      return (QuadCell) QuadPrefixTree.this.getCell(p, getLevel() + 1);//not performant!
     }
-
-    private Shape shape;//cache
 
     @Override
     public Shape getShape() {
@@ -268,27 +268,30 @@ public class QuadPrefixTree extends SpatialPrefixTree {
     }
 
     private Rectangle makeShape() {
-      String token = getTokenString();
+      BytesRef token = getTokenBytesNoLeaf(null);
       double xmin = QuadPrefixTree.this.xmin;
       double ymin = QuadPrefixTree.this.ymin;
 
-      for (int i = 0; i < token.length(); i++) {
-        char c = token.charAt(i);
-        if ('A' == c || 'a' == c) {
-          ymin += levelH[i];
-        } else if ('B' == c || 'b' == c) {
-          xmin += levelW[i];
-          ymin += levelH[i];
-        } else if ('C' == c || 'c' == c) {
-          // nothing really
-        }
-        else if('D' == c || 'd' == c) {
-          xmin += levelW[i];
-        } else {
-          throw new RuntimeException("unexpected char: " + c);
+      for (int i = 0; i < token.length; i++) {
+        byte c = token.bytes[token.offset + i];
+        switch (c) {
+          case 'A':
+            ymin += levelH[i];
+            break;
+          case 'B':
+            xmin += levelW[i];
+            ymin += levelH[i];
+            break;
+          case 'C':
+            break;//nothing really
+          case 'D':
+            xmin += levelW[i];
+            break;
+          default:
+            throw new RuntimeException("unexpected char: " + c);
         }
       }
-      int len = token.length();
+      int len = token.length;
       double width, height;
       if (len > 0) {
         width = levelW[len-1];

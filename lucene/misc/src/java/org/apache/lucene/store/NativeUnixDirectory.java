@@ -198,11 +198,6 @@ public class NativeUnixDirectory extends FSDirectory {
     //   FileChannel provides an API?
     //}
 
-    @Override
-    public void flush() {
-      // TODO -- I don't think this method is necessary?
-    }
-
     private void dump() throws IOException {
       buffer.flip();
       final long limit = filePos + buffer.limit();
@@ -237,8 +232,8 @@ public class NativeUnixDirectory extends FSDirectory {
     }
 
     @Override
-    public long length() {
-      return fileLength + bufferPos;
+    public long getChecksum() throws IOException {
+      throw new UnsupportedOperationException("this directory currently does not work at all!");
     }
 
     @Override
@@ -410,6 +405,12 @@ public class NativeUnixDirectory extends FSDirectory {
       } catch (IOException ioe) {
         throw new RuntimeException("IOException during clone: " + this, ioe);
       }
+    }
+
+    @Override
+    public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
+      // TODO: is this the right thing to do?
+      return BufferedIndexInput.wrap(sliceDescription, this, offset, length);
     }
   }
 }

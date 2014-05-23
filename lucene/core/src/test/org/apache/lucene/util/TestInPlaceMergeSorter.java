@@ -30,7 +30,7 @@ public class TestInPlaceMergeSorter extends BaseSortTestCase {
 
   @Override
   public Sorter newSorter(Entry[] arr) {
-    return new ArrayInPlaceMergeSorter<Entry>(arr, ArrayUtil.<Entry>naturalComparator());
+    return new ArrayInPlaceMergeSorter<>(arr, ArrayUtil.<Entry>naturalComparator());
   }
 
 }

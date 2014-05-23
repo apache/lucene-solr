@@ -40,15 +40,15 @@
       <!-- lucene-test-framework dependency must be declared before lucene-core -->
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-test-framework</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-codecs</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
+@lucene-codecs.internal.test.dependencies@
+@lucene-codecs.external.test.dependencies@
   </dependencies>
   <build>
     <sourceDirectory/>

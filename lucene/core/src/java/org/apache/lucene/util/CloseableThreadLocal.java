@@ -55,11 +55,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class CloseableThreadLocal<T> implements Closeable {
 
-  private ThreadLocal<WeakReference<T>> t = new ThreadLocal<WeakReference<T>>();
+  private ThreadLocal<WeakReference<T>> t = new ThreadLocal<>();
 
   // Use a WeakHashMap so that if a Thread exits and is
   // GC'able, its entry may be removed:
-  private Map<Thread,T> hardRefs = new WeakHashMap<Thread,T>();
+  private Map<Thread,T> hardRefs = new WeakHashMap<>();
   
   // Increase this to decrease frequency of purging in get:
   private static int PURGE_MULTIPLIER = 20;
@@ -92,7 +92,7 @@ public class CloseableThreadLocal<T> implements Closeable {
 
   public void set(T object) {
 
-    t.set(new WeakReference<T>(object));
+    t.set(new WeakReference<>(object));
 
     synchronized(hardRefs) {
       hardRefs.put(Thread.currentThread(), object);

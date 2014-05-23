@@ -22,9 +22,9 @@ import org.apache.solr.client.solrj.MultiCoreExampleTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
@@ -42,7 +42,6 @@ import org.junit.Test;
 public class MultiCoreExampleJettyTest extends MultiCoreExampleTestBase {
 
   JettySolrRunner jetty;
-
   int port = 0;
   static final String context = "/example";
   
@@ -52,11 +51,10 @@ public class MultiCoreExampleJettyTest extends MultiCoreExampleTestBase {
     System.clearProperty("solr.directoryFactory");
     super.setUp();
 
-    jetty = new JettySolrRunner(getSolrHome(), context, 0 );
+    jetty = new JettySolrRunner(getSolrHome(), context, 0, null, null, true, null, sslConfig);
     jetty.start(false);
     port = jetty.getLocalPort();
 
-    cores.setPersistent(false);    
   }
 
   @Override public void tearDown() throws Exception 
@@ -65,36 +63,11 @@ public class MultiCoreExampleJettyTest extends MultiCoreExampleTestBase {
     jetty.stop();  // stop the server
   }
   
-
-  @Override
-  protected SolrServer getSolrCore(String name)
-  {
-    return createServer(name);
-  }
-
-  @Override
-  protected SolrServer getSolrCore0()
-  {
-    return createServer( "core0" );
-  }
-
-  @Override
-  protected SolrServer getSolrCore1()
-  {
-    return createServer( "core1" );
-  }
-
-  @Override
-  protected SolrServer getSolrAdmin()
-  {
-    return createServer( "" );
-  } 
-  
-  private SolrServer createServer( String name )
+  protected SolrServer createServer( String name )
   {
     try {
       // setup the server...
-      String url = "http://127.0.0.1:"+port+context+"/"+name;
+      String url = buildUrl(port, context) + "/" + name;
       HttpSolrServer s = new HttpSolrServer( url );
       s.setConnectionTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT);
       s.setDefaultMaxConnectionsPerHost(100);
@@ -139,7 +112,7 @@ public class MultiCoreExampleJettyTest extends MultiCoreExampleTestBase {
     assertEquals( 1, r.process( getSolrCore1() ).getResults().size() );
     
     // Distributed
-    String baseURL = "127.0.0.1:"+port+context+"/";
+    String baseURL = buildUrl(port, context) + "/";
     q = new SolrQuery( "*:*" );
     q.set( ShardParams.SHARDS, baseURL+"core0,"+baseURL+"core1" );
     q.set( "fl", "id,s:[shard]" );

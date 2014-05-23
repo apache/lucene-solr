@@ -37,7 +37,7 @@ import java.util.Map;
  *
  * @lucene.experimental
  */
-public abstract class AbstractSecondPassGroupingCollector<GROUP_VALUE_TYPE> extends Collector {
+public abstract class AbstractSecondPassGroupingCollector<GROUP_VALUE_TYPE> extends SimpleCollector {
 
   protected final Map<GROUP_VALUE_TYPE, SearchGroupDocs<GROUP_VALUE_TYPE>> groupMap;
   private final int maxDocsPerGroup;
@@ -107,10 +107,10 @@ public abstract class AbstractSecondPassGroupingCollector<GROUP_VALUE_TYPE> exte
   protected abstract SearchGroupDocs<GROUP_VALUE_TYPE> retrieveGroup(int doc) throws IOException;
 
   @Override
-  public void setNextReader(AtomicReaderContext readerContext) throws IOException {
+  protected void doSetNextReader(AtomicReaderContext readerContext) throws IOException {
     //System.out.println("SP.setNextReader");
     for (SearchGroupDocs<GROUP_VALUE_TYPE> group : groupMap.values()) {
-      group.collector.setNextReader(readerContext);
+      group.collector.getLeafCollector(readerContext);
     }
   }
 

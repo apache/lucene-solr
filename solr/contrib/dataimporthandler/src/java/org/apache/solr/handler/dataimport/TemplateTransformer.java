@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
 public class TemplateTransformer extends Transformer {
 
   private static final Logger LOG = LoggerFactory.getLogger(TemplateTransformer.class);
-  private Map<String ,List<String>> templateVsVars = new HashMap<String, List<String>>();
+  private Map<String ,List<String>> templateVsVars = new HashMap<>();
 
   @Override
   @SuppressWarnings("unchecked")

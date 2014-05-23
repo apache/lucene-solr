@@ -191,7 +191,7 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
 
     private class MockUpdateRequestProcessor extends UpdateRequestProcessor {
 
-      private Queue<DeleteUpdateCommand> deleteCommands = new LinkedList<DeleteUpdateCommand>();
+      private Queue<DeleteUpdateCommand> deleteCommands = new LinkedList<>();
 
       public MockUpdateRequestProcessor(UpdateRequestProcessor next) {
         super(next);

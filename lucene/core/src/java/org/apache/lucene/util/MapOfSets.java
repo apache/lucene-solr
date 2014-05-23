@@ -55,7 +55,7 @@ public class MapOfSets<K, V> {
     if (theMap.containsKey(key)) {
       theSet = theMap.get(key);
     } else {
-      theSet = new HashSet<V>(23);
+      theSet = new HashSet<>(23);
       theMap.put(key, theSet);
     }
     theSet.add(val);
@@ -72,7 +72,7 @@ public class MapOfSets<K, V> {
     if (theMap.containsKey(key)) {
       theSet = theMap.get(key);
     } else {
-      theSet = new HashSet<V>(23);
+      theSet = new HashSet<>(23);
       theMap.put(key, theSet);
     }
     theSet.addAll(vals);

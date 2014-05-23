@@ -49,8 +49,8 @@ public class TestBulgarianAnalyzer extends BaseTokenStreamTestCase {
   
   public void testReusableTokenStream() throws IOException {
     Analyzer a = new BulgarianAnalyzer(TEST_VERSION_CURRENT);
-    assertAnalyzesToReuse(a, "документи", new String[] {"документ"});
-    assertAnalyzesToReuse(a, "документ", new String[] {"документ"});
+    assertAnalyzesTo(a, "документи", new String[] {"документ"});
+    assertAnalyzesTo(a, "документ", new String[] {"документ"});
   }
   
   /**

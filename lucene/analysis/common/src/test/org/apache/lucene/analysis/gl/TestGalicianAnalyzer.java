@@ -34,8 +34,8 @@ public class TestGalicianAnalyzer extends BaseTokenStreamTestCase {
   public void testBasics() throws IOException {
     Analyzer a = new GalicianAnalyzer(TEST_VERSION_CURRENT);
     // stemming
-    checkOneTermReuse(a, "correspondente", "correspond");
-    checkOneTermReuse(a, "corresponderá", "correspond");
+    checkOneTerm(a, "correspondente", "correspond");
+    checkOneTerm(a, "corresponderá", "correspond");
     // stopword
     assertAnalyzesTo(a, "e", new String[] {});
   }
@@ -45,8 +45,8 @@ public class TestGalicianAnalyzer extends BaseTokenStreamTestCase {
     CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("correspondente"), false);
     Analyzer a = new GalicianAnalyzer(TEST_VERSION_CURRENT, 
         GalicianAnalyzer.getDefaultStopSet(), exclusionSet);
-    checkOneTermReuse(a, "correspondente", "correspondente");
-    checkOneTermReuse(a, "corresponderá", "correspond");
+    checkOneTerm(a, "correspondente", "correspondente");
+    checkOneTerm(a, "corresponderá", "correspond");
   }
   
   /** blast some random strings through the analyzer */

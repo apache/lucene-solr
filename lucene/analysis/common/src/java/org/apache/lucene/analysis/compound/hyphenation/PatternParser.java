@@ -131,7 +131,7 @@ public class PatternParser extends DefaultHandler {
     }
   }
 
-  protected String readToken(StringBuffer chars) {
+  protected String readToken(StringBuilder chars) {
     String word;
     boolean space = false;
     int i;
@@ -188,7 +188,7 @@ public class PatternParser extends DefaultHandler {
   }
 
   protected ArrayList<Object> normalizeException(ArrayList<?> ex) {
-    ArrayList<Object> res = new ArrayList<Object>();
+    ArrayList<Object> res = new ArrayList<>();
     for (int i = 0; i < ex.size(); i++) {
       Object item = ex.get(i);
       if (item instanceof String) {
@@ -287,7 +287,7 @@ public class PatternParser extends DefaultHandler {
       currElement = ELEM_PATTERNS;
     } else if (local.equals("exceptions")) {
       currElement = ELEM_EXCEPTIONS;
-      exception = new ArrayList<Object>();
+      exception = new ArrayList<>();
     } else if (local.equals("hyphen")) {
       if (token.length() > 0) {
         exception.add(token.toString());
@@ -344,7 +344,7 @@ public class PatternParser extends DefaultHandler {
   @SuppressWarnings("unchecked")
   @Override
   public void characters(char ch[], int start, int length) {
-    StringBuffer chars = new StringBuffer(length);
+    StringBuilder chars = new StringBuilder(length);
     chars.append(ch, start, length);
     String word = readToken(chars);
     while (word != null) {

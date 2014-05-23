@@ -216,10 +216,10 @@ final public class BasicAutomata {
       by.append('0');
     by.append(y);
     y = by.toString();
-    Collection<State> initials = new ArrayList<State>();
+    Collection<State> initials = new ArrayList<>();
     a.initial = between(x, y, 0, initials, digits <= 0);
     if (digits <= 0) {
-      ArrayList<StatePair> pairs = new ArrayList<StatePair>();
+      ArrayList<StatePair> pairs = new ArrayList<>();
       for (State p : initials)
         if (a.initial != p) pairs.add(new StatePair(a.initial, p));
       BasicOperations.addEpsilons(a, pairs);

@@ -20,10 +20,10 @@
  solr.xml specifying a custom shardHandlerFactory
 -->
 <solr>
-  <cores>
+
     <shardHandlerFactory name="shardHandlerFactory" 
                          class="org.apache.solr.core.MockShardHandlerFactory">
       <str name="myMagicRequiredParameter">myMagicRequiredValue</str>
     </shardHandlerFactory>
-  </cores>
+
 </solr>

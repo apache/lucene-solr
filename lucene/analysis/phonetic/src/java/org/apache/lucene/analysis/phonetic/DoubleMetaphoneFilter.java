@@ -32,7 +32,7 @@ public final class DoubleMetaphoneFilter extends TokenFilter {
 
   private static final String TOKEN_TYPE = "DoubleMetaphone";
   
-  private final LinkedList<State> remainingTokens = new LinkedList<State>();
+  private final LinkedList<State> remainingTokens = new LinkedList<>();
   private final DoubleMetaphone encoder = new DoubleMetaphone();
   private final boolean inject;
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);

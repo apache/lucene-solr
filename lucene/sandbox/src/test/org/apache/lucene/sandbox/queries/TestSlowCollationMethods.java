@@ -5,13 +5,15 @@ import java.util.Locale;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -55,14 +57,16 @@ public class TestSlowCollationMethods extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      String value = _TestUtil.randomUnicodeString(random());
+      String value = TestUtil.randomUnicodeString(random());
       Field field = newStringField("field", value, Field.Store.YES);
       doc.add(field);
+      Field dvField = new SortedDocValuesField("field", new BytesRef(value));
+      doc.add(dvField);
       iw.addDocument(doc);
     }
-    splitDoc = _TestUtil.randomUnicodeString(random());
+    splitDoc = TestUtil.randomUnicodeString(random());
     reader = iw.getReader();
-    iw.close();
+    iw.shutdown();
 
     searcher = newSearcher(reader);
   }
@@ -130,8 +134,8 @@ public class TestSlowCollationMethods extends LuceneTestCase {
   public void testRangeQuery() throws Exception {
     int numQueries = 50*RANDOM_MULTIPLIER;
     for (int i = 0; i < numQueries; i++) {
-      String startPoint = _TestUtil.randomUnicodeString(random());
-      String endPoint = _TestUtil.randomUnicodeString(random());
+      String startPoint = TestUtil.randomUnicodeString(random());
+      String endPoint = TestUtil.randomUnicodeString(random());
       Query query = new SlowCollatedTermRangeQuery("field", startPoint, endPoint, true, true, collator);
       doTestRanges(startPoint, endPoint, query);
     }
@@ -140,8 +144,8 @@ public class TestSlowCollationMethods extends LuceneTestCase {
   public void testRangeFilter() throws Exception {
     int numQueries = 50*RANDOM_MULTIPLIER;
     for (int i = 0; i < numQueries; i++) {
-      String startPoint = _TestUtil.randomUnicodeString(random());
-      String endPoint = _TestUtil.randomUnicodeString(random());
+      String startPoint = TestUtil.randomUnicodeString(random());
+      String endPoint = TestUtil.randomUnicodeString(random());
       Query query = new ConstantScoreQuery(new SlowCollatedTermRangeFilter("field", startPoint, endPoint, true, true, collator));
       doTestRanges(startPoint, endPoint, query);
     }
@@ -162,18 +166,18 @@ public class TestSlowCollationMethods extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      String value = _TestUtil.randomUnicodeString(random());
+      String value = TestUtil.randomUnicodeString(random());
       Field field = newStringField("field", value, Field.Store.YES);
       doc.add(field);
       iw.addDocument(doc);
     }
     IndexReader reader = iw.getReader();
-    iw.close();
+    iw.shutdown();
 
     IndexSearcher searcher = newSearcher(reader);
 
-    String startPoint = _TestUtil.randomUnicodeString(random());
-    String endPoint = _TestUtil.randomUnicodeString(random());
+    String startPoint = TestUtil.randomUnicodeString(random());
+    String endPoint = TestUtil.randomUnicodeString(random());
     Query query = new SlowCollatedTermRangeQuery("field", startPoint, endPoint, true, true, collator);
     QueryUtils.check(random(), query, searcher);
     reader.close();

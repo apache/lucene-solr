@@ -82,10 +82,10 @@ public class SuggesterTest extends SolrTestCaseJ4 {
     System.setProperty("solr.test.leavedatadir", "true");
     addDocs();
     assertU(commit());
-    File data = dataDir;
+    File data = initCoreDataDir;
     String config = configString;
     deleteCore();
-    dataDir = data;
+    initCoreDataDir = data;
     configString = config;
     initCore();
     assertQ(req("qt", requestUri, "q", "ac", SpellingParams.SPELLCHECK_COUNT, "2", SpellingParams.SPELLCHECK_ONLY_MORE_POPULAR, "true"),
@@ -116,6 +116,7 @@ public class SuggesterTest extends SolrTestCaseJ4 {
   public void testAnalyzer() throws Exception {
     Suggester suggester = new Suggester();
     NamedList params = new NamedList();
+    params.add("field", "test_field");
     params.add("lookupImpl", "org.apache.solr.spelling.suggest.tst.TSTLookupFactory");
     suggester.init(params, h.getCore());
     assertTrue(suggester.getQueryAnalyzer() != null);

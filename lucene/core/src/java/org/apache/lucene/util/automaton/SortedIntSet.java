@@ -35,7 +35,7 @@ final class SortedIntSet {
   // O(N^2) linear ops to O(N log(N)) TreeMap
   private final static int TREE_MAP_CUTOVER = 30;
 
-  private final Map<Integer,Integer> map = new TreeMap<Integer,Integer>();
+  private final Map<Integer,Integer> map = new TreeMap<>();
 
   private boolean useTreeMap;
 

@@ -17,12 +17,14 @@
 
 package org.apache.solr.spelling.suggest;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 
@@ -32,13 +34,14 @@ import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.search.spell.HighFrequencyDictionary;
 import org.apache.lucene.search.spell.SuggestMode;
 import org.apache.lucene.search.suggest.FileDictionary;
-import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.search.suggest.Lookup;
+import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.search.suggest.analyzing.AnalyzingSuggester;
 import org.apache.lucene.search.suggest.fst.WFSTCompletionLookup;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.spelling.SolrSpellChecker;
@@ -102,6 +105,22 @@ public class Suggester extends SolrSpellChecker {
     factory = core.getResourceLoader().newInstance(lookupImpl, LookupFactory.class);
     
     lookup = factory.create(config, core);
+    core.addCloseHook(new CloseHook() {
+      @Override
+      public void preClose(SolrCore core) {
+        if (lookup != null && lookup instanceof Closeable) {
+          try {
+            ((Closeable) lookup).close();
+          } catch (IOException e) {
+            LOG.warn("Could not close the suggester lookup.", e);
+          }
+        }
+      }
+      
+      @Override
+      public void postClose(SolrCore core) {}
+    });
+    
     String store = (String)config.get(STORE_DIR);
     if (store != null) {
       storeDir = new File(store);
@@ -119,6 +138,7 @@ public class Suggester extends SolrSpellChecker {
         }
       }
     }
+    
     return name;
   }
   
@@ -131,7 +151,7 @@ public class Suggester extends SolrSpellChecker {
     } else {
       try {
         dictionary = new FileDictionary(new InputStreamReader(
-                core.getResourceLoader().openResource(sourceLocation), IOUtils.CHARSET_UTF_8));
+                core.getResourceLoader().openResource(sourceLocation), StandardCharsets.UTF_8));
       } catch (UnsupportedEncodingException e) {
         // should not happen
         LOG.error("should not happen", e);

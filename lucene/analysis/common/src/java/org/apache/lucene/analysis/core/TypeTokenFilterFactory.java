@@ -58,7 +58,7 @@ public class TypeTokenFilterFactory extends TokenFilterFactory implements Resour
   public void inform(ResourceLoader loader) throws IOException {
     List<String> files = splitFileNames(stopTypesFiles);
     if (files.size() > 0) {
-      stopTypes = new HashSet<String>();
+      stopTypes = new HashSet<>();
       for (String file : files) {
         List<String> typesLines = getLines(loader, file.trim());
         stopTypes.addAll(typesLines);

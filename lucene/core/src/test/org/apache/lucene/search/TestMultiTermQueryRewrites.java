@@ -58,7 +58,7 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
       ((i % 2 == 0) ? swriter1 : swriter2).addDocument(doc);
     }
     writer.forceMerge(1); swriter1.forceMerge(1); swriter2.forceMerge(1);
-    writer.close(); swriter1.close(); swriter2.close();
+    writer.shutdown(); swriter1.shutdown(); swriter2.shutdown();
     
     reader = DirectoryReader.open(dir);
     searcher = newSearcher(reader);

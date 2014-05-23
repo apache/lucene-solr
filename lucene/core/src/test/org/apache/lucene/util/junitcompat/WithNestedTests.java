@@ -20,20 +20,30 @@ package org.apache.lucene.util.junitcompat;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import org.apache.lucene.util.FailureMarker;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestRuleIgnoreAfterMaxFailures;
 import org.apache.lucene.util.TestRuleIgnoreTestSuites;
 import org.apache.lucene.util.TestRuleMarkFailure;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
+import org.junit.runner.Result;
+import org.junit.runner.notification.Failure;
 
+import com.carrotsearch.randomizedtesting.RandomizedRunner;
+import com.carrotsearch.randomizedtesting.RandomizedTest;
+import com.carrotsearch.randomizedtesting.SysGlobals;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
 
@@ -50,6 +60,7 @@ import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
  * cause havoc (static fields).
  */
 public abstract class WithNestedTests {
+  @SuppressSysoutChecks(bugUrl = "WithNestedTests has its own stream capture.")
   public static abstract class AbstractNestedTest extends LuceneTestCase 
     implements TestRuleIgnoreTestSuites.NestedTestSuite {
     protected static boolean isRunningNested() {
@@ -73,15 +84,36 @@ public abstract class WithNestedTests {
     private TestRuleIgnoreAfterMaxFailures prevRule;
 
     protected void before() throws Throwable {
+      if (!isPropertyEmpty(SysGlobals.SYSPROP_TESTFILTER()) ||
+          !isPropertyEmpty(SysGlobals.SYSPROP_TESTCLASS())  ||
+          !isPropertyEmpty(SysGlobals.SYSPROP_TESTMETHOD()) ||
+          !isPropertyEmpty(SysGlobals.SYSPROP_ITERATIONS())) {
+        // We're running with a complex test filter that is properly handled by classes
+        // which are executed by RandomizedRunner. The "outer" classes testing LuceneTestCase
+        // itself are executed by the default JUnit runner and would be always executed.
+        // We thus always skip execution if any filtering is detected.
+        Assume.assumeTrue(false);
+      }
+      
+      // Check zombie threads from previous suites. Don't run if zombies are around.
+      RandomizedTest.assumeFalse(RandomizedRunner.hasZombieThreads());
+
       TestRuleIgnoreAfterMaxFailures newRule = new TestRuleIgnoreAfterMaxFailures(Integer.MAX_VALUE);
       prevRule = LuceneTestCase.replaceMaxFailureRule(newRule);
+      RandomizedTest.assumeFalse(FailureMarker.hadFailures());
     }
 
     protected void afterAlways(List<Throwable> errors) throws Throwable {
       if (prevRule != null) {
         LuceneTestCase.replaceMaxFailureRule(prevRule);
       }
+      FailureMarker.resetFailures();
     }
+
+    private boolean isPropertyEmpty(String propertyName) {
+      String value = System.getProperty(propertyName);
+      return value == null || value.trim().isEmpty();
+    }    
   }); 
 
   /**
@@ -113,14 +145,15 @@ public abstract class WithNestedTests {
 
       try {
         sysout = new ByteArrayOutputStream();
-        System.setOut(new PrintStream(sysout, true, "UTF-8"));
+        System.setOut(new PrintStream(sysout, true, IOUtils.UTF_8));
         syserr = new ByteArrayOutputStream();
-        System.setErr(new PrintStream(syserr, true, "UTF-8"));
+        System.setErr(new PrintStream(syserr, true, IOUtils.UTF_8));
       } catch (UnsupportedEncodingException e) {
         throw new RuntimeException(e);
       }
     }
 
+    FailureMarker.resetFailures();
     System.setProperty(TestRuleIgnoreTestSuites.PROPERTY_RUN_NESTED, "true");
   }
 
@@ -135,23 +168,29 @@ public abstract class WithNestedTests {
     }
   }
 
+  protected void assertFailureCount(int expected, Result result) {
+    if (result.getFailureCount() != expected) {
+      StringBuilder b = new StringBuilder();
+      for (Failure f : result.getFailures()) {
+        b.append("\n\n");
+        b.append(f.getMessage());
+        b.append("\n");
+        b.append(f.getTrace());
+      }
+      RandomizedTest.assertFalse("Expected failures: " + expected + " but was " + 
+          result.getFailureCount() + ", failures below: " + b.toString(), true);
+    }
+  }
+
   protected String getSysOut() {
     Assert.assertTrue(suppressOutputStreams);
     System.out.flush();
-    try {
-      return new String(sysout.toByteArray(), "UTF-8");
-    } catch (UnsupportedEncodingException e) {
-      throw new RuntimeException(e);
-    }
+    return new String(sysout.toByteArray(), StandardCharsets.UTF_8);
   }
 
   protected String getSysErr() {
     Assert.assertTrue(suppressOutputStreams);
     System.err.flush();
-    try {
-      return new String(syserr.toByteArray(), "UTF-8");
-    } catch (UnsupportedEncodingException e) {
-      throw new RuntimeException(e);
-    }
+    return new String(syserr.toByteArray(), StandardCharsets.UTF_8);
   }  
 }

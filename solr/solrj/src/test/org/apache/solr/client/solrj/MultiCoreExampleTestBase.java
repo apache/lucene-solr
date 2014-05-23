@@ -18,7 +18,11 @@
 package org.apache.solr.client.solrj;
 
 import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
@@ -28,10 +32,7 @@ import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.ExternalPaths;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 
@@ -41,54 +42,40 @@ import org.junit.Test;
  */
 public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase 
 {
-  protected static CoreContainer cores;
+  protected CoreContainer cores;
 
   private File dataDir2;
   private File dataDir1;
+  
+  private SolrServer solrCore0;
+  private SolrServer solrCore1;
+  private SolrServer solrAdmin;
+  
+  private final Set<SolrServer> clients = new HashSet<>();
 
   @Override public String getSolrHome() { return ExternalPaths.EXAMPLE_MULTICORE_HOME; }
 
-  
-  @BeforeClass
-  public static void beforeThisClass2() throws Exception {
-    cores = new CoreContainer();
-  }
-  
-  @AfterClass
-  public static void afterClass() {
-    cores.shutdown();
-  }
-  
   @Override public void setUp() throws Exception {
     super.setUp();
-
-    SolrCore.log.info("CORES=" + cores + " : " + cores.getCoreNames());
-    cores.setPersistent(false);
-    
-    dataDir1 = new File(TEMP_DIR, getClass().getName() + "-core0-"
-        + System.currentTimeMillis());
-    dataDir1.mkdirs();
-    
-    dataDir2 = new File(TEMP_DIR, getClass().getName() + "-core1-"
-        + System.currentTimeMillis());
-    dataDir2.mkdirs();
+    dataDir1 = createTempDir();
+    dataDir2 = createTempDir();
     
     System.setProperty( "solr.core0.data.dir", this.dataDir1.getCanonicalPath() ); 
-    System.setProperty( "solr.core1.data.dir", this.dataDir2.getCanonicalPath() ); 
+    System.setProperty( "solr.core1.data.dir", this.dataDir2.getCanonicalPath() );
   }
   
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
     
-    String skip = System.getProperty("solr.test.leavedatadir");
-    if (null != skip && 0 != skip.trim().length()) {
-      System.err.println("NOTE: per solr.test.leavedatadir, dataDir2 will not be removed: " + dataDir2.getAbsolutePath());
-    } else {
-      if (!recurseDelete(dataDir2)) {
-        System.err.println("!!!! WARNING: best effort to remove " + dataDir2.getAbsolutePath() + " FAILED !!!!!");
-      }
+    if(solrCore0 != null) solrCore0.shutdown();
+    if(solrCore1 != null) solrCore1.shutdown();
+    if(solrAdmin != null) solrAdmin.shutdown();
+    solrCore0 = solrCore1 = solrAdmin = null;
+    for (SolrServer client:clients) {
+      client.shutdown();
     }
+    clients.clear();
   }
 
   @Override
@@ -102,11 +89,40 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
   {
     throw new UnsupportedOperationException();
   }
+  
+  protected SolrServer getSolrCore0()
+  {
+    if (solrCore0 == null) {
+      solrCore0 = createServer( "core0" );
+    }
+    return solrCore0;
+  }
 
-  protected abstract SolrServer getSolrCore0();
-  protected abstract SolrServer getSolrCore1();
-  protected abstract SolrServer getSolrAdmin();
-  protected abstract SolrServer getSolrCore(String name);
+  protected SolrServer getSolrCore1()
+  {
+    if (solrCore1 == null) {
+      solrCore1 = createServer( "core1" );
+    }
+    return solrCore1;
+  }
+
+  protected SolrServer getSolrAdmin()
+  {
+    if (solrAdmin == null) {
+      solrAdmin = createServer( "" );
+    }
+    return solrAdmin;
+  } 
+  
+  protected SolrServer getSolrCore(String name)
+  {
+    SolrServer server = createServer(name);
+    clients.add(server);
+    return server;
+  }
+
+
+  protected abstract SolrServer createServer(String string);
 
   @Test
   public void testMultiCore() throws Exception
@@ -212,25 +228,22 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
     CoreAdminRequest.renameCore("coreb","corec",coreadmin);
     CoreAdminRequest.renameCore("corec","cored",coreadmin);
     CoreAdminRequest.renameCore("cored","corefoo",coreadmin);
-    try {
+    try { 
       getSolrCore("core1").query( new SolrQuery( "id:BBB" ) );
       fail( "core1 should be gone" );
     }
     catch( Exception ex ) {}
+    
     assertEquals( 1, getSolrCore("corefoo").query( new SolrQuery( "id:BBB" ) ).getResults().size() );
 
     NamedList<Object> response = getSolrCore("corefoo").query(new SolrQuery().setRequestHandler("/admin/system")).getResponse();
     NamedList<Object> coreInfo = (NamedList<Object>) response.get("core");
     String indexDir = (String) ((NamedList<Object>) coreInfo.get("directory")).get("index");
     
-    
     response = getSolrCore("core0").query(new SolrQuery().setRequestHandler("/admin/system")).getResponse();
     coreInfo = (NamedList<Object>) response.get("core");
     String dataDir = (String) ((NamedList<Object>) coreInfo.get("directory")).get("data");
     
-
-    System.out.println( (String) ((NamedList<Object>) coreInfo.get("directory")).get("dirimpl"));
-
     // test delete index on core
     CoreAdminRequest.unloadCore("corefoo", true, coreadmin);
     File dir = new File(indexDir);

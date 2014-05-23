@@ -43,4 +43,14 @@ public final class ToStringUtils {
     }
   }
 
+  private final static char [] HEX = "0123456789abcdef".toCharArray();
+
+  public static String longHex(long x) {
+    char [] asHex = new char [16];
+    for (int i = 16; --i >= 0; x >>>= 4) {
+      asHex[i] = HEX[(int) x & 0x0F];
+    }
+    return "0x" + new String(asHex);
+  }
+
 }

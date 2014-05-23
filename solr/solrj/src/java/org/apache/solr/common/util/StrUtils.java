@@ -38,7 +38,7 @@ public class StrUtils {
    * outside strings.
    */
   public static List<String> splitSmart(String s, char separator) {
-    ArrayList<String> lst = new ArrayList<String>(4);
+    ArrayList<String> lst = new ArrayList<>(4);
     int pos=0, start=0, end=s.length();
     char inString=0;
     char ch=0;
@@ -85,7 +85,7 @@ public class StrUtils {
    * @param decode decode backslash escaping
    */
   public static List<String> splitSmart(String s, String separator, boolean decode) {
-    ArrayList<String> lst = new ArrayList<String>(2);
+    ArrayList<String> lst = new ArrayList<>(2);
     StringBuilder sb = new StringBuilder();
     int pos=0, end=s.length();
     while (pos < end) {
@@ -135,7 +135,7 @@ public class StrUtils {
     if (fileNames == null)
       return Collections.<String>emptyList();
 
-    List<String> result = new ArrayList<String>();
+    List<String> result = new ArrayList<>();
     for (String file : fileNames.split("(?<!\\\\),")) {
       result.add(file.replaceAll("\\\\(?=,)", ""));
     }
@@ -168,7 +168,7 @@ public class StrUtils {
 
 
   public static List<String> splitWS(String s, boolean decode) {
-    ArrayList<String> lst = new ArrayList<String>(2);
+    ArrayList<String> lst = new ArrayList<>(2);
     StringBuilder sb = new StringBuilder();
     int pos=0, end=s.length();
     while (pos < end) {
@@ -207,7 +207,7 @@ public class StrUtils {
   }
 
   public static List<String> toLower(List<String> strings) {
-    ArrayList<String> ret = new ArrayList<String>(strings.size());
+    ArrayList<String> ret = new ArrayList<>(strings.size());
     for (String str : strings) {
       ret.add(str.toLowerCase(Locale.ROOT));
     }

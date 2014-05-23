@@ -55,7 +55,7 @@ public class SolrDocumentTest extends LuceneTestCase
     assertNull( doc.getFieldValue( "xxxxx" ) );
     assertNull( doc.getFieldValues( "xxxxx" ) );
     
-    List<String> keys = new ArrayList<String>();
+    List<String> keys = new ArrayList<>();
     for( String s : doc.getFieldNames() ) {
       keys.add( s );
     }
@@ -105,7 +105,7 @@ public class SolrDocumentTest extends LuceneTestCase
   
   public void testAddCollections()
   {
-    final List<String> c0 = new ArrayList<String>();
+    final List<String> c0 = new ArrayList<>();
     c0.add( "aaa" );
     c0.add( "aaa" );
     c0.add( "aaa" );
@@ -170,7 +170,7 @@ public class SolrDocumentTest extends LuceneTestCase
 
     // set field using a collection is documented to be backed by 
     // that collection, so changes should affect it.
-    Collection<String> tmp = new ArrayList<String>(3);
+    Collection<String> tmp = new ArrayList<>(3);
     tmp.add("one");
     doc.setField( "collection_backed", tmp );
     assertEquals("collection not the same", 

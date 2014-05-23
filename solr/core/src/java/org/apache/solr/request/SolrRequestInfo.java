@@ -32,7 +32,7 @@ import java.util.List;
 
 
 public class SolrRequestInfo {
-  protected final static ThreadLocal<SolrRequestInfo> threadLocal = new ThreadLocal<SolrRequestInfo>();
+  protected final static ThreadLocal<SolrRequestInfo> threadLocal = new ThreadLocal<>();
 
   protected SolrQueryRequest req;
   protected SolrQueryResponse rsp;
@@ -64,8 +64,8 @@ public class SolrRequestInfo {
         for (Closeable hook : info.closeHooks) {
           try {
             hook.close();
-          } catch (Throwable throwable) {
-            SolrException.log(SolrCore.log, "Exception during close hook", throwable);
+          } catch (Exception e) {
+            SolrException.log(SolrCore.log, "Exception during close hook", e);
           }
         }
       }
@@ -132,7 +132,7 @@ public class SolrRequestInfo {
     // is this better here, or on SolrQueryRequest?
     synchronized (this) {
       if (closeHooks == null) {
-        closeHooks = new LinkedList<Closeable>();
+        closeHooks = new LinkedList<>();
       }
       closeHooks.add(hook);
     }

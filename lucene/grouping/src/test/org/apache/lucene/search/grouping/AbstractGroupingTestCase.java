@@ -18,7 +18,7 @@ package org.apache.lucene.search.grouping;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Base class for grouping related tests.
@@ -32,7 +32,7 @@ public abstract class AbstractGroupingTestCase extends LuceneTestCase {
       // B/c of DV based impl we can't see the difference between an empty string and a null value.
       // For that reason we don't generate empty string
       // groups.
-      randomValue = _TestUtil.randomRealisticUnicodeString(random());
+      randomValue = TestUtil.randomRealisticUnicodeString(random());
       //randomValue = _TestUtil.randomSimpleString(random());
     } while ("".equals(randomValue));
     return randomValue;

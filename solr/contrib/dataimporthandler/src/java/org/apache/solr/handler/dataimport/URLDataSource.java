@@ -24,6 +24,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -140,7 +141,7 @@ public class URLDataSource extends DataSource<Reader> {
 
   public static final String BASE_URL = "baseUrl";
 
-  public static final String UTF_8 = "UTF-8";
+  public static final String UTF_8 = StandardCharsets.UTF_8.name();
 
   public static final String CONNECTION_TIMEOUT_FIELD_NAME = "connectionTimeout";
 

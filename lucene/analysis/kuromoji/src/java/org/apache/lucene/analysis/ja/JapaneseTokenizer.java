@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.ja;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -40,6 +39,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.util.RollingCharBuffer;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.FST;
@@ -132,7 +132,7 @@ public final class JapaneseTokenizer extends Tokenizer {
   private static final int MAX_UNKNOWN_WORD_LENGTH = 1024;
   private static final int MAX_BACKTRACE_GAP = 1024;
 
-  private final EnumMap<Type, Dictionary> dictionaryMap = new EnumMap<Type, Dictionary>(Type.class);
+  private final EnumMap<Type, Dictionary> dictionaryMap = new EnumMap<>(Type.class);
 
   private final TokenInfoFST fst;
   private final TokenInfoDictionary dictionary;
@@ -141,7 +141,7 @@ public final class JapaneseTokenizer extends Tokenizer {
   private final UserDictionary userDictionary;
   private final CharacterDefinition characterDefinition;
 
-  private final FST.Arc<Long> arc = new FST.Arc<Long>();
+  private final FST.Arc<Long> arc = new FST.Arc<>();
   private final FST.BytesReader fstReader;
   private final IntsRef wordIdRef = new IntsRef();
 
@@ -174,7 +174,7 @@ public final class JapaneseTokenizer extends Tokenizer {
   private int pos;
 
   // Already parsed, but not yet passed to caller, tokens:
-  private final List<Token> pending = new ArrayList<Token>();
+  private final List<Token> pending = new ArrayList<>();
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
@@ -190,27 +190,25 @@ public final class JapaneseTokenizer extends Tokenizer {
    * <p>
    * Uses the default AttributeFactory.
    * 
-   * @param input Reader containing text
    * @param userDictionary Optional: if non-null, user dictionary.
    * @param discardPunctuation true if punctuation tokens should be dropped from the output.
    * @param mode tokenization mode.
    */
-  public JapaneseTokenizer(Reader input, UserDictionary userDictionary, boolean discardPunctuation, Mode mode) {
-    this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, input, userDictionary, discardPunctuation, mode);
+  public JapaneseTokenizer(UserDictionary userDictionary, boolean discardPunctuation, Mode mode) {
+    this(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, userDictionary, discardPunctuation, mode);
   }
 
   /**
    * Create a new JapaneseTokenizer.
    *
    * @param factory the AttributeFactory to use
-   * @param input Reader containing text
    * @param userDictionary Optional: if non-null, user dictionary.
    * @param discardPunctuation true if punctuation tokens should be dropped from the output.
    * @param mode tokenization mode.
    */
   public JapaneseTokenizer
-      (AttributeFactory factory, Reader input, UserDictionary userDictionary, boolean discardPunctuation, Mode mode) {
-    super(factory, input);
+      (AttributeFactory factory, UserDictionary userDictionary, boolean discardPunctuation, Mode mode) {
+    super(factory);
     dictionary = TokenInfoDictionary.getInstance();
     fst = dictionary.getFST();
     unkDictionary = UnknownDictionary.getInstance();
@@ -243,7 +241,7 @@ public final class JapaneseTokenizer extends Tokenizer {
         outputCompounds = false;
         break;
     }
-    buffer.reset(null); // best effort NPE consumers that don't call reset()
+    buffer.reset(this.input);
 
     resetState();
 
@@ -261,7 +259,14 @@ public final class JapaneseTokenizer extends Tokenizer {
   }
 
   @Override
+  public void close() throws IOException {
+    super.close();
+    buffer.reset(input);
+  }
+
+  @Override
   public void reset() throws IOException {
+    super.reset();
     buffer.reset(input);
     resetState();
   }
@@ -280,7 +285,8 @@ public final class JapaneseTokenizer extends Tokenizer {
   }
 
   @Override
-  public void end() {
+  public void end() throws IOException {
+    super.end();
     // Set final offset
     int finalOffset = correctOffset(pos);
     offsetAtt.setOffset(finalOffset, finalOffset);

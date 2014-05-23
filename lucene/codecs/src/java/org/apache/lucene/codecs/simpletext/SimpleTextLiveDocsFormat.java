@@ -23,10 +23,10 @@ import java.util.Collection;
 
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.SegmentInfoPerCommit;
+import org.apache.lucene.index.SegmentCommitInfo;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
@@ -63,16 +63,16 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
   }
 
   @Override
-  public Bits readLiveDocs(Directory dir, SegmentInfoPerCommit info, IOContext context) throws IOException {
+  public Bits readLiveDocs(Directory dir, SegmentCommitInfo info, IOContext context) throws IOException {
     assert info.hasDeletions();
     BytesRef scratch = new BytesRef();
     CharsRef scratchUTF16 = new CharsRef();
     
     String fileName = IndexFileNames.fileNameFromGeneration(info.info.name, LIVEDOCS_EXTENSION, info.getDelGen());
-    IndexInput in = null;
+    ChecksumIndexInput in = null;
     boolean success = false;
     try {
-      in = dir.openInput(fileName, context);
+      in = dir.openChecksumInput(fileName, context);
       
       SimpleTextUtil.readLine(in, scratch);
       assert StringHelper.startsWith(scratch, SIZE);
@@ -87,6 +87,8 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
         bits.set(docid);
         SimpleTextUtil.readLine(in, scratch);
       }
+      
+      SimpleTextUtil.checkFooter(in);
       
       success = true;
       return new SimpleTextBits(bits, size);
@@ -105,7 +107,7 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
   }
 
   @Override
-  public void writeLiveDocs(MutableBits bits, Directory dir, SegmentInfoPerCommit info, int newDelCount, IOContext context) throws IOException {
+  public void writeLiveDocs(MutableBits bits, Directory dir, SegmentCommitInfo info, int newDelCount, IOContext context) throws IOException {
     BitSet set = ((SimpleTextBits) bits).bits;
     int size = bits.length();
     BytesRef scratch = new BytesRef();
@@ -127,6 +129,7 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
       
       SimpleTextUtil.write(out, END);
       SimpleTextUtil.writeNewline(out);
+      SimpleTextUtil.writeChecksum(out, scratch);
       success = true;
     } finally {
       if (success) {
@@ -138,7 +141,7 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
   }
 
   @Override
-  public void files(SegmentInfoPerCommit info, Collection<String> files) throws IOException {
+  public void files(SegmentCommitInfo info, Collection<String> files) throws IOException {
     if (info.hasDeletions()) {
       files.add(IndexFileNames.fileNameFromGeneration(info.info.name, LIVEDOCS_EXTENSION, info.getDelGen()));
     }

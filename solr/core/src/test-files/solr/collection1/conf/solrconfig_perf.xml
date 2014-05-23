@@ -23,6 +23,8 @@
        If replication is in use, this should match the replication configuration. -->
   <dataDir>${solr.data.dir:}</dataDir>
 
+  <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
   <!--  The DirectoryFactory to use for indexes.
         solr.StandardDirectoryFactory, the default, is filesystem based.
         solr.RAMDirectoryFactory is memory based and not persistent. -->
@@ -65,7 +67,6 @@
                  etagSeed="Solr">
     </httpCaching>
   </requestDispatcher>
-
 
   <requestHandler name="standard" class="solr.SearchHandler" default="true">
   </requestHandler>

@@ -142,7 +142,7 @@ public class SignatureUpdateProcessorFactory
                     "Can't use SignatureUpdateProcessor with partial updates on signature fields");
           }
           Collection<String> docFields = doc.getFieldNames();
-          currDocSigFields = new ArrayList<String>(docFields.size());
+          currDocSigFields = new ArrayList<>(docFields.size());
           currDocSigFields.addAll(docFields);
           Collections.sort(currDocSigFields);
         } else {

@@ -83,7 +83,7 @@ public abstract class AbstractSubTypeFieldType extends FieldType implements Sche
 
   static SchemaField registerPolyFieldDynamicPrototype(IndexSchema schema, FieldType type) {
     String name = "*" + FieldType.POLY_FIELD_SEPARATOR + type.typeName;
-    Map<String, String> props = new HashMap<String, String>();
+    Map<String, String> props = new HashMap<>();
     //Just set these, delegate everything else to the field type
     props.put("indexed", "true");
     props.put("stored", "false");

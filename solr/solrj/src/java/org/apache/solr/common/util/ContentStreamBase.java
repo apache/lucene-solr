@@ -27,6 +27,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
 /**
@@ -37,7 +38,7 @@ import java.util.Locale;
  */
 public abstract class ContentStreamBase implements ContentStream
 {
-  public static final String DEFAULT_CHARSET = "utf-8";
+  public static final String DEFAULT_CHARSET = StandardCharsets.UTF_8.name();
   
   protected String name;
   protected String sourceInfo;

@@ -25,6 +25,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -171,6 +172,8 @@ public final class FST<T> {
   private final boolean allowArrayArcs;
 
   private Arc<T> cachedRootArcs[];
+  private Arc<T> assertingCachedRootArcs[]; // only set wit assert
+
 
   /** Represents a single arc. */
   public final static class Arc<T> {
@@ -213,7 +216,7 @@ public final class FST<T> {
       }
       return this;
     }
-
+    
     boolean flag(int flag) {
       return FST.flag(flags, flag);
     }
@@ -231,15 +234,18 @@ public final class FST<T> {
       StringBuilder b = new StringBuilder();
       b.append("node=" + node);
       b.append(" target=" + target);
-      b.append(" label=" + label);
-      if (flag(BIT_LAST_ARC)) {
-        b.append(" last");
-      }
+      b.append(" label=0x" + Integer.toHexString(label));
       if (flag(BIT_FINAL_ARC)) {
         b.append(" final");
       }
+      if (flag(BIT_LAST_ARC)) {
+        b.append(" last");
+      }
       if (flag(BIT_TARGET_NEXT)) {
         b.append(" targetNext");
+      }
+      if (flag(BIT_STOP_NODE)) {
+        b.append(" stop");
       }
       if (flag(BIT_ARC_HAS_OUTPUT)) {
         b.append(" output=" + output);
@@ -374,7 +380,7 @@ public final class FST<T> {
 
     /*
     if (bytes.length == 665) {
-      Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"), "UTF-8");
+      Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"), StandardCharsets.UTF_8);
       Util.toDot(this, w, false, false);
       w.close();
       System.out.println("Wrote FST to out.dot");
@@ -398,14 +404,14 @@ public final class FST<T> {
     return size;
   }
 
-  void finish(long startNode) throws IOException {
-    if (this.startNode != -1) {
+  void finish(long newStartNode) throws IOException {
+    if (startNode != -1) {
       throw new IllegalStateException("already finished");
     }
-    if (startNode == FINAL_END_NODE && emptyOutput != null) {
-      startNode = 0;
+    if (newStartNode == FINAL_END_NODE && emptyOutput != null) {
+      newStartNode = 0;
     }
-    this.startNode = startNode;
+    startNode = newStartNode;
     bytes.finish();
 
     cacheRootArcs();
@@ -420,12 +426,19 @@ public final class FST<T> {
       return node;
     }
   }
-
+  
   // Caches first 128 labels
   @SuppressWarnings({"rawtypes","unchecked"})
   private void cacheRootArcs() throws IOException {
     cachedRootArcs = (Arc<T>[]) new Arc[0x80];
-    final Arc<T> arc = new Arc<T>();
+    readRootArcs(cachedRootArcs);
+    
+    assert setAssertingRootArcs(cachedRootArcs);
+    assert assertRootArcs();
+  }
+  
+  public void readRootArcs(Arc<T>[] arcs) throws IOException {
+    final Arc<T> arc = new Arc<>();
     getFirstArc(arc);
     final BytesReader in = getBytesReader();
     if (targetHasArcs(arc)) {
@@ -433,7 +446,7 @@ public final class FST<T> {
       while(true) {
         assert arc.label != END_LABEL;
         if (arc.label < cachedRootArcs.length) {
-          cachedRootArcs[arc.label] = new Arc<T>().copyFrom(arc);
+          arcs[arc.label] = new Arc<T>().copyFrom(arc);
         } else {
           break;
         }
@@ -443,6 +456,38 @@ public final class FST<T> {
         readNextRealArc(arc, in);
       }
     }
+  }
+  
+  @SuppressWarnings({"rawtypes","unchecked"})
+  private boolean setAssertingRootArcs(Arc<T>[] arcs) throws IOException {
+    assertingCachedRootArcs = (Arc<T>[]) new Arc[arcs.length];
+    readRootArcs(assertingCachedRootArcs);
+    return true;
+  }
+  
+  private boolean assertRootArcs() {
+    assert cachedRootArcs != null;
+    assert assertingCachedRootArcs != null;
+    for (int i = 0; i < cachedRootArcs.length; i++) {
+      final Arc<T> root = cachedRootArcs[i];
+      final Arc<T> asserting = assertingCachedRootArcs[i];
+      if (root != null) { 
+        assert root.arcIdx == asserting.arcIdx;
+        assert root.bytesPerArc == asserting.bytesPerArc;
+        assert root.flags == asserting.flags;
+        assert root.label == asserting.label;
+        assert root.nextArc == asserting.nextArc;
+        assert root.nextFinalOutput.equals(asserting.nextFinalOutput);
+        assert root.node == asserting.node;
+        assert root.numArcs == asserting.numArcs;
+        assert root.output.equals(asserting.output);
+        assert root.posArcsStart == asserting.posArcsStart;
+        assert root.target == asserting.target;
+      } else {
+        assert root == null && asserting == null;
+      } 
+    }
+    return true;
   }
 
   public T getEmptyOutput() {
@@ -548,7 +593,7 @@ public final class FST<T> {
     InputStream is = new BufferedInputStream(new FileInputStream(file));
     boolean success = false;
     try {
-      FST<T> fst = new FST<T>(new InputStreamDataInput(is), outputs);
+      FST<T> fst = new FST<>(new InputStreamDataInput(is), outputs);
       success = true;
       return fst;
     } finally {
@@ -793,6 +838,9 @@ public final class FST<T> {
     if (emptyOutput != null) {
       arc.flags = BIT_FINAL_ARC | BIT_LAST_ARC;
       arc.nextFinalOutput = emptyOutput;
+      if (emptyOutput != NO_OUTPUT) {
+        arc.flags |= BIT_ARC_HAS_FINAL_OUTPUT;
+      }
     } else {
       arc.flags = BIT_LAST_ARC;
       arc.nextFinalOutput = NO_OUTPUT;
@@ -845,10 +893,10 @@ public final class FST<T> {
           // skip this arc:
           readLabel(in);
           if (arc.flag(BIT_ARC_HAS_OUTPUT)) {
-            outputs.read(in);
+            outputs.skipOutput(in);
           }
           if (arc.flag(BIT_ARC_HAS_FINAL_OUTPUT)) {
-            outputs.readFinalOutput(in);
+            outputs.skipFinalOutput(in);
           }
           if (arc.flag(BIT_STOP_NODE)) {
           } else if (arc.flag(BIT_TARGET_NEXT)) {
@@ -1099,7 +1147,6 @@ public final class FST<T> {
   /** Finds an arc leaving the incoming arc, replacing the arc in place.
    *  This returns null if the arc was not found, else the incoming arc. */
   public Arc<T> findTargetArc(int labelToMatch, Arc<T> follow, Arc<T> arc, BytesReader in) throws IOException {
-    assert cachedRootArcs != null;
 
     if (labelToMatch == END_LABEL) {
       if (follow.isFinal()) {
@@ -1121,9 +1168,13 @@ public final class FST<T> {
 
     // Short-circuit if this arc is in the root arc cache:
     if (follow.target == startNode && labelToMatch < cachedRootArcs.length) {
+      
+      // LUCENE-5152: detect tricky cases where caller
+      // modified previously returned cached root-arcs:
+      assert assertRootArcs();
       final Arc<T> result = cachedRootArcs[labelToMatch];
       if (result == null) {
-        return result;
+        return null;
       } else {
         arc.copyFrom(result);
         return arc;
@@ -1201,11 +1252,11 @@ public final class FST<T> {
       readLabel(in);
 
       if (flag(flags, BIT_ARC_HAS_OUTPUT)) {
-        outputs.read(in);
+        outputs.skipOutput(in);
       }
 
       if (flag(flags, BIT_ARC_HAS_FINAL_OUTPUT)) {
-        outputs.readFinalOutput(in);
+        outputs.skipFinalOutput(in);
       }
 
       if (!flag(flags, BIT_STOP_NODE) && !flag(flags, BIT_TARGET_NEXT)) {
@@ -1279,9 +1330,6 @@ public final class FST<T> {
     /** Returns true if this reader uses reversed bytes
      *  under-the-hood. */
     public abstract boolean reversed();
-
-    /** Skips bytes. */
-    public abstract void skipBytes(int count);
   }
 
   private static class ArcAndState<T> {
@@ -1299,7 +1347,7 @@ public final class FST<T> {
     // TODO: must assert this FST was built with
     // "willRewrite"
 
-    final List<ArcAndState<T>> queue = new ArrayList<ArcAndState<T>>();
+    final List<ArcAndState<T>> queue = new ArrayList<>();
 
     // TODO: use bitset to not revisit nodes already
     // visited
@@ -1308,7 +1356,7 @@ public final class FST<T> {
     int saved = 0;
 
     queue.add(new ArcAndState<T>(getFirstArc(new Arc<T>()), new IntsRef()));
-    Arc<T> scratchArc = new Arc<T>();
+    Arc<T> scratchArc = new Arc<>();
     while(queue.size() > 0) {
       //System.out.println("cycle size=" + queue.size());
       //for(ArcAndState<T> ent : queue) {
@@ -1449,7 +1497,7 @@ public final class FST<T> {
       throw new IllegalArgumentException("this FST was not built with willPackFST=true");
     }
 
-    Arc<T> arc = new Arc<T>();
+    Arc<T> arc = new Arc<>();
 
     final BytesReader r = getBytesReader();
 
@@ -1476,7 +1524,7 @@ public final class FST<T> {
     // Free up RAM:
     inCounts = null;
 
-    final Map<Integer,Integer> topNodeMap = new HashMap<Integer,Integer>();
+    final Map<Integer,Integer> topNodeMap = new HashMap<>();
     for(int downTo=q.size()-1;downTo>=0;downTo--) {
       NodeAndInCount n = q.pop();
       topNodeMap.put(n.node, downTo);
@@ -1508,7 +1556,7 @@ public final class FST<T> {
       // for assert:
       boolean negDelta = false;
 
-      fst = new FST<T>(inputType, outputs, bytes.getBlockBits());
+      fst = new FST<>(inputType, outputs, bytes.getBlockBits());
       
       final BytesStore writer = fst.bytes;
 

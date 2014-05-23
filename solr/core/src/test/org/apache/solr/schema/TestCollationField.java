@@ -23,7 +23,7 @@ import java.text.Collator;
 import java.text.RuleBasedCollator;
 import java.util.Locale;
 
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -63,7 +63,7 @@ public class TestCollationField extends SolrTestCaseJ4 {
    */
   public static String setupSolrHome() throws Exception {
     // make a solr home underneath the test's TEMP_DIR
-    File tmpFile = _TestUtil.getTempDir("collation1");
+    File tmpFile = createTempDir("collation1");
     tmpFile.delete();
     tmpFile.mkdir();
     
@@ -74,6 +74,7 @@ public class TestCollationField extends SolrTestCaseJ4 {
     
     // copy over configuration files
     FileUtils.copyFile(getFile("solr/collection1/conf/solrconfig-basic.xml"), new File(confDir, "solrconfig.xml"));
+    FileUtils.copyFile(getFile("solr/collection1/conf/solrconfig.snippet.randomindexconfig.xml"), new File(confDir, "solrconfig.snippet.randomindexconfig.xml"));
     FileUtils.copyFile(getFile("solr/collection1/conf/schema-collate.xml"), new File(confDir, "schema.xml"));
     
     // generate custom collation rules (DIN 5007-2), saving to customrules.dat

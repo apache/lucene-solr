@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler;
 
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.common.params.CommonParams;
@@ -28,6 +29,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -35,12 +37,12 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml","schema12.xml");
   }
 
-  String filename = "solr_tmp.csv";
-  String def_charset = "UTF-8";
-  File file = new File(filename);
+  String filename;
+  File file;
 
   @Override
   @Before
@@ -48,6 +50,9 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
     // if you override setUp or tearDown, you better call
     // the super classes version
     super.setUp();
+    File tempDir = createTempDir("TestCSVLoader");
+    file = new File(tempDir, "solr_tmp.csv");
+    filename = file.getPath();
     cleanup();
   }
   
@@ -61,12 +66,8 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
   }
 
   void makeFile(String contents) {
-    makeFile(contents,def_charset);
-  }
-
-  void makeFile(String contents, String charset) {
     try {
-      Writer out = new OutputStreamWriter(new FileOutputStream(filename), charset);
+      Writer out = new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8);
       out.write(contents);
       out.close();
     } catch (Exception e) {
@@ -88,7 +89,7 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
 
     // TODO: stop using locally defined streams once stream.file and
     // stream.body work everywhere
-    List<ContentStream> cs = new ArrayList<ContentStream>(1);
+    List<ContentStream> cs = new ArrayList<>(1);
     ContentStreamBase f = new ContentStreamBase.FileStream(new File(filename));
     f.setContentType("text/csv");
     cs.add(f);
@@ -104,6 +105,25 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
     assertQ(req("id:[100 TO 110]"),"//*[@numFound='0']");
     assertU(commit());
     assertQ(req("id:[100 TO 110]"),"//*[@numFound='3']");
+  }
+
+  @Test
+  public void testCSVRowId() throws Exception {
+    makeFile("id\n100\n101\n102");
+    loadLocal("rowid", "rowid_i");//add a special field
+    // check default commit of false
+    assertU(commit());
+    assertQ(req("rowid_i:1"),"//*[@numFound='1']");
+    assertQ(req("rowid_i:2"),"//*[@numFound='1']");
+    assertQ(req("rowid_i:100"),"//*[@numFound='0']");
+
+    makeFile("id\n200\n201\n202");
+    loadLocal("rowid", "rowid_i", "rowidOffset", "100");//add a special field
+    // check default commit of false
+    assertU(commit());
+    assertQ(req("rowid_i:101"),"//*[@numFound='1']");
+    assertQ(req("rowid_i:102"),"//*[@numFound='1']");
+    assertQ(req("rowid_i:10000"),"//*[@numFound='0']");
   }
 
   @Test

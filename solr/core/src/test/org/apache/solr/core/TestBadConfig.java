@@ -27,6 +27,23 @@ public class TestBadConfig extends AbstractBadConfigTestBase {
     assertConfigs("bad_solrconfig.xml","schema.xml","unset.sys.property");
   }
 
+  public void testSegmentMergerWithoutReopen() throws Exception {
+      assertConfigs("bad-solrconfig-warmer-no-reopen.xml", "schema12.xml",
+                    "mergedSegmentWarmer");
+  }
+  public void testMultipleDirectoryFactories() throws Exception {
+      assertConfigs("bad-solrconfig-multiple-dirfactory.xml", "schema12.xml",
+                    "directoryFactory");
+  }
+  public void testMultipleIndexConfigs() throws Exception {
+      assertConfigs("bad-solrconfig-multiple-indexconfigs.xml", "schema12.xml",
+                    "indexConfig");
+  }
+  public void testMultipleCFS() throws Exception {
+      assertConfigs("bad-solrconfig-multiple-cfs.xml", "schema12.xml",
+                    "useCompoundFile");
+  }
+
   public void testUpdateLogButNoVersionField() throws Exception {
     
     System.setProperty("enable.update.log", "true");

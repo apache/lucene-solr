@@ -30,11 +30,12 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 import static org.apache.lucene.index.TestIndexWriter.assertNoUnreferencedFiles;
 
@@ -55,7 +56,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
         System.out.println("TEST: pass=" + pass);
       }
       boolean doAbort = pass == 1;
-      long diskFree = _TestUtil.nextInt(random(), 100, 300);
+      long diskFree = TestUtil.nextInt(random(), 100, 300);
       while(true) {
         if (VERBOSE) {
           System.out.println("TEST: cycle: diskFree=" + diskFree);
@@ -99,20 +100,24 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
               if (VERBOSE) {
                 System.out.println("TEST: now close");
               }
-              writer.close();
+              writer.shutdown();
             } catch (IOException e) {
               if (VERBOSE) {
                 System.out.println("TEST: exception on close; retry w/ no disk space limit");
                 e.printStackTrace(System.out);
               }
               dir.setMaxSizeInBytes(0);
-              writer.close();
+              try {
+                writer.shutdown();
+              } catch (AlreadyClosedException ace) {
+                // OK
+              }
             }
           }
 
           //_TestUtil.syncConcurrentMerges(ms);
 
-          if (_TestUtil.anyFilesExceptWriteLock(dir)) {
+          if (TestUtil.anyFilesExceptWriteLock(dir)) {
             assertNoUnreferencedFiles(dir, "after disk full during addDocument");
             
             // Make sure reader can open the index:
@@ -122,11 +127,11 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
           dir.close();
           // Now try again w/ more space:
 
-          diskFree += TEST_NIGHTLY ? _TestUtil.nextInt(random(), 400, 600) : _TestUtil.nextInt(random(), 3000, 5000);
+          diskFree += TEST_NIGHTLY ? TestUtil.nextInt(random(), 400, 600) : TestUtil.nextInt(random(), 3000, 5000);
         } else {
           //_TestUtil.syncConcurrentMerges(writer);
           dir.setMaxSizeInBytes(0);
-          writer.close();
+          writer.shutdown();
           dir.close();
           break;
         }
@@ -156,8 +161,8 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     // sum because the merged FST may use array encoding for
     // some arcs (which uses more space):
 
-    final String idFormat = _TestUtil.getPostingsFormat("id");
-    final String contentFormat = _TestUtil.getPostingsFormat("content");
+    final String idFormat = TestUtil.getPostingsFormat("id");
+    final String contentFormat = TestUtil.getPostingsFormat("content");
     assumeFalse("This test cannot run with Memory codec", idFormat.equals("Memory") || contentFormat.equals("Memory"));
 
     int START_COUNT = 57;
@@ -174,7 +179,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
       for(int j=0;j<25;j++) {
         addDocWithIndex(writer, 25*i+j);
       }
-      writer.close();
+      writer.shutdown();
       String[] files = dirs[i].listAll();
       for(int j=0;j<files.length;j++) {
         inputDiskUsage += dirs[i].fileLength(files[j]);
@@ -188,7 +193,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     for(int j=0;j<START_COUNT;j++) {
       addDocWithIndex(writer, j);
     }
-    writer.close();
+    writer.shutdown();
     
     // Make sure starting index seems to be working properly:
     Term searchTerm = new Term("content", "aaa");        
@@ -227,7 +232,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
       }
       
       // Start with 100 bytes more than we are currently using:
-      long diskFree = diskUsage+_TestUtil.nextInt(random(), 50, 200);
+      long diskFree = diskUsage+ TestUtil.nextInt(random(), 50, 200);
       
       int method = iter;
       
@@ -355,7 +360,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
           
           // Make sure all threads from
           // ConcurrentMergeScheduler are done
-          _TestUtil.syncConcurrentMerges(writer);
+          TestUtil.syncConcurrentMerges(writer);
           
           if (VERBOSE) {
             System.out.println("  now test readers");
@@ -437,17 +442,17 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
         dir.setRandomIOExceptionRate(0.0);
         dir.setRandomIOExceptionRateOnOpen(0.0);
         
-        writer.close();
+        writer.shutdown();
         
         // Wait for all BG threads to finish else
         // dir.close() will throw IOException because
         // there are still open files
-        _TestUtil.syncConcurrentMerges(ms);
+        TestUtil.syncConcurrentMerges(ms);
         
         dir.close();
         
         // Try again with more free space:
-        diskFree += TEST_NIGHTLY ? _TestUtil.nextInt(random(), 4000, 8000) : _TestUtil.nextInt(random(), 40000, 80000);
+        diskFree += TEST_NIGHTLY ? TestUtil.nextInt(random(), 4000, 8000) : TestUtil.nextInt(random(), 40000, 80000);
       }
     }
     
@@ -490,7 +495,8 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
             setReaderPooling(true).
             setMergePolicy(newLogMergePolicy(2))
     );
-    _TestUtil.keepFullyDeletedSegments(w);
+    // we can do this because we add/delete/add (and dont merge to "nothing")
+    w.setKeepFullyDeletedSegments(true);
 
     Document doc = new Document();
 
@@ -513,10 +519,10 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
       // expected
       assertTrue(ftdm.didFail1 || ftdm.didFail2);
     }
-    _TestUtil.checkIndex(dir);
+    TestUtil.checkIndex(dir);
     ftdm.clearDoFail();
     w.addDocument(doc);
-    w.close();
+    w.shutdown();
 
     dir.close();
   }
@@ -544,7 +550,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     } catch (IOException ioe) {
     }
     try {
-      writer.close(false);
+      writer.shutdown(false);
       fail("did not hit disk full");
     } catch (IOException ioe) {
     }
@@ -552,7 +558,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     // Make sure once disk space is avail again, we can
     // cleanly close:
     dir.setMaxSizeInBytes(0);
-    writer.close(false);
+    writer.close();
     dir.close();
   }
   

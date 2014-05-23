@@ -45,9 +45,15 @@ import org.apache.lucene.util.BytesRef;
  * {@link FixedGapTermsIndexWriter}.
  */
 public final class Lucene41WithOrds extends PostingsFormat {
-    
+  final int termIndexInterval;
+  
   public Lucene41WithOrds() {
+    this(FixedGapTermsIndexWriter.DEFAULT_TERM_INDEX_INTERVAL);
+  }
+  
+  public Lucene41WithOrds(int termIndexInterval) {
     super("Lucene41WithOrds");
+    this.termIndexInterval = termIndexInterval;
   }
 
   @Override
@@ -61,7 +67,7 @@ public final class Lucene41WithOrds extends PostingsFormat {
     TermsIndexWriterBase indexWriter;
     boolean success = false;
     try {
-      indexWriter = new FixedGapTermsIndexWriter(state);
+      indexWriter = new FixedGapTermsIndexWriter(state, termIndexInterval);
       success = true;
     } finally {
       if (!success) {
@@ -87,8 +93,6 @@ public final class Lucene41WithOrds extends PostingsFormat {
     }
   }
 
-  public final static int TERMS_CACHE_SIZE = 1024;
-
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
     PostingsReaderBase postings = new Lucene41PostingsReader(state.directory, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
@@ -99,7 +103,6 @@ public final class Lucene41WithOrds extends PostingsFormat {
       indexReader = new FixedGapTermsIndexReader(state.directory,
                                                  state.fieldInfos,
                                                  state.segmentInfo.name,
-                                                 state.termsIndexDivisor,
                                                  BytesRef.getUTF8SortedAsUnicodeComparator(),
                                                  state.segmentSuffix, state.context);
       success = true;
@@ -117,7 +120,6 @@ public final class Lucene41WithOrds extends PostingsFormat {
                                                 state.segmentInfo,
                                                 postings,
                                                 state.context,
-                                                TERMS_CACHE_SIZE,
                                                 state.segmentSuffix);
       success = true;
       return ret;

@@ -37,13 +37,13 @@ public class TestCollectionUtil extends LuceneTestCase {
   
   public void testIntroSort() {
     for (int i = 0, c = atLeast(500); i < c; i++) {
-      List<Integer> list1 = createRandomList(2000), list2 = new ArrayList<Integer>(list1);
+      List<Integer> list1 = createRandomList(2000), list2 = new ArrayList<>(list1);
       CollectionUtil.introSort(list1);
       Collections.sort(list2);
       assertEquals(list2, list1);
       
       list1 = createRandomList(2000);
-      list2 = new ArrayList<Integer>(list1);
+      list2 = new ArrayList<>(list1);
       CollectionUtil.introSort(list1, Collections.reverseOrder());
       Collections.sort(list2, Collections.reverseOrder());
       assertEquals(list2, list1);
@@ -56,13 +56,13 @@ public class TestCollectionUtil extends LuceneTestCase {
 
   public void testTimSort() {
     for (int i = 0, c = atLeast(500); i < c; i++) {
-      List<Integer> list1 = createRandomList(2000), list2 = new ArrayList<Integer>(list1);
+      List<Integer> list1 = createRandomList(2000), list2 = new ArrayList<>(list1);
       CollectionUtil.timSort(list1);
       Collections.sort(list2);
       assertEquals(list2, list1);
       
       list1 = createRandomList(2000);
-      list2 = new ArrayList<Integer>(list1);
+      list2 = new ArrayList<>(list1);
       CollectionUtil.timSort(list1, Collections.reverseOrder());
       Collections.sort(list2, Collections.reverseOrder());
       assertEquals(list2, list1);
@@ -82,7 +82,7 @@ public class TestCollectionUtil extends LuceneTestCase {
     CollectionUtil.timSort(list, Collections.reverseOrder());
     
     // check that empty non-random access lists pass sorting without ex (as sorting is not needed)
-    list = new LinkedList<Integer>();
+    list = new LinkedList<>();
     CollectionUtil.introSort(list);
     CollectionUtil.timSort(list);
     CollectionUtil.introSort(list, Collections.reverseOrder());
@@ -91,7 +91,7 @@ public class TestCollectionUtil extends LuceneTestCase {
   
   public void testOneElementListSort() {
     // check that one-element non-random access lists pass sorting without ex (as sorting is not needed)
-    List<Integer> list = new LinkedList<Integer>();
+    List<Integer> list = new LinkedList<>();
     list.add(1);
     CollectionUtil.introSort(list);
     CollectionUtil.timSort(list);

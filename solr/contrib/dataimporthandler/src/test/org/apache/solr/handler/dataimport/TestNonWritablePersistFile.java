@@ -16,14 +16,14 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 
 public class TestNonWritablePersistFile extends AbstractDataImportHandlerTestCase {
   private static final String FULLIMPORT_QUERY = "select * from x";
@@ -52,17 +52,11 @@ public class TestNonWritablePersistFile extends AbstractDataImportHandlerTestCas
 
   @BeforeClass
   public static void createTempSolrHomeAndCore() throws Exception {
-    createTempDir();
-    tmpSolrHome = TEMP_DIR + File.separator + TestNonWritablePersistFile.class.getSimpleName() + System.currentTimeMillis();
+    tmpSolrHome = createTempDir().getAbsolutePath();
     FileUtils.copyDirectory(getFile("dih/solr"), new File(tmpSolrHome).getAbsoluteFile());
     initCore("dataimport-solrconfig.xml", "dataimport-schema.xml", 
              new File(tmpSolrHome).getAbsolutePath());
   }  
-  
-  @AfterClass
-  public static void destroyTempSolrHomeAndCore() throws Exception {
-    FileUtils.deleteDirectory(new File(tmpSolrHome).getAbsoluteFile());
-  }
 
   @Test
   @SuppressWarnings("unchecked")
@@ -78,8 +72,8 @@ public class TestNonWritablePersistFile extends AbstractDataImportHandlerTestCas
     try {
       // execute the test only if we are able to set file to read only mode
       assumeTrue("No dataimport.properties file", f.exists() || f.createNewFile());
-      assumeTrue("dataimport.proprties can't be set read only", f.setReadOnly());
-      assumeFalse("dataimport.proprties is still writable even though " + 
+      assumeTrue("dataimport.properties can't be set read only", f.setReadOnly());
+      assumeFalse("dataimport.properties is still writable even though " + 
                   "marked readonly - test running as superuser?", f.canWrite());
 
       ignoreException("Properties is not writable");

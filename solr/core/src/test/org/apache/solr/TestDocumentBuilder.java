@@ -38,7 +38,7 @@ public class TestDocumentBuilder extends LuceneTestCase {
     doc.addField("field2", "value1");
     doc.addField("field3", "value2");
     doc.addField("field4", 15);
-    List<Integer> list = new ArrayList<Integer>();
+    List<Integer> list = new ArrayList<>();
     list.add(45);
     list.add(33);
     list.add(20);

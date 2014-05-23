@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -73,7 +74,7 @@ public class WriteEnwikiLineDocTaskTest extends BenchmarkTestCase {
   
   private void doReadTest(int n, File file, String expTitle, String expDate, String expBody) throws Exception {
     InputStream in = new FileInputStream(file);
-    BufferedReader br = new BufferedReader(new InputStreamReader(in, "utf-8"));
+    BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
     try {
       String line = br.readLine();
       WriteLineDocTaskTest.assertHeaderLine(line);

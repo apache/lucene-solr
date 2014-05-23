@@ -91,11 +91,11 @@ public class RequestInfo {
     List<String> modifiableEntities = null;
     if(o != null) {
       if (o instanceof String) {
-        modifiableEntities = new ArrayList<String>();
+        modifiableEntities = new ArrayList<>();
         modifiableEntities.add((String) o);
       } else if (o instanceof List<?>) {
         @SuppressWarnings("unchecked")
-        List<String> modifiableEntities1 = new ArrayList<String>((List<String>) o);
+        List<String> modifiableEntities1 = new ArrayList<>((List<String>) o);
         modifiableEntities = modifiableEntities1;
       } 
       entitiesToRun = Collections.unmodifiableList(modifiableEntities);
@@ -110,7 +110,7 @@ public class RequestInfo {
       dataConfigParam = null;
     }
     dataConfig = dataConfigParam;
-    this.rawParams = Collections.unmodifiableMap(new HashMap<String,Object>(requestParams));
+    this.rawParams = Collections.unmodifiableMap(new HashMap<>(requestParams));
   }
 
   public String getCommand() {

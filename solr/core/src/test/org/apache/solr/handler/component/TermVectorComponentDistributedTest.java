@@ -17,10 +17,18 @@
 
 package org.apache.solr.handler.component;
 
+import org.apache.lucene.util.Constants;
+
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.common.params.TermVectorParams;
+import org.junit.BeforeClass;
 
 public class TermVectorComponentDistributedTest extends BaseDistributedSearchTestCase {
+  @BeforeClass
+  public static void betterNotBeJ9() {
+    assumeFalse("FIXME: SOLR-5792: This test fails under IBM J9", 
+                Constants.JAVA_VENDOR.startsWith("IBM"));
+  }
 
   @Override
   public void doTest() throws Exception {
@@ -31,6 +39,7 @@ public class TermVectorComponentDistributedTest extends BaseDistributedSearchTes
     handle.put("maxScore", SKIPVAL);
     handle.put("score", SKIPVAL);
     handle.put("[docid]", SKIPVAL);
+    handle.put("_version_", SKIPVAL); // not a cloud test, but may use updateLog
 
     // SOLR-3720: TODO: TVC doesn't "merge" df and idf .. should it?
     handle.put("df", SKIPVAL);

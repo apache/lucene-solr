@@ -20,11 +20,14 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Collections;
 import java.util.Iterator;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -35,7 +38,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestIndexableField extends LuceneTestCase {
 
@@ -151,7 +154,7 @@ public class TestIndexableField extends LuceneTestCase {
     }
 
     @Override
-    public TokenStream tokenStream(Analyzer analyzer) throws IOException {
+    public TokenStream tokenStream(Analyzer analyzer, TokenStream previous) throws IOException {
       return readerValue() != null ? analyzer.tokenStream(name(), readerValue()) :
         analyzer.tokenStream(name(), new StringReader(stringValue()));
     }
@@ -172,7 +175,7 @@ public class TestIndexableField extends LuceneTestCase {
     int baseCount = 0;
 
     for(int docCount=0;docCount<NUM_DOCS;docCount++) {
-      final int fieldCount = _TestUtil.nextInt(random(), 1, 17);
+      final int fieldCount = TestUtil.nextInt(random(), 1, 17);
       fieldsPerDoc[docCount] = fieldCount-1;
 
       final int finalDocCount = docCount;
@@ -280,7 +283,7 @@ public class TestIndexableField extends LuceneTestCase {
     }
 
     final IndexReader r = w.getReader();
-    w.close();
+    w.shutdown();
 
     final IndexSearcher s = newSearcher(r);
     int counter = 0;
@@ -376,6 +379,65 @@ public class TestIndexableField extends LuceneTestCase {
     }
 
     r.close();
+    dir.close();
+  }
+
+  private static class CustomField implements StorableField {
+    @Override
+    public BytesRef binaryValue() {
+      return null;
+    }
+
+    @Override
+    public String stringValue() {
+      return "foobar";
+    }
+
+    @Override
+    public Reader readerValue() {
+      return null;
+    }
+
+    @Override
+    public Number numericValue() {
+      return null;
+    }
+
+    @Override
+    public String name() {
+      return "field";
+    }
+
+    @Override
+    public IndexableFieldType fieldType() {
+      FieldType ft = new FieldType(StoredField.TYPE);
+      ft.setStoreTermVectors(true);
+      ft.freeze();
+      return ft;
+    }
+  }
+
+  // LUCENE-5611
+  public void testNotIndexedTermVectors() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    try {
+      w.addDocument(
+                    new IndexDocument() {
+                      @Override
+                      public Iterable<IndexableField> indexableFields() {
+                        return Collections.emptyList();
+                      }
+                      @Override
+                      public Iterable<StorableField> storableFields() {
+                        return Collections.<StorableField>singletonList(new CustomField());
+                      }
+                    });
+      fail("didn't hit exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    w.close();
     dir.close();
   }
 }

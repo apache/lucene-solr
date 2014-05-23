@@ -33,7 +33,7 @@ import java.util.Properties;
 public class MockDataSource extends
         DataSource<Iterator<Map<String, Object>>> {
 
-  private static Map<String, Iterator<Map<String, Object>>> cache = new HashMap<String, Iterator<Map<String, Object>>>();
+  private static Map<String, Iterator<Map<String, Object>>> cache = new HashMap<>();
 
   public static void setIterator(String query,
                                  Iterator<Map<String, Object>> iter) {

@@ -24,6 +24,7 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.spatial.prefix.tree.Cell;
+import org.apache.lucene.spatial.prefix.tree.CellIterator;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -31,7 +32,6 @@ import org.apache.lucene.util.SentinelIntSet;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collection;
 
 /**
  * Finds docs where its indexed shape {@link org.apache.lucene.spatial.query.SpatialOperation#Contains
@@ -41,8 +41,35 @@ import java.util.Collection;
  */
 public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
 
-  public ContainsPrefixTreeFilter(Shape queryShape, String fieldName, SpatialPrefixTree grid, int detailLevel) {
+  /*
+  Future optimizations:
+    Instead of seekExact, use seekCeil with some leap-frogging, like Intersects does.
+  */
+
+  /**
+   * If the spatial data for a document is comprised of multiple overlapping or adjacent parts,
+   * it might fail to match a query shape when doing the CONTAINS predicate when the sum of
+   * those shapes contain the query shape but none do individually.  Set this to false to
+   * increase performance if you don't care about that circumstance (such as if your indexed
+   * data doesn't even have such conditions).  See LUCENE-5062.
+   */
+  protected final boolean multiOverlappingIndexedShapes;
+
+  public ContainsPrefixTreeFilter(Shape queryShape, String fieldName, SpatialPrefixTree grid, int detailLevel, boolean multiOverlappingIndexedShapes) {
     super(queryShape, fieldName, grid, detailLevel);
+    this.multiOverlappingIndexedShapes = multiOverlappingIndexedShapes;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!super.equals(o))
+      return false;
+    return multiOverlappingIndexedShapes == ((ContainsPrefixTreeFilter)o).multiOverlappingIndexedShapes;
+  }
+
+  @Override
+  public int hashCode() {
+    return super.hashCode() + (multiOverlappingIndexedShapes ? 1 : 0);
   }
 
   @Override
@@ -56,7 +83,8 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
       super(context, acceptDocs);
     }
 
-    BytesRef termBytes = new BytesRef();
+    //The reused value of cell.getTokenBytesNoLeaf which is always then seek()'ed to. It's used in assertions too.
+    BytesRef termBytes = new BytesRef();//no leaf
     Cell nextCell;//see getLeafDocs
 
     /** This is the primary algorithm; recursive.  Returns null if finds none. */
@@ -65,18 +93,26 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
       if (termsEnum == null)//signals all done
         return null;
 
-      //Leaf docs match all query shape
+      // Leaf docs match all query shape
       SmallDocSet leafDocs = getLeafDocs(cell, acceptContains);
 
-      // Get the AND of all child results
+      // Get the AND of all child results (into combinedSubResults)
       SmallDocSet combinedSubResults = null;
-      Collection<Cell> subCells = cell.getSubCells(queryShape);
-      for (Cell subCell : subCells) {
+      //   Optimization: use null subCellsFilter when we know cell is within the query shape.
+      Shape subCellsFilter = queryShape;
+      if (cell.getLevel() != 0 && ((cell.getShapeRel() == null || cell.getShapeRel() == SpatialRelation.WITHIN))) {
+        subCellsFilter = null;
+        assert cell.getShape().relate(queryShape) == SpatialRelation.WITHIN;
+      }
+      CellIterator subCells = cell.getNextLevelCells(subCellsFilter);
+      while (subCells.hasNext()) {
+        Cell subCell = subCells.next();
         if (!seekExact(subCell))
           combinedSubResults = null;
         else if (subCell.getLevel() == detailLevel)
           combinedSubResults = getDocs(subCell, acceptContains);
-        else if (subCell.getShapeRel() == SpatialRelation.WITHIN)
+        else if (!multiOverlappingIndexedShapes &&
+            subCell.getShapeRel() == SpatialRelation.WITHIN)
           combinedSubResults = getLeafDocs(subCell, acceptContains);
         else
           combinedSubResults = visit(subCell, acceptContains); //recursion
@@ -90,35 +126,45 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
       if (combinedSubResults != null) {
         if (leafDocs == null)
           return combinedSubResults;
-        return leafDocs.union(combinedSubResults);
+        return leafDocs.union(combinedSubResults);//union is 'or'
       }
       return leafDocs;
     }
 
     private boolean seekExact(Cell cell) throws IOException {
-      assert new BytesRef(cell.getTokenBytes()).compareTo(termBytes) > 0;
+      assert cell.getTokenBytesNoLeaf(null).compareTo(termBytes) > 0;
+      if (termsEnum == null)
+        return false;
+      termBytes = cell.getTokenBytesNoLeaf(termBytes);
+      assert assertCloneTermBytes(); //assertions look at termBytes later on
+      return termsEnum.seekExact(termBytes);
+    }
 
-      termBytes.bytes = cell.getTokenBytes();
-      termBytes.length = termBytes.bytes.length;
-      return termsEnum.seekExact(termBytes, cell.getLevel() <= 2);
+    private boolean assertCloneTermBytes() {
+      termBytes = BytesRef.deepCopyOf(termBytes);
+      return true;
     }
 
     private SmallDocSet getDocs(Cell cell, Bits acceptContains) throws IOException {
-      assert new BytesRef(cell.getTokenBytes()).equals(termBytes);
+      assert cell.getTokenBytesNoLeaf(null).equals(termBytes);
 
       return collectDocs(acceptContains);
     }
 
-    private SmallDocSet getLeafDocs(Cell leafCell, Bits acceptContains) throws IOException {
-      assert new BytesRef(leafCell.getTokenBytes()).equals(termBytes);
+    /** Gets docs on the leaf of the given cell, _if_ there is a leaf cell, otherwise null. */
+    private SmallDocSet getLeafDocs(Cell cell, Bits acceptContains) throws IOException {
+      assert cell.getTokenBytesNoLeaf(null).equals(termBytes);
 
+      if (termsEnum == null)
+        return null;
       BytesRef nextTerm = termsEnum.next();
       if (nextTerm == null) {
         termsEnum = null;//signals all done
         return null;
       }
-      nextCell = grid.getCell(nextTerm.bytes, nextTerm.offset, nextTerm.length, nextCell);
-      if (nextCell.getLevel() == leafCell.getLevel() && nextCell.isLeaf()) {
+      nextCell = grid.readCell(nextTerm, nextCell);
+      assert cell.isPrefixOf(nextCell);
+      if (nextCell.getLevel() == cell.getLevel() && nextCell.isLeaf()) {
         return collectDocs(acceptContains);
       } else {
         return null;

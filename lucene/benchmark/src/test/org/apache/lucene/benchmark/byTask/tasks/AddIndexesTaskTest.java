@@ -30,7 +30,8 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.BeforeClass;
 
 /** Tests the functionality of {@link AddIndexesTask}. */
@@ -40,7 +41,7 @@ public class AddIndexesTaskTest extends BenchmarkTestCase {
   
   @BeforeClass
   public static void beforeClassAddIndexesTaskTest() throws Exception {
-    testDir = _TestUtil.getTempDir("addIndexesTask");
+    testDir = createTempDir("addIndexesTask");
     
     // create a dummy index under inputDir
     inputDir = new File(testDir, "input");
@@ -50,7 +51,7 @@ public class AddIndexesTaskTest extends BenchmarkTestCase {
       for (int i = 0; i < 10; i++) {
         writer.addDocument(new Document());
       }
-      writer.close();
+      writer.shutdown();
     } finally {
       tmpDir.close();
     }

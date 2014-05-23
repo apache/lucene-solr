@@ -17,21 +17,25 @@ package org.apache.lucene.util.packed;
  * limitations under the License.
  */
 
+import static org.apache.lucene.util.BitUtil.zigZagDecode;
+import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.BPV_SHIFT;
+import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.MAX_BLOCK_SIZE;
+import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.MIN_BLOCK_SIZE;
+import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.MIN_VALUE_EQUALS_0;
 import static org.apache.lucene.util.packed.BlockPackedReaderIterator.readVLong;
-import static org.apache.lucene.util.packed.BlockPackedReaderIterator.zigZagDecode;
-import static org.apache.lucene.util.packed.BlockPackedWriter.BPV_SHIFT;
-import static org.apache.lucene.util.packed.BlockPackedWriter.MIN_VALUE_EQUALS_0;
-import static org.apache.lucene.util.packed.BlockPackedWriter.checkBlockSize;
+import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
+import static org.apache.lucene.util.packed.PackedInts.numBlocks;
 
 import java.io.IOException;
 
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.LongValues;
 
 /**
  * Provides random access to a stream written with {@link BlockPackedWriter}.
  * @lucene.internal
  */
-public final class BlockPackedReader {
+public final class BlockPackedReader extends LongValues {
 
   private final int blockShift, blockMask;
   private final long valueCount;
@@ -40,14 +44,10 @@ public final class BlockPackedReader {
 
   /** Sole constructor. */
   public BlockPackedReader(IndexInput in, int packedIntsVersion, int blockSize, long valueCount, boolean direct) throws IOException {
-    checkBlockSize(blockSize);
     this.valueCount = valueCount;
-    blockShift = Integer.numberOfTrailingZeros(blockSize);
+    blockShift = checkBlockSize(blockSize, MIN_BLOCK_SIZE, MAX_BLOCK_SIZE);
     blockMask = blockSize - 1;
-    final int numBlocks = (int) (valueCount / blockSize) + (valueCount % blockSize == 0 ? 0 : 1);
-    if ((long) numBlocks * blockSize < valueCount) {
-      throw new IllegalArgumentException("valueCount is too large for this block size");
-    }
+    final int numBlocks = numBlocks(valueCount, blockSize);
     long[] minValues = null;
     subReaders = new PackedInts.Reader[numBlocks];
     for (int i = 0; i < numBlocks; ++i) {
@@ -78,7 +78,7 @@ public final class BlockPackedReader {
     this.minValues = minValues;
   }
 
-  /** Get value at <code>index</code>. */
+  @Override
   public long get(long index) {
     assert index >= 0 && index < valueCount;
     final int block = (int) (index >>> blockShift);
@@ -86,4 +86,12 @@ public final class BlockPackedReader {
     return (minValues == null ? 0 : minValues[block]) + subReaders[block].get(idx);
   }
 
+  /** Returns approximate RAM bytes used */
+  public long ramBytesUsed() {
+    long size = 0;
+    for (PackedInts.Reader reader : subReaders) {
+      size += reader.ramBytesUsed();
+    }
+    return size;
+  }
 }

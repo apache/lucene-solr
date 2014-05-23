@@ -29,7 +29,7 @@ import org.apache.lucene.store.DataOutput;
 
 class BytesStore extends DataOutput {
 
-  private final List<byte[]> blocks = new ArrayList<byte[]>();
+  private final List<byte[]> blocks = new ArrayList<>();
 
   private final int blockSize;
   private final int blockBits;
@@ -362,7 +362,7 @@ class BytesStore extends DataOutput {
       }
 
       @Override
-      public void skipBytes(int count) {
+      public void skipBytes(long count) {
         setPosition(getPosition() + count);
       }
 
@@ -430,7 +430,7 @@ class BytesStore extends DataOutput {
       }
 
       @Override
-      public void skipBytes(int count) {
+      public void skipBytes(long count) {
         setPosition(getPosition() - count);
       }
 

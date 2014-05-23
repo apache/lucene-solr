@@ -61,8 +61,8 @@ public class TestAnalyzingQueryParser extends LuceneTestCase {
   private String[] fuzzyInput;
   private String[] fuzzyExpected;
 
-  private Map<String, String> wildcardEscapeHits = new TreeMap<String, String>();
-  private Map<String, String> wildcardEscapeMisses = new TreeMap<String, String>();
+  private Map<String, String> wildcardEscapeHits = new TreeMap<>();
+  private Map<String, String> wildcardEscapeMisses = new TreeMap<>();
 
   @Override
   public void setUp() throws Exception {
@@ -253,8 +253,8 @@ public class TestAnalyzingQueryParser extends LuceneTestCase {
 
   final static class ASCIIAnalyzer extends Analyzer {
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer result = new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
+    public TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer result = new MockTokenizer(MockTokenizer.WHITESPACE, true);
       return new TokenStreamComponents(result, new FoldingFilter(result));
     }
   }
@@ -281,7 +281,7 @@ public class TestAnalyzingQueryParser extends LuceneTestCase {
     Field field = new Field(FIELD, content, fieldType);
     doc.add(field);
     writer.addDocument(doc);
-    writer.close();
+    writer.shutdown();
     DirectoryReader ir = DirectoryReader.open(ramDir);
     IndexSearcher is = new IndexSearcher(ir);
       

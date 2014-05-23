@@ -51,7 +51,7 @@ public class TestScorerPerf extends LuceneTestCase {
     d = newDirectory();
     IndexWriter iw = new IndexWriter(d, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     iw.addDocument(new Document());
-    iw.close();
+    iw.shutdown();
     r = DirectoryReader.open(d);
     s = newSearcher(r);
   }
@@ -77,7 +77,7 @@ public class TestScorerPerf extends LuceneTestCase {
       iw.addDocument(d);
     }
     iw.forceMerge(1);
-    iw.close();
+    iw.shutdown();
   }
 
 
@@ -97,13 +97,10 @@ public class TestScorerPerf extends LuceneTestCase {
     return sets;
   }
 
-  public static class CountingHitCollector extends Collector {
+  public static class CountingHitCollector extends SimpleCollector {
     int count=0;
     int sum=0;
     protected int docBase = 0;
-
-    @Override
-    public void setScorer(Scorer scorer) throws IOException {}
     
     @Override
     public void collect(int doc) {
@@ -115,7 +112,7 @@ public class TestScorerPerf extends LuceneTestCase {
     public int getSum() { return sum; }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) {
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
       docBase = context.docBase;
     }
     @Override

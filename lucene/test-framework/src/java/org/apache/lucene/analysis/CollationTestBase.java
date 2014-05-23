@@ -19,7 +19,6 @@ package org.apache.lucene.analysis;
 
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,7 +32,6 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
@@ -48,7 +46,8 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Base test class for testing Unicode collation.
@@ -71,7 +70,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
     doc.add(new TextField("content", "\u0633\u0627\u0628", Field.Store.YES));
     doc.add(new StringField("body", "body", Field.Store.YES));
     writer.addDocument(doc);
-    writer.close();
+    writer.shutdown();
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = new IndexSearcher(reader);
     Query query = new TermQuery(new Term("body","body"));
@@ -107,7 +106,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
     // Collator (or an Arabic one for the case when Farsi is not supported).
     doc.add(new TextField("content", "\u0633\u0627\u0628", Field.Store.YES));
     writer.addDocument(doc);
-    writer.close();
+    writer.shutdown();
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = new IndexSearcher(reader);
 
@@ -132,7 +131,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
     doc.add(new TextField("content", "\u0633\u0627\u0628", Field.Store.YES));
     doc.add(new StringField("body", "body", Field.Store.YES));
     writer.addDocument(doc);
-    writer.close();
+    writer.shutdown();
 
     IndexReader reader = DirectoryReader.open(farsiIndex);
     IndexSearcher search = newSearcher(reader);
@@ -155,83 +154,6 @@ public abstract class CollationTestBase extends LuceneTestCase {
     farsiIndex.close();
   }
   
-  // Test using various international locales with accented characters (which
-  // sort differently depending on locale)
-  //
-  // Copied (and slightly modified) from 
-  // org.apache.lucene.search.TestSort.testInternationalSort()
-  //  
-  // TODO: this test is really fragile. there are already 3 different cases,
-  // depending upon unicode version.
-  public void testCollationKeySort(Analyzer usAnalyzer,
-                                   Analyzer franceAnalyzer,
-                                   Analyzer swedenAnalyzer,
-                                   Analyzer denmarkAnalyzer,
-                                   String usResult,
-                                   String frResult,
-                                   String svResult,
-                                   String dkResult) throws Exception {
-    Directory indexStore = newDirectory();
-    IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
-
-    // document data:
-    // the tracer field is used to determine which document was hit
-    String[][] sortData = new String[][] {
-      // tracer contents US                 France             Sweden (sv_SE)     Denmark (da_DK)
-      {  "A",   "x",     "p\u00EAche",      "p\u00EAche",      "p\u00EAche",      "p\u00EAche"      },
-      {  "B",   "y",     "HAT",             "HAT",             "HAT",             "HAT"             },
-      {  "C",   "x",     "p\u00E9ch\u00E9", "p\u00E9ch\u00E9", "p\u00E9ch\u00E9", "p\u00E9ch\u00E9" },
-      {  "D",   "y",     "HUT",             "HUT",             "HUT",             "HUT"             },
-      {  "E",   "x",     "peach",           "peach",           "peach",           "peach"           },
-      {  "F",   "y",     "H\u00C5T",        "H\u00C5T",        "H\u00C5T",        "H\u00C5T"        },
-      {  "G",   "x",     "sin",             "sin",             "sin",             "sin"             },
-      {  "H",   "y",     "H\u00D8T",        "H\u00D8T",        "H\u00D8T",        "H\u00D8T"        },
-      {  "I",   "x",     "s\u00EDn",        "s\u00EDn",        "s\u00EDn",        "s\u00EDn"        },
-      {  "J",   "y",     "HOT",             "HOT",             "HOT",             "HOT"             },
-    };
-
-    FieldType customType = new FieldType();
-    customType.setStored(true);
-    
-    for (int i = 0 ; i < sortData.length ; ++i) {
-      Document doc = new Document();
-      doc.add(new Field("tracer", sortData[i][0], customType));
-      doc.add(new TextField("contents", sortData[i][1], Field.Store.NO));
-      if (sortData[i][2] != null) 
-        doc.add(new TextField("US", usAnalyzer.tokenStream("US", new StringReader(sortData[i][2]))));
-      if (sortData[i][3] != null) 
-        doc.add(new TextField("France", franceAnalyzer.tokenStream("France", new StringReader(sortData[i][3]))));
-      if (sortData[i][4] != null)
-        doc.add(new TextField("Sweden", swedenAnalyzer.tokenStream("Sweden", new StringReader(sortData[i][4]))));
-      if (sortData[i][5] != null) 
-        doc.add(new TextField("Denmark", denmarkAnalyzer.tokenStream("Denmark", new StringReader(sortData[i][5]))));
-      writer.addDocument(doc);
-    }
-    writer.forceMerge(1);
-    writer.close();
-    IndexReader reader = DirectoryReader.open(indexStore);
-    IndexSearcher searcher = new IndexSearcher(reader);
-
-    Sort sort = new Sort();
-    Query queryX = new TermQuery(new Term ("contents", "x"));
-    Query queryY = new TermQuery(new Term ("contents", "y"));
-    
-    sort.setSort(new SortField("US", SortField.Type.STRING));
-    assertMatches(searcher, queryY, sort, usResult);
-
-    sort.setSort(new SortField("France", SortField.Type.STRING));
-    assertMatches(searcher, queryX, sort, frResult);
-
-    sort.setSort(new SortField("Sweden", SortField.Type.STRING));
-    assertMatches(searcher, queryY, sort, svResult);
-
-    sort.setSort(new SortField("Denmark", SortField.Type.STRING));
-    assertMatches(searcher, queryY, sort, dkResult);
-    reader.close();
-    indexStore.close();
-  }
-    
   // Make sure the documents returned by the search match the expected list
   // Copied from TestSort.java
   private void assertMatches(IndexSearcher searcher, Query query, Sort sort, 
@@ -251,23 +173,26 @@ public abstract class CollationTestBase extends LuceneTestCase {
 
   public void assertThreadSafe(final Analyzer analyzer) throws Exception {
     int numTestPoints = 100;
-    int numThreads = _TestUtil.nextInt(random(), 3, 5);
-    final HashMap<String,BytesRef> map = new HashMap<String,BytesRef>();
+    int numThreads = TestUtil.nextInt(random(), 3, 5);
+    final HashMap<String,BytesRef> map = new HashMap<>();
     
     // create a map<String,SortKey> up front.
     // then with multiple threads, generate sort keys for all the keys in the map
     // and ensure they are the same as the ones we produced in serial fashion.
 
     for (int i = 0; i < numTestPoints; i++) {
-      String term = _TestUtil.randomSimpleString(random());
-      TokenStream ts = analyzer.tokenStream("fake", new StringReader(term));
-      TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
-      BytesRef bytes = termAtt.getBytesRef();
-      ts.reset();
-      assertTrue(ts.incrementToken());
-      termAtt.fillBytesRef();
-      // ensure we make a copy of the actual bytes too
-      map.put(term, BytesRef.deepCopyOf(bytes));
+      String term = TestUtil.randomSimpleString(random());
+      try (TokenStream ts = analyzer.tokenStream("fake", term)) {
+        TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
+        BytesRef bytes = termAtt.getBytesRef();
+        ts.reset();
+        assertTrue(ts.incrementToken());
+        termAtt.fillBytesRef();
+        // ensure we make a copy of the actual bytes too
+        map.put(term, BytesRef.deepCopyOf(bytes));
+        assertFalse(ts.incrementToken());
+        ts.end();
+      }
     }
     
     Thread threads[] = new Thread[numThreads];
@@ -279,13 +204,16 @@ public abstract class CollationTestBase extends LuceneTestCase {
             for (Map.Entry<String,BytesRef> mapping : map.entrySet()) {
               String term = mapping.getKey();
               BytesRef expected = mapping.getValue();
-              TokenStream ts = analyzer.tokenStream("fake", new StringReader(term));
-              TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
-              BytesRef bytes = termAtt.getBytesRef();
-              ts.reset();
-              assertTrue(ts.incrementToken());
-              termAtt.fillBytesRef();
-              assertEquals(expected, bytes);
+              try (TokenStream ts = analyzer.tokenStream("fake", term)) {
+                TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
+                BytesRef bytes = termAtt.getBytesRef();
+                ts.reset();
+                assertTrue(ts.incrementToken());
+                termAtt.fillBytesRef();
+                assertEquals(expected, bytes);
+                assertFalse(ts.incrementToken());
+                ts.end();
+              }
             }
           } catch (IOException e) {
             throw new RuntimeException(e);

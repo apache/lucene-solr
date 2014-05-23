@@ -44,9 +44,10 @@ public class LowerCaseFilterStage extends Stage {
       final int length = termAttIn.length();
       final char[] bufferOut = termAttOut.resizeBuffer(length);
       for (int i = 0; i < length;) {
+        // nocommit correct?
         i += Character.toChars(
                 Character.toLowerCase(
-                   charUtils.codePointAt(buffer, i)), bufferOut, i);
+                   charUtils.codePointAt(buffer, i, length)), bufferOut, i);
       }
       termAttOut.setLength(length);
       return true;

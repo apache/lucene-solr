@@ -39,7 +39,7 @@ import org.apache.lucene.util.NamedSPILoader;
 public abstract class Codec implements NamedSPILoader.NamedSPI {
 
   private static final NamedSPILoader<Codec> loader =
-    new NamedSPILoader<Codec>(Codec.class);
+    new NamedSPILoader<>(Codec.class);
 
   private final String name;
 
@@ -119,7 +119,7 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
     loader.reload(classloader);
   }
   
-  private static Codec defaultCodec = Codec.forName("Lucene42");
+  private static Codec defaultCodec = Codec.forName("Lucene46");
   
   /** expert: returns the default codec used for newly created
    *  {@link IndexWriterConfig}s.

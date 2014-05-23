@@ -22,7 +22,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 
 public class SpatialBoxQParserPlugin extends SpatialFilterQParserPlugin {
-  public static String NAME = "bbox";
+  public static final String NAME = "bbox";
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams,

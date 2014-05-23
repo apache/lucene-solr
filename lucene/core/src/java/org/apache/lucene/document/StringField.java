@@ -1,7 +1,5 @@
 package org.apache.lucene.document;
 
-import org.apache.lucene.index.FieldInfo.IndexOptions;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +16,8 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 
 /** A field that is indexed but not tokenized: the entire
  *  String value is indexed as a single token.  For example

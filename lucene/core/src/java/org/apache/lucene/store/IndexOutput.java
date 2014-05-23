@@ -31,9 +31,6 @@ import java.io.IOException;
  */
 public abstract class IndexOutput extends DataOutput implements Closeable {
 
-  /** Forces any buffered output to be written. */
-  public abstract void flush() throws IOException;
-
   /** Closes this stream to further operations. */
   @Override
   public abstract void close() throws IOException;
@@ -43,20 +40,6 @@ public abstract class IndexOutput extends DataOutput implements Closeable {
    */
   public abstract long getFilePointer();
 
-
-  /** The number of bytes in the file. */
-  public abstract long length() throws IOException;
-
-  /** Set the file length. By default, this method does
-   * nothing (it's optional for a Directory to implement
-   * it).  But, certain Directory implementations (for
-   * example @see FSDirectory) can use this to inform the
-   * underlying IO system to pre-allocate the file to the
-   * specified size.  If the length is longer than the
-   * current file length, the bytes added to the file are
-   * undefined.  Otherwise the file is truncated.
-   * @param length file length
-   */
-  public void setLength(long length) throws IOException {}
-
+  /** Returns the current checksum of bytes written so far */
+  public abstract long getChecksum() throws IOException;
 }

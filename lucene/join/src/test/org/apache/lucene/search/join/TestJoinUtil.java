@@ -17,42 +17,6 @@ package org.apache.lucene.search.join;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
-import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.TopScoreDocCollector;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -66,6 +30,51 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.SimpleCollector;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.TestUtil;
+import org.junit.Test;
+
+@SuppressCodecs({"Lucene40", "Lucene41", "Lucene42"}) // we need SortedSet, docsWithField
 public class TestJoinUtil extends LuceneTestCase {
 
   public void testSimple() throws Exception {
@@ -84,20 +93,25 @@ public class TestJoinUtil extends LuceneTestCase {
     doc.add(new TextField("description", "random text", Field.Store.NO));
     doc.add(new TextField("name", "name1", Field.Store.NO));
     doc.add(new TextField(idField, "1", Field.Store.NO));
+    doc.add(new SortedDocValuesField(idField, new BytesRef("1")));
     w.addDocument(doc);
 
     // 1
     doc = new Document();
     doc.add(new TextField("price", "10.0", Field.Store.NO));
     doc.add(new TextField(idField, "2", Field.Store.NO));
+    doc.add(new SortedDocValuesField(idField, new BytesRef("2")));
     doc.add(new TextField(toField, "1", Field.Store.NO));
+    doc.add(new SortedDocValuesField(toField, new BytesRef("1")));
     w.addDocument(doc);
 
     // 2
     doc = new Document();
     doc.add(new TextField("price", "20.0", Field.Store.NO));
     doc.add(new TextField(idField, "3", Field.Store.NO));
+    doc.add(new SortedDocValuesField(idField, new BytesRef("3")));
     doc.add(new TextField(toField, "1", Field.Store.NO));
+    doc.add(new SortedDocValuesField(toField, new BytesRef("1")));
     w.addDocument(doc);
 
     // 3
@@ -105,6 +119,7 @@ public class TestJoinUtil extends LuceneTestCase {
     doc.add(new TextField("description", "more random text", Field.Store.NO));
     doc.add(new TextField("name", "name2", Field.Store.NO));
     doc.add(new TextField(idField, "4", Field.Store.NO));
+    doc.add(new SortedDocValuesField(idField, new BytesRef("4")));
     w.addDocument(doc);
     w.commit();
 
@@ -112,18 +127,22 @@ public class TestJoinUtil extends LuceneTestCase {
     doc = new Document();
     doc.add(new TextField("price", "10.0", Field.Store.NO));
     doc.add(new TextField(idField, "5", Field.Store.NO));
+    doc.add(new SortedDocValuesField(idField, new BytesRef("5")));
     doc.add(new TextField(toField, "4", Field.Store.NO));
+    doc.add(new SortedDocValuesField(toField, new BytesRef("4")));
     w.addDocument(doc);
 
     // 5
     doc = new Document();
     doc.add(new TextField("price", "20.0", Field.Store.NO));
     doc.add(new TextField(idField, "6", Field.Store.NO));
+    doc.add(new SortedDocValuesField(idField, new BytesRef("6")));
     doc.add(new TextField(toField, "4", Field.Store.NO));
+    doc.add(new SortedDocValuesField(toField, new BytesRef("4")));
     w.addDocument(doc);
 
     IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
-    w.close();
+    w.shutdown();
 
     // Search for product
     Query joinQuery =
@@ -150,6 +169,154 @@ public class TestJoinUtil extends LuceneTestCase {
     dir.close();
   }
 
+  // TermsWithScoreCollector.MV.Avg forgets to grow beyond TermsWithScoreCollector.INITIAL_ARRAY_SIZE
+  public void testOverflowTermsWithScoreCollector() throws Exception {
+    test300spartans(true, ScoreMode.Avg);
+  }
+
+  public void testOverflowTermsWithScoreCollectorRandom() throws Exception {
+    test300spartans(random().nextBoolean(), ScoreMode.values()[random().nextInt(ScoreMode.values().length)]);
+  }
+
+  void test300spartans(boolean multipleValues, ScoreMode scoreMode) throws Exception {
+    final String idField = "id";
+    final String toField = "productId";
+
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(
+        random(),
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT,
+            new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+
+    // 0
+    Document doc = new Document();
+    doc.add(new TextField("description", "random text", Field.Store.NO));
+    doc.add(new TextField("name", "name1", Field.Store.NO));
+    doc.add(new TextField(idField, "0", Field.Store.NO));
+    doc.add(new SortedDocValuesField(idField, new BytesRef("0")));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new TextField("price", "10.0", Field.Store.NO));
+
+    if (multipleValues) {
+      for(int i=0;i<300;i++) {
+        doc.add(new SortedSetDocValuesField(toField, new BytesRef(""+i)));
+      }
+    } else {
+      doc.add(new SortedDocValuesField(toField, new BytesRef("0")));
+    }
+    w.addDocument(doc);
+
+    IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
+    w.shutdown();
+
+    // Search for product
+    Query joinQuery =
+        JoinUtil.createJoinQuery(toField, multipleValues, idField, new TermQuery(new Term("price", "10.0")), indexSearcher, scoreMode);
+
+    TopDocs result = indexSearcher.search(joinQuery, 10);
+    assertEquals(1, result.totalHits);
+    assertEquals(0, result.scoreDocs[0].doc);
+   
+
+    indexSearcher.getIndexReader().close();
+    dir.close();
+  }
+
+  /** LUCENE-5487: verify a join query inside a SHOULD BQ
+   *  will still use the join query's optimized BulkScorers */
+  public void testInsideBooleanQuery() throws Exception {
+    final String idField = "id";
+    final String toField = "productId";
+
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(
+        random(),
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT,
+            new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+
+    // 0
+    Document doc = new Document();
+    doc.add(new TextField("description", "random text", Field.Store.NO));
+    doc.add(new TextField("name", "name1", Field.Store.NO));
+    doc.add(new TextField(idField, "7", Field.Store.NO));
+    w.addDocument(doc);
+
+    // 1
+    doc = new Document();
+    doc.add(new TextField("price", "10.0", Field.Store.NO));
+    doc.add(new TextField(idField, "2", Field.Store.NO));
+    doc.add(new TextField(toField, "7", Field.Store.NO));
+    w.addDocument(doc);
+
+    // 2
+    doc = new Document();
+    doc.add(new TextField("price", "20.0", Field.Store.NO));
+    doc.add(new TextField(idField, "3", Field.Store.NO));
+    doc.add(new TextField(toField, "7", Field.Store.NO));
+    w.addDocument(doc);
+
+    // 3
+    doc = new Document();
+    doc.add(new TextField("description", "more random text", Field.Store.NO));
+    doc.add(new TextField("name", "name2", Field.Store.NO));
+    doc.add(new TextField(idField, "0", Field.Store.NO));
+    w.addDocument(doc);
+    w.commit();
+
+    // 4
+    doc = new Document();
+    doc.add(new TextField("price", "10.0", Field.Store.NO));
+    doc.add(new TextField(idField, "5", Field.Store.NO));
+    doc.add(new TextField(toField, "0", Field.Store.NO));
+    w.addDocument(doc);
+
+    // 5
+    doc = new Document();
+    doc.add(new TextField("price", "20.0", Field.Store.NO));
+    doc.add(new TextField(idField, "6", Field.Store.NO));
+    doc.add(new TextField(toField, "0", Field.Store.NO));
+    w.addDocument(doc);
+
+    w.forceMerge(1);
+
+    IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
+    w.shutdown();
+
+    // Search for product
+    Query joinQuery =
+        JoinUtil.createJoinQuery(idField, false, toField, new TermQuery(new Term("description", "random")), indexSearcher, ScoreMode.Avg);
+
+    BooleanQuery bq = new BooleanQuery();
+    bq.add(joinQuery, BooleanClause.Occur.SHOULD);
+    bq.add(new TermQuery(new Term("id", "3")), BooleanClause.Occur.SHOULD);
+
+    indexSearcher.search(bq, new SimpleCollector() {
+        boolean sawFive;
+        @Override
+        public void collect(int docID) {
+          // Hairy / evil (depends on how BooleanScorer
+          // stores temporarily collected docIDs by
+          // appending to head of linked list):
+          if (docID == 5) {
+            sawFive = true;
+          } else if (docID == 1) {
+            assertFalse("optimized bulkScorer was not used for join query embedded in boolean query!", sawFive);
+          }
+        }
+        @Override
+        public boolean acceptsDocsOutOfOrder() {
+          return true;
+        }
+      });
+
+    indexSearcher.getIndexReader().close();
+    dir.close();
+  }
+
   public void testSimpleWithScoring() throws Exception {
     final String idField = "id";
     final String toField = "movieId";
@@ -166,20 +333,25 @@ public class TestJoinUtil extends LuceneTestCase {
     doc.add(new TextField("description", "A random movie", Field.Store.NO));
     doc.add(new TextField("name", "Movie 1", Field.Store.NO));
     doc.add(new TextField(idField, "1", Field.Store.NO));
+    doc.add(new SortedDocValuesField(idField, new BytesRef("1")));
     w.addDocument(doc);
 
     // 1
     doc = new Document();
     doc.add(new TextField("subtitle", "The first subtitle of this movie", Field.Store.NO));
     doc.add(new TextField(idField, "2", Field.Store.NO));
+    doc.add(new SortedDocValuesField(idField, new BytesRef("2")));
     doc.add(new TextField(toField, "1", Field.Store.NO));
+    doc.add(new SortedDocValuesField(toField, new BytesRef("1")));
     w.addDocument(doc);
 
     // 2
     doc = new Document();
     doc.add(new TextField("subtitle", "random subtitle; random event movie", Field.Store.NO));
     doc.add(new TextField(idField, "3", Field.Store.NO));
+    doc.add(new SortedDocValuesField(idField, new BytesRef("3")));
     doc.add(new TextField(toField, "1", Field.Store.NO));
+    doc.add(new SortedDocValuesField(toField, new BytesRef("1")));
     w.addDocument(doc);
 
     // 3
@@ -187,6 +359,7 @@ public class TestJoinUtil extends LuceneTestCase {
     doc.add(new TextField("description", "A second random movie", Field.Store.NO));
     doc.add(new TextField("name", "Movie 2", Field.Store.NO));
     doc.add(new TextField(idField, "4", Field.Store.NO));
+    doc.add(new SortedDocValuesField(idField, new BytesRef("4")));
     w.addDocument(doc);
     w.commit();
 
@@ -194,18 +367,22 @@ public class TestJoinUtil extends LuceneTestCase {
     doc = new Document();
     doc.add(new TextField("subtitle", "a very random event happened during christmas night", Field.Store.NO));
     doc.add(new TextField(idField, "5", Field.Store.NO));
+    doc.add(new SortedDocValuesField(idField, new BytesRef("5")));
     doc.add(new TextField(toField, "4", Field.Store.NO));
+    doc.add(new SortedDocValuesField(toField, new BytesRef("4")));
     w.addDocument(doc);
 
     // 5
     doc = new Document();
     doc.add(new TextField("subtitle", "movie end movie test 123 test 123 random", Field.Store.NO));
     doc.add(new TextField(idField, "6", Field.Store.NO));
+    doc.add(new SortedDocValuesField(idField, new BytesRef("6")));
     doc.add(new TextField(toField, "4", Field.Store.NO));
+    doc.add(new SortedDocValuesField(toField, new BytesRef("4")));
     w.addDocument(doc);
 
     IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
-    w.close();
+    w.shutdown();
 
     // Search for movie via subtitle
     Query joinQuery =
@@ -243,18 +420,18 @@ public class TestJoinUtil extends LuceneTestCase {
   @Test
   @Slow
   public void testSingleValueRandomJoin() throws Exception {
-    int maxIndexIter = _TestUtil.nextInt(random(), 6, 12);
-    int maxSearchIter = _TestUtil.nextInt(random(), 13, 26);
-    executeRandomJoin(false, maxIndexIter, maxSearchIter, _TestUtil.nextInt(random(), 87, 764));
+    int maxIndexIter = TestUtil.nextInt(random(), 6, 12);
+    int maxSearchIter = TestUtil.nextInt(random(), 13, 26);
+    executeRandomJoin(false, maxIndexIter, maxSearchIter, TestUtil.nextInt(random(), 87, 764));
   }
 
   @Test
   @Slow
   // This test really takes more time, that is why the number of iterations are smaller.
   public void testMultiValueRandomJoin() throws Exception {
-    int maxIndexIter = _TestUtil.nextInt(random(), 3, 6);
-    int maxSearchIter = _TestUtil.nextInt(random(), 6, 12);
-    executeRandomJoin(true, maxIndexIter, maxSearchIter, _TestUtil.nextInt(random(), 11, 57));
+    int maxIndexIter = TestUtil.nextInt(random(), 3, 6);
+    int maxSearchIter = TestUtil.nextInt(random(), 6, 12);
+    executeRandomJoin(true, maxIndexIter, maxSearchIter, TestUtil.nextInt(random(), 11, 57));
   }
 
   private void executeRandomJoin(boolean multipleValuesPerDocument, int maxIndexIter, int maxSearchIter, int numberOfDocumentsToIndex) throws Exception {
@@ -272,7 +449,7 @@ public class TestJoinUtil extends LuceneTestCase {
       IndexIterationContext context = createContext(numberOfDocumentsToIndex, w, multipleValuesPerDocument, scoreDocsInOrder);
 
       IndexReader topLevelReader = w.getReader();
-      w.close();
+      w.shutdown();
       for (int searchIter = 1; searchIter <= maxSearchIter; searchIter++) {
         if (VERBOSE) {
           System.out.println("searchIter=" + searchIter);
@@ -306,7 +483,7 @@ public class TestJoinUtil extends LuceneTestCase {
         // Need to know all documents that have matches. TopDocs doesn't give me that and then I'd be also testing TopDocsCollector...
         final FixedBitSet actualResult = new FixedBitSet(indexSearcher.getIndexReader().maxDoc());
         final TopScoreDocCollector topScoreDocCollector = TopScoreDocCollector.create(10, false);
-        indexSearcher.search(joinQuery, new Collector() {
+        indexSearcher.search(joinQuery, new SimpleCollector() {
 
           int docBase;
 
@@ -317,9 +494,9 @@ public class TestJoinUtil extends LuceneTestCase {
           }
 
           @Override
-          public void setNextReader(AtomicReaderContext context) {
+          protected void doSetNextReader(AtomicReaderContext context) throws IOException {
             docBase = context.docBase;
-            topScoreDocCollector.setNextReader(context);
+            topScoreDocCollector.getLeafCollector(context);
           }
 
           @Override
@@ -359,8 +536,8 @@ public class TestJoinUtil extends LuceneTestCase {
         assertEquals(expectedTopDocs.getMaxScore(), actualTopDocs.getMaxScore(), 0.0f);
         for (int i = 0; i < expectedTopDocs.scoreDocs.length; i++) {
           if (VERBOSE) {
-            System.out.printf("Expected doc: %d | Actual doc: %d\n", expectedTopDocs.scoreDocs[i].doc, actualTopDocs.scoreDocs[i].doc);
-            System.out.printf("Expected score: %f | Actual score: %f\n", expectedTopDocs.scoreDocs[i].score, actualTopDocs.scoreDocs[i].score);
+            System.out.printf(Locale.ENGLISH, "Expected doc: %d | Actual doc: %d\n", expectedTopDocs.scoreDocs[i].doc, actualTopDocs.scoreDocs[i].doc);
+            System.out.printf(Locale.ENGLISH, "Expected score: %f | Actual score: %f\n", expectedTopDocs.scoreDocs[i].score, actualTopDocs.scoreDocs[i].score);
           }
           assertEquals(expectedTopDocs.scoreDocs[i].doc, actualTopDocs.scoreDocs[i].doc);
           assertEquals(expectedTopDocs.scoreDocs[i].score, actualTopDocs.scoreDocs[i].score, 0.0f);
@@ -386,7 +563,7 @@ public class TestJoinUtil extends LuceneTestCase {
     for (int i = 0; i < numRandomValues; i++) {
       String uniqueRandomValue;
       do {
-        uniqueRandomValue = _TestUtil.randomRealisticUnicodeString(random());
+        uniqueRandomValue = TestUtil.randomRealisticUnicodeString(random());
 //        uniqueRandomValue = _TestUtil.randomSimpleString(random);
       } while ("".equals(uniqueRandomValue) || trackSet.contains(uniqueRandomValue));
       // Generate unique values and empty strings aren't allowed.
@@ -421,6 +598,11 @@ public class TestJoinUtil extends LuceneTestCase {
           context.fromDocuments.get(linkValue).add(docs[i]);
           context.randomValueFromDocs.get(value).add(docs[i]);
           document.add(newTextField(random(), "from", linkValue, Field.Store.NO));
+          if (multipleValuesPerDocument) {
+            document.add(new SortedSetDocValuesField("from", new BytesRef(linkValue)));
+          } else {
+            document.add(new SortedDocValuesField("from", new BytesRef(linkValue)));
+          }
         } else {
           if (!context.toDocuments.containsKey(linkValue)) {
             context.toDocuments.put(linkValue, new ArrayList<RandomDoc>());
@@ -432,6 +614,11 @@ public class TestJoinUtil extends LuceneTestCase {
           context.toDocuments.get(linkValue).add(docs[i]);
           context.randomValueToDocs.get(value).add(docs[i]);
           document.add(newTextField(random(), "to", linkValue, Field.Store.NO));
+          if (multipleValuesPerDocument) {
+            document.add(new SortedSetDocValuesField("to", new BytesRef(linkValue)));
+          } else {
+            document.add(new SortedDocValuesField("to", new BytesRef(linkValue)));
+          }
         }
       }
 
@@ -471,7 +658,7 @@ public class TestJoinUtil extends LuceneTestCase {
       }
       final Map<BytesRef, JoinScore> joinValueToJoinScores = new HashMap<>();
       if (multipleValuesPerDocument) {
-        fromSearcher.search(new TermQuery(new Term("value", uniqueRandomValue)), new Collector() {
+        fromSearcher.search(new TermQuery(new Term("value", uniqueRandomValue)), new SimpleCollector() {
 
           private Scorer scorer;
           private SortedSetDocValues docTermOrds;
@@ -492,8 +679,8 @@ public class TestJoinUtil extends LuceneTestCase {
           }
 
           @Override
-          public void setNextReader(AtomicReaderContext context) throws IOException {
-            docTermOrds = FieldCache.DEFAULT.getDocTermOrds(context.reader(), fromField);
+          protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+            docTermOrds = DocValues.getSortedSet(context.reader(), fromField);
           }
 
           @Override
@@ -507,17 +694,18 @@ public class TestJoinUtil extends LuceneTestCase {
           }
         });
       } else {
-        fromSearcher.search(new TermQuery(new Term("value", uniqueRandomValue)), new Collector() {
+        fromSearcher.search(new TermQuery(new Term("value", uniqueRandomValue)), new SimpleCollector() {
 
           private Scorer scorer;
           private BinaryDocValues terms;
+          private Bits docsWithField;
           private final BytesRef spare = new BytesRef();
 
           @Override
           public void collect(int doc) throws IOException {
             terms.get(doc, spare);
             BytesRef joinValue = spare;
-            if (joinValue.bytes == BinaryDocValues.MISSING) {
+            if (joinValue.length == 0 && !docsWithField.get(doc)) {
               return;
             }
 
@@ -529,8 +717,9 @@ public class TestJoinUtil extends LuceneTestCase {
           }
 
           @Override
-          public void setNextReader(AtomicReaderContext context) throws IOException {
-            terms = FieldCache.DEFAULT.getTerms(context.reader(), fromField);
+          protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+            terms = DocValues.getBinary(context.reader(), fromField);
+            docsWithField = DocValues.getDocsWithField(context.reader(), fromField);
           }
 
           @Override
@@ -557,7 +746,7 @@ public class TestJoinUtil extends LuceneTestCase {
             joinValues.addAll(joinValueToJoinScores.keySet());
             for (BytesRef joinValue : joinValues) {
               termsEnum = terms.iterator(termsEnum);
-              if (termsEnum.seekExact(joinValue, true)) {
+              if (termsEnum.seekExact(joinValue)) {
                 docsEnum = termsEnum.docs(slowCompositeReader.getLiveDocs(), docsEnum, DocsEnum.FLAG_NONE);
                 JoinScore joinScore = joinValueToJoinScores.get(joinValue);
 
@@ -572,7 +761,7 @@ public class TestJoinUtil extends LuceneTestCase {
             }
           }
         } else {
-          toSearcher.search(new MatchAllDocsQuery(), new Collector() {
+          toSearcher.search(new MatchAllDocsQuery(), new SimpleCollector() {
 
             private SortedSetDocValues docTermOrds;
             private final BytesRef scratch = new BytesRef();
@@ -598,9 +787,9 @@ public class TestJoinUtil extends LuceneTestCase {
             }
 
             @Override
-            public void setNextReader(AtomicReaderContext context) throws IOException {
+            protected void doSetNextReader(AtomicReaderContext context) throws IOException {
               docBase = context.docBase;
-              docTermOrds = FieldCache.DEFAULT.getDocTermOrds(context.reader(), toField);
+              docTermOrds = DocValues.getSortedSet(context.reader(), toField);
             }
 
             @Override
@@ -610,7 +799,7 @@ public class TestJoinUtil extends LuceneTestCase {
           });
         }
       } else {
-        toSearcher.search(new MatchAllDocsQuery(), new Collector() {
+        toSearcher.search(new MatchAllDocsQuery(), new SimpleCollector() {
 
           private BinaryDocValues terms;
           private int docBase;
@@ -627,8 +816,8 @@ public class TestJoinUtil extends LuceneTestCase {
           }
 
           @Override
-          public void setNextReader(AtomicReaderContext context) throws IOException {
-            terms = FieldCache.DEFAULT.getTerms(context.reader(), toField);
+          protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+            terms = DocValues.getBinary(context.reader(), toField);
             docBase = context.docBase;
           }
 

@@ -27,9 +27,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.ArrayList;
 
-import org.apache.lucene.index.MergePolicy.MergeTrigger;
-
-
 /**
  *  Merges segments of approximately equal size, subject to
  *  an allowed number of segments per tier.  This is similar
@@ -76,7 +73,11 @@ import org.apache.lucene.index.MergePolicy.MergeTrigger;
 //     maybe CMS should do so)
 
 public class TieredMergePolicy extends MergePolicy {
-
+  /** Default noCFSRatio.  If a merge's size is >= 10% of
+   *  the index, then we disable compound file for it.
+   *  @see MergePolicy#setNoCFSRatio */
+  public static final double DEFAULT_NO_CFS_RATIO = 0.1;
+  
   private int maxMergeAtOnce = 10;
   private long maxMergedSegmentBytes = 5*1024*1024*1024L;
   private int maxMergeAtOnceExplicit = 30;
@@ -84,14 +85,12 @@ public class TieredMergePolicy extends MergePolicy {
   private long floorSegmentBytes = 2*1024*1024L;
   private double segsPerTier = 10.0;
   private double forceMergeDeletesPctAllowed = 10.0;
-  private boolean useCompoundFile = true;
-  private double noCFSRatio = 0.1;
-  private long maxCFSSegmentSize = Long.MAX_VALUE;
   private double reclaimDeletesWeight = 2.0;
 
   /** Sole constructor, setting all settings to their
    *  defaults. */
   public TieredMergePolicy() {
+    super(DEFAULT_NO_CFS_RATIO, MergePolicy.DEFAULT_MAX_CFS_SEGMENT_SIZE);
   }
 
   /** Maximum number of segments to be merged at a time
@@ -155,9 +154,12 @@ public class TieredMergePolicy extends MergePolicy {
   }
 
   /** Controls how aggressively merges that reclaim more
-   *  deletions are favored.  Higher values favor selecting
-   *  merges that reclaim deletions.  A value of 0.0 means
-   *  deletions don't impact merge selection. */
+   *  deletions are favored.  Higher values will more
+   *  aggressively target merges that reclaim deletions, but
+   *  be careful not to go so high that way too much merging
+   *  takes place; a value of 3.0 is probably nearly too
+   *  high.  A value of 0.0 means deletions don't impact
+   *  merge selection. */ 
   public TieredMergePolicy setReclaimDeletesWeight(double v) {
     if (v < 0.0) {
       throw new IllegalArgumentException("reclaimDeletesWeight must be >= 0.0 (got " + v + ")");
@@ -233,44 +235,9 @@ public class TieredMergePolicy extends MergePolicy {
     return segsPerTier;
   }
 
-  /** Sets whether compound file format should be used for
-   *  newly flushed and newly merged segments.  Default
-   *  true. */
-  public TieredMergePolicy setUseCompoundFile(boolean useCompoundFile) {
-    this.useCompoundFile = useCompoundFile;
-    return this;
-  }
-
-  /** Returns the current useCompoundFile setting.
-   *
-   * @see  #setUseCompoundFile */
-  public boolean getUseCompoundFile() {
-    return useCompoundFile;
-  }
-
-  /** If a merged segment will be more than this percentage
-   *  of the total size of the index, leave the segment as
-   *  non-compound file even if compound file is enabled.
-   *  Set to 1.0 to always use CFS regardless of merge
-   *  size.  Default is 0.1. */
-  public TieredMergePolicy setNoCFSRatio(double noCFSRatio) {
-    if (noCFSRatio < 0.0 || noCFSRatio > 1.0) {
-      throw new IllegalArgumentException("noCFSRatio must be 0.0 to 1.0 inclusive; got " + noCFSRatio);
-    }
-    this.noCFSRatio = noCFSRatio;
-    return this;
-  }
-  
-  /** Returns the current noCFSRatio setting.
-   *
-   * @see #setNoCFSRatio */
-  public double getNoCFSRatio() {
-    return noCFSRatio;
-  }
-
-  private class SegmentByteSizeDescending implements Comparator<SegmentInfoPerCommit> {
+  private class SegmentByteSizeDescending implements Comparator<SegmentCommitInfo> {
     @Override
-    public int compare(SegmentInfoPerCommit o1, SegmentInfoPerCommit o2) {
+    public int compare(SegmentCommitInfo o1, SegmentCommitInfo o2) {
       try {
         final long sz1 = size(o1);
         final long sz2 = size(o2);
@@ -291,12 +258,16 @@ public class TieredMergePolicy extends MergePolicy {
    *  merge. */
   protected static abstract class MergeScore {
     /** Sole constructor. (For invocation by subclass 
-     * constructors, typically implicit.) */
+     *  constructors, typically implicit.) */
     protected MergeScore() {
     }
     
+    /** Returns the score for this merge candidate; lower
+     *  scores are better. */
     abstract double getScore();
 
+    /** Human readable explanation of how the merge got this
+     *  score. */
     abstract String getExplanation();
   }
 
@@ -308,16 +279,16 @@ public class TieredMergePolicy extends MergePolicy {
     if (infos.size() == 0) {
       return null;
     }
-    final Collection<SegmentInfoPerCommit> merging = writer.get().getMergingSegments();
-    final Collection<SegmentInfoPerCommit> toBeMerged = new HashSet<SegmentInfoPerCommit>();
+    final Collection<SegmentCommitInfo> merging = writer.get().getMergingSegments();
+    final Collection<SegmentCommitInfo> toBeMerged = new HashSet<>();
 
-    final List<SegmentInfoPerCommit> infosSorted = new ArrayList<SegmentInfoPerCommit>(infos.asList());
+    final List<SegmentCommitInfo> infosSorted = new ArrayList<>(infos.asList());
     Collections.sort(infosSorted, new SegmentByteSizeDescending());
 
     // Compute total index bytes & print details about the index
     long totIndexBytes = 0;
     long minSegmentBytes = Long.MAX_VALUE;
-    for(SegmentInfoPerCommit info : infosSorted) {
+    for(SegmentCommitInfo info : infosSorted) {
       final long segBytes = size(info);
       if (verbose()) {
         String extra = merging.contains(info) ? " [merging]" : "";
@@ -370,9 +341,9 @@ public class TieredMergePolicy extends MergePolicy {
       // Gather eligible segments for merging, ie segments
       // not already being merged and not already picked (by
       // prior iteration of this loop) for merging:
-      final List<SegmentInfoPerCommit> eligible = new ArrayList<SegmentInfoPerCommit>();
+      final List<SegmentCommitInfo> eligible = new ArrayList<>();
       for(int idx = tooBigCount; idx<infosSorted.size(); idx++) {
-        final SegmentInfoPerCommit info = infosSorted.get(idx);
+        final SegmentCommitInfo info = infosSorted.get(idx);
         if (merging.contains(info)) {
           mergingBytes += info.sizeInBytes();
         } else if (!toBeMerged.contains(info)) {
@@ -390,11 +361,11 @@ public class TieredMergePolicy extends MergePolicy {
         return spec;
       }
 
-      if (eligible.size() >= allowedSegCountInt) {
+      if (eligible.size() > allowedSegCountInt) {
 
         // OK we are over budget -- find best merge!
         MergeScore bestScore = null;
-        List<SegmentInfoPerCommit> best = null;
+        List<SegmentCommitInfo> best = null;
         boolean bestTooLarge = false;
         long bestMergeBytes = 0;
 
@@ -403,10 +374,10 @@ public class TieredMergePolicy extends MergePolicy {
 
           long totAfterMergeBytes = 0;
 
-          final List<SegmentInfoPerCommit> candidate = new ArrayList<SegmentInfoPerCommit>();
+          final List<SegmentCommitInfo> candidate = new ArrayList<>();
           boolean hitTooLarge = false;
           for(int idx = startIdx;idx<eligible.size() && candidate.size() < maxMergeAtOnce;idx++) {
-            final SegmentInfoPerCommit info = eligible.get(idx);
+            final SegmentCommitInfo info = eligible.get(idx);
             final long segBytes = size(info);
 
             if (totAfterMergeBytes + segBytes > maxMergedSegmentBytes) {
@@ -445,7 +416,7 @@ public class TieredMergePolicy extends MergePolicy {
           }
           final OneMerge merge = new OneMerge(best);
           spec.add(merge);
-          for(SegmentInfoPerCommit info : merge.segments) {
+          for(SegmentCommitInfo info : merge.segments) {
             toBeMerged.add(info);
           }
 
@@ -462,20 +433,23 @@ public class TieredMergePolicy extends MergePolicy {
   }
 
   /** Expert: scores one merge; subclasses can override. */
-  protected MergeScore score(List<SegmentInfoPerCommit> candidate, boolean hitTooLarge, long mergingBytes) throws IOException {
+  protected MergeScore score(List<SegmentCommitInfo> candidate, boolean hitTooLarge, long mergingBytes) throws IOException {
     long totBeforeMergeBytes = 0;
     long totAfterMergeBytes = 0;
     long totAfterMergeBytesFloored = 0;
-    for(SegmentInfoPerCommit info : candidate) {
+    for(SegmentCommitInfo info : candidate) {
       final long segBytes = size(info);
       totAfterMergeBytes += segBytes;
       totAfterMergeBytesFloored += floorSize(segBytes);
       totBeforeMergeBytes += info.sizeInBytes();
     }
 
-    // Measure "skew" of the merge, which can range
-    // from 1.0/numSegsBeingMerged (good) to 1.0
-    // (poor):
+    // Roughly measure "skew" of the merge, i.e. how
+    // "balanced" the merge is (whether the segments are
+    // about the same size), which can range from
+    // 1.0/numSegsBeingMerged (good) to 1.0 (poor). Heavily
+    // lopsided merges (skew near 1.0) is no good; it means
+    // O(N^2) merge cost over time:
     final double skew;
     if (hitTooLarge) {
       // Pretend the merge has perfect skew; skew doesn't
@@ -518,16 +492,16 @@ public class TieredMergePolicy extends MergePolicy {
   }
 
   @Override
-  public MergeSpecification findForcedMerges(SegmentInfos infos, int maxSegmentCount, Map<SegmentInfoPerCommit,Boolean> segmentsToMerge) throws IOException {
+  public MergeSpecification findForcedMerges(SegmentInfos infos, int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge) throws IOException {
     if (verbose()) {
       message("findForcedMerges maxSegmentCount=" + maxSegmentCount + " infos=" + writer.get().segString(infos) + " segmentsToMerge=" + segmentsToMerge);
     }
 
-    List<SegmentInfoPerCommit> eligible = new ArrayList<SegmentInfoPerCommit>();
+    List<SegmentCommitInfo> eligible = new ArrayList<>();
     boolean forceMergeRunning = false;
-    final Collection<SegmentInfoPerCommit> merging = writer.get().getMergingSegments();
+    final Collection<SegmentCommitInfo> merging = writer.get().getMergingSegments();
     boolean segmentIsOriginal = false;
-    for(SegmentInfoPerCommit info : infos) {
+    for(SegmentCommitInfo info : infos) {
       final Boolean isOriginal = segmentsToMerge.get(info);
       if (isOriginal != null) {
         segmentIsOriginal = isOriginal;
@@ -544,7 +518,7 @@ public class TieredMergePolicy extends MergePolicy {
     }
 
     if ((maxSegmentCount > 1 && eligible.size() <= maxSegmentCount) ||
-        (maxSegmentCount == 1 && eligible.size() == 1 && (!segmentIsOriginal || isMerged(eligible.get(0))))) {
+        (maxSegmentCount == 1 && eligible.size() == 1 && (!segmentIsOriginal || isMerged(infos, eligible.get(0))))) {
       if (verbose()) {
         message("already merged");
       }
@@ -594,9 +568,9 @@ public class TieredMergePolicy extends MergePolicy {
     if (verbose()) {
       message("findForcedDeletesMerges infos=" + writer.get().segString(infos) + " forceMergeDeletesPctAllowed=" + forceMergeDeletesPctAllowed);
     }
-    final List<SegmentInfoPerCommit> eligible = new ArrayList<SegmentInfoPerCommit>();
-    final Collection<SegmentInfoPerCommit> merging = writer.get().getMergingSegments();
-    for(SegmentInfoPerCommit info : infos) {
+    final List<SegmentCommitInfo> eligible = new ArrayList<>();
+    final Collection<SegmentCommitInfo> merging = writer.get().getMergingSegments();
+    for(SegmentCommitInfo info : infos) {
       double pctDeletes = 100.*((double) writer.get().numDeletedDocs(info))/info.info.getDocCount();
       if (pctDeletes > forceMergeDeletesPctAllowed && !merging.contains(info)) {
         eligible.add(info);
@@ -637,44 +611,7 @@ public class TieredMergePolicy extends MergePolicy {
   }
 
   @Override
-  public boolean useCompoundFile(SegmentInfos infos, SegmentInfoPerCommit mergedInfo) throws IOException {
-    if (!getUseCompoundFile()) {
-        return false;
-    }
-    long mergedInfoSize = size(mergedInfo);
-    if (mergedInfoSize > maxCFSSegmentSize) {
-        return false;
-    }
-    if (getNoCFSRatio() >= 1.0) {
-        return true;
-    }
-    long totalSize = 0;
-    for (SegmentInfoPerCommit info : infos) {
-        totalSize += size(info);
-    }
-    return mergedInfoSize <= getNoCFSRatio() * totalSize;
-  }
-
-  @Override
   public void close() {
-  }
-
-  private boolean isMerged(SegmentInfoPerCommit info) {
-    IndexWriter w = writer.get();
-    assert w != null;
-    boolean hasDeletions = w.numDeletedDocs(info) > 0;
-    return !hasDeletions &&
-      info.info.dir == w.getDirectory() &&
-      (info.info.getUseCompoundFile() == useCompoundFile || noCFSRatio < 1.0 || maxCFSSegmentSize < Long.MAX_VALUE);
-  }
-
-  // Segment size in bytes, pro-rated by % deleted
-  private long size(SegmentInfoPerCommit info) throws IOException {
-    final long byteSize = info.sizeInBytes();    
-    final int delCount = writer.get().numDeletedDocs(info);
-    final double delRatio = (info.info.getDocCount() <= 0 ? 0.0f : ((double)delCount / (double)info.info.getDocCount()));    
-    assert delRatio <= 1.0;
-    return (long) (byteSize * (1.0-delRatio));
   }
 
   private long floorSize(long bytes) {
@@ -699,28 +636,8 @@ public class TieredMergePolicy extends MergePolicy {
     sb.append("floorSegmentMB=").append(floorSegmentBytes/1024/1024.).append(", ");
     sb.append("forceMergeDeletesPctAllowed=").append(forceMergeDeletesPctAllowed).append(", ");
     sb.append("segmentsPerTier=").append(segsPerTier).append(", ");
-    sb.append("useCompoundFile=").append(useCompoundFile).append(", ");
     sb.append("maxCFSSegmentSizeMB=").append(getMaxCFSSegmentSizeMB()).append(", ");
     sb.append("noCFSRatio=").append(noCFSRatio);
     return sb.toString();
-  }
-
-  /** Returns the largest size allowed for a compound file segment */
-  public final double getMaxCFSSegmentSizeMB() {
-    return maxCFSSegmentSize/1024/1024.;
-  }
-
-  /** If a merged segment will be more than this value,
-   *  leave the segment as
-   *  non-compound file even if compound file is enabled.
-   *  Set this to Double.POSITIVE_INFINITY (default) and noCFSRatio to 1.0
-   *  to always use CFS regardless of merge size. */
-  public final TieredMergePolicy setMaxCFSSegmentSizeMB(double v) {
-    if (v < 0.0) {
-      throw new IllegalArgumentException("maxCFSSegmentSizeMB must be >=0 (got " + v + ")");
-    }
-    v *= 1024 * 1024;
-    this.maxCFSSegmentSize = (v > Long.MAX_VALUE) ? Long.MAX_VALUE : (long) v;
-    return this;
   }
 }

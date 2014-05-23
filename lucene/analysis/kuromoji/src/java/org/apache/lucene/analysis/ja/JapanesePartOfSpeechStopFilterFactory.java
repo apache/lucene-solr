@@ -58,7 +58,7 @@ public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory im
     stopTags = null;
     CharArraySet cas = getWordSet(loader, stopTagFiles, false);
     if (cas != null) {
-      stopTags = new HashSet<String>();
+      stopTags = new HashSet<>();
       for (Object element : cas) {
         char chars[] = (char[]) element;
         stopTags.add(new String(chars));

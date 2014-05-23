@@ -175,16 +175,16 @@ class DocHelper {
     largeLazyField//placeholder for large field, since this is null.  It must always be last
   };
 
-  public static Map<String,IndexableField> all     =new HashMap<String,IndexableField>();
-  public static Map<String,IndexableField> indexed =new HashMap<String,IndexableField>();
-  public static Map<String,IndexableField> stored  =new HashMap<String,IndexableField>();
-  public static Map<String,IndexableField> unstored=new HashMap<String,IndexableField>();
-  public static Map<String,IndexableField> unindexed=new HashMap<String,IndexableField>();
-  public static Map<String,IndexableField> termvector=new HashMap<String,IndexableField>();
-  public static Map<String,IndexableField> notermvector=new HashMap<String,IndexableField>();
-  public static Map<String,IndexableField> lazy= new HashMap<String,IndexableField>();
-  public static Map<String,IndexableField> noNorms=new HashMap<String,IndexableField>();
-  public static Map<String,IndexableField> noTf=new HashMap<String,IndexableField>();
+  public static Map<String,IndexableField> all     =new HashMap<>();
+  public static Map<String,IndexableField> indexed =new HashMap<>();
+  public static Map<String,IndexableField> stored  =new HashMap<>();
+  public static Map<String,IndexableField> unstored=new HashMap<>();
+  public static Map<String,IndexableField> unindexed=new HashMap<>();
+  public static Map<String,IndexableField> termvector=new HashMap<>();
+  public static Map<String,IndexableField> notermvector=new HashMap<>();
+  public static Map<String,IndexableField> lazy= new HashMap<>();
+  public static Map<String,IndexableField> noNorms=new HashMap<>();
+  public static Map<String,IndexableField> noTf=new HashMap<>();
 
   static {
     //Initialize the large Lazy Field
@@ -227,7 +227,7 @@ class DocHelper {
 
   static
   {
-    nameValues = new HashMap<String,Object>();
+    nameValues = new HashMap<>();
     nameValues.put(TEXT_FIELD_1_KEY, FIELD_1_TEXT);
     nameValues.put(TEXT_FIELD_2_KEY, FIELD_2_TEXT);
     nameValues.put(TEXT_FIELD_3_KEY, FIELD_3_TEXT);
@@ -259,7 +259,7 @@ class DocHelper {
    * named "test"; returns the SegmentInfo describing the new
    * segment 
    */ 
-  public static SegmentInfoPerCommit writeDoc(Random random, Directory dir, Document doc) throws IOException
+  public static SegmentCommitInfo writeDoc(Random random, Directory dir, Document doc) throws IOException
   {
     return writeDoc(random, dir, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false), null, doc);
   }
@@ -269,14 +269,14 @@ class DocHelper {
    * and the similarity score; returns the SegmentInfo
    * describing the new segment
    */ 
-  public static SegmentInfoPerCommit writeDoc(Random random, Directory dir, Analyzer analyzer, Similarity similarity, Document doc) throws IOException {
+  public static SegmentCommitInfo writeDoc(Random random, Directory dir, Analyzer analyzer, Similarity similarity, Document doc) throws IOException {
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig( /* LuceneTestCase.newIndexWriterConfig(random, */ 
         TEST_VERSION_CURRENT, analyzer).setSimilarity(similarity == null ? IndexSearcher.getDefaultSimilarity() : similarity));
-    //writer.setUseCompoundFile(false);
+    //writer.setNoCFSRatio(0.0);
     writer.addDocument(doc);
     writer.commit();
-    SegmentInfoPerCommit info = writer.newestSegment();
-    writer.close();
+    SegmentCommitInfo info = writer.newestSegment();
+    writer.shutdown();
     return info;
   }
 

@@ -45,6 +45,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 
@@ -63,9 +64,9 @@ public class TestParser extends LuceneTestCase {
     builder = new CorePlusExtensionsParser("contents", analyzer);
 
     BufferedReader d = new BufferedReader(new InputStreamReader(
-        TestParser.class.getResourceAsStream("reuters21578.txt"), "US-ASCII"));
+        TestParser.class.getResourceAsStream("reuters21578.txt"), StandardCharsets.US_ASCII));
     dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(Version.LUCENE_40, analyzer));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     String line = d.readLine();
     while (line != null) {
       int endOfDate = line.indexOf('\t');
@@ -79,7 +80,7 @@ public class TestParser extends LuceneTestCase {
       line = d.readLine();
     }
     d.close();
-    writer.close();
+    writer.shutdown();
     reader = DirectoryReader.open(dir);
     searcher = newSearcher(reader);
 

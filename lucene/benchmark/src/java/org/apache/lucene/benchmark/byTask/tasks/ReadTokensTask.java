@@ -81,7 +81,7 @@ public class ReadTokensTask extends PerfTask {
         continue;
       }
       
-      final TokenStream stream = field.tokenStream(analyzer);
+      final TokenStream stream = field.tokenStream(analyzer, null);
       // reset the TokenStream to the first token
       stream.reset();
 
@@ -90,6 +90,8 @@ public class ReadTokensTask extends PerfTask {
         termAtt.fillBytesRef();
         tokenCount++;
       }
+      stream.end();
+      stream.close();
     }
     totalTokenCount += tokenCount;
     return tokenCount;

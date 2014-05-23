@@ -33,7 +33,7 @@ package org.apache.solr.schema;
  * @see Double
  * @see <a href="http://java.sun.com/docs/books/jls/third_edition/html/typesValues.html#4.2.3">Java Language Specification, s4.2.3</a>
  */
-public class TrieDoubleField extends TrieField {
+public class TrieDoubleField extends TrieField implements DoubleValueFieldType {
   {
     type=TrieTypes.DOUBLE;
   }

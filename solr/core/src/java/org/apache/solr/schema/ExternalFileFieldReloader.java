@@ -51,7 +51,7 @@ import java.util.List;
 public class ExternalFileFieldReloader extends AbstractSolrEventListener {
 
   private String datadir;
-  private List<FileFloatSource> fieldSources = new ArrayList<FileFloatSource>();
+  private List<FileFloatSource> fieldSources = new ArrayList<>();
 
   private static final Logger log = LoggerFactory.getLogger(ExternalFileFieldReloader.class);
 

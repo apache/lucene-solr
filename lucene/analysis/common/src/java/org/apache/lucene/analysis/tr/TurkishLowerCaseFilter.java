@@ -57,7 +57,7 @@ public final class TurkishLowerCaseFilter extends TokenFilter {
       final char[] buffer = termAtt.buffer();
       int length = termAtt.length();
       for (int i = 0; i < length;) {
-        final int ch = Character.codePointAt(buffer, i);
+        final int ch = Character.codePointAt(buffer, i, length);
     
         iOrAfter = (ch == LATIN_CAPITAL_LETTER_I || 
             (iOrAfter && Character.getType(ch) == Character.NON_SPACING_MARK));
@@ -100,7 +100,7 @@ public final class TurkishLowerCaseFilter extends TokenFilter {
    */
   private boolean isBeforeDot(char s[], int pos, int len) {
     for (int i = pos; i < len;) {
-      final int ch = Character.codePointAt(s, i);
+      final int ch = Character.codePointAt(s, i, len);
       if (Character.getType(ch) != Character.NON_SPACING_MARK)
         return false;
       if (ch == COMBINING_DOT_ABOVE)

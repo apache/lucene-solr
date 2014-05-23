@@ -17,7 +17,6 @@ package org.apache.lucene.search.highlight.custom;
  * limitations under the License.
  */
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -89,8 +88,7 @@ public class HighlightCustomQueryTest extends LuceneTestCase {
   private String highlightField(Query query, String fieldName,
       String text) throws IOException, InvalidTokenOffsetsException {
     TokenStream tokenStream = new MockAnalyzer(random(), MockTokenizer.SIMPLE,
-        true, MockTokenFilter.ENGLISH_STOPSET).tokenStream(fieldName,
-        new StringReader(text));
+        true, MockTokenFilter.ENGLISH_STOPSET).tokenStream(fieldName, text);
     // Assuming "<B>", "</B>" used to highlight
     SimpleHTMLFormatter formatter = new SimpleHTMLFormatter();
     MyQueryScorer scorer = new MyQueryScorer(query, fieldName, FIELD_NAME);

@@ -59,6 +59,15 @@ final class ScriptIterator {
   private int scriptStart;
   private int scriptLimit;
   private int scriptCode;
+  
+  private final boolean combineCJ;
+  
+  /**
+   * @param combineCJ if true: Han,Hiragana,Katakana will all return as {@link UScript#JAPANESE}
+   */
+  ScriptIterator(boolean combineCJ) {
+    this.combineCJ = combineCJ;
+  }
 
   /**
    * Get the start of this script run
@@ -162,10 +171,24 @@ final class ScriptIterator {
   }
 
   /** fast version of UScript.getScript(). Basic Latin is an array lookup */
-  private static int getScript(int codepoint) {
-    if (0 <= codepoint && codepoint < basicLatin.length)
+  private int getScript(int codepoint) {
+    if (0 <= codepoint && codepoint < basicLatin.length) {
       return basicLatin[codepoint];
-    else
-      return UScript.getScript(codepoint);
+    } else {
+      int script = UScript.getScript(codepoint);
+      if (combineCJ) {
+        if (script == UScript.HAN || script == UScript.HIRAGANA || script == UScript.KATAKANA) {
+          return UScript.JAPANESE;
+        } else if (codepoint >= 0xFF10 && codepoint <= 0xFF19) {
+          // when using CJK dictionary breaking, don't let full width numbers go to it, otherwise
+          // they are treated as punctuation. we currently have no cleaner way to fix this!
+          return UScript.LATIN; 
+        } else {
+          return script;
+        }
+      } else {
+        return script;
+      }
+    }
   }
 }

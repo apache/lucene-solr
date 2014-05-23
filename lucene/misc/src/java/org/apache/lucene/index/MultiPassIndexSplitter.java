@@ -103,7 +103,7 @@ public class MultiPassIndexSplitter {
       // pass the subreaders directly, as our wrapper's numDocs/hasDeletetions are not up-to-date
       final List<? extends FakeDeleteAtomicIndexReader> sr = input.getSequentialSubReaders();
       w.addIndexes(sr.toArray(new IndexReader[sr.size()])); // TODO: maybe take List<IR> here?
-      w.close();
+      w.shutdown();
     }
     System.err.println("Done.");
   }
@@ -118,7 +118,7 @@ public class MultiPassIndexSplitter {
       System.err.println("\t-seq\tsequential docid-range split (default is round-robin)");
       System.exit(-1);
     }
-    ArrayList<IndexReader> indexes = new ArrayList<IndexReader>();
+    ArrayList<IndexReader> indexes = new ArrayList<>();
     String outDir = null;
     int numParts = -1;
     boolean seq = false;

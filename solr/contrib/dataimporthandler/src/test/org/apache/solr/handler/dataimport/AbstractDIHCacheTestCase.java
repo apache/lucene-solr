@@ -42,7 +42,7 @@ public class AbstractDIHCacheTestCase {
   protected static final Date Feb21_2011 = new Date(1298268000000l);
   protected final String[] fieldTypes = { "INTEGER", "BIGDECIMAL", "STRING", "STRING",   "FLOAT",   "DATE",   "CLOB" };
   protected final String[] fieldNames = { "a_id",    "PI",         "letter", "examples", "a_float", "a_date", "DESCRIPTION" };
-  protected List<ControlData> data = new ArrayList<ControlData>();
+  protected List<ControlData> data = new ArrayList<>();
   protected Clob APPLE = null;
 
   @Before
@@ -55,7 +55,7 @@ public class AbstractDIHCacheTestCase {
 
     // The first row needs to have all non-null fields,
     // otherwise we would have to always send the fieldTypes & fieldNames as CacheProperties when building.
-    data = new ArrayList<ControlData>();
+    data = new ArrayList<>();
     data.add(new ControlData(new Object[] { new Integer(1), new BigDecimal(Math.PI), "A", "Apple", new Float(1.11), Feb21_2011, APPLE }));
     data.add(new ControlData(new Object[] { new Integer(2), new BigDecimal(Math.PI), "B", "Ball", new Float(2.22), Feb21_2011, null }));
     data.add(new ControlData(new Object[] { new Integer(4), new BigDecimal(Math.PI), "D", "Dog", new Float(4.44), Feb21_2011, null }));
@@ -102,7 +102,7 @@ public class AbstractDIHCacheTestCase {
   }
 
   protected List<ControlData> extractDataInKeyOrder(DIHCache cache, String[] theFieldNames) {
-    List<Object[]> data = new ArrayList<Object[]>();
+    List<Object[]> data = new ArrayList<>();
     Iterator<Map<String, Object>> cacheIter = cache.iterator();
     while (cacheIter.hasNext()) {
       data.add(mapToObjectArray(cacheIter.next(), theFieldNames));
@@ -114,7 +114,7 @@ public class AbstractDIHCacheTestCase {
   //It will look for id's sequentially until one is skipped, then will stop.
   protected List<ControlData> extractDataByKeyLookup(DIHCache cache, String[] theFieldNames) {
     int recId = 1;
-    List<Object[]> data = new ArrayList<Object[]>();
+    List<Object[]> data = new ArrayList<>();
     while (true) {
       Iterator<Map<String, Object>> listORecs = cache.iterator(recId);
       if (listORecs == null) {
@@ -130,7 +130,7 @@ public class AbstractDIHCacheTestCase {
   }
 
   protected List<ControlData> listToControlData(List<Object[]> data) {
-    List<ControlData> returnData = new ArrayList<ControlData>(data.size());
+    List<ControlData> returnData = new ArrayList<>(data.size());
     for (int i = 0; i < data.size(); i++) {
       returnData.add(new ControlData(data.get(i)));
     }
@@ -147,7 +147,7 @@ public class AbstractDIHCacheTestCase {
 
   protected void compareData(List<ControlData> theControl, List<ControlData> test) {
     // The test data should come back primarily in Key order and secondarily in insertion order.
-    List<ControlData> control = new ArrayList<ControlData>(theControl);
+    List<ControlData> control = new ArrayList<>(theControl);
     Collections.sort(control);
 
     StringBuilder errors = new StringBuilder();
@@ -189,9 +189,9 @@ public class AbstractDIHCacheTestCase {
   protected Map<String, Object> controlDataToMap(ControlData cd, String[] theFieldNames, boolean keepOrdered) {
     Map<String, Object> rec = null;
     if (keepOrdered) {
-      rec = new LinkedHashMap<String, Object>();
+      rec = new LinkedHashMap<>();
     } else {
-      rec = new HashMap<String, Object>();
+      rec = new HashMap<>();
     }
     for (int i = 0; i < cd.data.length; i++) {
       String fieldName = theFieldNames[i];

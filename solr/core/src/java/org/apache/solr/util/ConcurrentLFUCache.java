@@ -62,7 +62,7 @@ public class ConcurrentLFUCache<K, V> {
     if (upperWaterMark < 1) throw new IllegalArgumentException("upperWaterMark must be > 0");
     if (lowerWaterMark >= upperWaterMark)
       throw new IllegalArgumentException("lowerWaterMark must be  < upperWaterMark");
-    map = new ConcurrentHashMap<Object, CacheEntry<K, V>>(initialSize);
+    map = new ConcurrentHashMap<>(initialSize);
     newThreadForCleanup = runNewThreadForCleanup;
     this.upperWaterMark = upperWaterMark;
     this.lowerWaterMark = lowerWaterMark;
@@ -108,7 +108,7 @@ public class ConcurrentLFUCache<K, V> {
 
   public V put(K key, V val) {
     if (val == null) return null;
-    CacheEntry<K, V> e = new CacheEntry<K, V>(key, val, stats.accessCounter.incrementAndGet());
+    CacheEntry<K, V> e = new CacheEntry<>(key, val, stats.accessCounter.incrementAndGet());
     CacheEntry<K, V> oldCacheEntry = map.put(key, e);
     int currentSize;
     if (oldCacheEntry == null) {
@@ -171,7 +171,7 @@ public class ConcurrentLFUCache<K, V> {
 
       int wantToRemove = sz - lowerWaterMark;
 
-      TreeSet<CacheEntry> tree = new TreeSet<CacheEntry>();
+      TreeSet<CacheEntry> tree = new TreeSet<>();
 
       for (CacheEntry<K, V> ce : map.values()) {
         // set hitsCopy to avoid later Atomic reads
@@ -223,10 +223,10 @@ public class ConcurrentLFUCache<K, V> {
    * @return a LinkedHashMap containing 'n' or less than 'n' entries
    */
   public Map<K, V> getLeastUsedItems(int n) {
-    Map<K, V> result = new LinkedHashMap<K, V>();
+    Map<K, V> result = new LinkedHashMap<>();
     if (n <= 0)
       return result;
-    TreeSet<CacheEntry> tree = new TreeSet<CacheEntry>();
+    TreeSet<CacheEntry> tree = new TreeSet<>();
     // we need to grab the lock since we are changing the copy variables
     markAndSweepLock.lock();
     try {
@@ -267,10 +267,10 @@ public class ConcurrentLFUCache<K, V> {
    * @return a LinkedHashMap containing 'n' or less than 'n' entries
    */
   public Map<K, V> getMostUsedItems(int n) {
-    Map<K, V> result = new LinkedHashMap<K, V>();
+    Map<K, V> result = new LinkedHashMap<>();
     if (n <= 0)
       return result;
-    TreeSet<CacheEntry> tree = new TreeSet<CacheEntry>();
+    TreeSet<CacheEntry> tree = new TreeSet<>();
     // we need to grab the lock since we are changing the copy variables
     markAndSweepLock.lock();
     try {
@@ -427,7 +427,7 @@ public class ConcurrentLFUCache<K, V> {
     private boolean stop = false;
 
     public CleanupThread(ConcurrentLFUCache c) {
-      cache = new WeakReference<ConcurrentLFUCache>(c);
+      cache = new WeakReference<>(c);
     }
 
     @Override

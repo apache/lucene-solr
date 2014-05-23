@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 
 import org.apache.lucene.analysis.*;
@@ -58,8 +59,8 @@ public class TestPositionIncrement extends LuceneTestCase {
   public void testSetPosition() throws Exception {
     Analyzer analyzer = new Analyzer() {
       @Override
-      public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        return new TokenStreamComponents(new Tokenizer(reader) {
+      public TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new Tokenizer() {
           // TODO: use CannedTokenStream
           private final String[] TOKENS = {"1", "2", "3", "4", "5"};
           private final int[] INCREMENTS = {1, 2, 1, 0, 1};
@@ -95,7 +96,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     d.add(newTextField("field", "bogus", Field.Store.YES));
     writer.addDocument(d);
     IndexReader reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     
 
     IndexSearcher searcher = newSearcher(reader);
@@ -249,7 +250,7 @@ public class TestPositionIncrement extends LuceneTestCase {
       for (byte[] bytes : payloads) {
         count++;
         if (VERBOSE) {
-          System.out.println("  payload: " + new String(bytes, "UTF-8"));
+          System.out.println("  payload: " + new String(bytes, StandardCharsets.UTF_8));
         }
       }
     }
@@ -276,13 +277,13 @@ public class TestPositionIncrement extends LuceneTestCase {
     Collection<byte[]> pls = psu.getPayloadsForQuery(snq);
     count = pls.size();
     for (byte[] bytes : pls) {
-      String s = new String(bytes, "UTF-8");
+      String s = new String(bytes, StandardCharsets.UTF_8);
       //System.out.println(s);
       sawZero |= s.equals("pos: 0");
     }
     assertEquals(5, count);
     assertTrue(sawZero);
-    writer.close();
+    writer.shutdown();
     is.getIndexReader().close();
     dir.close();
   }

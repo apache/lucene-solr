@@ -22,14 +22,13 @@ import java.io.FileInputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.IOException;
-
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -54,6 +53,9 @@ public class LicenseCheckTask extends Task {
   private static final int CHECKSUM_BUFFER_SIZE = 8 * 1024;
   private static final int CHECKSUM_BYTE_MASK = 0xFF;
 
+  private boolean skipSnapshotsChecksum;
+  private boolean skipChecksum;
+  
   /**
    * All JAR files to check.
    */
@@ -103,6 +105,14 @@ public class LicenseCheckTask extends Task {
   public void setLicenseDirectory(File file) {
     licenseDirectory = file;
   }
+  
+  public void setSkipSnapshotsChecksum(boolean skipSnapshotsChecksum) {
+    this.skipSnapshotsChecksum = skipSnapshotsChecksum;
+  }
+  
+  public void setSkipChecksum(boolean skipChecksum) {
+    this.skipChecksum = skipChecksum;
+  }
 
   /**
    * Execute the task.
@@ -111,6 +121,12 @@ public class LicenseCheckTask extends Task {
   public void execute() throws BuildException {
     if (licenseMapper == null) {
       throw new BuildException("Expected an embedded <licenseMapper>.");
+    }
+
+    if (skipChecksum) {
+      log("Skipping checksum verification for dependencies", Project.MSG_INFO);
+    } else if (skipSnapshotsChecksum) {
+      log("Skipping checksum for SNAPSHOT dependencies", Project.MSG_INFO);
     }
 
     jarResources.setProject(getProject());
@@ -160,54 +176,66 @@ public class LicenseCheckTask extends Task {
    */
   private boolean checkJarFile(File jarFile) {
     log("Scanning: " + jarFile.getPath(), verboseLevel);
-
-    // validate the jar matches against our expected hash
-    final File checksumFile = new File(licenseDirectory, 
-                                       jarFile.getName() + "." + CHECKSUM_TYPE);
-    if (! (checksumFile.exists() && checksumFile.canRead()) ) {
-      log("MISSING " +CHECKSUM_TYPE+ " checksum file for: " + jarFile.getPath(), Project.MSG_ERR);
-      this.failures = true;
-      return false;
-    } else {
-      final String expectedChecksum = readChecksumFile(checksumFile);
-      try {
-        final MessageDigest md = MessageDigest.getInstance(CHECKSUM_TYPE);
-        byte[] buf = new byte[CHECKSUM_BUFFER_SIZE];
-        try {
-          FileInputStream fis = new FileInputStream(jarFile);
-          try {
-            DigestInputStream dis = new DigestInputStream(fis, md);
-            try {
-              while (dis.read(buf, 0, CHECKSUM_BUFFER_SIZE) != -1) {
-                // NOOP
-              }
-            } finally {
-              dis.close();
-            }
-          } finally {
-            fis.close();
-          }
-        } catch (IOException ioe) {
-          throw new BuildException("IO error computing checksum of file: " + jarFile, ioe);
-        }
-        final byte[] checksumBytes = md.digest();
-        final String checksum = createChecksumString(checksumBytes);
-        if ( ! checksum.equals(expectedChecksum) ) {
-          log("CHECKSUM FAILED for " + jarFile.getPath() + 
-              " (expected: \"" + expectedChecksum + "\" was: \"" + checksum + "\")", 
-              Project.MSG_ERR);
+    
+    if (!skipChecksum) {
+      if (!skipSnapshotsChecksum || !jarFile.getName().contains("-SNAPSHOT")) {
+        // validate the jar matches against our expected hash
+        final File checksumFile = new File(licenseDirectory, jarFile.getName()
+            + "." + CHECKSUM_TYPE);
+        if (!(checksumFile.exists() && checksumFile.canRead())) {
+          log("MISSING " + CHECKSUM_TYPE + " checksum file for: "
+              + jarFile.getPath(), Project.MSG_ERR);
+          log("EXPECTED " + CHECKSUM_TYPE + " checksum file : "
+              + checksumFile.getPath(), Project.MSG_ERR);
           this.failures = true;
           return false;
+        } else {
+          final String expectedChecksum = readChecksumFile(checksumFile);
+          try {
+            final MessageDigest md = MessageDigest.getInstance(CHECKSUM_TYPE);
+            byte[] buf = new byte[CHECKSUM_BUFFER_SIZE];
+            try {
+              FileInputStream fis = new FileInputStream(jarFile);
+              try {
+                DigestInputStream dis = new DigestInputStream(fis, md);
+                try {
+                  while (dis.read(buf, 0, CHECKSUM_BUFFER_SIZE) != -1) {
+                    // NOOP
+                  }
+                } finally {
+                  dis.close();
+                }
+              } finally {
+                fis.close();
+              }
+            } catch (IOException ioe) {
+              throw new BuildException("IO error computing checksum of file: "
+                  + jarFile, ioe);
+            }
+            final byte[] checksumBytes = md.digest();
+            final String checksum = createChecksumString(checksumBytes);
+            if (!checksum.equals(expectedChecksum)) {
+              log("CHECKSUM FAILED for " + jarFile.getPath() + " (expected: \""
+                  + expectedChecksum + "\" was: \"" + checksum + "\")",
+                  Project.MSG_ERR);
+              this.failures = true;
+              return false;
+            }
+            
+          } catch (NoSuchAlgorithmException ae) {
+            throw new BuildException("Digest type " + CHECKSUM_TYPE
+                + " not supported by your JVM", ae);
+          }
         }
-
-      } catch (NoSuchAlgorithmException ae) {
-        throw new BuildException("Digest type " + CHECKSUM_TYPE + " not supported by your JVM", ae);
+      } else if (skipSnapshotsChecksum) {
+        log("Skipping jar because it is a SNAPSHOT : "
+            + jarFile.getAbsolutePath(), Project.MSG_INFO);
       }
     }
     
     // Get the expected license path base from the mapper and search for license files.
-    Map<File, LicenseType> foundLicenses = new LinkedHashMap<File, LicenseType>();
-    List<File> expectedLocations = new ArrayList<File>();
+    Map<File, LicenseType> foundLicenses = new LinkedHashMap<>();
+    List<File> expectedLocations = new ArrayList<>();
 outer:
     for (String mappedPath : licenseMapper.mapFileName(jarFile.getName())) {
       for (LicenseType licenseType : LicenseType.values()) {
@@ -273,7 +301,7 @@ outer:
     BufferedReader reader = null;
     try {
       reader = new BufferedReader(new InputStreamReader
-                                  (new FileInputStream(f), "UTF-8"));
+                                  (new FileInputStream(f), StandardCharsets.UTF_8));
       try {
         String checksum = reader.readLine();
         if (null == checksum || 0 == checksum.length()) {

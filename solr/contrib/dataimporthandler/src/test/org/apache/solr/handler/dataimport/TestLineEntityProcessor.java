@@ -62,7 +62,7 @@ public class TestLineEntityProcessor extends AbstractDataImportHandlerTestCase {
 
     /// call the entity processor to the list of lines
     if (VERBOSE) System.out.print("\n");
-    List<String> fList = new ArrayList<String>();
+    List<String> fList = new ArrayList<>();
     while (true) {
       Map<String, Object> f = ep.nextRow();
       if (f == null) break;
@@ -101,7 +101,7 @@ public class TestLineEntityProcessor extends AbstractDataImportHandlerTestCase {
     ep.init(c);
 
     /// call the entity processor to the list of lines
-    List<String> fList = new ArrayList<String>();
+    List<String> fList = new ArrayList<>();
     while (true) {
       Map<String, Object> f = ep.nextRow();
       if (f == null) break;
@@ -139,7 +139,7 @@ public class TestLineEntityProcessor extends AbstractDataImportHandlerTestCase {
     ep.init(c);
 
     /// call the entity processor to walk the directory
-    List<String> fList = new ArrayList<String>();
+    List<String> fList = new ArrayList<>();
     while (true) {
       Map<String, Object> f = ep.nextRow();
       if (f == null) break;
@@ -175,7 +175,7 @@ public class TestLineEntityProcessor extends AbstractDataImportHandlerTestCase {
     ep.init(c);
 
     /// call the entity processor to walk the directory
-    List<String> fList = new ArrayList<String>();
+    List<String> fList = new ArrayList<>();
     while (true) {
       Map<String, Object> f = ep.nextRow();
       if (f == null) break;
@@ -195,7 +195,7 @@ public class TestLineEntityProcessor extends AbstractDataImportHandlerTestCase {
           String rw,  // DIH regex attribute 'replaceWith'
           String gn    // DIH regex attribute 'groupNames'
   ) {
-    HashMap<String, String> vals = new HashMap<String, String>();
+    HashMap<String, String> vals = new HashMap<>();
     vals.put("column", col);
     vals.put("type", type);
     vals.put("sourceColName", srcCol);

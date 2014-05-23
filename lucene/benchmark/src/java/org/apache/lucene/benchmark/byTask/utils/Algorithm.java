@@ -293,7 +293,7 @@ public class Algorithm {
     if (alts==null) {
       return new String[]{ dfltPkg };
     }
-    ArrayList<String> pkgs = new ArrayList<String>();
+    ArrayList<String> pkgs = new ArrayList<>();
     pkgs.add(dfltPkg);
     for (String alt : alts.split(",")) {
       pkgs.add(alt);
@@ -339,7 +339,7 @@ public class Algorithm {
    * @return all tasks participating in this algorithm.
    */
   public ArrayList<PerfTask> extractTasks() {
-    ArrayList<PerfTask> res = new ArrayList<PerfTask>();
+    ArrayList<PerfTask> res = new ArrayList<>();
     extractTasks(res, sequence);
     return res;
   }

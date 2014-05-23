@@ -27,7 +27,7 @@ import org.junit.Test;
 
 public class MultiCollectorTest extends LuceneTestCase {
 
-  private static class DummyCollector extends Collector {
+  private static class DummyCollector extends SimpleCollector {
 
     boolean acceptsDocsOutOfOrderCalled = false;
     boolean collectCalled = false;
@@ -46,7 +46,7 @@ public class MultiCollectorTest extends LuceneTestCase {
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
       setNextReaderCalled = true;
     }
 
@@ -71,10 +71,11 @@ public class MultiCollectorTest extends LuceneTestCase {
     // doesn't, an NPE would be thrown.
     Collector c = MultiCollector.wrap(new DummyCollector(), null, new DummyCollector());
     assertTrue(c instanceof MultiCollector);
-    assertTrue(c.acceptsDocsOutOfOrder());
-    c.collect(1);
-    c.setNextReader(null);
-    c.setScorer(null);
+    final LeafCollector ac = c.getLeafCollector(null);
+    assertTrue(ac.acceptsDocsOutOfOrder());
+    ac.collect(1);
+    c.getLeafCollector(null);
+    c.getLeafCollector(null).setScorer(null);
   }
 
   @Test
@@ -93,10 +94,11 @@ public class MultiCollectorTest extends LuceneTestCase {
     // doesn't, an NPE would be thrown.
     DummyCollector[] dcs = new DummyCollector[] { new DummyCollector(), new DummyCollector() };
     Collector c = MultiCollector.wrap(dcs);
-    assertTrue(c.acceptsDocsOutOfOrder());
-    c.collect(1);
-    c.setNextReader(null);
-    c.setScorer(null);
+    LeafCollector ac = c.getLeafCollector(null);
+    assertTrue(ac.acceptsDocsOutOfOrder());
+    ac.collect(1);
+    ac = c.getLeafCollector(null);
+    ac.setScorer(null);
 
     for (DummyCollector dc : dcs) {
       assertTrue(dc.acceptsDocsOutOfOrderCalled);

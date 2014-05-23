@@ -37,8 +37,8 @@ public class TestItalianAnalyzer extends BaseTokenStreamTestCase {
   public void testBasics() throws IOException {
     Analyzer a = new ItalianAnalyzer(TEST_VERSION_CURRENT);
     // stemming
-    checkOneTermReuse(a, "abbandonata", "abbandonat");
-    checkOneTermReuse(a, "abbandonati", "abbandonat");
+    checkOneTerm(a, "abbandonata", "abbandonat");
+    checkOneTerm(a, "abbandonati", "abbandonat");
     // stopword
     assertAnalyzesTo(a, "dallo", new String[] {});
   }
@@ -48,8 +48,8 @@ public class TestItalianAnalyzer extends BaseTokenStreamTestCase {
     CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("abbandonata"), false);
     Analyzer a = new ItalianAnalyzer(TEST_VERSION_CURRENT, 
         ItalianAnalyzer.getDefaultStopSet(), exclusionSet);
-    checkOneTermReuse(a, "abbandonata", "abbandonata");
-    checkOneTermReuse(a, "abbandonati", "abbandonat");
+    checkOneTerm(a, "abbandonata", "abbandonata");
+    checkOneTerm(a, "abbandonati", "abbandonat");
   }
   
   /** blast some random strings through the analyzer */

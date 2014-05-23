@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.util;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 /** Fake resource loader for tests: works if you want to fake reading a single file */
 public class StringMockResourceLoader implements ResourceLoader {
@@ -50,6 +51,6 @@ public class StringMockResourceLoader implements ResourceLoader {
 
   @Override
   public InputStream openResource(String resource) throws IOException {
-    return new ByteArrayInputStream(text.getBytes("UTF-8"));
+    return new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8));
   }
 }

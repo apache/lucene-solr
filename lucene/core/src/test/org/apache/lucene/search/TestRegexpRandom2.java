@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -37,8 +38,8 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -62,15 +63,18 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     fieldName = random().nextBoolean() ? "field" : ""; // sometimes use an empty string as field name
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
-        .setMaxBufferedDocs(_TestUtil.nextInt(random(), 50, 1000)));
+        .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
     Document doc = new Document();
     Field field = newStringField(fieldName, "", Field.Store.NO);
     doc.add(field);
-    List<String> terms = new ArrayList<String>();
+    Field dvField = new SortedDocValuesField(fieldName, new BytesRef());
+    doc.add(dvField);
+    List<String> terms = new ArrayList<>();
     int num = atLeast(200);
     for (int i = 0; i < num; i++) {
-      String s = _TestUtil.randomUnicodeString(random());
+      String s = TestUtil.randomUnicodeString(random());
       field.setStringValue(s);
+      dvField.setBytesValue(new BytesRef(s));
       terms.add(s);
       writer.addDocument(doc);
     }
@@ -87,7 +91,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     reader = writer.getReader();
     searcher1 = newSearcher(reader);
     searcher2 = newSearcher(reader);
-    writer.close();
+    writer.shutdown();
   }
 
   @Override

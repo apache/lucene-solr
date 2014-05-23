@@ -139,7 +139,7 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
     }
     analysisRequest.setQuery(solrParams.get(AnalysisParams.QUERY, solrParams.get(CommonParams.Q)));
 
-    String value = solrParams.get(AnalysisParams.FIELD_VALUE);
+    String value = solrParams.required().get(AnalysisParams.FIELD_VALUE);
 
     Iterable<ContentStream> streams = req.getContentStreams();
     if (streams != null) {
@@ -173,9 +173,9 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
    * @return The analysis breakdown as a named list.
    */
   protected NamedList<NamedList> handleAnalysisRequest(FieldAnalysisRequest request, IndexSchema schema) {
-    NamedList<NamedList> analysisResults = new SimpleOrderedMap<NamedList>();
+    NamedList<NamedList> analysisResults = new SimpleOrderedMap<>();
 
-    NamedList<NamedList> fieldTypeAnalysisResults = new SimpleOrderedMap<NamedList>();
+    NamedList<NamedList> fieldTypeAnalysisResults = new SimpleOrderedMap<>();
     if (request.getFieldTypes() != null)  {
       for (String fieldTypeName : request.getFieldTypes()) {
         FieldType fieldType = schema.getFieldTypes().get(fieldTypeName);
@@ -183,7 +183,7 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
       }
     }
 
-    NamedList<NamedList> fieldNameAnalysisResults = new SimpleOrderedMap<NamedList>();
+    NamedList<NamedList> fieldNameAnalysisResults = new SimpleOrderedMap<>();
     if (request.getFieldNames() != null)  {
       for (String fieldName : request.getFieldNames()) {
         FieldType fieldType = schema.getFieldType(fieldName);
@@ -215,9 +215,9 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
       ? getQueryTokenSet(queryValue, fieldType.getQueryAnalyzer())
       : EMPTY_BYTES_SET;
 
-    NamedList<NamedList> analyzeResults = new SimpleOrderedMap<NamedList>();
+    NamedList<NamedList> analyzeResults = new SimpleOrderedMap<>();
     if (analysisRequest.getFieldValue() != null) {
-      AnalysisContext context = new AnalysisContext(fieldName, fieldType, fieldType.getAnalyzer(), termsToMatch);
+      AnalysisContext context = new AnalysisContext(fieldName, fieldType, fieldType.getIndexAnalyzer(), termsToMatch);
       NamedList analyzedTokens = analyzeValue(analysisRequest.getFieldValue(), context);
       analyzeResults.add("index", analyzedTokens);
     }

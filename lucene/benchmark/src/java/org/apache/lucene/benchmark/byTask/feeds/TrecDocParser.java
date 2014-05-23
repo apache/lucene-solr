@@ -35,7 +35,7 @@ public abstract class TrecDocParser {
   /** trec parser type used for unknown extensions */
   public static final ParsePathType DEFAULT_PATH_TYPE  = ParsePathType.GOV2;
 
-  static final Map<ParsePathType,TrecDocParser> pathType2parser = new HashMap<ParsePathType,TrecDocParser>();
+  static final Map<ParsePathType,TrecDocParser> pathType2parser = new HashMap<>();
   static {
     pathType2parser.put(ParsePathType.GOV2, new TrecGov2Parser());
     pathType2parser.put(ParsePathType.FBIS, new TrecFBISParser());
@@ -44,7 +44,7 @@ public abstract class TrecDocParser {
     pathType2parser.put(ParsePathType.LATIMES, new TrecLATimesParser());
   }
 
-  static final Map<String,ParsePathType> pathName2Type = new HashMap<String,ParsePathType>();
+  static final Map<String,ParsePathType> pathName2Type = new HashMap<>();
   static {
     for (ParsePathType ppt : ParsePathType.values()) {
       pathName2Type.put(ppt.name().toUpperCase(Locale.ROOT),ppt);

@@ -54,7 +54,7 @@ public class DummyCustomParamSpellChecker extends SolrSpellChecker {
 
     // sort the keys to make ordering predictable
     Iterator<String> iterator = options.customParams.getParameterNamesIterator();
-    List<String> lst = new ArrayList<String>();
+    List<String> lst = new ArrayList<>();
     while (iterator.hasNext()) {
       lst.add(iterator.next());
     }

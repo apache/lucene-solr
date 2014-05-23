@@ -78,7 +78,7 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
 
   public void testWaitOptions() throws Exception {
     // SOLR-3903
-    final List<Throwable> failures = new ArrayList<Throwable>();
+    final List<Throwable> failures = new ArrayList<>();
     ConcurrentUpdateSolrServer s = new ConcurrentUpdateSolrServer
       (jetty.getBaseUrl().toString() + "/collection1", 2, 2) {
         @Override

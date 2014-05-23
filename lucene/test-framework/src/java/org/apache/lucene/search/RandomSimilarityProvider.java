@@ -65,7 +65,7 @@ import org.apache.lucene.search.similarities.Similarity;
 public class RandomSimilarityProvider extends PerFieldSimilarityWrapper {
   final DefaultSimilarity defaultSim = new DefaultSimilarity();
   final List<Similarity> knownSims;
-  Map<String,Similarity> previousMappings = new HashMap<String,Similarity>();
+  Map<String,Similarity> previousMappings = new HashMap<>();
   final int perFieldSeed;
   final int coordType; // 0 = no coord, 1 = coord, 2 = crazy coord
   final boolean shouldQueryNorm;
@@ -74,7 +74,7 @@ public class RandomSimilarityProvider extends PerFieldSimilarityWrapper {
     perFieldSeed = random.nextInt();
     coordType = random.nextInt(3);
     shouldQueryNorm = random.nextBoolean();
-    knownSims = new ArrayList<Similarity>(allSims);
+    knownSims = new ArrayList<>(allSims);
     Collections.shuffle(knownSims, random);
   }
   
@@ -103,7 +103,7 @@ public class RandomSimilarityProvider extends PerFieldSimilarityWrapper {
     assert field != null;
     Similarity sim = previousMappings.get(field);
     if (sim == null) {
-      sim = knownSims.get(Math.abs(perFieldSeed ^ field.hashCode()) % knownSims.size());
+      sim = knownSims.get(Math.max(0, Math.abs(perFieldSeed ^ field.hashCode())) % knownSims.size());
       previousMappings.put(field, sim);
     }
     return sim;
@@ -138,7 +138,7 @@ public class RandomSimilarityProvider extends PerFieldSimilarityWrapper {
   };
   static List<Similarity> allSims;
   static {
-    allSims = new ArrayList<Similarity>();
+    allSims = new ArrayList<>();
     allSims.add(new DefaultSimilarity());
     allSims.add(new BM25Similarity());
     for (BasicModel basicModel : BASIC_MODELS) {

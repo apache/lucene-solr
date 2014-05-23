@@ -39,7 +39,7 @@ public class NewAnalyzerTask extends PerfTask {
 
   public NewAnalyzerTask(PerfRunData runData) {
     super(runData);
-    analyzerNames = new ArrayList<String>();
+    analyzerNames = new ArrayList<>();
   }
   
   public static final Analyzer createAnalyzer(String className) throws Exception{

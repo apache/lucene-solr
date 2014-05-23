@@ -33,7 +33,9 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.ThaiWordFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ * @deprecated Use {@link ThaiTokenizerFactory} instead
  */
+@Deprecated
 public class ThaiWordFilterFactory extends TokenFilterFactory {
   
   /** Creates a new ThaiWordFilterFactory */

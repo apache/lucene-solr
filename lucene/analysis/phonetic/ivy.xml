@@ -19,7 +19,7 @@
 <ivy-module version="2.0">
     <info organisation="org.apache.lucene" module="analyzers-phonetic"/>
     <dependencies>
-      <dependency org="commons-codec" name="commons-codec" rev="1.7" transitive="false"/>
+      <dependency org="commons-codec" name="commons-codec" rev="${/commons-codec/commons-codec}" transitive="false"/>
       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
 </ivy-module>

@@ -40,7 +40,7 @@ public class LogDocMergePolicy extends LogMergePolicy {
   }
 
   @Override
-  protected long size(SegmentInfoPerCommit info) throws IOException {
+  protected long size(SegmentCommitInfo info) throws IOException {
     return sizeDocs(info);
   }
 

@@ -26,7 +26,7 @@
   <types>
 
 
-    <fieldtype name="integer" class="solr.IntField" />
+    <fieldtype name="integer" class="solr.TrieIntField" precisionStep="0"/>
 
     <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
     <fieldtype name="stop-one" class="solr.TextField">

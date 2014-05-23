@@ -25,6 +25,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 import com.ibm.icu.text.RuleBasedBreakIterator;
 
@@ -37,7 +38,7 @@ public class RBBIRuleCompiler {
   static String getRules(File ruleFile) throws IOException {
     StringBuilder rules = new StringBuilder();
     InputStream in = new FileInputStream(ruleFile);
-    BufferedReader cin = new BufferedReader(new InputStreamReader(in, "UTF-8"));
+    BufferedReader cin = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
     String line = null;
     while ((line = cin.readLine()) != null) {
       if (!line.startsWith("#"))

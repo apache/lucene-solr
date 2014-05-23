@@ -22,15 +22,21 @@ import java.io.IOException;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.util.LuceneTestCase;
 
 /** Read-write version of {@link Lucene40NormsFormat} for testing */
+@SuppressWarnings("deprecation")
 public class Lucene40RWNormsFormat extends Lucene40NormsFormat {
 
   @Override
   public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
-    String filename = IndexFileNames.segmentFileName(state.segmentInfo.name, 
-                                                     "nrm", 
-                                                     IndexFileNames.COMPOUND_FILE_EXTENSION);
-    return new Lucene40DocValuesWriter(state, filename, Lucene40FieldInfosReader.LEGACY_NORM_TYPE_KEY);
+    if (!LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
+      return super.normsConsumer(state);
+    } else {
+      String filename = IndexFileNames.segmentFileName(state.segmentInfo.name, 
+          "nrm", 
+          IndexFileNames.COMPOUND_FILE_EXTENSION);
+      return new Lucene40DocValuesWriter(state, filename, Lucene40FieldInfosReader.LEGACY_NORM_TYPE_KEY);
+    }
   }
 }

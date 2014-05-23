@@ -25,7 +25,7 @@ import org.apache.lucene.benchmark.byTask.feeds.DocData;
 public class ConsumeContentSourceTask extends PerfTask {
 
   private final ContentSource source;
-  private ThreadLocal<DocData> dd = new ThreadLocal<DocData>();
+  private ThreadLocal<DocData> dd = new ThreadLocal<>();
   
   public ConsumeContentSourceTask(PerfRunData runData) {
     super(runData);

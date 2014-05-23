@@ -17,8 +17,10 @@
 
 <solr>
   <str name="adminHandler">testAdminHandler</str>
+  <str name="collectionsHandler">testCollectionsHandler</str>
   <int name="coreLoadThreads">11</int>
   <str name="coreRootDirectory">${coreRootDirectory:testCoreRootDirectory}</str>
+  <str name="infoHandler">testInfoHandler</str>
   <str name="managementPath">testManagementPath</str>
   <str name="sharedLib">testSharedLib</str>
   <str name="shareSchema">${shareSchema:testShareSchema}</str>
@@ -27,6 +29,8 @@
   <solrcloud>
     <int name="distribUpdateConnTimeout">22</int>
     <int name="distribUpdateSoTimeout">33</int>
+    <int name="maxUpdateConnections">3</int>
+    <int name="maxUpdateConnectionsPerHost">37</int>
     <int name="leaderVoteWait">55</int>
     <str name="host">testHost</str>
     <str name="hostContext">testHostContext</str>

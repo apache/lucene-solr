@@ -63,7 +63,7 @@ public class VersionedFile
           });
           Arrays.sort(names);
           f = new File(dir, names[names.length-1]);
-          oldFiles = new ArrayList<File>();
+          oldFiles = new ArrayList<>();
           for (int i=0; i<names.length-1; i++) {
             oldFiles.add(new File(dir, names[i]));
           }
@@ -88,11 +88,11 @@ public class VersionedFile
     return is;
   }
 
-  private static final Set<File> deleteList = new HashSet<File>();
+  private static final Set<File> deleteList = new HashSet<>();
   private static synchronized void delete(Collection<File> files) {
     synchronized (deleteList) {
       deleteList.addAll(files);
-      List<File> deleted = new ArrayList<File>();
+      List<File> deleted = new ArrayList<>();
       for (File df : deleteList) {
         try {
           df.delete();

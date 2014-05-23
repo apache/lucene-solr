@@ -25,11 +25,11 @@ import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Map.Entry;
 
-import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.ZooKeeperServerMain;
@@ -121,7 +121,7 @@ public class SolrZkServer {
             zkServer.runFromConfig(sc);
           }
           log.info("ZooKeeper Server exited.");
-        } catch (Throwable e) {
+        } catch (Exception e) {
           log.error("ZooKeeper Server ERROR", e);
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
@@ -179,7 +179,7 @@ class SolrZkServerProps extends QuorumPeerConfig {
       Properties cfg = new Properties();
       FileInputStream in = new FileInputStream(configFile);
       try {
-        cfg.load(in);
+        cfg.load(new InputStreamReader(in, StandardCharsets.UTF_8));
       } finally {
         in.close();
       }
@@ -461,7 +461,7 @@ class SolrZkServerProps extends QuorumPeerConfig {
             + " file is missing");
       }
 
-      BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(myIdFile), IOUtils.CHARSET_UTF_8));
+      BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(myIdFile), StandardCharsets.UTF_8));
       String myIdString;
       try {
         myIdString = br.readLine();

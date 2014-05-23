@@ -29,6 +29,8 @@
 
 package org.apache.lucene.util.automaton;
 
+import java.util.Arrays;
+
 /**
  * Finite-state automaton with fast run operation.
  * 
@@ -164,5 +166,31 @@ public abstract class RunAutomaton {
       return transitions[state * points.length + getCharClass(c)];
     else
       return transitions[state * points.length + classmap[c]];
+  }
+
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + initial;
+    result = prime * result + maxInterval;
+    result = prime * result + points.length;
+    result = prime * result + size;
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) return true;
+    if (obj == null) return false;
+    if (getClass() != obj.getClass()) return false;
+    RunAutomaton other = (RunAutomaton) obj;
+    if (initial != other.initial) return false;
+    if (maxInterval != other.maxInterval) return false;
+    if (size != other.size) return false;
+    if (!Arrays.equals(points, other.points)) return false;
+    if (!Arrays.equals(accept, other.accept)) return false;
+    if (!Arrays.equals(transitions, other.transitions)) return false;
+    return true;
   }
 }

@@ -36,9 +36,7 @@ abstract public class SolrExampleTestBase extends AbstractSolrTestCase
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    if (dataDir == null) {
-      createTempDir();
-    }
+
   }
  
   @Override
@@ -49,7 +47,7 @@ abstract public class SolrExampleTestBase extends AbstractSolrTestCase
     
     // this sets the property for jetty starting SolrDispatchFilter
     System.setProperty( "solr.solr.home", this.getSolrHome() ); 
-    System.setProperty( "solr.data.dir", this.dataDir.getCanonicalPath() ); 
+    System.setProperty( "solr.data.dir", this.initCoreDataDir.getCanonicalPath() ); 
   }
   
   /**

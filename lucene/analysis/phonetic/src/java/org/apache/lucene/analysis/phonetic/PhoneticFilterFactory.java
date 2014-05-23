@@ -73,7 +73,7 @@ public class PhoneticFilterFactory extends TokenFilterFactory implements Resourc
   private static final String PACKAGE_CONTAINING_ENCODERS = "org.apache.commons.codec.language.";
 
   //Effectively constants; uppercase keys
-  private static final Map<String, Class<? extends Encoder>> registry = new HashMap<String, Class<? extends Encoder>>(6);
+  private static final Map<String, Class<? extends Encoder>> registry = new HashMap<>(6);
 
   static {
     registry.put("DoubleMetaphone".toUpperCase(Locale.ROOT), DoubleMetaphone.class);

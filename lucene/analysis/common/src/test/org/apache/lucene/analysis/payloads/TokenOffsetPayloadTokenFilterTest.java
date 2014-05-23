@@ -23,14 +23,13 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
-import java.io.StringReader;
 
 public class TokenOffsetPayloadTokenFilterTest extends BaseTokenStreamTestCase {
 
   public void test() throws IOException {
     String test = "The quick red fox jumped over the lazy brown dogs";
 
-    TokenOffsetPayloadTokenFilter nptf = new TokenOffsetPayloadTokenFilter(new MockTokenizer(new StringReader(test), MockTokenizer.WHITESPACE, false));
+    TokenOffsetPayloadTokenFilter nptf = new TokenOffsetPayloadTokenFilter(whitespaceMockTokenizer(test));
     int count = 0;
     PayloadAttribute payloadAtt = nptf.getAttribute(PayloadAttribute.class);
     OffsetAttribute offsetAtt = nptf.getAttribute(OffsetAttribute.class);

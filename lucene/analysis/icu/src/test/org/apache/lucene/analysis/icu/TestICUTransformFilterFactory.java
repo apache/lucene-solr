@@ -32,10 +32,10 @@ public class TestICUTransformFilterFactory extends BaseTokenStreamTestCase {
   /** ensure the transform is working */
   public void test() throws Exception {
     Reader reader = new StringReader("簡化字");
-    Map<String,String> args = new HashMap<String,String>();
+    Map<String,String> args = new HashMap<>();
     args.put("id", "Traditional-Simplified");
     ICUTransformFilterFactory factory = new ICUTransformFilterFactory(args);
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = factory.create(stream);
     assertTokenStreamContents(stream, new String[] { "简化字" });
   }
@@ -44,10 +44,10 @@ public class TestICUTransformFilterFactory extends BaseTokenStreamTestCase {
   public void testForwardDirection() throws Exception {
     // forward
     Reader reader = new StringReader("Российская Федерация");
-    Map<String,String> args = new HashMap<String,String>();
+    Map<String,String> args = new HashMap<>();
     args.put("id", "Cyrillic-Latin");
     ICUTransformFilterFactory factory = new ICUTransformFilterFactory(args);
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = factory.create(stream);
     assertTokenStreamContents(stream, new String[] { "Rossijskaâ",  "Federaciâ" });
   }
@@ -55,11 +55,11 @@ public class TestICUTransformFilterFactory extends BaseTokenStreamTestCase {
   public void testReverseDirection() throws Exception {
     // backward (invokes Latin-Cyrillic)
     Reader reader = new StringReader("Rossijskaâ Federaciâ");
-    Map<String,String> args = new HashMap<String,String>();
+    Map<String,String> args = new HashMap<>();
     args.put("id", "Cyrillic-Latin");
     args.put("direction", "reverse");
     ICUTransformFilterFactory factory = new ICUTransformFilterFactory(args);
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = factory.create(stream);
     assertTokenStreamContents(stream, new String[] { "Российская", "Федерация" });
   }

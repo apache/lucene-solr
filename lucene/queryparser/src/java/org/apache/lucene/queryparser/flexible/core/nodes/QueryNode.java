@@ -91,4 +91,8 @@ public interface QueryNode {
    */
   public Map<String, Object> getTagMap();
 
+  /**
+   * Removes this query node from its parent.
+   */
+  public void removeFromParent();
 }

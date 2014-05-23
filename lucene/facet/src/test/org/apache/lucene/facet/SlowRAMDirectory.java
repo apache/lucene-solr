@@ -118,7 +118,11 @@ public class SlowRAMDirectory extends RAMDirectory {
       ii.readBytes(b, offset, len);
     }
     
+    // TODO: is it intentional that clone doesnt wrap?
     @Override public IndexInput clone() { return ii.clone(); }
+    @Override public IndexInput slice(String sliceDescription, long offset, long length) throws IOException { 
+      return ii.slice(sliceDescription, offset, length);
+    }
     @Override public void close() throws IOException { ii.close(); }
     @Override public boolean equals(Object o) { return ii.equals(o); }
     @Override public long getFilePointer() { return ii.getFilePointer(); }
@@ -164,9 +168,8 @@ public class SlowRAMDirectory extends RAMDirectory {
     }
     
     @Override public void close() throws IOException { io.close(); }
-    @Override public void flush() throws IOException { io.flush(); }
     @Override public long getFilePointer() { return io.getFilePointer(); }
-    @Override public long length() throws IOException { return io.length(); }
+    @Override public long getChecksum() throws IOException { return io.getChecksum(); }
   }
   
 }

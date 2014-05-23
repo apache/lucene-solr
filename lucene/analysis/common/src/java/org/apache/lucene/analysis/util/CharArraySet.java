@@ -74,7 +74,7 @@ public class CharArraySet extends AbstractSet<Object> {
    *          otherwise <code>true</code>.
    */
   public CharArraySet(Version matchVersion, int startSize, boolean ignoreCase) {
-    this(new CharArrayMap<Object>(matchVersion, startSize, ignoreCase));
+    this(new CharArrayMap<>(matchVersion, startSize, ignoreCase));
   }
 
   /**

@@ -48,7 +48,7 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
       String script = "function f1(row,context){"
               + "row.put('name','Hello ' + row.get('name'));" + "return row;\n" + "}";
       Context context = getContext("f1", script);
-      Map<String, Object> map = new HashMap<String, Object>();
+      Map<String, Object> map = new HashMap<>();
       map.put("name", "Scott");
       EntityProcessorWrapper sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null, null);
       sep.init(context);
@@ -62,8 +62,8 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
   }
 
   private Context getContext(String funcName, String script) {
-    List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
-    Map<String, String> entity = new HashMap<String, String>();
+    List<Map<String, String>> fields = new ArrayList<>();
+    Map<String, String> entity = new HashMap<>();
     entity.put("name", "hello");
     entity.put("transformer", "script:" + funcName);
 
@@ -81,7 +81,7 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
               + "row.put('name','Hello ' + row.get('name'));" + "return row;\n" + "}";
 
       Context context = getContext("f1", script);
-      Map<String, Object> map = new HashMap<String, Object>();
+      Map<String, Object> map = new HashMap<>();
       map.put("name", "Scott");
       EntityProcessorWrapper sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null, null);
       sep.init(context);

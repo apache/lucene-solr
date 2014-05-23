@@ -31,6 +31,7 @@ import java.io.File;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -53,7 +54,7 @@ public class QueryDriver {
     
     File topicsFile = new File(args[0]);
     File qrelsFile = new File(args[1]);
-    SubmissionReport submitLog = new SubmissionReport(new PrintWriter(args[2], "UTF-8"), "lucene");
+    SubmissionReport submitLog = new SubmissionReport(new PrintWriter(args[2], IOUtils.UTF_8 /* huh, no nio.Charset ctor? */), "lucene");
     FSDirectory dir = FSDirectory.open(new File(args[3]));
     String fieldSpec = args.length == 5 ? args[4] : "T"; // default to Title-only if not specified.
     IndexReader reader = DirectoryReader.open(dir);
@@ -66,15 +67,15 @@ public class QueryDriver {
 
     // use trec utilities to read trec topics into quality queries
     TrecTopicsReader qReader = new TrecTopicsReader();
-    QualityQuery qqs[] = qReader.readQueries(new BufferedReader(IOUtils.getDecodingReader(topicsFile, IOUtils.CHARSET_UTF_8)));
+    QualityQuery qqs[] = qReader.readQueries(new BufferedReader(IOUtils.getDecodingReader(topicsFile, StandardCharsets.UTF_8)));
 
     // prepare judge, with trec utilities that read from a QRels file
-    Judge judge = new TrecJudge(new BufferedReader(IOUtils.getDecodingReader(qrelsFile, IOUtils.CHARSET_UTF_8)));
+    Judge judge = new TrecJudge(new BufferedReader(IOUtils.getDecodingReader(qrelsFile, StandardCharsets.UTF_8)));
 
     // validate topics & judgments match each other
     judge.validateData(qqs, logger);
 
-    Set<String> fieldSet = new HashSet<String>();
+    Set<String> fieldSet = new HashSet<>();
     if (fieldSpec.indexOf('T') >= 0) fieldSet.add("title");
     if (fieldSpec.indexOf('D') >= 0) fieldSet.add("description");
     if (fieldSpec.indexOf('N') >= 0) fieldSet.add("narrative");

@@ -38,12 +38,12 @@ public class TestRegexTransformer extends AbstractDataImportHandlerTestCase {
 
   @Test
   public void testCommaSeparated() {
-    List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
+    List<Map<String, String>> fields = new ArrayList<>();
     // <field column="col1" sourceColName="a" splitBy="," />
     fields.add(getField("col1", "string", null, "a", ","));
     Context context = getContext(null, null, null, Context.FULL_DUMP, fields, null);
 
-    Map<String, Object> src = new HashMap<String, Object>();
+    Map<String, Object> src = new HashMap<>();
     src.put("a", "a,bb,cc,d");
 
     Map<String, Object> result = new RegexTransformer().transformRow(src, context);
@@ -54,21 +54,21 @@ public class TestRegexTransformer extends AbstractDataImportHandlerTestCase {
 
   @Test
   public void testGroupNames() {
-    List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
+    List<Map<String, String>> fields = new ArrayList<>();
     // <field column="col1" regex="(\w*)(\w*) (\w*)" groupNames=",firstName,lastName"/>
-    Map<String ,String > m = new HashMap<String, String>();
+    Map<String ,String > m = new HashMap<>();
     m.put(COLUMN,"fullName");
     m.put(GROUP_NAMES,",firstName,lastName");
     m.put(REGEX,"(\\w*) (\\w*) (\\w*)");
     fields.add(m);
     Context context = getContext(null, null, null, Context.FULL_DUMP, fields, null);
-    Map<String, Object> src = new HashMap<String, Object>();
+    Map<String, Object> src = new HashMap<>();
     src.put("fullName", "Mr Noble Paul");
 
     Map<String, Object> result = new RegexTransformer().transformRow(src, context);
     assertEquals("Noble", result.get("firstName"));
     assertEquals("Paul", result.get("lastName"));
-    src= new HashMap<String, Object>();
+    src= new HashMap<>();
     List<String> l= new ArrayList();
     l.add("Mr Noble Paul") ;
     l.add("Mr Shalin Mangar") ;
@@ -84,14 +84,14 @@ public class TestRegexTransformer extends AbstractDataImportHandlerTestCase {
 
   @Test
   public void testReplaceWith() {
-    List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
+    List<Map<String, String>> fields = new ArrayList<>();
     // <field column="name" regexp="'" replaceWith="''" />
     Map<String, String> fld = getField("name", "string", "'", null, null);
     fld.put(REPLACE_WITH, "''");
     fields.add(fld);
     Context context = getContext(null, null, null, Context.FULL_DUMP, fields, null);
 
-    Map<String, Object> src = new HashMap<String, Object>();
+    Map<String, Object> src = new HashMap<>();
     String s = "D'souza";
     src.put("name", s);
 
@@ -130,7 +130,7 @@ public class TestRegexTransformer extends AbstractDataImportHandlerTestCase {
     fld.put(GROUP_NAMES,"t4,t5");
     fields.add(fld);
 
-    Map<String, Object> row = new HashMap<String, Object>();
+    Map<String, Object> row = new HashMap<>();
     String s = "Fuel Economy Range: 26 mpg Hwy, 19 mpg City";
     row.put("rowdata", s);
 
@@ -150,14 +150,14 @@ public class TestRegexTransformer extends AbstractDataImportHandlerTestCase {
 
   @Test
   public void testMultiValuedRegex(){
-      List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
+      List<Map<String, String>> fields = new ArrayList<>();
 //    <field column="participant" sourceColName="person" regex="(.*)" />
     Map<String, String> fld = getField("participant", null, "(.*)", "person", null);
     fields.add(fld);
     Context context = getContext(null, null,
             null, Context.FULL_DUMP, fields, null);
 
-    ArrayList<String> strings = new ArrayList<String>();
+    ArrayList<String> strings = new ArrayList<>();
     strings.add("hello");
     strings.add("world");
     Map<String, Object> result = new RegexTransformer().transformRow(createMap("person", strings), context);
@@ -165,7 +165,7 @@ public class TestRegexTransformer extends AbstractDataImportHandlerTestCase {
   }
 
   public static List<Map<String, String>> getFields() {
-    List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
+    List<Map<String, String>> fields = new ArrayList<>();
 
     // <field column="city_mileage" sourceColName="rowdata" regexp=
     //    "Fuel Economy Range:\\s*?\\d*?\\s*?mpg Hwy,\\s*?(\\d*?)\\s*?mpg City"

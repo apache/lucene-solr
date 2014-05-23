@@ -23,10 +23,9 @@ import org.apache.lucene.util.BytesRef;
  * Exposes multi-valued view over a single-valued instance.
  * <p>
  * This can be used if you want to have one multi-valued implementation
- * against e.g. FieldCache.getDocTermOrds that also works for single-valued 
- * fields.
+ * that works for single or multi-valued types.
  */
-public class SingletonSortedSetDocValues extends SortedSetDocValues {
+final class SingletonSortedSetDocValues extends SortedSetDocValues {
   private final SortedDocValues in;
   private int docID;
   private boolean set;
@@ -35,6 +34,11 @@ public class SingletonSortedSetDocValues extends SortedSetDocValues {
   public SingletonSortedSetDocValues(SortedDocValues in) {
     this.in = in;
     assert NO_MORE_ORDS == -1; // this allows our nextOrd() to work for missing values without a check
+  }
+
+  /** Return the wrapped {@link SortedDocValues} */
+  public SortedDocValues getSortedDocValues() {
+    return in;
   }
 
   @Override

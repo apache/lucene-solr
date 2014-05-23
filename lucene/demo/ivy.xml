@@ -19,7 +19,7 @@
 <ivy-module version="2.0">
     <info organisation="org.apache.lucene" module="core-demo"/>
     <dependencies>
-      <dependency org="javax.servlet" name="servlet-api" rev="2.4"/>
+      <dependency org="javax.servlet" name="servlet-api" rev="${/javax.servlet/servlet-api}"/>
       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
 </ivy-module>

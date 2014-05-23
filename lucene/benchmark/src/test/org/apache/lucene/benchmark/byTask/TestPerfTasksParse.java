@@ -20,11 +20,10 @@ package org.apache.lucene.benchmark.byTask;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringReader;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 import org.apache.lucene.benchmark.byTask.feeds.AbstractQueryMaker;
@@ -38,10 +37,12 @@ import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 
 import conf.ConfLoader;
 
 /** Test very simply that perf tasks are parses as expected. */
+@SuppressSysoutChecks(bugUrl = "very noisy")
 public class TestPerfTasksParse extends LuceneTestCase {
 
   static final String NEW_LINE = System.getProperty("line.separator");
@@ -50,8 +51,7 @@ public class TestPerfTasksParse extends LuceneTestCase {
   // properties in effect in all tests here
   static final String propPart = 
     INDENT + "directory=RAMDirectory" + NEW_LINE +
-    INDENT + "print.props=false" + NEW_LINE
-  ;
+    INDENT + "print.props=false" + NEW_LINE;
 
   /** Test the repetiotion parsing for parallel tasks */
   public void testParseParallelTaskSequenceRepetition() throws Exception {
@@ -120,16 +120,16 @@ public class TestPerfTasksParse extends LuceneTestCase {
       public boolean accept(File pathname) { return pathname.isFile() && pathname.getName().endsWith(".alg"); }
     })) {
       try {
-        Config config = new Config(new InputStreamReader(new FileInputStream(algFile), "UTF-8"));
+        Config config = new Config(new InputStreamReader(new FileInputStream(algFile), StandardCharsets.UTF_8));
         String contentSource = config.get("content.source", null);
         if (contentSource != null) { Class.forName(contentSource); }
-        config.set("work.dir", new File(TEMP_DIR,"work").getAbsolutePath());
+        config.set("work.dir", createTempDir(LuceneTestCase.getTestClass().getSimpleName()).getAbsolutePath());
         config.set("content.source", MockContentSource.class.getName());
         String dir = config.get("content.source", null);
         if (dir != null) { Class.forName(dir); }
         config.set("directory", RAMDirectory.class.getName());
         if (config.get("line.file.out", null) != null) {
-          config.set("line.file.out", new File(TEMP_DIR,"o.txt").getAbsolutePath());
+          config.set("line.file.out", createTempFile("linefile", ".txt").getAbsolutePath());
         }
         if (config.get("query.maker", null) != null) {
           Class.forName(config.get("query.maker", null));
@@ -138,9 +138,7 @@ public class TestPerfTasksParse extends LuceneTestCase {
         PerfRunData data = new PerfRunData(config);
         new Algorithm(data);
       } catch (Throwable t) {
-        t.printStackTrace();
-        fail("Could not parse sample file: " + algFile + " reason:"
-            + t.getClass() + ":" + t.getMessage());
+        throw new AssertionError("Could not parse sample file: " + algFile, t);
       }
       foundFiles = true;
     }

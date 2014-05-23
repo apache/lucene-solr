@@ -354,7 +354,7 @@ public class DirectSpellChecker {
     // try ed=1 first, in case we get lucky
     terms = suggestSimilar(term, inspections, ir, docfreq, 1, accuracy, spare);
     if (maxEdits > 1 && terms.size() < inspections) {
-      HashSet<ScoreTerm> moreTerms = new HashSet<ScoreTerm>();
+      HashSet<ScoreTerm> moreTerms = new HashSet<>();
       moreTerms.addAll(terms);
       moreTerms.addAll(suggestSimilar(term, inspections, ir, docfreq, maxEdits, accuracy, spare));
       terms = moreTerms;
@@ -409,7 +409,7 @@ public class DirectSpellChecker {
       return Collections.emptyList();
     }
     FuzzyTermsEnum e = new FuzzyTermsEnum(terms, atts, term, editDistance, Math.max(minPrefix, editDistance-1), true);
-    final PriorityQueue<ScoreTerm> stQueue = new PriorityQueue<ScoreTerm>();
+    final PriorityQueue<ScoreTerm> stQueue = new PriorityQueue<>();
     
     BytesRef queryTerm = new BytesRef(term.text());
     BytesRef candidateTerm;

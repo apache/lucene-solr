@@ -1,4 +1,21 @@
+<!--
+   Licensed to the Apache Software Foundation (ASF) under one
+   or more contributor license agreements.  See the NOTICE file
+   distributed with this work for additional information
+   regarding copyright ownership.  The ASF licenses this file
+   to you under the Apache License, Version 2.0 (the
+   "License"); you may not use this file except in compliance
+   with the License.  You may obtain a copy of the License at
 
+     http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing,
+   software distributed under the License is distributed on an
+   "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+   KIND, either express or implied.  See the License for the
+   specific language governing permissions and limitations
+   under the License.
+-->
 <project name="custom-tasks">
   <description>
     This file is designed for importing into a main build file, and not intended
@@ -22,11 +39,13 @@
     
     <!-- Some typical snapshot/minimalized JAR suffixes. -->
     <replaceregex pattern="-min$" replace="" flags="gi" />
-    <replaceregex pattern="SNAPSHOT$" replace="" flags="gi" />
+    <replaceregex pattern="SNAPSHOT" replace="" flags="gi" />
 
     <!-- Typical version patterns. -->
     <replaceregex pattern="\.rc[0-9]+" replace="" flags="gi" />
-    <replaceregex pattern="\-(r)?([0-9\-\_\.])+(b(eta)?([0-9\-\.])*)?$" replace="" flags="gi" />
+    <replaceregex pattern="\-(r)?([0-9\-\_\.])+(([a-zA-Z]+)([0-9\-\.])*)?" replace="" flags="gi" />
+    
+    <replaceregex pattern="[-]tests$" replace="-tests" flags="gi" />
 
     <!-- git hashcode pattern: its always 40 chars right? -->
     <replaceregex pattern="\-[a-z0-9]{40,40}$" replace="" flags="gi" />
@@ -40,7 +59,7 @@
     <sequential>
       <!-- LICENSE and NOTICE verification macro. -->
       <echo>License check under: @{dir}</echo>
-      <licenses licenseDirectory="@{licensedir}">
+      <licenses licenseDirectory="@{licensedir}" skipChecksum="${skipChecksum}" skipSnapshotsChecksum="${skipSnapshotsChecksum}">
         <fileset dir="@{dir}">
           <include name="**/*.jar" />
           <!-- Speed up scanning a bit. -->
@@ -63,6 +82,58 @@
           </chainedmapper>
         </licenseMapper>
       </licenses>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="lib-versions-check-macro">
+    <attribute name="dir"/>
+    <attribute name="centralized.versions.file"/>
+    <sequential>
+      <!-- 
+        Verify that the '/org/name' keys in ivy-versions.properties are sorted
+        lexically and are neither duplicates nor orphans, and that all
+         dependencies in all ivy.xml files use rev="${/org/name}" format.
+        -->
+      <echo>Lib versions check under: @{dir}</echo>
+      <libversions centralizedVersionsFile="@{centralized.versions.file}">
+        <fileset dir="@{dir}">
+          <include name="**/ivy.xml" />
+          <!-- Speed up scanning a bit. -->
+          <exclude name="**/.git/**" />
+          <exclude name="**/.svn/**" />
+          <exclude name="**/bin/**" />
+          <exclude name="**/build/**" />
+          <exclude name="**/dist/**" />
+          <exclude name="**/src/**" />
+        </fileset>
+      </libversions>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="get-maven-dependencies-macro">
+    <attribute name="dir"/>
+    <attribute name="centralized.versions.file"/>
+    <attribute name="module.dependencies.properties.file"/>
+    <attribute name="maven.dependencies.filters.file"/>
+    <sequential>
+      <echo>Get maven dependencies called under: @{dir}</echo>
+      <mvndeps centralizedVersionsFile="@{centralized.versions.file}"
+               moduleDependenciesPropertiesFile="@{module.dependencies.properties.file}"
+               mavenDependenciesFiltersFile="@{maven.dependencies.filters.file}">
+        <fileset dir="@{dir}">
+          <include name="**/ivy.xml" />
+          <!-- Speed up scanning a bit. -->
+          <exclude name="**/.git/**" />
+          <exclude name="**/.svn/**" />
+          <exclude name="**/bin/**" />
+          <exclude name="**/build/**" />
+          <exclude name="**/dist/**" />
+          <exclude name="**/src/**" />
+          <exclude name="**/maven-build/**" />
+          <exclude name="**/idea-build/**" />
+          <exclude name="**/dev-tools/**" />
+        </fileset>
+      </mvndeps>
     </sequential>
   </macrodef>
 </project>

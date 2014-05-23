@@ -19,9 +19,9 @@ package org.apache.solr.handler.component;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.QueryElevationParams;
 import org.apache.solr.util.FileUtils;
@@ -37,6 +37,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -56,10 +57,9 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
   private void init(String config, String schema) throws Exception {
     //write out elevate-data.xml to the Data dir first by copying it from conf, which we know exists, this way we can test both conf and data configurations
-    createTempDir();
     File parent = new File(TEST_HOME() + "/collection1", "conf");
     File elevateFile = new File(parent, "elevate.xml");
-    File elevateDataFile = new File(dataDir, "elevate-data.xml");
+    File elevateDataFile = new File(initCoreDataDir, "elevate-data.xml");
     FileUtils.copyFile(elevateFile, elevateDataFile);
 
 
@@ -106,6 +106,208 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testGroupedQuery() throws Exception {
+    try {
+      init("schema11.xml");
+      clearIndex();
+      assertU(commit());
+      assertU(adoc("id", "1", "text", "XXXX XXXX", "str_s", "a"));
+      assertU(adoc("id", "2", "text", "XXXX AAAA", "str_s", "b"));
+      assertU(adoc("id", "3", "text", "ZZZZ", "str_s", "c"));
+      assertU(adoc("id", "4", "text", "XXXX ZZZZ", "str_s", "d"));
+      assertU(adoc("id", "5", "text", "ZZZZ ZZZZ", "str_s", "e"));
+      assertU(adoc("id", "6", "text", "AAAA AAAA AAAA", "str_s", "f"));
+      assertU(adoc("id", "7", "text", "AAAA AAAA ZZZZ", "str_s", "g"));
+      assertU(adoc("id", "8", "text", "XXXX", "str_s", "h"));
+      assertU(adoc("id", "9", "text", "YYYY ZZZZ", "str_s", "i"));
+      
+      assertU(adoc("id", "22", "text", "XXXX ZZZZ AAAA", "str_s", "b"));
+      assertU(adoc("id", "66", "text", "XXXX ZZZZ AAAA", "str_s", "f"));
+      assertU(adoc("id", "77", "text", "XXXX ZZZZ AAAA", "str_s", "g"));
+     
+      assertU(commit());
+
+      final String groups = "//arr[@name='groups']";
+
+      assertQ("non-elevated group query", 
+              req(CommonParams.Q, "AAAA", 
+                  CommonParams.QT, "/elevate",
+                  GroupParams.GROUP_FIELD, "str_s", 
+                  GroupParams.GROUP, "true",
+                  GroupParams.GROUP_TOTAL_COUNT, "true", 
+                  GroupParams.GROUP_LIMIT, "100", 
+                  QueryElevationParams.ENABLE, "false",
+                  CommonParams.FL, "id, score, [elevated]")
+              , "//*[@name='ngroups'][.='3']"
+              , "//*[@name='matches'][.='6']"
+
+              , groups +"/lst[1]//doc[1]/float[@name='id'][.='6.0']"
+              , groups +"/lst[1]//doc[1]/bool[@name='[elevated]'][.='false']"
+              , groups +"/lst[1]//doc[2]/float[@name='id'][.='66.0']"
+              , groups +"/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']"
+
+              , groups +"/lst[2]//doc[1]/float[@name='id'][.='7.0']"
+              , groups +"/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']"
+              , groups +"/lst[2]//doc[2]/float[@name='id'][.='77.0']"
+              , groups +"/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']"
+
+              , groups +"/lst[3]//doc[1]/float[@name='id'][.='2.0']"
+              , groups +"/lst[3]//doc[1]/bool[@name='[elevated]'][.='false']"
+              , groups +"/lst[3]//doc[2]/float[@name='id'][.='22.0']"
+              , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']"
+              );
+
+      assertQ("elevated group query", 
+              req(CommonParams.Q, "AAAA", 
+                  CommonParams.QT, "/elevate",
+                  GroupParams.GROUP_FIELD, "str_s", 
+                  GroupParams.GROUP, "true",
+                  GroupParams.GROUP_TOTAL_COUNT, "true",
+                  GroupParams.GROUP_LIMIT, "100", 
+                  CommonParams.FL, "id, score, [elevated]")
+              , "//*[@name='ngroups'][.='3']"
+              , "//*[@name='matches'][.='6']"
+
+              , groups +"/lst[1]//doc[1]/float[@name='id'][.='7.0']"
+              , groups +"/lst[1]//doc[1]/bool[@name='[elevated]'][.='true']"
+              , groups +"/lst[1]//doc[2]/float[@name='id'][.='77.0']"
+              , groups +"/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']"
+
+              , groups +"/lst[2]//doc[1]/float[@name='id'][.='6.0']"
+              , groups +"/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']"
+              , groups +"/lst[2]//doc[2]/float[@name='id'][.='66.0']"
+              , groups +"/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']"
+
+              , groups +"/lst[3]//doc[1]/float[@name='id'][.='2.0']"
+              , groups +"/lst[3]//doc[1]/bool[@name='[elevated]'][.='false']"
+              , groups +"/lst[3]//doc[2]/float[@name='id'][.='22.0']"
+              , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']"
+              );
+
+      assertQ("non-elevated because sorted group query", 
+              req(CommonParams.Q, "AAAA", 
+                  CommonParams.QT, "/elevate",
+                  CommonParams.SORT, "id asc",
+                  GroupParams.GROUP_FIELD, "str_s", 
+                  GroupParams.GROUP, "true",
+                  GroupParams.GROUP_TOTAL_COUNT, "true", 
+                  GroupParams.GROUP_LIMIT, "100", 
+                  CommonParams.FL, "id, score, [elevated]")
+              , "//*[@name='ngroups'][.='3']"
+              , "//*[@name='matches'][.='6']"
+
+              , groups +"/lst[1]//doc[1]/float[@name='id'][.='2.0']"
+              , groups +"/lst[1]//doc[1]/bool[@name='[elevated]'][.='false']"
+              , groups +"/lst[1]//doc[2]/float[@name='id'][.='22.0']"
+              , groups +"/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']"
+
+              , groups +"/lst[2]//doc[1]/float[@name='id'][.='6.0']"
+              , groups +"/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']"
+              , groups +"/lst[2]//doc[2]/float[@name='id'][.='66.0']"
+              , groups +"/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']"
+
+              , groups +"/lst[3]//doc[1]/float[@name='id'][.='7.0']"
+              , groups +"/lst[3]//doc[1]/bool[@name='[elevated]'][.='true']"
+              , groups +"/lst[3]//doc[2]/float[@name='id'][.='77.0']"
+              , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']"
+              );
+
+      assertQ("force-elevated sorted group query", 
+              req(CommonParams.Q, "AAAA", 
+                  CommonParams.QT, "/elevate",
+                  CommonParams.SORT, "id asc",
+                  QueryElevationParams.FORCE_ELEVATION, "true", 
+                  GroupParams.GROUP_FIELD, "str_s", 
+                  GroupParams.GROUP, "true",
+                  GroupParams.GROUP_TOTAL_COUNT, "true", 
+                  GroupParams.GROUP_LIMIT, "100", 
+                  CommonParams.FL, "id, score, [elevated]")
+              , "//*[@name='ngroups'][.='3']"
+              , "//*[@name='matches'][.='6']"
+
+              , groups +"/lst[1]//doc[1]/float[@name='id'][.='7.0']"
+              , groups +"/lst[1]//doc[1]/bool[@name='[elevated]'][.='true']"
+              , groups +"/lst[1]//doc[2]/float[@name='id'][.='77.0']"
+              , groups +"/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']"
+
+              , groups +"/lst[2]//doc[1]/float[@name='id'][.='2.0']"
+              , groups +"/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']"
+              , groups +"/lst[2]//doc[2]/float[@name='id'][.='22.0']"
+              , groups +"/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']"
+
+              , groups +"/lst[3]//doc[1]/float[@name='id'][.='6.0']"
+              , groups +"/lst[3]//doc[1]/bool[@name='[elevated]'][.='false']"
+              , groups +"/lst[3]//doc[2]/float[@name='id'][.='66.0']"
+              , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']"
+              );
+
+
+      assertQ("non-elevated because of sort within group query", 
+              req(CommonParams.Q, "AAAA", 
+                  CommonParams.QT, "/elevate",
+                  CommonParams.SORT, "id asc",
+                  GroupParams.GROUP_SORT, "id desc", 
+                  GroupParams.GROUP_FIELD, "str_s", 
+                  GroupParams.GROUP, "true",
+                  GroupParams.GROUP_TOTAL_COUNT, "true", 
+                  GroupParams.GROUP_LIMIT, "100", 
+                  CommonParams.FL, "id, score, [elevated]")
+              , "//*[@name='ngroups'][.='3']"
+              , "//*[@name='matches'][.='6']"
+
+              , groups +"/lst[1]//doc[1]/float[@name='id'][.='22.0']"
+              , groups +"/lst[1]//doc[1]/bool[@name='[elevated]'][.='false']"
+              , groups +"/lst[1]//doc[2]/float[@name='id'][.='2.0']"
+              , groups +"/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']"
+
+              , groups +"/lst[2]//doc[1]/float[@name='id'][.='66.0']"
+              , groups +"/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']"
+              , groups +"/lst[2]//doc[2]/float[@name='id'][.='6.0']"
+              , groups +"/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']"
+
+              , groups +"/lst[3]//doc[1]/float[@name='id'][.='77.0']"
+              , groups +"/lst[3]//doc[1]/bool[@name='[elevated]'][.='false']"
+              , groups +"/lst[3]//doc[2]/float[@name='id'][.='7.0']"
+              , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='true']"
+              );
+
+
+      assertQ("force elevated sort within sorted group query", 
+              req(CommonParams.Q, "AAAA", 
+                  CommonParams.QT, "/elevate",
+                  CommonParams.SORT, "id asc",
+                  GroupParams.GROUP_SORT, "id desc", 
+                  QueryElevationParams.FORCE_ELEVATION, "true", 
+                  GroupParams.GROUP_FIELD, "str_s", 
+                  GroupParams.GROUP, "true",
+                  GroupParams.GROUP_TOTAL_COUNT, "true", 
+                  GroupParams.GROUP_LIMIT, "100", 
+                  CommonParams.FL, "id, score, [elevated]")
+              , "//*[@name='ngroups'][.='3']"
+              , "//*[@name='matches'][.='6']"
+
+              , groups +"/lst[1]//doc[1]/float[@name='id'][.='7.0']"
+              , groups +"/lst[1]//doc[1]/bool[@name='[elevated]'][.='true']"
+              , groups +"/lst[1]//doc[2]/float[@name='id'][.='77.0']"
+              , groups +"/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']"
+
+              , groups +"/lst[2]//doc[1]/float[@name='id'][.='22.0']"
+              , groups +"/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']"
+              , groups +"/lst[2]//doc[2]/float[@name='id'][.='2.0']"
+              , groups +"/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']"
+
+              , groups +"/lst[3]//doc[1]/float[@name='id'][.='66.0']"
+              , groups +"/lst[3]//doc[1]/bool[@name='[elevated]'][.='false']"
+              , groups +"/lst[3]//doc[2]/float[@name='id'][.='6.0']"
+              , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']"
+              );
+
+    } finally {
+      delete();
+    }
+  }
+
+  @Test
   public void testTrieFieldType() throws Exception {
     try {
       init("schema.xml");
@@ -145,7 +347,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       init("schema12.xml");
       SolrCore core = h.getCore();
 
-      NamedList<String> args = new NamedList<String>();
+      NamedList<String> args = new NamedList<>();
       args.add(QueryElevationComponent.FIELD_TYPE, "string");
       args.add(QueryElevationComponent.CONFIG_FILE, "elevate.xml");
 
@@ -168,7 +370,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       assertEquals(null, map.get("zzzz"));
 
       // Now test the same thing with a lowercase filter: 'lowerfilt'
-      args = new NamedList<String>();
+      args = new NamedList<>();
       args.add(QueryElevationComponent.FIELD_TYPE, "lowerfilt");
       args.add(QueryElevationComponent.CONFIG_FILE, "elevate.xml");
 
@@ -332,7 +534,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       String query = "title:ipod";
 
-      Map<String, String> args = new HashMap<String, String>();
+      Map<String, String> args = new HashMap<>();
       args.put(CommonParams.Q, query);
       args.put(CommonParams.QT, "/elevate");
       args.put(CommonParams.FL, "id,score");
@@ -438,6 +640,32 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       );
 
 
+      // Test setting ids and excludes from http parameters
+
+      booster.elevationCache.clear();
+      args.put(QueryElevationParams.IDS, "x,y,z");
+      args.put(QueryElevationParams.EXCLUDE, "b");
+
+      assertQ("All five should make it", req
+          , "//*[@numFound='5']"
+          , "//result/doc[1]/str[@name='id'][.='x']"
+          , "//result/doc[2]/str[@name='id'][.='y']"
+          , "//result/doc[3]/str[@name='id'][.='z']"
+          , "//result/doc[4]/str[@name='id'][.='a']"
+          , "//result/doc[5]/str[@name='id'][.='c']"
+      );
+
+      args.put(QueryElevationParams.IDS, "x,z,y");
+      args.put(QueryElevationParams.EXCLUDE, "b,c");
+
+      assertQ("All four should make it", req
+          , "//*[@numFound='4']"
+          , "//result/doc[1]/str[@name='id'][.='x']"
+          , "//result/doc[2]/str[@name='id'][.='z']"
+          , "//result/doc[3]/str[@name='id'][.='y']"
+          , "//result/doc[4]/str[@name='id'][.='a']"
+      );
+
       req.close();
     } finally {
       delete();
@@ -446,7 +674,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
   // write a test file to boost some docs
   private void writeFile(File file, String query, String... ids) throws Exception {
-    PrintWriter out = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), IOUtils.CHARSET_UTF_8));
+    PrintWriter out = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
     out.println("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>");
     out.println("<elevate>");
     out.println("<query text=\"" + query + "\">");
@@ -470,7 +698,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       writeFile(f, "aaa", "A");
 
       QueryElevationComponent comp = (QueryElevationComponent) h.getCore().getSearchComponent("elevate");
-      NamedList<String> args = new NamedList<String>();
+      NamedList<String> args = new NamedList<>();
       args.add(QueryElevationComponent.CONFIG_FILE, testfile);
       comp.init(args);
       comp.inform(h.getCore());

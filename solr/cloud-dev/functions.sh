@@ -1,6 +1,6 @@
 JAVA_OPTS="-server -Xms256M -Xmx256M"
-BASE_PORT=7570
-BASE_STOP_PORT=6570
+BASE_PORT=7572
+BASE_STOP_PORT=6572
 ZK_PORT="9983"
 
 rebuild() {
@@ -16,7 +16,7 @@ rebuild() {
 setports() {
 	if [ "1" = "$1" ]; then
 		PORT="8983"
-	        STOP_PORT="7983"
+	    STOP_PORT="7983"
 	else
  		PORT="$(( $BASE_PORT + $1 ))"
 	        STOP_PORT="$(( $BASE_STOP_PORT + $1 ))"

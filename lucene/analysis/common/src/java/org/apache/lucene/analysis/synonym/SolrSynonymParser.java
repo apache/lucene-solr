@@ -54,17 +54,16 @@ import org.apache.lucene.util.CharsRef;
  *  </ol>
  * @lucene.experimental
  */
-public class SolrSynonymParser extends SynonymMap.Builder {
+public class SolrSynonymParser extends SynonymMap.Parser {
   private final boolean expand;
-  private final Analyzer analyzer;
   
   public SolrSynonymParser(boolean dedup, boolean expand, Analyzer analyzer) {
-    super(dedup);
+    super(dedup, analyzer);
     this.expand = expand;
-    this.analyzer = analyzer;
   }
-  
-  public void add(Reader in) throws IOException, ParseException {
+
+  @Override
+  public void parse(Reader in) throws IOException, ParseException {
     LineNumberReader br = new LineNumberReader(in);
     try {
       addInternal(br);
@@ -96,19 +95,19 @@ public class SolrSynonymParser extends SynonymMap.Builder {
         String inputStrings[] = split(sides[0], ",");
         inputs = new CharsRef[inputStrings.length];
         for (int i = 0; i < inputs.length; i++) {
-          inputs[i] = analyze(analyzer, unescape(inputStrings[i]).trim(), new CharsRef());
+          inputs[i] = analyze(unescape(inputStrings[i]).trim(), new CharsRef());
         }
         
         String outputStrings[] = split(sides[1], ",");
         outputs = new CharsRef[outputStrings.length];
         for (int i = 0; i < outputs.length; i++) {
-          outputs[i] = analyze(analyzer, unescape(outputStrings[i]).trim(), new CharsRef());
+          outputs[i] = analyze(unescape(outputStrings[i]).trim(), new CharsRef());
         }
       } else {
         String inputStrings[] = split(line, ",");
         inputs = new CharsRef[inputStrings.length];
         for (int i = 0; i < inputs.length; i++) {
-          inputs[i] = analyze(analyzer, unescape(inputStrings[i]).trim(), new CharsRef());
+          inputs[i] = analyze(unescape(inputStrings[i]).trim(), new CharsRef());
         }
         if (expand) {
           outputs = inputs;
@@ -131,7 +130,7 @@ public class SolrSynonymParser extends SynonymMap.Builder {
   }
   
   private static String[] split(String s, String separator) {
-    ArrayList<String> list = new ArrayList<String>(2);
+    ArrayList<String> list = new ArrayList<>(2);
     StringBuilder sb = new StringBuilder();
     int pos=0, end=s.length();
     while (pos < end) {

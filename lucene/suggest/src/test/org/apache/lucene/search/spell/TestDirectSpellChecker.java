@@ -56,7 +56,7 @@ public class TestDirectSpellChecker extends LuceneTestCase {
     }
     
     ir.close();
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
   public void testSimpleExamples() throws Exception {
@@ -122,7 +122,7 @@ public class TestDirectSpellChecker extends LuceneTestCase {
     assertEquals("thousand", similar[0].string);
 
     ir.close();
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
   
@@ -188,7 +188,7 @@ public class TestDirectSpellChecker extends LuceneTestCase {
     assertEquals(2, similar.length);
 
     ir.close();
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
   
@@ -211,7 +211,7 @@ public class TestDirectSpellChecker extends LuceneTestCase {
         SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
     assertEquals(0, similar.length);
     ir.close();
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
   
@@ -236,7 +236,7 @@ public class TestDirectSpellChecker extends LuceneTestCase {
     assertEquals(1, similar.length);
     assertEquals("five", similar[0].string);
     ir.close();
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
   
@@ -261,7 +261,7 @@ public class TestDirectSpellChecker extends LuceneTestCase {
     assertEquals(1, similar.length);
     assertEquals("seventeen", similar[0].string);
     ir.close();
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
 }

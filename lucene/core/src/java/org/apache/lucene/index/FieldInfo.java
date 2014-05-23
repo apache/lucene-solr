@@ -47,6 +47,8 @@ public final class FieldInfo {
 
   private Map<String,String> attributes;
 
+  private long dvGen;
+  
   /**
    * Controls how much information is stored in the postings lists.
    * @lucene.experimental
@@ -79,7 +81,7 @@ public final class FieldInfo {
      * Character offsets are encoded alongside the positions. 
      */
     DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS,
-  };
+  }
   
   /**
    * DocValues types.
@@ -92,32 +94,34 @@ public final class FieldInfo {
      */
     NUMERIC,
     /**
-     * A per-document byte[].
+     * A per-document byte[].  Values may be larger than
+     * 32766 bytes, but different codecs may enforce their own limits.
      */
     BINARY,
     /** 
      * A pre-sorted byte[]. Fields with this type only store distinct byte values 
      * and store an additional offset pointer per document to dereference the shared 
      * byte[]. The stored byte[] is presorted and allows access via document id, 
-     * ordinal and by-value.
+     * ordinal and by-value.  Values must be <= 32766 bytes.
      */
     SORTED,
     /** 
      * A pre-sorted Set&lt;byte[]&gt;. Fields with this type only store distinct byte values 
      * and store additional offset pointers per document to dereference the shared 
      * byte[]s. The stored byte[] is presorted and allows access via document id, 
-     * ordinal and by-value.
+     * ordinal and by-value.  Values must be <= 32766 bytes.
      */
     SORTED_SET
-  };
+  }
 
   /**
    * Sole Constructor.
    *
    * @lucene.experimental
    */
-  public FieldInfo(String name, boolean indexed, int number, boolean storeTermVector, 
-            boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues, DocValuesType normsType, Map<String,String> attributes) {
+  public FieldInfo(String name, boolean indexed, int number, boolean storeTermVector, boolean omitNorms, 
+      boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues, DocValuesType normsType, 
+      long dvGen, Map<String,String> attributes) {
     this.name = name;
     this.indexed = indexed;
     this.number = number;
@@ -135,6 +139,7 @@ public final class FieldInfo {
       this.indexOptions = null;
       this.normType = null;
     }
+    this.dvGen = dvGen;
     this.attributes = attributes;
     assert checkConsistency();
   }
@@ -154,6 +159,10 @@ public final class FieldInfo {
       // Cannot store payloads unless positions are indexed:
       assert indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !this.storePayloads;
     }
+    
+    if (dvGen != -1) {
+      assert docValueType != null;
+    }
 
     return true;
   }
@@ -165,16 +174,10 @@ public final class FieldInfo {
   // should only be called by FieldInfos#addOrUpdate
   void update(boolean indexed, boolean storeTermVector, boolean omitNorms, boolean storePayloads, IndexOptions indexOptions) {
     //System.out.println("FI.update field=" + name + " indexed=" + indexed + " omitNorms=" + omitNorms + " this.omitNorms=" + this.omitNorms);
-    if (this.indexed != indexed) {
-      this.indexed = true;                      // once indexed, always index
-    }
+    this.indexed |= indexed;  // once indexed, always indexed
     if (indexed) { // if updated field data is not for indexing, leave the updates out
-      if (this.storeTermVector != storeTermVector) {
-        this.storeTermVector = true;                // once vector, always vector
-      }
-      if (this.storePayloads != storePayloads) {
-        this.storePayloads = true;
-      }
+      this.storeTermVector |= storeTermVector;                // once vector, always vector
+      this.storePayloads |= storePayloads;
       if (this.omitNorms != omitNorms) {
         this.omitNorms = true;                // if one require omitNorms at least once, it remains off for life
         this.normType = null;
@@ -220,6 +223,20 @@ public final class FieldInfo {
    */
   public DocValuesType getDocValuesType() {
     return docValueType;
+  }
+  
+  /** Sets the docValues generation of this field. */
+  void setDocValuesGen(long dvGen) {
+    this.dvGen = dvGen;
+    assert checkConsistency();
+  }
+  
+  /**
+   * Returns the docValues generation of this field, or -1 if no docValues
+   * updates exist for it.
+   */
+  public long getDocValuesGen() {
+    return dvGen;
   }
   
   /**
@@ -307,7 +324,7 @@ public final class FieldInfo {
    */
   public String putAttribute(String key, String value) {
     if (attributes == null) {
-      attributes = new HashMap<String,String>();
+      attributes = new HashMap<>();
     }
     return attributes.put(key, value);
   }

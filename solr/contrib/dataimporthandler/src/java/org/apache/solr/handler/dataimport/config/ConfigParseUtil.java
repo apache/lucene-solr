@@ -41,7 +41,7 @@ public class ConfigParseUtil {
   }
   
   public static HashMap<String,String> getAllAttributes(Element e) {
-    HashMap<String,String> m = new HashMap<String,String>();
+    HashMap<String,String> m = new HashMap<>();
     NamedNodeMap nnm = e.getAttributes();
     for (int i = 0; i < nnm.getLength(); i++) {
       m.put(nnm.item(i).getNodeName(), nnm.item(i).getNodeValue());
@@ -68,7 +68,7 @@ public class ConfigParseUtil {
   }
   
   public static List<Element> getChildNodes(Element e, String byName) {
-    List<Element> result = new ArrayList<Element>();
+    List<Element> result = new ArrayList<>();
     NodeList l = e.getChildNodes();
     for (int i = 0; i < l.getLength(); i++) {
       if (e.equals(l.item(i).getParentNode())

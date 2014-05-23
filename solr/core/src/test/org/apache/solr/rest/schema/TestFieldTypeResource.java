@@ -39,7 +39,7 @@ public class TestFieldTypeResource extends SolrRestletTestBase {
             "/response/lst[@name='fieldType']/bool[@name='omitPositions'] = 'false'",
             "/response/lst[@name='fieldType']/bool[@name='storeOffsetsWithPositions'] = 'false'",
             "/response/lst[@name='fieldType']/bool[@name='multiValued'] = 'false'",
-            "/response/lst[@name='fieldType']/bool[@name='tokenized'] = 'true'",
+            "/response/lst[@name='fieldType']/bool[@name='tokenized'] = 'false'",
             "/response/lst[@name='fieldType']/arr[@name='fields']/str = 'weight'",
             "/response/lst[@name='fieldType']/arr[@name='dynamicFields']/str = '*_f'");
   }
@@ -69,7 +69,7 @@ public class TestFieldTypeResource extends SolrRestletTestBase {
              "/fieldType/omitPositions==false",
              "/fieldType/storeOffsetsWithPositions==false",
              "/fieldType/multiValued==false",
-             "/fieldType/tokenized==true",
+             "/fieldType/tokenized==false",
              "/fieldType/fields==['weight']",
              "/fieldType/dynamicFields==['*_f']");
   }

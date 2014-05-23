@@ -55,8 +55,8 @@ public class TestRTGBase extends SolrTestCaseJ4 {
     }
   }
 
-  protected final ConcurrentHashMap<Integer,DocInfo> model = new ConcurrentHashMap<Integer,DocInfo>();
-  protected Map<Integer,DocInfo> committedModel = new HashMap<Integer,DocInfo>();
+  protected final ConcurrentHashMap<Integer,DocInfo> model = new ConcurrentHashMap<>();
+  protected Map<Integer,DocInfo> committedModel = new HashMap<>();
   protected long snapshotCount;
   protected long committedModelClock;
   protected volatile int lastId;
@@ -132,7 +132,7 @@ public class TestRTGBase extends SolrTestCaseJ4 {
     if (terms == null) return -1;
     BytesRef termBytes = t.bytes();
     final TermsEnum termsEnum = terms.iterator(null);
-    if (!termsEnum.seekExact(termBytes, false)) {
+    if (!termsEnum.seekExact(termBytes)) {
       return -1;
     }
     DocsEnum docs = termsEnum.docs(MultiFields.getLiveDocs(r), null, DocsEnum.FLAG_NONE);

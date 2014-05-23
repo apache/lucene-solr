@@ -33,7 +33,7 @@ import java.util.HashMap;
  */
 public abstract class AbstractQueryConfig {
   
-  final private HashMap<ConfigurationKey<?>, Object> configMap = new HashMap<ConfigurationKey<?>, Object>();
+  final private HashMap<ConfigurationKey<?>, Object> configMap = new HashMap<>();
   
   AbstractQueryConfig() {
     // although this class is public, it can only be constructed from package

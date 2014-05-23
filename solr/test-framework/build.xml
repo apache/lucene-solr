@@ -46,6 +46,16 @@
   <!-- redefine the clover setup, because we dont want to run clover for the test-framework -->
   <target name="-clover.setup" if="run.clover"/>
 
+  <!-- redefine the test compilation, so its just a no-op -->
+  <target name="compile-test"/>
+  
+  <!-- redefine the forbidden apis for tests, as we check ourselves -->
+  <target name="-check-forbidden-tests" depends="-init-forbidden-apis,compile-core">
+    <forbidden-apis signaturesFile="${common.dir}/tools/forbiddenApis/tests.txt" classpathref="forbidden-apis.allclasses.classpath"> 
+      <fileset dir="${build.dir}/classes/java"/>
+    </forbidden-apis>
+  </target>
+
   <!-- Override common-solr.javadocs to include JUnit links -->
   <!-- and to copy the built javadocs to ${dest}/docs/api/test-framework -->
   <target name="javadocs"
@@ -70,12 +80,25 @@
       <solr-jarify basedir="${javadoc.dir}/${name}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
     </sequential>
   </target>
-
   <target name="module-jars-to-solr"
-          depends="jar-test-framework">
+          depends="-module-jars-to-solr-not-for-package,-module-jars-to-solr-package"/>
+  <target name="-module-jars-to-solr-not-for-package" unless="called.from.create-package">
+    <antcall target="jar-test-framework" inheritall="true"/>
+    <property name="test-framework.uptodate" value="true"/>
     <mkdir dir="${build.dir}/lucene-libs"/>
     <copy todir="${build.dir}/lucene-libs" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
       <path refid="solr.test.framework.lucene.libs" />
+    </copy>
+  </target>
+  <target name="-module-jars-to-solr-package" if="called.from.create-package">
+    <antcall target="-unpack-lucene-tgz" inheritall="true"/>
+    <pathconvert property="relative.solr.test.framework.lucene.libs" pathsep=",">
+      <path refid="solr.test.framework.lucene.libs"/>
+      <globmapper from="${common.build.dir}/*" to="*" handledirsep="true"/>
+    </pathconvert>
+    <mkdir dir="${build.dir}/lucene-libs"/>
+    <copy todir="${build.dir}/lucene-libs" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
+      <fileset dir="${lucene.tgz.unpack.dir}/lucene-${version}" includes="${relative.solr.test.framework.lucene.libs}"/>
     </copy>
   </target>
 

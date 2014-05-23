@@ -75,7 +75,7 @@ public class RequestHandlerUtils
   }
 
   
-  private static Set<String> commitParams = new HashSet<String>(Arrays.asList(new String[]{UpdateParams.OPEN_SEARCHER, UpdateParams.WAIT_SEARCHER, UpdateParams.SOFT_COMMIT, UpdateParams.EXPUNGE_DELETES, UpdateParams.MAX_OPTIMIZE_SEGMENTS, UpdateParams.PREPARE_COMMIT}));
+  private static Set<String> commitParams = new HashSet<>(Arrays.asList(new String[]{UpdateParams.OPEN_SEARCHER, UpdateParams.WAIT_SEARCHER, UpdateParams.SOFT_COMMIT, UpdateParams.EXPUNGE_DELETES, UpdateParams.MAX_OPTIMIZE_SEGMENTS, UpdateParams.PREPARE_COMMIT}));
 
   public static void validateCommitParams(SolrParams params) {
     Iterator<String> i = params.getParameterNamesIterator();

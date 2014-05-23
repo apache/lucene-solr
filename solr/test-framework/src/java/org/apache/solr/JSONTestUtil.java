@@ -21,6 +21,8 @@ import org.noggit.ObjectBuilder;
 import org.apache.solr.common.util.StrUtils;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 public class JSONTestUtil {
@@ -116,7 +118,7 @@ class CollectionTester {
     this.val = val;
     this.valRoot = val;
     this.delta = delta;
-    path = new ArrayList<Object>();
+    path = new ArrayList<>();
   }
   public CollectionTester(Object val) {
     this(val, JSONTestUtil.DEFAULT_DELTA);
@@ -179,6 +181,13 @@ class CollectionTester {
     // generic fallback
     if (!expected.equals(val)) {
 
+      if (expected instanceof String) {
+        String str = (String)expected;
+        if (str.length() > 6 && str.startsWith("///") && str.endsWith("///")) {
+          return handleSpecialString(str);
+        }
+      }
+
       // make an exception for some numerics
       if ((expected instanceof Integer && val instanceof Long || expected instanceof Long && val instanceof Integer)
           && ((Number)expected).longValue() == ((Number)val).longValue()) {
@@ -195,6 +204,29 @@ class CollectionTester {
 
     // setErr("unknown expected type " + expected.getClass().getName());
     return true;
+  }
+
+  private boolean handleSpecialString(String str) {
+    String code = str.substring(3,str.length()-3);
+    if ("ignore".equals(code)) {
+      return true;
+    } else if (code.startsWith("regex:")) {
+      String regex = code.substring("regex:".length());
+      if (!(val instanceof String)) {
+        setErr("mismatch: '" + expected + "'!='" + val + "', value is not a string");
+        return false;
+      }
+      Pattern pattern = Pattern.compile(regex);
+      Matcher matcher = pattern.matcher((String)val);
+      if (matcher.find()) {
+        return true;
+      }
+      setErr("mismatch: '" + expected + "'!='" + val + "', regex does not match");
+      return false;
+    }
+
+    setErr("mismatch: '" + expected + "'!='" + val + "'");
+    return false;
   }
 
   boolean matchList() {
@@ -227,7 +259,7 @@ class CollectionTester {
     return true;
   }
 
-  private static Set<String> reserved = new HashSet<String>(Arrays.asList("_SKIP_","_MATCH_","_ORDERED_","_UNORDERED_"));
+  private static Set<String> reserved = new HashSet<>(Arrays.asList("_SKIP_","_MATCH_","_ORDERED_","_UNORDERED_"));
 
   boolean matchMap() {
     Map<String,Object> expectedMap = (Map<String,Object>)expected;
@@ -254,7 +286,7 @@ class CollectionTester {
     }
 
     Set<String> keys = match != null ? match : expectedMap.keySet();
-    Set<String> visited = new HashSet<String>();
+    Set<String> visited = new HashSet<>();
 
     Iterator<Map.Entry<String,Object>> iter = ordered ? v.entrySet().iterator() : null;
 
@@ -314,7 +346,7 @@ class CollectionTester {
           if (v.containsKey(skipStr)) skipped++;
       }
       if (numExpected != (v.size() - skipped)) {
-        HashSet<String> set = new HashSet<String>(v.keySet());
+        HashSet<String> set = new HashSet<>(v.keySet());
         set.removeAll(expectedMap.keySet());
         setErr("unexpected map keys " + set); 
         return false;

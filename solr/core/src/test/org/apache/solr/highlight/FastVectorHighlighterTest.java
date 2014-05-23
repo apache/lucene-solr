@@ -67,7 +67,7 @@ public class FastVectorHighlighterTest extends SolrTestCaseJ4 {
 
   @Test
   public void test() {
-    HashMap<String,String> args = new HashMap<String,String>();
+    HashMap<String,String> args = new HashMap<>();
     args.put("hl", "true");
     args.put("hl.fl", "tv_text");
     args.put("hl.snippets", "2");

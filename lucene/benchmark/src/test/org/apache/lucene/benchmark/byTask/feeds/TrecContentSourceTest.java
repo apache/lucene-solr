@@ -31,7 +31,8 @@ import org.apache.lucene.benchmark.byTask.feeds.TrecDocParser.ParsePathType;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TrecContentSourceTest extends LuceneTestCase {
 
@@ -343,8 +344,8 @@ public class TrecContentSourceTest extends LuceneTestCase {
    * supported formats - bzip, gzip, txt. 
    */
   public void testTrecFeedDirAllTypes() throws Exception {
-    File dataDir =  _TestUtil.getTempDir("trecFeedAllTypes");
-    _TestUtil.unzip(getDataFile("trecdocs.zip"), dataDir);
+    File dataDir =  createTempDir("trecFeedAllTypes");
+    TestUtil.unzip(getDataFile("trecdocs.zip"), dataDir);
     TrecContentSource tcs = new TrecContentSource();
     Properties props = new Properties();
     props.setProperty("print.props", "false");
@@ -359,7 +360,7 @@ public class TrecContentSourceTest extends LuceneTestCase {
     DocData dd = new DocData();
     int n = 0;
     boolean gotExpectedException = false;
-    HashSet<ParsePathType> unseenTypes = new HashSet<ParsePathType>(Arrays.asList(ParsePathType.values()));
+    HashSet<ParsePathType> unseenTypes = new HashSet<>(Arrays.asList(ParsePathType.values()));
     try {
       while (n<100) { // arbiterary limit to prevent looping forever in case of test failure
         dd = tcs.getNextDocData(dd);

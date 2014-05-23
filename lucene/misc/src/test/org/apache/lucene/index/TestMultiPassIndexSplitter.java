@@ -1,4 +1,5 @@
 package org.apache.lucene.index;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -32,7 +33,7 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE));
     Document doc;
     for (int i = 0; i < NUM_DOCS; i++) {
       doc = new Document();
@@ -43,7 +44,7 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     }
     w.commit();
     w.deleteDocuments(new Term("id", "" + (NUM_DOCS-1)));
-    w.close();
+    w.shutdown();
     input = DirectoryReader.open(dir);
   }
   

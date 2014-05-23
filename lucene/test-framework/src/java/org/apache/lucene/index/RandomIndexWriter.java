@@ -25,19 +25,14 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.NumericDocValuesField; 
-import org.apache.lucene.document.SortedDocValuesField; 
-import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.index.IndexWriter; // javadoc
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NullInfoStream;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
-import org.apache.lucene.util._TestUtil;
 
 /** Silly class that randomizes the indexing experience.  EG
  *  it may swap in a different merge policy/scheduler; may
@@ -55,23 +50,22 @@ public class RandomIndexWriter implements Closeable {
   private boolean getReaderCalled;
   private final Codec codec; // sugar
 
-  // Randomly calls Thread.yield so we mixup thread scheduling
-  private static final class MockIndexWriter extends IndexWriter {
-
-    private final Random r;
-
-    public MockIndexWriter(Random r, Directory dir, IndexWriterConfig conf) throws IOException {
-      super(dir, conf);
-      // TODO: this should be solved in a different way; Random should not be shared (!).
-      this.r = new Random(r.nextLong());
-    }
-
-    @Override
-    boolean testPoint(String name) {
-      if (r.nextInt(4) == 2)
-        Thread.yield();
-      return true;
-    }
+  
+  public static IndexWriter mockIndexWriter(Directory dir, IndexWriterConfig conf, Random r) throws IOException {
+    // Randomly calls Thread.yield so we mixup thread scheduling
+    final Random random = new Random(r.nextLong());
+    return mockIndexWriter(dir, conf,  new TestPoint() {
+      @Override
+      public void apply(String message) {
+        if (random.nextInt(4) == 2)
+          Thread.yield();
+      }
+    });
+  }
+  
+  public static IndexWriter mockIndexWriter(Directory dir, IndexWriterConfig conf, TestPoint testPoint) throws IOException {
+    conf.setInfoStream(new TestPointInfoStream(conf.getInfoStream(), testPoint));
+    return new IndexWriter(dir, conf);
   }
 
   /** create a RandomIndexWriter with a random config: Uses TEST_VERSION_CURRENT and MockAnalyzer */
@@ -93,8 +87,8 @@ public class RandomIndexWriter implements Closeable {
   public RandomIndexWriter(Random r, Directory dir, IndexWriterConfig c) throws IOException {
     // TODO: this should be solved in a different way; Random should not be shared (!).
     this.r = new Random(r.nextLong());
-    w = new MockIndexWriter(r, dir, c);
-    flushAt = _TestUtil.nextInt(r, 10, 1000);
+    w = mockIndexWriter(dir, c, r);
+    flushAt = TestUtil.nextInt(r, 10, 1000);
     codec = w.getConfig().getCodec();
     if (LuceneTestCase.VERBOSE) {
       System.out.println("RIW dir=" + dir + " config=" + w.getConfig());
@@ -111,10 +105,12 @@ public class RandomIndexWriter implements Closeable {
    * @see IndexWriter#addDocument(org.apache.lucene.index.IndexDocument)
    */
   public <T extends IndexableField> void addDocument(final IndexDocument doc) throws IOException {
+    LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
     addDocument(doc, w.getAnalyzer());
   }
 
   public <T extends IndexableField> void addDocument(final IndexDocument doc, Analyzer a) throws IOException {
+    LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
     if (r.nextInt(5) == 3) {
       // TODO: maybe, we should simply buffer up added docs
       // (but we need to clone them), and only when
@@ -156,12 +152,13 @@ public class RandomIndexWriter implements Closeable {
   }
 
   private void maybeCommit() throws IOException {
+    LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
     if (docCount++ == flushAt) {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("RIW.add/updateDocument: now doing a commit at docCount=" + docCount);
       }
       w.commit();
-      flushAt += _TestUtil.nextInt(r, (int) (flushAtFactor * 10), (int) (flushAtFactor * 1000));
+      flushAt += TestUtil.nextInt(r, (int) (flushAtFactor * 10), (int) (flushAtFactor * 1000));
       if (flushAtFactor < 2e6) {
         // gradually but exponentially increase time b/w flushes
         flushAtFactor *= 1.05;
@@ -170,11 +167,13 @@ public class RandomIndexWriter implements Closeable {
   }
   
   public void addDocuments(Iterable<? extends IndexDocument> docs) throws IOException {
+    LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
     w.addDocuments(docs);
     maybeCommit();
   }
 
   public void updateDocuments(Term delTerm, Iterable<? extends IndexDocument> docs) throws IOException {
+    LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
     w.updateDocuments(delTerm, docs);
     maybeCommit();
   }
@@ -184,6 +183,7 @@ public class RandomIndexWriter implements Closeable {
    * @see IndexWriter#updateDocument(Term, org.apache.lucene.index.IndexDocument)
    */
   public <T extends IndexableField> void updateDocument(Term t, final IndexDocument doc) throws IOException {
+    LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
     if (r.nextInt(5) == 3) {
       w.updateDocuments(t, new Iterable<IndexDocument>() {
 
@@ -220,22 +220,37 @@ public class RandomIndexWriter implements Closeable {
   }
   
   public void addIndexes(Directory... dirs) throws IOException {
+    LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
     w.addIndexes(dirs);
   }
 
   public void addIndexes(IndexReader... readers) throws IOException {
+    LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
     w.addIndexes(readers);
   }
   
+  public void updateNumericDocValue(Term term, String field, Long value) throws IOException {
+    LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
+    w.updateNumericDocValue(term, field, value);
+  }
+  
+  public void updateBinaryDocValue(Term term, String field, BytesRef value) throws IOException {
+    LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
+    w.updateBinaryDocValue(term, field, value);
+  }
+  
   public void deleteDocuments(Term term) throws IOException {
+    LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
     w.deleteDocuments(term);
   }
 
   public void deleteDocuments(Query q) throws IOException {
+    LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
     w.deleteDocuments(q);
   }
   
   public void commit() throws IOException {
+    LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
     w.commit();
   }
   
@@ -252,6 +267,7 @@ public class RandomIndexWriter implements Closeable {
   }
 
   public DirectoryReader getReader() throws IOException {
+    LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
     return getReader(true);
   }
 
@@ -259,10 +275,12 @@ public class RandomIndexWriter implements Closeable {
   private boolean doRandomForceMergeAssert = true;
 
   public void forceMergeDeletes(boolean doWait) throws IOException {
+    LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
     w.forceMergeDeletes(doWait);
   }
 
   public void forceMergeDeletes() throws IOException {
+    LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
     w.forceMergeDeletes();
   }
 
@@ -283,19 +301,25 @@ public class RandomIndexWriter implements Closeable {
           System.out.println("RIW: doRandomForceMerge(1)");
         }
         w.forceMerge(1);
-      } else {
+      } else if (r.nextBoolean()) {
         // partial forceMerge
-        final int limit = _TestUtil.nextInt(r, 1, segCount);
+        final int limit = TestUtil.nextInt(r, 1, segCount);
         if (LuceneTestCase.VERBOSE) {
           System.out.println("RIW: doRandomForceMerge(" + limit + ")");
         }
         w.forceMerge(limit);
         assert !doRandomForceMergeAssert || w.getSegmentCount() <= limit: "limit=" + limit + " actual=" + w.getSegmentCount();
+      } else {
+        if (LuceneTestCase.VERBOSE) {
+          System.out.println("RIW: do random forceMergeDeletes()");
+        }
+        w.forceMergeDeletes();
       }
     }
   }
 
   public DirectoryReader getReader(boolean applyDeletions) throws IOException {
+    LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
     getReaderCalled = true;
     if (r.nextInt(20) == 2) {
       doRandomForceMerge();
@@ -314,7 +338,7 @@ public class RandomIndexWriter implements Closeable {
       }
       w.commit();
       if (r.nextBoolean()) {
-        return DirectoryReader.open(w.getDirectory(), _TestUtil.nextInt(r, 1, 10));
+        return DirectoryReader.open(w.getDirectory());
       } else {
         return w.getReader(applyDeletions);
       }
@@ -327,12 +351,29 @@ public class RandomIndexWriter implements Closeable {
    */
   @Override
   public void close() throws IOException {
+    if (!w.isClosed()) {
+      LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
+    }
     // if someone isn't using getReader() API, we want to be sure to
     // forceMerge since presumably they might open a reader on the dir.
     if (getReaderCalled == false && r.nextInt(8) == 2) {
       doRandomForceMerge();
     }
     w.close();
+  }
+
+  /**
+   * Shuts down this writer
+   * @see IndexWriter#shutdown()
+   */
+  public void shutdown() throws IOException {
+    LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
+    // if someone isn't using getReader() API, we want to be sure to
+    // forceMerge since presumably they might open a reader on the dir.
+    if (getReaderCalled == false && r.nextInt(8) == 2) {
+      doRandomForceMerge();
+    }
+    w.shutdown();
   }
 
   /**
@@ -343,6 +384,45 @@ public class RandomIndexWriter implements Closeable {
    * @see IndexWriter#forceMerge(int)
    */
   public void forceMerge(int maxSegmentCount) throws IOException {
+    LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
     w.forceMerge(maxSegmentCount);
+  }
+  
+  static final class TestPointInfoStream extends InfoStream {
+    private final InfoStream delegate;
+    private final TestPoint testPoint;
+    
+    public TestPointInfoStream(InfoStream delegate, TestPoint testPoint) {
+      this.delegate = delegate == null ? new NullInfoStream(): delegate;
+      this.testPoint = testPoint;
+    }
+
+    @Override
+    public void close() throws IOException {
+      delegate.close();
+    }
+
+    @Override
+    public void message(String component, String message) {
+      if ("TP".equals(component)) {
+        testPoint.apply(message);
+      }
+      if (delegate.isEnabled(component)) {
+        delegate.message(component, message);
+      }
+    }
+    
+    @Override
+    public boolean isEnabled(String component) {
+      return "TP".equals(component) || delegate.isEnabled(component);
+    }
+  }
+  
+  /**
+   * Simple interface that is executed for each <tt>TP</tt> {@link InfoStream} component
+   * message. See also {@link RandomIndexWriter#mockIndexWriter(Directory, IndexWriterConfig, TestPoint)}
+   */
+  public static interface TestPoint {
+    public abstract void apply(String message);
   }
 }

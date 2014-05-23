@@ -17,13 +17,19 @@ package org.apache.lucene.util.fst;
  * limitations under the License.
  */
 
-import java.io.*;
-import java.util.*;
-
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.fst.FST.Arc;
 import org.apache.lucene.util.fst.FST.BytesReader;
+
+import java.io.IOException;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+import java.util.TreeSet;
 
 /** Static helper methods.
  *
@@ -93,9 +99,7 @@ public final class Util {
    *
    *  <p>NOTE: this only works with {@code FST<Long>}, only
    *  works when the outputs are ascending in order with
-   *  the inputs and only works when you shared
-   *  the outputs (pass doShare=true to {@link
-   *  PositiveIntOutputs#getSingleton}).
+   *  the inputs.
    *  For example, simple ordinals (0, 1,
    *  2, ...), or file offets (when appending to a file)
    *  fit this. */
@@ -106,7 +110,7 @@ public final class Util {
     // TODO: would be nice not to alloc this on every lookup
     FST.Arc<Long> arc = fst.getFirstArc(new FST.Arc<Long>());
     
-    FST.Arc<Long> scratchArc = new FST.Arc<Long>();
+    FST.Arc<Long> scratchArc = new FST.Arc<>();
 
     final IntsRef result = new IntsRef();
     
@@ -240,11 +244,16 @@ public final class Util {
     }    
   }
 
-  private static class FSTPath<T> {
+  /** Represents a path in TopNSearcher.
+   *
+   *  @lucene.experimental
+   */
+  public static class FSTPath<T> {
     public FST.Arc<T> arc;
     public T cost;
     public final IntsRef input;
 
+    /** Sole constructor */
     public FSTPath(T cost, FST.Arc<T> arc, IntsRef input) {
       this.arc = new FST.Arc<T>().copyFrom(arc);
       this.cost = cost;
@@ -285,12 +294,19 @@ public final class Util {
     private final int topN;
     private final int maxQueueDepth;
 
-    private final FST.Arc<T> scratchArc = new FST.Arc<T>();
+    private final FST.Arc<T> scratchArc = new FST.Arc<>();
     
     final Comparator<T> comparator;
 
     TreeSet<FSTPath<T>> queue = null;
 
+    /**
+     * Creates an unbounded TopNSearcher
+     * @param fst the {@link org.apache.lucene.util.fst.FST} to search on
+     * @param topN the number of top scoring entries to retrieve
+     * @param maxQueueDepth the maximum size of the queue of possible top entries
+     * @param comparator the comparator to select the top N
+     */
     public TopNSearcher(FST<T> fst, int topN, int maxQueueDepth, Comparator<T> comparator) {
       this.fst = fst;
       this.bytesReader = fst.getBytesReader();
@@ -298,11 +314,11 @@ public final class Util {
       this.maxQueueDepth = maxQueueDepth;
       this.comparator = comparator;
 
-      queue = new TreeSet<FSTPath<T>>(new TieBreakByInputComparator<T>(comparator));
+      queue = new TreeSet<>(new TieBreakByInputComparator<>(comparator));
     }
 
     // If back plus this arc is competitive then add to queue:
-    private void addIfCompetitive(FSTPath<T> path) {
+    protected void addIfCompetitive(FSTPath<T> path) {
 
       assert queue != null;
 
@@ -341,7 +357,7 @@ public final class Util {
       System.arraycopy(path.input.ints, 0, newInput.ints, 0, path.input.length);
       newInput.ints[path.input.length] = path.arc.label;
       newInput.length = path.input.length+1;
-      final FSTPath<T> newPath = new FSTPath<T>(cost, path.arc, newInput);
+      final FSTPath<T> newPath = new FSTPath<>(cost, path.arc, newInput);
 
       queue.add(newPath);
 
@@ -359,7 +375,7 @@ public final class Util {
         startOutput = fst.outputs.getNoOutput();
       }
 
-      FSTPath<T> path = new FSTPath<T>(startOutput, node, input);
+      FSTPath<T> path = new FSTPath<>(startOutput, node, input);
       fst.readFirstTargetArc(node, path.arc, bytesReader);
 
       //System.out.println("add start paths");
@@ -376,9 +392,9 @@ public final class Util {
       }
     }
 
-    public MinResult<T>[] search() throws IOException {
+    public TopResults<T> search() throws IOException {
 
-      final List<MinResult<T>> results = new ArrayList<MinResult<T>>();
+      final List<Result<T>> results = new ArrayList<>();
 
       //System.out.println("search topN=" + topN);
 
@@ -401,6 +417,7 @@ public final class Util {
 
         if (queue == null) {
           // Ran out of paths
+          //System.out.println("  break queue=null");
           break;
         }
 
@@ -410,6 +427,7 @@ public final class Util {
 
         if (path == null) {
           // There were less than topN paths available:
+          //System.out.println("  break no more paths");
           break;
         }
 
@@ -417,7 +435,7 @@ public final class Util {
           //System.out.println("    empty string!  cost=" + path.cost);
           // Empty string!
           path.input.length--;
-          results.add(new MinResult<T>(path.input, path.cost));
+          results.add(new Result<>(path.input, path.cost));
           continue;
         }
 
@@ -480,10 +498,10 @@ public final class Util {
             //System.out.println("    done!: " + path);
             T finalOutput = fst.outputs.add(path.cost, path.arc.output);
             if (acceptResult(path.input, finalOutput)) {
-              results.add(new MinResult<T>(path.input, finalOutput));
+              //System.out.println("    add result: " + path);
+              results.add(new Result<>(path.input, finalOutput));
             } else {
               rejectCount++;
-              assert rejectCount + topN <= maxQueueDepth: "maxQueueDepth (" + maxQueueDepth + ") is too small for topN (" + topN + "): rejected " + rejectCount + " paths";
             }
             break;
           } else {
@@ -494,10 +512,7 @@ public final class Util {
           }
         }
       }
-    
-      @SuppressWarnings({"rawtypes","unchecked"}) final MinResult<T>[] arr =
-        (MinResult<T>[]) new MinResult[results.size()];
-      return results.toArray(arr);
+      return new TopResults<>(rejectCount + topN <= maxQueueDepth, results);
     }
 
     protected boolean acceptResult(IntsRef input, T output) {
@@ -507,27 +522,52 @@ public final class Util {
 
   /** Holds a single input (IntsRef) + output, returned by
    *  {@link #shortestPaths shortestPaths()}. */
-  public final static class MinResult<T> {
+  public final static class Result<T> {
     public final IntsRef input;
     public final T output;
-    public MinResult(IntsRef input, T output) {
+    public Result(IntsRef input, T output) {
       this.input = input;
       this.output = output;
     }
   }
 
+
+  /**
+   * Holds the results for a top N search using {@link TopNSearcher}
+   */
+  public static final class TopResults<T> implements Iterable<Result<T>> {
+
+    /**
+     * <code>true</code> iff this is a complete result ie. if
+     * the specified queue size was large enough to find the complete list of results. This might
+     * be <code>false</code> if the {@link TopNSearcher} rejected too many results.
+     */
+    public final boolean isComplete;
+    /**
+     * The top results
+     */
+    public final List<Result<T>> topN;
+
+    TopResults(boolean isComplete, List<Result<T>> topN) {
+      this.topN = topN;
+      this.isComplete = isComplete;
+    }
+
+    @Override
+    public Iterator<Result<T>> iterator() {
+      return topN.iterator();
+    }
+  }
+
+
   /** Starting from node, find the top N min cost 
-   *  completions to a final node.
-   *
-   *  <p>NOTE: you must share the outputs when you build the
-   *  FST (pass doShare=true to {@link
-   *  PositiveIntOutputs#getSingleton}). */
-  public static <T> MinResult<T>[] shortestPaths(FST<T> fst, FST.Arc<T> fromNode, T startOutput, Comparator<T> comparator, int topN,
+   *  completions to a final node. */
+  public static <T> TopResults<T> shortestPaths(FST<T> fst, FST.Arc<T> fromNode, T startOutput, Comparator<T> comparator, int topN,
                                                  boolean allowEmptyString) throws IOException {
 
     // All paths are kept, so we can pass topN for
     // maxQueueDepth and the pruning is admissible:
-    TopNSearcher<T> searcher = new TopNSearcher<T>(fst, topN, topN, comparator);
+    TopNSearcher<T> searcher = new TopNSearcher<>(fst, topN, topN, comparator);
 
     // since this search is initialized with a single start node 
     // it is okay to start with an empty input path here
@@ -576,15 +616,15 @@ public final class Util {
     final FST.Arc<T> startArc = fst.getFirstArc(new FST.Arc<T>());
 
     // A queue of transitions to consider for the next level.
-    final List<FST.Arc<T>> thisLevelQueue = new ArrayList<FST.Arc<T>>();
+    final List<FST.Arc<T>> thisLevelQueue = new ArrayList<>();
 
     // A queue of transitions to consider when processing the next level.
-    final List<FST.Arc<T>> nextLevelQueue = new ArrayList<FST.Arc<T>>();
+    final List<FST.Arc<T>> nextLevelQueue = new ArrayList<>();
     nextLevelQueue.add(startArc);
     //System.out.println("toDot: startArc: " + startArc);
     
     // A list of states on the same level (for ranking).
-    final List<Integer> sameLevelStates = new ArrayList<Integer>();
+    final List<Integer> sameLevelStates = new ArrayList<>();
 
     // A bitset of already seen states (target offset).
     final BitSet seen = new BitSet();
@@ -607,7 +647,7 @@ public final class Util {
     final T NO_OUTPUT = fst.outputs.getNoOutput();
     final BytesReader r = fst.getBytesReader();
 
-    // final FST.Arc<T> scratchArc = new FST.Arc<T>();
+    // final FST.Arc<T> scratchArc = new FST.Arc<>();
 
     {
       final String stateColor;
@@ -767,11 +807,12 @@ public final class Util {
    * Ensures an arc's label is indeed printable (dot uses US-ASCII). 
    */
   private static String printableLabel(int label) {
-    if (label >= 0x20 && label <= 0x7d) {
+    // Any ordinary ascii character, except for " or \, are
+    // printed as the character; else, as a hex string:
+    if (label >= 0x20 && label <= 0x7d && label != 0x22 && label != 0x5c) {  // " OR \
       return Character.toString((char) label);
-    } else {
-      return "0x" + Integer.toHexString(label);
     }
+    return "0x" + Integer.toHexString(label);
   }
 
   /** Just maps each UTF16 unit (char) to the ints in an
@@ -814,7 +855,7 @@ public final class Util {
     final int charLimit = offset + length;
     while(charIdx < charLimit) {
       scratch.grow(intIdx+1);
-      final int utf32 = Character.codePointAt(s, charIdx);
+      final int utf32 = Character.codePointAt(s, charIdx, charLimit);
       scratch.ints[intIdx] = utf32;
       charIdx += Character.charCount(utf32);
       intIdx++;

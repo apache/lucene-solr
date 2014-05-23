@@ -75,7 +75,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
         type = stream.getContentType();
       }
       if( type == null ) { // Normal requests will not get here.
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Missing ContentType");
+        throw new SolrException(ErrorCode.UNSUPPORTED_MEDIA_TYPE, "Missing ContentType");
       }
       int idx = type.indexOf(';');
       if(idx>0) {
@@ -83,7 +83,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
       }
       ContentStreamLoader loader = loaders.get(type);
       if(loader==null) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Unsupported ContentType: "
+        throw new SolrException(ErrorCode.UNSUPPORTED_MEDIA_TYPE, "Unsupported ContentType: "
             +type+ "  Not in: "+loaders.keySet());
       }
       if(loader.getDefaultWT()!=null) {
@@ -98,7 +98,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
         String wt = loader.getDefaultWT();
         // Make sure it is a valid writer
         if(req.getCore().getQueryResponseWriter(wt)!=null) {
-          Map<String,String> map = new HashMap<String,String>(1);
+          Map<String,String> map = new HashMap<>(1);
           map.put(CommonParams.WT, wt);
           req.setParams(SolrParams.wrapDefaults(params, 
               new MapSolrParams(map)));
@@ -117,7 +117,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
   
   protected void setAssumeContentType(String ct) {
     if(invariants==null) {
-      Map<String,String> map = new HashMap<String,String>();
+      Map<String,String> map = new HashMap<>();
       map.put(UpdateParams.ASSUME_CONTENT_TYPE,ct);
       invariants = new MapSolrParams(map);
     }
@@ -133,7 +133,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
     if(args!=null) {
       p = SolrParams.toSolrParams(args);
     }
-    Map<String,ContentStreamLoader> registry = new HashMap<String,ContentStreamLoader>();
+    Map<String,ContentStreamLoader> registry = new HashMap<>();
     registry.put("application/xml", new XMLLoader().init(p) );
     registry.put("application/json", new JsonLoader().init(p) );
     registry.put("application/csv", new CSVLoader().init(p) );

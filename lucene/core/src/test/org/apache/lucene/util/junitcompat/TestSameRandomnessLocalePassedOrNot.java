@@ -2,7 +2,8 @@ package org.apache.lucene.util.junitcompat;
 
 import java.util.*;
 
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.junit.*;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
@@ -53,7 +54,7 @@ public class TestSameRandomnessLocalePassedOrNot extends WithNestedTests {
       seed = RandomizedContext.current().getRunnerSeedAsString();
 
       Random rnd = random();
-      pickString = _TestUtil.randomSimpleString(rnd);
+      pickString = TestUtil.randomSimpleString(rnd);
       
       defaultLocale = Locale.getDefault();
       defaultTimeZone = TimeZone.getDefault();

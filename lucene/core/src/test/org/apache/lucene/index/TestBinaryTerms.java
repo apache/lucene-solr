@@ -53,7 +53,7 @@ public class TestBinaryTerms extends LuceneTestCase {
     }
     
     IndexReader ir = iw.getReader();
-    iw.close();
+    iw.shutdown();
     
     IndexSearcher is = newSearcher(ir);
     

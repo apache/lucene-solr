@@ -65,7 +65,7 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
     }
   }
   
-  private static final class ScoreCachingCollector extends Collector {
+  private static final class ScoreCachingCollector extends SimpleCollector {
 
     private int idx = 0;
     private Scorer scorer;
@@ -88,9 +88,6 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
       ++idx;
     }
 
-    @Override public void setNextReader(AtomicReaderContext context) {
-    }
-
     @Override public void setScorer(Scorer scorer) {
       this.scorer = new ScoreCachingWrappingScorer(scorer);
     }
@@ -110,7 +107,7 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     writer.commit();
     IndexReader ir = writer.getReader();
-    writer.close();
+    writer.shutdown();
     IndexSearcher searcher = newSearcher(ir);
     Weight fake = new TermQuery(new Term("fake", "weight")).createWeight(searcher);
     Scorer s = new SimpleScorer(fake);

@@ -21,6 +21,7 @@ import java.io.Reader;
 import java.io.StringReader;
 
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 /**
@@ -29,7 +30,8 @@ import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 public class TestCJKBigramFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testDefaults() throws Exception {
     Reader reader = new StringReader("多くの学生が試験に落ちた。");
-    TokenStream stream = tokenizerFactory("standard").create(reader);
+    TokenStream stream = tokenizerFactory("standard").create();
+    ((Tokenizer)stream).setReader(reader);
     stream = tokenFilterFactory("CJKBigram").create(stream);
     assertTokenStreamContents(stream,
         new String[] { "多く", "くの", "の学", "学生", "生が", "が試", "試験", "験に", "に落", "落ち", "ちた" });
@@ -37,7 +39,8 @@ public class TestCJKBigramFilterFactory extends BaseTokenStreamFactoryTestCase {
   
   public void testHanOnly() throws Exception {
     Reader reader = new StringReader("多くの学生が試験に落ちた。");
-    TokenStream stream = tokenizerFactory("standard").create(reader);
+    TokenStream stream = tokenizerFactory("standard").create();
+    ((Tokenizer)stream).setReader(reader);
     stream = tokenFilterFactory("CJKBigram", 
         "hiragana", "false").create(stream);
     assertTokenStreamContents(stream,
@@ -46,7 +49,8 @@ public class TestCJKBigramFilterFactory extends BaseTokenStreamFactoryTestCase {
   
   public void testHanOnlyUnigrams() throws Exception {
     Reader reader = new StringReader("多くの学生が試験に落ちた。");
-    TokenStream stream = tokenizerFactory("standard").create(reader);
+    TokenStream stream = tokenizerFactory("standard").create();
+    ((Tokenizer)stream).setReader(reader);
     stream = tokenFilterFactory("CJKBigram", 
         "hiragana", "false", 
         "outputUnigrams", "true").create(stream);

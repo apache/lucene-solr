@@ -37,6 +37,9 @@
     <module>dataimporthandler-extras</module>
     <module>extraction</module>
     <module>langid</module>
+    <module>morphlines-cell</module>
+    <module>morphlines-core</module>
+    <module>map-reduce</module>
     <module>uima</module>
     <module>velocity</module>
   </modules>

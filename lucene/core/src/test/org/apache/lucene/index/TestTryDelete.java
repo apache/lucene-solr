@@ -40,7 +40,7 @@ public class TestTryDelete extends LuceneTestCase
   private static IndexWriter getWriter (Directory directory)
     throws IOException
   {
-    LogMergePolicy policy = new LogByteSizeMergePolicy();
+    MergePolicy policy = new LogByteSizeMergePolicy();
     IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT,
                                                    new MockAnalyzer(random()));
     conf.setMergePolicy(policy);
@@ -65,7 +65,7 @@ public class TestTryDelete extends LuceneTestCase
     }
 
     writer.commit();
-    writer.close();
+    writer.shutdown();
 
     return directory;
   }
@@ -153,7 +153,7 @@ public class TestTryDelete extends LuceneTestCase
 
     assertEquals(0, topDocs.totalHits);
 
-    writer.close();
+    writer.shutdown();
 
     searcher = new IndexSearcher(DirectoryReader.open(directory));
 

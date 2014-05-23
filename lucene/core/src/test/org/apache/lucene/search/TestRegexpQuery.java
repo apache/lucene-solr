@@ -51,7 +51,7 @@ public class TestRegexpQuery extends LuceneTestCase {
     doc.add(newTextField(FN, "the quick brown fox jumps over the lazy ??? dog 493432 49344", Field.Store.NO));
     writer.addDocument(doc);
     reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     searcher = newSearcher(reader);
   }
   

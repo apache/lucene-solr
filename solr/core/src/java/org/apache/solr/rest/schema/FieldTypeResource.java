@@ -88,7 +88,7 @@ public class FieldTypeResource extends BaseFieldTypeResource implements GETable 
    */
   @Override
   protected List<String> getFieldsWithFieldType(FieldType fieldType) {
-    List<String> fields = new ArrayList<String>();
+    List<String> fields = new ArrayList<>();
     for (SchemaField schemaField : getSchema().getFields().values()) {
       if (schemaField.getType().getTypeName().equals(fieldType.getTypeName())) {
         fields.add(schemaField.getName());
@@ -104,7 +104,7 @@ public class FieldTypeResource extends BaseFieldTypeResource implements GETable 
    */
   @Override
   protected List<String> getDynamicFieldsWithFieldType(FieldType fieldType) {
-    List<String> dynamicFields = new ArrayList<String>();
+    List<String> dynamicFields = new ArrayList<>();
     for (SchemaField prototype : getSchema().getDynamicFieldPrototypes()) {
       if (prototype.getType().getTypeName().equals(fieldType.getTypeName())) {
         dynamicFields.add(prototype.getName());

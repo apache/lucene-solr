@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">3451</int>
+    <lst name="params">
+      <str name="q">*:*</str>
+      <str name="group.limit">1</str>
+      <str name="group.field">acco_id</str>
+      <str name="group.format">simple</str>
+      <str name="group">true</str>
+      <str name="group.ngroups">true</str>
+    </lst>
+  </lst>
+  <lst name="grouped">
+    <lst name="acco_id">
+      <int name="matches">30000000</int>
+      <int name="ngroups">5687</int>
+      <result name="doclist" numFound="30000000" start="0">
+        <doc>
+          <int name="id">0</int>
+          <str name="country">EG</str>
+          <str name="acco_id">116_AR</str>
+          <int name="price">417500</int>
+        </doc>
+        <doc>
+          <int name="id">2236</int>
+          <str name="country">EG</str>
+          <str name="acco_id">116_HI</str>
+          <int name="price">475300</int>
+        </doc>
+        <doc>
+          <int name="id">4470</int>
+          <str name="country">ES</str>
+          <str name="acco_id">953_AR</str>
+          <int name="price">559600</int>
+        </doc>
+        <doc>
+          <int name="id">5490</int>
+          <str name="country">ES</str>
+          <str name="acco_id">953_HI</str>
+          <int name="price">594600</int>
+        </doc>
+        <doc>
+          <int name="id">6520</int>
+          <str name="country">EG</str>
+          <str name="acco_id">954_AR</str>
+          <int name="price">425100</int>
+        </doc>
+        <doc>
+          <int name="id">8756</int>
+          <str name="country">EG</str>
+          <str name="acco_id">954_HI</str>
+          <int name="price">444400</int>
+        </doc>
+        <doc>
+          <int name="id">10990</int>
+          <str name="country">ES</str>
+          <str name="acco_id">546_AR</str>
+          <int name="price">1314300</int>
+        </doc>
+        <doc>
+          <int name="id">15974</int>
+          <str name="country">ES</str>
+          <str name="acco_id">546_HI</str>
+          <int name="price">1243500</int>
+        </doc>
+        <doc>
+          <int name="id">20958</int>
+          <str name="country">ES</str>
+          <str name="acco_id">708_AR</str>
+          <int name="price">1515300</int>
+        </doc>
+        <doc>
+          <int name="id">25585</int>
+          <str name="country">ES</str>
+          <str name="acco_id">708_HI</str>
+          <int name="price">1449700</int>
+        </doc>
+      </result>
+    </lst>
+  </lst>
+</response>
+

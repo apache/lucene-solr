@@ -18,6 +18,7 @@ package org.apache.solr.servlet;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 import org.apache.http.HttpResponse;
@@ -39,7 +40,7 @@ public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
     HttpSolrServer httpserver = (HttpSolrServer)getSolrServer();
     HttpRequestBase m = null;
     
-    ArrayList<BasicNameValuePair> qparams = new ArrayList<BasicNameValuePair>();
+    ArrayList<BasicNameValuePair> qparams = new ArrayList<>();
     if(params.length==0) {
       qparams.add(new BasicNameValuePair("q", "solr"));
       qparams.add(new BasicNameValuePair("qt", "standard"));
@@ -49,7 +50,7 @@ public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
     }
 
     URI uri = URI.create(httpserver.getBaseURL() + "/select?" +
-                         URLEncodedUtils.format(qparams, "UTF-8"));
+                         URLEncodedUtils.format(qparams, StandardCharsets.UTF_8));
    
     if ("GET".equals(method)) {
       m = new HttpGet(uri);
@@ -66,13 +67,13 @@ public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
     HttpSolrServer httpserver = (HttpSolrServer)getSolrServer();
     HttpRequestBase m = null;
     
-    ArrayList<BasicNameValuePair> qparams = new ArrayList<BasicNameValuePair>();
+    ArrayList<BasicNameValuePair> qparams = new ArrayList<>();
     for(int i=0;i<params.length/2;i++) {
       qparams.add(new BasicNameValuePair(params[i*2], params[i*2+1]));
     }
 
     URI uri = URI.create(httpserver.getBaseURL() + "/update?" + 
-                         URLEncodedUtils.format(qparams, "UTF-8"));
+                         URLEncodedUtils.format(qparams, StandardCharsets.UTF_8));
     
     if ("GET".equals(method)) {
       m=new HttpGet(uri);

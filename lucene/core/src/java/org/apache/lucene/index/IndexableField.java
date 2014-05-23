@@ -42,11 +42,17 @@ public interface IndexableField extends GeneralField {
    * implementations should use the given Analyzer to create the TokenStreams.
    *
    * @param analyzer Analyzer that should be used to create the TokenStreams from
+   * @param reuse TokenStream for a previous instance of this field <b>name</b>. This allows
+   *              custom field types (like StringField and NumericField) that do not use
+   *              the analyzer to still have good performance. Note: the passed-in type
+   *              may be inappropriate, for example if you mix up different types of Fields
+   *              for the same field name. So its the responsibility of the implementation to
+   *              check.
    * @return TokenStream value for indexing the document.  Should always return
    *         a non-null value if the field is to be indexed
    * @throws IOException Can be thrown while creating the TokenStream
    */
-  public TokenStream tokenStream(Analyzer analyzer) throws IOException;
+  public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) throws IOException;
 
   /** 
    * Returns the field's index-time boost.

@@ -25,8 +25,9 @@ import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
@@ -41,7 +42,7 @@ public class Test4GBStoredFields extends LuceneTestCase {
 
   @Nightly
   public void test() throws Exception {
-    MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new MMapDirectory(_TestUtil.getTempDir("4GBStoredFields")));
+    MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new MMapDirectory(createTempDir("4GBStoredFields")));
     dir.setThrottling(MockDirectoryWrapper.Throttling.NEVER);
 
     IndexWriter w = new IndexWriter(dir,
@@ -80,7 +81,7 @@ public class Test4GBStoredFields extends LuceneTestCase {
       }
     }
     w.forceMerge(1);
-    w.close();
+    w.shutdown();
     if (VERBOSE) {
       boolean found = false;
       for (String file : dir.listAll()) {

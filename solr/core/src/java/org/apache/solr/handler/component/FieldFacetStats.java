@@ -25,10 +25,10 @@ import java.util.Map;
 
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -48,6 +48,7 @@ public class FieldFacetStats {
   public final String name;
   final SchemaField facet_sf;
   final SchemaField field_sf;
+  final boolean calcDistinct;
 
   public final Map<String, StatsValues> facetStatsValues;
 
@@ -63,22 +64,23 @@ public class FieldFacetStats {
 
   private final BytesRef tempBR = new BytesRef();
 
-  public FieldFacetStats(SolrIndexSearcher searcher, String name, SchemaField field_sf, SchemaField facet_sf) {
+  public FieldFacetStats(SolrIndexSearcher searcher, String name, SchemaField field_sf, SchemaField facet_sf, boolean calcDistinct) {
     this.name = name;
     this.field_sf = field_sf;
     this.facet_sf = facet_sf;
+    this.calcDistinct = calcDistinct;
 
     topLevelReader = searcher.getAtomicReader();
     valueSource = facet_sf.getType().getValueSource(facet_sf, null);
 
-    facetStatsValues = new HashMap<String, StatsValues>();
-    facetStatsTerms = new ArrayList<HashMap<String, Integer>>();
+    facetStatsValues = new HashMap<>();
+    facetStatsTerms = new ArrayList<>();
   }
 
   private StatsValues getStatsValues(String key) throws IOException {
     StatsValues stats = facetStatsValues.get(key);
     if (stats == null) {
-      stats = StatsValuesFactory.createStatsValues(field_sf);
+      stats = StatsValuesFactory.createStatsValues(field_sf, calcDistinct);
       facetStatsValues.put(key, stats);
       stats.setNextReader(context);
     }
@@ -98,7 +100,7 @@ public class FieldFacetStats {
   // Currently only used by UnInvertedField stats
   public boolean facetTermNum(int docID, int statsTermNum) throws IOException {
     if (topLevelSortedValues == null) {
-      topLevelSortedValues = FieldCache.DEFAULT.getTermsIndex(topLevelReader, name);
+      topLevelSortedValues = DocValues.getSorted(topLevelReader, name);
     }
     
     int term = topLevelSortedValues.getOrd(docID);
@@ -139,7 +141,7 @@ public class FieldFacetStats {
       String key = (String) pairs.getKey();
       StatsValues facetStats = facetStatsValues.get(key);
       if (facetStats == null) {
-        facetStats = StatsValuesFactory.createStatsValues(field_sf);
+        facetStats = StatsValuesFactory.createStatsValues(field_sf, calcDistinct);
         facetStatsValues.put(key, facetStats);
       }
       Integer count = (Integer) pairs.getValue();

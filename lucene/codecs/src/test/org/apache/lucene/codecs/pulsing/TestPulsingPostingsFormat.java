@@ -19,14 +19,15 @@ package org.apache.lucene.codecs.pulsing;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Tests PulsingPostingsFormat
  */
 public class TestPulsingPostingsFormat extends BasePostingsFormatTestCase {
   // TODO: randomize cutoff
-  private final Codec codec = _TestUtil.alwaysPostingsFormat(new Pulsing41PostingsFormat());
+  private final Codec codec = TestUtil.alwaysPostingsFormat(new Pulsing41PostingsFormat());
 
   @Override
   protected Codec getCodec() {

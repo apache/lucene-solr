@@ -20,8 +20,6 @@ import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.Query;
@@ -48,7 +46,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.*;
 
 /**
@@ -71,27 +68,27 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
   // Thread safe registry
   protected final Map<String,SolrFormatter> formatters =
-    new HashMap<String, SolrFormatter>();
+    new HashMap<>();
 
   // Thread safe registry
   protected final Map<String,SolrEncoder> encoders =
-    new HashMap<String, SolrEncoder>();
+    new HashMap<>();
 
   // Thread safe registry
   protected final Map<String,SolrFragmenter> fragmenters =
-    new HashMap<String, SolrFragmenter>() ;
+    new HashMap<>() ;
 
   // Thread safe registry
   protected final Map<String, SolrFragListBuilder> fragListBuilders =
-    new HashMap<String, SolrFragListBuilder>() ;
+    new HashMap<>() ;
 
   // Thread safe registry
   protected final Map<String, SolrFragmentsBuilder> fragmentsBuilders =
-    new HashMap<String, SolrFragmentsBuilder>() ;
+    new HashMap<>() ;
 
   // Thread safe registry
   protected final Map<String, SolrBoundaryScanner> boundaryScanners =
-    new HashMap<String, SolrBoundaryScanner>() ;
+    new HashMap<>() ;
 
   @Override
   public void init(PluginInfo info) {
@@ -114,7 +111,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     formatters.put("", fmt);
     formatters.put(null, fmt);
 
-    // Load the formatters
+    // Load the encoders
     SolrEncoder enc = solrCore.initPlugins(info.getChildren("encoder"), encoders,SolrEncoder.class,null);
     if (enc == null) enc = new DefaultEncoder();
     encoders.put("", enc);
@@ -383,7 +380,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     IndexSchema schema = searcher.getSchema();
     NamedList fragments = new SimpleOrderedMap();
     String[] fieldNames = getHighlightFields(query, req, defaultFields);
-    Set<String> fset = new HashSet<String>();
+    Set<String> fset = new HashSet<>();
      
     {
       // pre-fetch documents using the Searcher's doc cache
@@ -400,7 +397,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
         params.getBool( HighlightParams.USE_PHRASE_HIGHLIGHTER, true ),
         // FVH cannot process hl.requireFieldMatch parameter per-field basis
         params.getBool( HighlightParams.FIELD_MATCH, false ) );
-    fvh.setPhraseLimit(params.getInt(HighlightParams.PHRASE_LIMIT, Integer.MAX_VALUE));
+    fvh.setPhraseLimit(params.getInt(HighlightParams.PHRASE_LIMIT, SolrHighlighter.DEFAULT_PHRASE_LIMIT));
     FieldQuery fieldQuery = fvh.getFieldQuery( query, searcher.getIndexReader() );
 
     // Highlight each document
@@ -467,7 +464,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     boolean mergeContiguousFragments = isMergeContiguousFragments(fieldName, params);
 
     String[] summaries = null;
-    List<TextFragment> frags = new ArrayList<TextFragment>();
+    List<TextFragment> frags = new ArrayList<>();
 
     TermOffsetsTokenStream tots = null; // to be non-null iff we're using TermOffsets optimization
     TokenStream tvStream = TokenSources.getTokenStreamWithOffsets(searcher.getIndexReader(), docId, fieldName);
@@ -556,7 +553,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
      // convert fragments back into text
      // TODO: we can include score and position information in output as snippet attributes
     if (frags.size() > 0) {
-      ArrayList<String> fragTexts = new ArrayList<String>();
+      ArrayList<String> fragTexts = new ArrayList<>();
       for (TextFragment fragment: frags) {
         if (preserveMulti) {
           if (fragment != null) {
@@ -603,7 +600,11 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     String alternateField = params.getFieldParam(fieldName, HighlightParams.ALTERNATE_FIELD);
     if (alternateField != null && alternateField.length() > 0) {
       StorableField[] docFields = doc.getFields(alternateField);
-      List<String> listFields = new ArrayList<String>();
+      if (docFields.length == 0) {
+        // The alternate field did not exist, treat the original field as fallback instead
+        docFields = doc.getFields(fieldName);
+      }
+      List<String> listFields = new ArrayList<>();
       for (StorableField field : docFields) {
         if (field.binaryValue() == null)
           listFields.add(field.stringValue());
@@ -614,7 +615,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       if (altTexts != null && altTexts.length > 0){
         Encoder encoder = getEncoder(fieldName, params);
         int alternateFieldLen = params.getFieldInt(fieldName, HighlightParams.ALTERNATE_FIELD_LENGTH,0);
-        List<String> altList = new ArrayList<String>();
+        List<String> altList = new ArrayList<>();
         int len = 0;
         for( String altText: altTexts ){
           if( alternateFieldLen <= 0 ){
@@ -636,7 +637,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   private TokenStream createAnalyzerTStream(IndexSchema schema, String fieldName, String docText) throws IOException {
 
     TokenStream tstream;
-    TokenStream ts = schema.getAnalyzer().tokenStream(fieldName, new StringReader(docText));
+    TokenStream ts = schema.getIndexAnalyzer().tokenStream(fieldName, docText);
     ts.reset();
     tstream = new TokenOrderingFilter(ts, 10);
     return tstream;
@@ -650,7 +651,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
  */
 final class TokenOrderingFilter extends TokenFilter {
   private final int windowSize;
-  private final LinkedList<OrderedToken> queue = new LinkedList<OrderedToken>();
+  private final LinkedList<OrderedToken> queue = new LinkedList<>();
   private boolean done=false;
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   
@@ -691,6 +692,11 @@ final class TokenOrderingFilter extends TokenFilter {
       restoreState(queue.removeFirst().state);
       return true;
     }
+  }
+
+  @Override
+  public void reset() throws IOException {
+    // this looks wrong: but its correct.
   }
 }
 

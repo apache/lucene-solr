@@ -38,12 +38,16 @@ import org.apache.lucene.index.SegmentWriteState;
  *    minvalue 0
  *    pattern 000
  *  005
+ *  T
  *  234
+ *  T
  *  123
+ *  T
  *  ...
  *  </pre>
  *  so a document's value (delta encoded from minvalue) can be retrieved by 
- *  seeking to startOffset + (1+pattern.length())*docid. The extra 1 is the newline.
+ *  seeking to startOffset + (1+pattern.length()+2)*docid. The extra 1 is the newline. 
+ *  The extra 2 is another newline and 'T' or 'F': true if the value is real, false if missing.
  *  
  *  for bytes this is also a "fixed-width" file, for example:
  *  <pre>
@@ -53,12 +57,15 @@ import org.apache.lucene.index.SegmentWriteState;
  *    pattern 0
  *  length 6
  *  foobar[space][space]
+ *  T
  *  length 3
  *  baz[space][space][space][space][space]
+ *  T
  *  ...
  *  </pre>
- *  so a doc's value can be retrieved by seeking to startOffset + (9+pattern.length+maxlength)*doc
+ *  so a doc's value can be retrieved by seeking to startOffset + (9+pattern.length+maxlength+2)*doc
  *  the extra 9 is 2 newlines, plus "length " itself.
+ *  the extra 2 is another newline and 'T' or 'F': true if the value is real, false if missing.
  *  
  *  for sorted bytes this is a fixed-width file, for example:
  *  <pre>

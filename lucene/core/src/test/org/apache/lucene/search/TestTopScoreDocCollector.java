@@ -60,7 +60,7 @@ public class TestTopScoreDocCollector extends LuceneTestCase {
         assertEquals("expected doc Id " + j + " found " + sd[j].doc, j, sd[j].doc);
       }
     }
-    writer.close();
+    writer.shutdown();
     reader.close();
     dir.close();
   }

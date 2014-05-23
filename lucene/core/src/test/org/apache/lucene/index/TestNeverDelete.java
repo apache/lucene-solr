@@ -27,7 +27,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 // Make sure if you use NoDeletionPolicy that no file
 // referenced by a commit point is ever deleted
@@ -35,7 +35,7 @@ import org.apache.lucene.util._TestUtil;
 public class TestNeverDelete extends LuceneTestCase {
 
   public void testIndexing() throws Exception {
-    final File tmpDir = _TestUtil.getTempDir("TestNeverDelete");
+    final File tmpDir = createTempDir("TestNeverDelete");
     final BaseDirectoryWrapper d = newFSDirectory(tmpDir);
 
     // We want to "see" files removed if Lucene removed
@@ -49,7 +49,7 @@ public class TestNeverDelete extends LuceneTestCase {
                                                       newIndexWriterConfig(TEST_VERSION_CURRENT,
                                                                            new MockAnalyzer(random()))
                                                       .setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));
-    w.w.getConfig().setMaxBufferedDocs(_TestUtil.nextInt(random(), 5, 30));
+    w.w.getConfig().setMaxBufferedDocs(TestUtil.nextInt(random(), 5, 30));
 
     w.commit();
     Thread[] indexThreads = new Thread[random().nextInt(4)];
@@ -80,7 +80,7 @@ public class TestNeverDelete extends LuceneTestCase {
       indexThreads[x].start();
     }
 
-    final Set<String> allFiles = new HashSet<String>();
+    final Set<String> allFiles = new HashSet<>();
 
     DirectoryReader r = DirectoryReader.open(d);
     while(System.currentTimeMillis() < stopTime) {
@@ -91,7 +91,7 @@ public class TestNeverDelete extends LuceneTestCase {
       allFiles.addAll(ic.getFileNames());
       // Make sure no old files were removed
       for(String fileName : allFiles) {
-        assertTrue("file " + fileName + " does not exist", d.fileExists(fileName));
+        assertTrue("file " + fileName + " does not exist", slowFileExists(d, fileName));
       }
       DirectoryReader r2 = DirectoryReader.openIfChanged(r);
       if (r2 != null) {
@@ -105,9 +105,9 @@ public class TestNeverDelete extends LuceneTestCase {
     for(Thread t : indexThreads) {
       t.join();
     }
-    w.close();
+    w.shutdown();
     d.close();
 
-    _TestUtil.rmDir(tmpDir);
+    TestUtil.rm(tmpDir);
   }
 }

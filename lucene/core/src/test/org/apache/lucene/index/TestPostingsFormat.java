@@ -28,4 +28,10 @@ public class TestPostingsFormat extends BasePostingsFormatTestCase {
   protected Codec getCodec() {
     return Codec.getDefault();
   }
+
+  @Override
+  public void testMergeStability() throws Exception {
+    assumeTrue("The MockRandom PF randomizes content on the fly, so we can't check it", false);
+  }
+
 }

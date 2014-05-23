@@ -60,8 +60,7 @@ public class GenerateHTMLStripCharFilterSupplementaryMacros {
 
   static void outputHeader() {
     System.out.print(APACHE_LICENSE);
-    System.out.print("// Generated using ICU4J " + VersionInfo.ICU_VERSION.toString() + " on ");
-    System.out.println(DATE_FORMAT.format(new Date()));
+    System.out.println("// Generated using ICU4J " + VersionInfo.ICU_VERSION.toString());
     System.out.println("// by " + GenerateHTMLStripCharFilterSupplementaryMacros.class.getName());
     System.out.print(NL + NL);
   }
@@ -77,7 +76,7 @@ public class GenerateHTMLStripCharFilterSupplementaryMacros {
       System.out.println("\t  []");
     }
 
-    HashMap<Character,UnicodeSet> utf16ByLead = new HashMap<Character,UnicodeSet>();
+    HashMap<Character,UnicodeSet> utf16ByLead = new HashMap<>();
     for (UnicodeSetIterator it = new UnicodeSetIterator(set); it.next();) {
       char utf16[] = Character.toChars(it.codepoint);
       UnicodeSet trails = utf16ByLead.get(utf16[0]);
@@ -88,7 +87,7 @@ public class GenerateHTMLStripCharFilterSupplementaryMacros {
       trails.add(utf16[1]);
     }
     
-    Map<String,UnicodeSet> utf16ByTrail = new HashMap<String,UnicodeSet>();
+    Map<String,UnicodeSet> utf16ByTrail = new HashMap<>();
     for (Map.Entry<Character,UnicodeSet> entry : utf16ByLead.entrySet()) {
       String trail = entry.getValue().getRegexEquivalent();
       UnicodeSet leads = utf16ByTrail.get(trail);

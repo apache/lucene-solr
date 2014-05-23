@@ -24,6 +24,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.postingshighlight.DefaultPassageFormatter;
@@ -67,6 +68,8 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  *       &lt;str name="hl.bs.variant"&gt;&lt;/str&gt;
  *       &lt;str name="hl.bs.type"&gt;SENTENCE&lt;/str&gt;
  *       &lt;int name="hl.maxAnalyzedChars"&gt;10000&lt;/int&gt;
+ *       &lt;str name="hl.multiValuedSeparatorChar"&gt; &lt;/str&gt;
+ *       &lt;bool name="hl.highlightMultiTerm"&gt;false&lt;/bool&gt;
  *     &lt;/lst&gt;
  *   &lt;/requestHandler&gt;
  * </pre>
@@ -96,6 +99,8 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  *    <li>hl.bs.country (string) specifies country code for BreakIterator. default is empty string (root locale)
  *    <li>hl.bs.variant (string) specifies country code for BreakIterator. default is empty string (root locale)
  *    <li>hl.maxAnalyzedChars specifies how many characters at most will be processed in a document.
+ *    <li>hl.multiValuedSeparatorChar specifies the logical separator between values for multi-valued fields.
+ *    <li>hl.highlightMultiTerm enables highlighting for range/wildcard/fuzzy/prefix queries.
  *        NOTE: currently hl.maxAnalyzedChars cannot yet be specified per-field
  *  </ul>
  *  
@@ -129,6 +134,8 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
       for (int i = 0; i < fieldNames.length; i++) {
         maxPassages[i] = params.getFieldInt(fieldNames[i], HighlightParams.SNIPPETS, 1);
       }
+      
+      final IndexSchema schema = req.getSchema();
       
       PostingsHighlighter highlighter = new PostingsHighlighter(maxLength) {
         @Override
@@ -167,6 +174,24 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
           String type = params.getFieldParam(field, HighlightParams.BS_TYPE);
           return parseBreakIterator(type, locale);
         }
+
+        @Override
+        protected char getMultiValuedSeparator(String field) {
+          String sep = params.getFieldParam(field, HighlightParams.MULTI_VALUED_SEPARATOR, " ");
+          if (sep.length() != 1) {
+            throw new IllegalArgumentException(HighlightParams.MULTI_VALUED_SEPARATOR + " must be exactly one character.");
+          }
+          return sep.charAt(0);
+        }
+
+        @Override
+        protected Analyzer getIndexAnalyzer(String field) {
+          if (params.getFieldBool(field, HighlightParams.HIGHLIGHT_MULTI_TERM, false)) {
+            return schema.getIndexAnalyzer();
+          } else {
+            return null;
+          }
+        }
       };
       
       Map<String,String[]> snippets = highlighter.highlightFields(fieldNames, query, searcher, docIDs, maxPassages);
@@ -184,9 +209,9 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
    * @return encoded namedlist of summaries
    */
   protected NamedList<Object> encodeSnippets(String[] keys, String[] fieldNames, Map<String,String[]> snippets) {
-    NamedList<Object> list = new SimpleOrderedMap<Object>();
+    NamedList<Object> list = new SimpleOrderedMap<>();
     for (int i = 0; i < keys.length; i++) {
-      NamedList<Object> summary = new SimpleOrderedMap<Object>();
+      NamedList<Object> summary = new SimpleOrderedMap<>();
       for (String field : fieldNames) {
         String snippet = snippets.get(field)[i];
         // box in an array to match the format of existing highlighters, 

@@ -21,6 +21,7 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.CharTokenizer;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Version;
 
@@ -42,28 +43,24 @@ public final class WhitespaceTokenizer extends CharTokenizer {
   /**
    * Construct a new WhitespaceTokenizer. * @param matchVersion Lucene version
    * to match See {@link <a href="#version">above</a>}
-   * 
-   * @param in
-   *          the input to split up into tokens
+   *
    */
-  public WhitespaceTokenizer(Version matchVersion, Reader in) {
-    super(matchVersion, in);
+  public WhitespaceTokenizer(Version matchVersion) {
+    super(matchVersion);
   }
 
   /**
    * Construct a new WhitespaceTokenizer using a given
-   * {@link org.apache.lucene.util.AttributeSource.AttributeFactory}.
+   * {@link org.apache.lucene.util.AttributeFactory}.
    *
    * @param
    *          matchVersion Lucene version to match See
    *          {@link <a href="#version">above</a>}
    * @param factory
    *          the attribute factory to use for this {@link Tokenizer}
-   * @param in
-   *          the input to split up into tokens
    */
-  public WhitespaceTokenizer(Version matchVersion, AttributeFactory factory, Reader in) {
-    super(matchVersion, factory, in);
+  public WhitespaceTokenizer(Version matchVersion, AttributeFactory factory) {
+    super(matchVersion, factory);
   }
   
   /** Collects only characters which do not satisfy

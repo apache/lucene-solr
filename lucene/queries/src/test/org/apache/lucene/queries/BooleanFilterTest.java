@@ -56,8 +56,8 @@ public class BooleanFilterTest extends LuceneTestCase {
     addDoc(writer, "guest", "020", "20050101", "Y");
     addDoc(writer, "admin", "020", "20050101", "Maybe");
     addDoc(writer, "admin guest", "030", "20050101", "N");
-    reader = new SlowCompositeReaderWrapper(writer.getReader());
-    writer.close();
+    reader = SlowCompositeReaderWrapper.wrap(writer.getReader());
+    writer.shutdown();
   }
 
   @Override

@@ -24,4 +24,5 @@ org.apache.lucene.analysis.pattern.PatternTokenizerFactory
 org.apache.lucene.analysis.standard.ClassicTokenizerFactory
 org.apache.lucene.analysis.standard.StandardTokenizerFactory
 org.apache.lucene.analysis.standard.UAX29URLEmailTokenizerFactory
+org.apache.lucene.analysis.th.ThaiTokenizerFactory
 org.apache.lucene.analysis.wikipedia.WikipediaTokenizerFactory

@@ -24,7 +24,9 @@ import java.io.IOException;
  *  implementing this interface to execute the merges
  *  selected by a {@link MergePolicy}.  The default
  *  MergeScheduler is {@link ConcurrentMergeScheduler}.</p>
- *
+ *  <p>Implementers of sub-classes should make sure that {@link #clone()}
+ *  returns an independent instance able to work with any {@link IndexWriter}
+ *  instance.</p>
  * @lucene.experimental
 */
 public abstract class MergeScheduler implements Closeable, Cloneable {
@@ -34,8 +36,12 @@ public abstract class MergeScheduler implements Closeable, Cloneable {
   protected MergeScheduler() {
   }
 
-  /** Run the merges provided by {@link IndexWriter#getNextMerge()}. */
-  public abstract void merge(IndexWriter writer) throws IOException;
+  /** Run the merges provided by {@link IndexWriter#getNextMerge()}.
+   * @param writer the {@link IndexWriter} to obtain the merges from.
+   * @param trigger the {@link MergeTrigger} that caused this merge to happen
+   * @param newMergesFound <code>true</code> iff any new merges were found by the caller otherwise <code>false</code>
+   * */
+  public abstract void merge(IndexWriter writer, MergeTrigger trigger, boolean newMergesFound) throws IOException;
 
   /** Close this MergeScheduler. */
   @Override

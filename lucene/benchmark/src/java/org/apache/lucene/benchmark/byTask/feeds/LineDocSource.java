@@ -29,6 +29,7 @@ import java.util.Properties;
 import org.apache.lucene.benchmark.byTask.tasks.WriteLineDocTask;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.benchmark.byTask.utils.StreamUtils;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * A {@link ContentSource} reading one line at a time as a
@@ -277,7 +278,7 @@ public class LineDocSource extends ContentSource {
     }
     file = new File(fileName).getAbsoluteFile();
     if (encoding == null) {
-      encoding = "UTF-8";
+      encoding = IOUtils.UTF_8;
     }
   }
 

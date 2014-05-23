@@ -51,7 +51,7 @@ public abstract class SimilarityFactory {
 
   /** Returns a serializable description of this similarity(factory) */
   public SimpleOrderedMap<Object> getNamedPropertyValues() {
-    SimpleOrderedMap<Object> props = new SimpleOrderedMap<Object>();
+    SimpleOrderedMap<Object> props = new SimpleOrderedMap<>();
     props.add(CLASS_NAME, getClassArg());
     if (null != params) {
       Iterator<String> iter = params.getParameterNamesIterator();

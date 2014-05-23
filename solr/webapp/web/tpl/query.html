@@ -37,12 +37,20 @@ limitations under the License.
         <label for="fq">
           <a rel="help">fq</a>
         </label>
-        <input type="text" id="fq" name="fq" class="multiple" title="Filter query.">
+        <div class="multiple">
+          <div class="row clearfix">
+            <input type="text" id="fq" name="fq" title="Filter query.">
+            <div class="buttons">
+              <a class="rem" data-action="0"><span>[-]</span></a>
+              <a class="add" data-action="1"><span>[+]</span></a>
+            </div>
+          </div>
+        </div>
 
         <label for="sort">
           <a rel="help">sort</a>
         </label>
-        <input type="text" id="sort" name="sort" class="multiple" title="Sort field or function with asc|desc.">
+        <input type="text" id="sort" name="sort" title="Sort field or function with asc|desc.">
 
         <label for="start">
           <a rel="help">start</a>,
@@ -72,8 +80,8 @@ limitations under the License.
           <a rel="help">wt</a>
         </label>
         <select name="wt" id="wt" title="The writer type (response format).">
-          <option>xml</option>
           <option>json</option>
+          <option>xml</option>
           <option>python</option>
           <option>ruby</option>
           <option>php</option>
@@ -340,7 +348,7 @@ limitations under the License.
 
   <div id="result">
 
-    <a id="url" href="#"></a>
+    <a id="url" class="address-bar" href="#"></a>
 
     <div id="response">
 

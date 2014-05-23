@@ -31,7 +31,7 @@ public class TestPatternReplaceFilterFactory extends BaseTokenStreamFactoryTestC
 
   public void testReplaceAll() throws Exception {
     Reader reader = new StringReader("aabfooaabfooabfoob ab caaaaaaaaab");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("PatternReplace",
         "pattern", "a*b",
         "replacement", "-").create(stream);

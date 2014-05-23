@@ -149,7 +149,7 @@ public class TestStressIndexing extends LuceneTestCase {
     for(int i=0;i<numThread;i++)
       threads[i].join();
 
-    modifier.close();
+    modifier.shutdown();
 
     for(int i=0;i<numThread;i++)
       assertTrue(! threads[i].failed);
@@ -165,6 +165,10 @@ public class TestStressIndexing extends LuceneTestCase {
   */
   public void testStressIndexAndSearching() throws Exception {
     Directory directory = newDirectory();
+    if (directory instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper) directory).setAssertNoUnrefencedFilesOnClose(true);
+    }
+
     runStressTest(directory, new ConcurrentMergeScheduler());
     directory.close();
   }

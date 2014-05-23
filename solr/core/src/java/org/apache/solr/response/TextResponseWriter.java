@@ -29,6 +29,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.Base64;
+import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.util.FastWriter;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
@@ -36,7 +37,6 @@ import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.TransformContext;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.DateField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
 
@@ -235,7 +235,7 @@ public abstract class TextResponseWriter {
       if (existing == null) {
         SchemaField sf = schema.getFieldOrNull(f.name());
         if (sf != null && sf.multiValued()) {
-          List<Object> vals = new ArrayList<Object>();
+          List<Object> vals = new ArrayList<>();
           vals.add( f );
           out.setField( f.name(), vals );
         } 
@@ -346,7 +346,7 @@ public abstract class TextResponseWriter {
 
 
   public void writeDate(String name, Date val) throws IOException {
-    writeDate(name, DateField.formatExternal(val));
+    writeDate(name, TrieDateField.formatExternal(val));
   }
   
 

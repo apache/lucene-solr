@@ -106,7 +106,7 @@ public class WordBreakSpellChecker {
     int queueInitialCapacity = maxSuggestions > 10 ? 10 : maxSuggestions;
     Comparator<SuggestWordArrayWrapper> queueComparator = sortMethod == BreakSuggestionSortMethod.NUM_CHANGES_THEN_MAX_FREQUENCY ? new LengthThenMaxFreqComparator()
         : new LengthThenSumFreqComparator();
-    Queue<SuggestWordArrayWrapper> suggestions = new PriorityQueue<SuggestWordArrayWrapper>(
+    Queue<SuggestWordArrayWrapper> suggestions = new PriorityQueue<>(
         queueInitialCapacity, queueComparator);
     
     int origFreq = ir.docFreq(term);
@@ -176,7 +176,7 @@ public class WordBreakSpellChecker {
     
     int queueInitialCapacity = maxSuggestions > 10 ? 10 : maxSuggestions;
     Comparator<CombineSuggestionWrapper> queueComparator = new CombinationsThenFreqComparator();
-    Queue<CombineSuggestionWrapper> suggestions = new PriorityQueue<CombineSuggestionWrapper>(
+    Queue<CombineSuggestionWrapper> suggestions = new PriorityQueue<>(
         queueInitialCapacity, queueComparator);
     
     int thisTimeEvaluations = 0;

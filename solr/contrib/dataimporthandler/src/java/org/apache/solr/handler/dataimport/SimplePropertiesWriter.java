@@ -22,9 +22,12 @@ import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVE
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.security.AccessControlException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -33,7 +36,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 /**
@@ -88,7 +93,7 @@ public class SimplePropertiesWriter extends DIHProperties {
     if(params.get(LOCALE) != null) {
       String localeStr = params.get(LOCALE);
       for (Locale l : Locale.getAvailableLocales()) {
-        if(localeStr.equals(l.getDisplayName())) {
+        if(localeStr.equals(l.getDisplayName(Locale.ROOT))) {
           locale = l;
           break;
         }
@@ -110,25 +115,38 @@ public class SimplePropertiesWriter extends DIHProperties {
       configDir = params.get(DIRECTORY);
     } else {
       SolrCore core = dataImporter.getCore();
-      configDir = (core == null ? "." : core.getResourceLoader().getConfigDir());
+      if (core == null) {
+        configDir = SolrResourceLoader.locateSolrHome();
+      } else {
+        configDir = core.getResourceLoader().getConfigDir();
+      }
     }
   }
   
   private File getPersistFile() {
-    String filePath = configDir;
-    if (configDir != null && !configDir.endsWith(File.separator)) filePath += File.separator;
-    filePath += filename;
-    return new File(filePath);
+    final File filePath;
+    if (new File(filename).isAbsolute() || configDir == null) {
+      filePath = new File(filename);
+    } else {
+      filePath = new File(new File(configDir), filename);
+    }
+    return filePath;
   }
+
   @Override
   public boolean isWritable() {
     File persistFile = getPersistFile();
-    return persistFile.exists() ? persistFile.canWrite() : persistFile
-        .getParentFile().canWrite();
-    
+    try {
+      return persistFile.exists() 
+          ? persistFile.canWrite() 
+          : persistFile.getParentFile().canWrite();
+    } catch (AccessControlException e) {
+      return false;
+    }
   }
   
-  protected String convertDateToString(Date d) {
+  @Override
+  public String convertDateToString(Date d) {
     return dateFormat.format(d);
   }
   protected Date convertStringToDate(String s) {
@@ -168,7 +186,7 @@ public class SimplePropertiesWriter extends DIHProperties {
    * already converted them.
    */
   protected Map<String,Object> propertiesToMap(Properties p) {
-    Map<String,Object> theMap = new HashMap<String,Object>();
+    Map<String,Object> theMap = new HashMap<>();
     for(Map.Entry<Object,Object> entry : p.entrySet()) {
       String key = entry.getKey().toString();
       Object val = entry.getValue().toString();
@@ -179,28 +197,19 @@ public class SimplePropertiesWriter extends DIHProperties {
   
   @Override
   public void persist(Map<String, Object> propObjs) {
-    OutputStream propOutput = null;    
+    Writer propOutput = null;    
     Properties existingProps = mapToProperties(readIndexerProperties());    
     Properties newProps = mapToProperties(propObjs);
     try {
       existingProps.putAll(newProps);
-      String filePath = configDir;
-      if (configDir != null && !configDir.endsWith(File.separator)) {
-        filePath += File.separator;
-      }
-      filePath += filename;
-      propOutput = new FileOutputStream(filePath);
+      propOutput = new OutputStreamWriter(new FileOutputStream(getPersistFile()), StandardCharsets.UTF_8);
       existingProps.store(propOutput, null);
       log.info("Wrote last indexed time to " + filename);
     } catch (Exception e) {
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
           "Unable to persist Index Start Time", e);
     } finally {
-      try {
-        if (propOutput != null) propOutput.close();
-      } catch (IOException e) {
-        propOutput = null;
-      }
+      IOUtils.closeWhileHandlingException(propOutput);
     }
   }
   
@@ -215,16 +224,12 @@ public class SimplePropertiesWriter extends DIHProperties {
       }
       filePath += filename;
       propInput = new FileInputStream(filePath);
-      props.load(propInput);
+      props.load(new InputStreamReader(propInput, StandardCharsets.UTF_8));
       log.info("Read " + filename);
     } catch (Exception e) {
       log.warn("Unable to read: " + filename);
     } finally {
-      try {
-        if (propInput != null) propInput.close();
-      } catch (IOException e) {
-        propInput = null;
-      }
+      IOUtils.closeWhileHandlingException(propInput);
     }    
     return propertiesToMap(props);
   }

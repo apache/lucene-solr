@@ -40,7 +40,7 @@ import org.apache.lucene.queryparser.flexible.core.util.StringUtils;
  */
 public abstract class QueryConfigHandler extends AbstractQueryConfig {
   
-  final private LinkedList<FieldConfigListener> listeners = new LinkedList<FieldConfigListener>();
+  final private LinkedList<FieldConfigListener> listeners = new LinkedList<>();
 
   /**
    * Returns an implementation of

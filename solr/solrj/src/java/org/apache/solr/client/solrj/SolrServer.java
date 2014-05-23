@@ -86,7 +86,7 @@ public abstract class SolrServer implements Serializable
    */
   public UpdateResponse addBeans(Collection<?> beans, int commitWithinMs) throws SolrServerException, IOException {
     DocumentObjectBinder binder = this.getBinder();
-    ArrayList<SolrInputDocument> docs =  new ArrayList<SolrInputDocument>(beans.size());
+    ArrayList<SolrInputDocument> docs =  new ArrayList<>(beans.size());
     for (Object bean : beans) {
       docs.add(binder.toSolrInputDocument(bean));
     }

@@ -26,7 +26,9 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /**
  * A RequestWriter is used to write requests to Solr.
@@ -37,13 +39,13 @@ import java.nio.charset.Charset;
  * @since solr 1.4
  */
 public class RequestWriter {
-  public static final Charset UTF_8 = Charset.forName("UTF-8");
+  public static final Charset UTF_8 = StandardCharsets.UTF_8;
 
   public Collection<ContentStream> getContentStreams(SolrRequest req) throws IOException {
     if (req instanceof UpdateRequest) {
       UpdateRequest updateRequest = (UpdateRequest) req;
       if (isEmpty(updateRequest)) return null;
-      List<ContentStream> l = new ArrayList<ContentStream>();
+      List<ContentStream> l = new ArrayList<>();
       l.add(new LazyContentStream(updateRequest));
       return l;
     }
@@ -52,7 +54,7 @@ public class RequestWriter {
 
   private boolean isEmpty(UpdateRequest updateRequest) {
     return isNull(updateRequest.getDocuments()) &&
-            isNull(updateRequest.getDeleteById()) &&
+            isNull(updateRequest.getDeleteByIdMap()) &&
             isNull(updateRequest.getDeleteQuery()) &&
             updateRequest.getDocIterator() == null;
   }
@@ -68,7 +70,7 @@ public class RequestWriter {
   public void write(SolrRequest request, OutputStream os) throws IOException {
     if (request instanceof UpdateRequest) {
       UpdateRequest updateRequest = (UpdateRequest) request;
-      OutputStreamWriter writer = new OutputStreamWriter(os, UTF_8);
+      BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, UTF_8));
       updateRequest.writeXML(writer);
       writer.flush();
     }
@@ -135,6 +137,10 @@ public class RequestWriter {
   }
 
   protected boolean isNull(List l) {
+    return l == null || l.isEmpty();
+  }
+  
+  protected boolean isNull(Map l) {
     return l == null || l.isEmpty();
   }
 }

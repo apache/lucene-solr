@@ -59,7 +59,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * {@link BlockPackedWriter blocks of packed ints} for positions.</p>
  * <p>Here is a more detailed description of the field data file format:</p>
  * <ul>
- * <li>VectorData (.tvd) --&gt; &lt;Header&gt;, PackedIntsVersion, ChunkSize, &lt;Chunk&gt;<sup>ChunkCount</sup></li>
+ * <li>VectorData (.tvd) --&gt; &lt;Header&gt;, PackedIntsVersion, ChunkSize, &lt;Chunk&gt;<sup>ChunkCount</sup>, Footer</li>
  * <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  * <li>PackedIntsVersion --&gt; {@link PackedInts#VERSION_CURRENT} as a {@link DataOutput#writeVInt VInt}</li>
  * <li>ChunkSize is the number of bytes of terms to accumulate before flushing, as a {@link DataOutput#writeVInt VInt}</li>
@@ -107,14 +107,16 @@ import org.apache.lucene.util.packed.PackedInts;
  * <li>FieldTermsAndPayLoads --&gt; Terms (Payloads)</li>
  * <li>Terms: term bytes</li>
  * <li>Payloads: payload bytes (if the field has payloads)</li>
+ * <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
  * </li>
  * <li><a name="vector_index" id="vector_index"></a>
  * <p>An index file (extension <tt>.tvx</tt>).</p>
  * <ul>
- * <li>VectorIndex (.tvx) --&gt; &lt;Header&gt;, &lt;ChunkIndex&gt;</li>
+ * <li>VectorIndex (.tvx) --&gt; &lt;Header&gt;, &lt;ChunkIndex&gt;, Footer</li>
  * <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  * <li>ChunkIndex: See {@link CompressingStoredFieldsIndexWriter}</li>
+ * <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
  * </li>
  * </ol>

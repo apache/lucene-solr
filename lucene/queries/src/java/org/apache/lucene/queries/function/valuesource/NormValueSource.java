@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.util.Map;
 
 /** 
- * Function that returns {@link TFIDFSimilarity#decodeNormValue(byte)}
+ * Function that returns {@link TFIDFSimilarity#decodeNormValue(long)}
  * for every document.
  * <p>
  * Note that the configured Similarity for the field must be
@@ -71,14 +71,16 @@ public class NormValueSource extends ValueSource {
     return new FloatDocValues(this) {
       @Override
       public float floatVal(int doc) {
-        return similarity.decodeNormValue((byte)norms.get(doc));
+        return similarity.decodeNormValue(norms.get(doc));
       }
     };
   }
 
   @Override
   public boolean equals(Object o) {
-    if (this.getClass() != o.getClass()) return false;
+    if (this.getClass() != o.getClass()) {
+      return false;
+    }
     return this.field.equals(((NormValueSource)o).field);
   }
 

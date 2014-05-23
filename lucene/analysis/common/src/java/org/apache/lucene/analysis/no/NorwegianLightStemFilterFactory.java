@@ -23,6 +23,9 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.no.NorwegianLightStemFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
+import static org.apache.lucene.analysis.no.NorwegianLightStemmer.BOKMAAL;
+import static org.apache.lucene.analysis.no.NorwegianLightStemmer.NYNORSK;
+
 /** 
  * Factory for {@link NorwegianLightStemFilter}.
  * <pre class="prettyprint">
@@ -30,15 +33,27 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
  *     &lt;filter class="solr.LowerCaseFilterFactory"/&gt;
- *     &lt;filter class="solr.NorwegianLightStemFilterFactory"/&gt;
+ *     &lt;filter class="solr.NorwegianLightStemFilterFactory" variant="nb"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  */
 public class NorwegianLightStemFilterFactory extends TokenFilterFactory {
   
+  private final int flags;
+  
   /** Creates a new NorwegianLightStemFilterFactory */
   public NorwegianLightStemFilterFactory(Map<String,String> args) {
     super(args);
+    String variant = get(args, "variant");
+    if (variant == null || "nb".equals(variant)) {
+      flags = BOKMAAL;
+    } else if ("nn".equals(variant)) {
+      flags = NYNORSK;
+    } else if ("no".equals(variant)) {
+      flags = BOKMAAL | NYNORSK;
+    } else {
+      throw new IllegalArgumentException("invalid variant: " + variant);
+    }
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -46,6 +61,6 @@ public class NorwegianLightStemFilterFactory extends TokenFilterFactory {
   
   @Override
   public TokenStream create(TokenStream input) {
-    return new NorwegianLightStemFilter(input);
+    return new NorwegianLightStemFilter(input, flags);
   }
 }

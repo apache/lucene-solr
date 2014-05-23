@@ -19,14 +19,13 @@ package org.apache.lucene.replicator;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.facet.index.FacetFields;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.FacetField;
+import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexWriter;
@@ -42,10 +41,10 @@ import org.junit.Test;
 public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
   
   private Document newDocument(TaxonomyWriter taxoWriter) throws IOException {
+    FacetsConfig config = new FacetsConfig();
     Document doc = new Document();
-    FacetFields ff = new FacetFields(taxoWriter);
-    ff.addFields(doc, Collections.singleton(new CategoryPath("A")));
-    return doc;
+    doc.add(new FacetField("A", "1"));
+    return config.build(taxoWriter, doc);
   }
   
   @Test
@@ -63,7 +62,8 @@ public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
     } catch (IllegalStateException e) {
       // expected
     } finally {
-      IOUtils.close(indexWriter, taxoWriter, taxoDir, indexDir);
+      indexWriter.shutdown();
+      IOUtils.close(taxoWriter, taxoDir, indexDir);
     }
   }
   
@@ -83,8 +83,8 @@ public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
       Revision rev1 = new IndexAndTaxonomyRevision(indexWriter, taxoWriter);
       // releasing that revision should not delete the files
       rev1.release();
-      assertTrue(indexDir.fileExists(IndexFileNames.SEGMENTS + "_1"));
-      assertTrue(taxoDir.fileExists(IndexFileNames.SEGMENTS + "_1"));
+      assertTrue(slowFileExists(indexDir, IndexFileNames.SEGMENTS + "_1"));
+      assertTrue(slowFileExists(taxoDir, IndexFileNames.SEGMENTS + "_1"));
       
       rev1 = new IndexAndTaxonomyRevision(indexWriter, taxoWriter); // create revision again, so the files are snapshotted
       indexWriter.addDocument(newDocument(taxoWriter));
@@ -92,7 +92,8 @@ public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
       taxoWriter.commit();
       assertNotNull(new IndexAndTaxonomyRevision(indexWriter, taxoWriter));
       rev1.release(); // this release should trigger the delete of segments_1
-      assertFalse(indexDir.fileExists(IndexFileNames.SEGMENTS + "_1"));
+      assertFalse(slowFileExists(indexDir, IndexFileNames.SEGMENTS + "_1"));
+      indexWriter.shutdown();
     } finally {
       IOUtils.close(indexWriter, taxoWriter, taxoDir, indexDir);
     }
@@ -118,6 +119,7 @@ public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
         String lastFile = files.get(files.size() - 1).fileName;
         assertTrue(lastFile.startsWith(IndexFileNames.SEGMENTS) && !lastFile.equals(IndexFileNames.SEGMENTS_GEN));
       }
+      indexWriter.shutdown();
     } finally {
       IOUtils.close(indexWriter, taxoWriter, taxoDir, indexDir);
     }
@@ -139,6 +141,7 @@ public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
       Revision rev = new IndexAndTaxonomyRevision(indexWriter, taxoWriter);
       for (Entry<String,List<RevisionFile>> e : rev.getSourceFiles().entrySet()) {
         String source = e.getKey();
+        @SuppressWarnings("resource") // silly, both directories are closed in the end
         Directory dir = source.equals(IndexAndTaxonomyRevision.INDEX_SOURCE) ? indexDir : taxoDir;
         for (RevisionFile file : e.getValue()) {
           IndexInput src = dir.openInput(file.fileName, IOContext.READONCE);
@@ -162,6 +165,7 @@ public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
           IOUtils.close(src, in);
         }
       }
+      indexWriter.shutdown();
     } finally {
       IOUtils.close(indexWriter, taxoWriter, taxoDir, indexDir);
     }

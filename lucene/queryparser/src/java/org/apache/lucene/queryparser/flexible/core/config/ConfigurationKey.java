@@ -36,7 +36,7 @@ final public class ConfigurationKey<T> {
    * @return a new instance
    */
   public static <T> ConfigurationKey<T> newInstance() {
-    return new ConfigurationKey<T>();
+    return new ConfigurationKey<>();
   }
   
 }

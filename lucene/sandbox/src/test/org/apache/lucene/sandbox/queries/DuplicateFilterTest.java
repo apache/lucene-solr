@@ -31,7 +31,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class DuplicateFilterTest extends LuceneTestCase {
   private static final String KEY_FIELD = "url";
@@ -61,7 +61,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
     writer.forceMerge(1);
 
     reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     searcher = newSearcher(reader);
 
   }
@@ -83,7 +83,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
 
   public void testDefaultFilter() throws Throwable {
     DuplicateFilter df = new DuplicateFilter(KEY_FIELD);
-    HashSet<String> results = new HashSet<String>();
+    HashSet<String> results = new HashSet<>();
     ScoreDoc[] hits = searcher.search(tq, df, 1000).scoreDocs;
 
     for (ScoreDoc hit : hits) {
@@ -95,7 +95,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
   }
 
   public void testNoFilter() throws Throwable {
-    HashSet<String> results = new HashSet<String>();
+    HashSet<String> results = new HashSet<>();
     ScoreDoc[] hits = searcher.search(tq, null, 1000).scoreDocs;
     assertTrue("Default searching should have found some matches", hits.length > 0);
     boolean dupsFound = false;
@@ -113,7 +113,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
   public void testFastFilter() throws Throwable {
     DuplicateFilter df = new DuplicateFilter(KEY_FIELD);
     df.setProcessingMode(DuplicateFilter.ProcessingMode.PM_FAST_INVALIDATION);
-    HashSet<String> results = new HashSet<String>();
+    HashSet<String> results = new HashSet<>();
     ScoreDoc[] hits = searcher.search(tq, df, 1000).scoreDocs;
     assertTrue("Filtered searching should have found some matches", hits.length > 0);
 
@@ -134,12 +134,12 @@ public class DuplicateFilterTest extends LuceneTestCase {
     for (ScoreDoc hit : hits) {
       StoredDocument d = searcher.doc(hit.doc);
       String url = d.get(KEY_FIELD);
-      DocsEnum td = _TestUtil.docs(random(), reader,
-                                   KEY_FIELD,
-                                   new BytesRef(url),
-                                   MultiFields.getLiveDocs(reader),
-                                   null,
-                                   0);
+      DocsEnum td = TestUtil.docs(random(), reader,
+          KEY_FIELD,
+          new BytesRef(url),
+          MultiFields.getLiveDocs(reader),
+          null,
+          0);
 
       int lastDoc = 0;
       while (td.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
@@ -158,12 +158,12 @@ public class DuplicateFilterTest extends LuceneTestCase {
     for (ScoreDoc hit : hits) {
       StoredDocument d = searcher.doc(hit.doc);
       String url = d.get(KEY_FIELD);
-      DocsEnum td = _TestUtil.docs(random(), reader,
-                                   KEY_FIELD,
-                                   new BytesRef(url),
-                                   MultiFields.getLiveDocs(reader),
-                                   null,
-                                   0);
+      DocsEnum td = TestUtil.docs(random(), reader,
+          KEY_FIELD,
+          new BytesRef(url),
+          MultiFields.getLiveDocs(reader),
+          null,
+          0);
 
       int lastDoc = 0;
       td.nextDoc();

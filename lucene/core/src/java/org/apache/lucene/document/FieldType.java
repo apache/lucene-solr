@@ -382,9 +382,9 @@ public class FieldType implements IndexableFieldType  {
       }
       if (storeTermVectorPositions()) {
         result.append(",termVectorPosition");
-        if (storeTermVectorPayloads()) {
-          result.append(",termVectorPayloads");
-        }
+      }
+      if (storeTermVectorPayloads()) {
+        result.append(",termVectorPayloads");
       }
       if (omitNorms()) {
         result.append(",omitNorms");

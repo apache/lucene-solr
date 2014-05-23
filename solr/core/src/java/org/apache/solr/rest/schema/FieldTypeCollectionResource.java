@@ -60,8 +60,8 @@ public class FieldTypeCollectionResource extends BaseFieldTypeResource implement
   @Override
   public Representation get() {
     try {
-      List<SimpleOrderedMap<Object>> props = new ArrayList<SimpleOrderedMap<Object>>();
-      Map<String,FieldType> sortedFieldTypes = new TreeMap<String, FieldType>(getSchema().getFieldTypes());
+      List<SimpleOrderedMap<Object>> props = new ArrayList<>();
+      Map<String,FieldType> sortedFieldTypes = new TreeMap<>(getSchema().getFieldTypes());
       for (FieldType fieldType : sortedFieldTypes.values()) {
         props.add(getFieldTypeProperties(fieldType));
       }
@@ -99,12 +99,12 @@ public class FieldTypeCollectionResource extends BaseFieldTypeResource implement
    * The map only includes field types that are used by at least one field.  
    */
   private Map<String,List<String>> getFieldsByFieldType() {
-    Map<String,List<String>> fieldsByFieldType = new HashMap<String,List<String>>();
+    Map<String,List<String>> fieldsByFieldType = new HashMap<>();
     for (SchemaField schemaField : getSchema().getFields().values()) {
       final String fieldType = schemaField.getType().getTypeName();
       List<String> fields = fieldsByFieldType.get(fieldType);
       if (null == fields) {
-        fields = new ArrayList<String>();
+        fields = new ArrayList<>();
         fieldsByFieldType.put(fieldType, fields);
       }
       fields.add(schemaField.getName());
@@ -120,12 +120,12 @@ public class FieldTypeCollectionResource extends BaseFieldTypeResource implement
    * The map only includes field types that are used by at least one dynamic field.  
    */
   private Map<String,List<String>> getDynamicFieldsByFieldType() {
-    Map<String,List<String>> dynamicFieldsByFieldType = new HashMap<String,List<String>>();
+    Map<String,List<String>> dynamicFieldsByFieldType = new HashMap<>();
     for (SchemaField schemaField : getSchema().getDynamicFieldPrototypes()) {
       final String fieldType = schemaField.getType().getTypeName();
       List<String> dynamicFields = dynamicFieldsByFieldType.get(fieldType);
       if (null == dynamicFields) {
-        dynamicFields = new ArrayList<String>();
+        dynamicFields = new ArrayList<>();
         dynamicFieldsByFieldType.put(fieldType, dynamicFields);
       }
       dynamicFields.add(schemaField.getName());

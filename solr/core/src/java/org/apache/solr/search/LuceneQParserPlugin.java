@@ -34,7 +34,7 @@ import java.util.List;
  * <br>Example: <code>{!lucene q.op=AND df=text sort='price asc'}myfield:foo +bar -baz</code>
  */
 public class LuceneQParserPlugin extends QParserPlugin {
-  public static String NAME = "lucene";
+  public static final String NAME = "lucene";
 
   @Override
   public void init(NamedList args) {
@@ -86,9 +86,9 @@ class OldLuceneQParser extends LuceneQParser {
   public SortSpec getSort(boolean useGlobal) throws SyntaxError {
     SortSpec sort = super.getSort(useGlobal);
     if (sortStr != null && sortStr.length()>0 && sort.getSort()==null) {
-      Sort oldSort = QueryParsing.parseSort(sortStr, getReq());
-      if( oldSort != null ) {
-        sort.sort = oldSort;
+      SortSpec oldSort = QueryParsing.parseSortSpec(sortStr, getReq());
+      if( oldSort.getSort() != null ) {
+        sort.setSortAndFields(oldSort.getSort(), oldSort.getSchemaFields());
       }
     }
     return sort;

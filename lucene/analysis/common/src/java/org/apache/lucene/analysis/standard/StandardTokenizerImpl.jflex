@@ -32,11 +32,13 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
  *       Asian languages, including Thai, Lao, Myanmar, and Khmer</li>
  *   <li>&lt;IDEOGRAPHIC&gt;: A single CJKV ideographic character</li>
  *   <li>&lt;HIRAGANA&gt;: A single hiragana character</li>
+ *   <li>&lt;KATAKANA&gt;: A sequence of katakana characters</li>
+ *   <li>&lt;HANGUL&gt;: A sequence of Hangul characters</li>
  * </ul>
  */
 %%
 
-%unicode 6.1
+%unicode 6.3
 %integer
 %final
 %public
@@ -47,33 +49,40 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 %buffer 4096
 
 %include SUPPLEMENTARY.jflex-macro
-ALetter = ([\p{WB:ALetter}] | {ALetterSupp})
-Format =  ([\p{WB:Format}] | {FormatSupp})
-Numeric = ([\p{WB:Numeric}] | {NumericSupp})
-Extend =  ([\p{WB:Extend}] | {ExtendSupp})
-Katakana = ([\p{WB:Katakana}] | {KatakanaSupp})
-MidLetter = ([\p{WB:MidLetter}] | {MidLetterSupp})
-MidNum = ([\p{WB:MidNum}] | {MidNumSupp})
-MidNumLet = ([\p{WB:MidNumLet}] | {MidNumLetSupp})
-ExtendNumLet = ([\p{WB:ExtendNumLet}] | {ExtendNumLetSupp})
-ComplexContext = ([\p{LB:Complex_Context}] | {ComplexContextSupp})
-Han = ([\p{Script:Han}] | {HanSupp})
-Hiragana = ([\p{Script:Hiragana}] | {HiraganaSupp})
+ALetter           = (\p{WB:ALetter}                                     | {ALetterSupp})
+Format            = (\p{WB:Format}                                      | {FormatSupp})
+Numeric           = ([\p{WB:Numeric}[\p{Blk:HalfAndFullForms}&&\p{Nd}]] | {NumericSupp})
+Extend            = (\p{WB:Extend}                                      | {ExtendSupp})
+Katakana          = (\p{WB:Katakana}                                    | {KatakanaSupp})
+MidLetter         = (\p{WB:MidLetter}                                   | {MidLetterSupp})
+MidNum            = (\p{WB:MidNum}                                      | {MidNumSupp})
+MidNumLet         = (\p{WB:MidNumLet}                                   | {MidNumLetSupp})
+ExtendNumLet      = (\p{WB:ExtendNumLet}                                | {ExtendNumLetSupp})
+ComplexContext    = (\p{LB:Complex_Context}                             | {ComplexContextSupp})
+Han               = (\p{Script:Han}                                     | {HanSupp})
+Hiragana          = (\p{Script:Hiragana}                                | {HiraganaSupp})
+SingleQuote       = (\p{WB:Single_Quote}                                | {SingleQuoteSupp})
+DoubleQuote       = (\p{WB:Double_Quote}                                | {DoubleQuoteSupp})
+HebrewLetter      = (\p{WB:Hebrew_Letter}                               | {HebrewLetterSupp})
+RegionalIndicator = (\p{WB:Regional_Indicator}                          | {RegionalIndicatorSupp})
+HebrewOrALetter   = ({HebrewLetter} | {ALetter})
 
-// Script=Hangul & Aletter
-HangulEx       = (!(!\p{Script:Hangul}|!\p{WB:ALetter})) ({Format} | {Extend})*
 // UAX#29 WB4. X (Extend | Format)* --> X
 //
-ALetterEx      = {ALetter}                     ({Format} | {Extend})*
-// TODO: Convert hard-coded full-width numeric range to property intersection (something like [\p{Full-Width}&&\p{Numeric}]) once JFlex supports it
-NumericEx      = ({Numeric} | [\uFF10-\uFF19]) ({Format} | {Extend})*
-KatakanaEx     = {Katakana}                    ({Format} | {Extend})* 
-MidLetterEx    = ({MidLetter} | {MidNumLet})   ({Format} | {Extend})* 
-MidNumericEx   = ({MidNum} | {MidNumLet})      ({Format} | {Extend})*
-ExtendNumLetEx = {ExtendNumLet}                ({Format} | {Extend})*
+HangulEx            = [\p{Script:Hangul}&&[\p{WB:ALetter}\p{WB:Hebrew_Letter}]] ({Format} | {Extend})*
+HebrewOrALetterEx   = {HebrewOrALetter}                                         ({Format} | {Extend})*
+NumericEx           = {Numeric}                                                 ({Format} | {Extend})*
+KatakanaEx          = {Katakana}                                                ({Format} | {Extend})* 
+MidLetterEx         = ({MidLetter} | {MidNumLet} | {SingleQuote})               ({Format} | {Extend})* 
+MidNumericEx        = ({MidNum} | {MidNumLet} | {SingleQuote})                  ({Format} | {Extend})*
+ExtendNumLetEx      = {ExtendNumLet}                                            ({Format} | {Extend})*
+HanEx               = {Han}                                                     ({Format} | {Extend})*
+HiraganaEx          = {Hiragana}                                                ({Format} | {Extend})*
+SingleQuoteEx       = {SingleQuote}                                             ({Format} | {Extend})*                                            
+DoubleQuoteEx       = {DoubleQuote}                                             ({Format} | {Extend})*
+HebrewLetterEx      = {HebrewLetter}                                            ({Format} | {Extend})*
+RegionalIndicatorEx = {RegionalIndicator}                                       ({Format} | {Extend})*
 
-HanEx = {Han} ({Format} | {Extend})*
-HiraganaEx = {Hiragana} ({Format} | {Extend})*
 
 %{
   /** Alphanumeric sequences */
@@ -121,15 +130,12 @@ HiraganaEx = {Hiragana} ({Format} | {Extend})*
 <<EOF>> { return StandardTokenizerInterface.YYEOF; }
 
 // UAX#29 WB8.   Numeric × Numeric
-//        WB11.  Numeric (MidNum | MidNumLet) × Numeric
-//        WB12.  Numeric × (MidNum | MidNumLet) Numeric
-//        WB13a. (ALetter | Numeric | Katakana | ExtendNumLet) × ExtendNumLet
-//        WB13b. ExtendNumLet × (ALetter | Numeric | Katakana)
+//        WB11.  Numeric (MidNum | MidNumLet | Single_Quote) × Numeric
+//        WB12.  Numeric × (MidNum | MidNumLet | Single_Quote) Numeric
+//        WB13a. (ALetter | Hebrew_Letter | Numeric | Katakana | ExtendNumLet) × ExtendNumLet
+//        WB13b. ExtendNumLet × (ALetter | Hebrew_Letter | Numeric | Katakana) 
 //
-{ExtendNumLetEx}* {NumericEx} ({ExtendNumLetEx}+ {NumericEx} 
-                              | {MidNumericEx} {NumericEx} 
-                              | {NumericEx})*
-{ExtendNumLetEx}* 
+{ExtendNumLetEx}* {NumericEx} ( ( {ExtendNumLetEx}* | {MidNumericEx} ) {NumericEx} )* {ExtendNumLetEx}* 
   { return NUMERIC_TYPE; }
 
 // subset of the below for typing purposes only!
@@ -139,22 +145,32 @@ HiraganaEx = {Hiragana} ({Format} | {Extend})*
 {KatakanaEx}+
   { return KATAKANA_TYPE; }
 
-// UAX#29 WB5.   ALetter × ALetter
-//        WB6.   ALetter × (MidLetter | MidNumLet) ALetter
-//        WB7.   ALetter (MidLetter | MidNumLet) × ALetter
-//        WB9.   ALetter × Numeric
-//        WB10.  Numeric × ALetter
+// UAX#29 WB5.   (ALetter | Hebrew_Letter) × (ALetter | Hebrew_Letter)
+//        WB6.   (ALetter | Hebrew_Letter) × (MidLetter | MidNumLet | Single_Quote) (ALetter | Hebrew_Letter)
+//        WB7.   (ALetter | Hebrew_Letter) (MidLetter | MidNumLet | Single_Quote) × (ALetter | Hebrew_Letter)
+//        WB7a.  Hebrew_Letter × Single_Quote
+//        WB7b.  Hebrew_Letter × Double_Quote Hebrew_Letter
+//        WB7c.  Hebrew_Letter Double_Quote × Hebrew_Letter
+//        WB9.   (ALetter | Hebrew_Letter) × Numeric
+//        WB10.  Numeric × (ALetter | Hebrew_Letter)
 //        WB13.  Katakana × Katakana
-//        WB13a. (ALetter | Numeric | Katakana | ExtendNumLet) × ExtendNumLet
-//        WB13b. ExtendNumLet × (ALetter | Numeric | Katakana)
+//        WB13a. (ALetter | Hebrew_Letter | Numeric | Katakana | ExtendNumLet) × ExtendNumLet
+//        WB13b. ExtendNumLet × (ALetter | Hebrew_Letter | Numeric | Katakana) 
 //
-{ExtendNumLetEx}*  ( {KatakanaEx} ({ExtendNumLetEx}* {KatakanaEx})* 
-                   | ( {NumericEx}  ({ExtendNumLetEx}+ {NumericEx} | {MidNumericEx} {NumericEx} | {NumericEx})*
-                     | {ALetterEx}  ({ExtendNumLetEx}+ {ALetterEx} | {MidLetterEx}  {ALetterEx} | {ALetterEx})* )+ ) 
-({ExtendNumLetEx}+ ( {KatakanaEx} ({ExtendNumLetEx}* {KatakanaEx})* 
-                   | ( {NumericEx}  ({ExtendNumLetEx}+ {NumericEx} | {MidNumericEx} {NumericEx} | {NumericEx})*
-                     | {ALetterEx}  ({ExtendNumLetEx}+ {ALetterEx} | {MidLetterEx}  {ALetterEx} | {ALetterEx})* )+ ) )*
-{ExtendNumLetEx}*  
+{ExtendNumLetEx}*  ( {KatakanaEx}          ( {ExtendNumLetEx}*   {KatakanaEx}                           )*
+                   | ( {HebrewLetterEx}    ( {SingleQuoteEx}     | {DoubleQuoteEx}  {HebrewLetterEx}    )
+                     | {NumericEx}         ( ( {ExtendNumLetEx}* | {MidNumericEx} ) {NumericEx}         )*
+                     | {HebrewOrALetterEx} ( ( {ExtendNumLetEx}* | {MidLetterEx}  ) {HebrewOrALetterEx} )*
+                     )+
+                   )
+({ExtendNumLetEx}+ ( {KatakanaEx}          ( {ExtendNumLetEx}*   {KatakanaEx}                           )*
+                   | ( {HebrewLetterEx}    ( {SingleQuoteEx}     | {DoubleQuoteEx}  {HebrewLetterEx}    )
+                     | {NumericEx}         ( ( {ExtendNumLetEx}* | {MidNumericEx} ) {NumericEx}         )*
+                     | {HebrewOrALetterEx} ( ( {ExtendNumLetEx}* | {MidLetterEx}  ) {HebrewOrALetterEx} )*
+                     )+
+                   )
+)*
+{ExtendNumLetEx}* 
   { return WORD_TYPE; }
 
 
@@ -166,7 +182,7 @@ HiraganaEx = {Hiragana} ({Format} | {Extend})*
 //    annex.  That means that satisfactory treatment of languages like Chinese
 //    or Thai requires special handling.
 // 
-// In Unicode 6.1, only one character has the \p{Line_Break = Contingent_Break}
+// In Unicode 6.3, only one character has the \p{Line_Break = Contingent_Break}
 // property: U+FFFC ( ￼ ) OBJECT REPLACEMENT CHARACTER.
 //
 // In the ICU implementation of UAX#29, \p{Line_Break = Complex_Context}
@@ -188,6 +204,8 @@ HiraganaEx = {Hiragana} ({Format} | {Extend})*
 // UAX#29 WB3.   CR × LF
 //        WB3a.  (Newline | CR | LF) ÷
 //        WB3b.  ÷ (Newline | CR | LF)
+//        WB13c. Regional_Indicator × Regional_Indicator
 //        WB14.  Any ÷ Any
 //
-[^] { /* Break so we don't hit fall-through warning: */ break; /* Not numeric, word, ideographic, hiragana, or SE Asian -- ignore it. */ }
+{RegionalIndicatorEx} {RegionalIndicatorEx}+ | [^]
+  { /* Break so we don't hit fall-through warning: */ break; /* Not numeric, word, ideographic, hiragana, or SE Asian -- ignore it. */ }

@@ -6,6 +6,7 @@ import java.util.Iterator;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.VirtualMethod;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /*
@@ -91,6 +92,20 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     }
 
     @Override
+    public BytesRef getMin() throws IOException {
+      BytesRef v = in.getMin();
+      assert v == null || v.isValid();
+      return v;
+    }
+
+    @Override
+    public BytesRef getMax() throws IOException {
+      BytesRef v = in.getMax();
+      assert v == null || v.isValid();
+      return v;
+    }
+
+    @Override
     public TermsEnum iterator(TermsEnum reuse) throws IOException {
       // TODO: should we give this thing a random to be super-evil,
       // and randomly *not* unwrap?
@@ -103,12 +118,16 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     }
   }
   
+  static final VirtualMethod<TermsEnum> SEEK_EXACT = new VirtualMethod<>(TermsEnum.class, "seekExact", BytesRef.class);
+
   static class AssertingTermsEnum extends FilterTermsEnum {
     private enum State {INITIAL, POSITIONED, UNPOSITIONED};
     private State state = State.INITIAL;
+    private final boolean delegateOverridesSeekExact;
 
     public AssertingTermsEnum(TermsEnum in) {
       super(in);
+      delegateOverridesSeekExact = SEEK_EXACT.isOverriddenAsOf(in.getClass());
     }
 
     @Override
@@ -185,9 +204,9 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     }
 
     @Override
-    public SeekStatus seekCeil(BytesRef term, boolean useCache) throws IOException {
+    public SeekStatus seekCeil(BytesRef term) throws IOException {
       assert term.isValid();
-      SeekStatus result = super.seekCeil(term, useCache);
+      SeekStatus result = super.seekCeil(term);
       if (result == SeekStatus.END) {
         state = State.UNPOSITIONED;
       } else {
@@ -197,15 +216,20 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     }
 
     @Override
-    public boolean seekExact(BytesRef text, boolean useCache) throws IOException {
+    public boolean seekExact(BytesRef text) throws IOException {
       assert text.isValid();
-      if (super.seekExact(text, useCache)) {
+      boolean result;
+      if (delegateOverridesSeekExact) {
+        result = in.seekExact(text);
+      } else {
+        result = super.seekExact(text);
+      }
+      if (result) {
         state = State.POSITIONED;
-        return true;
       } else {
         state = State.UNPOSITIONED;
-        return false;
       }
+      return result;
     }
 
     @Override
@@ -219,6 +243,11 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       assert term.isValid();
       super.seekExact(term, state);
       this.state = State.POSITIONED;
+    }
+
+    @Override
+    public String toString() {
+      return "AssertingTermsEnum(" + in + ")";
     }
   }
   
@@ -438,14 +467,14 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       this.in = in;
       this.maxDoc = maxDoc;
       this.valueCount = in.getValueCount();
-      assert valueCount >= 1 && valueCount <= maxDoc;
+      assert valueCount >= 0 && valueCount <= maxDoc;
     }
 
     @Override
     public int getOrd(int docID) {
       assert docID >= 0 && docID < maxDoc;
       int ord = in.getOrd(docID);
-      assert ord >= 0 && ord < valueCount;
+      assert ord >= -1 && ord < valueCount;
       return ord;
     }
 
@@ -606,6 +635,54 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       assert fi == null || fi.hasNorms() == false;
       return null;
     }
+  }
+  
+  /** Wraps a Bits but with additional asserts */
+  public static class AssertingBits implements Bits {
+    final Bits in;
+    
+    public AssertingBits(Bits in) {
+      this.in = in;
+    }
+    
+    @Override
+    public boolean get(int index) {
+      assert index >= 0 && index < length();
+      return in.get(index);
+    }
+
+    @Override
+    public int length() {
+      return in.length();
+    }
+  }
+
+  @Override
+  public Bits getLiveDocs() {
+    Bits liveDocs = super.getLiveDocs();
+    if (liveDocs != null) {
+      assert maxDoc() == liveDocs.length();
+      liveDocs = new AssertingBits(liveDocs);
+    } else {
+      assert maxDoc() == numDocs();
+      assert !hasDeletions();
+    }
+    return liveDocs;
+  }
+
+  @Override
+  public Bits getDocsWithField(String field) throws IOException {
+    Bits docsWithField = super.getDocsWithField(field);
+    FieldInfo fi = getFieldInfos().fieldInfo(field);
+    if (docsWithField != null) {
+      assert fi != null;
+      assert fi.hasDocValues();
+      assert maxDoc() == docsWithField.length();
+      docsWithField = new AssertingBits(docsWithField);
+    } else {
+      assert fi == null || fi.hasDocValues() == false;
+    }
+    return docsWithField;
   }
 
   // this is the same hack as FCInvisible

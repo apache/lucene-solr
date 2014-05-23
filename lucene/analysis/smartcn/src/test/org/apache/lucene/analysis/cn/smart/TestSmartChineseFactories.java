@@ -24,16 +24,18 @@ import java.util.HashMap;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 
 /** 
  * Tests for {@link SmartChineseSentenceTokenizerFactory} and 
  * {@link SmartChineseWordTokenFilterFactory}
  */
+@Deprecated
 public class TestSmartChineseFactories extends BaseTokenStreamTestCase {
   /** Test showing the behavior with whitespace */
   public void testSimple() throws Exception {
     Reader reader = new StringReader("我购买了道具和服装。");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     SmartChineseWordTokenFilterFactory factory = new SmartChineseWordTokenFilterFactory(new HashMap<String,String>());
     stream = factory.create(stream);
     // TODO: fix smart chinese to not emit punctuation tokens
@@ -46,7 +48,8 @@ public class TestSmartChineseFactories extends BaseTokenStreamTestCase {
   public void testTokenizer() throws Exception {
     Reader reader = new StringReader("我购买了道具和服装。我购买了道具和服装。");
     SmartChineseSentenceTokenizerFactory tokenizerFactory = new SmartChineseSentenceTokenizerFactory(new HashMap<String,String>());
-    TokenStream stream = tokenizerFactory.create(reader);
+    TokenStream stream = tokenizerFactory.create();
+    ((Tokenizer)stream).setReader(reader);
     SmartChineseWordTokenFilterFactory factory = new SmartChineseWordTokenFilterFactory(new HashMap<String,String>());
     stream = factory.create(stream);
     // TODO: fix smart chinese to not emit punctuation tokens

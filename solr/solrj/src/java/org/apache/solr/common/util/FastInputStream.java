@@ -22,7 +22,7 @@ import java.io.*;
 /** Single threaded buffered InputStream
  *  Internal Solr use only, subject to change.
  */
-public class FastInputStream extends InputStream implements DataInput {
+public class FastInputStream extends DataInputInputStream {
   protected final InputStream in;
   protected final byte[] buf;
   protected int pos;

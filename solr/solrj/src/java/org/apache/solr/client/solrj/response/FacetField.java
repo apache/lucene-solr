@@ -125,7 +125,7 @@ import org.apache.solr.client.solrj.util.ClientUtils;
    public void add( String name, long cnt )
    {
      if( _values == null ) {
-       _values = new ArrayList<Count>( 30 );
+       _values = new ArrayList<>( 30 );
      }
      _values.add( new Count( this, name, cnt ) );
    }
@@ -136,7 +136,7 @@ import org.apache.solr.client.solrj.util.ClientUtils;
    public void insert( String name, long cnt )
    {
      if( _values == null ) {
-       _values = new ArrayList<Count>( 30 );
+       _values = new ArrayList<>( 30 );
      }
      _values.add( 0, new Count( this, name, cnt ) );
    }
@@ -158,7 +158,7 @@ import org.apache.solr.client.solrj.util.ClientUtils;
    {
      FacetField ff = new FacetField( _name );
      if( _values != null ) {
-       ff._values = new ArrayList<Count>( _values.size() );
+       ff._values = new ArrayList<>( _values.size() );
        for( Count c : _values ) {
          if( c._count < max ) { // !equal to
            ff._values.add( c );

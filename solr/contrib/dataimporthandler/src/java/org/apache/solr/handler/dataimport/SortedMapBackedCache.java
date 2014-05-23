@@ -60,7 +60,7 @@ public class SortedMapBackedCache implements DIHCache {
     }
     List<Map<String,Object>> thisKeysRecs = theMap.get(pk);
     if (thisKeysRecs == null) {
-      thisKeysRecs = new ArrayList<Map<String,Object>>();
+      thisKeysRecs = new ArrayList<>();
       theMap.put(pk, thisKeysRecs);
     }
     thisKeysRecs.add(rec);
@@ -131,7 +131,7 @@ public class SortedMapBackedCache implements DIHCache {
       return null;
     }
     if(key instanceof Iterable<?>) {
-      List<Map<String,Object>> vals = new ArrayList<Map<String,Object>>();
+      List<Map<String,Object>> vals = new ArrayList<>();
       Iterator<?> iter = ((Iterable<?>) key).iterator();
       while(iter.hasNext()) {
         List<Map<String,Object>> val = theMap.get(iter.next());
@@ -220,7 +220,7 @@ public class SortedMapBackedCache implements DIHCache {
     checkOpen(false);
     isOpen = true;
     if (theMap == null) {
-      theMap = new TreeMap<Object,List<Map<String,Object>>>();
+      theMap = new TreeMap<>();
     }
     
     String pkName = CachePropertyUtil.getAttributeValueAsString(context,

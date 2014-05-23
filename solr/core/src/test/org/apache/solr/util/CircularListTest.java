@@ -30,7 +30,7 @@ public class CircularListTest  extends LuceneTestCase {
 
   @Test
   public void testCircularList() throws IOException {
-    CircularList<Integer> list = new CircularList<Integer>(10);
+    CircularList<Integer> list = new CircularList<>(10);
     for(int i=0;i<10; i++) {
       list.add(new Integer(i));
     }

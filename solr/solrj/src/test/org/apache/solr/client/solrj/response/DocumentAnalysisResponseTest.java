@@ -40,7 +40,7 @@ public class DocumentAnalysisResponseTest extends LuceneTestCase {
 
     // the parsing of the analysis phases is already tested in the AnalysisResponseBaseTest. So we can just fake
     // the phases list here and use it.
-    final List<AnalysisResponseBase.AnalysisPhase> phases = new ArrayList<AnalysisResponseBase.AnalysisPhase>(1);
+    final List<AnalysisResponseBase.AnalysisPhase> phases = new ArrayList<>(1);
     AnalysisResponseBase.AnalysisPhase expectedPhase = new AnalysisResponseBase.AnalysisPhase("Tokenizer");
     phases.add(expectedPhase);
 

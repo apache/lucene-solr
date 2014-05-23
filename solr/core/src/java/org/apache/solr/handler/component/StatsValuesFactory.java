@@ -18,15 +18,13 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Map;
-import java.util.HashMap;
+import java.util.*;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -43,25 +41,17 @@ public class StatsValuesFactory {
    * @param sf SchemaField for the field whose statistics will be created by the resulting StatsValues
    * @return Instance of StatsValues that will create statistics from values from a field of the given type
    */
-  public static StatsValues createStatsValues(SchemaField sf) {
+  public static StatsValues createStatsValues(SchemaField sf, boolean calcDistinct) {
     // TODO: allow for custom field types
     FieldType fieldType = sf.getType();
-    if (DoubleField.class.isInstance(fieldType) ||
-        IntField.class.isInstance(fieldType) ||
-        LongField.class.isInstance(fieldType) ||
-        ShortField.class.isInstance(fieldType) ||
-        FloatField.class.isInstance(fieldType) ||
-        ByteField.class.isInstance(fieldType) ||
-        TrieField.class.isInstance(fieldType) ||
-        SortableDoubleField.class.isInstance(fieldType) ||
-        SortableIntField.class.isInstance(fieldType) ||
-        SortableLongField.class.isInstance(fieldType) ||
-        SortableFloatField.class.isInstance(fieldType)) {
-      return new NumericStatsValues(sf);
-    } else if (DateField.class.isInstance(fieldType)) {
-      return new DateStatsValues(sf);
+    if (TrieDateField.class.isInstance(fieldType)) {
+      return new DateStatsValues(sf, calcDistinct);
+    } else if (TrieField.class.isInstance(fieldType)) {
+      return new NumericStatsValues(sf, calcDistinct);
     } else if (StrField.class.isInstance(fieldType)) {
-      return new StringStatsValues(sf);
+      return new StringStatsValues(sf, calcDistinct);
+    } else if (sf.getType().getClass().equals(EnumField.class)) {
+      return new EnumStatsValues(sf, calcDistinct);
     } else {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Field type " + fieldType + " is not currently supported");
     }
@@ -83,15 +73,20 @@ abstract class AbstractStatsValues<T> implements StatsValues {
   protected T min;
   protected long missing;
   protected long count;
+  protected long countDistinct;
+  protected Set<T> distinctValues;
   private ValueSource valueSource;
   protected FunctionValues values;
+  protected boolean calcDistinct = false;
   
   // facetField   facetValue
-  protected Map<String, Map<String, StatsValues>> facets = new HashMap<String, Map<String, StatsValues>>();
+  protected Map<String, Map<String, StatsValues>> facets = new HashMap<>();
 
-  protected AbstractStatsValues(SchemaField sf) {
+  protected AbstractStatsValues(SchemaField sf, boolean calcDistinct) {
     this.sf = sf;
     this.ft = sf.getType();
+    this.distinctValues = new TreeSet<>();
+    this.calcDistinct = calcDistinct;
   }
 
   /**
@@ -101,6 +96,10 @@ abstract class AbstractStatsValues<T> implements StatsValues {
   public void accumulate(NamedList stv) {
     count += (Long) stv.get("count");
     missing += (Long) stv.get("missing");
+    if (calcDistinct) {
+      distinctValues.addAll((Collection<T>) stv.get("distinctValues"));
+      countDistinct = distinctValues.size();
+    }
 
     updateMinMax((T) stv.get("min"), (T) stv.get("max"));
     updateTypeSpecificStats(stv);
@@ -115,14 +114,14 @@ abstract class AbstractStatsValues<T> implements StatsValues {
       NamedList vals = (NamedList) f.getVal(i);
       Map<String, StatsValues> addTo = facets.get(field);
       if (addTo == null) {
-        addTo = new HashMap<String, StatsValues>();
+        addTo = new HashMap<>();
         facets.put(field, addTo);
       }
       for (int j = 0; j < vals.size(); j++) {
         String val = vals.getName(j);
         StatsValues vvals = addTo.get(val);
         if (vvals == null) {
-          vvals = StatsValuesFactory.createStatsValues(sf);
+          vvals = StatsValuesFactory.createStatsValues(sf, calcDistinct);
           addTo.put(val, vvals);
         }
         vvals.accumulate((NamedList) vals.getVal(j));
@@ -141,6 +140,10 @@ abstract class AbstractStatsValues<T> implements StatsValues {
 
   public void accumulate(T value, int count) {
     this.count += count;
+    if (calcDistinct) {
+      distinctValues.add(value);
+      countDistinct = distinctValues.size();
+    }
     updateMinMax(value, value);
     updateTypeSpecificStats(value, count);
   }
@@ -174,18 +177,23 @@ abstract class AbstractStatsValues<T> implements StatsValues {
    */
   @Override
   public NamedList<?> getStatsValues() {
-    NamedList<Object> res = new SimpleOrderedMap<Object>();
+    NamedList<Object> res = new SimpleOrderedMap<>();
 
     res.add("min", min);
     res.add("max", max);
     res.add("count", count);
     res.add("missing", missing);
+    if (calcDistinct) {
+      res.add("distinctValues", distinctValues);
+      res.add("countDistinct", countDistinct);
+    }
+
     addTypeSpecificStats(res);
 
      // add the facet stats
-    NamedList<NamedList<?>> nl = new SimpleOrderedMap<NamedList<?>>();
+    NamedList<NamedList<?>> nl = new SimpleOrderedMap<>();
     for (Map.Entry<String, Map<String, StatsValues>> entry : facets.entrySet()) {
-      NamedList<NamedList<?>> nl2 = new SimpleOrderedMap<NamedList<?>>();
+      NamedList<NamedList<?>> nl2 = new SimpleOrderedMap<>();
       nl.add(entry.getKey(), nl2);
       for (Map.Entry<String, StatsValues> e2 : entry.getValue().entrySet()) {
         nl2.add(e2.getKey(), e2.getValue().getStatsValues());
@@ -241,8 +249,8 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
   double sum;
   double sumOfSquares;
 
-  public NumericStatsValues(SchemaField sf) {
-    super(sf);
+  public NumericStatsValues(SchemaField sf, boolean calcDistinct) {
+    super(sf, calcDistinct);
     min = Double.POSITIVE_INFINITY;
     max = Double.NEGATIVE_INFINITY;
   }
@@ -312,15 +320,81 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
 }
 
 /**
+ * Implementation of StatsValues that supports EnumField values
+ */
+class EnumStatsValues extends AbstractStatsValues<EnumFieldValue> {
+
+  public EnumStatsValues(SchemaField sf, boolean calcDistinct) {
+    super(sf, calcDistinct);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public void accumulate(int docID) {
+    if (values.exists(docID)) {
+      Integer intValue = (Integer) values.objectVal(docID);
+      String stringValue = values.strVal(docID);
+      EnumFieldValue enumFieldValue = new EnumFieldValue(intValue, stringValue);
+      accumulate(enumFieldValue, 1);
+    } else {
+      missing();
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  protected void updateMinMax(EnumFieldValue min, EnumFieldValue max) {
+    if (max != null) {
+      if (max.compareTo(this.max) > 0)
+        this.max = max;
+    }
+    if (this.min == null)
+      this.min = min;
+    else if (this.min.compareTo(min) > 0)
+      this.min = min;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  protected void updateTypeSpecificStats(NamedList stv) {
+    // No type specific stats
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  protected void updateTypeSpecificStats(EnumFieldValue value, int count) {
+    // No type specific stats
+  }
+
+  /**
+   * Adds no type specific statistics
+   */
+  @Override
+  protected void addTypeSpecificStats(NamedList<Object> res) {
+    // Add no statistics
+  }
+
+
+}
+
+/**
+ * /**
  * Implementation of StatsValues that supports Date values
  */
 class DateStatsValues extends AbstractStatsValues<Date> {
 
-  private long sum = -1;
+  private long sum = 0;
   double sumOfSquares = 0;
 
-  public DateStatsValues(SchemaField sf) {
-    super(sf);
+  public DateStatsValues(SchemaField sf, boolean calcDistinct) {
+    super(sf, calcDistinct);
   }
 
   @Override
@@ -337,8 +411,11 @@ class DateStatsValues extends AbstractStatsValues<Date> {
    */
   @Override
   protected void updateTypeSpecificStats(NamedList stv) {
-    sum += ((Date) stv.get("sum")).getTime();
-    sumOfSquares += ((Number)stv.get("sumOfSquares")).doubleValue();
+    Date date = (Date) stv.get("sum");
+    if (date != null) {
+      sum += date.getTime();
+      sumOfSquares += ((Number)stv.get("sumOfSquares")).doubleValue();
+    }
   }
 
   /**
@@ -356,10 +433,10 @@ class DateStatsValues extends AbstractStatsValues<Date> {
    */
   @Override
   protected void updateMinMax(Date min, Date max) {
-    if(this.min==null || this.min.after(min)) {
+    if(null != min && (this.min==null || this.min.after(min))) {
       this.min = min;
     }
-    if(this.max==null || this.max.before(min)) {
+    if(null != max && (this.max==null || this.max.before(max))) {
       this.max = max;
     }
   }
@@ -402,14 +479,18 @@ class DateStatsValues extends AbstractStatsValues<Date> {
  */
 class StringStatsValues extends AbstractStatsValues<String> {
 
-  public StringStatsValues(SchemaField sf) {
-    super(sf);
+  public StringStatsValues(SchemaField sf, boolean calcDistinct) {
+    super(sf, calcDistinct);
   }
 
   @Override
   public void accumulate(int docID) {
     if (values.exists(docID)) {
-      accumulate(values.strVal(docID), 1);
+      String value = values.strVal(docID);
+      if (value != null)
+        accumulate(value, 1);
+      else
+        missing();
     } else {
       missing();
     }

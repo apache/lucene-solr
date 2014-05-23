@@ -35,6 +35,7 @@ import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMFile;
@@ -48,13 +49,13 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
  * An {@link AtomicReader} which supports sorting documents by a given
- * {@link Sorter}. You can use this class to sort an index as follows:
+ * {@link Sort}. You can use this class to sort an index as follows:
  * 
  * <pre class="prettyprint">
  * IndexWriter writer; // writer to which the sorted index will be added
  * DirectoryReader reader; // reader on the input index
- * Sorter sorter; // determines how the documents are sorted
- * AtomicReader sortingReader = new SortingAtomicReader(reader, sorter);
+ * Sort sort; // determines how the documents are sorted
+ * AtomicReader sortingReader = SortingAtomicReader.wrap(SlowCompositeReaderWrapper.wrap(reader), sort);
  * writer.addIndexes(reader);
  * writer.close();
  * reader.close();
@@ -218,6 +219,27 @@ public class SortingAtomicReader extends FilterAtomicReader {
     @Override
     public long get(int docID) {
       return in.get(docMap.newToOld(docID));
+    }
+  }
+  
+  private static class SortingBits implements Bits {
+
+    private final Bits in;
+    private final Sorter.DocMap docMap;
+
+    public SortingBits(final Bits in, Sorter.DocMap docMap) {
+      this.in = in;
+      this.docMap = docMap;
+    }
+
+    @Override
+    public boolean get(int index) {
+      return in.get(docMap.newToOld(index));
+    }
+
+    @Override
+    public int length() {
+      return in.length();
     }
   }
   
@@ -459,7 +481,7 @@ public class SortingAtomicReader extends FilterAtomicReader {
   static class SortingDocsAndPositionsEnum extends FilterDocsAndPositionsEnum {
     
     /**
-     * A {@link Sorter} which sorts two parallel arrays of doc IDs and
+     * A {@link TimSorter} which sorts two parallel arrays of doc IDs and
      * offsets in one go. Everytime a doc ID is 'swapped', its correponding offset
      * is swapped too.
      */
@@ -560,7 +582,7 @@ public class SortingAtomicReader extends FilterAtomicReader {
         file = new RAMFile();
         sorter = new DocOffsetSorter(maxDoc);
       }
-      final IndexOutput out = new RAMOutputStream(file);
+      final IndexOutput out = new RAMOutputStream(file, false);
       int doc;
       int i = 0;
       while ((doc = in.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
@@ -687,14 +709,14 @@ public class SortingAtomicReader extends FilterAtomicReader {
   }
 
   /** Return a sorted view of <code>reader</code> according to the order
-   *  defined by <code>sorter</code>. If the reader is already sorted, this
+   *  defined by <code>sort</code>. If the reader is already sorted, this
    *  method might return the reader as-is. */
-  public static AtomicReader wrap(AtomicReader reader, Sorter sorter) throws IOException {
-    return wrap(reader, sorter.sort(reader));
+  public static AtomicReader wrap(AtomicReader reader, Sort sort) throws IOException {
+    return wrap(reader, new Sorter(sort).sort(reader));
   }
 
-  /** Expert: same as {@link #wrap(AtomicReader, Sorter)} but operates directly on a {@link Sorter.DocMap}. */
-  public static AtomicReader wrap(AtomicReader reader, Sorter.DocMap docMap) {
+  /** Expert: same as {@link #wrap(AtomicReader, Sort)} but operates directly on a {@link Sorter.DocMap}. */
+  static AtomicReader wrap(AtomicReader reader, Sorter.DocMap docMap) {
     if (docMap == null) {
       // the reader is already sorter
       return reader;
@@ -743,20 +765,9 @@ public class SortingAtomicReader extends FilterAtomicReader {
     final Bits inLiveDocs = in.getLiveDocs();
     if (inLiveDocs == null) {
       return null;
+    } else {
+      return new SortingBits(inLiveDocs, docMap);
     }
-    return new Bits() {
-
-      @Override
-      public boolean get(int index) {
-        return inLiveDocs.get(docMap.newToOld(index));
-      }
-
-      @Override
-      public int length() {
-        return inLiveDocs.length();
-      }
-
-    };
   }
   
   @Override
@@ -794,6 +805,16 @@ public class SortingAtomicReader extends FilterAtomicReader {
     } else {
       return new SortingSortedSetDocValues(sortedSetDV, docMap);
     }  
+  }
+
+  @Override
+  public Bits getDocsWithField(String field) throws IOException {
+    Bits bits = in.getDocsWithField(field);
+    if (bits == null || bits instanceof Bits.MatchAllBits || bits instanceof Bits.MatchNoBits) {
+      return bits;
+    } else {
+      return new SortingBits(bits, docMap);
+    }
   }
 
   @Override

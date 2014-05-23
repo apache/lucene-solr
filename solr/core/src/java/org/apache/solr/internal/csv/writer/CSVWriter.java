@@ -46,7 +46,7 @@ public class CSVWriter {
     public void writeRecord(Map map) {
         CSVField[] fields = config.getFields();
         try {
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             for (int i = 0; i < fields.length; i++) {
                 Object o = map.get(fields[i].getName());
                 if (o != null) {
@@ -83,7 +83,7 @@ public class CSVWriter {
                 if (field.overrideFill()) {
                     fillPattern = field.getFill();
                 }
-                StringBuffer sb = new StringBuffer();
+                StringBuilder sb = new StringBuilder();
                 int fillSize = (field.getSize() - value.length());
                 char[] fill = new char[fillSize];
                 Arrays.fill(fill, config.getFillChar());

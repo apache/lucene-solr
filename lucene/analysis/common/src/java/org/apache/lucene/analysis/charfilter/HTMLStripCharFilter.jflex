@@ -29,14 +29,12 @@ import org.apache.lucene.analysis.util.CharArrayMap;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.OpenStringBuilder;
 
-
 /**
  * A CharFilter that wraps another Reader and attempts to strip out HTML constructs.
  */
-@SuppressWarnings("fallthrough")
 %%
 
-%unicode 6.1
+%unicode 6.3
 %apiprivate
 %type int
 %final
@@ -199,7 +197,7 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
           escapeSTYLE = true;
         } else {
           if (null == this.escapedTags) {
-            this.escapedTags = new CharArraySet(Version.LUCENE_40, 16, true);
+            this.escapedTags = new CharArraySet(Version.LUCENE_CURRENT, 16, true);
           }
           this.escapedTags.add(tag);
         }
@@ -311,7 +309,7 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
       cumulativeDiff += inputSegment.length() - outputSegment.length();
       // position the correction at (already output length) + (substitution length)
       addOffCorrectMap(outputCharCount + outputSegment.length(), cumulativeDiff);
-      eofReturnValue = outputSegment.nextChar();
+      eofReturnValue = outputSegment.length() > 0 ? outputSegment.nextChar() : -1;
       break;
     }
     case BANG:
@@ -324,7 +322,7 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
     case LEFT_ANGLE_BRACKET_SLASH:
     case LEFT_ANGLE_BRACKET_SPACE: {        // Include
       outputSegment = inputSegment;
-      eofReturnValue = outputSegment.nextChar();
+      eofReturnValue = outputSegment.length() > 0 ? outputSegment.nextChar() : -1;
       break;
     }
     default: {
@@ -756,7 +754,13 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
 }
 
 <BANG> {
-  "--" { yybegin(COMMENT); }
+  "--" {
+    if (inputSegment.length() > 2) { // Chars between "<!" and "--" - this is not a comment
+      inputSegment.append(yytext());
+    } else {
+      yybegin(COMMENT);
+    }
+  }
   ">" {
     // add (previously matched input length) + (this match length) [ - (substitution length) = 0 ]
     cumulativeDiff += inputSegment.length() + yylength();
@@ -773,12 +777,16 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
   // [21] CDEnd   ::= ']]>'
   //
   "[CDATA[" {
-    // add (previously matched input length) + (this match length) [ - (substitution length) = 0 ]
-    cumulativeDiff += inputSegment.length() + yylength();
-    // position the correction at (already output length) [ + (substitution length) = 0 ]
-    addOffCorrectMap(outputCharCount, cumulativeDiff);
-    inputSegment.clear();
-    yybegin(CDATA);
+    if (inputSegment.length() > 2) { // Chars between "<!" and "[CDATA[" - this is not a CDATA section
+      inputSegment.append(yytext());
+    } else {
+      // add (previously matched input length) + (this match length) [ - (substitution length) = 0 ]
+      cumulativeDiff += inputSegment.length() + yylength();
+      // position the correction at (already output length) [ + (substitution length) = 0 ]
+      addOffCorrectMap(outputCharCount, cumulativeDiff);
+      inputSegment.clear();
+      yybegin(CDATA);
+    }
   }
   [^] {
     inputSegment.append(zzBuffer[zzStartRead]);

@@ -38,6 +38,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 /** Index all text files under a directory.
@@ -86,8 +87,9 @@ public class IndexFiles {
       System.out.println("Indexing to directory '" + indexPath + "'...");
 
       Directory dir = FSDirectory.open(new File(indexPath));
-      Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_40);
-      IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_40, analyzer);
+      // :Post-Release-Update-Version.LUCENE_XY:
+      Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_5_0);
+      IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_5_0, analyzer);
 
       if (create) {
         // Create a new index in the directory, removing any
@@ -116,7 +118,7 @@ public class IndexFiles {
       //
       // writer.forceMerge(1);
 
-      writer.close();
+      writer.shutdown();
 
       Date end = new Date();
       System.out.println(end.getTime() - start.getTime() + " total milliseconds");
@@ -190,7 +192,7 @@ public class IndexFiles {
           // so that the text of the file is tokenized and indexed, but not stored.
           // Note that FileReader expects the file to be in UTF-8 encoding.
           // If that's not the case searching for special characters will fail.
-          doc.add(new TextField("contents", new BufferedReader(new InputStreamReader(fis, "UTF-8"))));
+          doc.add(new TextField("contents", new BufferedReader(new InputStreamReader(fis, StandardCharsets.UTF_8))));
 
           if (writer.getConfig().getOpenMode() == OpenMode.CREATE) {
             // New index, so we just add the document (no old document can be there):

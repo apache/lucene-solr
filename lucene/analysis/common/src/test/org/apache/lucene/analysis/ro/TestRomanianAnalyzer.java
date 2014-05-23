@@ -34,8 +34,8 @@ public class TestRomanianAnalyzer extends BaseTokenStreamTestCase {
   public void testBasics() throws IOException {
     Analyzer a = new RomanianAnalyzer(TEST_VERSION_CURRENT);
     // stemming
-    checkOneTermReuse(a, "absenţa", "absenţ");
-    checkOneTermReuse(a, "absenţi", "absenţ");
+    checkOneTerm(a, "absenţa", "absenţ");
+    checkOneTerm(a, "absenţi", "absenţ");
     // stopword
     assertAnalyzesTo(a, "îl", new String[] {});
   }
@@ -45,8 +45,8 @@ public class TestRomanianAnalyzer extends BaseTokenStreamTestCase {
     CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("absenţa"), false);
     Analyzer a = new RomanianAnalyzer(TEST_VERSION_CURRENT, 
         RomanianAnalyzer.getDefaultStopSet(), exclusionSet);
-    checkOneTermReuse(a, "absenţa", "absenţa");
-    checkOneTermReuse(a, "absenţi", "absenţ");
+    checkOneTerm(a, "absenţa", "absenţa");
+    checkOneTerm(a, "absenţi", "absenţ");
   }
   
   /** blast some random strings through the analyzer */

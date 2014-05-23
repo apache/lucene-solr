@@ -52,7 +52,7 @@ public class IndexMergeTool {
 
     System.out.println("Full merge...");
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
     System.out.println("Done.");
   }
 }

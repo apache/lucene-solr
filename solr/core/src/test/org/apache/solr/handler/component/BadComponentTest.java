@@ -19,7 +19,6 @@ package org.apache.solr.handler.component;
  */
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException;
 import org.junit.Test;
 
 /**
@@ -34,14 +33,7 @@ public class BadComponentTest extends SolrTestCaseJ4{
       ignoreException(".*QueryElevationComponent.*");
       System.setProperty("elevate.file", "foo.xml");
       initCore("solrconfig-elevate.xml", "schema12.xml");
-      assertTrue(false);
-    } catch (RuntimeException e) {
-      //TODO: better way of checking this?
-      if (e.getCause() instanceof SolrException){
-        assertTrue(true);
-      } else {
-        assertTrue(false);
-      }
+      assertTrue(hasInitException("QueryElevationComponent"));
     } finally {
       System.clearProperty("elevate.file");
       resetExceptionIgnores();

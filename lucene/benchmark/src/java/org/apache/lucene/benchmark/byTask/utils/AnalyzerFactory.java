@@ -78,8 +78,8 @@ public final class AnalyzerFactory {
       }
 
       @Override
-      protected Analyzer.TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        final Tokenizer tokenizer = tokenizerFactory.create(reader);
+      protected Analyzer.TokenStreamComponents createComponents(String fieldName) {
+        final Tokenizer tokenizer = tokenizerFactory.create();
         TokenStream tokenStream = tokenizer;
         for (TokenFilterFactory filterFactory : tokenFilterFactories) {
           tokenStream = filterFactory.create(tokenStream);

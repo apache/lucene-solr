@@ -20,7 +20,7 @@
                         query="select DESCRIPTION from category where ID = '${item_category.CATEGORY_ID}'"
                         deltaQuery="select ID from category where last_modified > '${dataimporter.last_index_time}'"
                         parentDeltaQuery="select ITEM_ID, CATEGORY_ID from item_category where CATEGORY_ID=${category.ID}">
-                    <field column="description" name="cat" />
+                    <field column="DESCRIPTION" name="cat" />
                 </entity>
             </entity>
         </entity>

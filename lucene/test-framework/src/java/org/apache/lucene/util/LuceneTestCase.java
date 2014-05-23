@@ -17,12 +17,39 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import java.io.*;
-import java.lang.annotation.*;
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.*;
-import java.util.concurrent.*;
+import java.nio.file.NoSuchFileException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.TreeSet;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
@@ -33,29 +60,99 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.AlcoholicMergePolicy;
+import org.apache.lucene.index.AssertingAtomicReader;
+import org.apache.lucene.index.AssertingDirectoryReader;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.CompositeReader;
+import org.apache.lucene.index.ConcurrentMergeScheduler;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.FieldFilterAtomicReader;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LiveIndexWriterConfig;
+import org.apache.lucene.index.LogByteSizeMergePolicy;
+import org.apache.lucene.index.LogDocMergePolicy;
+import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.index.MergeScheduler;
+import org.apache.lucene.index.MockRandomMergePolicy;
+import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.ParallelAtomicReader;
+import org.apache.lucene.index.ParallelCompositeReader;
+import org.apache.lucene.index.SegmentReader;
+import org.apache.lucene.index.SerialMergeScheduler;
+import org.apache.lucene.index.SimpleMergedSegmentWarmer;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.StoredDocument;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
-import org.apache.lucene.search.*;
-import org.apache.lucene.search.FieldCache.CacheEntry;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.TieredMergePolicy;
+import org.apache.lucene.search.AssertingIndexSearcher;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryUtils.FCInvisibleMultiReader;
-import org.apache.lucene.store.*;
+import org.apache.lucene.store.BaseDirectoryWrapper;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext.Context;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.LockFactory;
+import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
-import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.NRTCachingDirectory;
+import org.apache.lucene.store.RateLimitedDirectoryWrapper;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
-import org.junit.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
-import com.carrotsearch.randomizedtesting.*;
-import com.carrotsearch.randomizedtesting.annotations.*;
+import com.carrotsearch.randomizedtesting.JUnit4MethodProvider;
+import com.carrotsearch.randomizedtesting.LifecycleScope;
+import com.carrotsearch.randomizedtesting.MixWithSuiteName;
+import com.carrotsearch.randomizedtesting.RandomizedContext;
+import com.carrotsearch.randomizedtesting.RandomizedRunner;
+import com.carrotsearch.randomizedtesting.RandomizedTest;
+import com.carrotsearch.randomizedtesting.annotations.Listeners;
+import com.carrotsearch.randomizedtesting.annotations.SeedDecorators;
+import com.carrotsearch.randomizedtesting.annotations.TestGroup;
+import com.carrotsearch.randomizedtesting.annotations.TestMethodProviders;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction.Action;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakGroup.Group;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakGroup;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Consequence;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import com.carrotsearch.randomizedtesting.rules.NoClassHooksShadowingRule;
 import com.carrotsearch.randomizedtesting.rules.NoInstanceHooksOverridesRule;
@@ -110,13 +207,6 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAs
  *   context ({@link RandomizedContext#current()}) and then calling
  *   {@link RandomizedContext#getRunnerSeedAsString()}.</li>
  * </ul>
- * 
- * <p>There is a number of other facilities tests can use, like:
- * <ul>
- *   <li>{@link #closeAfterTest(Closeable)} and {@link #closeAfterSuite(Closeable)} to
- *   register resources to be closed after each scope (if close fails, the scope
- *   will fail too).</li>
- * </ul> 
  */
 @RunWith(RandomizedRunner.class)
 @TestMethodProviders({
@@ -124,7 +214,8 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAs
   JUnit4MethodProvider.class
 })
 @Listeners({
-  RunListenerPrintReproduceInfo.class
+  RunListenerPrintReproduceInfo.class,
+  FailureMarker.class
 })
 @SeedDecorators({MixWithSuiteName.class}) // See LUCENE-3995 for rationale.
 @ThreadLeakScope(Scope.SUITE)
@@ -136,6 +227,7 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAs
 @ThreadLeakFilters(defaultFilters = true, filters = {
     QuickPatchThreadsFilter.class
 })
+@TestRuleLimitSysouts.Limit(bytes = TestRuleLimitSysouts.DEFAULT_SYSOUT_BYTES_THRESHOLD)
 public abstract class LuceneTestCase extends Assert {
 
   // --------------------------------------------------------------------
@@ -144,6 +236,7 @@ public abstract class LuceneTestCase extends Assert {
 
   public static final String SYSPROP_NIGHTLY = "tests.nightly";
   public static final String SYSPROP_WEEKLY = "tests.weekly";
+  public static final String SYSPROP_MONSTER = "tests.monster";
   public static final String SYSPROP_AWAITSFIX = "tests.awaitsfix";
   public static final String SYSPROP_SLOW = "tests.slow";
   public static final String SYSPROP_BADAPPLES = "tests.badapples";
@@ -171,6 +264,17 @@ public abstract class LuceneTestCase extends Assert {
   @Retention(RetentionPolicy.RUNTIME)
   @TestGroup(enabled = false, sysProperty = SYSPROP_WEEKLY)
   public @interface Weekly {}
+  
+  /**
+   * Annotation for monster tests that require special setup (e.g. use tons of disk and RAM)
+   */
+  @Documented
+  @Inherited
+  @Retention(RetentionPolicy.RUNTIME)
+  @TestGroup(enabled = false, sysProperty = SYSPROP_MONSTER)
+  public @interface Monster {
+    String value();
+  }
 
   /**
    * Annotation for tests which exhibit a known issue and are temporarily disabled.
@@ -208,7 +312,10 @@ public abstract class LuceneTestCase extends Assert {
   @Inherited
   @Retention(RetentionPolicy.RUNTIME)
   @TestGroup(enabled = false, sysProperty = SYSPROP_BADAPPLES)
-  public @interface BadApple {}
+  public @interface BadApple {
+    /** Point to JIRA entry. */
+    public String bugUrl();
+  }
 
   /**
    * Annotation for test classes that should avoid certain codec types
@@ -222,24 +329,59 @@ public abstract class LuceneTestCase extends Assert {
     String[] value();
   }
   
+  /**
+   * Marks any suites which are known not to close all the temporary
+   * files. This may prevent temp. files and folders from being cleaned
+   * up after the suite is completed.
+   * 
+   * @see LuceneTestCase#createTempDir()
+   * @see LuceneTestCase#createTempFile(String, String)
+   */
+  @Documented
+  @Inherited
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.TYPE)
+  public @interface SuppressTempFileChecks {
+    /** Point to JIRA entry. */
+    public String bugUrl() default "None";
+  }
+
+  /**
+   * Ignore {@link TestRuleLimitSysouts} for any suite which is known to print 
+   * over the default limit of bytes to {@link System#out} or {@link System#err}.
+   * 
+   * @see TestRuleLimitSysouts
+   */
+  @Documented
+  @Inherited
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.TYPE)
+  public @interface SuppressSysoutChecks {
+    /** Point to JIRA entry. */
+    public String bugUrl();
+  }
+
   // -----------------------------------------------------------------
   // Truly immutable fields and constants, initialized once and valid 
   // for all suites ever since.
   // -----------------------------------------------------------------
 
+  // :Post-Release-Update-Version.LUCENE_XY:
   /** 
    * Use this constant when creating Analyzers and any other version-dependent stuff.
    * <p><b>NOTE:</b> Change this when development starts for new Lucene version:
    */
-  public static final Version TEST_VERSION_CURRENT = Version.LUCENE_50;
+  public static final Version TEST_VERSION_CURRENT = Version.LUCENE_5_0;
 
   /**
    * True if and only if tests are run in verbose mode. If this flag is false
-   * tests are not expected to print any messages.
+   * tests are not expected to print any messages. Enforced with {@link TestRuleLimitSysouts}.
    */
   public static final boolean VERBOSE = systemPropertyAsBoolean("tests.verbose", false);
 
-  /** TODO: javadoc? */
+  /**
+   * Enables or disables dumping of {@link InfoStream} messages. 
+   */
   public static final boolean INFOSTREAM = systemPropertyAsBoolean("tests.infostream", VERBOSE);
 
   /**
@@ -284,14 +426,18 @@ public abstract class LuceneTestCase extends Assert {
   /** Throttling, see {@link MockDirectoryWrapper#setThrottling(Throttling)}. */
   public static final Throttling TEST_THROTTLING = TEST_NIGHTLY ? Throttling.SOMETIMES : Throttling.NEVER;
 
-  /** Create indexes in this directory, optimally use a subdir, named after the test */
-  public static final File TEMP_DIR;
+  /** Leave temporary files on disk, even on successful runs. */
+  public static final boolean LEAVE_TEMPORARY;
   static {
-    String s = System.getProperty("tempDir", System.getProperty("java.io.tmpdir"));
-    if (s == null)
-      throw new RuntimeException("To run tests, you need to define system property 'tempDir' or 'java.io.tmpdir'.");
-    TEMP_DIR = new File(s);
-    TEMP_DIR.mkdirs();
+    boolean defaultValue = false;
+    for (String property : Arrays.asList(
+        "tests.leaveTemporary" /* ANT tasks's (junit4) flag. */,
+        "tests.leavetemporary" /* lowercase */,
+        "tests.leavetmpdir" /* default */,
+        "solr.test.leavetmpdir" /* Solr's legacy */)) {
+      defaultValue |= systemPropertyAsBoolean(property, false);
+    }
+    LEAVE_TEMPORARY = defaultValue;
   }
 
   /**
@@ -314,26 +460,22 @@ public abstract class LuceneTestCase extends Assert {
   /** All {@link Directory} implementations. */
   private static final List<String> CORE_DIRECTORIES;
   static {
-    CORE_DIRECTORIES = new ArrayList<String>(FS_DIRECTORIES);
+    CORE_DIRECTORIES = new ArrayList<>(FS_DIRECTORIES);
     CORE_DIRECTORIES.add("RAMDirectory");
   };
-  
-  protected static final Set<String> doesntSupportOffsets = new HashSet<String>(Arrays.asList( 
-    "Lucene3x",
-    "MockFixedIntBlock",
-    "MockVariableIntBlock",
-    "MockSep",
-    "MockRandom"
-  ));
   
   // -----------------------------------------------------------------
   // Fields initialized in class or instance rules.
   // -----------------------------------------------------------------
 
   /**
-   * @lucene.internal 
+   * When {@code true}, Codecs for old Lucene version will support writing
+   * indexes in that format. Defaults to {@code false}, can be disabled by
+   * specific tests on demand.
+   * 
+   * @lucene.internal
    */
-  public static boolean PREFLEX_IMPERSONATION_IS_ACTIVE;
+  public static boolean OLD_FORMAT_IMPERSONATION_IS_ACTIVE = false;
 
 
   // -----------------------------------------------------------------
@@ -353,8 +495,12 @@ public abstract class LuceneTestCase extends Assert {
   /**
    * Suite failure marker (any error in the test or suite scope).
    */
-  public final static TestRuleMarkFailure suiteFailureMarker = 
-      new TestRuleMarkFailure();
+  private static TestRuleMarkFailure suiteFailureMarker;
+  
+  /**
+   * Temporary files cleanup rule.
+   */
+  private static TestRuleTemporaryFilesCleanup tempFilesCleanupRule;
 
   /**
    * Ignore tests after hitting a designated number of initial failures. This
@@ -383,9 +529,18 @@ public abstract class LuceneTestCase extends Assert {
     }
 
     ignoreAfterMaxFailuresDelegate = 
-        new AtomicReference<TestRuleIgnoreAfterMaxFailures>(
+        new AtomicReference<>(
             new TestRuleIgnoreAfterMaxFailures(maxFailures));
     ignoreAfterMaxFailures = TestRuleDelegate.of(ignoreAfterMaxFailuresDelegate);
+  }
+  
+  /**
+   * Try to capture streams early so that other classes don't have a chance to steal references
+   * to them (as is the case with ju.logging handlers).
+   */
+  static {
+    TestRuleLimitSysouts.checkCaptureStreams();
+    Logger.getGlobal().getHandlers();
   }
 
   /**
@@ -405,7 +560,7 @@ public abstract class LuceneTestCase extends Assert {
 
   /** By-name list of ignored types like loggers etc. */
   private final static Set<String> STATIC_LEAK_IGNORED_TYPES = 
-      Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(
+      Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
       "org.slf4j.Logger",
       "org.apache.solr.SolrLogFormatter",
       EnumSet.class.getName())));
@@ -419,8 +574,10 @@ public abstract class LuceneTestCase extends Assert {
   public static TestRule classRules = RuleChain
     .outerRule(new TestRuleIgnoreTestSuites())
     .around(ignoreAfterMaxFailures)
-    .around(suiteFailureMarker)
+    .around(suiteFailureMarker = new TestRuleMarkFailure())
     .around(new TestRuleAssertionsRequired())
+    .around(new TestRuleLimitSysouts(suiteFailureMarker))
+    .around(tempFilesCleanupRule = new TestRuleTemporaryFilesCleanup(suiteFailureMarker))
     .around(new StaticFieldsInvariantRule(STATIC_LEAK_THRESHOLD, true) {
       @Override
       protected boolean accept(java.lang.reflect.Field field) {
@@ -473,8 +630,18 @@ public abstract class LuceneTestCase extends Assert {
     .around(threadAndTestNameRule)
     .around(new SystemPropertiesInvariantRule(IGNORED_INVARIANT_PROPERTIES))
     .around(new TestRuleSetupAndRestoreInstanceEnv())
-    .around(new TestRuleFieldCacheSanity())
     .around(parentChainCallRule);
+
+  private static final Map<String,FieldType> fieldToType = new HashMap<String,FieldType>();
+
+  enum LiveIWCFlushMode {BY_RAM, BY_DOCS, EITHER};
+
+  /** Set by TestRuleSetupAndRestoreClassEnv */
+  static LiveIWCFlushMode liveIWCFlushMode;
+
+  static void setLiveIWCFlushMode(LiveIWCFlushMode flushMode) {
+    liveIWCFlushMode = flushMode;
+  }
 
   // -----------------------------------------------------------------
   // Suite and test case setup/ cleanup.
@@ -494,6 +661,7 @@ public abstract class LuceneTestCase extends Assert {
   @After
   public void tearDown() throws Exception {
     parentChainCallRule.teardownCalled = true;
+    fieldToType.clear();
   }
 
 
@@ -582,48 +750,6 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /**
-   * Asserts that FieldCacheSanityChecker does not detect any
-   * problems with FieldCache.DEFAULT.
-   * <p>
-   * If any problems are found, they are logged to System.err
-   * (allong with the msg) when the Assertion is thrown.
-   * </p>
-   * <p>
-   * This method is called by tearDown after every test method,
-   * however IndexReaders scoped inside test methods may be garbage
-   * collected prior to this method being called, causing errors to
-   * be overlooked. Tests are encouraged to keep their IndexReaders
-   * scoped at the class level, or to explicitly call this method
-   * directly in the same scope as the IndexReader.
-   * </p>
-   *
-   * @see org.apache.lucene.util.FieldCacheSanityChecker
-   */
-  protected static void assertSaneFieldCaches(final String msg) {
-    final CacheEntry[] entries = FieldCache.DEFAULT.getCacheEntries();
-    Insanity[] insanity = null;
-    try {
-      try {
-        insanity = FieldCacheSanityChecker.checkSanity(entries);
-      } catch (RuntimeException e) {
-        dumpArray(msg + ": FieldCache", entries, System.err);
-        throw e;
-      }
-
-      assertEquals(msg + ": Insane FieldCache usage(s) found",
-                   0, insanity.length);
-      insanity = null;
-    } finally {
-
-      // report this in the event of any exception/failure
-      // if no failure, then insanity will be null anyway
-      if (null != insanity) {
-        dumpArray(msg + ": Insane FieldCache usage(s)", insanity, System.err);
-      }
-    }
-  }
-
-  /**
    * Returns a number of at least <code>i</code>
    * <p>
    * The actual number returned will be influenced by whether {@link #TEST_NIGHTLY}
@@ -632,7 +758,7 @@ public abstract class LuceneTestCase extends Assert {
   public static int atLeast(Random random, int i) {
     int min = (TEST_NIGHTLY ? 2*i : i) * RANDOM_MULTIPLIER;
     int max = min+(min/2);
-    return _TestUtil.nextInt(random, min, max);
+    return TestUtil.nextInt(random, min, max);
   }
   
   public static int atLeast(int i) {
@@ -682,7 +808,7 @@ public abstract class LuceneTestCase extends Assert {
    */
   @SafeVarargs @SuppressWarnings("varargs")
   public static <T> Set<T> asSet(T... args) {
-    return new HashSet<T>(Arrays.asList(args));
+    return new HashSet<>(Arrays.asList(args));
   }
 
   /**
@@ -737,80 +863,53 @@ public abstract class LuceneTestCase extends Assert {
 
     if (r.nextBoolean()) {
       c.setMergeScheduler(new SerialMergeScheduler());
+    } else if (rarely(r)) {
+      int maxThreadCount = TestUtil.nextInt(random(), 1, 4);
+      int maxMergeCount = TestUtil.nextInt(random(), maxThreadCount, maxThreadCount + 4);
+      ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
+      cms.setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
+      c.setMergeScheduler(cms);
     }
     if (r.nextBoolean()) {
       if (rarely(r)) {
         // crazy value
-        c.setMaxBufferedDocs(_TestUtil.nextInt(r, 2, 15));
+        c.setMaxBufferedDocs(TestUtil.nextInt(r, 2, 15));
       } else {
         // reasonable value
-        c.setMaxBufferedDocs(_TestUtil.nextInt(r, 16, 1000));
+        c.setMaxBufferedDocs(TestUtil.nextInt(r, 16, 1000));
       }
     }
     if (r.nextBoolean()) {
-      if (rarely(r)) {
-        // crazy value
-        c.setTermIndexInterval(r.nextBoolean() ? _TestUtil.nextInt(r, 1, 31) : _TestUtil.nextInt(r, 129, 1000));
-      } else {
-        // reasonable value
-        c.setTermIndexInterval(_TestUtil.nextInt(r, 32, 128));
-      }
-    }
-    if (r.nextBoolean()) {
-      int maxNumThreadStates = rarely(r) ? _TestUtil.nextInt(r, 5, 20) // crazy value
-          : _TestUtil.nextInt(r, 1, 4); // reasonable value
+      int maxNumThreadStates = rarely(r) ? TestUtil.nextInt(r, 5, 20) // crazy value
+          : TestUtil.nextInt(r, 1, 4); // reasonable value
 
-      Method setIndexerThreadPoolMethod = null;
-      try {
-        // Retrieve the package-private setIndexerThreadPool
-        // method:
-        for(Method m : IndexWriterConfig.class.getDeclaredMethods()) {
-          if (m.getName().equals("setIndexerThreadPool")) {
-            m.setAccessible(true);
-            setIndexerThreadPoolMethod = m;
-            break;
-          }
-        }
-      } catch (Exception e) {
-        // Should not happen?
-        throw new RuntimeException(e);
-      }
-
-      if (setIndexerThreadPoolMethod == null) {
-        throw new RuntimeException("failed to lookup IndexWriterConfig.setIndexerThreadPool method");
-      }
-
-      try {
-        if (rarely(r)) {
-          Class<?> clazz = Class.forName("org.apache.lucene.index.RandomDocumentsWriterPerThreadPool");
-          Constructor<?> ctor = clazz.getConstructor(int.class, Random.class);
-          ctor.setAccessible(true);
-          // random thread pool
-          setIndexerThreadPoolMethod.invoke(c, ctor.newInstance(maxNumThreadStates, r));
-        } else {
-          // random thread pool
-          c.setMaxThreadStates(maxNumThreadStates);
-        }
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
+      c.setMaxThreadStates(maxNumThreadStates);
     }
 
-    if (rarely(r)) {
-      c.setMergePolicy(new MockRandomMergePolicy(r));
-    } else if (r.nextBoolean()) {
-      c.setMergePolicy(newTieredMergePolicy());
-    } else if (r.nextInt(5) == 0) { 
-      c.setMergePolicy(newAlcoholicMergePolicy());
-    } else {
-      c.setMergePolicy(newLogMergePolicy());
-    }
+    c.setMergePolicy(newMergePolicy(r));
+
     if (rarely(r)) {
       c.setMergedSegmentWarmer(new SimpleMergedSegmentWarmer(c.getInfoStream()));
     }
+    c.setUseCompoundFile(r.nextBoolean());
     c.setReaderPooling(r.nextBoolean());
-    c.setReaderTermsIndexDivisor(_TestUtil.nextInt(r, 1, 4));
+    c.setCheckIntegrityAtMerge(r.nextBoolean());
     return c;
+  }
+
+  public static MergePolicy newMergePolicy(Random r) {
+    if (rarely(r)) {
+      return new MockRandomMergePolicy(r);
+    } else if (r.nextBoolean()) {
+      return newTieredMergePolicy(r);
+    } else if (r.nextInt(5) == 0) { 
+      return newAlcoholicMergePolicy(r, classEnvRule.timeZone);
+    }
+    return newLogMergePolicy(r);
+  }
+
+  public static MergePolicy newMergePolicy() {
+    return newMergePolicy(random());
   }
 
   public static LogMergePolicy newLogMergePolicy() {
@@ -831,29 +930,38 @@ public abstract class LuceneTestCase extends Assert {
 
   public static LogMergePolicy newLogMergePolicy(Random r) {
     LogMergePolicy logmp = r.nextBoolean() ? new LogDocMergePolicy() : new LogByteSizeMergePolicy();
-    logmp.setUseCompoundFile(r.nextBoolean());
     logmp.setCalibrateSizeByDeletes(r.nextBoolean());
     if (rarely(r)) {
-      logmp.setMergeFactor(_TestUtil.nextInt(r, 2, 9));
+      logmp.setMergeFactor(TestUtil.nextInt(r, 2, 9));
     } else {
-      logmp.setMergeFactor(_TestUtil.nextInt(r, 10, 50));
+      logmp.setMergeFactor(TestUtil.nextInt(r, 10, 50));
     }
-    logmp.setUseCompoundFile(r.nextBoolean());
-    logmp.setNoCFSRatio(0.1 + r.nextDouble()*0.8);
-    if (rarely()) {
-      logmp.setMaxCFSSegmentSizeMB(0.2 + r.nextDouble() * 2.0);
-    }
+    configureRandom(r, logmp);
     return logmp;
+  }
+  
+  private static void configureRandom(Random r, MergePolicy mergePolicy) {
+    if (r.nextBoolean()) {
+      mergePolicy.setNoCFSRatio(0.1 + r.nextDouble()*0.8);
+    } else {
+      mergePolicy.setNoCFSRatio(r.nextBoolean() ? 1.0 : 0.0);
+    }
+    
+    if (rarely()) {
+      mergePolicy.setMaxCFSSegmentSizeMB(0.2 + r.nextDouble() * 2.0);
+    } else {
+      mergePolicy.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
+    }
   }
 
   public static TieredMergePolicy newTieredMergePolicy(Random r) {
     TieredMergePolicy tmp = new TieredMergePolicy();
     if (rarely(r)) {
-      tmp.setMaxMergeAtOnce(_TestUtil.nextInt(r, 2, 9));
-      tmp.setMaxMergeAtOnceExplicit(_TestUtil.nextInt(r, 2, 9));
+      tmp.setMaxMergeAtOnce(TestUtil.nextInt(r, 2, 9));
+      tmp.setMaxMergeAtOnceExplicit(TestUtil.nextInt(r, 2, 9));
     } else {
-      tmp.setMaxMergeAtOnce(_TestUtil.nextInt(r, 10, 50));
-      tmp.setMaxMergeAtOnceExplicit(_TestUtil.nextInt(r, 10, 50));
+      tmp.setMaxMergeAtOnce(TestUtil.nextInt(r, 10, 50));
+      tmp.setMaxMergeAtOnceExplicit(TestUtil.nextInt(r, 10, 50));
     }
     if (rarely(r)) {
       tmp.setMaxMergedSegmentMB(0.2 + r.nextDouble() * 2.0);
@@ -863,36 +971,158 @@ public abstract class LuceneTestCase extends Assert {
     tmp.setFloorSegmentMB(0.2 + r.nextDouble() * 2.0);
     tmp.setForceMergeDeletesPctAllowed(0.0 + r.nextDouble() * 30.0);
     if (rarely(r)) {
-      tmp.setSegmentsPerTier(_TestUtil.nextInt(r, 2, 20));
+      tmp.setSegmentsPerTier(TestUtil.nextInt(r, 2, 20));
     } else {
-      tmp.setSegmentsPerTier(_TestUtil.nextInt(r, 10, 50));
+      tmp.setSegmentsPerTier(TestUtil.nextInt(r, 10, 50));
     }
-    tmp.setUseCompoundFile(r.nextBoolean());
-    tmp.setNoCFSRatio(0.1 + r.nextDouble()*0.8);
-    if (rarely()) {
-      tmp.setMaxCFSSegmentSizeMB(0.2 + r.nextDouble() * 2.0);
-    }
+    configureRandom(r, tmp);
     tmp.setReclaimDeletesWeight(r.nextDouble()*4);
     return tmp;
   }
 
-  public static LogMergePolicy newLogMergePolicy(boolean useCFS) {
-    LogMergePolicy logmp = newLogMergePolicy();
-    logmp.setUseCompoundFile(useCFS);
+  public static MergePolicy newLogMergePolicy(boolean useCFS) {
+    MergePolicy logmp = newLogMergePolicy();
+    logmp.setNoCFSRatio(useCFS ? 1.0 : 0.0);
     return logmp;
   }
 
-  public static LogMergePolicy newLogMergePolicy(boolean useCFS, int mergeFactor) {
+  public static MergePolicy newLogMergePolicy(boolean useCFS, int mergeFactor) {
     LogMergePolicy logmp = newLogMergePolicy();
-    logmp.setUseCompoundFile(useCFS);
+    logmp.setNoCFSRatio(useCFS ? 1.0 : 0.0);
     logmp.setMergeFactor(mergeFactor);
     return logmp;
   }
 
-  public static LogMergePolicy newLogMergePolicy(int mergeFactor) {
+  public static MergePolicy newLogMergePolicy(int mergeFactor) {
     LogMergePolicy logmp = newLogMergePolicy();
     logmp.setMergeFactor(mergeFactor);
     return logmp;
+  }
+  
+  // if you want it in LiveIndexWriterConfig: it must and will be tested here.
+  public static void maybeChangeLiveIndexWriterConfig(Random r, LiveIndexWriterConfig c) {
+    boolean didChange = false;
+
+    if (rarely(r)) {
+      // change flush parameters:
+      // this is complicated because the api requires you "invoke setters in a magical order!"
+      // LUCENE-5661: workaround for race conditions in the API
+      synchronized (c) {
+        boolean flushByRAM;
+        switch (liveIWCFlushMode) {
+        case BY_RAM:
+          flushByRAM = true;
+          break;
+        case BY_DOCS:
+          flushByRAM = false;
+          break;
+        case EITHER:
+          flushByRAM = random().nextBoolean();
+          break;
+        default:
+          throw new AssertionError();
+        }
+        if (flushByRAM) { 
+          c.setRAMBufferSizeMB(TestUtil.nextInt(r, 1, 10));
+          c.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
+        } else {
+          if (rarely(r)) {
+            // crazy value
+            c.setMaxBufferedDocs(TestUtil.nextInt(r, 2, 15));
+          } else {
+            // reasonable value
+            c.setMaxBufferedDocs(TestUtil.nextInt(r, 16, 1000));
+          }
+          c.setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
+        }
+      }
+      didChange = true;
+    }
+    
+    if (rarely(r)) {
+      // change buffered deletes parameters
+      boolean limitBufferedDeletes = r.nextBoolean();
+      if (limitBufferedDeletes) {
+        c.setMaxBufferedDeleteTerms(TestUtil.nextInt(r, 1, 1000));
+      } else {
+        c.setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH);
+      }
+      didChange = true;
+    }
+    
+    if (rarely(r)) {
+      // change warmer parameters
+      if (r.nextBoolean()) {
+        c.setMergedSegmentWarmer(new SimpleMergedSegmentWarmer(c.getInfoStream()));
+      } else {
+        c.setMergedSegmentWarmer(null);
+      }
+      didChange = true;
+    }
+    
+    if (rarely(r)) {
+      // change CFS flush parameters
+      c.setUseCompoundFile(r.nextBoolean());
+      didChange = true;
+    }
+    
+    if (rarely(r)) {
+      // change merge integrity check parameters
+      c.setCheckIntegrityAtMerge(r.nextBoolean());
+      didChange = true;
+    }
+    
+    if (rarely(r)) {
+      // change CMS merge parameters
+      MergeScheduler ms = c.getMergeScheduler();
+      if (ms instanceof ConcurrentMergeScheduler) {
+        int maxThreadCount = TestUtil.nextInt(r, 1, 4);
+        int maxMergeCount = TestUtil.nextInt(r, maxThreadCount, maxThreadCount + 4);
+        ((ConcurrentMergeScheduler)ms).setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
+      }
+      didChange = true;
+    }
+    
+    if (rarely(r)) {
+      MergePolicy mp = c.getMergePolicy();
+      configureRandom(r, mp);
+      if (mp instanceof LogMergePolicy) {
+        LogMergePolicy logmp = (LogMergePolicy) mp;
+        logmp.setCalibrateSizeByDeletes(r.nextBoolean());
+        if (rarely(r)) {
+          logmp.setMergeFactor(TestUtil.nextInt(r, 2, 9));
+        } else {
+          logmp.setMergeFactor(TestUtil.nextInt(r, 10, 50));
+        }
+      } else if (mp instanceof TieredMergePolicy) {
+        TieredMergePolicy tmp = (TieredMergePolicy) mp;
+        if (rarely(r)) {
+          tmp.setMaxMergeAtOnce(TestUtil.nextInt(r, 2, 9));
+          tmp.setMaxMergeAtOnceExplicit(TestUtil.nextInt(r, 2, 9));
+        } else {
+          tmp.setMaxMergeAtOnce(TestUtil.nextInt(r, 10, 50));
+          tmp.setMaxMergeAtOnceExplicit(TestUtil.nextInt(r, 10, 50));
+        }
+        if (rarely(r)) {
+          tmp.setMaxMergedSegmentMB(0.2 + r.nextDouble() * 2.0);
+        } else {
+          tmp.setMaxMergedSegmentMB(r.nextDouble() * 100);
+        }
+        tmp.setFloorSegmentMB(0.2 + r.nextDouble() * 2.0);
+        tmp.setForceMergeDeletesPctAllowed(0.0 + r.nextDouble() * 30.0);
+        if (rarely(r)) {
+          tmp.setSegmentsPerTier(TestUtil.nextInt(r, 2, 20));
+        } else {
+          tmp.setSegmentsPerTier(TestUtil.nextInt(r, 10, 50));
+        }
+        configureRandom(r, tmp);
+        tmp.setReclaimDeletesWeight(r.nextDouble()*4);
+      }
+      didChange = true;
+    }
+    if (VERBOSE && didChange) {
+      System.out.println("NOTE: LuceneTestCase: randomly changed IWC's live settings to:\n" + c);
+    }
   }
 
   /**
@@ -971,7 +1201,8 @@ public abstract class LuceneTestCase extends Assert {
       }
       return wrapped;
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      Rethrow.rethrow(e);
+      throw null; // dummy to prevent compiler failure
     }
   }
 
@@ -989,11 +1220,11 @@ public abstract class LuceneTestCase extends Assert {
   }
   
   private static BaseDirectoryWrapper wrapDirectory(Random random, Directory directory, boolean bare) {
-    if (rarely(random)) {
+    if (rarely(random) && !bare) {
       directory = new NRTCachingDirectory(directory, random.nextDouble(), random.nextDouble());
     }
     
-    if (rarely(random)) { 
+    if (rarely(random) && !bare) { 
       final double maxMBPerSec = 10 + 5*(random.nextDouble()-0.5);
       if (LuceneTestCase.VERBOSE) {
         System.out.println("LuceneTestCase: will rate limit output IndexOutput to " + maxMBPerSec + " MB/sec");
@@ -1046,11 +1277,43 @@ public abstract class LuceneTestCase extends Assert {
   public static Field newField(String name, String value, FieldType type) {
     return newField(random(), name, value, type);
   }
-  
-  public static Field newField(Random random, String name, String value, FieldType type) {
+
+  /** Returns a FieldType derived from newType but whose
+   *  term vector options match the old type */
+  private static FieldType mergeTermVectorOptions(FieldType newType, FieldType oldType) {
+    if (newType.indexed() && oldType.storeTermVectors() == true && newType.storeTermVectors() == false) {
+      newType = new FieldType(newType);
+      newType.setStoreTermVectors(oldType.storeTermVectors());
+      newType.setStoreTermVectorPositions(oldType.storeTermVectorPositions());
+      newType.setStoreTermVectorOffsets(oldType.storeTermVectorOffsets());
+      newType.setStoreTermVectorPayloads(oldType.storeTermVectorPayloads());
+      newType.freeze();
+    }
+
+    return newType;
+  }
+
+  // TODO: if we can pull out the "make term vector options
+  // consistent across all instances of the same field name"
+  // write-once schema sort of helper class then we can
+  // remove the sync here.  We can also fold the random
+  // "enable norms" (now commented out, below) into that:
+  public synchronized static Field newField(Random random, String name, String value, FieldType type) {
+
+    // Defeat any consumers that illegally rely on intern'd
+    // strings (we removed this from Lucene a while back):
     name = new String(name);
-    if (usually(random) || !type.indexed()) {
+
+    FieldType prevType = fieldToType.get(name);
+
+    if (usually(random) || !type.indexed() || prevType != null) {
       // most of the time, don't modify the params
+      if (prevType == null) {
+        fieldToType.put(name, new FieldType(type));
+      } else {
+        type = mergeTermVectorOptions(type, prevType);
+      }
+
       return new Field(name, value, type);
     }
 
@@ -1063,19 +1326,30 @@ public abstract class LuceneTestCase extends Assert {
       newType.setStored(true); // randomly store it
     }
 
+    // Randomly turn on term vector options, but always do
+    // so consistently for the same field name:
     if (!newType.storeTermVectors() && random.nextBoolean()) {
       newType.setStoreTermVectors(true);
-      if (!newType.storeTermVectorOffsets()) {
-        newType.setStoreTermVectorOffsets(random.nextBoolean());
-      }
       if (!newType.storeTermVectorPositions()) {
         newType.setStoreTermVectorPositions(random.nextBoolean());
         
-        if (newType.storeTermVectorPositions() && !newType.storeTermVectorPayloads()) {
-          newType.setStoreTermVectorPayloads(random.nextBoolean());
+        if (newType.storeTermVectorPositions()) {
+          if (!newType.storeTermVectorPayloads()) {
+            newType.setStoreTermVectorPayloads(random.nextBoolean());
+          }
         }
       }
+      
+      if (!newType.storeTermVectorOffsets()) {
+        newType.setStoreTermVectorOffsets(random.nextBoolean());
+      }
+
+      if (VERBOSE) {
+        System.out.println("NOTE: LuceneTestCase: upgrade name=" + name + " type=" + newType);
+      }
     }
+    newType.freeze();
+    fieldToType.put(name, newType);
 
     // TODO: we need to do this, but smarter, ie, most of
     // the time we set the same value for a given field but
@@ -1125,8 +1399,8 @@ public abstract class LuceneTestCase extends Assert {
     FSDirectory d = null;
     try {
       d = CommandLineUtil.newFSDirectory(clazz, file);
-    } catch (Exception e) {
-      d = FSDirectory.open(file);
+    } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+      Rethrow.rethrow(e);
     }
     return d;
   }
@@ -1144,15 +1418,29 @@ public abstract class LuceneTestCase extends Assert {
       final Class<? extends Directory> clazz = CommandLineUtil.loadDirectoryClass(clazzName);
       // If it is a FSDirectory type, try its ctor(File)
       if (FSDirectory.class.isAssignableFrom(clazz)) {
-        final File dir = _TestUtil.getTempDir("index");
-        dir.mkdirs(); // ensure it's created so we 'have' it.
+        final File dir = createTempDir("index-" + clazzName);
         return newFSDirectoryImpl(clazz.asSubclass(FSDirectory.class), dir);
+      }
+
+      // See if it has a File ctor even though it's not an
+      // FSDir subclass:
+      Constructor<? extends Directory> fileCtor = null;
+      try {
+        fileCtor = clazz.getConstructor(File.class);
+      } catch (NoSuchMethodException nsme) {
+        // Ignore
+      }
+
+      if (fileCtor != null) {
+        final File dir = createTempDir("index");
+        return fileCtor.newInstance(dir);
       }
 
       // try empty ctor
       return clazz.newInstance();
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      Rethrow.rethrow(e);
+      throw null; // dummy to prevent compiler failure
     }
   }
   
@@ -1184,13 +1472,13 @@ public abstract class LuceneTestCase extends Assert {
             break;
           case 3:
             final AtomicReader ar = SlowCompositeReaderWrapper.wrap(r);
-            final List<String> allFields = new ArrayList<String>();
+            final List<String> allFields = new ArrayList<>();
             for (FieldInfo fi : ar.getFieldInfos()) {
               allFields.add(fi.name);
             }
             Collections.shuffle(allFields, random);
             final int end = allFields.isEmpty() ? 0 : random.nextInt(allFields.size());
-            final Set<String> fields = new HashSet<String>(allFields.subList(0, end));
+            final Set<String> fields = new HashSet<>(allFields.subList(0, end));
             // will create no FC insanity as ParallelAtomicReader has own cache key:
             r = new ParallelAtomicReader(
               new FieldFilterAtomicReader(ar, fields, false),
@@ -1240,7 +1528,7 @@ public abstract class LuceneTestCase extends Assert {
     } else if (oldContext.mergeInfo != null) {
       // Always return at least the estimatedMergeBytes of
       // the incoming IOContext:
-      return new IOContext(new MergeInfo(randomNumDocs, Math.max(oldContext.mergeInfo.estimatedMergeBytes, size), random.nextBoolean(), _TestUtil.nextInt(random, 1, 100)));
+      return new IOContext(new MergeInfo(randomNumDocs, Math.max(oldContext.mergeInfo.estimatedMergeBytes, size), random.nextBoolean(), TestUtil.nextInt(random, 1, 100)));
     } else {
       // Make a totally random IOContext:
       final IOContext context;
@@ -1274,20 +1562,30 @@ public abstract class LuceneTestCase extends Assert {
   public static IndexSearcher newSearcher(IndexReader r) {
     return newSearcher(r, true);
   }
-  
+
+  /**
+   * Create a new searcher over the reader. This searcher might randomly use
+   * threads.
+   */
+  public static IndexSearcher newSearcher(IndexReader r, boolean maybeWrap) {
+    return newSearcher(r, maybeWrap, true);
+  }
+
   /**
    * Create a new searcher over the reader. This searcher might randomly use
    * threads. if <code>maybeWrap</code> is true, this searcher might wrap the
-   * reader with one that returns null for getSequentialSubReaders.
+   * reader with one that returns null for getSequentialSubReaders. If
+   * <code>wrapWithAssertions</code> is true, this searcher might be an
+   * {@link AssertingIndexSearcher} instance.
    */
-  public static IndexSearcher newSearcher(IndexReader r, boolean maybeWrap) {
+  public static IndexSearcher newSearcher(IndexReader r, boolean maybeWrap, boolean wrapWithAssertions) {
     Random random = random();
     if (usually()) {
       if (maybeWrap) {
         try {
           r = maybeWrapReader(r);
         } catch (IOException e) {
-          throw new AssertionError(e);
+          Rethrow.rethrow(e);
         }
       }
       // TODO: this whole check is a coverage hack, we should move it to tests for various filterreaders.
@@ -1296,12 +1594,17 @@ public abstract class LuceneTestCase extends Assert {
         // TODO: not useful to check DirectoryReader (redundant with checkindex)
         // but maybe sometimes run this on the other crazy readers maybeWrapReader creates?
         try {
-          _TestUtil.checkReader(r);
+          TestUtil.checkReader(r);
         } catch (IOException e) {
-          throw new AssertionError(e);
+          Rethrow.rethrow(e);
         }
       }
-      IndexSearcher ret = random.nextBoolean() ? new AssertingIndexSearcher(random, r) : new AssertingIndexSearcher(random, r.getContext());
+      final IndexSearcher ret;
+      if (wrapWithAssertions) {
+        ret = random.nextBoolean() ? new AssertingIndexSearcher(random, r) : new AssertingIndexSearcher(random, r.getContext());
+      } else {
+        ret = random.nextBoolean() ? new IndexSearcher(r) : new IndexSearcher(r.getContext());
+      }
       ret.setSimilarity(classEnvRule.similarity);
       return ret;
     } else {
@@ -1310,7 +1613,7 @@ public abstract class LuceneTestCase extends Assert {
       if (random.nextBoolean()) {
         ex = null;
       } else {
-        threads = _TestUtil.nextInt(random, 1, 8);
+        threads = TestUtil.nextInt(random, 1, 8);
         ex = new ThreadPoolExecutor(threads, threads, 0L, TimeUnit.MILLISECONDS,
             new LinkedBlockingQueue<Runnable>(),
             new NamedThreadFactory("LuceneTestCase"));
@@ -1319,18 +1622,25 @@ public abstract class LuceneTestCase extends Assert {
       }
       if (ex != null) {
        if (VERBOSE) {
-        System.out.println("NOTE: newSearcher using ExecutorService with " + threads + " threads");
+         System.out.println("NOTE: newSearcher using ExecutorService with " + threads + " threads");
        }
        r.addReaderClosedListener(new ReaderClosedListener() {
          @Override
          public void onClose(IndexReader reader) {
-           _TestUtil.shutdownExecutorService(ex);
+           TestUtil.shutdownExecutorService(ex);
          }
        });
       }
-      IndexSearcher ret = random.nextBoolean() 
-          ? new AssertingIndexSearcher(random, r, ex)
-          : new AssertingIndexSearcher(random, r.getContext(), ex);
+      IndexSearcher ret;
+      if (wrapWithAssertions) {
+        ret = random.nextBoolean()
+            ? new AssertingIndexSearcher(random, r, ex)
+            : new AssertingIndexSearcher(random, r.getContext(), ex);
+      } else {
+        ret = random.nextBoolean()
+            ? new IndexSearcher(r, ex)
+            : new IndexSearcher(r.getContext(), ex);
+      }
       ret.setSimilarity(classEnvRule.similarity);
       return ret;
     }
@@ -1349,10 +1659,41 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
   
+  /** Returns true if the default codec supports single valued docvalues with missing values */ 
+  public static boolean defaultCodecSupportsMissingDocValues() {
+    String name = Codec.getDefault().getName();
+    if (name.equals("Lucene3x") ||
+        name.equals("Lucene40") || name.equals("Appending") ||
+        name.equals("Lucene41") || 
+        name.equals("Lucene42")) {
+      return false;
+    }
+    return true;
+  }
+  
   /** Returns true if the default codec supports SORTED_SET docvalues */ 
   public static boolean defaultCodecSupportsSortedSet() {
     String name = Codec.getDefault().getName();
     if (name.equals("Lucene40") || name.equals("Lucene41")) {
+      return false;
+    }
+    return true;
+  }
+  
+  /** Returns true if the codec "supports" docsWithField 
+   * (other codecs return MatchAllBits, because you couldnt write missing values before) */
+  public static boolean defaultCodecSupportsDocsWithField() {
+    String name = Codec.getDefault().getName();
+    if (name.equals("Lucene40") || name.equals("Lucene41") || name.equals("Lucene42")) {
+      return false;
+    }
+    return true;
+  }
+  
+  /** Returns true if the codec "supports" field updates. */
+  public static boolean defaultCodecSupportsFieldUpdates() {
+    String name = Codec.getDefault().getName();
+    if (name.equals("Lucene40") || name.equals("Lucene41") || name.equals("Lucene42") || name.equals("Lucene45")) {
       return false;
     }
     return true;
@@ -1452,7 +1793,6 @@ public abstract class LuceneTestCase extends Assert {
    * checks collection-level statistics on Terms 
    */
   public void assertTermsStatisticsEquals(String info, Terms leftTerms, Terms rightTerms) throws IOException {
-    assert leftTerms.getComparator() == rightTerms.getComparator();
     if (leftTerms.getDocCount() != -1 && rightTerms.getDocCount() != -1) {
       assertEquals(info, leftTerms.getDocCount(), rightTerms.getDocCount());
     }
@@ -1686,7 +2026,7 @@ public abstract class LuceneTestCase extends Assert {
     Random random = random();
 
     // collect this number of terms from the left side
-    HashSet<BytesRef> tests = new HashSet<BytesRef>();
+    HashSet<BytesRef> tests = new HashSet<>();
     int numPasses = 0;
     while (numPasses < 10 && tests.size() < numTests) {
       leftEnum = leftTerms.iterator(leftEnum);
@@ -1717,7 +2057,7 @@ public abstract class LuceneTestCase extends Assert {
               tests.add(new BytesRef(new byte[] {(byte) 0xFF, (byte) 0xFF})); // past the last term
               break;
             case 2:
-              tests.add(new BytesRef(_TestUtil.randomSimpleString(random()))); // random term
+              tests.add(new BytesRef(TestUtil.randomSimpleString(random()))); // random term
               break;
             default:
               throw new AssertionError();
@@ -1729,7 +2069,7 @@ public abstract class LuceneTestCase extends Assert {
 
     rightEnum = rightTerms.iterator(rightEnum);
 
-    ArrayList<BytesRef> shuffledTests = new ArrayList<BytesRef>(tests);
+    ArrayList<BytesRef> shuffledTests = new ArrayList<>(tests);
     Collections.shuffle(shuffledTests, random);
 
     for (BytesRef b : shuffledTests) {
@@ -1739,14 +2079,13 @@ public abstract class LuceneTestCase extends Assert {
         rightEnum = rightTerms.iterator(rightEnum);
       }
 
-      final boolean useCache = random().nextBoolean();
       final boolean seekExact = random().nextBoolean();
 
       if (seekExact) {
-        assertEquals(info, leftEnum.seekExact(b, useCache), rightEnum.seekExact(b, useCache));
+        assertEquals(info, leftEnum.seekExact(b), rightEnum.seekExact(b));
       } else {
-        SeekStatus leftStatus = leftEnum.seekCeil(b, useCache);
-        SeekStatus rightStatus = rightEnum.seekCeil(b, useCache);
+        SeekStatus leftStatus = leftEnum.seekCeil(b);
+        SeekStatus rightStatus = rightEnum.seekCeil(b);
         assertEquals(info, leftStatus, rightStatus);
         if (leftStatus != SeekStatus.END) {
           assertEquals(info, leftEnum.term(), rightEnum.term());
@@ -1849,7 +2188,7 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   private static Set<String> getDVFields(IndexReader reader) {
-    Set<String> fields = new HashSet<String>();
+    Set<String> fields = new HashSet<>();
     for(FieldInfo fi : MultiFields.getMergedFieldInfos(reader)) {
       if (fi.hasDocValues()) {
         fields.add(fi.name);
@@ -1952,6 +2291,20 @@ public abstract class LuceneTestCase extends Assert {
           assertNull(info, rightValues);
         }
       }
+      
+      {
+        Bits leftBits = MultiDocValues.getDocsWithField(leftReader, field);
+        Bits rightBits = MultiDocValues.getDocsWithField(rightReader, field);
+        if (leftBits != null && rightBits != null) {
+          assertEquals(info, leftBits.length(), rightBits.length());
+          for (int i = 0; i < leftBits.length(); i++) {
+            assertEquals(info, leftBits.get(i), rightBits.get(i));
+          }
+        } else {
+          assertNull(info, leftBits);
+          assertNull(info, rightBits);
+        }
+      }
     }
   }
   
@@ -1988,8 +2341,8 @@ public abstract class LuceneTestCase extends Assert {
     FieldInfos rightInfos = MultiFields.getMergedFieldInfos(rightReader);
     
     // TODO: would be great to verify more than just the names of the fields!
-    TreeSet<String> left = new TreeSet<String>();
-    TreeSet<String> right = new TreeSet<String>();
+    TreeSet<String> left = new TreeSet<>();
+    TreeSet<String> right = new TreeSet<>();
     
     for (FieldInfo fi : leftInfos) {
       left.add(fi.name);
@@ -2000,5 +2353,70 @@ public abstract class LuceneTestCase extends Assert {
     }
     
     assertEquals(info, left, right);
+  }
+
+  /** Returns true if the file exists (can be opened), false
+   *  if it cannot be opened, and (unlike Java's
+   *  File.exists) throws IOException if there's some
+   *  unexpected error. */
+  public static boolean slowFileExists(Directory dir, String fileName) throws IOException {
+    try {
+      dir.openInput(fileName, IOContext.DEFAULT).close();
+      return true;
+    } catch (NoSuchFileException | FileNotFoundException e) {
+      return false;
+    }
+  }
+
+  /**
+   * This method is deprecated for a reason. Do not use it. Call {@link #createTempDir()}
+   * or {@link #createTempDir(String)} or {@link #createTempFile(String, String)}.
+   */
+  @Deprecated
+  public static File getBaseTempDirForTestClass() {
+    return tempFilesCleanupRule.getPerTestClassTempDir();
+  }
+
+
+  /**
+   * Creates an empty, temporary folder (when the name of the folder is of no importance).
+   * 
+   * @see #createTempDir(String)
+   */
+  public static File createTempDir() {
+    return createTempDir("tempDir");
+  }
+
+  /**
+   * Creates an empty, temporary folder with the given name prefix under the 
+   * test class's {@link #getBaseTempDirForTestClass()}.
+   *  
+   * <p>The folder will be automatically removed after the
+   * test class completes successfully. The test should close any file handles that would prevent
+   * the folder from being removed. 
+   */
+  public static File createTempDir(String prefix) {
+    return tempFilesCleanupRule.createTempDir(prefix);
+  }
+  
+  /**
+   * Creates an empty file with the given prefix and suffix under the 
+   * test class's {@link #getBaseTempDirForTestClass()}.
+   * 
+   * <p>The file will be automatically removed after the
+   * test class completes successfully. The test should close any file handles that would prevent
+   * the folder from being removed. 
+   */
+  public static File createTempFile(String prefix, String suffix) throws IOException {
+    return tempFilesCleanupRule.createTempFile(prefix, suffix);
+  }
+
+  /**
+   * Creates an empty temporary file.
+   * 
+   * @see #createTempFile(String, String) 
+   */
+  public static File createTempFile() throws IOException {
+    return createTempFile("tempFile", ".tmp");
   }
 }

@@ -11,7 +11,10 @@ import org.apache.log4j.spi.LoggingEvent;
 import org.apache.log4j.spi.ThrowableInformation;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -44,7 +47,7 @@ public class SolrLogLayout extends Layout {
   
   long startTime = System.currentTimeMillis();
   long lastTime = startTime;
-  Map<Method,String> methodAlias = new HashMap<Method,String>();
+  Map<Method,String> methodAlias = new HashMap<>();
   
   public static class Method {
     public String className;
@@ -81,9 +84,9 @@ public class SolrLogLayout extends Layout {
     Map<String,Object> coreProps;
   }
   
-  Map<Integer,CoreInfo> coreInfoMap = new WeakHashMap<Integer,CoreInfo>();
+  Map<Integer,CoreInfo> coreInfoMap = new WeakHashMap<>();
   
-  public Map<String,String> classAliases = new HashMap<String,String>();
+  public Map<String,String> classAliases = new HashMap<>();
   
   public void appendThread(StringBuilder sb, LoggingEvent event) {
     Thread th = Thread.currentThread();
@@ -112,7 +115,9 @@ public class SolrLogLayout extends Layout {
   
   public String _format(LoggingEvent event) {
     String message = (String) event.getMessage();
-    
+    if (message == null) {
+      message = "";
+    }
     StringBuilder sb = new StringBuilder(message.length() + 80);
     
     long now = event.timeStamp;

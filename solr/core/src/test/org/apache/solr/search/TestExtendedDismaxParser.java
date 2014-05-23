@@ -41,6 +41,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml", "schema12.xml");
     index();
   }
@@ -1145,7 +1146,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
       public FuzzyQueryParser(QParser parser, String defaultField) {
         super(parser, defaultField);
-        frequentlyMisspelledWords = new HashSet<String>();
+        frequentlyMisspelledWords = new HashSet<>();
         frequentlyMisspelledWords.add("absence");
       }
       

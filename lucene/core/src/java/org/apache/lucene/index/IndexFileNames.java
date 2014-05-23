@@ -200,6 +200,19 @@ public final class IndexFileNames {
   }  
 
   /**
+   * Return the extension (anything after the first '.'),
+   * or null if there is no '.' in the file name.
+   */
+  public static String getExtension(String filename) {
+    final int idx = filename.indexOf('.');
+    if (idx == -1) {
+      return null;
+    } else {
+      return filename.substring(idx + 1, filename.length());
+    }
+  }
+
+  /**
    * All files created by codecs much match this pattern (checked in
    * SegmentInfo).
    */

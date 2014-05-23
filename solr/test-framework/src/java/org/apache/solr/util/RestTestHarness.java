@@ -16,23 +16,33 @@ package org.apache.solr.util;
  * limitations under the License.
  */
 
-import org.apache.commons.io.IOUtils;
-
-import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.StringWriter;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.util.EntityUtils;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.common.params.ModifiableSolrParams;
 
 /**
  * Facilitates testing Solr's REST API via a provided embedded Jetty
  */
 public class RestTestHarness extends BaseTestHarness {
   private RESTfulServerProvider serverProvider;
+  private HttpClient httpClient = HttpClientUtil.createClient(new
+      ModifiableSolrParams());
   
   public RestTestHarness(RESTfulServerProvider serverProvider) {
     this.serverProvider = serverProvider;
@@ -83,22 +93,7 @@ public class RestTestHarness extends BaseTestHarness {
    * @exception Exception any exception in the response.
    */
   public String query(String request) throws Exception {
-    URL url = new URL(getBaseURL() + request);
-    HttpURLConnection connection = (HttpURLConnection)url.openConnection();
-    InputStream inputStream = null;
-    StringWriter strWriter;
-    try {
-      try {
-        inputStream = connection.getInputStream();
-      } catch (IOException e) {
-        inputStream = connection.getErrorStream();
-      }
-      strWriter = new StringWriter();
-      IOUtils.copy(new InputStreamReader(inputStream, "UTF-8"), strWriter);
-    } finally {
-      IOUtils.closeQuietly(inputStream);
-    }
-    return strWriter.toString();
+    return getResponse(new HttpGet(getBaseURL() + request));
   }
 
   /**
@@ -110,27 +105,23 @@ public class RestTestHarness extends BaseTestHarness {
    * @return The response to the PUT request
    */
   public String put(String request, String content) throws IOException {
-    URL url = new URL(getBaseURL() + request);
-    HttpURLConnection connection = (HttpURLConnection)url.openConnection();
-    connection.setDoOutput(true);
-    connection.setRequestMethod("PUT");
-    OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
-    out.write(content);
-    out.close();
-    InputStream inputStream = null;
-    StringWriter stringWriter;
-    try {
-      try {
-        inputStream = connection.getInputStream();
-      } catch (IOException e) {
-        inputStream = connection.getErrorStream();
-      }
-      stringWriter = new StringWriter();
-      IOUtils.copy(new InputStreamReader(inputStream, "UTF-8"), stringWriter);
-    } finally {
-      IOUtils.closeQuietly(inputStream);
-    }
-    return stringWriter.toString();
+    HttpPut httpPut = new HttpPut(getBaseURL() + request);
+    httpPut.setEntity(new StringEntity(content, ContentType.create(
+        "application/json", StandardCharsets.UTF_8)));
+    
+    return getResponse(httpPut);
+  }
+
+  /**
+   * Processes a DELETE request using a URL path (with no context path) + optional query params,
+   * e.g. "/schema/analysis/protwords/english", and returns the response content.
+   *
+   * @param request the URL path and optional query params
+   * @return The response to the DELETE request
+   */
+  public String delete(String request) throws IOException {
+    HttpDelete httpDelete = new HttpDelete(getBaseURL() + request);
+    return getResponse(httpDelete);
   }
 
   /**
@@ -142,29 +133,11 @@ public class RestTestHarness extends BaseTestHarness {
    * @return The response to the PUT request
    */
   public String post(String request, String content) throws IOException {
-    URL url = new URL(getBaseURL() + request);
-    HttpURLConnection connection = (HttpURLConnection)url.openConnection();
-    connection.setDoOutput(true);
-    connection.setRequestMethod("POST");
-    connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
-
-    OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
-    out.write(content);
-    out.close();
-    InputStream inputStream = null;
-    StringWriter stringWriter;
-    try {
-      try {
-        inputStream = connection.getInputStream();
-      } catch (IOException e) {
-        inputStream = connection.getErrorStream();
-      }
-      stringWriter = new StringWriter();
-      IOUtils.copy(new InputStreamReader(inputStream, "UTF-8"), stringWriter);
-    } finally {
-      IOUtils.closeQuietly(inputStream);
-    }
-    return stringWriter.toString();
+    HttpPost httpPost = new HttpPost(getBaseURL() + request);
+    httpPost.setEntity(new StringEntity(content, ContentType.create(
+        "application/json", StandardCharsets.UTF_8)));
+    
+    return getResponse(httpPost);
   }
 
 
@@ -178,15 +151,22 @@ public class RestTestHarness extends BaseTestHarness {
     }
   }
 
-  
+
+  /**
+   * Reloads the first core listed in the response to the core admin handler STATUS command
+   */
   @Override
   public void reload() throws Exception {
-    String xml = checkResponseStatus("/admin/cores?action=RELOAD", "0");
+    String coreName = (String)evaluateXPath
+        (query("/admin/cores?action=STATUS"),
+         "//lst[@name='status']/lst[1]/str[@name='name']",
+         XPathConstants.STRING);
+    String xml = checkResponseStatus("/admin/cores?action=RELOAD&core=" + coreName, "0");
     if (null != xml) {
       throw new RuntimeException("RELOAD failed:\n" + xml);
     }
   }
-  
+
   /**
    * Processes an "update" (add, commit or optimize) and
    * returns the response as a String.
@@ -200,6 +180,19 @@ public class RestTestHarness extends BaseTestHarness {
       return query("/update?stream.body=" + URLEncoder.encode(xml, "UTF-8"));
     } catch (Exception e) {
       throw new RuntimeException(e);
+    }
+  }
+
+  /**
+   * Executes the given request and returns the response.
+   */
+  private String getResponse(HttpUriRequest request) throws IOException {
+    HttpEntity entity = null;
+    try {
+      entity = httpClient.execute(request).getEntity();
+      return EntityUtils.toString(entity, StandardCharsets.UTF_8);
+    } finally {
+      EntityUtils.consumeQuietly(entity);
     }
   }
 }

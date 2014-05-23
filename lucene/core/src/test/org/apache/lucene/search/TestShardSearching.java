@@ -30,7 +30,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 // TODO
 //   - other queries besides PrefixQuery & TermQuery (but:
@@ -65,13 +65,13 @@ public class TestShardSearching extends ShardSearchingTestBase {
   }
 
   public void testSimple() throws Exception {
-    final int numNodes = _TestUtil.nextInt(random(), 1, 10);
+    final int numNodes = TestUtil.nextInt(random(), 1, 10);
 
     final double runTimeSec = atLeast(3);
 
-    final int minDocsToMakeTerms = _TestUtil.nextInt(random(), 5, 20);
+    final int minDocsToMakeTerms = TestUtil.nextInt(random(), 5, 20);
 
-    final int maxSearcherAgeSeconds = _TestUtil.nextInt(random(), 1, 3);
+    final int maxSearcherAgeSeconds = TestUtil.nextInt(random(), 1, 3);
 
     if (VERBOSE) {
       System.out.println("TEST: numNodes=" + numNodes + " runTimeSec=" + runTimeSec + " maxSearcherAgeSeconds=" + maxSearcherAgeSeconds);
@@ -82,7 +82,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
           maxSearcherAgeSeconds
           );
 
-    final List<PreviousSearchState> priorSearches = new ArrayList<PreviousSearchState>();
+    final List<PreviousSearchState> priorSearches = new ArrayList<>();
     List<BytesRef> terms = null;
     while (System.nanoTime() < endTimeNanos) {
 
@@ -175,7 +175,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
             // TODO: try to "focus" on high freq terms sometimes too
             // TODO: maybe also periodically reset the terms...?
             final TermsEnum termsEnum = MultiFields.getTerms(mockReader, "body").iterator(null);
-            terms = new ArrayList<BytesRef>();
+            terms = new ArrayList<>();
             while(termsEnum.next() != null) {
               terms.add(BytesRef.deepCopyOf(termsEnum.term()));
             }
@@ -200,7 +200,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
               if (t.length() <= 1) {
                 prefix = t;
               } else {
-                prefix = t.substring(0, _TestUtil.nextInt(random(), 1, 2));
+                prefix = t.substring(0, TestUtil.nextInt(random(), 1, 2));
               }
               query = new PrefixQuery(new Term("body", prefix));
             }
@@ -219,7 +219,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
                 //sort = new Sort(SortField.FIELD_DOC);
                 sort = null;
               } else if (what == 2) {
-                sort = new Sort(new SortField[] {new SortField("docid", SortField.Type.INT, random().nextBoolean())});
+                sort = new Sort(new SortField[] {new SortField("docid_int", SortField.Type.INT, random().nextBoolean())});
               } else {
                 sort = new Sort(new SortField[] {new SortField("title", SortField.Type.STRING, random().nextBoolean())});
               }
@@ -276,7 +276,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
 
   private PreviousSearchState assertSame(IndexSearcher mockSearcher, NodeState.ShardIndexSearcher shardSearcher, Query q, Sort sort, PreviousSearchState state) throws IOException {
 
-    int numHits = _TestUtil.nextInt(random(), 1, 100);
+    int numHits = TestUtil.nextInt(random(), 1, 100);
     if (state != null && state.searchAfterLocal == null) {
       // In addition to what we last searched:
       numHits += state.numHitsPaged;
@@ -384,7 +384,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
       sd.doc += base[sd.shardIndex];
     }
 
-    _TestUtil.assertEquals(hits, shardHits);
+    TestUtil.assertEquals(hits, shardHits);
 
     if (moreHits) {
       // Return a continuation:

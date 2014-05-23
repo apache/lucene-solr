@@ -68,7 +68,7 @@ public class SearchTravRetLoadFieldSelectorTask extends SearchTravTask {
   @Override
   public void setParams(String params) {
     this.params = params; // cannot just call super.setParams(), b/c it's params differ.
-    fieldsToLoad = new HashSet<String>();
+    fieldsToLoad = new HashSet<>();
     for (StringTokenizer tokenizer = new StringTokenizer(params, ","); tokenizer.hasMoreTokens();) {
       String s = tokenizer.nextToken();
       fieldsToLoad.add(s);

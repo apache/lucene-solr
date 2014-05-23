@@ -33,7 +33,7 @@ public class TestReverseStringFilterFactory extends BaseTokenStreamFactoryTestCa
    */
   public void testReversing() throws Exception {
     Reader reader = new StringReader("simple test");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("ReverseString").create(stream);
     assertTokenStreamContents(stream, new String[] { "elpmis", "tset" });
   }

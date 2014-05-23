@@ -20,11 +20,9 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.search.DocSet;
 
-
 /**
- * Experimental.  Subject to change before the next release.
- *
- **/
+ * @lucene.experimental
+ */
 public abstract class DocumentClusteringEngine extends ClusteringEngine {
 
   /**
@@ -34,18 +32,17 @@ public abstract class DocumentClusteringEngine extends ClusteringEngine {
    * @param solrParams The params controlling clustering
    * @return The clustering results
    */
-  public abstract NamedList cluster(SolrParams solrParams);
+  public abstract NamedList<?> cluster(SolrParams solrParams);
 
   /**
-   *  Experimental.  Subject to change before the next release
-   *
+   * Experimental.  Subject to change before the next release
    *
    * Cluster the set of docs.  Clustering of documents is often an expensive task that can take a long time.
    * @param docs The docs to cluster.  If null, cluster all docs as in {@link #cluster(org.apache.solr.common.params.SolrParams)}
    * @param solrParams The params controlling the clustering
    * @return The results.
    */
-  public abstract NamedList cluster(DocSet docs, SolrParams solrParams);
+  public abstract NamedList<?> cluster(DocSet docs, SolrParams solrParams);
 
 
 }

@@ -25,6 +25,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.util.Bits;
 
 /** Abstract API that produces numeric, binary and
  * sorted docvalues.
@@ -56,4 +57,22 @@ public abstract class DocValuesProducer implements Closeable {
    *  The returned instance need not be thread-safe: it will only be
    *  used by a single thread. */
   public abstract SortedSetDocValues getSortedSet(FieldInfo field) throws IOException;
+  
+  /** Returns a {@link Bits} at the size of <code>reader.maxDoc()</code>, 
+   *  with turned on bits for each docid that does have a value for this field.
+   *  The returned instance need not be thread-safe: it will only be
+   *  used by a single thread. */
+  public abstract Bits getDocsWithField(FieldInfo field) throws IOException;
+  
+  /** Returns approximate RAM bytes used */
+  public abstract long ramBytesUsed();
+  
+  /** 
+   * Checks consistency of this producer
+   * <p>
+   * Note that this may be costly in terms of I/O, e.g. 
+   * may involve computing a checksum value against large data files.
+   * @lucene.internal
+   */
+  public abstract void checkIntegrity() throws IOException;
 }

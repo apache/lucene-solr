@@ -15,7 +15,7 @@
 # * limitations under the License.
 # */
 
-writer.version=LUCENE_40
+writer.version=4.0
 
 analyzer=org.apache.lucene.analysis.standard.StandardAnalyzer
 directory=FSDirectory

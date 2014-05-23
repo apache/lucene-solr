@@ -132,22 +132,13 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
   }
   
   /** Calculates the hash code as required by TermsHash during indexing.
-   * <p>It is defined as:
-   * <pre class="prettyprint">
-   *  int hash = 0;
-   *  for (int i = offset; i &lt; offset + length; i++) {
-   *    hash = 31*hash + bytes[i];
-   *  }
-   * </pre>
-   */
+   *  <p> This is currently implemented as MurmurHash3 (32
+   *  bit), using the seed from {@link
+   *  StringHelper#GOOD_FAST_HASH_SEED}, but is subject to
+   *  change from release to release. */
   @Override
   public int hashCode() {
-    int hash = 0;
-    final int end = offset + length;
-    for(int i=offset;i<end;i++) {
-      hash = 31 * hash + bytes[i];
-    }
-    return hash;
+    return StringHelper.murmurhash3_x86_32(this, StringHelper.GOOD_FAST_HASH_SEED);
   }
 
   @Override

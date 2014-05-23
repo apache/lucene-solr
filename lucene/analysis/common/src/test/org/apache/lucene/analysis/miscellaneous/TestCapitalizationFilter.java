@@ -18,7 +18,6 @@
 package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,6 +30,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.junit.Test;
 
 import static org.apache.lucene.analysis.miscellaneous.CapitalizationFilter.*;
 
@@ -78,7 +78,7 @@ public class TestCapitalizationFilter extends BaseTokenStreamTestCase {
         true, keep, true, null, 0, DEFAULT_MAX_WORD_COUNT, DEFAULT_MAX_TOKEN_LENGTH);
     
     // Now try some prefixes
-    List<char[]> okPrefix = new ArrayList<char[]>();
+    List<char[]> okPrefix = new ArrayList<>();
     okPrefix.add("McK".toCharArray());
     
     assertCapitalizesTo("McKinley", 
@@ -107,8 +107,10 @@ public class TestCapitalizationFilter extends BaseTokenStreamTestCase {
       boolean onlyFirstWord, CharArraySet keep, boolean forceFirstLetter,
       Collection<char[]> okPrefix, int minWordLength, int maxWordCount,
       int maxTokenLength) throws IOException {
-    assertCapitalizesTo(new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false),
-        expected, onlyFirstWord, keep, forceFirstLetter, okPrefix, minWordLength, 
+    final MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    tokenizer.setReader(new StringReader(input));
+    assertCapitalizesTo(tokenizer,
+        expected, onlyFirstWord, keep, forceFirstLetter, okPrefix, minWordLength,
         maxWordCount, maxTokenLength);
   }
   
@@ -116,7 +118,9 @@ public class TestCapitalizationFilter extends BaseTokenStreamTestCase {
       boolean onlyFirstWord, CharArraySet keep, boolean forceFirstLetter,
       Collection<char[]> okPrefix, int minWordLength, int maxWordCount,
       int maxTokenLength) throws IOException {
-    assertCapitalizesTo(new MockTokenizer(new StringReader(input), MockTokenizer.KEYWORD, false),
+    final MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.KEYWORD, false);
+    tokenizer.setReader(new StringReader(input));
+    assertCapitalizesTo(tokenizer,
         new String[] { expected }, onlyFirstWord, keep, forceFirstLetter, okPrefix,
         minWordLength, maxWordCount, maxTokenLength);    
   }
@@ -126,8 +130,8 @@ public class TestCapitalizationFilter extends BaseTokenStreamTestCase {
     Analyzer a = new Analyzer() {
 
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, new CapitalizationFilter(tokenizer));
       }
     };
@@ -138,11 +142,27 @@ public class TestCapitalizationFilter extends BaseTokenStreamTestCase {
   public void testEmptyTerm() throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, new CapitalizationFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
+  }
+
+  /**
+   * checking the validity of constructor arguments
+   */
+  @Test(expected = IllegalArgumentException.class)
+  public void testIllegalArguments() throws Exception {
+    new CapitalizationFilter(whitespaceMockTokenizer("accept only valid arguments"),true, null, true, null, -1 , DEFAULT_MAX_WORD_COUNT, DEFAULT_MAX_TOKEN_LENGTH);
+  }
+  @Test(expected = IllegalArgumentException.class)
+  public void testIllegalArguments1() throws Exception {
+    new CapitalizationFilter(whitespaceMockTokenizer("accept only valid arguments"),true, null, true, null, 0 , -10, DEFAULT_MAX_TOKEN_LENGTH);
+  }
+  @Test(expected = IllegalArgumentException.class)
+  public void testIllegalArguments2() throws Exception {
+    new CapitalizationFilter(whitespaceMockTokenizer("accept only valid arguments"),true, null, true, null, 0 , DEFAULT_MAX_WORD_COUNT, -50);
   }
 }

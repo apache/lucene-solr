@@ -42,7 +42,7 @@ public class SpanNearBuilder extends SpanBuilderBase {
     String slopString = DOMUtils.getAttributeOrFail(e, "slop");
     int slop = Integer.parseInt(slopString);
     boolean inOrder = DOMUtils.getAttribute(e, "inOrder", false);
-    List<SpanQuery> spans = new ArrayList<SpanQuery>();
+    List<SpanQuery> spans = new ArrayList<>();
     for (Node kid = e.getFirstChild(); kid != null; kid = kid.getNextSibling()) {
       if (kid.getNodeType() == Node.ELEMENT_NODE) {
         spans.add(factory.getSpanQuery((Element) kid));

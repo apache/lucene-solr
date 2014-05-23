@@ -31,7 +31,7 @@ import org.apache.lucene.util.PriorityQueue;
  * however, you might want to consider overriding all methods, in order to avoid
  * a NullPointerException.
  */
-public abstract class TopDocsCollector<T extends ScoreDoc> extends Collector {
+public abstract class TopDocsCollector<T extends ScoreDoc> extends SimpleCollector {
 
   /** This is used in case topDocs() is called with illegal parameters, or there
    *  simply aren't (enough) results. */

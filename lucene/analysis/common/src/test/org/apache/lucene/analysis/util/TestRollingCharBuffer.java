@@ -21,7 +21,7 @@ import java.io.StringReader;
 import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestRollingCharBuffer extends LuceneTestCase {
 
@@ -37,7 +37,7 @@ public class TestRollingCharBuffer extends LuceneTestCase {
       if (stringLen == 0) {
         s = "";
       } else {
-        s = _TestUtil.randomUnicodeString(random, stringLen);
+        s = TestUtil.randomUnicodeString(random, stringLen);
       }
       if (VERBOSE) {
         System.out.println("\nTEST: iter=" + iter + " s.length()=" + s.length());
@@ -59,7 +59,7 @@ public class TestRollingCharBuffer extends LuceneTestCase {
           availCount++;
         } else if (random.nextBoolean()) {
           // Read previous char
-          int pos = _TestUtil.nextInt(random, nextRead-availCount, nextRead-1);
+          int pos = TestUtil.nextInt(random, nextRead - availCount, nextRead - 1);
           if (VERBOSE) {
             System.out.println("    old char pos=" + pos);
           }
@@ -70,7 +70,7 @@ public class TestRollingCharBuffer extends LuceneTestCase {
           if (availCount == 1) {
             length = 1;
           } else {
-            length = _TestUtil.nextInt(random, 1, availCount);
+            length = TestUtil.nextInt(random, 1, availCount);
           }
           int start;
           if (length == availCount) {

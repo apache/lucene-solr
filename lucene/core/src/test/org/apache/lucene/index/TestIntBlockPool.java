@@ -63,7 +63,7 @@ public class TestIntBlockPool extends LuceneTestCase {
     Counter bytesUsed = Counter.newCounter();
     IntBlockPool pool = new IntBlockPool(new ByteTrackingAllocator(bytesUsed));
     for (int j = 0; j < 2; j++) {
-      List<StartEndAndValues> holders = new ArrayList<TestIntBlockPool.StartEndAndValues>();
+      List<StartEndAndValues> holders = new ArrayList<>();
       int num = atLeast(4);
       for (int i = 0; i < num; i++) {
         holders.add(new StartEndAndValues(random().nextInt(1000)));

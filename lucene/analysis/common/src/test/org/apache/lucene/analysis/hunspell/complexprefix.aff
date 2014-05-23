@@ -1,0 +1,12 @@
+SET UTF-8
+
+COMPLEXPREFIXES
+
+PFX A Y 1
+PFX A   0 pone .
+
+PFX B Y 1
+PFX B   0 ptwo/A .
+
+SFX C Y 1
+SFX C   0 suf .

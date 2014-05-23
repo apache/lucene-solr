@@ -22,6 +22,7 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * <p>
@@ -301,5 +302,9 @@ public class FuzzySet {
   public float getSaturation() {
     int numBitsSet = filter.cardinality();
     return (float) numBitsSet / (float) bloomSize;
+  }
+
+  public long ramBytesUsed() {
+    return RamUsageEstimator.sizeOf(filter.getBits());
   }
 }

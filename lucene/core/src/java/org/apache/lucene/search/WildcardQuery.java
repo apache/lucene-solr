@@ -63,7 +63,7 @@ public class WildcardQuery extends AutomatonQuery {
    */
   @SuppressWarnings("fallthrough")
   public static Automaton toAutomaton(Term wildcardquery) {
-    List<Automaton> automata = new ArrayList<Automaton>();
+    List<Automaton> automata = new ArrayList<>();
     
     String wildcardText = wildcardquery.text();
     

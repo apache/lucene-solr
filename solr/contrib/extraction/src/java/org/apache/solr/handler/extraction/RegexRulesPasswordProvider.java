@@ -20,6 +20,7 @@ package org.apache.solr.handler.extraction;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
@@ -41,7 +42,7 @@ import org.slf4j.LoggerFactory;
 public class RegexRulesPasswordProvider implements PasswordProvider {
   private static final Logger log = LoggerFactory.getLogger(RegexRulesPasswordProvider.class);
   
-  private LinkedHashMap<Pattern,String> passwordMap = new LinkedHashMap<Pattern,String>(); 
+  private LinkedHashMap<Pattern,String> passwordMap = new LinkedHashMap<>();
   private String explicitPassword; 
   
   @Override
@@ -72,8 +73,8 @@ public class RegexRulesPasswordProvider implements PasswordProvider {
    * @param is input stream for the file
    */
   public static LinkedHashMap<Pattern,String> parseRulesFile(InputStream is) {
-    LinkedHashMap<Pattern,String> rules = new LinkedHashMap<Pattern,String>();
-    BufferedReader br = new BufferedReader(IOUtils.getDecodingReader(is, IOUtils.CHARSET_UTF_8));
+    LinkedHashMap<Pattern,String> rules = new LinkedHashMap<>();
+    BufferedReader br = new BufferedReader(IOUtils.getDecodingReader(is, StandardCharsets.UTF_8));
     String line;
     try {
       int linenum = 0;

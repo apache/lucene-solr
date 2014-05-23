@@ -52,7 +52,7 @@ public class DefaultSolrParams extends SolrParams {
 
   @Override
   public Iterator<String> getParameterNamesIterator() {
-    final IteratorChain<String> c = new IteratorChain<String>();
+    final IteratorChain<String> c = new IteratorChain<>();
     c.addIterator(defaults.getParameterNamesIterator());
     c.addIterator(params.getParameterNamesIterator());
     return c;

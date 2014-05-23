@@ -253,7 +253,7 @@ public class TestWildcard
       doc.add(newTextField(field, contents[i], Field.Store.YES));
       writer.addDocument(doc);
     }
-    writer.close();
+    writer.shutdown();
 
     return indexStore;
   }
@@ -352,7 +352,7 @@ public class TestWildcard
       doc.add(newTextField(field, docs[i], Field.Store.NO));
       iw.addDocument(doc);
     }
-    iw.close();
+    iw.shutdown();
     
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = newSearcher(reader);

@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.lucene.codecs.TermVectorsWriter;
@@ -28,30 +29,35 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
-final class TermVectorsConsumer extends TermsHashConsumer {
+final class TermVectorsConsumer extends TermsHash {
 
   TermVectorsWriter writer;
-  final DocumentsWriterPerThread docWriter;
-  int freeCount;
-  int lastDocID;
 
-  final DocumentsWriterPerThread.DocState docState;
+  /** Scratch term used by TermVectorsConsumerPerField.finishDocument. */
   final BytesRef flushTerm = new BytesRef();
 
-  // Used by perField when serializing the term vectors
+  final DocumentsWriterPerThread docWriter;
+
+  /** Used by TermVectorsConsumerPerField when serializing
+   *  the term vectors. */
   final ByteSliceReader vectorSliceReaderPos = new ByteSliceReader();
   final ByteSliceReader vectorSliceReaderOff = new ByteSliceReader();
+
   boolean hasVectors;
+  int numVectorFields;
+  int lastDocID;
+  private TermVectorsConsumerPerField[] perFields = new TermVectorsConsumerPerField[1];
 
   public TermVectorsConsumer(DocumentsWriterPerThread docWriter) {
+    super(docWriter, false, null);
     this.docWriter = docWriter;
-    docState = docWriter.docState;
   }
 
   @Override
-  void flush(Map<String, TermsHashConsumerPerField> fieldsToFlush, final SegmentWriteState state) throws IOException {
+  void flush(Map<String, TermsHashPerField> fieldsToFlush, final SegmentWriteState state) throws IOException {
     if (writer != null) {
       int numDocs = state.segmentInfo.getDocCount();
+      assert numDocs > 0;
       // At least one doc in this run had term vectors enabled
       try {
         fill(numDocs);
@@ -60,16 +66,9 @@ final class TermVectorsConsumer extends TermsHashConsumer {
       } finally {
         IOUtils.close(writer);
         writer = null;
-
         lastDocID = 0;
         hasVectors = false;
       }
-    }
-
-    for (final TermsHashConsumerPerField field : fieldsToFlush.values() ) {
-      TermVectorsConsumerPerField perField = (TermVectorsConsumerPerField) field;
-      perField.termsHashPerField.reset();
-      perField.shrinkHash();
     }
   }
 
@@ -83,7 +82,7 @@ final class TermVectorsConsumer extends TermsHashConsumer {
     }
   }
 
-  private final void initTermVectorsWriter() throws IOException {
+  private void initTermVectorsWriter() throws IOException {
     if (writer == null) {
       IOContext context = new IOContext(new FlushInfo(docWriter.getNumDocsInRAM(), docWriter.bytesUsed()));
       writer = docWriter.codec.termVectorsFormat().vectorsWriter(docWriter.directory, docWriter.getSegmentInfo(), context);
@@ -92,13 +91,16 @@ final class TermVectorsConsumer extends TermsHashConsumer {
   }
 
   @Override
-  void finishDocument(TermsHash termsHash) throws IOException {
+  void finishDocument() throws IOException {
 
-    assert docWriter.writer.testPoint("TermVectorsTermsWriter.finishDocument start");
+    assert docWriter.testPoint("TermVectorsTermsWriter.finishDocument start");
 
     if (!hasVectors) {
       return;
     }
+
+    // Fields in term vectors are UTF16 sorted:
+    ArrayUtil.introSort(perFields, 0, numVectorFields);
 
     initTermVectorsWriter();
 
@@ -115,37 +117,35 @@ final class TermVectorsConsumer extends TermsHashConsumer {
 
     lastDocID++;
 
-    termsHash.reset();
-    reset();
-    assert docWriter.writer.testPoint("TermVectorsTermsWriter.finishDocument end");
+    super.reset();
+    resetFields();
+    assert docWriter.testPoint("TermVectorsTermsWriter.finishDocument end");
   }
 
   @Override
   public void abort() {
     hasVectors = false;
+    try {
+      super.abort();
+    } finally {
+      if (writer != null) {
+        writer.abort();
+        writer = null;
+      }
 
-    if (writer != null) {
-      writer.abort();
-      writer = null;
+      lastDocID = 0;
+      reset();
     }
-
-    lastDocID = 0;
-
-    reset();
   }
 
-  int numVectorFields;
-
-  TermVectorsConsumerPerField[] perFields;
-
-  void reset() {
+  void resetFields() {
+    Arrays.fill(perFields, null); // don't hang onto stuff from previous doc
     numVectorFields = 0;
-    perFields = new TermVectorsConsumerPerField[1];
   }
 
   @Override
-  public TermsHashConsumerPerField addField(TermsHashPerField termsHashPerField, FieldInfo fieldInfo) {
-    return new TermVectorsConsumerPerField(termsHashPerField, this, fieldInfo);
+  public TermsHashPerField addField(FieldInvertState invertState, FieldInfo fieldInfo) {
+    return new TermVectorsConsumerPerField(invertState, this, fieldInfo);
   }
 
   void addFieldToFlush(TermVectorsConsumerPerField fieldToFlush) {
@@ -161,27 +161,7 @@ final class TermVectorsConsumer extends TermsHashConsumer {
 
   @Override
   void startDocument() {
-    assert clearLastVectorFieldName();
-    reset();
+    resetFields();
+    numVectorFields = 0;
   }
-
-  // Called only by assert
-  final boolean clearLastVectorFieldName() {
-    lastVectorFieldName = null;
-    return true;
-  }
-
-  // Called only by assert
-  String lastVectorFieldName;
-  final boolean vectorFieldsInOrder(FieldInfo fi) {
-    try {
-      if (lastVectorFieldName != null)
-        return lastVectorFieldName.compareTo(fi.name) < 0;
-      else
-        return true;
-    } finally {
-      lastVectorFieldName = fi.name;
-    }
-  }
-
 }

@@ -30,7 +30,7 @@ public class Aliases {
   }
 
   public Aliases() {
-    this.aliasMap = new HashMap<String,Map<String,String>>();
+    this.aliasMap = new HashMap<>();
   }
   
   public Map<String,String> getCollectionAliasMap() {

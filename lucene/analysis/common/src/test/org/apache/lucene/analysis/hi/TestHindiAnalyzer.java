@@ -34,15 +34,15 @@ public class TestHindiAnalyzer extends BaseTokenStreamTestCase {
   public void testBasics() throws Exception {
     Analyzer a = new HindiAnalyzer(TEST_VERSION_CURRENT);
     // two ways to write 'hindi' itself.
-    checkOneTermReuse(a, "हिन्दी", "हिंद");
-    checkOneTermReuse(a, "हिंदी", "हिंद");
+    checkOneTerm(a, "हिन्दी", "हिंद");
+    checkOneTerm(a, "हिंदी", "हिंद");
   }
   
   public void testExclusionSet() throws Exception {
     CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("हिंदी"), false);
     Analyzer a = new HindiAnalyzer(TEST_VERSION_CURRENT, 
         HindiAnalyzer.getDefaultStopSet(), exclusionSet);
-    checkOneTermReuse(a, "हिंदी", "हिंदी");
+    checkOneTerm(a, "हिंदी", "हिंदी");
   }
   
   /** blast some random strings through the analyzer */

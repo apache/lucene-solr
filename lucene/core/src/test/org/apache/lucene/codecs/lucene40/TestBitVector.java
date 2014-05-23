@@ -23,7 +23,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * <code>TestBitVector</code> tests the <code>BitVector</code>, obviously.
@@ -231,10 +232,10 @@ public class TestBitVector extends LuceneTestCase
 
     public void testClearedBitNearEnd() throws IOException {
       Directory d = newDirectory();
-      final int numBits = _TestUtil.nextInt(random(), 7, 1000);
+      final int numBits = TestUtil.nextInt(random(), 7, 1000);
       BitVector bv = new BitVector(numBits);
       bv.invertAll();
-      bv.clear(numBits-_TestUtil.nextInt(random(), 1, 7));
+      bv.clear(numBits- TestUtil.nextInt(random(), 1, 7));
       bv.write(d, "test", newIOContext(random()));
       assertEquals(numBits-1, bv.count());
       d.close();
@@ -242,7 +243,7 @@ public class TestBitVector extends LuceneTestCase
 
     public void testMostlySet() throws IOException {
       Directory d = newDirectory();
-      final int numBits = _TestUtil.nextInt(random(), 30, 1000);
+      final int numBits = TestUtil.nextInt(random(), 30, 1000);
       for(int numClear=0;numClear<20;numClear++) {
         BitVector bv = new BitVector(numBits);
         bv.invertAll();

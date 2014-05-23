@@ -20,8 +20,8 @@
     <info organisation="org.apache.solr" module="example-DIH"/>
 
     <dependencies>
-      <dependency org="hsqldb" name="hsqldb" rev="1.8.0.10" transitive="false"/>
-      <dependency org="org.apache.derby" name="derby" rev="10.9.1.0" transitive="false"/>
+      <dependency org="hsqldb" name="hsqldb" rev="${/hsqldb/hsqldb}" transitive="false"/>
+      <dependency org="org.apache.derby" name="derby" rev="${/org.apache.derby/derby}" transitive="false"/>
       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
 </ivy-module>

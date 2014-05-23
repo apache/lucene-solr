@@ -17,21 +17,22 @@
 
 package org.apache.solr.client.solrj.request;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Arrays;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class is experimental and subject to change.
@@ -52,6 +53,7 @@ public class CoreAdminRequest extends SolrRequest
     protected String schemaName = null;
     protected String dataDir = null;
     protected String ulogDir = null;
+    protected String configSet = null;
     protected String collection;
     private Integer numShards;
     private String shardId;
@@ -59,6 +61,7 @@ public class CoreAdminRequest extends SolrRequest
     private String coreNodeName;
     private Boolean loadOnStartup;
     private Boolean isTransient;
+    private String collectionConfigName;
 
     public Create() {
       action = CoreAdminAction.CREATE;
@@ -69,6 +72,9 @@ public class CoreAdminRequest extends SolrRequest
     public void setConfigName(String config) { this.configName = config; }
     public void setDataDir(String dataDir) { this.dataDir = dataDir; }
     public void setUlogDir(String ulogDir) { this.ulogDir = ulogDir; }
+    public void setConfigSet(String configSet) {
+      this.configSet = configSet;
+    }
     public void setCollection(String collection) { this.collection = collection; }
     public void setNumShards(int numShards) {this.numShards = numShards;}
     public void setShardId(String shardId) {this.shardId = shardId;}
@@ -76,19 +82,24 @@ public class CoreAdminRequest extends SolrRequest
     public void setCoreNodeName(String coreNodeName) {this.coreNodeName = coreNodeName;}
     public void setIsTransient(Boolean isTransient) { this.isTransient = isTransient; }
     public void setIsLoadOnStartup(Boolean loadOnStartup) { this.loadOnStartup = loadOnStartup;}
+    public void setCollectionConfigName(String name) { this.collectionConfigName = name;}
 
     public String getInstanceDir() { return instanceDir; }
     public String getSchemaName()  { return schemaName; }
     public String getConfigName()  { return configName; }
     public String getDataDir() { return dataDir; }
     public String getUlogDir() { return ulogDir; }
+    public String getConfigSet() {
+      return configSet;
+    }
     public String getCollection() { return collection; }
     public String getShardId() { return shardId; }
     public String getRoles() { return roles; }
     public String getCoreNodeName() { return coreNodeName; }
     public Boolean getIsLoadOnStartup() { return loadOnStartup; }
     public Boolean getIsTransient() { return isTransient; }
-
+    public String getCollectionConfigName() { return collectionConfigName;}
+    
     @Override
     public SolrParams getParams() {
       if( action == null ) {
@@ -114,6 +125,9 @@ public class CoreAdminRequest extends SolrRequest
       if (ulogDir != null) {
         params.set( CoreAdminParams.ULOG_DIR, ulogDir);
       }
+      if (configSet != null) {
+        params.set( CoreAdminParams.CONFIGSET, configSet);
+      }
       if (collection != null) {
         params.set( CoreAdminParams.COLLECTION, collection);
       }
@@ -137,6 +151,11 @@ public class CoreAdminRequest extends SolrRequest
       if (loadOnStartup != null) {
         params.set(CoreAdminParams.LOAD_ON_STARTUP, loadOnStartup);
       }
+      
+      if (collectionConfigName != null) {
+        params.set("collection.configName", collectionConfigName);
+      }
+      
       return params;
     }
 
@@ -148,7 +167,7 @@ public class CoreAdminRequest extends SolrRequest
     protected String state;
     protected Boolean checkLive;
     protected Boolean onlyIfLeader;
-    
+    protected Boolean onlyIfLeaderActive;
 
     public WaitForState() {
       action = CoreAdminAction.PREPRECOVERY;
@@ -194,6 +213,10 @@ public class CoreAdminRequest extends SolrRequest
       this.onlyIfLeader = onlyIfLeader;
     }
     
+    public void setOnlyIfLeaderActive(boolean onlyIfLeaderActive) {
+      this.onlyIfLeaderActive = onlyIfLeaderActive;
+    }
+    
     @Override
     public SolrParams getParams() {
       if( action == null ) {
@@ -223,10 +246,21 @@ public class CoreAdminRequest extends SolrRequest
       if (onlyIfLeader != null) {
         params.set( "onlyIfLeader", onlyIfLeader);
       }
+      
+      if (onlyIfLeaderActive != null) {
+        params.set( "onlyIfLeaderActive", onlyIfLeaderActive);
+      }
 
       return params;
     }
-
+    
+    public String toString() {
+      if (action != null) {
+        return "WaitForState: "+getParams();
+      } else {
+        return super.toString();
+      }
+    }
   }
   
   public static class RequestRecovery extends CoreAdminRequest {
@@ -363,7 +397,8 @@ public class CoreAdminRequest extends SolrRequest
 
   public static class Unload extends CoreAdminRequest {
     protected boolean deleteIndex;
-    private boolean deleteDataDir;
+    protected boolean deleteDataDir;
+    protected boolean deleteInstanceDir;
 
     public Unload(boolean deleteIndex) {
       action = CoreAdminAction.UNLOAD;
@@ -382,11 +417,24 @@ public class CoreAdminRequest extends SolrRequest
      this.deleteDataDir = deleteDataDir; 
     }
 
+    public void setDeleteInstanceDir(boolean deleteInstanceDir){
+        this.deleteInstanceDir = deleteInstanceDir;
+    }
+
+    public boolean isDeleteDataDir() {
+      return deleteDataDir;
+    }
+
+    public boolean isDeleteInstanceDir() {
+      return deleteInstanceDir;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       params.set(CoreAdminParams.DELETE_INDEX, deleteIndex);
       params.set(CoreAdminParams.DELETE_DATA_DIR, deleteDataDir);
+      params.set(CoreAdminParams.DELETE_INSTANCE_DIR, deleteInstanceDir);
       return params;
     }
 
@@ -457,10 +505,11 @@ public class CoreAdminRequest extends SolrRequest
   @Override
   public CoreAdminResponse process(SolrServer server) throws SolrServerException, IOException 
   {
-    long startTime = System.currentTimeMillis();
+    long startTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
     CoreAdminResponse res = new CoreAdminResponse();
     res.setResponse( server.request( this ) );
-    res.setElapsedTime( System.currentTimeMillis()-startTime );
+    long endTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
+    res.setElapsedTime(endTime - startTime);
     return res;
   }
 
@@ -481,11 +530,15 @@ public class CoreAdminRequest extends SolrRequest
     return unloadCore(name, false, server);
   }
 
-  public static CoreAdminResponse unloadCore( String name, boolean deleteIndex, SolrServer server ) throws SolrServerException, IOException
-  {
+  public static CoreAdminResponse unloadCore(String name, boolean deleteIndex, SolrServer server) throws SolrServerException, IOException {
+    return unloadCore(name, deleteIndex, false, server);
+  }
+
+  public static CoreAdminResponse unloadCore(String name, boolean deleteIndex, boolean deleteInstanceDir, SolrServer server) throws SolrServerException, IOException {
     Unload req = new Unload(deleteIndex);
-    req.setCoreName( name );
-    return req.process( server );
+    req.setCoreName(name);
+    req.setDeleteInstanceDir(deleteInstanceDir);
+    return req.process(server);
   }
 
   public static CoreAdminResponse renameCore(String coreName, String newName, SolrServer server ) throws SolrServerException, IOException
@@ -534,6 +587,7 @@ public class CoreAdminRequest extends SolrRequest
     return req.process( server );
   }
 
+  @Deprecated
   public static CoreAdminResponse persist(String fileName, SolrServer server) throws SolrServerException, IOException 
   {
     CoreAdminRequest.Persist req = new CoreAdminRequest.Persist();

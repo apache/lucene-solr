@@ -16,8 +16,8 @@ package org.apache.solr.rest.schema;
  * limitations under the License.
  */
 
+import org.apache.solr.rest.BaseSolrResource;
 import org.apache.solr.rest.GETable;
-import org.apache.solr.rest.SolrRestApi;
 import org.apache.solr.schema.IndexSchema;
 import org.restlet.representation.Representation;
 import org.restlet.resource.ResourceException;
@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 /**
  * This class responds to requests at /solr/(corename)/schema/version
  */
-public class SchemaVersionResource extends BaseSchemaResource implements GETable {
+public class SchemaVersionResource extends BaseSolrResource implements GETable {
   private static final Logger log = LoggerFactory.getLogger(SchemaVersionResource.class);
 
   public SchemaVersionResource() {

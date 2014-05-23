@@ -31,12 +31,12 @@ import org.apache.solr.common.util.NamedList;
 public class TestLRUCache extends LuceneTestCase {
 
   public void testFullAutowarm() throws IOException {
-    LRUCache<Object, Object> lruCache = new LRUCache<Object, Object>();
-    Map<String, String> params = new HashMap<String, String>();
+    LRUCache<Object, Object> lruCache = new LRUCache<>();
+    Map<String, String> params = new HashMap<>();
     params.put("size", "100");
     params.put("initialSize", "10");
     params.put("autowarmCount", "100%");
-    CacheRegenerator cr = createCodeRegenerator();
+    CacheRegenerator cr = new NoOpRegenerator();
     Object o = lruCache.init(params, null, cr);
     lruCache.setState(SolrCache.State.LIVE);
     for (int i = 0; i < 101; i++) {
@@ -45,7 +45,7 @@ public class TestLRUCache extends LuceneTestCase {
     assertEquals("25", lruCache.get(25));
     assertEquals(null, lruCache.get(110));
     assertEquals(null, lruCache.get(1));  // first item put in should be the first out
-    LRUCache<Object, Object> lruCacheNew = new LRUCache<Object, Object>();
+    LRUCache<Object, Object> lruCacheNew = new LRUCache<>();
     lruCacheNew.init(params, o, cr);
     lruCacheNew.warm(null, lruCache);
     lruCacheNew.setState(SolrCache.State.LIVE);
@@ -64,19 +64,19 @@ public class TestLRUCache extends LuceneTestCase {
   }
   
   private void doTestPercentageAutowarm(int limit, int percentage, int[] hits, int[]misses) {
-    LRUCache<Object, Object> lruCache = new LRUCache<Object, Object>();
-    Map<String, String> params = new HashMap<String, String>();
+    LRUCache<Object, Object> lruCache = new LRUCache<>();
+    Map<String, String> params = new HashMap<>();
     params.put("size", String.valueOf(limit));
     params.put("initialSize", "10");
     params.put("autowarmCount", percentage + "%");
-    CacheRegenerator cr = createCodeRegenerator();
+    CacheRegenerator cr = new NoOpRegenerator();
     Object o = lruCache.init(params, null, cr);
     lruCache.setState(SolrCache.State.LIVE);
     for (int i = 1; i <= limit; i++) {
       lruCache.put(i, "" + i);//adds numbers from 1 to 100
     }
 
-    LRUCache<Object, Object> lruCacheNew = new LRUCache<Object, Object>();
+    LRUCache<Object, Object> lruCacheNew = new LRUCache<>();
     lruCacheNew.init(params, o, cr);
     lruCacheNew.warm(null, lruCache);
     lruCacheNew.setState(SolrCache.State.LIVE);
@@ -94,11 +94,11 @@ public class TestLRUCache extends LuceneTestCase {
   
   @SuppressWarnings("unchecked")
   public void testNoAutowarm() throws IOException {
-    LRUCache<Object, Object> lruCache = new LRUCache<Object, Object>();
-    Map<String, String> params = new HashMap<String, String>();
+    LRUCache<Object, Object> lruCache = new LRUCache<>();
+    Map<String, String> params = new HashMap<>();
     params.put("size", "100");
     params.put("initialSize", "10");
-    CacheRegenerator cr = createCodeRegenerator();
+    CacheRegenerator cr = new NoOpRegenerator();
     Object o = lruCache.init(params, null, cr);
     lruCache.setState(SolrCache.State.LIVE);
     for (int i = 0; i < 101; i++) {
@@ -111,7 +111,7 @@ public class TestLRUCache extends LuceneTestCase {
     assertEquals(1L, nl.get("hits"));
     assertEquals(101L, nl.get("inserts"));
     assertEquals(null, lruCache.get(1));  // first item put in should be the first out
-    LRUCache<Object, Object> lruCacheNew = new LRUCache<Object, Object>();
+    LRUCache<Object, Object> lruCacheNew = new LRUCache<>();
     lruCacheNew.init(params, o, cr);
     lruCacheNew.warm(null, lruCache);
     lruCacheNew.setState(SolrCache.State.LIVE);
@@ -120,18 +120,5 @@ public class TestLRUCache extends LuceneTestCase {
     assertEquals(null, lruCacheNew.get(90));
     assertEquals(null, lruCacheNew.get(50));
     lruCacheNew.close();
-  }
-  
-  private CacheRegenerator createCodeRegenerator() {
-    CacheRegenerator cr = new CacheRegenerator() {
-      @Override
-      @SuppressWarnings("unchecked")
-      public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache,
-                                    SolrCache oldCache, Object oldKey, Object oldVal) {
-        newCache.put(oldKey, oldVal);
-        return true;
-      }
-    };
-    return cr;
   }
 }

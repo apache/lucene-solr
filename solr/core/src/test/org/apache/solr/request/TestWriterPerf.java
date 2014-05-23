@@ -21,6 +21,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 import org.apache.solr.client.solrj.ResponseParser;
@@ -67,7 +68,7 @@ public class TestWriterPerf extends AbstractSolrTestCase {
 
 
   void index(Object... olst) {
-    ArrayList<String> lst = new ArrayList<String>();
+    ArrayList<String> lst = new ArrayList<>();
     for (Object o : olst) lst.add(o.toString());
     assertU(adoc(lst.toArray(new String[lst.size()])));
   }
@@ -119,7 +120,7 @@ public class TestWriterPerf extends AbstractSolrTestCase {
       out = new ByteArrayOutputStream();
       // to be fair, from my previous tests, much of the performance will be sucked up
       // by java's UTF-8 encoding/decoding, not the actual writing
-      Writer writer = new OutputStreamWriter(out, "UTF-8");
+      Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);
       w.write(writer, req, rsp);
       writer.close();
     }

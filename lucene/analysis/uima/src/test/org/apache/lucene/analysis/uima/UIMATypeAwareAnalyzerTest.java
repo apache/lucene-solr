@@ -19,11 +19,10 @@ package org.apache.lucene.analysis.uima;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.io.StringReader;
 
 /**
  * Testcase for {@link UIMATypeAwareAnalyzer}
@@ -51,7 +50,7 @@ public class UIMATypeAwareAnalyzerTest extends BaseTokenStreamTestCase {
   public void baseUIMATypeAwareAnalyzerStreamTest() throws Exception {
 
     // create a token stream
-    TokenStream ts = analyzer.tokenStream("text", new StringReader("the big brown fox jumped on the wood"));
+    TokenStream ts = analyzer.tokenStream("text", "the big brown fox jumped on the wood");
 
     // check that 'the big brown fox jumped on the wood' tokens have the expected PoS types
     assertTokenStreamContents(ts,

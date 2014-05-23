@@ -19,15 +19,20 @@ package org.apache.solr.handler.loader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.params.*;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.handler.UpdateRequestHandler;
@@ -48,7 +53,8 @@ import org.slf4j.LoggerFactory;
  */
 public class JsonLoader extends ContentStreamLoader {
   final static Logger log = LoggerFactory.getLogger( JsonLoader.class );
-  
+  private static final String CHILD_DOC_KEY = "_childDocuments_";
+
   @Override
   public String getDefaultWT() {
     return "json";
@@ -404,35 +410,40 @@ public class JsonLoader extends ContentStreamLoader {
             +" at ["+parser.getPosition()+"]" );
       }
     }
-  
-  
+
+
     private SolrInputDocument parseDoc(int ev) throws IOException {
       assert ev == JSONParser.OBJECT_START;
-  
+
       SolrInputDocument sdoc = new SolrInputDocument();
       for (;;) {
-        SolrInputField sif = parseField();
-        if (sif == null) return sdoc;
-        SolrInputField prev = sdoc.put(sif.getName(), sif);
-        if (prev != null) {
-          // blech - repeated keys
-          sif.addValue(prev.getValue(), prev.getBoost());
+        ev = parser.nextEvent();
+        if (ev == JSONParser.OBJECT_END) {
+          return sdoc;
         }
+        String fieldName = parser.getString();
+
+        if(fieldName.equals(JsonLoader.CHILD_DOC_KEY)) {
+          ev = parser.nextEvent();
+          assertEvent(ev, JSONParser.ARRAY_START);
+          while( (ev = parser.nextEvent()) != JSONParser.ARRAY_END ) {
+            assertEvent(ev, JSONParser.OBJECT_START);
+
+            sdoc.addChildDocument(parseDoc(ev));
+          }
+        } else {
+          SolrInputField sif = new SolrInputField(fieldName);
+          parseFieldValue(sif);
+          // pulling out the pieces may seem weird, but it's because
+          // SolrInputDocument.addField will do the right thing
+          // if the doc already has another value for this field
+          // (ie: repeating fieldname keys)
+          sdoc.addField(sif.getName(), sif.getValue(), sif.getBoost());
+        }
+
       }
     }
-  
-    private SolrInputField parseField()  throws IOException {
-      int ev = parser.nextEvent();
-      if (ev == JSONParser.OBJECT_END) {
-        return null;
-      }
-  
-      String fieldName = parser.getString();
-      SolrInputField sif = new SolrInputField(fieldName);
-      parseFieldValue(sif);
-      return sif;
-    }
-  
+
     private void parseFieldValue(SolrInputField sif) throws IOException {
       int ev = parser.nextEvent();
       if (ev == JSONParser.OBJECT_START) {
@@ -469,7 +480,7 @@ public class JsonLoader extends ContentStreamLoader {
             } else {
               // If we encounter other unknown map keys, then use a map
               if (extendedInfo == null) {
-                extendedInfo = new HashMap<String, Object>(2);
+                extendedInfo = new HashMap<>(2);
               }
               // for now, the only extended info will be field values
               // we could either store this as an Object or a SolrInputField
@@ -512,11 +523,13 @@ public class JsonLoader extends ContentStreamLoader {
         case JSONParser.STRING:
           return parser.getString();
         case JSONParser.LONG:
+          return parser.getLong();
         case JSONParser.NUMBER:
+          return parser.getDouble();
         case JSONParser.BIGNUMBER:
           return parser.getNumberChars().toString();
         case JSONParser.BOOLEAN:
-          return Boolean.toString(parser.getBoolean()); // for legacy reasons, single values s are expected to be strings
+          return parser.getBoolean();
         case JSONParser.NULL:
           parser.getNull();
           return null;

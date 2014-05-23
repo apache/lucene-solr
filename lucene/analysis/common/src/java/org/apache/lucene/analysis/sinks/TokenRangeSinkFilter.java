@@ -31,6 +31,12 @@ public class TokenRangeSinkFilter extends TeeSinkTokenFilter.SinkFilter {
   private int count;
 
   public TokenRangeSinkFilter(int lower, int upper) {
+    if (lower < 1) {
+      throw new IllegalArgumentException("lower must be greater than zero");
+    }
+    if (lower > upper) {
+      throw new IllegalArgumentException("lower must not be greater than upper");
+    }
     this.lower = lower;
     this.upper = upper;
   }

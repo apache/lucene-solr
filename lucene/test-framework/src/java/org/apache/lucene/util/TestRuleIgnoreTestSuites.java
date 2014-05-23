@@ -49,7 +49,7 @@ public final class TestRuleIgnoreTestSuites implements TestRule {
       @Override
       public void evaluate() throws Throwable {
         if (NestedTestSuite.class.isAssignableFrom(d.getTestClass())) {
-          LuceneTestCase.assumeTrue("Nested suite class ignored (started as stand-along).",
+          LuceneTestCase.assumeTrue("Nested suite class ignored (started as stand-alone).",
               isRunningNested());
         }
         s.evaluate();

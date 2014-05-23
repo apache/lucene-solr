@@ -34,7 +34,7 @@ import java.util.List;
  */
 public class GroupResponse implements Serializable {
 
-  private final List<GroupCommand> _values = new ArrayList<GroupCommand>();
+  private final List<GroupCommand> _values = new ArrayList<>();
 
   /**
    * Adds a grouping command to the response.

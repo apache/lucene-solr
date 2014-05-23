@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
@@ -69,9 +70,9 @@ public class ExternalFileField extends FieldType implements SchemaAware {
     String ftypeS = args.remove("valType");
     if (ftypeS != null) {
       ftype = schema.getFieldTypes().get(ftypeS);
-      if (ftype != null && !(ftype instanceof FloatField) && !(ftype instanceof TrieFloatField)) {
+      if (ftype != null && !(ftype instanceof TrieFloatField)) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Only float and pfloat (Trie|Float)Field are currently supported as external field type.  Got " + ftypeS);
+            "Only float (TrieFloatField) is currently supported as external field type.  Got " + ftypeS);
       }
     }
     keyFieldName = args.remove("keyField");
@@ -89,6 +90,11 @@ public class ExternalFileField extends FieldType implements SchemaAware {
   public SortField getSortField(SchemaField field,boolean reverse) {
     FileFloatSource source = getFileFloatSource(field);
     return source.getSortField(reverse);
+  }
+  
+  @Override
+  public Type getUninversionType(SchemaField sf) {
+    return null;
   }
 
   @Override

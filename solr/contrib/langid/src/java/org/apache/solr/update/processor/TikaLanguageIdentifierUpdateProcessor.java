@@ -41,7 +41,7 @@ public class TikaLanguageIdentifierUpdateProcessor extends LanguageIdentifierUpd
   
   @Override
   protected List<DetectedLanguage> detectLanguage(String content) {
-    List<DetectedLanguage> languages = new ArrayList<DetectedLanguage>();
+    List<DetectedLanguage> languages = new ArrayList<>();
     if(content.trim().length() != 0) { 
       LanguageIdentifier identifier = new LanguageIdentifier(content);
       // FIXME: Hack - we get the distance from toString and calculate our own certainty score

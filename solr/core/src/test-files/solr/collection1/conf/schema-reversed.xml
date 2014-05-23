@@ -25,7 +25,8 @@
   <types>
 
 
-    <fieldtype name="integer" class="solr.IntField" />
+    <fieldtype name="long" class="solr.TrieLongField" />
+    <fieldType name="integer" class="solr.TrieIntField" precisionStep="0"/>
     <fieldtype name="string" class="solr.StrField" />
 
     <fieldtype name="text" class="solr.TextField">
@@ -72,6 +73,8 @@
    <field name="one" type="srev" indexed="true" stored="false"/>
    <field name="two" type="rev" indexed="true" stored="false"/>
    <field name="three" type="text" indexed="true" stored="false"/>
+
+   <field name="_version_" type="long" indexed="true" stored="true" multiValued="false" />
 
    <field name="signatureField" type="string" indexed="true" stored="false"/>
    <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>

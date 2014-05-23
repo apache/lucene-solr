@@ -57,7 +57,7 @@ public final class GreekLowerCaseFilter extends TokenFilter {
       int chLen = termAtt.length();
       for (int i = 0; i < chLen;) {
         i += Character.toChars(
-            lowerCase(charUtils.codePointAt(chArray, i)), chArray, i);
+            lowerCase(charUtils.codePointAt(chArray, i, chLen)), chArray, i);
        }
       return true;
     } else {

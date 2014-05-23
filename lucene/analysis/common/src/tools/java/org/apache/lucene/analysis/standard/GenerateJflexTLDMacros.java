@@ -25,6 +25,7 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -60,20 +61,21 @@ public class GenerateJflexTLDMacros {
   
   private static final String APACHE_LICENSE 
     = "/*" + NL
-      + " * Copyright 2001-2005 The Apache Software Foundation." + NL
-      + " *" + NL
-      + " * Licensed under the Apache License, Version 2.0 (the \"License\");" + NL
-      + " * you may not use this file except in compliance with the License." + NL
-      + " * You may obtain a copy of the License at" + NL
-      + " *" + NL
-      + " *      http://www.apache.org/licenses/LICENSE-2.0" + NL
-      + " *" + NL
-      + " * Unless required by applicable law or agreed to in writing, software" + NL
-      + " * distributed under the License is distributed on an \"AS IS\" BASIS," + NL
-      + " * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied." + NL
-      + " * See the License for the specific language governing permissions and" + NL
-      + " * limitations under the License." + NL
-      + " */" + NL + NL;
+    + " * Licensed to the Apache Software Foundation (ASF) under one or more" + NL
+    + " * contributor license agreements.  See the NOTICE file distributed with" + NL
+    + " * this work for additional information regarding copyright ownership." + NL
+    + " * The ASF licenses this file to You under the Apache License, Version 2.0" + NL
+    + " * (the \"License\"); you may not use this file except in compliance with" + NL
+    + " * the License.  You may obtain a copy of the License at" + NL
+    + " *" + NL
+    + " *     http://www.apache.org/licenses/LICENSE-2.0" + NL
+    + " *" + NL
+    + " * Unless required by applicable law or agreed to in writing, software" + NL
+    + " * distributed under the License is distributed on an \"AS IS\" BASIS," + NL
+    + " * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied." + NL
+    + " * See the License for the specific language governing permissions and" + NL
+    + " * limitations under the License." + NL
+    + " */" + NL;
     
   private static final Pattern TLD_PATTERN_1 
     = Pattern.compile("([-A-Za-z0-9]+)\\.\\s+NS\\s+.*");
@@ -110,14 +112,14 @@ public class GenerateJflexTLDMacros {
    * @throws java.io.IOException if there is a problem downloading the database 
    */
   private SortedSet<String> getIANARootZoneDatabase() throws IOException {
-    final SortedSet<String> TLDs = new TreeSet<String>();
+    final SortedSet<String> TLDs = new TreeSet<>();
     final URLConnection connection = tldFileURL.openConnection();
     connection.setUseCaches(false);
     connection.addRequestProperty("Cache-Control", "no-cache");
     connection.connect();
     tldFileLastModified = connection.getLastModified();
     BufferedReader reader = new BufferedReader
-      (new InputStreamReader(connection.getInputStream(), "US-ASCII"));
+      (new InputStreamReader(connection.getInputStream(), StandardCharsets.US_ASCII));
     try {
       String line;
       while (null != (line = reader.readLine())) {
@@ -149,7 +151,7 @@ public class GenerateJflexTLDMacros {
       (DateFormat.FULL, DateFormat.FULL, Locale.ROOT);
     dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
     final Writer writer = new OutputStreamWriter
-      (new FileOutputStream(outputFile), "UTF-8");
+      (new FileOutputStream(outputFile), StandardCharsets.UTF_8);
     try {
       writer.write(APACHE_LICENSE);
       writer.write("// Generated from IANA Root Zone Database <");

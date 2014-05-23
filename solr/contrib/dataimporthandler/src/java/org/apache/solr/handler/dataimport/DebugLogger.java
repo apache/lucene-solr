@@ -183,7 +183,7 @@ class DebugLogger {
       @Override
       public Object getData(String query) {
         log(DIHLogLevels.ENTITY_META, "query", query);
-        long start = System.currentTimeMillis();
+        long start = System.nanoTime();
         try {
           return ds.getData(query);
         } catch (DataImportHandlerException de) {

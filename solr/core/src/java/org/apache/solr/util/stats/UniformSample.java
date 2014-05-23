@@ -100,7 +100,7 @@ public class UniformSample implements Sample {
   @Override
   public Snapshot getSnapshot() {
     final int s = size();
-    final List<Long> copy = new ArrayList<Long>(s);
+    final List<Long> copy = new ArrayList<>(s);
     for (int i = 0; i < s; i++) {
       copy.add(values.get(i));
     }

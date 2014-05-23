@@ -17,12 +17,11 @@ package org.apache.lucene.analysis.pattern;
  * limitations under the License.
  */
 
-import java.io.Reader;
 import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.util.TokenizerFactory;
-import org.apache.lucene.util.AttributeSource.AttributeFactory;
+import org.apache.lucene.util.AttributeFactory;
 
 /**
  * Factory for {@link PatternTokenizer}.
@@ -81,7 +80,7 @@ public class PatternTokenizerFactory extends TokenizerFactory {
    * Split the input using configured pattern
    */
   @Override
-  public PatternTokenizer create(final AttributeFactory factory, final Reader in) {
-    return new PatternTokenizer(factory, in, pattern, group);
+  public PatternTokenizer create(final AttributeFactory factory) {
+    return new PatternTokenizer(factory, pattern, group);
   }
 }

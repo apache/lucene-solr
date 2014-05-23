@@ -16,6 +16,12 @@ package org.apache.solr.util;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.SortedMap;
+
+import javax.xml.xpath.XPathExpressionException;
+
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.common.SolrException;
@@ -27,14 +33,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
-import javax.xml.xpath.XPathExpressionException;
-import java.io.IOException;
-import java.util.Map;
-import java.util.SortedMap;
+import org.junit.AfterClass;
 
 abstract public class RestTestBase extends SolrJettyTestBase {
   private static final Logger log = LoggerFactory.getLogger(RestTestBase.class);
   protected static RestTestHarness restTestHarness;
+
+  @AfterClass
+  public static void cleanUpHarness() {
+    restTestHarness = null;
+  }
 
   public static void createJettyAndHarness
       (String solrHome, String configFile, String schemaFile, String context,
@@ -127,7 +135,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
       }
       */
 
-      String results = restTestHarness.validateXPath(response, tests);
+      String results = TestHarness.validateXPath(response, tests);
 
       if (null != results) {
         String msg = "REQUEST FAILED: xpath=" + results
@@ -229,8 +237,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
 
     for (String test : tests) {
       if (null == test || 0 == test.length()) continue;
-      String testJSON = test.replaceAll("(?<!\\\\)\'", "\"");
-      testJSON = testJSON.replaceAll("\\\\\'", "'");
+      String testJSON = json(test);
 
       try {
         failed = true;
@@ -311,8 +318,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
 
     for (String test : tests) {
       if (null == test || 0 == test.length()) continue;
-      String testJSON = test.replaceAll("(?<!\\\\)\'", "\"");
-      testJSON = testJSON.replaceAll("\\\\\'", "'");
+      String testJSON = json(test);
 
       try {
         failed = true;
@@ -391,8 +397,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
 
     for (String test : tests) {
       if (null == test || 0 == test.length()) continue;
-      String testJSON = test.replaceAll("(?<!\\\\)\'", "\"");
-      testJSON = testJSON.replaceAll("\\\\\'", "'");
+      String testJSON = json(test);
 
       try {
         failed = true;
@@ -417,8 +422,73 @@ abstract public class RestTestBase extends SolrJettyTestBase {
       }
     }
   }
+  
+  /**
+   * Deletes a resource and then matches some JSON test expressions against the 
+   * response using the default double delta tolerance.
+   * @see org.apache.solr.JSONTestUtil#DEFAULT_DELTA
+   * @see #assertJDelete(String,double,String...)
+   */
+  public static void assertJDelete(String request, String... tests) throws Exception {
+    assertJDelete(request, JSONTestUtil.DEFAULT_DELTA, tests);
+  }
 
+  /**
+   * Deletes a resource and then matches some JSON test expressions against the 
+   * response using the specified double delta tolerance.
+   */
+  public static void assertJDelete(String request, double delta, String... tests) throws Exception {
+    int queryStartPos = request.indexOf('?');
+    String query;
+    String path;
+    if (-1 == queryStartPos) {
+      query = "";
+      path = request;
+    } else {
+      query = request.substring(queryStartPos + 1);
+      path = request.substring(0, queryStartPos);
+    }
+    query = setParam(query, "wt", "json");
+    request = path + '?' + setParam(query, "indent", "on");
 
+    String response;
+    boolean failed = true;
+    try {
+      response = restTestHarness.delete(request);
+      failed = false;
+    } finally {
+      if (failed) {
+        log.error("REQUEST FAILED: " + request);
+      }
+    }
+
+    for (String test : tests) {
+      if (null == test || 0 == test.length()) continue;
+      String testJSON = json(test);
+
+      try {
+        failed = true;
+        String err = JSONTestUtil.match(response, testJSON, delta);
+        failed = false;
+        if (err != null) {
+          log.error("query failed JSON validation. error=" + err +
+              "\n expected =" + testJSON +
+              "\n response = " + response +
+              "\n request = " + request + "\n"
+          );
+          throw new RuntimeException(err);
+        }
+      } finally {
+        if (failed) {
+          log.error("JSON query validation threw an exception." +
+              "\n expected =" + testJSON +
+              "\n response = " + response +
+              "\n request = " + request + "\n"
+          );
+        }
+      }
+    }
+  }
 
   /**
    * Insures that the given param is included in the query with the given value.

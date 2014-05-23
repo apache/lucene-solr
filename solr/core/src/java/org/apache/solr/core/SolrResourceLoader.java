@@ -17,55 +17,61 @@
 
 package org.apache.solr.core;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileFilter;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.analysis.util.WordlistLoader;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.ResourceLoader;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.rest.RestManager;
+import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.ManagedIndexSchemaFactory;
 import org.apache.solr.schema.SimilarityFactory;
+import org.apache.solr.search.QParserPlugin;
+import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
+import org.apache.solr.util.FileUtils;
+import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.Charset;
-import java.lang.reflect.Constructor;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.naming.NoInitialContextException;
 
-import org.apache.solr.util.FileUtils;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.handler.component.SearchComponent;
-import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.response.QueryResponseWriter;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
-import org.apache.solr.util.plugin.SolrCoreAware;
-import org.apache.solr.search.QParserPlugin;
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileFilter;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Constructor;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @since solr 1.3
@@ -76,7 +82,11 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
 
   static final String project = "solr";
   static final String base = "org.apache" + "." + project;
-  static final String[] packages = {"","analysis.","schema.","handler.","search.","update.","core.","response.","request.","update.processor.","util.", "spelling.", "handler.component.", "handler.dataimport." };
+  static final String[] packages = {
+      "", "analysis.", "schema.", "handler.", "search.", "update.", "core.", "response.", "request.",
+      "update.processor.", "util.", "spelling.", "handler.component.", "handler.dataimport.",
+      "spelling.suggest.", "spelling.suggest.fst.", "rest.schema.analysis."
+  };
 
   protected URLClassLoader classLoader;
   private final String instanceDir;
@@ -85,13 +95,26 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   private final List<SolrCoreAware> waitingForCore = Collections.synchronizedList(new ArrayList<SolrCoreAware>());
   private final List<SolrInfoMBean> infoMBeans = Collections.synchronizedList(new ArrayList<SolrInfoMBean>());
   private final List<ResourceLoaderAware> waitingForResources = Collections.synchronizedList(new ArrayList<ResourceLoaderAware>());
-  private static final Charset UTF_8 = Charset.forName("UTF-8");
+  private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
   //TODO: Solr5. Remove this completely when you obsolete putting <core> tags in solr.xml (See Solr-4196)
   private final Properties coreProperties;
 
   private volatile boolean live;
-
+  
+  // Provide a registry so that managed resources can register themselves while the XML configuration
+  // documents are being parsed ... after all are registered, they are asked by the RestManager to
+  // initialize themselves. This two-step process is required because not all resources are available
+  // (such as the SolrZkClient) when XML docs are being parsed.    
+  private RestManager.Registry managedResourceRegistry;
+  
+  public synchronized RestManager.Registry getManagedResourceRegistry() {
+    if (managedResourceRegistry == null) {
+      managedResourceRegistry = new RestManager.Registry();      
+    }
+    return managedResourceRegistry; 
+  }
+  
   /**
    * <p>
    * This loader will delegate to the context classloader when possible,
@@ -248,7 +271,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   }
 
   public String getConfigDir() {
-    return instanceDir + "conf/";
+    return instanceDir + "conf" + File.separator;
   }
   
   public String getDataDir()    {
@@ -297,27 +320,46 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   public InputStream openResource(String resource) throws IOException {
     InputStream is=null;
     try {
-      File f0 = new File(resource);
-      File f = f0;
+      File f0 = new File(resource), f = f0;
       if (!f.isAbsolute()) {
         // try $CWD/$configDir/$resource
-        f = new File(getConfigDir() + resource);
+        f = new File(getConfigDir() + resource).getAbsoluteFile();
       }
-      if (f.isFile() && f.canRead()) {
+      boolean found = f.isFile() && f.canRead();
+      if (!found) { // no success with $CWD/$configDir/$resource
+        f = f0.getAbsoluteFile();
+        found = f.isFile() && f.canRead();
+      }
+      // check that we don't escape instance dir
+      if (found) {
+        if (!Boolean.parseBoolean(System.getProperty("solr.allow.unsafe.resourceloading", "false"))) {
+          final URI instanceURI = new File(getInstanceDir()).getAbsoluteFile().toURI().normalize();
+          final URI fileURI = f.toURI().normalize();
+          if (instanceURI.relativize(fileURI) == fileURI) {
+            // no URI relativize possible, so they don't share same base folder
+            throw new IOException("For security reasons, SolrResourceLoader cannot load files from outside the instance's directory: " + f +
+                "; if you want to override this safety feature and you are sure about the consequences, you can pass the system property "+
+                "-Dsolr.allow.unsafe.resourceloading=true to your JVM");
+          }
+        }
+        // relativize() returned a relative, new URI, so we are fine!
         return new FileInputStream(f);
-      } else if (f != f0) { // no success with $CWD/$configDir/$resource
-        if (f0.isFile() && f0.canRead())
-          return new FileInputStream(f0);
       }
-      // delegate to the class loader (looking into $INSTANCE_DIR/lib jars)
-      is = classLoader.getResourceAsStream(resource);
-      if (is == null)
-        is = classLoader.getResourceAsStream(getConfigDir() + resource);
+      // Delegate to the class loader (looking into $INSTANCE_DIR/lib jars).
+      // We need a ClassLoader-compatible (forward-slashes) path here!
+      is = classLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'));
+      // This is a hack just for tests (it is not done in ZKResourceLoader)!
+      // -> the getConfigDir's path must not be absolute!
+      if (is == null && System.getProperty("jetty.testMode") != null && !new File(getConfigDir()).isAbsolute()) {
+        is = classLoader.getResourceAsStream((getConfigDir() + resource).replace(File.separatorChar, '/'));
+      }
+    } catch (IOException ioe) {
+      throw ioe;
     } catch (Exception e) {
       throw new IOException("Error opening " + resource, e);
     }
     if (is==null) {
-      throw new IOException("Can't find resource '" + resource + "' in classpath or '" + getConfigDir() + "', cwd="+System.getProperty("user.dir"));
+      throw new IOException("Can't find resource '" + resource + "' in classpath or '" + new File(getConfigDir()).getAbsolutePath() + "'");
     }
     return is;
   }
@@ -368,7 +410,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   /*
    * A static map of short class name to fully qualified class name 
    */
-  private static final Map<String, String> classNameCache = new ConcurrentHashMap<String, String>();
+  private static final Map<String, String> classNameCache = new ConcurrentHashMap<>();
 
   // Using this pattern, legacy analysis components from previous Solr versions are identified and delegated to SPI loader:
   private static final Pattern legacyAnalysisPattern = 
@@ -404,56 +446,66 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
 
       }
     }
+    
     Class<? extends T> clazz = null;
-    
-    // first try legacy analysis patterns, now replaced by Lucene's Analysis package:
-    final Matcher m = legacyAnalysisPattern.matcher(cname);
-    if (m.matches()) {
-      final String name = m.group(4);
-      log.trace("Trying to load class from analysis SPI using name='{}'", name);
-      try {
-        if (CharFilterFactory.class.isAssignableFrom(expectedType)) {
-          return clazz = CharFilterFactory.lookupClass(name).asSubclass(expectedType);
-        } else if (TokenizerFactory.class.isAssignableFrom(expectedType)) {
-          return clazz = TokenizerFactory.lookupClass(name).asSubclass(expectedType);
-        } else if (TokenFilterFactory.class.isAssignableFrom(expectedType)) {
-          return clazz = TokenFilterFactory.lookupClass(name).asSubclass(expectedType);
-        } else {
-          log.warn("'{}' looks like an analysis factory, but caller requested different class type: {}", cname, expectedType.getName());
-        }
-      } catch (IllegalArgumentException ex) { 
-        // ok, we fall back to legacy loading
-      }
-    }
-    
-    // first try cname == full name
     try {
-      return Class.forName(cname, true, classLoader).asSubclass(expectedType);
-    } catch (ClassNotFoundException e) {
-      String newName=cname;
-      if (newName.startsWith(project)) {
-        newName = cname.substring(project.length()+1);
-      }
-      for (String subpackage : subpackages) {
+      // first try legacy analysis patterns, now replaced by Lucene's Analysis package:
+      final Matcher m = legacyAnalysisPattern.matcher(cname);
+      if (m.matches()) {
+        final String name = m.group(4);
+        log.trace("Trying to load class from analysis SPI using name='{}'", name);
         try {
-          String name = base + '.' + subpackage + newName;
-          log.trace("Trying class name " + name);
-          return clazz = Class.forName(name,true,classLoader).asSubclass(expectedType);
-        } catch (ClassNotFoundException e1) {
-          // ignore... assume first exception is best.
+          if (CharFilterFactory.class.isAssignableFrom(expectedType)) {
+            return clazz = CharFilterFactory.lookupClass(name).asSubclass(expectedType);
+          } else if (TokenizerFactory.class.isAssignableFrom(expectedType)) {
+            return clazz = TokenizerFactory.lookupClass(name).asSubclass(expectedType);
+          } else if (TokenFilterFactory.class.isAssignableFrom(expectedType)) {
+            return clazz = TokenFilterFactory.lookupClass(name).asSubclass(expectedType);
+          } else {
+            log.warn("'{}' looks like an analysis factory, but caller requested different class type: {}", cname, expectedType.getName());
+          }
+        } catch (IllegalArgumentException ex) { 
+          // ok, we fall back to legacy loading
         }
       }
-  
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error loading class '" + cname + "'", e);
-    }finally{
-      //cache the shortname vs FQN if it is loaded by the webapp classloader  and it is loaded
-      // using a shortname
-      if ( clazz != null &&
-              clazz.getClassLoader() == SolrResourceLoader.class.getClassLoader() &&
+      
+      // first try cname == full name
+      try {
+        return clazz = Class.forName(cname, true, classLoader).asSubclass(expectedType);
+      } catch (ClassNotFoundException e) {
+        String newName=cname;
+        if (newName.startsWith(project)) {
+          newName = cname.substring(project.length()+1);
+        }
+        for (String subpackage : subpackages) {
+          try {
+            String name = base + '.' + subpackage + newName;
+            log.trace("Trying class name " + name);
+            return clazz = Class.forName(name,true,classLoader).asSubclass(expectedType);
+          } catch (ClassNotFoundException e1) {
+            // ignore... assume first exception is best.
+          }
+        }
+    
+        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error loading class '" + cname + "'", e);
+      }
+      
+    } finally {
+      if (clazz != null) {
+        //cache the shortname vs FQN if it is loaded by the webapp classloader  and it is loaded
+        // using a shortname
+        if (clazz.getClassLoader() == SolrResourceLoader.class.getClassLoader() &&
               !cname.equals(clazz.getName()) &&
               (subpackages.length == 0 || subpackages == packages)) {
-        //store in the cache
-        classNameCache.put(cname, clazz.getName());
+          //store in the cache
+          classNameCache.put(cname, clazz.getName());
+        }
+        
+        // print warning if class is deprecated
+        if (clazz.isAnnotationPresent(Deprecated.class)) {
+          log.warn("Solr loaded a deprecated plugin/analysis class [{}]. Please consult documentation how to replace it accordingly.",
+              cname);
+        }
       }
     }
   }
@@ -643,8 +695,8 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     for (SolrInfoMBean bean : arr) {
       try {
         infoRegistry.put(bean.getName(), bean);
-      } catch (Throwable t) {
-        log.warn("could not register MBean '" + bean.getName() + "'.", t);
+      } catch (Exception e) {
+        log.warn("could not register MBean '" + bean.getName() + "'.", e);
       }
     }
   }
@@ -710,7 +762,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
    */
   private static final Map<Class, Class[]> awareCompatibility;
   static {
-    awareCompatibility = new HashMap<Class, Class[]>();
+    awareCompatibility = new HashMap<>();
     awareCompatibility.put( 
       SolrCoreAware.class, new Class[] {
         CodecFactory.class,

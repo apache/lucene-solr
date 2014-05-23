@@ -66,10 +66,12 @@ public class Log4jWatcher extends LogWatcher<LoggingEvent> {
 
   @Override
   public void setLogLevel(String category, String level) {
+    org.apache.log4j.Logger log;
     if(LoggerInfo.ROOT_NAME.equals(category)) {
-      category = "";
+      log = org.apache.log4j.LogManager.getRootLogger();
+    } else {
+      log = org.apache.log4j.Logger.getLogger(category);
     }
-    org.apache.log4j.Logger log = org.apache.log4j.Logger.getLogger(category);
     if(level==null||"unset".equals(level)||"null".equals(level)) {
       log.setLevel(null);
     }
@@ -81,7 +83,7 @@ public class Log4jWatcher extends LogWatcher<LoggingEvent> {
   @Override
   public Collection<LoggerInfo> getAllLoggers() {
     org.apache.log4j.Logger root = org.apache.log4j.LogManager.getRootLogger();
-    Map<String,LoggerInfo> map = new HashMap<String,LoggerInfo>();
+    Map<String,LoggerInfo> map = new HashMap<>();
     Enumeration<?> loggers = org.apache.log4j.LogManager.getCurrentLoggers();
     while (loggers.hasMoreElements()) {
       org.apache.log4j.Logger logger = (org.apache.log4j.Logger)loggers.nextElement();
@@ -126,7 +128,7 @@ public class Log4jWatcher extends LogWatcher<LoggingEvent> {
     if(history!=null) {
       throw new IllegalStateException("History already registered");
     }
-    history = new CircularList<LoggingEvent>(cfg.size);
+    history = new CircularList<>(cfg.size);
 
     appender = new EventAppender(this);
     if(cfg.threshold != null) {
@@ -150,7 +152,7 @@ public class Log4jWatcher extends LogWatcher<LoggingEvent> {
     doc.setField("time", new Date(event.getTimeStamp()));
     doc.setField("level", event.getLevel().toString());
     doc.setField("logger", event.getLogger().getName());
-    doc.setField("message", event.getMessage().toString());
+    doc.setField("message", event.getRenderedMessage());
     ThrowableInformation t = event.getThrowableInformation();
     if(t!=null) {
       doc.setField("trace", Throwables.getStackTraceAsString(t.getThrowable()));

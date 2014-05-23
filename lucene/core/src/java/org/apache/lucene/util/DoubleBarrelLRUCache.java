@@ -59,8 +59,8 @@ final public class DoubleBarrelLRUCache<K extends DoubleBarrelLRUCache.Cloneable
   public DoubleBarrelLRUCache(int maxSize) {
     this.maxSize = maxSize;
     countdown = new AtomicInteger(maxSize);
-    cache1 = new ConcurrentHashMap<K,V>();
-    cache2 = new ConcurrentHashMap<K,V>();
+    cache1 = new ConcurrentHashMap<>();
+    cache2 = new ConcurrentHashMap<>();
   }
 
   @SuppressWarnings("unchecked") 

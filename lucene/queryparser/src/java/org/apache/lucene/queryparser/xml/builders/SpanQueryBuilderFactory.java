@@ -29,7 +29,7 @@ import java.util.Map;
  */
 public class SpanQueryBuilderFactory implements SpanQueryBuilder {
 
-  private final Map<String, SpanQueryBuilder> builders = new HashMap<String, SpanQueryBuilder>();
+  private final Map<String, SpanQueryBuilder> builders = new HashMap<>();
 
   @Override
   public Query getQuery(Element e) throws ParserException {

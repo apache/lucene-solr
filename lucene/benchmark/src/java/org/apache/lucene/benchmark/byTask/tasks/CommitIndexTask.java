@@ -42,7 +42,7 @@ public class CommitIndexTask extends PerfTask {
   @Override
   public void setParams(String params) {
     super.setParams(params);
-    commitUserData = new HashMap<String,String>();
+    commitUserData = new HashMap<>();
     commitUserData.put(OpenReaderTask.USER_DATA, params);
   }
   

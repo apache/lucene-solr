@@ -34,14 +34,14 @@ import java.nio.ByteBuffer;
  */
 public class DocumentObjectBinder {
   
-  private final Map<Class, List<DocField>> infocache = new ConcurrentHashMap<Class, List<DocField>>();
+  private final Map<Class, List<DocField>> infocache = new ConcurrentHashMap<>();
 
   public DocumentObjectBinder() {
   }
 
   public <T> List<T> getBeans(Class<T> clazz, SolrDocumentList solrDocList) {
     List<DocField> fields = getDocFields(clazz);
-    List<T> result = new ArrayList<T>(solrDocList.size());
+    List<T> result = new ArrayList<>(solrDocList.size());
 
     for (SolrDocument sdoc : solrDocList) {
       result.add(getBean(clazz, fields, sdoc));
@@ -103,9 +103,9 @@ public class DocumentObjectBinder {
   }
 
   private List<DocField> collectInfo(Class clazz) {
-    List<DocField> fields = new ArrayList<DocField>();
+    List<DocField> fields = new ArrayList<>();
     Class superClazz = clazz;
-    List<AccessibleObject> members = new ArrayList<AccessibleObject>();
+    List<AccessibleObject> members = new ArrayList<>();
 
     while (superClazz != null && superClazz != Object.class) {
       members.addAll(Arrays.asList(superClazz.getDeclaredFields()));
@@ -275,7 +275,7 @@ public class DocumentObjectBinder {
       Map<String, Object> allValuesMap = null;
       List allValuesList = null;
       if (isContainedInMap) {
-        allValuesMap = new HashMap<String, Object>();
+        allValuesMap = new HashMap<>();
       } else {
         allValuesList = new ArrayList();
       }

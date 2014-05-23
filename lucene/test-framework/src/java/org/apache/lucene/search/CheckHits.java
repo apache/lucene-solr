@@ -59,7 +59,7 @@ public class CheckHits {
     throws IOException {
 
     String d = q.toString(defaultFieldName);
-    Set<Integer> ignore = new TreeSet<Integer>();
+    Set<Integer> ignore = new TreeSet<>();
     for (int i = 0; i < results.length; i++) {
       ignore.add(Integer.valueOf(results[i]));
     }
@@ -98,11 +98,11 @@ public class CheckHits {
 
     QueryUtils.check(random,query,searcher);
     
-    Set<Integer> correct = new TreeSet<Integer>();
+    Set<Integer> correct = new TreeSet<>();
     for (int i = 0; i < results.length; i++) {
       correct.add(Integer.valueOf(results[i]));
     }
-    final Set<Integer> actual = new TreeSet<Integer>();
+    final Set<Integer> actual = new TreeSet<>();
     final Collector c = new SetCollector(actual);
 
     searcher.search(query, c);
@@ -123,7 +123,7 @@ public class CheckHits {
   /**
    * Just collects document ids into a set.
    */
-  public static class SetCollector extends Collector {
+  public static class SetCollector extends SimpleCollector {
     final Set<Integer> bag;
     public SetCollector(Set<Integer> bag) {
       this.bag = bag;
@@ -136,7 +136,7 @@ public class CheckHits {
       bag.add(Integer.valueOf(doc + base));
     }
     @Override
-    public void setNextReader(AtomicReaderContext context) {
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
       base = context.docBase;
     }
     @Override
@@ -168,12 +168,12 @@ public class CheckHits {
 
     ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
 
-    Set<Integer> correct = new TreeSet<Integer>();
+    Set<Integer> correct = new TreeSet<>();
     for (int i = 0; i < results.length; i++) {
       correct.add(Integer.valueOf(results[i]));
     }
 
-    Set<Integer> actual = new TreeSet<Integer>();
+    Set<Integer> actual = new TreeSet<>();
     for (int i = 0; i < hits.length; i++) {
       actual.add(Integer.valueOf(hits[i].doc));
     }
@@ -464,7 +464,7 @@ public class CheckHits {
    *
    * @see CheckHits#verifyExplanation
    */
-  public static class ExplanationAsserter extends Collector {
+  public static class ExplanationAsserter extends SimpleCollector {
 
     Query q;
     IndexSearcher s;
@@ -508,7 +508,7 @@ public class CheckHits {
                         exp.isMatch());
     }
     @Override
-    public void setNextReader(AtomicReaderContext context) {
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
       base = context.docBase;
     }
     @Override

@@ -102,7 +102,7 @@ public class QueryScorer implements Scorer {
    * @param weightedTerms an array of pre-created {@link WeightedSpanTerm}s
    */
   public QueryScorer(WeightedSpanTerm[] weightedTerms) {
-    this.fieldWeightedSpanTerms = new HashMap<String,WeightedSpanTerm>(weightedTerms.length);
+    this.fieldWeightedSpanTerms = new HashMap<>(weightedTerms.length);
 
     for (int i = 0; i < weightedTerms.length; i++) {
       WeightedSpanTerm existingTerm = fieldWeightedSpanTerms.get(weightedTerms[i].term);
@@ -239,7 +239,7 @@ public class QueryScorer implements Scorer {
    */
   @Override
   public void startFragment(TextFragment newFragment) {
-    foundTerms = new HashSet<String>();
+    foundTerms = new HashSet<>();
     totalScore = 0;
   }
   

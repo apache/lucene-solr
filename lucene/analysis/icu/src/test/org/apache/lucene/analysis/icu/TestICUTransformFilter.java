@@ -66,7 +66,9 @@ public class TestICUTransformFilter extends BaseTokenStreamTestCase {
     String rules = "a > b; b > c;"; // convert a's to b's and b's to c's
     Transliterator custom = Transliterator.createFromRules("test", rules, Transliterator.FORWARD);
     assertTrue(custom.getFilter() == null);
-    new ICUTransformFilter(new KeywordTokenizer(new StringReader("")), custom);
+    final KeywordTokenizer input = new KeywordTokenizer();
+    input.setReader(new StringReader(""));
+    new ICUTransformFilter(input, custom);
     assertTrue(custom.getFilter().equals(new UnicodeSet("[ab]")));
   }
   
@@ -79,12 +81,16 @@ public class TestICUTransformFilter extends BaseTokenStreamTestCase {
     String rules = "\\U00020087 > x;"; // convert CJK UNIFIED IDEOGRAPH-20087 to an x
     Transliterator custom = Transliterator.createFromRules("test", rules, Transliterator.FORWARD);
     assertTrue(custom.getFilter() == null);
-    new ICUTransformFilter(new KeywordTokenizer(new StringReader("")), custom);
+    final KeywordTokenizer input = new KeywordTokenizer();
+    input.setReader(new StringReader(""));
+    new ICUTransformFilter(input, custom);
     assertTrue(custom.getFilter().equals(new UnicodeSet("[\\U00020087]")));
   }
 
   private void checkToken(Transliterator transform, String input, String expected) throws IOException {
-    TokenStream ts = new ICUTransformFilter(new KeywordTokenizer((new StringReader(input))), transform);
+    final KeywordTokenizer input1 = new KeywordTokenizer();
+    input1.setReader(new StringReader(input));
+    TokenStream ts = new ICUTransformFilter(input1, transform);
     assertTokenStreamContents(ts, new String[] { expected });
   }
   
@@ -93,8 +99,8 @@ public class TestICUTransformFilter extends BaseTokenStreamTestCase {
     final Transliterator transform = Transliterator.getInstance("Any-Latin");
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, new ICUTransformFilter(tokenizer, transform));
       }
     };
@@ -104,11 +110,11 @@ public class TestICUTransformFilter extends BaseTokenStreamTestCase {
   public void testEmptyTerm() throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, new ICUTransformFilter(tokenizer, Transliterator.getInstance("Any-Latin")));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

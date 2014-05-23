@@ -20,13 +20,14 @@ package org.apache.lucene.search.highlight;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -248,7 +249,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   private String highlightField(Query query, String fieldName, String text)
       throws IOException, InvalidTokenOffsetsException {
     TokenStream tokenStream = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET)
-        .tokenStream(fieldName, new StringReader(text));
+        .tokenStream(fieldName, text);
     // Assuming "<B>", "</B>" used to highlight
     SimpleHTMLFormatter formatter = new SimpleHTMLFormatter();
     QueryScorer scorer = new QueryScorer(query, fieldName, FIELD_NAME);
@@ -269,8 +270,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     
     for (int i = 0; i < hits.totalHits; i++) {
       String text = searcher.doc(hits.scoreDocs[i].doc).get(FIELD_NAME);
-      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME,
-          new StringReader(text));
+      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, text);
       highlighter.setTextFragmenter(new SimpleFragmenter(40));
 
       String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
@@ -348,7 +348,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     
     for (int i = 0; i < hits.totalHits; i++) {
       String text = searcher.doc(hits.scoreDocs[i].doc).get(FIELD_NAME);
-      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
+      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, text);
 
       highlighter.setTextFragmenter(new SimpleFragmenter(40));
 
@@ -377,7 +377,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     
     for (int i = 0; i < hits.totalHits; i++) {
       String text = searcher.doc(hits.scoreDocs[i].doc).get(FIELD_NAME);
-      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
+      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, text);
 
       highlighter.setTextFragmenter(new SimpleFragmenter(40));
 
@@ -406,7 +406,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     
     for (int i = 0; i < hits.totalHits; i++) {
       String text = searcher.doc(hits.scoreDocs[i].doc).get(FIELD_NAME);
-      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
+      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, text);
 
       highlighter.setTextFragmenter(new SimpleFragmenter(40));
 
@@ -421,7 +421,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
   
   public void testSpanRegexQuery() throws Exception {
-    query = new SpanOrQuery(new SpanMultiTermQueryWrapper<RegexpQuery>(new RegexpQuery(new Term(FIELD_NAME, "ken.*"))));
+    query = new SpanOrQuery(new SpanMultiTermQueryWrapper<>(new RegexpQuery(new Term(FIELD_NAME, "ken.*"))));
     searcher = newSearcher(reader);
     hits = searcher.search(query, 100);
     int maxNumFragmentsRequired = 2;
@@ -431,7 +431,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     
     for (int i = 0; i < hits.totalHits; i++) {
       String text = searcher.doc(hits.scoreDocs[i].doc).get(FIELD_NAME);
-      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
+      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, text);
 
       highlighter.setTextFragmenter(new SimpleFragmenter(40));
 
@@ -455,7 +455,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     
     for (int i = 0; i < hits.totalHits; i++) {
       String text = searcher.doc(hits.scoreDocs[i].doc).get(FIELD_NAME);
-      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
+      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, text);
 
       highlighter.setTextFragmenter(new SimpleFragmenter(40));
 
@@ -479,7 +479,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     
     for (int i = 0; i < hits.totalHits; i++) {
       String text = searcher.doc(hits.scoreDocs[i].doc).get(FIELD_NAME);
-      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
+      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, text);
 
       highlighter.setTextFragmenter(new SimpleFragmenter(40));
 
@@ -505,7 +505,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     
     for (int i = 0; i < hits.totalHits; i++) {
       String text = searcher.doc(hits.scoreDocs[i].doc).getField(NUMERIC_FIELD_NAME).numericValue().toString();
-      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
+      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, text);
 
       highlighter.setTextFragmenter(new SimpleFragmenter(40));
 
@@ -533,7 +533,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     
     for (int i = 0; i < hits.totalHits; i++) {
       String text = searcher.doc(hits.scoreDocs[i].doc).get(FIELD_NAME);
-      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
+      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, text);
 
       String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
           "...");
@@ -555,7 +555,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     for (int i = 0; i < hits.totalHits; i++) {
       String text = searcher.doc(hits.scoreDocs[i].doc).get(FIELD_NAME);
-      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
+      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, text);
       QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
       Highlighter highlighter = new Highlighter(this, scorer);
 
@@ -585,7 +585,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   
     for (int i = 0; i < hits.totalHits; i++) {
       String text = searcher.doc(hits.scoreDocs[i].doc).get(FIELD_NAME);
-      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
+      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, text);
 
       highlighter.setTextFragmenter(new SimpleSpanFragmenter(scorer, 5));
 
@@ -608,7 +608,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     for (int i = 0; i < hits.totalHits; i++) {
       String text = searcher.doc(hits.scoreDocs[i].doc).get(FIELD_NAME);
-      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
+      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, text);
 
       highlighter.setTextFragmenter(new SimpleSpanFragmenter(scorer, 20));
 
@@ -639,7 +639,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     
     for (int i = 0; i < hits.totalHits; i++) {
       String text = searcher.doc(hits.scoreDocs[i].doc).get(FIELD_NAME);
-      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
+      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, text);
 
       highlighter.setTextFragmenter(new SimpleFragmenter(40));
 
@@ -710,7 +710,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     int maxNumFragmentsRequired = 2;
     for (int i = 0; i < hits.totalHits; i++) {
       String text = searcher.doc(hits.scoreDocs[i].doc).get(FIELD_NAME);
-      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
+      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, text);
 
       String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
           "...");
@@ -907,7 +907,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       int maxNumFragmentsRequired = 2;
       String fragmentSeparator = "...";
       QueryScorer scorer = new QueryScorer(query, HighlighterTest.FIELD_NAME);
-      TokenStream tokenStream = analyzer.tokenStream(HighlighterTest.FIELD_NAME, new StringReader(text));
+      TokenStream tokenStream = analyzer.tokenStream(HighlighterTest.FIELD_NAME, text);
 
       Highlighter highlighter = new Highlighter(this, scorer);
 
@@ -931,7 +931,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       int maxNumFragmentsRequired = 2;
       String fragmentSeparator = "...";
       QueryScorer scorer = new QueryScorer(query, null);
-      TokenStream tokenStream = analyzer.tokenStream(HighlighterTest.FIELD_NAME, new StringReader(text));
+      TokenStream tokenStream = analyzer.tokenStream(HighlighterTest.FIELD_NAME, text);
 
       Highlighter highlighter = new Highlighter(this, scorer);
 
@@ -955,7 +955,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       int maxNumFragmentsRequired = 2;
       String fragmentSeparator = "...";
       QueryScorer scorer = new QueryScorer(query, "random_field", HighlighterTest.FIELD_NAME);
-      TokenStream tokenStream = analyzer.tokenStream(HighlighterTest.FIELD_NAME, new StringReader(text));
+      TokenStream tokenStream = analyzer.tokenStream(HighlighterTest.FIELD_NAME, text);
 
       Highlighter highlighter = new Highlighter(this, scorer);
 
@@ -1126,7 +1126,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         numHighlights = 0;
         for (int i = 0; i < hits.totalHits; i++) {
           String text = searcher.doc(hits.scoreDocs[i].doc).get(FIELD_NAME);
-          TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
+          TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, text);
 
           Highlighter highlighter = getHighlighter(query, FIELD_NAME,
               HighlighterTest.this);
@@ -1175,19 +1175,19 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         WeightedSpanTerm[] wTerms = new WeightedSpanTerm[2];
         wTerms[0] = new WeightedSpanTerm(10f, "hello");
 
-        List<PositionSpan> positionSpans = new ArrayList<PositionSpan>();
+        List<PositionSpan> positionSpans = new ArrayList<>();
         positionSpans.add(new PositionSpan(0, 0));
         wTerms[0].addPositionSpans(positionSpans);
 
         wTerms[1] = new WeightedSpanTerm(1f, "kennedy");
-        positionSpans = new ArrayList<PositionSpan>();
+        positionSpans = new ArrayList<>();
         positionSpans.add(new PositionSpan(14, 14));
         wTerms[1].addPositionSpans(positionSpans);
 
         Highlighter highlighter = getHighlighter(wTerms, HighlighterTest.this);// new
         // Highlighter(new
         // QueryTermScorer(wTerms));
-        TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(texts[0]));
+        TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, texts[0]);
         highlighter.setTextFragmenter(new SimpleFragmenter(2));
 
         String result = highlighter.getBestFragment(tokenStream, texts[0]).trim();
@@ -1196,7 +1196,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
         // readjust weights
         wTerms[1].setWeight(50f);
-        tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(texts[0]));
+        tokenStream = analyzer.tokenStream(FIELD_NAME, texts[0]);
         highlighter = getHighlighter(wTerms, HighlighterTest.this);
         highlighter.setTextFragmenter(new SimpleFragmenter(2));
 
@@ -1218,7 +1218,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
       @Override
       public void run() throws Exception {
-        HashMap<String,String> synonyms = new HashMap<String,String>();
+        HashMap<String,String> synonyms = new HashMap<>();
         synonyms.put("football", "soccer,footie");
         Analyzer analyzer = new SynonymAnalyzer(synonyms);
 
@@ -1232,7 +1232,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         Highlighter highlighter = getHighlighter(query, null, HighlighterTest.this);
 
         // Get 3 best fragments and separate with a "..."
-        TokenStream tokenStream = analyzer.tokenStream(null, new StringReader(s));
+        TokenStream tokenStream = analyzer.tokenStream(null, s);
 
         String result = highlighter.getBestFragments(tokenStream, s, 3, "...");
         String expectedResult = "<B>football</B>-<B>soccer</B> in the euro 2004 <B>footie</B> competition";
@@ -1257,7 +1257,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
         for (int i = 0; i < hits.totalHits; i++) {
           String text = searcher.doc(hits.scoreDocs[i].doc).get(FIELD_NAME);
-          TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
+          TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, text);
           Highlighter highlighter = getHighlighter(query, FIELD_NAME,
               HighlighterTest.this);
           String result = highlighter.getBestFragment(tokenStream, text);
@@ -1280,7 +1280,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
         for (int i = 0; i < hits.totalHits; i++) {
           String text = searcher.doc(hits.scoreDocs[i].doc).get(FIELD_NAME);
-          TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
+          TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, text);
 
           Highlighter highlighter = getHighlighter(query, FIELD_NAME,
               HighlighterTest.this);// new Highlighter(this, new
@@ -1288,7 +1288,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
           highlighter.setTextFragmenter(new SimpleFragmenter(20));
           String stringResults[] = highlighter.getBestFragments(tokenStream, text, 10);
 
-          tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
+          tokenStream = analyzer.tokenStream(FIELD_NAME, text);
           TextFragment fragmentResults[] = highlighter.getBestTextFragments(tokenStream, text,
               true, 10);
 
@@ -1318,7 +1318,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       public void run() throws Exception {
         numHighlights = 0;
         doSearching(new TermQuery(new Term(FIELD_NAME, "meat")));
-        TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(texts[0]));
+        TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, texts[0]);
         Highlighter highlighter = getHighlighter(query, FIELD_NAME,
             HighlighterTest.this);// new Highlighter(this, new
         // QueryTermScorer(query));
@@ -1432,7 +1432,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
         for (int i = 0; i < hits.totalHits; i++) {
           String text = searcher.doc(hits.scoreDocs[i].doc).get(FIELD_NAME);
-          TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
+          TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, text);
           Highlighter highlighter = getHighlighter(query, FIELD_NAME, HighlighterTest.this, false);
 
           highlighter.setTextFragmenter(new SimpleFragmenter(40));
@@ -1461,7 +1461,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         doSearching(new TermQuery(new Term(FIELD_NAME, "aninvalidquerywhichshouldyieldnoresults")));
 
         for (String text : texts) {
-          TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
+          TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, text);
           Highlighter highlighter = getHighlighter(query, FIELD_NAME,
               HighlighterTest.this);
           String result = highlighter.getBestFragment(tokenStream, text);
@@ -1503,7 +1503,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       }
     });
     highlighter.setTextFragmenter(new SimpleFragmenter(2000));
-    TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(rawDocContent));
+    TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, rawDocContent);
 
     String encodedSnippet = highlighter.getBestFragments(tokenStream, rawDocContent, 1, "");
     // An ugly bit of XML creation:
@@ -1514,7 +1514,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     // now an ugly built of XML parsing to test the snippet is encoded OK
     DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
     DocumentBuilder db = dbf.newDocumentBuilder();
-    org.w3c.dom.Document doc = db.parse(new ByteArrayInputStream(xhtml.getBytes("UTF-8")));
+    org.w3c.dom.Document doc = db.parse(new ByteArrayInputStream(xhtml.getBytes(StandardCharsets.UTF_8)));
     Element root = doc.getDocumentElement();
     NodeList nodes = root.getElementsByTagName("body");
     Element body = (Element) nodes.item(0);
@@ -1580,7 +1580,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
       private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
       {
-        lst = new ArrayList<Token>();
+        lst = new ArrayList<>();
         Token t;
         t = createToken("hi", 0, 2);
         t.setPositionIncrement(1);
@@ -1631,7 +1631,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
       private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
       {
-        lst = new ArrayList<Token>();
+        lst = new ArrayList<>();
         Token t;
         t = createToken("hispeed", 0, 8);
         t.setPositionIncrement(1);
@@ -1776,7 +1776,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     writer.addDocument( doc( "t_text1", "random words for highlighting tests del" ) );
     writer.addDocument( doc( "t_text1", "more random words for second field" ) );
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
   }
   
   private void deleteDocument() throws IOException {
@@ -1784,7 +1784,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     writer.deleteDocuments( new Term( "t_text1", "del" ) );
     // To see negative idf, keep comment the following line
     //writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
   }
   
   private void searchIndex() throws IOException, InvalidTokenOffsetsException {
@@ -1828,7 +1828,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
    * 
    * for (int i = 0; i < hits.totalHits; i++) { String text =
    * searcher.doc2(hits.scoreDocs[i].doc).get(FIELD_NAME); TokenStream
-   * tokenStream=bigramAnalyzer.tokenStream(FIELD_NAME,new StringReader(text));
+   * tokenStream=bigramAnalyzer.tokenStream(FIELD_NAME,text);
    * String highlightedText = highlighter.getBestFragment(tokenStream,text);
    * System.out.println(highlightedText); } }
    */
@@ -1855,7 +1855,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       final int expectedHighlights) throws Exception {
     for (int i = 0; i < hits.totalHits; i++) {
       String text = searcher.doc(hits.scoreDocs[i].doc).get(FIELD_NAME);
-      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
+      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, text);
       QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
       Highlighter highlighter = new Highlighter(this, scorer);
 
@@ -1904,7 +1904,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     writer.addDocument(doc, analyzer);
 
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
     reader = DirectoryReader.open(ramDir);
     numHighlights = 0;
   }
@@ -1956,8 +1956,8 @@ final class SynonymAnalyzer extends Analyzer {
    *      java.io.Reader)
    */
   @Override
-  public TokenStreamComponents createComponents(String arg0, Reader arg1) {
-    Tokenizer stream = new MockTokenizer(arg1, MockTokenizer.SIMPLE, true);
+  public TokenStreamComponents createComponents(String arg0) {
+    Tokenizer stream = new MockTokenizer(MockTokenizer.SIMPLE, true);
     stream.addAttribute(CharTermAttribute.class);
     stream.addAttribute(PositionIncrementAttribute.class);
     stream.addAttribute(OffsetAttribute.class);
@@ -2013,7 +2013,8 @@ final class SynonymTokenizer extends TokenStream {
       }
       st = new StringTokenizer(expansions, ",");
       if (st.hasMoreTokens()) {
-        currentRealToken = new Token(realOffsetAtt.startOffset(), realOffsetAtt.endOffset());
+        currentRealToken = new Token();
+        currentRealToken.setOffset(realOffsetAtt.startOffset(), realOffsetAtt.endOffset());
         currentRealToken.copyBuffer(realTermAtt.buffer(), 0, realTermAtt.length());
       }
       
@@ -2104,7 +2105,7 @@ final class SynonymTokenizer extends TokenStream {
         int maxNumFragmentsRequired = 2;
         String fragmentSeparator = "...";
         Scorer scorer = null;
-        TokenStream tokenStream = analyzer.tokenStream(HighlighterTest.FIELD_NAME, new StringReader(text));
+        TokenStream tokenStream = analyzer.tokenStream(HighlighterTest.FIELD_NAME, text);
         if (mode == QUERY) {
           scorer = new QueryScorer(query);
         } else if (mode == QUERY_TERM) {

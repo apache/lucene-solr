@@ -38,13 +38,13 @@ public class SimpleEndResultTransformer implements EndResultTransformer {
    */
   @Override
   public void transform(Map<String, ?> result, ResponseBuilder rb, SolrDocumentSource solrDocumentSource) {
-    NamedList<Object> commands = new SimpleOrderedMap<Object>();
+    NamedList<Object> commands = new SimpleOrderedMap<>();
     for (Map.Entry<String, ?> entry : result.entrySet()) {
       Object value = entry.getValue();
       if (TopGroups.class.isInstance(value)) {
         @SuppressWarnings("unchecked")
         TopGroups<BytesRef> topGroups = (TopGroups<BytesRef>) value;
-        NamedList<Object> command = new SimpleOrderedMap<Object>();
+        NamedList<Object> command = new SimpleOrderedMap<>();
         command.add("matches", rb.totalHitCount);
         if (topGroups.totalGroupCount != null) {
           command.add("ngroups", topGroups.totalGroupCount);

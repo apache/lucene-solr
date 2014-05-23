@@ -46,6 +46,7 @@
     <propertyref regex=".*\.uptodate$$"/>
     <propertyref regex=".*\.compiled$$"/>
     <propertyref regex=".*\.loaded$$"/>
+    <propertyref name="tests.totals.tmpfile" />
   </propertyset>
 
   <target name="common">
@@ -107,12 +108,15 @@
   <target name="jar">
     <forall-analyzers target="jar-core"/>
   </target>
+  <target name="jar-src">
+    <forall-analyzers target="jar-src"/>
+  </target>
   <target name="jar-core" depends="jar"/>
 
   <target name="build-artifacts-and-tests" depends="default,compile-test" />
 
-  <target name="dist-maven">
-    <forall-analyzers target="dist-maven"/>
+  <target name="-dist-maven">
+    <forall-analyzers target="-dist-maven"/>
   </target>  	
 
   <target name="-validate-maven-dependencies">
@@ -134,5 +138,17 @@
   <target name="-ecj-javadoc-lint">
     <forall-analyzers target="-ecj-javadoc-lint"/>
   </target>
+
+  <target name="regenerate">
+    <forall-analyzers target="regenerate"/>
+  </target>
+  
+  <target name="-append-module-dependencies-properties">
+    <forall-analyzers target="-append-module-dependencies-properties"/>
+  </target>
 	
+  <target name="check-forbidden-apis">
+    <forall-analyzers target="check-forbidden-apis"/>
+  </target>
+
 </project>

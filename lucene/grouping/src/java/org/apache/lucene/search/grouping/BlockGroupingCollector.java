@@ -18,13 +18,14 @@ package org.apache.lucene.search.grouping;
  */
 
 
+import java.io.IOException;
+import java.util.Collection;
+
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.PriorityQueue;
-
-import java.io.IOException;
 
 // TODO: this sentence is too long for the class summary.
 /** BlockGroupingCollector performs grouping with a
@@ -54,7 +55,7 @@ import java.io.IOException;
  * @lucene.experimental
  */
 
-public class BlockGroupingCollector extends Collector {
+public class BlockGroupingCollector extends SimpleCollector {
 
   private int[] pendingSubDocs;
   private float[] pendingSubScores;
@@ -90,7 +91,7 @@ public class BlockGroupingCollector extends Collector {
     int doc;
 
     public FakeScorer() {
-      super((Weight) null);
+      super(null);
     }
 
     @Override
@@ -121,6 +122,16 @@ public class BlockGroupingCollector extends Collector {
     @Override
     public long cost() {
       return 1;
+    }
+
+    @Override
+    public Weight getWeight() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Collection<ChildScorer> getChildren() {
+      throw new UnsupportedOperationException();
     }
   }
 
@@ -289,7 +300,7 @@ public class BlockGroupingCollector extends Collector {
    *  This is normally not a problem, as you can obtain the
    *  value just like you obtain other values for each
    *  matching document (eg, via stored fields, via
-   *  FieldCache, etc.)
+   *  DocValues, etc.)
    *
    *  @param withinGroupSort The {@link Sort} used to sort
    *    documents within each group.  Passing null is
@@ -339,7 +350,7 @@ public class BlockGroupingCollector extends Collector {
       }
 
       collector.setScorer(fakeScorer);
-      collector.setNextReader(og.readerContext);
+      collector.getLeafCollector(og.readerContext);
       for(int docIDX=0;docIDX<og.count;docIDX++) {
         final int doc = og.docs[docIDX];
         fakeScorer.doc = doc;
@@ -505,7 +516,7 @@ public class BlockGroupingCollector extends Collector {
   }
 
   @Override
-  public void setNextReader(AtomicReaderContext readerContext) throws IOException {
+  protected void doSetNextReader(AtomicReaderContext readerContext) throws IOException {
     if (subDocUpto != 0) {
       processGroup();
     }

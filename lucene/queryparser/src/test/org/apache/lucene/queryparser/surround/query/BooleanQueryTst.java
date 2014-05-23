@@ -22,13 +22,13 @@ import java.io.IOException;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Query;
-
+import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.queryparser.surround.parser.QueryParser;
-
 import org.junit.Assert;
 
 public class BooleanQueryTst {
@@ -57,7 +57,7 @@ public class BooleanQueryTst {
   
   public void setVerbose(boolean verbose) {this.verbose = verbose;}
 
-  class TestCollector extends Collector { // FIXME: use check hits from Lucene tests
+  class TestCollector extends SimpleCollector { // FIXME: use check hits from Lucene tests
     int totalMatched;
     boolean[] encountered;
     private Scorer scorer = null;
@@ -79,7 +79,7 @@ public class BooleanQueryTst {
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
       docBase = context.docBase;
     }
     

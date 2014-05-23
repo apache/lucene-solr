@@ -35,8 +35,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class LiveFieldValues<S,T> implements ReferenceManager.RefreshListener, Closeable {
 
-  private volatile Map<String,T> current = new ConcurrentHashMap<String,T>();
-  private volatile Map<String,T> old = new ConcurrentHashMap<String,T>();
+  private volatile Map<String,T> current = new ConcurrentHashMap<>();
+  private volatile Map<String,T> old = new ConcurrentHashMap<>();
   private final ReferenceManager<S> mgr;
   private final T missingValue;
 
@@ -58,7 +58,7 @@ public abstract class LiveFieldValues<S,T> implements ReferenceManager.RefreshLi
     // map.  While reopen is running, any lookup will first
     // try this new map, then fallback to old, then to the
     // current searcher:
-    current = new ConcurrentHashMap<String,T>();
+    current = new ConcurrentHashMap<>();
   }
 
   @Override
@@ -69,7 +69,7 @@ public abstract class LiveFieldValues<S,T> implements ReferenceManager.RefreshLi
     // entries in it, which is fine: it means they were
     // actually already included in the previously opened
     // reader.  So we can safely clear old here:
-    old = new ConcurrentHashMap<String,T>();
+    old = new ConcurrentHashMap<>();
   }
 
   /** Call this after you've successfully added a document

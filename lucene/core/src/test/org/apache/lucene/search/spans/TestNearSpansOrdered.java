@@ -58,7 +58,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
       writer.addDocument(doc);
     }
     reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     searcher = newSearcher(reader);
   }
 
@@ -167,7 +167,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
     Weight w = searcher.createNormalizedWeight(q);
     IndexReaderContext topReaderContext = searcher.getTopReaderContext();
     AtomicReaderContext leave = topReaderContext.leaves().get(0);
-    Scorer s = w.scorer(leave, true, false, leave.reader().getLiveDocs());
+    Scorer s = w.scorer(leave, leave.reader().getLiveDocs());
     assertEquals(1, s.advance(1));
   }
   

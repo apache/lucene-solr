@@ -26,8 +26,9 @@
 grant {
   // permissions for file access, write access only to sandbox:
   permission java.io.FilePermission "<<ALL FILES>>", "read,execute";
-  permission java.io.FilePermission "${junit4.childvm.cwd}", "read,execute,write";
-  permission java.io.FilePermission "${junit4.childvm.cwd}${/}-", "read,execute,write,delete";
+  permission java.io.FilePermission "${junit4.childvm.cwd}", "read,execute";
+  permission java.io.FilePermission "${junit4.childvm.cwd}${/}temp", "read,execute,write,delete";
+  permission java.io.FilePermission "${junit4.childvm.cwd}${/}temp${/}-", "read,execute,write,delete";
   permission java.io.FilePermission "${junit4.tempDir}${/}*", "read,execute,write,delete";
   permission java.io.FilePermission "${clover.db.dir}${/}-", "read,execute,write,delete";
   
@@ -59,6 +60,11 @@ grant {
   permission javax.management.MBeanPermission "*", "*";
   permission javax.management.MBeanServerPermission "*";
   permission javax.management.MBeanTrustPermission "*";
+  permission javax.security.auth.AuthPermission "*";
+  permission javax.security.auth.PrivateCredentialPermission "org.apache.hadoop.security.Credentials * \"*\"", "read";
+  permission java.security.SecurityPermission "putProviderProperty.SaslPlainServer";
+  permission java.security.SecurityPermission "insertProvider.SaslPlainServer";
+  permission javax.xml.bind.JAXBPermission "setDatatypeConverter";
   
   // TIKA uses BouncyCastle and that registers new provider for PDF parsing + MSOffice parsing. Maybe report as bug!
   permission java.security.SecurityPermission "putProviderProperty.BC";

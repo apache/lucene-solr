@@ -18,11 +18,9 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.Iterator;
 
 import org.apache.lucene.search.CachingWrapperFilter;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -39,13 +37,22 @@ import org.apache.lucene.util.BytesRef;
  * to override {@link #numDocs()} as well and vice-versa.
  * <p><b>NOTE</b>: If this {@link FilterAtomicReader} does not change the
  * content the contained reader, you could consider overriding
- * {@link #getCoreCacheKey()} so that {@link FieldCache} and
- * {@link CachingWrapperFilter} share the same entries for this atomic reader
+ * {@link #getCoreCacheKey()} so that
+ * {@link CachingWrapperFilter} shares the same entries for this atomic reader
  * and the wrapped one. {@link #getCombinedCoreAndDeletesKey()} could be
  * overridden as well if the {@link #getLiveDocs() live docs} are not changed
  * either.
  */
 public class FilterAtomicReader extends AtomicReader {
+
+  /** Get the wrapped instance by <code>reader</code> as long as this reader is
+   *  an intance of {@link FilterAtomicReader}.  */
+  public static AtomicReader unwrap(AtomicReader reader) {
+    while (reader instanceof FilterAtomicReader) {
+      reader = ((FilterAtomicReader) reader).in;
+    }
+    return reader;
+  }
 
   /** Base class for filtering {@link Fields}
    *  implementations. */
@@ -98,11 +105,6 @@ public class FilterAtomicReader extends AtomicReader {
     public TermsEnum iterator(TermsEnum reuse) throws IOException {
       return in.iterator(reuse);
     }
-    
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return in.getComparator();
-    }
 
     @Override
     public long size() throws IOException {
@@ -122,6 +124,11 @@ public class FilterAtomicReader extends AtomicReader {
     @Override
     public int getDocCount() throws IOException {
       return in.getDocCount();
+    }
+
+    @Override
+    public boolean hasFreqs() {
+      return in.hasFreqs();
     }
 
     @Override
@@ -157,8 +164,8 @@ public class FilterAtomicReader extends AtomicReader {
     }
 
     @Override
-    public SeekStatus seekCeil(BytesRef text, boolean useCache) throws IOException {
-      return in.seekCeil(text, useCache);
+    public SeekStatus seekCeil(BytesRef text) throws IOException {
+      return in.seekCeil(text);
     }
 
     @Override
@@ -199,11 +206,6 @@ public class FilterAtomicReader extends AtomicReader {
     @Override
     public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
       return in.docsAndPositions(liveDocs, reuse, flags);
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return in.getComparator();
     }
   }
 
@@ -414,4 +416,15 @@ public class FilterAtomicReader extends AtomicReader {
     return in.getNormValues(field);
   }
 
+  @Override
+  public Bits getDocsWithField(String field) throws IOException {
+    ensureOpen();
+    return in.getDocsWithField(field);
+  }
+
+  @Override
+  public void checkIntegrity() throws IOException {
+    ensureOpen();
+    in.checkIntegrity();
+  }
 }

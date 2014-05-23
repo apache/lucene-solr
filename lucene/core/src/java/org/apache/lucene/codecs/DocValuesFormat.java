@@ -41,7 +41,7 @@ import org.apache.lucene.util.NamedSPILoader;
 public abstract class DocValuesFormat implements NamedSPILoader.NamedSPI {
   
   private static final NamedSPILoader<DocValuesFormat> loader =
-      new NamedSPILoader<DocValuesFormat>(DocValuesFormat.class);
+      new NamedSPILoader<>(DocValuesFormat.class);
   
   /** Unique name that's used to retrieve this format when
    *  reading the index.

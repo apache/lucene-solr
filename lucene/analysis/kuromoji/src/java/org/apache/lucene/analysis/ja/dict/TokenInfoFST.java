@@ -51,9 +51,9 @@ public final class TokenInfoFST {
   @SuppressWarnings({"rawtypes","unchecked"})
   private FST.Arc<Long>[] cacheRootArcs() throws IOException {
     FST.Arc<Long> rootCache[] = new FST.Arc[1+(cacheCeiling-0x3040)];
-    FST.Arc<Long> firstArc = new FST.Arc<Long>();
+    FST.Arc<Long> firstArc = new FST.Arc<>();
     fst.getFirstArc(firstArc);
-    FST.Arc<Long> arc = new FST.Arc<Long>();
+    FST.Arc<Long> arc = new FST.Arc<>();
     final FST.BytesReader fstReader = fst.getBytesReader();
     // TODO: jump to 3040, readNextRealArc to ceiling? (just be careful we don't add bugs)
     for (int i = 0; i < rootCache.length; i++) {

@@ -44,7 +44,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
   public SpanOrQuery(SpanQuery... clauses) {
 
     // copy clauses array into an ArrayList
-    this.clauses = new ArrayList<SpanQuery>(clauses.length);
+    this.clauses = new ArrayList<>(clauses.length);
     for (int i = 0; i < clauses.length; i++) {
       addClause(clauses[i]);
     }
@@ -54,7 +54,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
   public final void addClause(SpanQuery clause) {
     if (field == null) {
       field = clause.getField();
-    } else if (!clause.getField().equals(field)) {
+    } else if (clause.getField() != null && !clause.getField().equals(field)) {
       throw new IllegalArgumentException("Clauses must have same field.");
     }
     this.clauses.add(clause);
@@ -132,7 +132,6 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
     final SpanOrQuery that = (SpanOrQuery) o;
 
     if (!clauses.equals(that.clauses)) return false;
-    if (!clauses.isEmpty() && !field.equals(that.field)) return false;
 
     return getBoost() == that.getBoost();
   }
@@ -243,7 +242,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
         ArrayList<byte[]> result = null;
         Spans theTop = top();
         if (theTop != null && theTop.isPayloadAvailable()) {
-          result = new ArrayList<byte[]>(theTop.getPayload());
+          result = new ArrayList<>(theTop.getPayload());
         }
         return result;
       }

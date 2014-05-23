@@ -40,11 +40,19 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
   public void setUp()  throws Exception {
     super.setUp();
     // set some system properties for use by tests
+    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
+    System.setProperty("solr.allow.unsafe.resourceloading", "true");
 
-    initMap = new HashMap<String,String>();
+    initMap = new HashMap<>();
     config = new SolrConfig(new SolrResourceLoader("solr/collection1"), testConfHome + "solrconfig.xml", null);
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    System.clearProperty("solr.allow.unsafe.resourceloading");
+    super.tearDown();
   }
 
   @SuppressWarnings("deprecation")
@@ -52,17 +60,10 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
   public void testDefaultOmitNorms() throws Exception {
     BinaryField bin;
     TextField t;
-    DateField dt;
+    TrieDateField dt;
     StrField s;
-    IntField i;
     TrieIntField ti;
-    SortableIntField si;
-    LongField l;
-    ShortField sf;
-    FloatField f;
-    DoubleField d;
     BoolField b;
-    ByteField bf;
     
     
     // ***********************
@@ -70,7 +71,7 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
     // ***********************
     schema = IndexSchemaFactory.buildIndexSchema(testConfHome + "schema12.xml", config);
     
-    dt = new DateField();
+    dt = new TrieDateField();
     dt.init(schema, initMap);
     assertFalse(dt.hasProperty(FieldType.OMIT_NORMS));
 
@@ -78,45 +79,13 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
     s.init(schema, initMap);
     assertFalse(s.hasProperty(FieldType.OMIT_NORMS));
 
-    i = new IntField();
-    i.init(schema, initMap);
-    assertFalse(i.hasProperty(FieldType.OMIT_NORMS));
-
     ti = new TrieIntField();
     ti.init(schema, initMap);
     assertFalse(ti.hasProperty(FieldType.OMIT_NORMS));
 
-    si = new SortableIntField();
-    si.init(schema, initMap);
-    assertFalse(si.hasProperty(FieldType.OMIT_NORMS));
-
-    l = new LongField();
-    l.init(schema, initMap);
-    assertFalse(l.hasProperty(FieldType.OMIT_NORMS));
-
-    sf = new ShortField();
-    sf.init(schema, initMap);
-    assertFalse(sf.hasProperty(FieldType.OMIT_NORMS));
-
-    f = new FloatField();
-    f.init(schema, initMap);
-    assertFalse(f.hasProperty(FieldType.OMIT_NORMS));
-
-    d = new DoubleField();
-    d.init(schema, initMap);
-    assertFalse(d.hasProperty(FieldType.OMIT_NORMS));
-
-    dt = new DateField();
-    dt.init(schema, initMap);
-    assertFalse(dt.hasProperty(FieldType.OMIT_NORMS));
-
     b = new BoolField();
     b.init(schema, initMap);
     assertFalse(b.hasProperty(FieldType.OMIT_NORMS));
-
-    bf = new ByteField();
-    bf.init(schema, initMap);
-    assertFalse(bf.hasProperty(FieldType.OMIT_NORMS));
 
     // Non-primitive fields
     t = new TextField();
@@ -132,7 +101,7 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
     // ***********************
     schema = IndexSchemaFactory.buildIndexSchema(testConfHome + "schema15.xml", config);
 
-    dt = new DateField();
+    dt = new TrieDateField();
     dt.init(schema, initMap);
     assertTrue(dt.hasProperty(FieldType.OMIT_NORMS));
 
@@ -140,45 +109,13 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
     s.init(schema, initMap);
     assertTrue(s.hasProperty(FieldType.OMIT_NORMS));
 
-    i = new IntField();
-    i.init(schema, initMap);
-    assertTrue(i.hasProperty(FieldType.OMIT_NORMS));
-
     ti = new TrieIntField();
     ti.init(schema, initMap);
     assertTrue(ti.hasProperty(FieldType.OMIT_NORMS));
 
-    si = new SortableIntField();
-    si.init(schema, initMap);
-    assertTrue(si.hasProperty(FieldType.OMIT_NORMS));
-
-    l = new LongField();
-    l.init(schema, initMap);
-    assertTrue(l.hasProperty(FieldType.OMIT_NORMS));
-
-    sf = new ShortField();
-    sf.init(schema, initMap);
-    assertTrue(sf.hasProperty(FieldType.OMIT_NORMS));
-
-    f = new FloatField();
-    f.init(schema, initMap);
-    assertTrue(f.hasProperty(FieldType.OMIT_NORMS));
-
-    d = new DoubleField();
-    d.init(schema, initMap);
-    assertTrue(d.hasProperty(FieldType.OMIT_NORMS));
-
-    dt = new DateField();
-    dt.init(schema, initMap);
-    assertTrue(dt.hasProperty(FieldType.OMIT_NORMS));
-
     b = new BoolField();
     b.init(schema, initMap);
     assertTrue(b.hasProperty(FieldType.OMIT_NORMS));
-
-    bf = new ByteField();
-    bf.init(schema, initMap);
-    assertTrue(bf.hasProperty(FieldType.OMIT_NORMS));
 
     // Non-primitive fields
     t = new TextField();

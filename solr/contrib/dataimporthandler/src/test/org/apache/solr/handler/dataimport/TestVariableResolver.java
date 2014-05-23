@@ -36,7 +36,7 @@ public class TestVariableResolver extends AbstractDataImportHandlerTestCase {
   @Test
   public void testSimpleNamespace() {
     VariableResolver vri = new VariableResolver();
-    Map<String,Object> ns = new HashMap<String,Object>();
+    Map<String,Object> ns = new HashMap<>();
     ns.put("world", "WORLD");
     vri.addNamespace("hello", ns);
     assertEquals("WORLD", vri.resolve("hello.world"));
@@ -61,10 +61,10 @@ public class TestVariableResolver extends AbstractDataImportHandlerTestCase {
   @Test
   public void testNestedNamespace() {
     VariableResolver vri = new VariableResolver();
-    Map<String,Object> ns = new HashMap<String,Object>();
+    Map<String,Object> ns = new HashMap<>();
     ns.put("world", "WORLD");
     vri.addNamespace("hello", ns);
-    ns = new HashMap<String,Object>();
+    ns = new HashMap<>();
     ns.put("world1", "WORLD1");
     vri.addNamespace("hello.my", ns);
     assertEquals("WORLD1", vri.resolve("hello.my.world1"));
@@ -73,10 +73,10 @@ public class TestVariableResolver extends AbstractDataImportHandlerTestCase {
   @Test
   public void test3LevelNestedNamespace() {
     VariableResolver vri = new VariableResolver();
-    Map<String,Object> ns = new HashMap<String,Object>();
+    Map<String,Object> ns = new HashMap<>();
     ns.put("world", "WORLD");
     vri.addNamespace("hello", ns);
-    ns = new HashMap<String,Object>();
+    ns = new HashMap<>();
     ns.put("world1", "WORLD1");
     vri.addNamespace("hello.my.new", ns);
     assertEquals("WORLD1", vri.resolve("hello.my.new.world1"));
@@ -87,7 +87,7 @@ public class TestVariableResolver extends AbstractDataImportHandlerTestCase {
     VariableResolver vri = new VariableResolver();
     vri.setEvaluators(new DataImporter().getEvaluators(Collections
         .<Map<String,String>> emptyList()));
-    Map<String,Object> ns = new HashMap<String,Object>();
+    Map<String,Object> ns = new HashMap<>();
     Date d = new Date();
     ns.put("dt", d);
     vri.addNamespace("A", ns);
@@ -115,7 +115,7 @@ public class TestVariableResolver extends AbstractDataImportHandlerTestCase {
   @Test
   public void testDefaultNamespace() {
     VariableResolver vri = new VariableResolver();
-    Map<String,Object> ns = new HashMap<String,Object>();
+    Map<String,Object> ns = new HashMap<>();
     ns.put("world", "WORLD");
     vri.addNamespace(null, ns);
     assertEquals("WORLD", vri.resolve("world"));
@@ -124,7 +124,7 @@ public class TestVariableResolver extends AbstractDataImportHandlerTestCase {
   @Test
   public void testDefaultNamespace1() {
     VariableResolver vri = new VariableResolver();
-    Map<String,Object> ns = new HashMap<String,Object>();
+    Map<String,Object> ns = new HashMap<>();
     ns.put("world", "WORLD");
     vri.addNamespace(null, ns);
     assertEquals("WORLD", vri.resolve("world"));
@@ -133,8 +133,8 @@ public class TestVariableResolver extends AbstractDataImportHandlerTestCase {
   @Test
   public void testFunctionNamespace1() throws Exception {
     VariableResolver resolver = new VariableResolver();
-    final List<Map<String,String>> l = new ArrayList<Map<String,String>>();
-    Map<String,String> m = new HashMap<String,String>();
+    final List<Map<String,String>> l = new ArrayList<>();
+    Map<String,String> m = new HashMap<>();
     m.put("name", "test");
     m.put("class", E.class.getName());
     l.add(m);

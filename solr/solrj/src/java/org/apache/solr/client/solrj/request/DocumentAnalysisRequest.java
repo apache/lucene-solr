@@ -32,6 +32,7 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A request for the org.apache.solr.handler.DocumentAnalysisRequestHandler.
@@ -41,7 +42,7 @@ import java.util.List;
  */
 public class DocumentAnalysisRequest extends SolrRequest {
 
-  private List<SolrInputDocument> documents = new ArrayList<SolrInputDocument>();
+  private List<SolrInputDocument> documents = new ArrayList<>();
   private String query;
   private boolean showMatch = false;
 
@@ -87,10 +88,11 @@ public class DocumentAnalysisRequest extends SolrRequest {
    */
   @Override
   public DocumentAnalysisResponse process(SolrServer server) throws SolrServerException, IOException {
-    long startTime = System.currentTimeMillis();
+    long startTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
     DocumentAnalysisResponse res = new DocumentAnalysisResponse();
     res.setResponse(server.request(this));
-    res.setElapsedTime(System.currentTimeMillis() - startTime);
+    long endTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
+    res.setElapsedTime(endTime - startTime);
     return res;
   }
 

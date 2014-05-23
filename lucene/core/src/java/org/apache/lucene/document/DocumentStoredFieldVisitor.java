@@ -49,7 +49,7 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
 
   /** Load only fields named in the provided fields. */
   public DocumentStoredFieldVisitor(String... fields) {
-    fieldsToAdd = new HashSet<String>(fields.length);
+    fieldsToAdd = new HashSet<>(fields.length);
     for(String field : fields) {
       fieldsToAdd.add(field);
     }

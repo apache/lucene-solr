@@ -35,9 +35,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.util. _TestUtil;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -52,10 +53,9 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.TrieDateField;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.BeforeClass;
 import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,15 +102,15 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       // half the time we use the root context, the other half...
 
       // Remember: randomSimpleString might be the empty string
-      hostContext.append(_TestUtil.randomSimpleString(random(), 2));
+      hostContext.append(TestUtil.randomSimpleString(random(), 2));
       if (random().nextBoolean()) {
         hostContext.append("_");
       }
-      hostContext.append(_TestUtil.randomSimpleString(random(), 3));
+      hostContext.append(TestUtil.randomSimpleString(random(), 3));
       if ( ! "/".equals(hostContext.toString())) {
         // if our random string is empty, this might add a trailing slash, 
         // but our code should be ok with that
-        hostContext.append("/").append(_TestUtil.randomSimpleString(random(), 2));
+        hostContext.append("/").append(TestUtil.randomSimpleString(random(), 2));
       } else {
         // we got 'lucky' and still just have the root context,
         // NOOP: don't try to add a subdir to nothing (ie "//" is bad)
@@ -122,7 +122,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     log.info("Setting hostContext system property: " + hc);
     System.setProperty("hostContext", hc);
   }
-
+  
   /**
    * Clears the "hostContext" system property
    * @see #initHostContext
@@ -186,8 +186,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected boolean fixShardCount = false;
 
   protected JettySolrRunner controlJetty;
-  protected List<SolrServer> clients = new ArrayList<SolrServer>();
-  protected List<JettySolrRunner> jettys = new ArrayList<JettySolrRunner>();
+  protected List<SolrServer> clients = new ArrayList<>();
+  protected List<JettySolrRunner> jettys = new ArrayList<>();
   
   protected String context;
   protected String[] deadServers;
@@ -210,7 +210,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   public static int UNORDERED = 8;
 
   protected int flags;
-  protected Map<String, Integer> handle = new HashMap<String, Integer>();
+  protected Map<String, Integer> handle = new HashMap<>();
 
   protected String id = "id";
   public static Logger log = LoggerFactory.getLogger(BaseDistributedSearchTestCase.class);
@@ -277,18 +277,12 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     super.setUp();
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
-    testDir = new File(TEMP_DIR,
-            getClass().getName() + "-" + System.currentTimeMillis());
-    testDir.mkdirs();
+    testDir = createTempDir();
   }
 
   @Override
   public void tearDown() throws Exception {
     destroyServers();
-    if (!AbstractSolrTestCase.recurseDelete(testDir)) {
-      System.err.println("!!!! WARNING: best effort to remove " + testDir.getAbsolutePath() + " FAILED !!!!!");
-    }
-    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity
     super.tearDown();
   }
 
@@ -306,7 +300,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
           getSchemaFile());
       jettys.add(j);
       clients.add(createNewSolrServer(j.getLocalPort()));
-      String shardStr = "127.0.0.1:" + j.getLocalPort() + context;
+      String shardStr = buildUrl(j.getLocalPort());
       shardsArr[i] = shardStr;
       sb.append(shardStr);
     }
@@ -327,7 +321,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       if (sb.length() > 0) sb.append(',');
       int nDeadServers = r.nextInt(deadServers.length+1);
       if (nDeadServers > 0) {
-        List<String> replicas = new ArrayList<String>(Arrays.asList(deadServers));
+        List<String> replicas = new ArrayList<>(Arrays.asList(deadServers));
         Collections.shuffle(replicas, r);
         replicas.add(r.nextInt(nDeadServers+1), shard);
         for (int i=0; i<nDeadServers+1; i++) {
@@ -367,14 +361,15 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
     boolean stopAtShutdown = true;
     JettySolrRunner jetty = new JettySolrRunner
-        (solrHome.getAbsolutePath(), context, 0, solrConfigOverride, schemaOverride, stopAtShutdown, getExtraServlets());
+        (solrHome.getAbsolutePath(), context, 0, solrConfigOverride, schemaOverride, stopAtShutdown,
+          getExtraServlets(), sslConfig, getExtraRequestFilters());
     jetty.setShards(shardList);
     jetty.setDataDir(dataDir);
     if (explicitCoreNodeName) {
       jetty.setCoreNodeName(Integer.toString(nodeCnt.incrementAndGet()));
     }
     jetty.start();
-
+    
     return jetty;
   }
   
@@ -382,14 +377,18 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   public SortedMap<ServletHolder,String> getExtraServlets() {
     return null;
   }
-  
+
+  /** Override this method to insert extra filters into the JettySolrRunners that are created using createJetty() */
+  public SortedMap<Class,String> getExtraRequestFilters() {
+    return null;
+  }
+
   protected SolrServer createNewSolrServer(int port) {
     try {
       // setup the server...
-      String url = "http://127.0.0.1:" + port + context;
-      HttpSolrServer s = new HttpSolrServer(url);
+      HttpSolrServer s = new HttpSolrServer(buildUrl(port));
       s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
-      s.setSoTimeout(60000);
+      s.setSoTimeout(90000);
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);
       return s;
@@ -397,6 +396,10 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     catch (Exception ex) {
       throw new RuntimeException(ex);
     }
+  }
+  
+  protected String buildUrl(int port) {
+    return buildUrl(port, context);
   }
 
   protected void addFields(SolrInputDocument doc, Object... fields) {
@@ -424,6 +427,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     indexDoc(doc);
   }
 
+  /**
+   * Indexes the document in both the control client, and a randomly selected client
+   */
   protected void indexDoc(SolrInputDocument doc) throws IOException, SolrServerException {
     controlClient.add(doc);
 
@@ -432,6 +438,17 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     client.add(doc);
   }
   
+  /**
+   * Indexes the document in both the control client and the specified client asserting
+   * that the respones are equivilent
+   */
+  protected UpdateResponse indexDoc(SolrServer server, SolrParams params, SolrInputDocument... sdocs) throws IOException, SolrServerException {
+    UpdateResponse controlRsp = add(controlClient, params, sdocs);
+    UpdateResponse specificRsp = add(server, params, sdocs);
+    compareSolrResponses(specificRsp, controlRsp);
+    return specificRsp;
+  }
+
   protected UpdateResponse add(SolrServer server, SolrParams params, SolrInputDocument... sdocs) throws IOException, SolrServerException {
     UpdateRequest ureq = new UpdateRequest();
     ureq.setParams(new ModifiableSolrParams(params));
@@ -492,17 +509,42 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return rsp;
   }
 
-  protected void query(Object... q) throws Exception {
-    query(true, q);
+  /**
+   * Sets distributed params.
+   * Returns the QueryResponse from {@link #queryServer},
+   */
+  protected QueryResponse query(Object... q) throws Exception {
+    return query(true, q);
   }
-  
-  protected void query(boolean setDistribParams, Object[] q) throws Exception {
+
+  /**
+   * Sets distributed params.
+   * Returns the QueryResponse from {@link #queryServer},
+   */
+  protected QueryResponse query(SolrParams params) throws Exception {
+    return query(true, params);
+  }
+
+  /**
+   * Returns the QueryResponse from {@link #queryServer}  
+   */
+  protected QueryResponse query(boolean setDistribParams, Object[] q) throws Exception {
     
     final ModifiableSolrParams params = new ModifiableSolrParams();
 
     for (int i = 0; i < q.length; i += 2) {
       params.add(q[i].toString(), q[i + 1].toString());
     }
+    return query(setDistribParams, params);
+  }
+
+  /**
+   * Returns the QueryResponse from {@link #queryServer}  
+   */
+  protected QueryResponse query(boolean setDistribParams, SolrParams p) throws Exception {
+    
+    final ModifiableSolrParams params = new ModifiableSolrParams(p);
+
     // TODO: look into why passing true causes fails
     params.set("distrib", "false");
     final QueryResponse controlRsp = controlClient.query(params);
@@ -543,9 +585,13 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         thread.join();
       }
     }
+    return rsp;
   }
   
   public QueryResponse queryAndCompare(SolrParams params, SolrServer... servers) throws SolrServerException {
+    return queryAndCompare(params, Arrays.<SolrServer>asList(servers));
+  }
+  public QueryResponse queryAndCompare(SolrParams params, Iterable<SolrServer> servers) throws SolrServerException {
     QueryResponse first = null;
     for (SolrServer server : servers) {
       QueryResponse rsp = server.query(new ModifiableSolrParams(params));
@@ -783,8 +829,14 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return null;
   }
 
+  protected void compareSolrResponses(SolrResponse a, SolrResponse b) {
+    String cmp = compare(a.getResponse(), b.getResponse(), flags, handle);
+    if (cmp != null) {
+      log.error("Mismatched responses:\n" + a + "\n" + b);
+      Assert.fail(cmp);
+    }
+  }
   protected void compareResponses(QueryResponse a, QueryResponse b) {
-    String cmp;
     if (System.getProperty("remove.version.field") != null) {
       // we don't care if one has a version and the other doesnt -
       // control vs distrib
@@ -800,11 +852,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         }
       }
     }
-    cmp = compare(a.getResponse(), b.getResponse(), flags, handle);
-    if (cmp != null) {
-      log.error("Mismatched responses:\n" + a + "\n" + b);
-      Assert.fail(cmp);
-    }
+    compareSolrResponses(a, b);
   }
 
   @Test
@@ -879,4 +927,5 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       FileUtils.copyFile(new File(getSolrHome(), solrxml), new File(jettyHome, "solr.xml"));
     }
   }
+
 }

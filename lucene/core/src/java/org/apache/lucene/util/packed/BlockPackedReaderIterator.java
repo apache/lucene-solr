@@ -17,9 +17,12 @@ package org.apache.lucene.util.packed;
  * limitations under the License.
  */
 
-import static org.apache.lucene.util.packed.BlockPackedWriter.BPV_SHIFT;
-import static org.apache.lucene.util.packed.BlockPackedWriter.MIN_VALUE_EQUALS_0;
-import static org.apache.lucene.util.packed.BlockPackedWriter.checkBlockSize;
+import static org.apache.lucene.util.BitUtil.zigZagDecode;
+import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.BPV_SHIFT;
+import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.MAX_BLOCK_SIZE;
+import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.MIN_BLOCK_SIZE;
+import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.MIN_VALUE_EQUALS_0;
+import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -35,10 +38,6 @@ import org.apache.lucene.util.LongsRef;
  * @lucene.internal
  */
 public final class BlockPackedReaderIterator {
-
-  static long zigZagDecode(long n) {
-    return ((n >>> 1) ^ -(n & 1));
-  }
 
   // same as DataInput.readVLong but supports negative values
   static long readVLong(DataInput in) throws IOException {
@@ -87,7 +86,7 @@ public final class BlockPackedReaderIterator {
    *                  been used to write the stream
    */
   public BlockPackedReaderIterator(DataInput in, int packedIntsVersion, int blockSize, long valueCount) {
-    checkBlockSize(blockSize);
+    checkBlockSize(blockSize, MIN_BLOCK_SIZE, MAX_BLOCK_SIZE);
     this.packedIntsVersion = packedIntsVersion;
     this.blockSize = blockSize;
     this.values = new long[blockSize];

@@ -17,7 +17,6 @@ package org.apache.lucene.search.highlight;
  */
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -25,7 +24,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
@@ -78,7 +76,7 @@ public class Highlighter
   public final String getBestFragment(Analyzer analyzer, String fieldName,String text)
     throws IOException, InvalidTokenOffsetsException
   {
-    TokenStream tokenStream = analyzer.tokenStream(fieldName, new StringReader(text));
+    TokenStream tokenStream = analyzer.tokenStream(fieldName, text);
     return getBestFragment(tokenStream, text);
   }
 
@@ -130,7 +128,7 @@ public class Highlighter
     int maxNumFragments)
     throws IOException, InvalidTokenOffsetsException
   {
-    TokenStream tokenStream = analyzer.tokenStream(fieldName, new StringReader(text));
+    TokenStream tokenStream = analyzer.tokenStream(fieldName, text);
     return getBestFragments(tokenStream, text, maxNumFragments);
   }
 
@@ -158,7 +156,7 @@ public class Highlighter
     TextFragment[] frag =getBestTextFragments(tokenStream,text, true,maxNumFragments);
 
     //Get text
-    ArrayList<String> fragTexts = new ArrayList<String>();
+    ArrayList<String> fragTexts = new ArrayList<>();
     for (int i = 0; i < frag.length; i++)
     {
       if ((frag[i] != null) && (frag[i].getScore() > 0))
@@ -184,7 +182,7 @@ public class Highlighter
     int maxNumFragments)
     throws IOException, InvalidTokenOffsetsException
   {
-    ArrayList<TextFragment> docFrags = new ArrayList<TextFragment>();
+    ArrayList<TextFragment> docFrags = new ArrayList<>();
     StringBuilder newText=new StringBuilder();
 
     CharTermAttribute termAtt = tokenStream.addAttribute(CharTermAttribute.class);
@@ -329,7 +327,7 @@ public class Highlighter
       if(mergeContiguousFragments)
       {
         mergeContiguousFragments(frag);
-        ArrayList<TextFragment> fragTexts = new ArrayList<TextFragment>();
+        ArrayList<TextFragment> fragTexts = new ArrayList<>();
         for (int i = 0; i < frag.length; i++)
         {
           if ((frag[i] != null) && (frag[i].getScore() > 0))

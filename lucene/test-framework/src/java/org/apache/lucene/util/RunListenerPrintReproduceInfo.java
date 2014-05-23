@@ -42,7 +42,7 @@ public final class RunListenerPrintReproduceInfo extends RunListener {
    * A list of all test suite classes executed so far in this JVM (ehm, 
    * under this class's classloader).
    */
-  private static List<String> testClassesRun = new ArrayList<String>();
+  private static List<String> testClassesRun = new ArrayList<>();
 
   /**
    * The currently executing scope.
@@ -88,10 +88,25 @@ public final class RunListenerPrintReproduceInfo extends RunListener {
   @Override
   public void testFinished(Description description) throws Exception {
     if (testFailed) {
-      reportAdditionalFailureInfo(description.getMethodName());
+      reportAdditionalFailureInfo(
+          stripTestNameAugmentations(
+              description.getMethodName()));
     }
     scope = LifecycleScope.SUITE;
     testFailed = false;
+  }
+
+  /**
+   * The {@link Description} object in JUnit does not expose the actual test method,
+   * instead it has the concept of a unique "name" of a test. To run the same method (tests)
+   * repeatedly, randomizedtesting must make those "names" unique: it appends the current iteration
+   * and seeds to the test method's name. We strip this information here.   
+   */
+  private String stripTestNameAugmentations(String methodName) {
+    if (methodName != null) {
+      methodName = methodName.replaceAll("\\s*\\{.+?\\}", "");
+    }
+    return methodName;
   }
 
   @Override

@@ -37,6 +37,7 @@ import org.apache.lucene.util.IOUtils;
  * @see Lucene40FieldInfosFormat
  * @lucene.experimental
  */
+@Deprecated
 public class Lucene40FieldInfosWriter extends FieldInfosWriter {
 
   /** Sole constructor. */
@@ -44,7 +45,7 @@ public class Lucene40FieldInfosWriter extends FieldInfosWriter {
   }
   
   @Override
-  public void write(Directory directory, String segmentName, FieldInfos infos, IOContext context) throws IOException {
+  public void write(Directory directory, String segmentName, String segmentSuffix, FieldInfos infos, IOContext context) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(segmentName, "", Lucene40FieldInfosFormat.FIELD_INFOS_EXTENSION);
     IndexOutput output = directory.createOutput(fileName, context);
     boolean success = false;

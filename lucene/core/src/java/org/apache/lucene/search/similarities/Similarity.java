@@ -88,10 +88,8 @@ import org.apache.lucene.util.SmallFloat; // javadoc
  *       is called for each query leaf node, {@link Similarity#queryNorm(float)} is called for the top-level
  *       query, and finally {@link Similarity.SimWeight#normalize(float, float)} passes down the normalization value
  *       and any top-level boosts (e.g. from enclosing {@link BooleanQuery}s).
- *   <li>For each segment in the index, the Query creates a {@link #exactSimScorer(SimWeight, AtomicReaderContext)}
- *       (for queries with exact frequencies such as TermQuerys and exact PhraseQueries) or a 
- *       {@link #sloppySimScorer(SimWeight, AtomicReaderContext)} (for queries with sloppy frequencies such as
- *       SpanQuerys and sloppy PhraseQueries). The score() method is called for each matching document.
+ *   <li>For each segment in the index, the Query creates a {@link #simScorer(SimWeight, AtomicReaderContext)}
+ *       The score() method is called for each matching document.
  * </ol>
  * <p>
  * <a name="explaintime"/>
@@ -166,76 +164,31 @@ public abstract class Similarity {
    * @return SimWeight object with the information this Similarity needs to score a query.
    */
   public abstract SimWeight computeWeight(float queryBoost, CollectionStatistics collectionStats, TermStatistics... termStats);
-  
+
   /**
-   * Creates a new {@link Similarity.ExactSimScorer} to score matching documents from a segment of the inverted index.
-   * @param weight collection information from {@link #computeWeight(float, CollectionStatistics, TermStatistics...)}
-   * @param context segment of the inverted index to be scored.
-   * @return ExactSimScorer for scoring documents across <code>context</code>
-   * @throws IOException if there is a low-level I/O error
-   */
-  public abstract ExactSimScorer exactSimScorer(SimWeight weight, AtomicReaderContext context) throws IOException;
-  
-  /**
-   * Creates a new {@link Similarity.SloppySimScorer} to score matching documents from a segment of the inverted index.
+   * Creates a new {@link Similarity.SimScorer} to score matching documents from a segment of the inverted index.
    * @param weight collection information from {@link #computeWeight(float, CollectionStatistics, TermStatistics...)}
    * @param context segment of the inverted index to be scored.
    * @return SloppySimScorer for scoring documents across <code>context</code>
    * @throws IOException if there is a low-level I/O error
    */
-  public abstract SloppySimScorer sloppySimScorer(SimWeight weight, AtomicReaderContext context) throws IOException;
+  public abstract SimScorer simScorer(SimWeight weight, AtomicReaderContext context) throws IOException;
   
   /**
-   * API for scoring exact queries such as {@link TermQuery} and 
-   * exact {@link PhraseQuery}.
-   * <p>
-   * Frequencies are integers (the term or phrase frequency within the document)
-   */
-  public static abstract class ExactSimScorer {
-    
-    /**
-     * Sole constructor. (For invocation by subclass 
-     * constructors, typically implicit.)
-     */
-    public ExactSimScorer() {}
-
-    /**
-     * Score a single document
-     * @param doc document id
-     * @param freq term frequency
-     * @return document's score
-     */
-    public abstract float score(int doc, int freq);
-    
-    /**
-     * Explain the score for a single document
-     * @param doc document id
-     * @param freq Explanation of how the term frequency was computed
-     * @return document's score
-     */
-    public Explanation explain(int doc, Explanation freq) {
-      Explanation result = new Explanation(score(doc, (int)freq.getValue()), 
-          "score(doc=" + doc + ",freq=" + freq.getValue() +"), with freq of:");
-      result.addDetail(freq);
-      return result;
-    }
-  }
-  
-  /**
-   * API for scoring "sloppy" queries such as {@link SpanQuery} and 
-   * sloppy {@link PhraseQuery}.
+   * API for scoring "sloppy" queries such as {@link TermQuery},
+   * {@link SpanQuery}, and {@link PhraseQuery}.
    * <p>
    * Frequencies are floating-point values: an approximate 
    * within-document frequency adjusted for "sloppiness" by 
-   * {@link SloppySimScorer#computeSlopFactor(int)}.
+   * {@link SimScorer#computeSlopFactor(int)}.
    */
-  public static abstract class SloppySimScorer {
+  public static abstract class SimScorer {
     
     /**
      * Sole constructor. (For invocation by subclass 
      * constructors, typically implicit.)
      */
-    public SloppySimScorer() {}
+    public SimScorer() {}
 
     /**
      * Score a single document

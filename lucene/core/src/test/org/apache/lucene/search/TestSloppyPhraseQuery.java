@@ -148,7 +148,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     assertEquals("slop: "+slop+"  query: "+query+"  doc: "+doc+"  Wrong number of hits", expectedNumResults, c.totalHits);
 
     //QueryUtils.check(query,searcher);
-    writer.close();
+    writer.shutdown();
     reader.close();
     ramDir.close();
 
@@ -175,7 +175,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     return query;
   }
 
-  static class MaxFreqCollector extends Collector {
+  static class MaxFreqCollector extends SimpleCollector {
     float max;
     int totalHits;
     Scorer scorer;
@@ -192,10 +192,6 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {      
-    }
-
-    @Override
     public boolean acceptsDocsOutOfOrder() {
       return false;
     }
@@ -203,7 +199,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
   
   /** checks that no scores or freqs are infinite */
   private void assertSaneScoring(PhraseQuery pq, IndexSearcher searcher) throws Exception {
-    searcher.search(pq, new Collector() {
+    searcher.search(pq, new SimpleCollector() {
       Scorer scorer;
       
       @Override
@@ -215,11 +211,6 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
       public void collect(int doc) throws IOException {
         assertFalse(Float.isInfinite(scorer.freq()));
         assertFalse(Float.isInfinite(scorer.score()));
-      }
-      
-      @Override
-      public void setNextReader(AtomicReaderContext context) {
-        // do nothing
       }
       
       @Override
@@ -248,7 +239,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     f.setStringValue("drug druggy drug druggy drug");
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
-    iw.close();
+    iw.shutdown();
     IndexSearcher is = newSearcher(ir);
     
     PhraseQuery pq = new PhraseQuery();
@@ -275,7 +266,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     doc.add(newField("lyrics", document, new FieldType(TextField.TYPE_NOT_STORED)));
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
-    iw.close();
+    iw.shutdown();
     
     IndexSearcher is = newSearcher(ir);
     PhraseQuery pq = new PhraseQuery();
@@ -328,7 +319,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
      doc.add(newField("lyrics", document, new FieldType(TextField.TYPE_NOT_STORED)));
      iw.addDocument(doc);
      IndexReader ir = iw.getReader();
-     iw.close();
+     iw.shutdown();
         
      IndexSearcher is = newSearcher(ir);
      

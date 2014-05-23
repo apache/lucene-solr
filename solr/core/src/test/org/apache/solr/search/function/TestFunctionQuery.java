@@ -19,7 +19,6 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.solr.SolrTestCaseJ4;
@@ -28,9 +27,11 @@ import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.Ignore;
+
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -49,11 +50,12 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   
   String base = "external_foo_extf";
   static long start = System.currentTimeMillis();
-  void makeExternalFile(String field, String contents, String charset) {
+  
+  void makeExternalFile(String field, String contents) {
     String dir = h.getCore().getDataDir();
     String filename = dir + "/external_" + field + "." + (start++);
     try {
-      Writer out = new OutputStreamWriter(new FileOutputStream(filename), charset);
+      Writer out = new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8);
       out.write(contents);
       out.close();
     } catch (Exception e) {
@@ -103,7 +105,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   void singleTest(String field, String funcTemplate, List<String> args, float... results) {
     String parseableQuery = func(field, funcTemplate);
 
-    List<String> nargs = new ArrayList<String>(Arrays.asList("q", parseableQuery
+    List<String> nargs = new ArrayList<>(Arrays.asList("q", parseableQuery
             ,"fl", "*,score"
             ,"indent","on"
             ,"rows","100"));
@@ -114,10 +116,10 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
       }
     }
 
-    List<String> tests = new ArrayList<String>();
+    List<String> tests = new ArrayList<>();
 
     // Construct xpaths like the following:
-    // "//doc[./float[@name='foo_pf']='10.0' and ./float[@name='score']='10.0']"
+    // "//doc[./float[@name='foo_f']='10.0' and ./float[@name='score']='10.0']"
 
     for (int i=0; i<results.length; i+=2) {
       String xpath = "//doc[./float[@name='" + "id" + "']='"
@@ -172,6 +174,9 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
     singleTest(field,"map(\0,0,0,500)",10,10, -4,-4, 0,500);
     singleTest(field,"map(\0,-4,5,500)",100,100, -4,500, 0,500, 5,500, 10,10, 25,25);
+    singleTest(field,"map(\0,0,0,sum(\0,500))",10,10, -4,-4, 0,500);
+    singleTest(field,"map(\0,0,0,sum(\0,500),sum(\0,1))",10,11, -4,-3, 0,500);
+    singleTest(field,"map(\0,-4,5,sum(\0,1))",100,100, -4,-3, 0,1, 5,6, 10,10, 25,25);
 
     singleTest(field,"scale(\0,-1,1)",-4,-1, 100,1, 0,-0.9230769f);
     singleTest(field,"scale(\0,-10,1000)",-4,-10, 100,1000, 0,28.846153f);
@@ -196,13 +201,10 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     singleTest(field,"sum(query($v1,5),query($v1,7))",
             Arrays.asList("v1","\0:[* TO *]"),  88,12
             );
-
-    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity
   }
 
   @Test
   public void testFunctions() {
-    doTest("foo_pf");  // a plain float field
     doTest("foo_f");  // a sortable float field
     doTest("foo_tf");  // a trie float field
   }
@@ -216,7 +218,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     createIndex(null,ids);
 
     // Unsorted field, largest first
-    makeExternalFile(field, "54321=543210\n0=-999\n25=250","UTF-8");
+    makeExternalFile(field, "54321=543210\n0=-999\n25=250");
     // test identity (straight field value)
     singleTest(field, "\0", 54321, 543210, 0,-999, 25,250, 100, 1);
     Object orig = FileFloatSource.onlyForTesting;
@@ -226,7 +228,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     singleTest(field, "sqrt(\0)");
     assertTrue(orig == FileFloatSource.onlyForTesting);
 
-    makeExternalFile(field, "0=1","UTF-8");
+    makeExternalFile(field, "0=1");
     assertU(h.query("/reloadCache",lrf.makeRequest("","")));
     singleTest(field, "sqrt(\0)");
     assertTrue(orig != FileFloatSource.onlyForTesting);
@@ -260,7 +262,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
       for (int j=0; j<len; j++) {
         sb.append("" + ids[j] + "=" + vals[j]+"\n");        
       }
-      makeExternalFile(field, sb.toString(),"UTF-8");
+      makeExternalFile(field, sb.toString());
 
       // make it visible
       assertU(h.query("/reloadCache",lrf.makeRequest("","")));
@@ -278,9 +280,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
       singleTest(field, "\0", answers);
       // System.out.println("Done test "+i);
-    }
-
-    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity    
+    }  
   }
 
   @Test
@@ -291,7 +291,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertU(adoc("id", "992", keyField, "BBB"));
     assertU(adoc("id", "993", keyField, "CCC=CCC"));
     assertU(commit());
-    makeExternalFile(extField, "AAA=AAA=543210\nBBB=-8\nCCC=CCC=250","UTF-8");
+    makeExternalFile(extField, "AAA=AAA=543210\nBBB=-8\nCCC=CCC=250");
     singleTest(extField,"\0",991,543210,992,-8,993,250);
   }
 
@@ -303,7 +303,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertU(adoc("id", "992", keyField, "92"));
     assertU(adoc("id", "993", keyField, "93"));
     assertU(commit());
-    makeExternalFile(extField, "91=543210\n92=-8\n93=250\n=67","UTF-8");
+    makeExternalFile(extField, "91=543210\n92=-8\n93=250\n=67");
     singleTest(extField,"\0",991,543210,992,-8,993,250);
   }
 
@@ -417,9 +417,6 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
            ,"*//doc[1]/float[.='120.0']"
            ,"*//doc[2]/float[.='121.0']"
     );
-
-
-    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity
   }
 
   /**
@@ -621,7 +618,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     createIndex(null,ids);
 
     // Unsorted field, largest first
-    makeExternalFile(field, "54321=543210\n0=-999\n25=250","UTF-8");
+    makeExternalFile(field, "54321=543210\n0=-999\n25=250");
     // test identity (straight field value)
     singleTest(fieldAsFunc, "\0", 54321, 543210, 0,-999, 25,250, 100, 1);
     Object orig = FileFloatSource.onlyForTesting;
@@ -631,13 +628,11 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     singleTest(fieldAsFunc, "sqrt(\0)");
     assertTrue(orig == FileFloatSource.onlyForTesting);
 
-    makeExternalFile(field, "0=1","UTF-8");
+    makeExternalFile(field, "0=1");
     assertU(adoc("id", "10000")); // will get same reader if no index change
     assertU(commit());   
     singleTest(fieldAsFunc, "sqrt(\0)");
-    assertTrue(orig != FileFloatSource.onlyForTesting);
-
-    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity    
+    assertTrue(orig != FileFloatSource.onlyForTesting);  
   }
 
   /**
@@ -662,9 +657,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
                100,100,  -4,-4,  0,0,  10,10,  25,25,  5,5,  77,77,  1,1);
     singleTest(fieldAsFunc, "sqrt(\0)", 
                100,10,  25,5,  0,0,   1,1);
-    singleTest(fieldAsFunc, "log(\0)",  1,0);
-
-    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity    
+    singleTest(fieldAsFunc, "log(\0)",  1,0); 
   }
 
     @Test
@@ -721,6 +714,33 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
     assertJQ(req("q", "id:1", "fl", "a:1,b:2.0,c:'X',d:{!func}foo_s,e:{!func}bar_s")  // if exists() is false, no pseudo-field should be added
         , "/response/docs/[0]=={'a':1, 'b':2.0,'c':'X','d':'A'}");
+  }
+
+  public void testMissingFieldFunctionBehavior() throws Exception {
+    clearIndex();
+    // add a doc that has no values in any interesting fields
+    assertU(adoc("id", "1"));
+    assertU(commit());
+
+    // it's important that these functions not only use fields that
+    // out doc have no values for, but also that that no other doc ever added
+    // to the index might have ever had a value for, so that the segment
+    // term metadata doesn't exist
+    
+    for (String suffix : new String[] {"s", "b", "dt", "tdt",
+                                       "i", "l", "f", "d", 
+                                       "ti", "tl", "tf", "td"    }) {
+      final String field = "no__vals____" + suffix;
+      assertQ(req("q","id:1",
+                  "fl","noval_if:if("+field+",42,-99)",
+                  "fl","noval_def:def("+field+",-99)",
+                  "fl","noval_not:not("+field+")",
+                  "fl","noval_exists:exists("+field+")"),
+              "//long[@name='noval_if']='-99'",
+              "//long[@name='noval_def']='-99'",
+              "//bool[@name='noval_not']='true'",
+              "//bool[@name='noval_exists']='false'");
+    }
   }
 
 }

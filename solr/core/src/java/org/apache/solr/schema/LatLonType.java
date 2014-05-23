@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.spatial4j.core.shape.Point;
+
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
@@ -29,6 +31,7 @@ import org.apache.lucene.index.StorableField;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.VectorValueSource;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ComplexExplanation;
@@ -38,6 +41,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.Bits;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
@@ -49,9 +53,9 @@ import org.apache.solr.search.SpatialOptions;
 
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
-import com.spatial4j.core.exception.InvalidShapeException;
-import com.spatial4j.core.io.ParseUtils;
 import com.spatial4j.core.shape.Rectangle;
+
+import org.apache.solr.util.SpatialUtils;
 
 
 /**
@@ -71,24 +75,16 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   @Override
   public List<StorableField> createFields(SchemaField field, Object value, float boost) {
     String externalVal = value.toString();
-    //we could have tileDiff + 3 fields (two for the lat/lon, one for storage)
-    List<StorableField> f = new ArrayList<StorableField>(3);
+    //we could have 3 fields (two for the lat & lon, one for storage)
+    List<StorableField> f = new ArrayList<>(3);
     if (field.indexed()) {
-      int i = 0;
-      double[] latLon;
-      try {
-        latLon = ParseUtils.parseLatitudeLongitude(null, externalVal);
-      } catch (InvalidShapeException e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-      }
+      Point point = SpatialUtils.parsePointSolrException(externalVal, SpatialContext.GEO);
       //latitude
-      SchemaField lat = subField(field, i, schema);
-      f.add(lat.createField(String.valueOf(latLon[LAT]), lat.indexed() && !lat.omitNorms() ? boost : 1f));
-      i++;
+      SchemaField subLatSF = subField(field, LAT, schema);
+      f.add(subLatSF.createField(String.valueOf(point.getY()), subLatSF.indexed() && !subLatSF.omitNorms() ? boost : 1f));
       //longitude
-      SchemaField lon = subField(field, i, schema);
-      f.add(lon.createField(String.valueOf(latLon[LON]), lon.indexed() && !lon.omitNorms() ? boost : 1f));
-
+      SchemaField subLonSF = subField(field, LON, schema);
+      f.add(subLonSF.createField(String.valueOf(point.getX()), subLonSF.indexed() && !subLonSF.omitNorms() ? boost : 1f));
     }
 
     if (field.stored()) {
@@ -102,59 +98,43 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
 
   @Override
   public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
-    int dimension = 2;
+    Point p1 = SpatialUtils.parsePointSolrException(part1, SpatialContext.GEO);
+    Point p2 = SpatialUtils.parsePointSolrException(part2, SpatialContext.GEO);
 
-    String[] p1;
-    String[] p2;
-    try {
-      p1 = ParseUtils.parsePoint(null, part1, dimension);
-      p2 = ParseUtils.parsePoint(null, part2, dimension);
-    } catch (InvalidShapeException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-    }
+    SchemaField latSF = subField(field, LAT, parser.getReq().getSchema());
+    SchemaField lonSF = subField(field, LON, parser.getReq().getSchema());
     BooleanQuery result = new BooleanQuery(true);
-    for (int i = 0; i < dimension; i++) {
-      SchemaField subSF = subField(field, i, parser.getReq().getSchema());
-      // points must currently be ordered... should we support specifying any two opposite corner points?
-      result.add(subSF.getType().getRangeQuery(parser, subSF, p1[i], p2[i], minInclusive, maxInclusive), BooleanClause.Occur.MUST);
-    }
+    // points must currently be ordered... should we support specifying any two opposite corner points?
+    result.add(latSF.getType().getRangeQuery(parser, latSF,
+        Double.toString(p1.getY()), Double.toString(p2.getY()), minInclusive, maxInclusive), BooleanClause.Occur.MUST);
+    result.add(lonSF.getType().getRangeQuery(parser, lonSF,
+        Double.toString(p1.getX()), Double.toString(p2.getX()), minInclusive, maxInclusive), BooleanClause.Occur.MUST);
     return result;
-
   }
 
   @Override
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
-    int dimension = 2;
-    
-    String[] p1 = new String[0];
-    try {
-      p1 = ParseUtils.parsePoint(null, externalVal, dimension);
-    } catch (InvalidShapeException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-    }
-    BooleanQuery bq = new BooleanQuery(true);
-    for (int i = 0; i < dimension; i++) {
-      SchemaField sf = subField(field, i, parser.getReq().getSchema());
-      Query tq = sf.getType().getFieldQuery(parser, sf, p1[i]);
-      bq.add(tq, BooleanClause.Occur.MUST);
-    }
-    return bq;
+    Point p1 = SpatialUtils.parsePointSolrException(externalVal, SpatialContext.GEO);
+
+    SchemaField latSF = subField(field, LAT, parser.getReq().getSchema());
+    SchemaField lonSF = subField(field, LON, parser.getReq().getSchema());
+    BooleanQuery result = new BooleanQuery(true);
+    result.add(latSF.getType().getFieldQuery(parser, latSF,
+        Double.toString(p1.getY())), BooleanClause.Occur.MUST);
+    result.add(lonSF.getType().getFieldQuery(parser, lonSF,
+        Double.toString(p1.getX())), BooleanClause.Occur.MUST);
+    return result;
   }
 
 
 
   @Override
   public Query createSpatialQuery(QParser parser, SpatialOptions options) {
-    double[] point = null;
-    try {
-      point = ParseUtils.parseLatitudeLongitude(options.pointStr);
-    } catch (InvalidShapeException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-    }
+    Point point = SpatialUtils.parsePointSolrException(options.pointStr, SpatialContext.GEO);
 
     // lat & lon in degrees
-    double latCenter = point[LAT];
-    double lonCenter = point[LON];
+    double latCenter = point.getY();
+    double lonCenter = point.getX();
     
     double distDeg = DistanceUtils.dist2Degrees(options.distance, options.radius);
     Rectangle bbox = DistanceUtils.calcBoxByDistFromPtDEG(latCenter, lonCenter, distDeg, SpatialContext.GEO, null);
@@ -176,8 +156,8 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
     IndexSchema schema = parser.getReq().getSchema();
     
     // Now that we've figured out the ranges, build them!
-    SchemaField latField = subField(options.field, LAT, schema);
-    SchemaField lonField = subField(options.field, LON, schema);
+    SchemaField latSF = subField(options.field, LAT, schema);
+    SchemaField lonSF = subField(options.field, LON, schema);
 
     SpatialDistanceQuery spatial = new SpatialDistanceQuery();
 
@@ -185,14 +165,14 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
     if (options.bbox) {
       BooleanQuery result = new BooleanQuery();
 
-      Query latRange = latField.getType().getRangeQuery(parser, latField,
+      Query latRange = latSF.getType().getRangeQuery(parser, latSF,
                 String.valueOf(latMin),
                 String.valueOf(latMax),
                 true, true);
       result.add(latRange, BooleanClause.Occur.MUST);
 
       if (lonMin != -180 || lonMax != 180) {
-        Query lonRange = lonField.getType().getRangeQuery(parser, lonField,
+        Query lonRange = lonSF.getType().getRangeQuery(parser, lonSF,
                 String.valueOf(lonMin),
                 String.valueOf(lonMax),
                 true, true);
@@ -201,7 +181,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
           BooleanQuery bothLons = new BooleanQuery();
           bothLons.add(lonRange, BooleanClause.Occur.SHOULD);
 
-          lonRange = lonField.getType().getRangeQuery(parser, lonField,
+          lonRange = lonSF.getType().getRangeQuery(parser, lonSF,
                 String.valueOf(lon2Min),
                 String.valueOf(lon2Max),
                 true, true);
@@ -218,8 +198,8 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
 
 
     spatial.origField = options.field.getName();
-    spatial.latSource = latField.getType().getValueSource(latField, parser);
-    spatial.lonSource = lonField.getType().getValueSource(lonField, parser);
+    spatial.latSource = latSF.getType().getValueSource(latSF, parser);
+    spatial.lonSource = lonSF.getType().getValueSource(lonSF, parser);
     spatial.latMin = latMin;
     spatial.latMax = latMax;
     spatial.lonMin = lonMin;
@@ -240,7 +220,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
-    ArrayList<ValueSource> vs = new ArrayList<ValueSource>(2);
+    ArrayList<ValueSource> vs = new ArrayList<>(2);
     for (int i = 0; i < 2; i++) {
       SchemaField sub = subField(field, i, parser.getReq().getSchema());
       vs.add(sub.getType().getValueSource(sub, parser));
@@ -261,6 +241,11 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
     throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Sorting not supported on LatLonType " + field.getName());
+  }
+  
+  @Override
+  public Type getUninversionType(SchemaField sf) {
+    return null;
   }
 
 
@@ -357,14 +342,13 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, Bits acceptDocs) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
       return new SpatialScorer(context, acceptDocs, this, queryWeight);
     }
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      return ((SpatialScorer)scorer(context, true, true, context.reader().getLiveDocs())).explain(doc);
+      return ((SpatialScorer)scorer(context, context.reader().getLiveDocs())).explain(doc);
     }
   }
 
@@ -547,14 +531,14 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     @Override
     public void collect(int doc) throws IOException {
       spatialScorer.doc = doc;
-      if (spatialScorer.match()) delegate.collect(doc);
+      if (spatialScorer.match()) leafDelegate.collect(doc);
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+      super.doSetNextReader(context);
       maxdoc = context.reader().maxDoc();
       spatialScorer = new SpatialScorer(context, null, weight, 1.0f);
-      super.setNextReader(context);
     }
   }
 

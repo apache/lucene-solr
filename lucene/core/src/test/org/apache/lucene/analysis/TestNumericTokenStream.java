@@ -31,18 +31,19 @@ public class TestNumericTokenStream extends BaseTokenStreamTestCase {
 
   public void testLongStream() throws Exception {
     final NumericTokenStream stream=new NumericTokenStream().setLongValue(lvalue);
-    // use getAttribute to test if attributes really exist, if not an IAE will be throwed
     final TermToBytesRefAttribute bytesAtt = stream.getAttribute(TermToBytesRefAttribute.class);
+    assertNotNull(bytesAtt);
     final TypeAttribute typeAtt = stream.getAttribute(TypeAttribute.class);
+    assertNotNull(typeAtt);
     final NumericTokenStream.NumericTermAttribute numericAtt = stream.getAttribute(NumericTokenStream.NumericTermAttribute.class);
+    assertNotNull(numericAtt);
     final BytesRef bytes = bytesAtt.getBytesRef();
     stream.reset();
     assertEquals(64, numericAtt.getValueSize());
     for (int shift=0; shift<64; shift+=NumericUtils.PRECISION_STEP_DEFAULT) {
       assertTrue("New token is available", stream.incrementToken());
       assertEquals("Shift value wrong", shift, numericAtt.getShift());
-      final int hash = bytesAtt.fillBytesRef();
-      assertEquals("Hash incorrect", bytes.hashCode(), hash);
+      bytesAtt.fillBytesRef();
       assertEquals("Term is incorrectly encoded", lvalue & ~((1L << shift) - 1L), NumericUtils.prefixCodedToLong(bytes));
       assertEquals("Term raw value is incorrectly encoded", lvalue & ~((1L << shift) - 1L), numericAtt.getRawValue());
       assertEquals("Type incorrect", (shift == 0) ? NumericTokenStream.TOKEN_TYPE_FULL_PREC : NumericTokenStream.TOKEN_TYPE_LOWER_PREC, typeAtt.type());
@@ -54,18 +55,19 @@ public class TestNumericTokenStream extends BaseTokenStreamTestCase {
 
   public void testIntStream() throws Exception {
     final NumericTokenStream stream=new NumericTokenStream().setIntValue(ivalue);
-    // use getAttribute to test if attributes really exist, if not an IAE will be throwed
     final TermToBytesRefAttribute bytesAtt = stream.getAttribute(TermToBytesRefAttribute.class);
+    assertNotNull(bytesAtt);
     final TypeAttribute typeAtt = stream.getAttribute(TypeAttribute.class);
+    assertNotNull(typeAtt);
     final NumericTokenStream.NumericTermAttribute numericAtt = stream.getAttribute(NumericTokenStream.NumericTermAttribute.class);
+    assertNotNull(numericAtt);
     final BytesRef bytes = bytesAtt.getBytesRef();
     stream.reset();
     assertEquals(32, numericAtt.getValueSize());
     for (int shift=0; shift<32; shift+=NumericUtils.PRECISION_STEP_DEFAULT) {
       assertTrue("New token is available", stream.incrementToken());
       assertEquals("Shift value wrong", shift, numericAtt.getShift());
-      final int hash = bytesAtt.fillBytesRef();
-      assertEquals("Hash incorrect", bytes.hashCode(), hash);
+      bytesAtt.fillBytesRef();
       assertEquals("Term is incorrectly encoded", ivalue & ~((1 << shift) - 1), NumericUtils.prefixCodedToInt(bytes));
       assertEquals("Term raw value is incorrectly encoded", ((long) ivalue) & ~((1L << shift) - 1L), numericAtt.getRawValue());
       assertEquals("Type incorrect", (shift == 0) ? NumericTokenStream.TOKEN_TYPE_FULL_PREC : NumericTokenStream.TOKEN_TYPE_LOWER_PREC, typeAtt.type());

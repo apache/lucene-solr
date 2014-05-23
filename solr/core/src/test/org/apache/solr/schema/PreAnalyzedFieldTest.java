@@ -72,7 +72,7 @@ public class PreAnalyzedFieldTest extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml","schema.xml");
+    initCore("solrconfig-minimal.xml","schema-preanalyzed.xml");
   }
 
   @Override
@@ -85,7 +85,7 @@ public class PreAnalyzedFieldTest extends SolrTestCaseJ4 {
   public void testValidSimple() {
     PreAnalyzedField paf = new PreAnalyzedField();
     // use Simple format
-    HashMap<String,String> args = new HashMap<String,String>();
+    HashMap<String,String> args = new HashMap<>();
     args.put(PreAnalyzedField.PARSER_IMPL, SimplePreAnalyzedParser.class.getName());
     paf.init(h.getCore().getLatestSchema(), args);
     PreAnalyzedParser parser = new SimplePreAnalyzedParser();
@@ -100,6 +100,12 @@ public class PreAnalyzedFieldTest extends SolrTestCaseJ4 {
         fail("Should pass: '" + s + "', exception: " + e);
       }
     }
+  }
+
+  @Test
+  public void testValidSimple2() {
+    assertU(adoc("id", "1",
+                 "pre", "{\"v\":\"1\",\"str\":\"document one\",\"tokens\":[{\"t\":\"one\"},{\"t\":\"two\"},{\"t\":\"three\",\"i\":100}]}"));
   }
   
   @Test
@@ -128,7 +134,7 @@ public class PreAnalyzedFieldTest extends SolrTestCaseJ4 {
   public void testParsers() {
     PreAnalyzedField paf = new PreAnalyzedField();
     // use Simple format
-    HashMap<String,String> args = new HashMap<String,String>();
+    HashMap<String,String> args = new HashMap<>();
     args.put(PreAnalyzedField.PARSER_IMPL, SimplePreAnalyzedParser.class.getName());
     paf.init(h.getCore().getLatestSchema(), args);
     try {

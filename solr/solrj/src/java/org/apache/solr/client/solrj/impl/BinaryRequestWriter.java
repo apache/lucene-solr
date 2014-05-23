@@ -41,12 +41,12 @@ public class BinaryRequestWriter extends RequestWriter {
     if (req instanceof UpdateRequest) {
       UpdateRequest updateRequest = (UpdateRequest) req;
       if (isNull(updateRequest.getDocuments()) &&
-              isNull(updateRequest.getDeleteById()) &&
+              isNull(updateRequest.getDeleteByIdMap()) &&
               isNull(updateRequest.getDeleteQuery())
               && (updateRequest.getDocIterator() == null) ) {
         return null;
       }
-      List<ContentStream> l = new ArrayList<ContentStream>();
+      List<ContentStream> l = new ArrayList<>();
       l.add(new LazyContentStream(updateRequest));
       return l;
     } else {

@@ -130,7 +130,7 @@ public class TestFilterAtomicReader extends LuceneTestCase {
     d3.add(newTextField("default", "two four", Field.Store.YES));
     writer.addDocument(d3);
 
-    writer.close();
+    writer.shutdown();
 
     Directory target = newDirectory();
 
@@ -140,7 +140,7 @@ public class TestFilterAtomicReader extends LuceneTestCase {
     writer = new IndexWriter(target, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     IndexReader reader = new TestReader(DirectoryReader.open(directory));
     writer.addIndexes(reader);
-    writer.close();
+    writer.shutdown();
     reader.close();
     reader = DirectoryReader.open(target);
     

@@ -26,7 +26,7 @@ import java.util.List;
 public abstract class RangeFacet<B, G> {
 
   private final String name;
-  private final List<Count> counts = new ArrayList<Count>();
+  private final List<Count> counts = new ArrayList<>();
 
   private final B start;
   private final B end;

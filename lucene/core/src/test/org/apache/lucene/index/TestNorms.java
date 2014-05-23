@@ -29,12 +29,14 @@ import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Test that norms info is preserved during index life - including
@@ -45,27 +47,37 @@ import org.apache.lucene.util._TestUtil;
 public class TestNorms extends LuceneTestCase {
   final String byteTestField = "normsTestByte";
 
-  class CustomNormEncodingSimilarity extends DefaultSimilarity {
+  class CustomNormEncodingSimilarity extends TFIDFSimilarity {
+
     @Override
-    public byte encodeNormValue(float f) {
-      return (byte) f;
+    public long encodeNormValue(float f) {
+      return (long) f;
     }
     
     @Override
-    public float decodeNormValue(byte b) {
-      return (float) b;
+    public float decodeNormValue(long norm) {
+      return norm;
     }
 
     @Override
     public float lengthNorm(FieldInvertState state) {
       return state.getLength();
     }
+
+    @Override public float coord(int overlap, int maxOverlap) { return 0; }
+    @Override public float queryNorm(float sumOfSquaredWeights) { return 0; }
+    @Override public float tf(float freq) { return 0; }
+    @Override public float idf(long docFreq, long numDocs) { return 0; }
+    @Override public float sloppyFreq(int distance) { return 0; }
+    @Override public float scorePayload(int doc, int start, int end, BytesRef payload) { return 0; }
   }
   
   // LUCENE-1260
   public void testCustomEncoder() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+
+    IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
     config.setSimilarity(new CustomNormEncodingSimilarity());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
     Document doc = new Document();
@@ -80,7 +92,7 @@ public class TestNorms extends LuceneTestCase {
     }
     
     IndexReader reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     
     NumericDocValues fooNorms = MultiDocValues.getNormValues(reader, "foo");
     for (int i = 0; i < reader.maxDoc(); i++) {
@@ -97,7 +109,7 @@ public class TestNorms extends LuceneTestCase {
   }
   
   public void testMaxByteNorms() throws IOException {
-    Directory dir = newFSDirectory(_TestUtil.getTempDir("TestNorms.testMaxByteNorms"));
+    Directory dir = newFSDirectory(createTempDir("TestNorms.testMaxByteNorms"));
     buildIndex(dir);
     AtomicReader open = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
     NumericDocValues normValues = open.getNormValues(byteTestField);
@@ -115,8 +127,10 @@ public class TestNorms extends LuceneTestCase {
 
   public void buildIndex(Directory dir) throws IOException {
     Random random = random();
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random()));
+        analyzer);
     Similarity provider = new MySimProvider();
     config.setSimilarity(provider);
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);
@@ -135,7 +149,7 @@ public class TestNorms extends LuceneTestCase {
       }
     }
     writer.commit();
-    writer.close();
+    writer.shutdown();
     docs.close();
   }
 
@@ -179,12 +193,7 @@ public class TestNorms extends LuceneTestCase {
     }
 
     @Override
-    public ExactSimScorer exactSimScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public SloppySimScorer sloppySimScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
+    public SimScorer simScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
       throw new UnsupportedOperationException();
     }
   } 

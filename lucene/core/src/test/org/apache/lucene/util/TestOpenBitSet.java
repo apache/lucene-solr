@@ -17,11 +17,21 @@
 
 package org.apache.lucene.util;
 
+import java.io.IOException;
 import java.util.BitSet;
 
 import org.apache.lucene.search.DocIdSetIterator;
 
-public class TestOpenBitSet extends LuceneTestCase {
+public class TestOpenBitSet extends BaseDocIdSetTestCase<OpenBitSet> {
+
+  @Override
+  public OpenBitSet copyOf(BitSet bs, int length) throws IOException {
+    final OpenBitSet set = new OpenBitSet(length);
+    for (int doc = bs.nextSetBit(0); doc != -1; doc = bs.nextSetBit(doc + 1)) {
+      set.set(doc);
+    }
+    return set;
+  }
 
   void doGet(BitSet a, OpenBitSet b) {
     int max = a.size();
@@ -320,6 +330,39 @@ public class TestOpenBitSet extends LuceneTestCase {
     checkPrevSetBitArray(new int[] {0});
     checkPrevSetBitArray(new int[] {0,2});
   }
+
+  public void testEnsureCapacity() {
+    OpenBitSet bits = new OpenBitSet(1);
+    int bit = random().nextInt(100) + 10;
+    bits.ensureCapacity(bit); // make room for more bits
+    bits.fastSet(bit-1);
+    assertTrue(bits.fastGet(bit-1));
+    bits.ensureCapacity(bit + 1);
+    bits.fastSet(bit);
+    assertTrue(bits.fastGet(bit));
+    bits.ensureCapacity(3); // should not change numBits nor grow the array
+    bits.fastSet(3);
+    assertTrue(bits.fastGet(3));
+    bits.fastSet(bit-1);
+    assertTrue(bits.fastGet(bit-1));
+
+    // test ensureCapacityWords
+    int numWords = random().nextInt(10) + 2; // make sure we grow the array (at least 128 bits)
+    bits.ensureCapacityWords(numWords);
+    bit = TestUtil.nextInt(random(), 127, (numWords << 6) - 1); // pick a bit >= to 128, but still within range
+    bits.fastSet(bit);
+    assertTrue(bits.fastGet(bit));
+    bits.fastClear(bit);
+    assertFalse(bits.fastGet(bit));
+    bits.fastFlip(bit);
+    assertTrue(bits.fastGet(bit));
+    bits.ensureCapacityWords(2); // should not change numBits nor grow the array
+    bits.fastSet(3);
+    assertTrue(bits.fastGet(3));
+    bits.fastSet(bit-1);
+    assertTrue(bits.fastGet(bit-1));
+  }
+  
 }
 
 

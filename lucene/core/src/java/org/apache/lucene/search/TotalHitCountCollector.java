@@ -17,13 +17,12 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
 
 /**
  * Just counts the total number of hits.
  */
 
-public class TotalHitCountCollector extends Collector {
+public class TotalHitCountCollector extends SimpleCollector {
   private int totalHits;
 
   /** Returns how many hits matched the search. */
@@ -32,16 +31,8 @@ public class TotalHitCountCollector extends Collector {
   }
 
   @Override
-  public void setScorer(Scorer scorer) {
-  }
-
-  @Override
   public void collect(int doc) {
     totalHits++;
-  }
-
-  @Override
-  public void setNextReader(AtomicReaderContext context) {
   }
 
   @Override

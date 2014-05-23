@@ -20,33 +20,52 @@ package org.apache.solr.common.cloud;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
+import static org.apache.solr.common.params.ShardParams._ROUTE_;
 
 /** This document router is for custom sharding
  */
 public class ImplicitDocRouter extends DocRouter {
   public static final String NAME = "implicit";
+//  @Deprecated
+//  public static final String DEFAULT_SHARD_PARAM = "_shard_";
+  private static Logger log = LoggerFactory
+      .getLogger(ImplicitDocRouter.class);
 
   @Override
   public Slice getTargetSlice(String id, SolrInputDocument sdoc, SolrParams params, DocCollection collection) {
     String shard = null;
     if (sdoc != null) {
-      Object o = sdoc.getFieldValue("_shard_");
-      if (o != null) {
-        shard = o.toString();
+      String f = getRouteField(collection);
+      if(f !=null) {
+        Object o = sdoc.getFieldValue(f);
+        if (o != null) shard = o.toString();
+        else throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No value for field "+f +" in " + sdoc);
+      }
+      if(shard == null) {
+        Object o = sdoc.getFieldValue(_ROUTE_);
+        if (o == null) o = sdoc.getFieldValue("_shard_");//deprecated . for backcompat remove later
+        if (o != null) {
+          shard = o.toString();
+        }
       }
     }
 
     if (shard == null) {
-      shard = params.get("_shard_");
+      shard = params.get(_ROUTE_);
+      if(shard == null) shard =params.get("_shard_"); //deperecated for back compat
     }
 
     if (shard != null) {
+
       Slice slice = collection.getSlice(shard);
       if (slice == null) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No _shard_=" + shard + " in " + collection);
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No shard called =" + shard + " in " + collection);
       }
       return slice;
     }
@@ -56,12 +75,14 @@ public class ImplicitDocRouter extends DocRouter {
 
   @Override
   public boolean isTargetSlice(String id, SolrInputDocument sdoc, SolrParams params, String shardId, DocCollection collection) {
+
     // todo : how to handle this?
     return false;
   }
 
   @Override
   public Collection<Slice> getSearchSlicesSingle(String shardKey, SolrParams params, DocCollection collection) {
+
     if (shardKey == null) {
       return collection.getActiveSlices();
     }
@@ -75,4 +96,8 @@ public class ImplicitDocRouter extends DocRouter {
     return Collections.singleton(slice);
   }
 
+  @Override
+  public List<Range> partitionRange(int partitions, Range range) {
+    return null;
+  }
 }

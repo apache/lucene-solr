@@ -18,7 +18,6 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -101,7 +100,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   /**
    * Key is the dictionary, value is the SpellChecker for that dictionary name
    */
-  protected Map<String, SolrSpellChecker> spellCheckers = new ConcurrentHashMap<String, SolrSpellChecker>();
+  protected Map<String, SolrSpellChecker> spellCheckers = new ConcurrentHashMap<>();
 
   protected QueryConverter queryConverter;
 
@@ -159,7 +158,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         boolean extendedResults = params.getBool(SPELLCHECK_EXTENDED_RESULTS, false); 
         boolean collate = params.getBool(SPELLCHECK_COLLATE, false);
         float accuracy = params.getFloat(SPELLCHECK_ACCURACY, Float.MIN_VALUE);
-        Integer alternativeTermCount = params.getInt(SpellingParams.SPELLCHECK_ALTERNATIVE_TERM_COUNT); 
+        int alternativeTermCount = params.getInt(SpellingParams.SPELLCHECK_ALTERNATIVE_TERM_COUNT, 0); 
         Integer maxResultsForSuggest = params.getInt(SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST);
         ModifiableSolrParams customParams = new ModifiableSolrParams();
         for (String checkerName : getDictionaryNames(params)) {
@@ -178,7 +177,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           SuggestMode suggestMode = SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX;
           if (onlyMorePopular) {
             suggestMode = SuggestMode.SUGGEST_MORE_POPULAR;
-          } else if (alternativeTermCount != null) {
+          } else if (alternativeTermCount > 0) {
             suggestMode = SuggestMode.SUGGEST_ALWAYS;
           }
           
@@ -321,7 +320,16 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     if (maxResultsForSuggest==null || !isCorrectlySpelled) {
       for (ShardRequest sreq : rb.finished) {
         for (ShardResponse srsp : sreq.responses) {
-          NamedList nl = (NamedList) srsp.getSolrResponse().getResponse().get("spellcheck");
+          NamedList nl = null;
+          try {
+            nl = (NamedList) srsp.getSolrResponse().getResponse().get("spellcheck");
+          } catch (Exception e) {
+            if (rb.req.getParams().getBool(ShardParams.SHARDS_TOLERANT, false)) {
+              continue; // looks like a shard did not return anything
+            }
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                "Unable to read spelling info for shard: " + srsp.getShard(), e);
+          }
           LOG.info(srsp.getShard() + " " + nl);
           if (nl != null) {
             mergeData.totalNumberShardResponses++;
@@ -372,7 +380,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       mergeData.origVsSuggestion.put(suggestion.getToken(), suggestion);
       HashSet<String> suggested = mergeData.origVsSuggested.get(suggestion.getToken());
       if (suggested == null) {
-        suggested = new HashSet<String>();
+        suggested = new HashSet<>();
         mergeData.origVsSuggested.put(suggestion.getToken(), suggested);
       }
 
@@ -462,31 +470,31 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   }
 
   private Collection<Token> getTokens(String q, Analyzer analyzer) throws IOException {
-    Collection<Token> result = new ArrayList<Token>();
+    Collection<Token> result = new ArrayList<>();
     assert analyzer != null;
-    TokenStream ts = analyzer.tokenStream("", new StringReader(q));
-    ts.reset();
-    // TODO: support custom attributes
-    CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
-    OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
-    TypeAttribute typeAtt = ts.addAttribute(TypeAttribute.class);
-    FlagsAttribute flagsAtt = ts.addAttribute(FlagsAttribute.class);
-    PayloadAttribute payloadAtt = ts.addAttribute(PayloadAttribute.class);
-    PositionIncrementAttribute posIncAtt = ts.addAttribute(PositionIncrementAttribute.class);
-    
-    while (ts.incrementToken()){
-      Token token = new Token();
-      token.copyBuffer(termAtt.buffer(), 0, termAtt.length());
-      token.setOffset(offsetAtt.startOffset(), offsetAtt.endOffset());
-      token.setType(typeAtt.type());
-      token.setFlags(flagsAtt.getFlags());
-      token.setPayload(payloadAtt.getPayload());
-      token.setPositionIncrement(posIncAtt.getPositionIncrement());
-      result.add(token);
+    try (TokenStream ts = analyzer.tokenStream("", q)) {
+      ts.reset();
+      // TODO: support custom attributes
+      CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
+      OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
+      TypeAttribute typeAtt = ts.addAttribute(TypeAttribute.class);
+      FlagsAttribute flagsAtt = ts.addAttribute(FlagsAttribute.class);
+      PayloadAttribute payloadAtt = ts.addAttribute(PayloadAttribute.class);
+      PositionIncrementAttribute posIncAtt = ts.addAttribute(PositionIncrementAttribute.class);
+      
+      while (ts.incrementToken()){
+        Token token = new Token();
+        token.copyBuffer(termAtt.buffer(), 0, termAtt.length());
+        token.setOffset(offsetAtt.startOffset(), offsetAtt.endOffset());
+        token.setType(typeAtt.type());
+        token.setFlags(flagsAtt.getFlags());
+        token.setPayload(payloadAtt.getPayload());
+        token.setPositionIncrement(posIncAtt.getPositionIncrement());
+        result.add(token);
+      }
+      ts.end();
+      return result;
     }
-    ts.end();
-    ts.close();
-    return result;
   }
 
   protected SolrSpellChecker getSpellChecker(SolrParams params) {
@@ -547,7 +555,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       Token inputToken = entry.getKey();
       String tokenString = new String(inputToken.buffer(), 0, inputToken
           .length());
-      Map<String,Integer> theSuggestions = new LinkedHashMap<String,Integer>(
+      Map<String,Integer> theSuggestions = new LinkedHashMap<>(
           entry.getValue());
       Iterator<String> sugIter = theSuggestions.keySet().iterator();
       while (sugIter.hasNext()) {
@@ -577,7 +585,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           suggestionList.add("origFreq", spellingResult
               .getTokenFrequency(inputToken));
           
-          ArrayList<SimpleOrderedMap> sugs = new ArrayList<SimpleOrderedMap>();
+          ArrayList<SimpleOrderedMap> sugs = new ArrayList<>();
           suggestionList.add("suggestion", sugs);
           for (Map.Entry<String,Integer> suggEntry : theSuggestions.entrySet()) {
             SimpleOrderedMap sugEntry = new SimpleOrderedMap();
@@ -652,7 +660,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         }
      }
 
-      Map<String, QueryConverter> queryConverters = new HashMap<String, QueryConverter>();
+      Map<String, QueryConverter> queryConverters = new HashMap<>();
       core.initPlugins(queryConverters,QueryConverter.class);
 
       //ensure that there is at least one query converter defined

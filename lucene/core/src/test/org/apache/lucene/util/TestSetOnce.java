@@ -51,20 +51,20 @@ public class TestSetOnce extends LuceneTestCase {
   
   @Test
   public void testEmptyCtor() throws Exception {
-    SetOnce<Integer> set = new SetOnce<Integer>();
+    SetOnce<Integer> set = new SetOnce<>();
     assertNull(set.get());
   }
   
   @Test(expected=AlreadySetException.class)
   public void testSettingCtor() throws Exception {
-    SetOnce<Integer> set = new SetOnce<Integer>(new Integer(5));
+    SetOnce<Integer> set = new SetOnce<>(new Integer(5));
     assertEquals(5, set.get().intValue());
     set.set(new Integer(7));
   }
   
   @Test(expected=AlreadySetException.class)
   public void testSetOnce() throws Exception {
-    SetOnce<Integer> set = new SetOnce<Integer>();
+    SetOnce<Integer> set = new SetOnce<>();
     set.set(new Integer(5));
     assertEquals(5, set.get().intValue());
     set.set(new Integer(7));
@@ -72,7 +72,7 @@ public class TestSetOnce extends LuceneTestCase {
   
   @Test
   public void testSetMultiThreaded() throws Exception {
-    final SetOnce<Integer> set = new SetOnce<Integer>();
+    final SetOnce<Integer> set = new SetOnce<>();
     SetOnceThread[] threads = new SetOnceThread[10];
     for (int i = 0; i < threads.length; i++) {
       threads[i] = new SetOnceThread(random());

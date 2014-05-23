@@ -41,6 +41,9 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.*;
 
+import org.apache.solr.search.function.CollapseScoreFunction;
+import org.apache.solr.search.function.OrdFieldSource;
+import org.apache.solr.search.function.ReverseOrdFieldSource;
 import org.apache.solr.search.function.distance.*;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
@@ -64,7 +67,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
   public abstract ValueSource parse(FunctionQParser fp) throws SyntaxError;
 
   /* standard functions */
-  public static Map<String, ValueSourceParser> standardValueSourceParsers = new HashMap<String, ValueSourceParser>();
+  public static Map<String, ValueSourceParser> standardValueSourceParsers = new HashMap<>();
 
   /** Adds a new parser for the name and returns any existing one that was overriden.
    *  This is not thread safe.
@@ -198,8 +201,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         ValueSource source = fp.parseValueSource();
         float min = fp.parseFloat();
         float max = fp.parseFloat();
-        float target = fp.parseFloat();
-        Float def = fp.hasMoreArguments() ? fp.parseFloat() : null;
+        ValueSource target = fp.parseValueSource();
+        ValueSource def = fp.hasMoreArguments() ? fp.parseValueSource() : null;
         return new RangeMapFloatFunction(source, min, max, target, def);
       }
     });
@@ -219,6 +222,12 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
             return Math.abs(vals.floatVal(doc));
           }
         };
+      }
+    });
+    addParser("cscore", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        return new CollapseScoreFunction();
       }
     });
     addParser("sum", new ValueSourceParser() {
@@ -293,7 +302,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
     });
 
-    addParser("geodist", HaversineConstFunction.parser);
+    addParser("geodist", new GeoDistValueSourceParser());
 
     addParser("hsin", new ValueSourceParser() {
       @Override
@@ -309,18 +318,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         ValueSource one = fp.parseValueSource();
         ValueSource two = fp.parseValueSource();
         if (fp.hasMoreArguments()) {
-
-
-          List<ValueSource> s1 = new ArrayList<ValueSource>();
-          s1.add(one);
-          s1.add(two);
-          pv1 = new VectorValueSource(s1);
-          ValueSource x2 = fp.parseValueSource();
-          ValueSource y2 = fp.parseValueSource();
-          List<ValueSource> s2 = new ArrayList<ValueSource>();
-          s2.add(x2);
-          s2.add(y2);
-          pv2 = new VectorValueSource(s2);
+          pv1 = new VectorValueSource(Arrays.asList(one, two));//x1, y1
+          pv2 = new VectorValueSource(Arrays.asList(fp.parseValueSource(), fp.parseValueSource()));//x2, y2
         } else {
           //check to see if we have multiValue source
           if (one instanceof MultiValueSource && two instanceof MultiValueSource){
@@ -852,8 +851,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
     } else {
       int dim = sources.size() / 2;
-      List<ValueSource> sources1 = new ArrayList<ValueSource>(dim);
-      List<ValueSource> sources2 = new ArrayList<ValueSource>(dim);
+      List<ValueSource> sources1 = new ArrayList<>(dim);
+      List<ValueSource> sources2 = new ArrayList<>(dim);
       //Get dim value sources for the first vector
       splitSources(dim, sources, sources1, sources2);
       mvr.mv1 = new VectorValueSource(sources1);
@@ -879,7 +878,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
 
 class DateValueSourceParser extends ValueSourceParser {
-  DateField df = new TrieDateField();
+  TrieDateField df = new TrieDateField();
 
   @Override
   public void init(NamedList args) {
@@ -896,9 +895,6 @@ class DateValueSourceParser extends ValueSourceParser {
   public ValueSource getValueSource(FunctionQParser fp, String arg) {
     if (arg == null) return null;
     SchemaField f = fp.req.getSchema().getField(arg);
-    if (f.getType().getClass() == DateField.class) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can't use ms() function on non-numeric legacy date field " + arg);
-    }
     return f.getType().getValueSource(f, fp);
   }
 

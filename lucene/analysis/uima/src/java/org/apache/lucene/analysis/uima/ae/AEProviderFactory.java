@@ -27,7 +27,7 @@ public class AEProviderFactory {
 
   private static final AEProviderFactory instance = new AEProviderFactory();
 
-  private final Map<String, AEProvider> providerCache = new HashMap<String, AEProvider>();
+  private final Map<String, AEProvider> providerCache = new HashMap<>();
 
   private AEProviderFactory() {
     // Singleton

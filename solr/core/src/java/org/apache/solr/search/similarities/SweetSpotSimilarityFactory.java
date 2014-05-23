@@ -180,7 +180,7 @@ public class SweetSpotSimilarityFactory extends DefaultSimilarityFactory {
   private static final class HyperbolicSweetSpotSimilarity 
     extends SweetSpotSimilarity {
     @Override
-    public float tf(int freq) {
+    public float tf(float freq) {
       return hyperbolicTf(freq);
     }
   };

@@ -17,80 +17,55 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import java.io.ByteArrayInputStream;
+import org.apache.solr.cloud.CurrentCoreDescriptorProvider;
+import org.apache.solr.cloud.SolrZkServer;
+import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
-
-import org.apache.solr.cloud.CurrentCoreDescriptorProvider;
-import org.apache.solr.cloud.SolrZkServer;
-import org.apache.solr.cloud.ZkController;
-import org.apache.solr.cloud.ZkSolrResourceLoader;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.cloud.ZooKeeperException;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.IndexSchemaFactory;
-import org.apache.solr.util.SystemIdResolver;
-import org.apache.zookeeper.KeeperException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xml.sax.InputSource;
 
 public class ZkContainer {
   protected static Logger log = LoggerFactory.getLogger(ZkContainer.class);
   
   protected ZkController zkController;
   private SolrZkServer zkServer;
-  private int zkClientTimeout;
-  private String hostPort;
-  private String hostContext;
-  private String host;
-  private String leaderVoteWait;
-  private int distribUpdateConnTimeout;
 
-  public SolrZkServer getZkServer() {
-    return zkServer;
-  }
-
-  public int getZkClientTimeout() {
-    return zkClientTimeout;
-  }
-
-  public String getHostPort() {
-    return hostPort;
-  }
-
-  public String getHostContext() {
-    return hostContext;
-  }
-
-  public String getHost() {
-    return host;
-  }
-
-  public String getLeaderVoteWait() {
-    return leaderVoteWait;
-  }
-
-  public int getDistribUpdateConnTimeout() {
-    return distribUpdateConnTimeout;
-  }
-
-  public int getDistribUpdateSoTimeout() {
-    return distribUpdateSoTimeout;
-  }
-
-  private int distribUpdateSoTimeout;
+  private ExecutorService coreZkRegister = Executors.newFixedThreadPool(Integer.MAX_VALUE,
+      new DefaultSolrThreadFactory("coreZkRegister") );
   
   public ZkContainer() {
     
   }
-  
-  public void initZooKeeper(final CoreContainer cc, String solrHome, String zkHost, int zkClientTimeout, String hostPort, String hostContext, String host, String leaderVoteWait, int distribUpdateConnTimeout, int distribUpdateSoTimeout) {
+
+  public void initZooKeeper(final CoreContainer cc, String solrHome, ConfigSolr config) {
+
+    if (config.getCoreLoadThreadCount() <= 1) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "SolrCloud requires a value of at least 2 in solr.xml for coreLoadThreads");
+    }
+
+    initZooKeeper(cc, solrHome,
+        config.getZkHost(), config.getZkClientTimeout(), config.getZkHostPort(), config.getZkHostContext(),
+        config.getHost(), config.getLeaderVoteWait(), config.getLeaderConflictResolveWait(), config.getGenericCoreNodeNames());
+  }
+    
+  public void initZooKeeper(final CoreContainer cc, String solrHome, String zkHost, int zkClientTimeout, String hostPort,
+        String hostContext, String host, int leaderVoteWait, int leaderConflictResolveWait, boolean genericCoreNodeNames) {
+
     ZkController zkController = null;
     
     // if zkHost sys property is not set, we are not using ZooKeeper
@@ -102,14 +77,6 @@ public class ZkContainer {
     }
 
     String zkRun = System.getProperty("zkRun");
-    
-    this.zkClientTimeout = zkClientTimeout;
-    this.hostPort = hostPort;
-    this.hostContext = hostContext;
-    this.host = host;
-    this.leaderVoteWait = leaderVoteWait;
-    this.distribUpdateConnTimeout = distribUpdateConnTimeout;
-    this.distribUpdateSoTimeout = distribUpdateSoTimeout;
     
     if (zkRun == null && zookeeperHost == null)
         return;  // not in zk mode
@@ -141,7 +108,7 @@ public class ZkContainer {
       }
     }
 
-    int zkClientConnectTimeout = 15000;
+    int zkClientConnectTimeout = 30000;
 
     if (zookeeperHost != null) {
 
@@ -163,12 +130,12 @@ public class ZkContainer {
         }
         zkController = new ZkController(cc, zookeeperHost, zkClientTimeout,
             zkClientConnectTimeout, host, hostPort, hostContext,
-            leaderVoteWait, distribUpdateConnTimeout, distribUpdateSoTimeout,
+            leaderVoteWait, leaderConflictResolveWait, genericCoreNodeNames,
             new CurrentCoreDescriptorProvider() {
 
               @Override
               public List<CoreDescriptor> getCurrentDescriptors() {
-                List<CoreDescriptor> descriptors = new ArrayList<CoreDescriptor>(
+                List<CoreDescriptor> descriptors = new ArrayList<>(
                     cc.getCoreNames().size());
                 Collection<SolrCore> cores = cc.getCores();
                 for (SolrCore core : cores) {
@@ -197,7 +164,7 @@ public class ZkContainer {
 
         
         if(boostrapConf) {
-          ZkController.bootstrapConf(zkController.getZkClient(), cc.cfg, solrHome);
+          ZkController.bootstrapConf(zkController.getZkClient(), cc, solrHome);
         }
         
       } catch (InterruptedException e) {
@@ -225,93 +192,38 @@ public class ZkContainer {
     this.zkController = zkController;
   }
   
-  // Helper method to separate out creating a core from ZK as opposed to the
-  // "usual" way. See create()
-  SolrCore createFromZk(String instanceDir, CoreDescriptor dcore, SolrResourceLoader loader) {
-    try {
-      SolrResourceLoader solrLoader = null;
-      SolrConfig config = null;
-      String zkConfigName = null;
-      IndexSchema schema;
-      String collection = dcore.getCloudDescriptor().getCollectionName();
-      zkController.createCollectionZkNode(dcore.getCloudDescriptor());
-      
-      zkConfigName = zkController.readConfigName(collection);
-      if (zkConfigName == null) {
-        log.error("Could not find config name for collection:" + collection);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-            "Could not find config name for collection:" + collection);
-      }
-      solrLoader = new ZkSolrResourceLoader(instanceDir, zkConfigName,
-          loader.getClassLoader(), ConfigSolrXml.getCoreProperties(instanceDir,
-              dcore), zkController);
-      config = getSolrConfigFromZk(zkConfigName, dcore.getConfigName(),
-          solrLoader);
-      schema = IndexSchemaFactory.buildIndexSchema(dcore.getSchemaName(),
-          config);
-      return new SolrCore(dcore.getName(), null, config, schema, dcore);
-      
-    } catch (KeeperException e) {
-      log.error("", e);
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
-    } catch (InterruptedException e) {
-      // Restore the interrupted status
-      Thread.currentThread().interrupt();
-      log.error("", e);
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
-    }
-  }
-  
-  public void registerInZk(SolrCore core) {
-    if (zkController != null) {
-      try {
-        zkController.register(core.getName(), core.getCoreDescriptor());
-      } catch (InterruptedException e) {
-        // Restore the interrupted status
-        Thread.currentThread().interrupt();
-        SolrException.log(log, "", e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
-            e);
-      } catch (Exception e) {
-        // if register fails, this is really bad - close the zkController to
-        // minimize any damage we can cause
-        try {
-          zkController.publish(core.getCoreDescriptor(), ZkStateReader.DOWN);
-        } catch (KeeperException e1) {
-          log.error("", e);
-          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-              "", e);
-        } catch (InterruptedException e1) {
-          Thread.currentThread().interrupt();
-          log.error("", e);
-          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-              "", e);
+  public void registerInZk(final SolrCore core, boolean background) {
+    Thread thread = new Thread() {
+      @Override
+      public void run() {
+          try {
+            zkController.register(core.getName(), core.getCoreDescriptor());
+          } catch (InterruptedException e) {
+            // Restore the interrupted status
+            Thread.currentThread().interrupt();
+            SolrException.log(log, "", e);
+          } catch (Exception e) {
+            try {
+              zkController.publish(core.getCoreDescriptor(), ZkStateReader.DOWN);
+            } catch (InterruptedException e1) {
+              Thread.currentThread().interrupt();
+              log.error("", e1);
+            } catch (Exception e1) {
+              log.error("", e1);
+            }
+            SolrException.log(log, "", e);
+          }
         }
-        SolrException.log(log, "", e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
-            e);
+      
+    };
+    
+    if (zkController != null) {
+      if (background) {
+        coreZkRegister.execute(thread);
+      } else {
+        thread.run();
       }
     }
-  }
-  
-  public SolrConfig getSolrConfigFromZk(String zkConfigName, String solrConfigFileName,
-      SolrResourceLoader resourceLoader) {
-    SolrConfig cfg = null;
-    try {
-      byte[] config = zkController.getConfigFileData(zkConfigName,
-          solrConfigFileName);
-      InputSource is = new InputSource(new ByteArrayInputStream(config));
-      is.setSystemId(SystemIdResolver
-          .createSystemIdFromResourceName(solrConfigFileName));
-      cfg = solrConfigFileName == null ? new SolrConfig(resourceLoader,
-          SolrConfig.DEFAULT_CONF_FILE, is) : new SolrConfig(resourceLoader,
-          solrConfigFileName, is);
-    } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "getSolrConfigFromZK failed for " + zkConfigName + " "
-              + solrConfigFileName, e);
-    }
-    return cfg;
   }
   
   public ZkController getZkController() {
@@ -326,18 +238,27 @@ public class ZkContainer {
       } catch (KeeperException e) {
         CoreContainer.log.error("", e);
       } catch (InterruptedException e) {
+        Thread.interrupted();
         CoreContainer.log.error("", e);
       }
     }
   }
 
   public void close() {
-    if (zkController != null) {
-      zkController.close();
+    
+    try {
+      if (zkController != null) {
+        zkController.close();
+      }
+    } finally {
+      try {
+        if (zkServer != null) {
+          zkServer.stop();
+        }
+      } finally {
+        ExecutorUtil.shutdownNowAndAwaitTermination(coreZkRegister);
+      }
     }
     
-    if (zkServer != null) {
-      zkServer.stop();
-    }
   }
 }

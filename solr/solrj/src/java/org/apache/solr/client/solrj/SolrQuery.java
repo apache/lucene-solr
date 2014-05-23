@@ -42,6 +42,8 @@ import java.util.regex.Pattern;
  */
 public class SolrQuery extends ModifiableSolrParams 
 {  
+  public static final String DOCID = "_docid_"; // duplicate of org.apache.solr.search.QueryParsing.DOCID which is not accessible from here
+  
   public enum ORDER { desc, asc;
     public ORDER reverse() {
       return (this == asc) ? desc : asc;
@@ -618,7 +620,7 @@ public class SolrQuery extends ModifiableSolrParams
    * @since 4.2
    */
   public SolrQuery setSorts(List<SortClause> value) {
-    sortClauses = new ArrayList<SortClause>(value);
+    sortClauses = new ArrayList<>(value);
     serializeSorts();
     return this;
   }
@@ -672,7 +674,7 @@ public class SolrQuery extends ModifiableSolrParams
    * @since 4.2
    */
   public SolrQuery addSort(SortClause sortClause) {
-    if (sortClauses == null) sortClauses = new ArrayList<SortClause>();
+    if (sortClauses == null) sortClauses = new ArrayList<>();
     sortClauses.add(sortClause);
     serializeSorts();
     return this;
@@ -782,6 +784,14 @@ public class SolrQuery extends ModifiableSolrParams
     }
   }
 
+  public void addStatsFieldCalcDistinct(String field, boolean calcDistinct) {
+    if (field == null) {
+      this.add(StatsParams.STATS_CALC_DISTINCT, Boolean.toString(calcDistinct));
+    } else {
+      this.add("f." + field + "." + StatsParams.STATS_CALC_DISTINCT, Boolean.toString(calcDistinct));
+    }
+  }
+
   public SolrQuery setFilterQueries(String ... fq) {
     this.set(CommonParams.FQ, fq);
     return this;
@@ -887,6 +897,10 @@ public class SolrQuery extends ModifiableSolrParams
 
   public void setShowDebugInfo(boolean showDebugInfo) {
     this.set(CommonParams.DEBUG_QUERY, String.valueOf(showDebugInfo));
+  }
+
+  public void setDistrib(boolean val) {
+    this.set(CommonParams.DISTRIB, String.valueOf(val));
   }
 
 

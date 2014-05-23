@@ -97,7 +97,7 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
     assertEquals(1, termPositions.freq());
     assertEquals(2, termPositions.nextPosition());
     reader.close();
-    writer.close();
+    writer.shutdown();
     // 3) reset stream and consume tokens again
     stream.reset();
     checkTokens(stream);

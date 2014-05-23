@@ -23,7 +23,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 public class DOMUtilTest extends DOMUtilTestBase {
   
   public void testAddToNamedListPrimitiveTypes() throws Exception {
-    NamedList<Object> namedList = new SimpleOrderedMap<Object>();
+    NamedList<Object> namedList = new SimpleOrderedMap<>();
     DOMUtil.addToNamedList( getNode( "<str name=\"String\">STRING</str>", "/str" ), namedList, null );
     assertTypeAndValue( namedList, "String", "STRING" );
     DOMUtil.addToNamedList( getNode( "<int name=\"Integer\">100</int>", "/int" ), namedList, null );

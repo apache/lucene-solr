@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene40;
  */
 
 import java.io.IOException;
+import java.util.Collections;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.SegmentInfoWriter;
@@ -35,6 +36,7 @@ import org.apache.lucene.util.IOUtils;
  * @see Lucene40SegmentInfoFormat
  * @lucene.experimental
  */
+@Deprecated
 public class Lucene40SegmentInfoWriter extends SegmentInfoWriter {
 
   /** Sole constructor. */
@@ -58,7 +60,7 @@ public class Lucene40SegmentInfoWriter extends SegmentInfoWriter {
 
       output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
       output.writeStringStringMap(si.getDiagnostics());
-      output.writeStringStringMap(si.attributes());
+      output.writeStringStringMap(Collections.<String,String>emptyMap());
       output.writeStringSet(si.files());
 
       success = true;

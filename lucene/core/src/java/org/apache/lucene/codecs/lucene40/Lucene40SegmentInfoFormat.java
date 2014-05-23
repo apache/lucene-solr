@@ -67,7 +67,9 @@ import org.apache.lucene.store.DataOutput; // javadocs
  * 
  * @see SegmentInfos
  * @lucene.experimental
+ * @deprecated Only for reading old 4.0-4.5 segments, and supporting IndexWriter.addIndexes
  */
+@Deprecated
 public class Lucene40SegmentInfoFormat extends SegmentInfoFormat {
   private final SegmentInfoReader reader = new Lucene40SegmentInfoReader();
   private final SegmentInfoWriter writer = new Lucene40SegmentInfoWriter();
@@ -81,6 +83,8 @@ public class Lucene40SegmentInfoFormat extends SegmentInfoFormat {
     return reader;
   }
 
+  // we must unfortunately support write, to allow addIndexes to write a new .si with rewritten filenames:
+  // see LUCENE-5377
   @Override
   public SegmentInfoWriter getSegmentInfoWriter() {
     return writer;

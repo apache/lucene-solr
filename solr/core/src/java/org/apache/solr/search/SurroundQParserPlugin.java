@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  */
 
 public class SurroundQParserPlugin extends QParserPlugin {
-  public static String NAME = "surround";
+  public static final String NAME = "surround";
 
   @Override
   public void init(NamedList args) {

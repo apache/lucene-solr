@@ -18,12 +18,16 @@
 package org.apache.solr.servlet;
 
 import java.io.IOException;
-import java.io.BufferedWriter;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -31,17 +35,21 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
+import org.noggit.ObjectBuilder;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.FastWriter;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.data.Stat;
+import org.noggit.CharArr;
+import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +61,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class ZookeeperInfoServlet extends HttpServlet {
   static final Logger log = LoggerFactory.getLogger(ZookeeperInfoServlet.class);
-  
+
   @Override
   public void init() {
   }
@@ -67,7 +75,7 @@ public final class ZookeeperInfoServlet extends HttpServlet {
     if (cores == null) {
       throw new ServletException("Missing request attribute org.apache.solr.CoreContainer.");
     }
-    
+
     final SolrParams params;
     try {
       params = SolrRequestParsers.DEFAULT.parse(null, request.getServletPath(), request).getParams();
@@ -82,6 +90,7 @@ public final class ZookeeperInfoServlet extends HttpServlet {
 
     String path = params.get("path");
     String addr = params.get("addr");
+    boolean all = "true".equals(params.get("all"));
 
     if (addr != null && addr.length() == 0) {
       addr = null;
@@ -96,7 +105,7 @@ public final class ZookeeperInfoServlet extends HttpServlet {
     response.setCharacterEncoding("UTF-8");
     response.setContentType("application/json");
 
-    Writer out = new FastWriter(new OutputStreamWriter(response.getOutputStream(), IOUtils.CHARSET_UTF_8));
+    Writer out = new FastWriter(new OutputStreamWriter(response.getOutputStream(), StandardCharsets.UTF_8));
 
     ZKPrinter printer = new ZKPrinter(response, out, cores.getZkController(), addr);
     printer.detail = detail;
@@ -107,7 +116,7 @@ public final class ZookeeperInfoServlet extends HttpServlet {
     } finally {
       printer.close();
     }
-    
+
     out.flush();
   }
 
@@ -195,7 +204,7 @@ public final class ZookeeperInfoServlet extends HttpServlet {
       if (path == null) {
         path = "/";
       } else {
-        path.trim();
+        path = path.trim();
         if (path.length() == 0) {
           path = "/";
         }
@@ -290,21 +299,6 @@ public final class ZookeeperInfoServlet extends HttpServlet {
           printZnode(json, path);
         }
 
-        /*
-        if (stat.getNumChildren() != 0)
-        {
-          writeKeyValue(json, "children_count",  stat.getNumChildren(), false );
-          out.println(", \"children_count\" : \"" + stat.getNumChildren() + "\"");
-        }
-        */
-
-        //if (stat.getDataLength() != 0)
-        if (data != null) {
-          String str = new BytesRef(data).utf8ToString();
-          //?? writeKeyValue(json, "content", str, false );
-          // Does nothing now, but on the assumption this will be used later we'll leave it in. If it comes out
-          // the catches below need to be restructured.
-        }
       } catch (IllegalArgumentException e) {
         // path doesn't exist (must have been removed)
         writeKeyValue(json, "warning", "(path gone)", false);
@@ -375,11 +369,22 @@ public final class ZookeeperInfoServlet extends HttpServlet {
       json.write(v);
     }
 
+    @SuppressWarnings("unchecked")
     boolean printZnode(JSONWriter json, String path) throws IOException {
       try {
         Stat stat = new Stat();
         // Trickily, the call to zkClient.getData fills in the stat variable
         byte[] data = zkClient.getData(path, null, stat, true);
+
+        String dataStr = null;
+        String dataStrErr = null;
+        if (null != data) {
+          try {
+            dataStr = (new BytesRef(data)).utf8ToString();
+          } catch (Exception e) {
+            dataStrErr = "data is not parsable as a utf8 String: " + e.toString();
+          }
+        }
 
         json.writeString("znode");
         json.writeNameSeparator();
@@ -397,15 +402,18 @@ public final class ZookeeperInfoServlet extends HttpServlet {
         writeKeyValue(json, "ctime", time(stat.getCtime()), false);
         writeKeyValue(json, "cversion", stat.getCversion(), false);
         writeKeyValue(json, "czxid", stat.getCzxid(), false);
-        writeKeyValue(json, "dataLength", stat.getDataLength(), false);
         writeKeyValue(json, "ephemeralOwner", stat.getEphemeralOwner(), false);
         writeKeyValue(json, "mtime", time(stat.getMtime()), false);
         writeKeyValue(json, "mzxid", stat.getMzxid(), false);
         writeKeyValue(json, "pzxid", stat.getPzxid(), false);
+        writeKeyValue(json, "dataLength", stat.getDataLength(), false);
+        if (null != dataStrErr) {
+          writeKeyValue(json, "dataNote", dataStrErr, false);
+        }
         json.endObject();
 
-        if (data != null) {
-          writeKeyValue(json, "data", new BytesRef(data).utf8ToString(), false);
+        if (null != dataStr) {
+          writeKeyValue(json, "data", dataStr, false);
         }
         json.endObject();
       } catch (KeeperException e) {

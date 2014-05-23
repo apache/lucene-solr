@@ -17,10 +17,14 @@ package org.apache.lucene.search.spell;
  * limitations under the License.
  */
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 
-import java.util.Comparator;
-import java.io.*;
-
+import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.IOUtils;
@@ -44,7 +48,7 @@ public class PlainTextDictionary implements Dictionary {
    * NOTE: content is treated as UTF-8
    */
   public PlainTextDictionary(File file) throws IOException {
-    in = new BufferedReader(IOUtils.getDecodingReader(file, IOUtils.CHARSET_UTF_8));
+    in = new BufferedReader(IOUtils.getDecodingReader(file, StandardCharsets.UTF_8));
   }
 
   /**
@@ -53,7 +57,7 @@ public class PlainTextDictionary implements Dictionary {
    * NOTE: content is treated as UTF-8
    */
   public PlainTextDictionary(InputStream dictFile) {
-    in = new BufferedReader(IOUtils.getDecodingReader(dictFile, IOUtils.CHARSET_UTF_8));
+    in = new BufferedReader(IOUtils.getDecodingReader(dictFile, StandardCharsets.UTF_8));
   }
 
   /**
@@ -64,8 +68,8 @@ public class PlainTextDictionary implements Dictionary {
   }
 
   @Override
-  public BytesRefIterator getWordsIterator() throws IOException {
-    return new FileIterator();
+  public InputIterator getEntryIterator() throws IOException {
+    return new InputIterator.InputIteratorWrapper(new FileIterator());
   }
 
   final class FileIterator implements BytesRefIterator {
@@ -96,11 +100,5 @@ public class PlainTextDictionary implements Dictionary {
       }
       return result;
     }
-    
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return null;
-    }
   }
-
 }

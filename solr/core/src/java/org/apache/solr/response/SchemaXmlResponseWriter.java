@@ -20,6 +20,7 @@ package org.apache.solr.response;
 import java.io.Writer;
 import java.io.IOException;
 
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 
@@ -44,6 +45,6 @@ public class SchemaXmlResponseWriter implements QueryResponseWriter {
 
   @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-    return CONTENT_TYPE_XML_UTF8;
+    return XMLResponseParser.XML_CONTENT_TYPE;
   }
 }

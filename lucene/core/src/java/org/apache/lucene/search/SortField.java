@@ -23,10 +23,6 @@ import java.util.Comparator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
 
-// TODO(simonw) -- for cleaner transition, maybe we should make
-// a new SortField that subclasses this one and always uses
-// index values?
-
 /**
  * Stores information about how to sort documents by terms in an individual
  * field.  Fields must be indexed in order to sort by them.
@@ -71,17 +67,9 @@ public class SortField {
      * lower values are at the front. */
     DOUBLE,
 
-    /** Sort using term values as encoded Shorts.  Sort values are Short and
-     * lower values are at the front. */
-    SHORT,
-
     /** Sort using a custom Comparator.  Sort values are any Comparable and
      * sorting is done according to natural order. */
     CUSTOM,
-
-    /** Sort using term values as encoded Bytes.  Sort values are Byte and
-     * lower values are at the front. */
-    BYTE,
 
     /** Sort using term values as Strings, but comparing by
      * value (using String.compareTo) for all comparisons.
@@ -106,7 +94,6 @@ public class SortField {
   private String field;
   private Type type;  // defaults to determining type dynamically
   boolean reverse = false;  // defaults to natural order
-  private FieldCache.Parser parser;
 
   // Used for CUSTOM sort
   private FieldComparatorSource comparatorSource;
@@ -136,52 +123,33 @@ public class SortField {
     this.reverse = reverse;
   }
 
-  /** Creates a sort by terms in the given field, parsed
-   * to numeric values using a custom {@link FieldCache.Parser}.
-   * @param field  Name of field to sort by.  Must not be null.
-   * @param parser Instance of a {@link FieldCache.Parser},
-   *  which must subclass one of the existing numeric
-   *  parsers from {@link FieldCache}. Sort type is inferred
-   *  by testing which numeric parser the parser subclasses.
-   * @throws IllegalArgumentException if the parser fails to
-   *  subclass an existing numeric parser, or field is null
-   */
-  public SortField(String field, FieldCache.Parser parser) {
-    this(field, parser, false);
-  }
-
-  /** Creates a sort, possibly in reverse, by terms in the given field, parsed
-   * to numeric values using a custom {@link FieldCache.Parser}.
-   * @param field  Name of field to sort by.  Must not be null.
-   * @param parser Instance of a {@link FieldCache.Parser},
-   *  which must subclass one of the existing numeric
-   *  parsers from {@link FieldCache}. Sort type is inferred
-   *  by testing which numeric parser the parser subclasses.
-   * @param reverse True if natural order should be reversed.
-   * @throws IllegalArgumentException if the parser fails to
-   *  subclass an existing numeric parser, or field is null
-   */
-  public SortField(String field, FieldCache.Parser parser, boolean reverse) {
-    if (parser instanceof FieldCache.IntParser) initFieldType(field, Type.INT);
-    else if (parser instanceof FieldCache.FloatParser) initFieldType(field, Type.FLOAT);
-    else if (parser instanceof FieldCache.ShortParser) initFieldType(field, Type.SHORT);
-    else if (parser instanceof FieldCache.ByteParser) initFieldType(field, Type.BYTE);
-    else if (parser instanceof FieldCache.LongParser) initFieldType(field, Type.LONG);
-    else if (parser instanceof FieldCache.DoubleParser) initFieldType(field, Type.DOUBLE);
-    else {
-      throw new IllegalArgumentException("Parser instance does not subclass existing numeric parser from FieldCache (got " + parser + ")");
-    }
-
-    this.reverse = reverse;
-    this.parser = parser;
-  }
+  /** Pass this to {@link #setMissingValue} to have missing
+   *  string values sort first. */
+  public final static Object STRING_FIRST = new Object() {
+      @Override
+      public String toString() {
+        return "SortField.STRING_FIRST";
+      }
+    };
   
-  public SortField setMissingValue(Object missingValue) {
-    if (type != Type.BYTE && type != Type.SHORT && type != Type.INT && type != Type.FLOAT && type != Type.LONG && type != Type.DOUBLE) {
-      throw new IllegalArgumentException( "Missing value only works for numeric types" );
+  /** Pass this to {@link #setMissingValue} to have missing
+   *  string values sort last. */
+  public final static Object STRING_LAST = new Object() {
+      @Override
+      public String toString() {
+        return "SortField.STRING_LAST";
+      }
+    };
+
+  public void setMissingValue(Object missingValue) {
+    if (type == Type.STRING) {
+      if (missingValue != STRING_FIRST && missingValue != STRING_LAST) {
+        throw new IllegalArgumentException("For STRING type, missing value must be either STRING_FIRST or STRING_LAST");
+      }
+    } else if (type != Type.INT && type != Type.FLOAT && type != Type.LONG && type != Type.DOUBLE) {
+      throw new IllegalArgumentException("Missing value only works for numeric or STRING types");
     }
     this.missingValue = missingValue;
-    return this;
   }
 
   /** Creates a sort with a custom comparison function.
@@ -232,14 +200,6 @@ public class SortField {
     return type;
   }
 
-  /** Returns the instance of a {@link FieldCache} parser that fits to the given sort type.
-   * May return <code>null</code> if no parser was specified. Sorting is using the default parser then.
-   * @return An instance of a {@link FieldCache} parser, or <code>null</code>.
-   */
-  public FieldCache.Parser getParser() {
-    return parser;
-  }
-
   /** Returns whether the sort should be reversed.
    * @return  True if natural order should be reversed.
    */
@@ -274,14 +234,6 @@ public class SortField {
         buffer.append("<string_val" + ": \"").append(field).append("\">");
         break;
 
-      case BYTE:
-        buffer.append("<byte: \"").append(field).append("\">");
-        break;
-
-      case SHORT:
-        buffer.append("<short: \"").append(field).append("\">");
-        break;
-
       case INT:
         buffer.append("<int" + ": \"").append(field).append("\">");
         break;
@@ -312,13 +264,16 @@ public class SortField {
     }
 
     if (reverse) buffer.append('!');
+    if (missingValue != null) {
+      buffer.append(" missingValue=");
+      buffer.append(missingValue);
+    }
 
     return buffer.toString();
   }
 
   /** Returns true if <code>o</code> is equal to this.  If a
-   *  {@link FieldComparatorSource} or {@link
-   *  FieldCache.Parser} was provided, it must properly
+   *  {@link FieldComparatorSource} was provided, it must properly
    *  implement equals (unless a singleton is always used). */
   @Override
   public boolean equals(Object o) {
@@ -334,8 +289,7 @@ public class SortField {
   }
 
   /** Returns true if <code>o</code> is equal to this.  If a
-   *  {@link FieldComparatorSource} or {@link
-   *  FieldCache.Parser} was provided, it must properly
+   *  {@link FieldComparatorSource} was provided, it must properly
    *  implement hashCode (unless a singleton is always
    *  used). */
   @Override
@@ -378,31 +332,26 @@ public class SortField {
       return new FieldComparator.DocComparator(numHits);
 
     case INT:
-      return new FieldComparator.IntComparator(numHits, field, parser, (Integer) missingValue);
+      return new FieldComparator.IntComparator(numHits, field, (Integer) missingValue);
 
     case FLOAT:
-      return new FieldComparator.FloatComparator(numHits, field, parser, (Float) missingValue);
+      return new FieldComparator.FloatComparator(numHits, field, (Float) missingValue);
 
     case LONG:
-      return new FieldComparator.LongComparator(numHits, field, parser, (Long) missingValue);
+      return new FieldComparator.LongComparator(numHits, field, (Long) missingValue);
 
     case DOUBLE:
-      return new FieldComparator.DoubleComparator(numHits, field, parser, (Double) missingValue);
-
-    case BYTE:
-      return new FieldComparator.ByteComparator(numHits, field, parser, (Byte) missingValue);
-
-    case SHORT:
-      return new FieldComparator.ShortComparator(numHits, field, parser, (Short) missingValue);
+      return new FieldComparator.DoubleComparator(numHits, field, (Double) missingValue);
 
     case CUSTOM:
       assert comparatorSource != null;
       return comparatorSource.newComparator(field, numHits, sortPos, reverse);
 
     case STRING:
-      return new FieldComparator.TermOrdValComparator(numHits, field);
+      return new FieldComparator.TermOrdValComparator(numHits, field, missingValue == STRING_LAST);
 
     case STRING_VAL:
+      // TODO: should we remove this?  who really uses it?
       return new FieldComparator.TermValComparator(numHits, field);
 
     case REWRITEABLE:
@@ -425,5 +374,10 @@ public class SortField {
    */
   public SortField rewrite(IndexSearcher searcher) throws IOException {
     return this;
+  }
+  
+  /** Whether the relevance score is needed to sort documents. */
+  public boolean needsScores() {
+    return type == Type.SCORE;
   }
 }

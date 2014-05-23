@@ -52,7 +52,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -103,7 +103,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
     
     qp = new StandardQueryParser(ANALYZER);
     
-    final HashMap<String,Number> randomNumberMap = new HashMap<String,Number>();
+    final HashMap<String,Number> randomNumberMap = new HashMap<>();
     
     SimpleDateFormat dateFormat;
     long randomDate;
@@ -190,12 +190,12 @@ public class TestNumericQueryParser extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
-            .setMaxBufferedDocs(_TestUtil.nextInt(random(), 50, 1000))
+            .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000))
             .setMergePolicy(newLogMergePolicy()));
     
     Document doc = new Document();
-    HashMap<String,NumericConfig> numericConfigMap = new HashMap<String,NumericConfig>();
-    HashMap<String,Field> numericFieldMap = new HashMap<String,Field>();
+    HashMap<String,NumericConfig> numericConfigMap = new HashMap<>();
+    HashMap<String,Field> numericFieldMap = new HashMap<>();
     qp.setNumericConfigMap(numericConfigMap);
     
     for (NumericType type : NumericType.values()) {
@@ -247,7 +247,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
     
     reader = writer.getReader();
     searcher = newSearcher(reader);
-    writer.close();
+    writer.shutdown();
     
   }
   
@@ -525,6 +525,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
     reader = null;
     directory.close();
     directory = null;
+    qp = null;
   }
   
 }

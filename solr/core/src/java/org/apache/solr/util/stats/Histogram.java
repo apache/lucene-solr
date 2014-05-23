@@ -74,7 +74,7 @@ public class Histogram {
   // These are for the Welford algorithm for calculating running variance
   // without floating-point doom.
   private final AtomicReference<double[]> variance =
-      new AtomicReference<double[]>(new double[]{-1, 0}); // M, S
+      new AtomicReference<>(new double[]{-1, 0}); // M, S
   private final AtomicLong count = new AtomicLong();
 
   /**

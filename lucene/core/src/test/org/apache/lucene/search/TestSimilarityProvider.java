@@ -61,7 +61,7 @@ public class TestSimilarityProvider extends LuceneTestCase {
     field2.setStringValue("jumps over lazy brown dog");
     iw.addDocument(doc);
     reader = iw.getReader();
-    iw.close();
+    iw.shutdown();
     searcher = newSearcher(reader);
     searcher.setSimilarity(sim);
   }
@@ -76,7 +76,7 @@ public class TestSimilarityProvider extends LuceneTestCase {
   public void testBasics() throws Exception {
     // sanity check of norms writer
     // TODO: generalize
-    AtomicReader slow = new SlowCompositeReaderWrapper(reader);
+    AtomicReader slow = SlowCompositeReaderWrapper.wrap(reader);
     NumericDocValues fooNorms = slow.getNormValues("foo");
     NumericDocValues barNorms = slow.getNormValues("bar");
     for (int i = 0; i < slow.maxDoc(); i++) {
@@ -106,6 +106,16 @@ public class TestSimilarityProvider extends LuceneTestCase {
   }
   
   private class Sim1 extends TFIDFSimilarity {
+    
+    @Override
+    public long encodeNormValue(float f) {
+      return (long) f;
+    }
+    
+    @Override
+    public float decodeNormValue(long norm) {
+      return norm;
+    }
     
     @Override
     public float coord(int overlap, int maxOverlap) {
@@ -144,6 +154,16 @@ public class TestSimilarityProvider extends LuceneTestCase {
   }
   
   private class Sim2 extends TFIDFSimilarity {
+    
+    @Override
+    public long encodeNormValue(float f) {
+      return (long) f;
+    }
+    
+    @Override
+    public float decodeNormValue(long norm) {
+      return norm;
+    }
     
     @Override
     public float coord(int overlap, int maxOverlap) {

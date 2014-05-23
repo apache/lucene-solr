@@ -73,7 +73,7 @@ final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
    */
   public synchronized void reload(ClassLoader classloader) {
     final LinkedHashMap<String,Class<? extends S>> services =
-      new LinkedHashMap<String,Class<? extends S>>(this.services);
+      new LinkedHashMap<>(this.services);
     final SPIClassIterator<S> loader = SPIClassIterator.get(clazz, classloader);
     while (loader.hasNext()) {
       final Class<? extends S> service = loader.next();
@@ -120,7 +120,7 @@ final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
       return service;
     } else {
       throw new IllegalArgumentException("A SPI class of type "+clazz.getName()+" with name '"+name+"' does not exist. "+
-          "You need to add the corresponding JAR file supporting this SPI to your classpath."+
+          "You need to add the corresponding JAR file supporting this SPI to your classpath. "+
           "The current classpath supports the following names: "+availableServices());
     }
   }

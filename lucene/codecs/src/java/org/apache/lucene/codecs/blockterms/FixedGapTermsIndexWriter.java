@@ -18,15 +18,15 @@ package org.apache.lucene.codecs.blockterms;
  */
 
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TermStats;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
 import java.util.List;
@@ -42,7 +42,7 @@ import java.io.IOException;
  *
  * @lucene.experimental */
 public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
-  protected final IndexOutput out;
+  protected IndexOutput out;
 
   /** Extension of terms index file */
   static final String TERMS_INDEX_EXTENSION = "tii";
@@ -50,23 +50,33 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
   final static String CODEC_NAME = "SIMPLE_STANDARD_TERMS_INDEX";
   final static int VERSION_START = 0;
   final static int VERSION_APPEND_ONLY = 1;
-  final static int VERSION_CURRENT = VERSION_APPEND_ONLY;
+  final static int VERSION_MONOTONIC_ADDRESSING = 2;
+  final static int VERSION_CHECKSUM = 3;
+  final static int VERSION_CURRENT = VERSION_CHECKSUM;
 
+  final static int BLOCKSIZE = 4096;
   final private int termIndexInterval;
+  public static final int DEFAULT_TERM_INDEX_INTERVAL = 32;
 
-  private final List<SimpleFieldWriter> fields = new ArrayList<SimpleFieldWriter>();
+  private final List<SimpleFieldWriter> fields = new ArrayList<>();
   
-  @SuppressWarnings("unused") private final FieldInfos fieldInfos; // unread
-
   public FixedGapTermsIndexWriter(SegmentWriteState state) throws IOException {
+    this(state, DEFAULT_TERM_INDEX_INTERVAL);
+  }
+  
+  public FixedGapTermsIndexWriter(SegmentWriteState state, int termIndexInterval) throws IOException {
+    if (termIndexInterval <= 0) {
+      throw new IllegalArgumentException("invalid termIndexInterval: " + termIndexInterval);
+    }
+    this.termIndexInterval = termIndexInterval;
     final String indexFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TERMS_INDEX_EXTENSION);
-    termIndexInterval = state.termIndexInterval;
     out = state.directory.createOutput(indexFileName, state.context);
     boolean success = false;
     try {
-      fieldInfos = state.fieldInfos;
       writeHeader(out);
-      out.writeInt(termIndexInterval);
+      out.writeVInt(termIndexInterval);
+      out.writeVInt(PackedInts.VERSION_CURRENT);
+      out.writeVInt(BLOCKSIZE);
       success = true;
     } finally {
       if (!success) {
@@ -114,22 +124,25 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
     long packedOffsetsStart;
     private long numTerms;
 
-    // TODO: we could conceivably make a PackedInts wrapper
-    // that auto-grows... then we wouldn't force 6 bytes RAM
-    // per index term:
-    private short[] termLengths;
-    private int[] termsPointerDeltas;
-    private long lastTermsPointer;
-    private long totTermLength;
+    private RAMOutputStream offsetsBuffer = new RAMOutputStream();
+    private MonotonicBlockPackedWriter termOffsets = new MonotonicBlockPackedWriter(offsetsBuffer, BLOCKSIZE);
+    private long currentOffset;
+
+    private RAMOutputStream addressBuffer = new RAMOutputStream();
+    private MonotonicBlockPackedWriter termAddresses = new MonotonicBlockPackedWriter(addressBuffer, BLOCKSIZE);
 
     private final BytesRef lastTerm = new BytesRef();
 
     SimpleFieldWriter(FieldInfo fieldInfo, long termsFilePointer) {
       this.fieldInfo = fieldInfo;
       indexStart = out.getFilePointer();
-      termsStart = lastTermsPointer = termsFilePointer;
-      termLengths = new short[0];
-      termsPointerDeltas = new int[0];
+      termsStart = termsFilePointer;
+      // we write terms+1 offsets, term n's length is n+1 - n
+      try {
+        termOffsets.add(0L);
+      } catch (IOException bogus) {
+        throw new RuntimeException(bogus);
+      }
     }
 
     @Override
@@ -157,21 +170,13 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
       // against prior term
       out.writeBytes(text.bytes, text.offset, indexedTermLength);
 
-      if (termLengths.length == numIndexTerms) {
-        termLengths = ArrayUtil.grow(termLengths);
-      }
-      if (termsPointerDeltas.length == numIndexTerms) {
-        termsPointerDeltas = ArrayUtil.grow(termsPointerDeltas);
-      }
-
       // save delta terms pointer
-      termsPointerDeltas[numIndexTerms] = (int) (termsFilePointer - lastTermsPointer);
-      lastTermsPointer = termsFilePointer;
+      termAddresses.add(termsFilePointer - termsStart);
 
       // save term length (in bytes)
       assert indexedTermLength <= Short.MAX_VALUE;
-      termLengths[numIndexTerms] = (short) indexedTermLength;
-      totTermLength += indexedTermLength;
+      currentOffset += indexedTermLength;
+      termOffsets.add(currentOffset);
 
       lastTerm.copyBytes(text);
       numIndexTerms++;
@@ -183,69 +188,61 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
       // write primary terms dict offsets
       packedIndexStart = out.getFilePointer();
 
-      PackedInts.Writer w = PackedInts.getWriter(out, numIndexTerms, PackedInts.bitsRequired(termsFilePointer), PackedInts.DEFAULT);
-
       // relative to our indexStart
-      long upto = 0;
-      for(int i=0;i<numIndexTerms;i++) {
-        upto += termsPointerDeltas[i];
-        w.add(upto);
-      }
-      w.finish();
+      termAddresses.finish();
+      addressBuffer.writeTo(out);
 
       packedOffsetsStart = out.getFilePointer();
 
       // write offsets into the byte[] terms
-      w = PackedInts.getWriter(out, 1+numIndexTerms, PackedInts.bitsRequired(totTermLength), PackedInts.DEFAULT);
-      upto = 0;
-      for(int i=0;i<numIndexTerms;i++) {
-        w.add(upto);
-        upto += termLengths[i];
-      }
-      w.add(upto);
-      w.finish();
+      termOffsets.finish();
+      offsetsBuffer.writeTo(out);
 
       // our referrer holds onto us, while other fields are
       // being written, so don't tie up this RAM:
-      termLengths = null;
-      termsPointerDeltas = null;
+      termOffsets = termAddresses = null;
+      addressBuffer = offsetsBuffer = null;
     }
   }
 
   @Override
   public void close() throws IOException {
-    boolean success = false;
-    try {
-      final long dirStart = out.getFilePointer();
-      final int fieldCount = fields.size();
-      
-      int nonNullFieldCount = 0;
-      for(int i=0;i<fieldCount;i++) {
-        SimpleFieldWriter field = fields.get(i);
-        if (field.numIndexTerms > 0) {
-          nonNullFieldCount++;
+    if (out != null) {
+      boolean success = false;
+      try {
+        final long dirStart = out.getFilePointer();
+        final int fieldCount = fields.size();
+        
+        int nonNullFieldCount = 0;
+        for(int i=0;i<fieldCount;i++) {
+          SimpleFieldWriter field = fields.get(i);
+          if (field.numIndexTerms > 0) {
+            nonNullFieldCount++;
+          }
         }
-      }
-      
-      out.writeVInt(nonNullFieldCount);
-      for(int i=0;i<fieldCount;i++) {
-        SimpleFieldWriter field = fields.get(i);
-        if (field.numIndexTerms > 0) {
-          out.writeVInt(field.fieldInfo.number);
-          out.writeVInt(field.numIndexTerms);
-          out.writeVLong(field.termsStart);
-          out.writeVLong(field.indexStart);
-          out.writeVLong(field.packedIndexStart);
-          out.writeVLong(field.packedOffsetsStart);
+        
+        out.writeVInt(nonNullFieldCount);
+        for(int i=0;i<fieldCount;i++) {
+          SimpleFieldWriter field = fields.get(i);
+          if (field.numIndexTerms > 0) {
+            out.writeVInt(field.fieldInfo.number);
+            out.writeVInt(field.numIndexTerms);
+            out.writeVLong(field.termsStart);
+            out.writeVLong(field.indexStart);
+            out.writeVLong(field.packedIndexStart);
+            out.writeVLong(field.packedOffsetsStart);
+          }
         }
-      }
-      writeTrailer(dirStart);
-      success = true;
-    } finally {
-      if (success) {
-        IOUtils.close(out);
-      } else {
-        IOUtils.closeWhileHandlingException(out);
+        writeTrailer(dirStart);
+        CodecUtil.writeFooter(out);
+        success = true;
+      } finally {
+        if (success) {
+          IOUtils.close(out);
+        } else {
+          IOUtils.closeWhileHandlingException(out);
+        }
+        out = null;
       }
     }
   }

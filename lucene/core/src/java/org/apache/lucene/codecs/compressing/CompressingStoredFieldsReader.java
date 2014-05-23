@@ -27,12 +27,16 @@ import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.STRING;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_BITS;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_MASK;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_BIG_CHUNKS;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_CHECKSUM;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_CURRENT;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_START;
 import static org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsWriter.FIELDS_EXTENSION;
 import static org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsWriter.FIELDS_INDEX_EXTENSION;
 
+import java.io.EOFException;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.apache.lucene.codecs.CodecUtil;
@@ -44,7 +48,10 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.BufferedChecksumIndexInput;
 import org.apache.lucene.store.ByteArrayDataInput;
+import org.apache.lucene.store.ChecksumIndexInput;
+import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -60,9 +67,15 @@ import org.apache.lucene.util.packed.PackedInts;
  */
 public final class CompressingStoredFieldsReader extends StoredFieldsReader {
 
+  // Do not reuse the decompression buffer when there is more than 32kb to decompress
+  private static final int BUFFER_REUSE_THRESHOLD = 1 << 15;
+
+  private final int version;
   private final FieldInfos fieldInfos;
   private final CompressingStoredFieldsIndexReader indexReader;
+  private final long maxPointer;
   private final IndexInput fieldsStream;
+  private final int chunkSize;
   private final int packedIntsVersion;
   private final CompressionMode compressionMode;
   private final Decompressor decompressor;
@@ -72,9 +85,12 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
 
   // used by clone
   private CompressingStoredFieldsReader(CompressingStoredFieldsReader reader) {
+    this.version = reader.version;
     this.fieldInfos = reader.fieldInfos;
     this.fieldsStream = reader.fieldsStream.clone();
     this.indexReader = reader.indexReader.clone();
+    this.maxPointer = reader.maxPointer;
+    this.chunkSize = reader.chunkSize;
     this.packedIntsVersion = reader.packedIntsVersion;
     this.compressionMode = reader.compressionMode;
     this.decompressor = reader.decompressor.clone();
@@ -91,22 +107,50 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     boolean success = false;
     fieldInfos = fn;
     numDocs = si.getDocCount();
-    IndexInput indexStream = null;
+    ChecksumIndexInput indexStream = null;
     try {
-      fieldsStream = d.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_EXTENSION), context);
       final String indexStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_INDEX_EXTENSION);
-      indexStream = d.openInput(indexStreamFN, context);
-
+      final String fieldsStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_EXTENSION);
+      // Load the index into memory
+      indexStream = d.openChecksumInput(indexStreamFN, context);
       final String codecNameIdx = formatName + CODEC_SFX_IDX;
-      final String codecNameDat = formatName + CODEC_SFX_DAT;
-      CodecUtil.checkHeader(indexStream, codecNameIdx, VERSION_START, VERSION_CURRENT);
-      CodecUtil.checkHeader(fieldsStream, codecNameDat, VERSION_START, VERSION_CURRENT);
-      assert CodecUtil.headerLength(codecNameDat) == fieldsStream.getFilePointer();
+      version = CodecUtil.checkHeader(indexStream, codecNameIdx, VERSION_START, VERSION_CURRENT);
       assert CodecUtil.headerLength(codecNameIdx) == indexStream.getFilePointer();
-
       indexReader = new CompressingStoredFieldsIndexReader(indexStream, si);
+
+      long maxPointer = -1;
+      
+      if (version >= VERSION_CHECKSUM) {
+        maxPointer = indexStream.readVLong();
+        CodecUtil.checkFooter(indexStream);
+      } else {
+        CodecUtil.checkEOF(indexStream);
+      }
+      indexStream.close();
       indexStream = null;
 
+      // Open the data file and read metadata
+      fieldsStream = d.openInput(fieldsStreamFN, context);
+      if (version >= VERSION_CHECKSUM) {
+        if (maxPointer + CodecUtil.footerLength() != fieldsStream.length()) {
+          throw new CorruptIndexException("Invalid fieldsStream maxPointer (file truncated?): maxPointer=" + maxPointer + ", length=" + fieldsStream.length());
+        }
+      } else {
+        maxPointer = fieldsStream.length();
+      }
+      this.maxPointer = maxPointer;
+      final String codecNameDat = formatName + CODEC_SFX_DAT;
+      final int fieldsVersion = CodecUtil.checkHeader(fieldsStream, codecNameDat, VERSION_START, VERSION_CURRENT);
+      if (version != fieldsVersion) {
+        throw new CorruptIndexException("Version mismatch between stored fields index and data: " + version + " != " + fieldsVersion);
+      }
+      assert CodecUtil.headerLength(codecNameDat) == fieldsStream.getFilePointer();
+
+      if (version >= VERSION_BIG_CHUNKS) {
+        chunkSize = fieldsStream.readVInt();
+      } else {
+        chunkSize = -1;
+      }
       packedIntsVersion = fieldsStream.readVInt();
       decompressor = compressionMode.newDecompressor();
       this.bytes = new BytesRef();
@@ -134,12 +178,12 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
   @Override
   public void close() throws IOException {
     if (!closed) {
-      IOUtils.close(fieldsStream, indexReader);
+      IOUtils.close(fieldsStream);
       closed = true;
     }
   }
 
-  private static void readField(ByteArrayDataInput in, StoredFieldVisitor visitor, FieldInfo info, int bits) throws IOException {
+  private static void readField(DataInput in, StoredFieldVisitor visitor, FieldInfo info, int bits) throws IOException {
     switch (bits & TYPE_MASK) {
       case BYTE_ARR:
         int length = in.readVInt();
@@ -151,7 +195,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
         length = in.readVInt();
         data = new byte[length];
         in.readBytes(data, 0, length);
-        visitor.stringField(info, new String(data, IOUtils.CHARSET_UTF_8));
+        visitor.stringField(info, new String(data, StandardCharsets.UTF_8));
         break;
       case NUMERIC_INT:
         visitor.intField(info, in.readInt());
@@ -170,7 +214,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     }
   }
 
-  private static void skipField(ByteArrayDataInput in, int bits) throws IOException {
+  private static void skipField(DataInput in, int bits) throws IOException {
     switch (bits & TYPE_MASK) {
       case BYTE_ARR:
       case STRING:
@@ -255,10 +299,56 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       return;
     }
 
-    decompressor.decompress(fieldsStream, totalLength, offset, length, bytes);
-    assert bytes.length == length;
+    final DataInput documentInput;
+    if (version >= VERSION_BIG_CHUNKS && totalLength >= 2 * chunkSize) {
+      assert chunkSize > 0;
+      assert offset < chunkSize;
 
-    final ByteArrayDataInput documentInput = new ByteArrayDataInput(bytes.bytes, bytes.offset, bytes.length);
+      decompressor.decompress(fieldsStream, chunkSize, offset, Math.min(length, chunkSize - offset), bytes);
+      documentInput = new DataInput() {
+
+        int decompressed = bytes.length;
+
+        void fillBuffer() throws IOException {
+          assert decompressed <= length;
+          if (decompressed == length) {
+            throw new EOFException();
+          }
+          final int toDecompress = Math.min(length - decompressed, chunkSize);
+          decompressor.decompress(fieldsStream, toDecompress, 0, toDecompress, bytes);
+          decompressed += toDecompress;
+        }
+
+        @Override
+        public byte readByte() throws IOException {
+          if (bytes.length == 0) {
+            fillBuffer();
+          }
+          --bytes.length;
+          return bytes.bytes[bytes.offset++];
+        }
+
+        @Override
+        public void readBytes(byte[] b, int offset, int len) throws IOException {
+          while (len > bytes.length) {
+            System.arraycopy(bytes.bytes, bytes.offset, b, offset, bytes.length);
+            len -= bytes.length;
+            offset += bytes.length;
+            fillBuffer();
+          }
+          System.arraycopy(bytes.bytes, bytes.offset, b, offset, len);
+          bytes.offset += len;
+          bytes.length -= len;
+        }
+
+      };
+    } else {
+      final BytesRef bytes = totalLength <= BUFFER_REUSE_THRESHOLD ? this.bytes : new BytesRef();
+      decompressor.decompress(fieldsStream, totalLength, offset, length, bytes);
+      assert bytes.length == length;
+      documentInput = new ByteArrayDataInput(bytes.bytes, bytes.offset, bytes.length);
+    }
+
     for (int fieldIDX = 0; fieldIDX < numStoredFields; fieldIDX++) {
       final long infoAndBits = documentInput.readVLong();
       final int fieldNumber = (int) (infoAndBits >>> TYPE_BITS);
@@ -270,17 +360,14 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       switch(visitor.needsField(fieldInfo)) {
         case YES:
           readField(documentInput, visitor, fieldInfo, bits);
-          assert documentInput.getPosition() <= bytes.offset + bytes.length : documentInput.getPosition() + " " + bytes.offset + bytes.length;
           break;
         case NO:
           skipField(documentInput, bits);
-          assert documentInput.getPosition() <= bytes.offset + bytes.length : documentInput.getPosition() + " " + bytes.offset + bytes.length;
           break;
         case STOP:
           return;
       }
     }
-    assert documentInput.getPosition() == bytes.offset + bytes.length : documentInput.getPosition() + " " + bytes.offset + " " + bytes.length;
   }
 
   @Override
@@ -289,29 +376,44 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     return new CompressingStoredFieldsReader(this);
   }
 
+  int getVersion() {
+    return version;
+  }
+
   CompressionMode getCompressionMode() {
     return compressionMode;
   }
 
+  int getChunkSize() {
+    return chunkSize;
+  }
+
   ChunkIterator chunkIterator(int startDocID) throws IOException {
     ensureOpen();
-    fieldsStream.seek(indexReader.getStartPointer(startDocID));
-    return new ChunkIterator();
+    return new ChunkIterator(startDocID);
   }
 
   final class ChunkIterator {
 
-    BytesRef bytes;
+    final ChecksumIndexInput fieldsStream;
+    final BytesRef spare;
+    final BytesRef bytes;
     int docBase;
     int chunkDocs;
     int[] numStoredFields;
     int[] lengths;
 
-    private ChunkIterator() {
+    private ChunkIterator(int startDocId) throws IOException {
       this.docBase = -1;
       bytes = new BytesRef();
+      spare = new BytesRef();
       numStoredFields = new int[1];
       lengths = new int[1];
+
+      IndexInput in = CompressingStoredFieldsReader.this.fieldsStream;
+      in.seek(0);
+      fieldsStream = new BufferedChecksumIndexInput(in);
+      fieldsStream.seek(indexReader.getStartPointer(startDocId));
     }
 
     /**
@@ -385,22 +487,46 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     void decompress() throws IOException {
       // decompress data
       final int chunkSize = chunkSize();
-      decompressor.decompress(fieldsStream, chunkSize, 0, chunkSize, bytes);
+      if (version >= VERSION_BIG_CHUNKS && chunkSize >= 2 * CompressingStoredFieldsReader.this.chunkSize) {
+        bytes.offset = bytes.length = 0;
+        for (int decompressed = 0; decompressed < chunkSize; ) {
+          final int toDecompress = Math.min(chunkSize - decompressed, CompressingStoredFieldsReader.this.chunkSize);
+          decompressor.decompress(fieldsStream, toDecompress, 0, toDecompress, spare);
+          bytes.bytes = ArrayUtil.grow(bytes.bytes, bytes.length + spare.length);
+          System.arraycopy(spare.bytes, spare.offset, bytes.bytes, bytes.length, spare.length);
+          bytes.length += spare.length;
+          decompressed += toDecompress;
+        }
+      } else {
+        decompressor.decompress(fieldsStream, chunkSize, 0, chunkSize, bytes);
+      }
       if (bytes.length != chunkSize) {
         throw new CorruptIndexException("Corrupted: expected chunk size = " + chunkSize() + ", got " + bytes.length + " (resource=" + fieldsStream + ")");
       }
     }
 
     /**
-     * Copy compressed data.
+     * Check integrity of the data. The iterator is not usable after this method has been called.
      */
-    void copyCompressedData(DataOutput out) throws IOException {
-      final long chunkEnd = docBase + chunkDocs == numDocs
-          ? fieldsStream.length()
-          : indexReader.getStartPointer(docBase + chunkDocs);
-      out.copyBytes(fieldsStream, chunkEnd - fieldsStream.getFilePointer());
+    void checkIntegrity() throws IOException {
+      if (version >= VERSION_CHECKSUM) {
+        fieldsStream.seek(fieldsStream.length() - CodecUtil.footerLength());
+        CodecUtil.checkFooter(fieldsStream);
+      }
     }
 
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return indexReader.ramBytesUsed();
+  }
+
+  @Override
+  public void checkIntegrity() throws IOException {
+    if (version >= VERSION_CHECKSUM) {
+      CodecUtil.checksumEntireFile(fieldsStream);
+    }
   }
 
 }

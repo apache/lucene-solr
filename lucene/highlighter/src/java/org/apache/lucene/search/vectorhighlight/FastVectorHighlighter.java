@@ -18,6 +18,8 @@ package org.apache.lucene.search.vectorhighlight;
  */
 
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Query;
@@ -28,7 +30,6 @@ import org.apache.lucene.search.highlight.Encoder;
  *
  */
 public class FastVectorHighlighter {
-
   public static final boolean DEFAULT_PHRASE_HIGHLIGHT = true;
   public static final boolean DEFAULT_FIELD_MATCH = true;
   private final boolean phraseHighlight;
@@ -186,13 +187,68 @@ public class FastVectorHighlighter {
     return fragmentsBuilder.createFragments( reader, docId, fieldName, fieldFragList, maxNumFragments,
         preTags, postTags, encoder );
   }
-  
+
+  /**
+   * Return the best fragments.  Matches are scanned from matchedFields and turned into fragments against
+   * storedField.  The highlighting may not make sense if matchedFields has matches with offsets that don't
+   * correspond features in storedField.  It will outright throw a {@code StringIndexOutOfBoundsException}
+   * if matchedFields produces offsets outside of storedField.  As such it is advisable that all
+   * matchedFields share the same source as storedField or are at least a prefix of it.
+   * 
+   * @param fieldQuery {@link FieldQuery} object
+   * @param reader {@link IndexReader} of the index
+   * @param docId document id to be highlighted
+   * @param storedField field of the document that stores the text
+   * @param matchedFields fields of the document to scan for matches
+   * @param fragCharSize the length (number of chars) of a fragment
+   * @param maxNumFragments maximum number of fragments
+   * @param fragListBuilder {@link FragListBuilder} object
+   * @param fragmentsBuilder {@link FragmentsBuilder} object
+   * @param preTags pre-tags to be used to highlight terms
+   * @param postTags post-tags to be used to highlight terms
+   * @param encoder an encoder that generates encoded text
+   * @return created fragments or null when no fragments created.
+   *         size of the array can be less than maxNumFragments
+   * @throws IOException If there is a low-level I/O error
+   */
+  public final String[] getBestFragments( final FieldQuery fieldQuery, IndexReader reader, int docId,
+      String storedField, Set< String > matchedFields, int fragCharSize, int maxNumFragments,
+      FragListBuilder fragListBuilder, FragmentsBuilder fragmentsBuilder,
+      String[] preTags, String[] postTags, Encoder encoder ) throws IOException {
+    FieldFragList fieldFragList =
+      getFieldFragList( fragListBuilder, fieldQuery, reader, docId, matchedFields, fragCharSize );
+    return fragmentsBuilder.createFragments( reader, docId, storedField, fieldFragList, maxNumFragments,
+        preTags, postTags, encoder );
+  }
+
+  /**
+   * Build a FieldFragList for one field.
+   */
   private FieldFragList getFieldFragList( FragListBuilder fragListBuilder,
       final FieldQuery fieldQuery, IndexReader reader, int docId,
-      String fieldName, int fragCharSize ) throws IOException {
-    FieldTermStack fieldTermStack = new FieldTermStack( reader, docId, fieldName, fieldQuery );
+      String matchedField, int fragCharSize ) throws IOException {
+    FieldTermStack fieldTermStack = new FieldTermStack( reader, docId, matchedField, fieldQuery );
     FieldPhraseList fieldPhraseList = new FieldPhraseList( fieldTermStack, fieldQuery, phraseLimit );
     return fragListBuilder.createFieldFragList( fieldPhraseList, fragCharSize );
+  }
+
+  /**
+   * Build a FieldFragList for more than one field.
+   */
+  private FieldFragList getFieldFragList( FragListBuilder fragListBuilder,
+      final FieldQuery fieldQuery, IndexReader reader, int docId,
+      Set< String > matchedFields, int fragCharSize ) throws IOException {
+    Iterator< String > matchedFieldsItr = matchedFields.iterator();
+    if ( !matchedFieldsItr.hasNext() ) {
+      throw new IllegalArgumentException( "matchedFields must contain at least on field name." );
+    }
+    FieldPhraseList[] toMerge = new FieldPhraseList[ matchedFields.size() ];
+    int i = 0;
+    while ( matchedFieldsItr.hasNext() ) {
+      FieldTermStack stack = new FieldTermStack( reader, docId, matchedFieldsItr.next(), fieldQuery );
+      toMerge[ i++ ] = new FieldPhraseList( stack, fieldQuery, phraseLimit );
+    } 
+    return fragListBuilder.createFieldFragList( new FieldPhraseList( toMerge ), fragCharSize );
   }
 
   /**

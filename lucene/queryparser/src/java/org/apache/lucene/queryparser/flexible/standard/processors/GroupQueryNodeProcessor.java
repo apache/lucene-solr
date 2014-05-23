@@ -80,7 +80,7 @@ public class GroupQueryNodeProcessor implements QueryNodeProcessor {
       queryTree = ((GroupQueryNode) queryTree).getChild();
     }
 
-    this.queryNodeList = new ArrayList<QueryNode>();
+    this.queryNodeList = new ArrayList<>();
     this.latestNodeVerified = false;
     readTree(queryTree);
 

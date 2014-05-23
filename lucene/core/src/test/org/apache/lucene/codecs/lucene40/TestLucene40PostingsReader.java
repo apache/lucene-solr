@@ -33,7 +33,8 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.junit.BeforeClass;
 
 public class TestLucene40PostingsReader extends LuceneTestCase {
   static final String terms[] = new String[100];
@@ -42,12 +43,17 @@ public class TestLucene40PostingsReader extends LuceneTestCase {
       terms[i] = Integer.toString(i+1);
     }
   }
+  
+  @BeforeClass
+  public static void beforeClass() {
+    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true; // explicitly instantiates ancient codec
+  }
 
   /** tests terms with different probabilities of being in the document.
    *  depends heavily on term vectors cross-check at checkIndex
    */
   public void testPostings() throws Exception {
-    Directory dir = newFSDirectory(_TestUtil.getTempDir("postings"));
+    Directory dir = newFSDirectory(createTempDir("postings"));
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwc.setCodec(Codec.forName("Lucene40"));
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
@@ -92,7 +98,7 @@ public class TestLucene40PostingsReader extends LuceneTestCase {
       // delete 1-100% of docs
       iw.deleteDocuments(new Term("title", terms[random().nextInt(terms.length)]));
     }
-    iw.close();
+    iw.shutdown();
     dir.close(); // checkindex
   }
   
@@ -106,11 +112,11 @@ public class TestLucene40PostingsReader extends LuceneTestCase {
   }
   
   String fieldValue(int maxTF) {
-    ArrayList<String> shuffled = new ArrayList<String>();
+    ArrayList<String> shuffled = new ArrayList<>();
     StringBuilder sb = new StringBuilder();
     int i = random().nextInt(terms.length);
     while (i < terms.length) {
-      int tf =  _TestUtil.nextInt(random(), 1, maxTF);
+      int tf =  TestUtil.nextInt(random(), 1, maxTF);
       for (int j = 0; j < tf; j++) {
         shuffled.add(terms[i]);
       }

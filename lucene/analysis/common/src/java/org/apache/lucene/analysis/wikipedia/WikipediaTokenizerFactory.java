@@ -17,12 +17,11 @@ package org.apache.lucene.analysis.wikipedia;
  * limitations under the License.
  */
 
-import java.io.Reader;
 import java.util.Collections;
 import java.util.Map;
 
 import org.apache.lucene.analysis.util.TokenizerFactory;
-import org.apache.lucene.util.AttributeSource.AttributeFactory;
+import org.apache.lucene.util.AttributeFactory;
 
 /** 
  * Factory for {@link WikipediaTokenizer}.
@@ -45,8 +44,8 @@ public class WikipediaTokenizerFactory extends TokenizerFactory {
   
   // TODO: add support for WikipediaTokenizer's advanced options.
   @Override
-  public WikipediaTokenizer create(AttributeFactory factory, Reader input) {
-    return new WikipediaTokenizer(factory, input, WikipediaTokenizer.TOKENS_ONLY, 
+  public WikipediaTokenizer create(AttributeFactory factory) {
+    return new WikipediaTokenizer(factory, WikipediaTokenizer.TOKENS_ONLY,
         Collections.<String>emptySet());
   }
 }

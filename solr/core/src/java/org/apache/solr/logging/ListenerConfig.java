@@ -19,8 +19,18 @@ package org.apache.solr.logging;
  */
 
 public class ListenerConfig {
-  public int size = 50;
-  public String threshold = null;
+
+  public final int size;
+  public final String threshold;
+
+  public ListenerConfig(int size, String threshold) {
+    this.size = size;
+    this.threshold = threshold;
+  }
+
+  public ListenerConfig() {
+    this(50, null);
+  }
   
   // Down the line, settings for solr URL/core to store logging
 }

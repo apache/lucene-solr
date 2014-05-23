@@ -24,9 +24,8 @@ import java.io.IOException;
  * <p>Implements {@link LockFactory} using {@link
  * File#createNewFile()}.</p>
  *
- * <p><b>NOTE:</b> the <a target="_top"
- * href="http://java.sun.com/j2se/1.4.2/docs/api/java/io/File.html#createNewFile()">javadocs
- * for <code>File.createNewFile</code></a> contain a vague
+ * <p><b>NOTE:</b> the {@linkplain File#createNewFile() javadocs
+ * for <code>File.createNewFile()</code>} contain a vague
  * yet spooky warning about not using the API for file
  * locking.  This warning was added due to <a target="_top"
  * href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4676183">this
@@ -42,6 +41,14 @@ import java.io.IOException;
  * API.  But, first be certain that no writer is in fact
  * writing to the index otherwise you can easily corrupt
  * your index.</p>
+ *
+ * <p>Special care needs to be taken if you change the locking
+ * implementation: First be certain that no writer is in fact
+ * writing to the index otherwise you can easily corrupt
+ * your index. Be sure to do the LockFactory change all Lucene
+ * instances and clean up all leftover lock files before starting
+ * the new configuration for the first time. Different implementations
+ * can not work together!</p>
  *
  * <p>If you suspect that this or any other LockFactory is
  * not working properly in your environment, you can easily
@@ -125,13 +132,24 @@ class SimpleFSLock extends Lock {
       throw new IOException("Found regular file where directory expected: " + 
                             lockDir.getAbsolutePath());
     }
-    return lockFile.createNewFile();
+    
+    try {
+      return lockFile.createNewFile();
+    } catch (IOException ioe) {
+      // On Windows, on concurrent createNewFile, the 2nd process gets "access denied".
+      // In that case, the lock was not aquired successfully, so return false.
+      // We record the failure reason here; the obtain with timeout (usually the
+      // one calling us) will use this as "root cause" if it fails to get the lock.
+      failureReason = ioe;
+      return false;
+    }
   }
 
   @Override
-  public void release() throws LockReleaseFailedException {
-    if (lockFile.exists() && !lockFile.delete())
+  public void close() throws LockReleaseFailedException {
+    if (lockFile.exists() && !lockFile.delete()) {
       throw new LockReleaseFailedException("failed to delete " + lockFile);
+    }
   }
 
   @Override

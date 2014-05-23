@@ -17,9 +17,6 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-// TODO: probably move this to core at some point (eg,
-// cutover kuromoji, synfilter, LookaheadTokenFilter)
-
 /** Acts like forever growing T[], but internally uses a
  *  circular buffer to reuse instances of T.
  * 

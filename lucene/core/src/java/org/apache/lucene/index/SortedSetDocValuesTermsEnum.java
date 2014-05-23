@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -37,7 +36,7 @@ class SortedSetDocValuesTermsEnum extends TermsEnum {
   }
 
   @Override
-  public SeekStatus seekCeil(BytesRef text, boolean useCache /* ignored */) throws IOException {
+  public SeekStatus seekCeil(BytesRef text) throws IOException {
     long ord = values.lookupTerm(text);
     if (ord >= 0) {
       currentOrd = ord;
@@ -61,7 +60,7 @@ class SortedSetDocValuesTermsEnum extends TermsEnum {
   }
 
   @Override
-  public boolean seekExact(BytesRef text, boolean useCache) throws IOException {
+  public boolean seekExact(BytesRef text) throws IOException {
     long ord = values.lookupTerm(text);
     if (ord >= 0) {
       term.offset = 0;
@@ -122,11 +121,6 @@ class SortedSetDocValuesTermsEnum extends TermsEnum {
   @Override
   public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
     throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public Comparator<BytesRef> getComparator() {
-    return BytesRef.getUTF8SortedAsUnicodeComparator();
   }
 
   @Override

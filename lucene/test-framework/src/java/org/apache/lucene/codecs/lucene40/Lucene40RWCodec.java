@@ -6,6 +6,8 @@ import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.SegmentInfoFormat;
+import org.apache.lucene.util.LuceneTestCase;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,11 +27,17 @@ import org.apache.lucene.codecs.NormsFormat;
  */
 
 /** Read-write version of Lucene40Codec for testing */
+@SuppressWarnings("deprecation")
 public final class Lucene40RWCodec extends Lucene40Codec {
+  
   private final FieldInfosFormat fieldInfos = new Lucene40FieldInfosFormat() {
     @Override
     public FieldInfosWriter getFieldInfosWriter() throws IOException {
-      return new Lucene40FieldInfosWriter();
+      if (!LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
+        return super.getFieldInfosWriter();
+      } else {
+        return new Lucene40FieldInfosWriter();
+      }
     }
   };
   
@@ -50,4 +58,5 @@ public final class Lucene40RWCodec extends Lucene40Codec {
   public NormsFormat normsFormat() {
     return norms;
   }
+  
 }

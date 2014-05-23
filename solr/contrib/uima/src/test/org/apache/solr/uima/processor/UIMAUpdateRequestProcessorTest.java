@@ -93,7 +93,6 @@ public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
 
   @Test
   public void testProcessing() throws Exception {
-
     addDoc("uima", adoc(
             "id",
             "2312312321312",
@@ -185,8 +184,15 @@ public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
     }
   }
 
+  @Test
+  public void testMultiplierProcessing() throws Exception {
+    for (int i = 0; i < RANDOM_MULTIPLIER; i++) {
+      testProcessing();
+    }
+  }
+
   private void addDoc(String chain, String doc) throws Exception {
-    Map<String, String[]> params = new HashMap<String, String[]>();
+    Map<String, String[]> params = new HashMap<>();
     params.put(UpdateParams.UPDATE_CHAIN, new String[] { chain });
     MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
     SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(), (SolrParams) mmparams) {
@@ -194,7 +200,7 @@ public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
 
     UpdateRequestHandler handler = new UpdateRequestHandler();
     handler.init(null);
-    ArrayList<ContentStream> streams = new ArrayList<ContentStream>(2);
+    ArrayList<ContentStream> streams = new ArrayList<>(2);
     streams.add(new ContentStreamBase.StringStream(doc));
     req.setContentStreams(streams);
     handler.handleRequestBody(req, new SolrQueryResponse());

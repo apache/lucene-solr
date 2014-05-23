@@ -210,7 +210,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
      );
     
     // test each combination at random
-    final List<String> list = new ArrayList<String>();
+    final List<String> list = new ArrayList<>();
     list.addAll(Arrays.asList("json.nl","map", "qt",tv, "q", "id:0", TermVectorComponent.COMPONENT_NAME, "true"));
     String[][] options = new String[][] { { TermVectorParams.TF, "'tf':1" },
         { TermVectorParams.OFFSETS, "'offsets':{'start':20, 'end':27}" },

@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.miscellaneous;
 import java.io.Reader;
 import java.io.StringReader;
 
-import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.util.StringMockResourceLoader;
@@ -32,7 +31,7 @@ public class TestStemmerOverrideFilterFactory extends BaseTokenStreamFactoryTest
   public void testKeywords() throws Exception {
     // our stemdict stems dogs to 'cat'
     Reader reader = new StringReader("testing dogs");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("StemmerOverride", TEST_VERSION_CURRENT,
         new StringMockResourceLoader("dogs\tcat"),
         "dictionary", "stemdict.txt").create(stream);
@@ -43,7 +42,7 @@ public class TestStemmerOverrideFilterFactory extends BaseTokenStreamFactoryTest
   
   public void testKeywordsCaseInsensitive() throws Exception {
     Reader reader = new StringReader("testing DoGs");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("StemmerOverride", TEST_VERSION_CURRENT,
         new StringMockResourceLoader("dogs\tcat"),
         "dictionary", "stemdict.txt",

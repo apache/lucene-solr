@@ -36,17 +36,17 @@ import java.util.Map;
  */
 public class TripleThreatTransformer {
   public Object transformRow(Map<String, Object> row) {
-    List<Map<String, Object>> rows = new ArrayList<Map<String, Object>>(3);
+    List<Map<String, Object>> rows = new ArrayList<>(3);
     rows.add(row);
     rows.add(addDuplicateBackwardsValues(row));
-    rows.add(new LinkedHashMap<String,Object>(row));
+    rows.add(new LinkedHashMap<>(row));
     rows.get(2).put("AddAColumn_s", "Added");
     modifyIdColumn(rows.get(1), 1);
     modifyIdColumn(rows.get(2), 2);
     return rows;
   }
   private LinkedHashMap<String,Object> addDuplicateBackwardsValues(Map<String, Object> row) {
-    LinkedHashMap<String,Object> n = new LinkedHashMap<String,Object>();
+    LinkedHashMap<String,Object> n = new LinkedHashMap<>();
     for(Map.Entry<String,Object> entry : row.entrySet()) {
       String key = entry.getKey();
       if(!"id".equalsIgnoreCase(key)) {

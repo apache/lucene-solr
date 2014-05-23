@@ -111,7 +111,7 @@ public class TestUnicodeUtil extends LuceneTestCase {
     BytesRef utf8 = new BytesRef(20);
     int num = atLeast(50000);
     for (int i = 0; i < num; i++) {
-      final String s = _TestUtil.randomUnicodeString(random());
+      final String s = TestUtil.randomUnicodeString(random());
       UnicodeUtil.UTF16toUTF8(s, 0, s.length(), utf8);
       assertEquals(s.codePointCount(0, s.length()),
                    UnicodeUtil.codePointCount(utf8));
@@ -142,7 +142,7 @@ public class TestUnicodeUtil extends LuceneTestCase {
     int[] codePoints = new int[20];
     int num = atLeast(50000);
     for (int i = 0; i < num; i++) {
-      final String s = _TestUtil.randomUnicodeString(random());
+      final String s = TestUtil.randomUnicodeString(random());
       UnicodeUtil.UTF16toUTF8(s, 0, s.length(), utf8);
       UnicodeUtil.UTF8toUTF32(utf8, utf32);
       
@@ -208,7 +208,7 @@ public class TestUnicodeUtil extends LuceneTestCase {
   public void testUTF8UTF16CharsRef() {
     int num = atLeast(3989);
     for (int i = 0; i < num; i++) {
-      String unicode = _TestUtil.randomRealisticUnicodeString(random());
+      String unicode = TestUtil.randomRealisticUnicodeString(random());
       BytesRef ref = new BytesRef(unicode);
       char[] arr = new char[1 + random().nextInt(100)];
       int offset = random().nextInt(arr.length);

@@ -25,7 +25,7 @@ import java.util.List;
 
 /** @lucene.internal */
 public class MemOutputStream extends FastOutputStream {
-  public List<byte[]> buffers = new LinkedList<byte[]>();
+  public List<byte[]> buffers = new LinkedList<>();
   public MemOutputStream(byte[] tempBuffer) {
     super(null, tempBuffer, 0);
   }

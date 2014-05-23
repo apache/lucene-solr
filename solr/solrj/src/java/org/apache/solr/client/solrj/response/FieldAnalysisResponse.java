@@ -32,8 +32,8 @@ import java.util.Map;
  */
 public class FieldAnalysisResponse extends AnalysisResponseBase {
 
-  private Map<String, Analysis> analysisByFieldTypeName = new HashMap<String, Analysis>();
-  private Map<String, Analysis> analysisByFieldName = new HashMap<String, Analysis>();
+  private Map<String, Analysis> analysisByFieldTypeName = new HashMap<>();
+  private Map<String, Analysis> analysisByFieldName = new HashMap<>();
 
   /**
    * {@inheritDoc}

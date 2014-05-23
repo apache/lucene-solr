@@ -40,8 +40,8 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 
 /**
@@ -163,7 +163,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       // Make sure once disk space is avail again, we can
       // cleanly close:
       dir.setMaxSizeInBytes(0);
-      writer.close(false);
+      writer.shutdown(false);
       dir.close();
     }
   }
@@ -177,6 +177,9 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     int NUM_THREADS = 3;
     int numIterations = TEST_NIGHTLY ? 7 : 3;
     for(int iter=0;iter<numIterations;iter++) {
+      if (VERBOSE) {
+        System.out.println("\nTEST: iter=" + iter);
+      }
       Directory dir = newDirectory();
 
       IndexWriter writer = new IndexWriter(
@@ -209,7 +212,10 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
           }
       }
 
-      writer.close(false);
+      if (VERBOSE) {
+        System.out.println("\nTEST: now close");
+      }
+      writer.shutdown(false);
 
       // Make sure threads that are adding docs are not hung:
       for(int i=0;i<NUM_THREADS;i++) {
@@ -222,12 +228,12 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
 
       // Quick test to make sure index is not corrupt:
       IndexReader reader = DirectoryReader.open(dir);
-      DocsEnum tdocs = _TestUtil.docs(random(), reader,
-                                      "field",
-                                      new BytesRef("aaa"),
-                                      MultiFields.getLiveDocs(reader),
-                                      null,
-                                      0);
+      DocsEnum tdocs = TestUtil.docs(random(), reader,
+          "field",
+          new BytesRef("aaa"),
+          MultiFields.getLiveDocs(reader),
+          null,
+          0);
       int count = 0;
       while(tdocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
         count++;
@@ -280,11 +286,11 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
 
       boolean success = false;
       try {
-        writer.close(false);
+        writer.shutdown(false);
         success = true;
       } catch (IOException ioe) {
         failure.clearDoFail();
-        writer.close(false);
+        writer.close();
       }
       if (VERBOSE) {
         System.out.println("TEST: success=" + success);
@@ -334,7 +340,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     }
     failure.clearDoFail();
     writer.addDocument(doc);
-    writer.close(false);
+    writer.shutdown(false);
     dir.close();
   }
 
@@ -358,6 +364,9 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
         boolean sawClose = false;
         boolean sawMerge = false;
         for (int i = 0; i < trace.length; i++) {
+          if (sawAbortOrFlushDoc && sawMerge && sawClose) {
+            break;
+          }
           if ("abort".equals(trace[i].getMethodName()) ||
               "finishDocument".equals(trace[i].getMethodName())) {
             sawAbortOrFlushDoc = true;
@@ -370,8 +379,9 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
           }
         }
         if (sawAbortOrFlushDoc && !sawClose && !sawMerge) {
-          if (onlyOnce)
+          if (onlyOnce) {
             doFail = false;
+          }
           //System.out.println(Thread.currentThread().getName() + ": now fail");
           //new Throwable().printStackTrace(System.out);
           throw new IOException("now failing on purpose");
@@ -417,7 +427,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       if (doFail) {
         StackTraceElement[] trace = new Exception().getStackTrace();
         for (int i = 0; i < trace.length; i++) {
-          if ("flush".equals(trace[i].getMethodName()) && "org.apache.lucene.index.DocFieldProcessor".equals(trace[i].getClassName())) {
+          if ("flush".equals(trace[i].getMethodName()) && DefaultIndexingChain.class.getName().equals(trace[i].getClassName())) {
             if (onlyOnce)
               doFail = false;
             //System.out.println(Thread.currentThread().getName() + ": NOW FAIL: onlyOnce=" + onlyOnce);
@@ -518,7 +528,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
         iwConstructed.countDown();
         startIndexing.await();
         writer.addDocument(doc);
-        writer.close();
+        writer.shutdown();
       } catch (Throwable e) {
         failed = true;
         failure = e;
@@ -535,10 +545,13 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       ((MockDirectoryWrapper)d).setPreventDoubleWrite(false);
     }
 
-    final int threadCount = _TestUtil.nextInt(random(), 2, 6);
+    final int threadCount = TestUtil.nextInt(random(), 2, 6);
 
-    final AtomicReference<IndexWriter> writerRef = new AtomicReference<IndexWriter>();
-    writerRef.set(new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))));
+    final AtomicReference<IndexWriter> writerRef = new AtomicReference<>();
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
+
+    writerRef.set(new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer)));
     final LineFileDocs docs = new LineFileDocs(random());
     final Thread[] threads = new Thread[threadCount];
     final int iters = atLeast(100);
@@ -617,7 +630,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     }
 
     assertTrue(!failed.get());
-    writerRef.get().close();
+    writerRef.get().shutdown();
     d.close();
   }
 }

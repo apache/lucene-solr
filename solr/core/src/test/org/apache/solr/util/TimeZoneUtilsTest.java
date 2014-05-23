@@ -18,7 +18,7 @@
 package org.apache.solr.util;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 import java.util.Set;
 import java.util.HashSet;
@@ -46,7 +46,7 @@ public class TimeZoneUtilsTest extends LuceneTestCase {
 
   public void testValidIds() throws Exception {
 
-    final Set<String> idsTested = new HashSet<String>();
+    final Set<String> idsTested = new HashSet<>();
 
     // brain dead: anything the JVM supports, should work
     for (String validId : TimeZone.getAvailableIDs()) {
@@ -117,8 +117,8 @@ public class TimeZoneUtilsTest extends LuceneTestCase {
     final Random r = random();
     final int iters = atLeast(r, 50);
     for (int i = 0; i <= iters; i++) {
-      int hour = _TestUtil.nextInt(r, 0, 23);
-      int min = _TestUtil.nextInt(r, 0, 59);
+      int hour = TestUtil.nextInt(r, 0, 23);
+      int min = TestUtil.nextInt(r, 0, 59);
 
       String hours = String.format(Locale.ROOT, 
                                    (r.nextBoolean() ? ONE_DIGIT : TWO_DIGIT),

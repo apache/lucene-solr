@@ -33,8 +33,8 @@ import org.slf4j.LoggerFactory;
 public abstract class ZkClientConnectionStrategy {
   private static Logger log = LoggerFactory.getLogger(ZkClientConnectionStrategy.class);
   
-  private List<DisconnectedListener> disconnectedListeners = new ArrayList<DisconnectedListener>();
-  private List<ConnectedListener> connectedListeners = new ArrayList<ConnectedListener>();
+  private List<DisconnectedListener> disconnectedListeners = new ArrayList<>();
+  private List<ConnectedListener> connectedListeners = new ArrayList<>();
   
   public abstract void connect(String zkServerAddress, int zkClientTimeout, Watcher watcher, ZkUpdate updater) throws IOException, InterruptedException, TimeoutException;
   public abstract void reconnect(String serverAddress, int zkClientTimeout, Watcher watcher, ZkUpdate updater) throws IOException, InterruptedException, TimeoutException;
@@ -43,8 +43,8 @@ public abstract class ZkClientConnectionStrategy {
     for (DisconnectedListener listener : disconnectedListeners) {
       try {
         listener.disconnected();
-      } catch (Throwable t) {
-        SolrException.log(log, "", t);
+      } catch (Exception e) {
+        SolrException.log(log, "", e);
       }
     }
   }
@@ -53,8 +53,8 @@ public abstract class ZkClientConnectionStrategy {
     for (ConnectedListener listener : connectedListeners) {
       try {
         listener.connected();
-      } catch (Throwable t) {
-        SolrException.log(log, "", t);
+      } catch (Exception e) {
+        SolrException.log(log, "", e);
       }
     }
   }

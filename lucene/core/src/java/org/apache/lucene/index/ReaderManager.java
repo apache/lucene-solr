@@ -82,4 +82,9 @@ public final class ReaderManager extends ReferenceManager<DirectoryReader> {
     return reference.tryIncRef();
   }
 
+  @Override
+  protected int getRefCount(DirectoryReader reference) {
+    return reference.getRefCount();
+  }
+
 }

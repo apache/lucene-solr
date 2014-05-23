@@ -28,7 +28,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * 
@@ -49,11 +49,11 @@ public class TestOmitPositions extends LuceneTestCase {
     }
     
     IndexReader reader = w.getReader();
-    w.close();
+    w.shutdown();
     
     assertNull(MultiFields.getTermPositionsEnum(reader, null, "foo", new BytesRef("test")));
     
-    DocsEnum de = _TestUtil.docs(random(), reader, "foo", new BytesRef("test"), null, null, DocsEnum.FLAG_FREQS);
+    DocsEnum de = TestUtil.docs(random(), reader, "foo", new BytesRef("test"), null, null, DocsEnum.FLAG_FREQS);
     while (de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
       assertEquals(2, de.freq());
     }
@@ -151,7 +151,7 @@ public class TestOmitPositions extends LuceneTestCase {
     // force merge
     writer.forceMerge(1);
     // flush
-    writer.close();
+    writer.shutdown();
 
     SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(ram));
     FieldInfos fi = reader.getFieldInfos();
@@ -194,7 +194,7 @@ public class TestOmitPositions extends LuceneTestCase {
                                                                    TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(3).setMergePolicy(newLogMergePolicy()));
     LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
     lmp.setMergeFactor(2);
-    lmp.setUseCompoundFile(false);
+    lmp.setNoCFSRatio(0.0);
     Document d = new Document();
 
     FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
@@ -220,7 +220,7 @@ public class TestOmitPositions extends LuceneTestCase {
     // force merge
     writer.forceMerge(1);
     // flush
-    writer.close();
+    writer.shutdown();
 
     assertNoPrx(ram);
     ram.close();
@@ -258,7 +258,7 @@ public class TestOmitPositions extends LuceneTestCase {
     FieldInfos fis = MultiFields.getMergedFieldInfos(ir);
     assertEquals(IndexOptions.DOCS_AND_FREQS, fis.fieldInfo("foo").getIndexOptions());
     assertFalse(fis.fieldInfo("foo").hasPayloads());
-    iw.close();
+    iw.shutdown();
     ir.close();
     dir.close(); // checkindex
   }

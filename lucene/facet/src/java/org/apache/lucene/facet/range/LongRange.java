@@ -17,41 +17,146 @@ package org.apache.lucene.facet.range;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.NumericDocValuesField; // javadocs
+import java.io.IOException;
+import java.util.Collections;
 
-/** Represents a range over long values indexed as {@link
- *  NumericDocValuesField}.  */
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.queries.function.FunctionValues;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.util.Bits;
+
+/** Represents a range over long values.
+ *
+ * @lucene.experimental */
 public final class LongRange extends Range {
-  private final long minIncl;
-  private final long maxIncl;
+  final long minIncl;
+  final long maxIncl;
 
+  /** Minimum. */
   public final long min;
+
+  /** Maximum. */
   public final long max;
+
+  /** True if the minimum value is inclusive. */
   public final boolean minInclusive;
+
+  /** True if the maximum value is inclusive. */
   public final boolean maxInclusive;
 
+  // TODO: can we require fewer args? (same for
+  // Double/FloatRange too)
+
   /** Create a LongRange. */
-  public LongRange(String label, long min, boolean minInclusive, long max, boolean maxInclusive) {
+  public LongRange(String label, long minIn, boolean minInclusive, long maxIn, boolean maxInclusive) {
     super(label);
-    this.min = min;
-    this.max = max;
+    this.min = minIn;
+    this.max = maxIn;
     this.minInclusive = minInclusive;
     this.maxInclusive = maxInclusive;
 
-    if (!minInclusive && min != Long.MAX_VALUE) {
-      min++;
+    if (!minInclusive) {
+      if (minIn != Long.MAX_VALUE) {
+        minIn++;
+      } else {
+        failNoMatch();
+      }
     }
 
-    if (!maxInclusive && max != Long.MIN_VALUE) {
-      max--;
+    if (!maxInclusive) {
+      if (maxIn != Long.MIN_VALUE) {
+        maxIn--;
+      } else {
+        failNoMatch();
+      }
     }
 
-    this.minIncl = min;
-    this.maxIncl = max;
+    if (minIn > maxIn) {
+      failNoMatch();
+    }
+
+    this.minIncl = minIn;
+    this.maxIncl = maxIn;
+  }
+
+  /** True if this range accepts the provided value. */
+  public boolean accept(long value) {
+    return value >= minIncl && value <= maxIncl;
   }
 
   @Override
-  public boolean accept(long value) {
-    return value >= minIncl && value <= maxIncl;
+  public String toString() {
+    return "LongRange(" + minIncl + " to " + maxIncl + ")";
+  }
+
+  @Override
+  public Filter getFilter(final Filter fastMatchFilter, final ValueSource valueSource) {
+    return new Filter() {
+
+      @Override
+      public String toString() {
+        return "Filter(" + LongRange.this.toString() + ")";
+      }
+
+      @Override
+      public DocIdSet getDocIdSet(AtomicReaderContext context, final Bits acceptDocs) throws IOException {
+
+        // TODO: this is just like ValueSourceScorer,
+        // ValueSourceFilter (spatial),
+        // ValueSourceRangeFilter (solr); also,
+        // https://issues.apache.org/jira/browse/LUCENE-4251
+
+        final FunctionValues values = valueSource.getValues(Collections.emptyMap(), context);
+
+        final int maxDoc = context.reader().maxDoc();
+
+        final Bits fastMatchBits;
+        if (fastMatchFilter != null) {
+          DocIdSet dis = fastMatchFilter.getDocIdSet(context, null);
+          if (dis == null) {
+            // No documents match
+            return null;
+          }
+          fastMatchBits = dis.bits();
+          if (fastMatchBits == null) {
+            throw new IllegalArgumentException("fastMatchFilter does not implement DocIdSet.bits");
+          }
+        } else {
+          fastMatchBits = null;
+        }
+
+        return new DocIdSet() {
+
+          @Override
+          public Bits bits() {
+            return new Bits() {
+              @Override
+              public boolean get(int docID) {
+                if (acceptDocs != null && acceptDocs.get(docID) == false) {
+                  return false;
+                }
+                if (fastMatchBits != null && fastMatchBits.get(docID) == false) {
+                  return false;
+                }
+                return accept(values.longVal(docID));
+              }
+
+              @Override
+              public int length() {
+                return maxDoc;
+              }
+            };
+          }
+
+          @Override
+          public DocIdSetIterator iterator() {
+            throw new UnsupportedOperationException("this filter can only be accessed via bits()");
+          }
+        };
+      }
+    };
   }
 }

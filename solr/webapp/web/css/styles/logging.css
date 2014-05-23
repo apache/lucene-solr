@@ -1,3 +1,22 @@
+/*
+
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
 #content #logging .loader
 {
   background-position: 0 50%;
@@ -22,12 +41,48 @@
   position: relative;
 }
 
+#content #logging #viewer time
+{
+  white-space: pre;
+}
+
+#content #logging #viewer #footer
+{
+  margin-top: 20px;
+}
+
 #content #logging #viewer #state
 {
   background-position: 0 50%;
+  float: left;
   color: #c0c0c0;
-  margin-top: 20px;
   padding-left: 21px;
+  width: 45%;
+}
+
+#content #logging #viewer #date-format
+{
+  float: right;
+}
+
+#content #logging #viewer #date-format a
+{
+  background-image: url( ../../img/ico/ui-check-box-uncheck.png );
+  background-position: 0 50%;
+  color: #c0c0c0;
+  display: block;
+  padding-left: 21px;
+}
+
+#content #logging #viewer #date-format a:hover
+{
+  color: #008;
+}
+
+#content #logging #viewer #date-format a.on
+{
+  background-image: url( ../../img/ico/ui-check-box.png );
+  color: #333;
 }
 
 #content #logging #viewer table
@@ -193,6 +248,13 @@
   padding-right: 21px;
 }
 
+#content #logging .jstree a span.name em
+{
+  color: #f00;
+  font-style: normal;
+  text-transform: uppercase;
+}
+
 #content #logging .jstree a.trigger.set
 {
   font-weight: bold;
@@ -224,6 +286,7 @@
 #content #logging .jstree li li li li li .selector-holder { left: 368px; }
 #content #logging .jstree li li li li li li .selector-holder { left: 350px; }
 #content #logging .jstree li li li li li li li .selector-holder { left: 332px; }
+#content #logging .jstree li li li li li li li li .selector-holder { left: 314px; }
 
 #content #logging .jstree .selector
 {

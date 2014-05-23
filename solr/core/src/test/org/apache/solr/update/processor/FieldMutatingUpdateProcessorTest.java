@@ -94,6 +94,28 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
                  5.0F, d.getField("foo_s").getBoost(), 0.0F);
   }
 
+  public void testUniqValues() throws Exception {
+    final String chain = "uniq-values";
+    SolrInputDocument d = null;
+    d = processAdd(chain,
+                   doc(f("id", "1111"),
+                       f("name", "Hoss", "Man", "Hoss"),
+                       f("uniq_1_s", "Hoss", "Man", "Hoss"),
+                       f("uniq_2_s", "Foo", "Hoss", "Man", "Hoss", "Bar"),
+                       f("uniq_3_s", 5.0F, 23, "string", 5.0F)));
+    
+    assertNotNull(d);
+    
+    assertEquals(Arrays.asList("Hoss", "Man", "Hoss"),
+                 d.getFieldValues("name"));
+    assertEquals(Arrays.asList("Hoss","Man"), 
+                 d.getFieldValues("uniq_1_s"));
+    assertEquals(Arrays.asList("Foo","Hoss","Man","Bar"),
+                 d.getFieldValues("uniq_2_s"));
+    assertEquals(Arrays.asList(5.0F, 23, "string"),
+                 d.getFieldValues("uniq_3_s"));
+  }
+
   public void testTrimFields() throws Exception {
     for (String chain : Arrays.asList("trim-fields", "trim-fields-arr")) {
       SolrInputDocument d = null;
@@ -174,16 +196,13 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
                    doc(f("id", "1111"),
                        f("foo_t", " string1 "),
                        f("foo_s", " string2 "),
-                       f("bar_dt", " string3 "),
-                       f("bar_pdt", " string4 ")));
+                       f("bar_dt", " string3 ")));
 
     assertNotNull(d);
 
     assertEquals(" string1 ", d.getFieldValue("foo_t"));
     assertEquals("string2", d.getFieldValue("foo_s"));
     assertEquals("string3", d.getFieldValue("bar_dt"));
-    assertEquals("string4", d.getFieldValue("bar_pdt"));
-
   }
 
   public void testTrimMultipleRules() throws Exception {
@@ -192,16 +211,13 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
                    doc(f("id", "1111"),
                        f("foo_t", " string1 "),
                        f("foo_s", " string2 "),
-                       f("bar_dt", " string3 "),
-                       f("foo_pdt", " string4 ")));
+                       f("bar_dt", " string3 ")));
 
     assertNotNull(d);
 
     assertEquals(" string1 ", d.getFieldValue("foo_t"));
     assertEquals("string2", d.getFieldValue("foo_s"));
     assertEquals(" string3 ", d.getFieldValue("bar_dt"));
-    assertEquals("string4", d.getFieldValue("foo_pdt"));
-
   }
 
   public void testTrimExclusions() throws Exception {
@@ -210,24 +226,20 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
                    doc(f("id", "1111"),
                        f("foo_t", " string1 "),
                        f("foo_s", " string2 "),
-                       f("bar_dt", " string3 "),
-                       f("foo_pdt", " string4 ")));
+                       f("bar_dt", " string3 ")));
 
     assertNotNull(d);
 
     assertEquals(" string1 ", d.getFieldValue("foo_t"));
     assertEquals("string2", d.getFieldValue("foo_s"));
     assertEquals("string3", d.getFieldValue("bar_dt"));
-    assertEquals("string4", d.getFieldValue("foo_pdt"));
 
     d = processAdd("trim-many", 
                    doc(f("id", "1111"),
                        f("foo_t", " string1 "),
                        f("foo_s", " string2 "),
                        f("bar_dt", " string3 "),
-                       f("bar_HOSS_s", " string4 "),
-                       f("foo_pdt", " string5 "),
-                       f("foo_HOSS_pdt", " string6 ")));
+                       f("bar_HOSS_s", " string4 ")));
 
     assertNotNull(d);
 
@@ -235,17 +247,13 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertEquals("string2", d.getFieldValue("foo_s"));
     assertEquals("string3", d.getFieldValue("bar_dt"));
     assertEquals(" string4 ", d.getFieldValue("bar_HOSS_s"));
-    assertEquals("string5", d.getFieldValue("foo_pdt"));
-    assertEquals(" string6 ", d.getFieldValue("foo_HOSS_pdt"));
 
     d = processAdd("trim-few", 
                    doc(f("id", "1111"),
                        f("foo_t", " string1 "),
                        f("foo_s", " string2 "),
                        f("bar_dt", " string3 "),
-                       f("bar_HOSS_s", " string4 "),
-                       f("foo_pdt", " string5 "),
-                       f("foo_HOSS_pdt", " string6 ")));
+                       f("bar_HOSS_s", " string4 ")));
 
     assertNotNull(d);
 
@@ -253,17 +261,13 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertEquals("string2", d.getFieldValue("foo_s"));
     assertEquals(" string3 ", d.getFieldValue("bar_dt"));
     assertEquals(" string4 ", d.getFieldValue("bar_HOSS_s"));
-    assertEquals(" string5 ", d.getFieldValue("foo_pdt"));
-    assertEquals(" string6 ", d.getFieldValue("foo_HOSS_pdt"));
 
     d = processAdd("trim-some", 
                    doc(f("id", "1111"),
                        f("foo_t", " string1 "),
                        f("foo_s", " string2 "),
                        f("bar_dt", " string3 "),
-                       f("bar_HOSS_s", " string4 "),
-                       f("foo_pdt", " string5 "),
-                       f("foo_HOSS_pdt", " string6 ")));
+                       f("bar_HOSS_s", " string4 ")));
 
     assertNotNull(d);
 
@@ -271,8 +275,6 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertEquals("string2", d.getFieldValue("foo_s"));
     assertEquals("string3", d.getFieldValue("bar_dt"));
     assertEquals("string4", d.getFieldValue("bar_HOSS_s"));
-    assertEquals("string5", d.getFieldValue("foo_pdt"));
-    assertEquals(" string6 ", d.getFieldValue("foo_HOSS_pdt"));
   }
 
   public void testRemoveBlanks() throws Exception {
@@ -345,6 +347,59 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
                  d.getFieldValue("content"));
     assertEquals("ThisXtitleXhasXaXlotXofXspaces", 
                  d.getFieldValue("title"));
+
+    // literalReplacement = true
+    d = processAdd("regex-replace-literal-true",
+        doc(f("id", "doc2"),
+            f("content", "Let's try this one"),
+            f("title", "Let's try try this one")));
+
+    assertNotNull(d);
+
+    assertEquals("Let's <$1> this one",
+        d.getFieldValue("content"));
+    assertEquals("Let's <$1> <$1> this one",
+        d.getFieldValue("title"));
+
+    // literalReplacement is not specified, defaults to true
+    d = processAdd("regex-replace-literal-default-true",
+        doc(f("id", "doc3"),
+            f("content", "Let's try this one"),
+            f("title", "Let's try try this one")));
+
+    assertNotNull(d);
+
+    assertEquals("Let's <$1> this one",
+        d.getFieldValue("content"));
+    assertEquals("Let's <$1> <$1> this one",
+        d.getFieldValue("title"));
+
+    // if user passes literalReplacement as a string param instead of boolean
+    d = processAdd("regex-replace-literal-str-true",
+        doc(f("id", "doc4"),
+            f("content", "Let's try this one"),
+            f("title", "Let's try try this one")));
+
+    assertNotNull(d);
+
+    assertEquals("Let's <$1> this one",
+        d.getFieldValue("content"));
+    assertEquals("Let's <$1> <$1> this one",
+        d.getFieldValue("title"));
+
+    // This is with literalReplacement = false
+    d = processAdd("regex-replace-literal-false",
+        doc(f("id", "doc5"),
+            f("content", "Let's try this one"),
+            f("title", "Let's try try this one")));
+
+    assertNotNull(d);
+
+    assertEquals("Let's <try> this one",
+        d.getFieldValue("content"));
+    assertEquals("Let's <try> <try> this one",
+        d.getFieldValue("title"));
+
   }
  
   public void testFirstValue() throws Exception {
@@ -393,7 +448,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     // test something that's definitely a SortedSet
 
     special = new SolrInputField("foo_s");
-    special.setValue(new TreeSet<String>
+    special.setValue(new TreeSet<>
                      (Arrays.asList("ggg", "first", "last", "hhh")), 1.2F);
     
     d = processAdd("last-value", 
@@ -421,7 +476,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     // (ie: get default behavior of Collection using iterator)
 
     special = new SolrInputField("foo_s");
-    special.setValue(new LinkedHashSet<String>
+    special.setValue(new LinkedHashSet<>
                      (Arrays.asList("first", "ggg", "hhh", "last")), 1.2F);
     
     d = processAdd("last-value", 
@@ -552,6 +607,8 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNull("test expects 'foo_giberish' to not be a valid field, looks like schema was changed out from under us",
                schema.getFieldTypeNoEx("foo_giberish"));
+    assertNull("test expects 'bar_giberish' to not be a valid field, looks like schema was changed out from under us",
+               schema.getFieldTypeNoEx("bar_giberish"));
     assertNotNull("test expects 't_raw' to be a valid field, looks like schema was changed out from under us",
                   schema.getFieldTypeNoEx("t_raw"));
     assertNotNull("test expects 'foo_s' to be a valid field, looks like schema was changed out from under us",
@@ -561,11 +618,13 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     
     d = processAdd("ignore-not-in-schema",       
                    doc(f("id", "1111"),
+                       f("bar_giberish", "123456789", "", 42, "abcd"),
                        f("foo_giberish", "123456789", "", 42, "abcd"),
                        f("t_raw", "123456789", "", 42, "abcd"),
                        f("foo_s", "hoss")));
     
     assertNotNull(d);
+    assertFalse(d.containsKey("bar_giberish"));
     assertFalse(d.containsKey("foo_giberish"));
     assertEquals(Arrays.asList("123456789", "", 42, "abcd"), 
                  d.getFieldValues("t_raw"));
@@ -574,15 +633,98 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     d = processAdd("ignore-some",
                    doc(f("id", "1111"),
                        f("foo_giberish", "123456789", "", 42, "abcd"),
+                       f("bar_giberish", "123456789", "", 42, "abcd"),
                        f("t_raw", "123456789", "", 42, "abcd"),
                        f("foo_s", "hoss")));
 
     assertNotNull(d);
     assertEquals(Arrays.asList("123456789", "", 42, "abcd"), 
                  d.getFieldValues("foo_giberish"));
+    assertEquals(Arrays.asList("123456789", "", 42, "abcd"), 
+                 d.getFieldValues("bar_giberish"));
     assertFalse(d.containsKey("t_raw"));
     assertEquals("hoss", d.getFieldValue("foo_s"));
-    
+
+    d = processAdd("ignore-not-in-schema-explicit-selector",
+                   doc(f("id", "1111"),
+                       f("foo_giberish", "123456789", "", 42, "abcd"),
+                       f("bar_giberish", "123456789", "", 42, "abcd"),
+                       f("t_raw", "123456789", "", 42, "abcd"),
+                       f("foo_s", "hoss")));
+    assertNotNull(d);
+    assertFalse(d.containsKey("foo_giberish"));
+    assertFalse(d.containsKey("bar_giberish"));
+    assertEquals(Arrays.asList("123456789", "", 42, "abcd"),
+                 d.getFieldValues("t_raw"));
+    assertEquals("hoss", d.getFieldValue("foo_s"));
+
+    d = processAdd("ignore-not-in-schema-and-foo-name-prefix",
+                   doc(f("id", "1111"),
+                       f("foo_giberish", "123456789", "", 42, "abcd"),
+                       f("bar_giberish", "123456789", "", 42, "abcd"),
+                       f("t_raw", "123456789", "", 42, "abcd"),
+                       f("foo_s", "hoss")));
+    assertNotNull(d);
+    assertFalse(d.containsKey("foo_giberish"));
+    assertEquals(Arrays.asList("123456789", "", 42, "abcd"),
+                 d.getFieldValues("bar_giberish"));
+    assertEquals(Arrays.asList("123456789", "", 42, "abcd"),
+                 d.getFieldValues("t_raw"));
+    assertEquals("hoss", d.getFieldValue("foo_s"));
+
+    d = processAdd("ignore-foo-name-prefix-except-not-schema",
+                   doc(f("id", "1111"),
+                       f("foo_giberish", "123456789", "", 42, "abcd"),
+                       f("bar_giberish", "123456789", "", 42, "abcd"),
+                       f("t_raw", "123456789", "", 42, "abcd"),
+                       f("foo_s", "hoss")));
+    assertNotNull(d);
+    assertEquals(Arrays.asList("123456789", "", 42, "abcd"),
+                 d.getFieldValues("foo_giberish"));
+    assertEquals(Arrays.asList("123456789", "", 42, "abcd"),
+                 d.getFieldValues("bar_giberish"));
+    assertEquals(Arrays.asList("123456789", "", 42, "abcd"),
+                 d.getFieldValues("t_raw"));
+    assertFalse(d.containsKey("foo_s"));
+
+    d = processAdd("ignore-in-schema",
+                   doc(f("id", "1111"),
+                       f("foo_giberish", "123456789", "", 42, "abcd"),
+                       f("bar_giberish", "123456789", "", 42, "abcd"),
+                       f("t_raw", "123456789", "", 42, "abcd"),
+                       f("foo_s", "hoss")));
+    assertNotNull(d);
+    assertTrue(d.containsKey("foo_giberish"));
+    assertTrue(d.containsKey("bar_giberish"));
+    assertFalse(d.containsKey("id"));
+    assertFalse(d.containsKey("t_raw"));
+    assertFalse(d.containsKey("foo_s"));
+
+    d = processAdd("ignore-not-in-schema-explicit-str-selector",
+                   doc(f("id", "1111"),
+                       f("foo_giberish", "123456789", "", 42, "abcd"),
+                       f("bar_giberish", "123456789", "", 42, "abcd"),
+                       f("t_raw", "123456789", "", 42, "abcd"),
+                       f("foo_s", "hoss")));
+    assertNotNull(d);
+    assertFalse(d.containsKey("foo_giberish"));
+    assertFalse(d.containsKey("bar_giberish"));
+    assertEquals(Arrays.asList("123456789", "", 42, "abcd"),
+                 d.getFieldValues("t_raw"));
+    assertEquals("hoss", d.getFieldValue("foo_s"));
+
+    d = processAdd("ignore-in-schema-str-selector",
+                   doc(f("id", "1111"),
+                       f("foo_giberish", "123456789", "", 42, "abcd"),
+                       f("bar_giberish", "123456789", "", 42, "abcd"),
+                       f("t_raw", "123456789", "", 42, "abcd"),
+                       f("foo_s", "hoss")));
+    assertNotNull(d);
+    assertTrue(d.containsKey("foo_giberish"));
+    assertTrue(d.containsKey("bar_giberish"));
+    assertFalse(d.containsKey("id"));
+    assertFalse(d.containsKey("t_raw"));
+    assertFalse(d.containsKey("foo_s"));
 
   }
 

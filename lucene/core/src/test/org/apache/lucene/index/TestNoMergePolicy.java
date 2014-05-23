@@ -29,18 +29,11 @@ public class TestNoMergePolicy extends LuceneTestCase {
 
   @Test
   public void testNoMergePolicy() throws Exception {
-    MergePolicy mp = NoMergePolicy.NO_COMPOUND_FILES;
+    MergePolicy mp = NoMergePolicy.INSTANCE;
     assertNull(mp.findMerges(null, (SegmentInfos)null));
     assertNull(mp.findForcedMerges(null, 0, null));
     assertNull(mp.findForcedDeletesMerges(null));
-    assertFalse(mp.useCompoundFile(null, null));
     mp.close();
-  }
-
-  @Test
-  public void testCompoundFiles() throws Exception {
-    assertFalse(NoMergePolicy.NO_COMPOUND_FILES.useCompoundFile(null, null));
-    assertTrue(NoMergePolicy.COMPOUND_FILES.useCompoundFile(null, null));
   }
 
   @Test
@@ -65,8 +58,8 @@ public class TestNoMergePolicy extends LuceneTestCase {
       if (m.getName().equals("clone")) {
         continue;
       }
-      if (m.getDeclaringClass() != Object.class) {
-        assertTrue(m + " is not overridden !", m.getDeclaringClass() == NoMergePolicy.class);
+      if (m.getDeclaringClass() != Object.class && !Modifier.isFinal(m.getModifiers())) {
+        assertTrue(m + " is not overridden ! ", m.getDeclaringClass() == NoMergePolicy.class);
       }
     }
   }

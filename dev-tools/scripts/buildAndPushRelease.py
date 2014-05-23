@@ -23,7 +23,7 @@ import subprocess
 
 # Usage: python3.2 -u buildAndPushRelease.py [-sign gpgKey(eg: 6E68DA61)] [-prepare] [-push userName] [-pushLocal dirName] [-smoke tmpDir] /path/to/checkout version(eg: 3.4.0) rcNum(eg: 0)
 #
-# EG: python3.2 -u buildAndPushRelease.py -prepare -push -sign 6E68DA61 mikemccand /lucene/34x 3.4.0 0
+# EG: python3.2 -u buildAndPushRelease.py -prepare -push mikemccand -sign 6E68DA61 /path/to/lucene_solr_4_7 4.7.0 0
 
 # NOTE: if you specify -sign, you have to type in your gpg password at
 # some point while this runs; it's VERY confusing because the output
@@ -46,9 +46,10 @@ def run(command):
     raise RuntimeError(msg)
 
 def runAndSendGPGPassword(command, password):
-  p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE)
+  p = subprocess.Popen(command, shell=True, bufsize=0, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE)
   f = open(LOG, 'ab')
   while True:
+    p.stdout.flush()
     line = p.stdout.readline()
     if len(line) == 0:
       break
@@ -114,7 +115,7 @@ def prepare(root, version, gpgKeyID, gpgPassword, doTest):
   
   print('  lucene prepare-release')
   os.chdir('lucene')
-  cmd = 'ant -Dversion=%s -Dspecversion=%s' % (version, version)
+  cmd = 'ant -Dversion=%s' % version
   if gpgKeyID is not None:
     cmd += ' -Dgpg.key=%s prepare-release' % gpgKeyID
   else:
@@ -127,7 +128,7 @@ def prepare(root, version, gpgKeyID, gpgPassword, doTest):
   
   print('  solr prepare-release')
   os.chdir('../solr')
-  cmd = 'ant -Dversion=%s -Dspecversion=%s' % (version, version)
+  cmd = 'ant -Dversion=%s' % version
   if gpgKeyID is not None:
     cmd += ' -Dgpg.key=%s prepare-release' % gpgKeyID
   else:
@@ -180,7 +181,7 @@ def push(version, root, rev, rcNum, username):
   run('ssh %s@people.apache.org "chmod -R a+rX-w public_html/staging_area/%s"' % (username, dir))
 
   print('  done!')
-  url = 'https://people.apache.org/~%s/staging_area/%s' % (username, dir)
+  url = 'http://people.apache.org/~%s/staging_area/%s' % (username, dir)
   return url
 
 def pushLocal(version, root, rev, rcNum, localDir):
@@ -201,8 +202,6 @@ def pushLocal(version, root, rev, rcNum, localDir):
   print('    unzip...')
   run('tar xjf "%s/lucene/dist/lucene.tar.bz2"' % root)
   os.remove('%s/lucene/dist/lucene.tar.bz2' % root)
-  print('    copy changes...')
-  run('cp -r "%s/lucene/build/docs/changes" changes-%s' % (root, version))
 
   print('  Solr')
   os.chdir('%s/solr/package' % root)

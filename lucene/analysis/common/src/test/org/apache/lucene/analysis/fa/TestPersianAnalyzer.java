@@ -208,8 +208,8 @@ public class TestPersianAnalyzer extends BaseTokenStreamTestCase {
    */
   public void testReusableTokenStream() throws Exception {
     Analyzer a = new PersianAnalyzer(TEST_VERSION_CURRENT);
-    assertAnalyzesToReuse(a, "خورده مي شده بوده باشد", new String[] { "خورده" });
-    assertAnalyzesToReuse(a, "برگ‌ها", new String[] { "برگ" });
+    assertAnalyzesTo(a, "خورده مي شده بوده باشد", new String[] { "خورده" });
+    assertAnalyzesTo(a, "برگ‌ها", new String[] { "برگ" });
   }
   
   /**

@@ -34,8 +34,8 @@ public class TestFinnishAnalyzer extends BaseTokenStreamTestCase {
   public void testBasics() throws IOException {
     Analyzer a = new FinnishAnalyzer(TEST_VERSION_CURRENT);
     // stemming
-    checkOneTermReuse(a, "edeltäjiinsä", "edeltäj");
-    checkOneTermReuse(a, "edeltäjistään", "edeltäj");
+    checkOneTerm(a, "edeltäjiinsä", "edeltäj");
+    checkOneTerm(a, "edeltäjistään", "edeltäj");
     // stopword
     assertAnalyzesTo(a, "olla", new String[] {});
   }
@@ -45,8 +45,8 @@ public class TestFinnishAnalyzer extends BaseTokenStreamTestCase {
     CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("edeltäjistään"), false);
     Analyzer a = new FinnishAnalyzer(TEST_VERSION_CURRENT, 
         FinnishAnalyzer.getDefaultStopSet(), exclusionSet);
-    checkOneTermReuse(a, "edeltäjiinsä", "edeltäj");
-    checkOneTermReuse(a, "edeltäjistään", "edeltäjistään");
+    checkOneTerm(a, "edeltäjiinsä", "edeltäj");
+    checkOneTerm(a, "edeltäjistään", "edeltäjistään");
   }
   
   /** blast some random strings through the analyzer */

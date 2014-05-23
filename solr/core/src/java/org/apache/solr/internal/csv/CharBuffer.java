@@ -191,16 +191,6 @@ public class CharBuffer {
      * Converts the contents of the buffer into a StringBuffer.
      * This method involves copying the new data once!
      */
-    public StringBuffer toStringBuffer() {
-        StringBuffer sb = new StringBuffer(length);
-        sb.append(c, 0, length);
-        return sb;
-    }
-    
-    /**
-     * Converts the contents of the buffer into a StringBuffer.
-     * This method involves copying the new data once!
-     */
     @Override
     public String toString() {
         return new String(c, 0, length);

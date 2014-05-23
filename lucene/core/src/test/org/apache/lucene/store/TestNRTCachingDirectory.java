@@ -20,14 +20,12 @@ package org.apache.lucene.store;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -37,25 +35,35 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
-public class TestNRTCachingDirectory extends LuceneTestCase {
+public class TestNRTCachingDirectory extends BaseDirectoryTestCase {
+
+  // TODO: RAMDir used here, because its still too slow to use e.g. SimpleFS
+  // for the threads tests... maybe because of the synchronization in listAll?
+  // would be good to investigate further...
+  @Override
+  protected Directory getDirectory(File path) throws IOException {
+    return new NRTCachingDirectory(new RAMDirectory(),
+                                   .1 + 2.0*random().nextDouble(),
+                                   .1 + 5.0*random().nextDouble());
+  }
 
   public void testNRTAndCommit() throws Exception {
     Directory dir = newDirectory();
     NRTCachingDirectory cachedDir = new NRTCachingDirectory(dir, 2.0, 25.0);
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
     RandomIndexWriter w = new RandomIndexWriter(random(), cachedDir, conf);
     final LineFileDocs docs = new LineFileDocs(random(), true);
-    final int numDocs = _TestUtil.nextInt(random(), 100, 400);
+    final int numDocs = TestUtil.nextInt(random(), 100, 400);
 
     if (VERBOSE) {
       System.out.println("TEST: numDocs=" + numDocs);
     }
 
-    final List<BytesRef> ids = new ArrayList<BytesRef>();
+    final List<BytesRef> ids = new ArrayList<>();
     DirectoryReader r = null;
     for(int docCount=0;docCount<numDocs;docCount++) {
       final Document doc = docs.nextDoc();
@@ -85,7 +93,7 @@ public class TestNRTCachingDirectory extends LuceneTestCase {
     }
 
     // Close should force cache to clear since all files are sync'd
-    w.close();
+    w.shutdown();
 
     final String[] cachedFiles = cachedDir.listCachedFiles();
     for(String file : cachedFiles) {
@@ -111,79 +119,7 @@ public class TestNRTCachingDirectory extends LuceneTestCase {
     NRTCachingDirectory cachedFSDir = new NRTCachingDirectory(fsDir, 2.0, 25.0);
     IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
     IndexWriter writer = new IndexWriter(cachedFSDir, conf);
-  }
-
-  public void testDeleteFile() throws Exception {
-    Directory dir = new NRTCachingDirectory(newDirectory(), 2.0, 25.0);
-    dir.createOutput("foo.txt", IOContext.DEFAULT).close();
-    dir.deleteFile("foo.txt");
-    assertEquals(0, dir.listAll().length);
-    dir.close();
-  }
-  
-  // LUCENE-3382 -- make sure we get exception if the directory really does not exist.
-  public void testNoDir() throws Throwable {
-    File tempDir = _TestUtil.getTempDir("doesnotexist");
-    _TestUtil.rmDir(tempDir);
-    Directory dir = new NRTCachingDirectory(newFSDirectory(tempDir), 2.0, 25.0);
-    try {
-      DirectoryReader.open(dir);
-      fail("did not hit expected exception");
-    } catch (NoSuchDirectoryException nsde) {
-      // expected
-    }
-    dir.close();
-  }
-  
-  // LUCENE-3382 test that we can add a file, and then when we call list() we get it back
-  public void testDirectoryFilter() throws IOException {
-    Directory dir = new NRTCachingDirectory(newFSDirectory(_TestUtil.getTempDir("foo")), 2.0, 25.0);
-    String name = "file";
-    try {
-      dir.createOutput(name, newIOContext(random())).close();
-      assertTrue(dir.fileExists(name));
-      assertTrue(Arrays.asList(dir.listAll()).contains(name));
-    } finally {
-      dir.close();
-    }
-  }
-  
-  // LUCENE-3382 test that delegate compound files correctly.
-  public void testCompoundFileAppendTwice() throws IOException {
-    Directory newDir = new NRTCachingDirectory(newDirectory(), 2.0, 25.0);
-    CompoundFileDirectory csw = new CompoundFileDirectory(newDir, "d.cfs", newIOContext(random()), true);
-    createSequenceFile(newDir, "d1", (byte) 0, 15);
-    IndexOutput out = csw.createOutput("d.xyz", newIOContext(random()));
-    out.writeInt(0);
-    try {
-      newDir.copy(csw, "d1", "d1", newIOContext(random()));
-      fail("file does already exist");
-    } catch (IllegalArgumentException e) {
-      //
-    }
-    out.close();
-    assertEquals(1, csw.listAll().length);
-    assertEquals("d.xyz", csw.listAll()[0]);
-   
-    csw.close();
-
-    CompoundFileDirectory cfr = new CompoundFileDirectory(newDir, "d.cfs", newIOContext(random()), false);
-    assertEquals(1, cfr.listAll().length);
-    assertEquals("d.xyz", cfr.listAll()[0]);
-    cfr.close();
-    newDir.close();
-  }
-  
-  /** Creates a file of the specified size with sequential data. The first
-   *  byte is written as the start byte provided. All subsequent bytes are
-   *  computed as start + offset where offset is the number of the byte.
-   */
-  private void createSequenceFile(Directory dir, String name, byte start, int size) throws IOException {
-      IndexOutput os = dir.createOutput(name, newIOContext(random()));
-      for (int i=0; i < size; i++) {
-          os.writeByte(start);
-          start ++;
-      }
-      os.close();
+    writer.close();
+    cachedFSDir.close();
   }
 }

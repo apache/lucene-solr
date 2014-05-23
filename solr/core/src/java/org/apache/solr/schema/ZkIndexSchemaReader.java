@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
 
 import java.io.ByteArrayInputStream;
+import java.util.concurrent.TimeUnit;
 
 /** Keeps a ManagedIndexSchema up-to-date when changes are made to the serialized managed schema in ZooKeeper */
 public class ZkIndexSchemaReader {
@@ -95,12 +96,12 @@ public class ZkIndexSchemaReader {
       byte[] data = zkClient.getData(managedSchemaPath, watcher, stat, true);
       if (stat.getVersion() != oldSchema.schemaZkVersion) {
         log.info("Retrieved schema from ZooKeeper");
-        long start = System.currentTimeMillis();
+        long start = System.nanoTime();
         InputSource inputSource = new InputSource(new ByteArrayInputStream(data));
         ManagedIndexSchema newSchema = oldSchema.reloadFields(inputSource, stat.getVersion());
         managedIndexSchemaFactory.setSchema(newSchema);
-        long stop = System.currentTimeMillis();
-        log.info("Finished refreshing schema in " + (stop - start) + " ms");
+        long stop = System.nanoTime();
+        log.info("Finished refreshing schema in " + TimeUnit.MILLISECONDS.convert(stop - start, TimeUnit.NANOSECONDS) + " ms");
       }
     }
   }

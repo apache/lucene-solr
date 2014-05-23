@@ -33,7 +33,14 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * @since solr 1.3
  */
 public abstract class UpdateRequestProcessorFactory implements NamedListInitializedPlugin
-{    
+{
+
+  /** A marker interface for UpdateRequestProcessorFactory implementations indicating that
+   * the factory should be used even if the update.distrib parameter would otherwise cause
+   * it to not be run.
+   */
+  public interface RunAlways {}
+
   @Override
   public void init( NamedList args )
   {

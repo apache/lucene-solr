@@ -19,6 +19,7 @@ package org.apache.lucene.analysis.uima;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.uima.ae.AEProviderFactory;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
 import org.apache.uima.cas.CAS;
@@ -45,8 +46,8 @@ public abstract class BaseUIMATokenizer extends Tokenizer {
   protected CAS cas;
 
   protected BaseUIMATokenizer
-      (AttributeFactory factory, Reader reader, String descriptorPath, Map<String, Object> configurationParameters) {
-    super(factory, reader);
+      (AttributeFactory factory, String descriptorPath, Map<String, Object> configurationParameters) {
+    super(factory);
     this.descriptorPath = descriptorPath;
     this.configurationParameters = configurationParameters;
   }
@@ -89,11 +90,7 @@ public abstract class BaseUIMATokenizer extends Tokenizer {
 
   @Override
   public void reset() throws IOException {
-    iterator = null;
-  }
-
-  @Override
-  public void end() throws IOException {
+    super.reset();
     iterator = null;
   }
 }

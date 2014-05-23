@@ -26,7 +26,7 @@ import org.apache.solr.request.SolrQueryRequest;
  * <br>Example: <code>{!lucenePlusSort}myfield:foo +bar -baz;price asc</code>
  */
 public class OldLuceneQParserPlugin extends QParserPlugin {
-  public static String NAME = "lucenePlusSort";
+  public static final String NAME = "lucenePlusSort";
 
   @Override
   public void init(NamedList args) {

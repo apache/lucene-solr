@@ -18,11 +18,10 @@ package org.apache.lucene.document;
  */
 
 import java.io.StringReader;
-import java.nio.CharBuffer;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.Token;
-import org.apache.lucene.document.Field.ReusableStringReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -187,7 +186,7 @@ public class TestField extends LuceneTestCase {
 
     trySetBoost(field);
     trySetByteValue(field);
-    field.setBytesValue("fubar".getBytes("UTF-8"));
+    field.setBytesValue("fubar".getBytes(StandardCharsets.UTF_8));
     field.setBytesValue(new BytesRef("baz"));
     trySetDoubleValue(field);
     trySetIntValue(field);
@@ -206,7 +205,7 @@ public class TestField extends LuceneTestCase {
 
     trySetBoost(field);
     trySetByteValue(field);
-    field.setBytesValue("fubar".getBytes("UTF-8"));
+    field.setBytesValue("fubar".getBytes(StandardCharsets.UTF_8));
     field.setBytesValue(new BytesRef("baz"));
     trySetDoubleValue(field);
     trySetIntValue(field);
@@ -297,15 +296,15 @@ public class TestField extends LuceneTestCase {
   
   public void testStoredFieldBytes() throws Exception {
     Field fields[] = new Field[] {
-        new StoredField("foo", "bar".getBytes("UTF-8")),
-        new StoredField("foo", "bar".getBytes("UTF-8"), 0, 3),
+        new StoredField("foo", "bar".getBytes(StandardCharsets.UTF_8)),
+        new StoredField("foo", "bar".getBytes(StandardCharsets.UTF_8), 0, 3),
         new StoredField("foo", new BytesRef("bar")),
     };
     
     for (Field field : fields) {
       trySetBoost(field);
       trySetByteValue(field);
-      field.setBytesValue("baz".getBytes("UTF-8"));
+      field.setBytesValue("baz".getBytes(StandardCharsets.UTF_8));
       field.setBytesValue(new BytesRef("baz"));
       trySetDoubleValue(field);
       trySetIntValue(field);
@@ -518,39 +517,4 @@ public class TestField extends LuceneTestCase {
     }
   }
   
-  public void testReusableStringReader() throws Exception {
-    ReusableStringReader reader = new ReusableStringReader();
-    assertEquals(-1, reader.read());
-    assertEquals(-1, reader.read(new char[1]));
-    assertEquals(-1, reader.read(new char[2], 1, 1));
-    assertEquals(-1, reader.read(CharBuffer.wrap(new char[2])));
-    
-    reader.setValue("foobar");
-    char[] buf = new char[4];
-    assertEquals(4, reader.read(buf));
-    assertEquals("foob", new String(buf));
-    assertEquals(2, reader.read(buf));
-    assertEquals("ar", new String(buf, 0, 2));
-    assertEquals(-1, reader.read(buf));
-    reader.close();
-
-    reader.setValue("foobar");
-    assertEquals(0, reader.read(buf, 1, 0));
-    assertEquals(3, reader.read(buf, 1, 3));
-    assertEquals("foo", new String(buf, 1, 3));
-    assertEquals(2, reader.read(CharBuffer.wrap(buf, 2, 2)));
-    assertEquals("ba", new String(buf, 2, 2));
-    assertEquals('r', (char) reader.read());
-    assertEquals(-1, reader.read(buf));
-    reader.close();
-
-    reader.setValue("foobar");
-    StringBuilder sb = new StringBuilder();
-    int ch;
-    while ((ch = reader.read()) != -1) {
-      sb.append((char) ch);
-    }
-    reader.close();
-    assertEquals("foobar", sb.toString());    
-  }
 }

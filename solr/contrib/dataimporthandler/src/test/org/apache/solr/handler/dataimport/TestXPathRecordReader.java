@@ -136,8 +136,8 @@ public class TestXPathRecordReader extends AbstractDataImportHandlerTestCase {
     rr.addField("a", "/root/x/b/@a", false);
     rr.addField("b", "/root/x/b/@b", false);
 
-    final List<Map<String, Object>> a = new ArrayList<Map<String, Object>>();
-    final List<Map<String, Object>> x = new ArrayList<Map<String, Object>>();
+    final List<Map<String, Object>> a = new ArrayList<>();
+    final List<Map<String, Object>> x = new ArrayList<>();
     rr.streamRecords(new StringReader(xml), new XPathRecordReader.Handler() {
       @Override
       public void handle(Map<String, Object> record, String xpath) {

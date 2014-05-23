@@ -35,7 +35,8 @@ import org.slf4j.LoggerFactory;
  * Base test class for ZooKeeper tests.
  */
 public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
-
+  private static final String ZOOKEEPER_FORCE_SYNC = "zookeeper.forceSync";
+  
   static final int TIMEOUT = 10000;
 
   private static final boolean DEBUG = false;
@@ -62,15 +63,14 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void azt_beforeClass() throws Exception {
-    createTempDir();
-    zkDir = dataDir.getAbsolutePath() + File.separator
-        + "zookeeper/server1/data";
+    zkDir = createTempDir("zkData").getAbsolutePath();
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     
     System.setProperty("solrcloud.skip.autorecovery", "true");
     System.setProperty("zkHost", zkServer.getZkAddress());
     System.setProperty("jetty.port", "0000");
+    System.setProperty(ZOOKEEPER_FORCE_SYNC, "false");
     
     buildZooKeeper(zkServer.getZkHost(), zkServer.getZkAddress(), SOLRHOME,
         "solrconfig.xml", "schema.xml");
@@ -86,13 +86,13 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
   // static to share with distrib test
   public static void buildZooKeeper(String zkHost, String zkAddress, File solrhome, String config,
       String schema) throws Exception {
-    SolrZkClient zkClient = new SolrZkClient(zkHost, AbstractZkTestCase.TIMEOUT);
+    SolrZkClient zkClient = new SolrZkClient(zkHost, AbstractZkTestCase.TIMEOUT, 45000, null);
     zkClient.makePath("/solr", false, true);
     zkClient.close();
 
     zkClient = new SolrZkClient(zkAddress, AbstractZkTestCase.TIMEOUT);
 
-    Map<String,Object> props = new HashMap<String,Object>();
+    Map<String,Object> props = new HashMap<>();
     props.put("configName", "conf1");
     final ZkNodeProps zkProps = new ZkNodeProps(props);
     
@@ -102,26 +102,27 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     zkClient.makePath("/collections/control_collection/shards", CreateMode.PERSISTENT, true);
 
     // for now, always upload the config and schema to the canonical names
-    putConfig(zkClient, solrhome, config, "solrconfig.xml");
-    putConfig(zkClient, solrhome, schema, "schema.xml");
+    putConfig("conf1", zkClient, solrhome, config, "solrconfig.xml");
+    putConfig("conf1", zkClient, solrhome, schema, "schema.xml");
 
-    putConfig(zkClient, solrhome, "stopwords.txt");
-    putConfig(zkClient, solrhome, "protwords.txt");
-    putConfig(zkClient, solrhome, "currency.xml");
-    putConfig(zkClient, solrhome, "open-exchange-rates.json");
-    putConfig(zkClient, solrhome, "mapping-ISOLatin1Accent.txt");
-    putConfig(zkClient, solrhome, "old_synonyms.txt");
-    putConfig(zkClient, solrhome, "synonyms.txt");
-    
+    putConfig("conf1", zkClient, solrhome, "solrconfig.snippet.randomindexconfig.xml");
+    putConfig("conf1", zkClient, solrhome, "stopwords.txt");
+    putConfig("conf1", zkClient, solrhome, "protwords.txt");
+    putConfig("conf1", zkClient, solrhome, "currency.xml");
+    putConfig("conf1", zkClient, solrhome, "enumsConfig.xml");
+    putConfig("conf1", zkClient, solrhome, "open-exchange-rates.json");
+    putConfig("conf1", zkClient, solrhome, "mapping-ISOLatin1Accent.txt");
+    putConfig("conf1", zkClient, solrhome, "old_synonyms.txt");
+    putConfig("conf1", zkClient, solrhome, "synonyms.txt");
     zkClient.close();
   }
 
-  private static void putConfig(SolrZkClient zkClient, File solrhome, final String name)
+  public static void putConfig(String confName, SolrZkClient zkClient, File solrhome, final String name)
       throws Exception {
-    putConfig(zkClient, solrhome, name, name);
+    putConfig(confName, zkClient, solrhome, name, name);
   }
 
-  private static void putConfig(SolrZkClient zkClient, File solrhome, final String srcName, String destName)
+  public static void putConfig(String confName, SolrZkClient zkClient, File solrhome, final String srcName, String destName)
       throws Exception {
     File file = new File(solrhome, "collection1"
         + File.separator + "conf" + File.separator + srcName);
@@ -130,7 +131,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
       return;
     }
 
-    String destPath = "/configs/conf1/" + destName;
+    String destPath = "/configs/" + confName + "/" + destName;
     log.info("put " + file.getAbsolutePath() + " to " + destPath);
     zkClient.makePath(destPath, file, false, true);
   }
@@ -151,14 +152,13 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     System.clearProperty("solr.test.sys.prop2");
     System.clearProperty("solrcloud.skip.autorecovery");
     System.clearProperty("jetty.port");
+    System.clearProperty(ZOOKEEPER_FORCE_SYNC);
 
-    zkServer.shutdown();
-
-    zkServer = null;
+    if (zkServer != null) {
+      zkServer.shutdown();
+      zkServer = null;
+    }
     zkDir = null;
-    
-    // wait just a bit for any zk client threads to outlast timeout
-    Thread.sleep(2000);
   }
 
   protected void printLayout(String zkHost) throws Exception {

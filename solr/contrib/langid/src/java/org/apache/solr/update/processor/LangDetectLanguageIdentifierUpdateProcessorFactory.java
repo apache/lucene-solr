@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -125,11 +126,10 @@ public class LangDetectLanguageIdentifierUpdateProcessorFactory extends
       return;
     }
     loaded = true;
-    List<String> profileData = new ArrayList<String>();
-    Charset encoding = Charset.forName("UTF-8");
+    List<String> profileData = new ArrayList<>();
     for (String language : languages) {
       InputStream stream = LangDetectLanguageIdentifierUpdateProcessor.class.getResourceAsStream("langdetect-profiles/" + language);
-      BufferedReader reader = new BufferedReader(new InputStreamReader(stream, encoding));
+      BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
       profileData.add(new String(IOUtils.toCharArray(reader)));
       reader.close();
     }

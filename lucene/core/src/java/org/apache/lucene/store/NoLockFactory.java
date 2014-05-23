@@ -55,7 +55,7 @@ class NoLock extends Lock {
   }
 
   @Override
-  public void release() {
+  public void close() {
   }
 
   @Override

@@ -17,10 +17,10 @@
 
 package org.apache.solr.client.solrj.embedded;
 
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.util.ExternalPaths;
-
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -31,6 +31,7 @@ import org.junit.Test;
  * rather then open a real connection?
  * 
  */
+@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class SolrExampleJettyTest extends SolrExampleTests {
 
   @BeforeClass
@@ -43,9 +44,9 @@ public class SolrExampleJettyTest extends SolrExampleTests {
   {
     try {
       // setup the server...
-      String url = "http://127.0.0.1/?core=xxx";
+      String url = "http" + (isSSLMode() ? "s" : "") +  "://127.0.0.1/?core=xxx";
       HttpSolrServer s = new HttpSolrServer( url );
-      Assert.fail( "CommonsHttpSolrServer should not allow a path with a parameter: "+s.getBaseURL() );
+      Assert.fail("HttpSolrServer should not allow a path with a parameter: "+s.getBaseURL() );
     }
     catch( Exception ex ) {
       // expected

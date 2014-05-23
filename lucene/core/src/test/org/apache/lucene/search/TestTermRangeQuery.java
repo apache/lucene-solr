@@ -206,8 +206,8 @@ public class TestTermRangeQuery extends LuceneTestCase {
       boolean done = false;
       CharTermAttribute termAtt;
       
-      public SingleCharTokenizer(Reader r) {
-        super(r);
+      public SingleCharTokenizer() {
+        super();
         termAtt = addAttribute(CharTermAttribute.class);
       }
 
@@ -227,14 +227,15 @@ public class TestTermRangeQuery extends LuceneTestCase {
       }
 
       @Override
-      public void reset() throws IOException {;
+      public void reset() throws IOException {
+        super.reset();
         done = false;
       }
     }
 
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      return new TokenStreamComponents(new SingleCharTokenizer(reader));
+    public TokenStreamComponents createComponents(String fieldName) {
+      return new TokenStreamComponents(new SingleCharTokenizer());
     }
   }
 
@@ -248,14 +249,14 @@ public class TestTermRangeQuery extends LuceneTestCase {
     for (int i = 0; i < values.length; i++) {
       insertDoc(writer, values[i]);
     }
-    writer.close();
+    writer.shutdown();
   }
 
   // shouldnt create an analyzer for every doc?
   private void addDoc(String content) throws IOException {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)).setOpenMode(OpenMode.APPEND));
     insertDoc(writer, content);
-    writer.close();
+    writer.shutdown();
   }
 
   private void insertDoc(IndexWriter writer, String content) throws IOException {

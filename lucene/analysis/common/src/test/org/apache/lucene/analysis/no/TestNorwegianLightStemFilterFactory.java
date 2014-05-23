@@ -30,11 +30,27 @@ import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 public class TestNorwegianLightStemFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testStemming() throws Exception {
     Reader reader = new StringReader("epler eple");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("NorwegianLightStem").create(stream);
     assertTokenStreamContents(stream, new String[] { "epl", "epl" });
   }
-  
+
+  /** Test stemming with variant set explicitly to Bokmål */
+  public void testBokmaalStemming() throws Exception {
+    Reader reader = new StringReader("epler eple");
+    TokenStream stream = whitespaceMockTokenizer(reader);
+    stream = tokenFilterFactory("NorwegianLightStem", "variant", "nb").create(stream);
+    assertTokenStreamContents(stream, new String[] { "epl", "epl" });
+  }
+
+  /** Test stemming with variant set explicitly to Nynorsk */
+  public void testNynorskStemming() throws Exception {
+    Reader reader = new StringReader("gutar gutane");
+    TokenStream stream = whitespaceMockTokenizer(reader);
+    stream = tokenFilterFactory("NorwegianLightStem", "variant", "nn").create(stream);
+    assertTokenStreamContents(stream, new String[] { "gut", "gut" });
+  }
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
     try {

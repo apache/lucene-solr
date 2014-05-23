@@ -27,9 +27,11 @@ import org.xml.sax.SAXException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 public class TestNumericRangeQueryBuilder extends LuceneTestCase {
 
@@ -166,7 +168,7 @@ public class TestNumericRangeQueryBuilder extends LuceneTestCase {
 
   private static Document getDocumentFromString(String str)
       throws SAXException, IOException, ParserConfigurationException {
-    InputStream is = new ByteArrayInputStream(str.getBytes("UTF-8"));
+    InputStream is = new ByteArrayInputStream(str.getBytes(StandardCharsets.UTF_8));
     DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
     factory.setNamespaceAware(true);
     DocumentBuilder builder = factory.newDocumentBuilder();

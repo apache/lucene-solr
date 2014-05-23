@@ -112,7 +112,7 @@ public class PKIndexSplitter {
       success = true;
     } finally {
       if (success) {
-        IOUtils.close(w);
+        w.shutdown();
       } else {
         IOUtils.closeWhileHandlingException(w);
       }

@@ -36,6 +36,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.util.IOUtils;
 
 /** Tests the functionality of {@link DocMaker}. */
 public class DocMakerTest extends BenchmarkTestCase {
@@ -166,7 +167,7 @@ public class DocMakerTest extends BenchmarkTestCase {
     // DocMaker did not close its ContentSource if resetInputs was called twice,
     // leading to a file handle leak.
     File f = new File(getWorkDir(), "docMakerLeak.txt");
-    PrintStream ps = new PrintStream(f, "UTF-8");
+    PrintStream ps = new PrintStream(f, IOUtils.UTF_8);
     ps.println("one title\t" + System.currentTimeMillis() + "\tsome content");
     ps.close();
     

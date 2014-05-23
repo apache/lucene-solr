@@ -30,6 +30,8 @@ import java.io.Reader;
  * @since solr 1.3
  */
 public class BinaryResponseParser extends ResponseParser {
+  public static final String BINARY_CONTENT_TYPE = "application/octet-stream";
+  
   @Override
   public String getWriterType() {
     return "javabin";
@@ -45,6 +47,10 @@ public class BinaryResponseParser extends ResponseParser {
     }
   }
 
+  @Override
+  public String getContentType() {
+    return BINARY_CONTENT_TYPE;
+  }
 
   @Override
   public String getVersion() {

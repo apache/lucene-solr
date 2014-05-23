@@ -17,9 +17,18 @@ package org.apache.solr.handler.dataimport;
  * limitations under the License.
  */
 
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.After;
@@ -29,27 +38,18 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.File;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
 public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
   protected static ZkTestServer zkServer;
 
   protected static String zkDir;
 
+  private static CoreContainer cc;
+
   private String dateFormat = "yyyy-MM-dd HH:mm:ss.SSSSSS";
 
   @BeforeClass
   public static void dihZk_beforeClass() throws Exception {
-    createTempDir();
-    zkDir = dataDir.getAbsolutePath() + File.separator
-        + "zookeeper/server1/data";
+    zkDir = createTempDir("zkData").getAbsolutePath();
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
 
@@ -60,13 +60,13 @@ public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
     AbstractZkTestCase.buildZooKeeper(zkServer.getZkHost(), zkServer.getZkAddress(), getFile("dih/solr"),
         "dataimport-solrconfig.xml", "dataimport-schema.xml");
 
-    initCore("dataimport-solrconfig.xml", "dataimport-schema.xml", getFile("dih/solr").getAbsolutePath());
+    //initCore("solrconfig.xml", "schema.xml", getFile("dih/solr").getAbsolutePath());
+    cc = createDefaultCoreContainer(getFile("dih/solr").getAbsolutePath());
   }
 
   @Before
   public void beforeDihZKTest() throws Exception {
-    clearIndex();
-    assertU(commit());
+
   }
 
   @After
@@ -77,13 +77,12 @@ public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
 
   @AfterClass
   public static void dihZk_afterClass() throws Exception {
+    cc.shutdown();
+    
     zkServer.shutdown();
 
     zkServer = null;
     zkDir = null;
-
-    // wait just a bit for any zk client threads to outlast timeout
-    Thread.sleep(2000);
   }
 
   @Test
@@ -104,11 +103,11 @@ public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
     SimpleDateFormat df = new SimpleDateFormat(dateFormat, Locale.ROOT);
     Date oneSecondAgo = new Date(System.currentTimeMillis() - 1000);
 
-    Map<String, String> init = new HashMap<String, String>();
+    Map<String, String> init = new HashMap<>();
     init.put("dateFormat", dateFormat);
     ZKPropertiesWriter spw = new ZKPropertiesWriter();
     spw.init(new DataImporter(h.getCore(), "dataimport"), init);
-    Map<String, Object> props = new HashMap<String, Object>();
+    Map<String, Object> props = new HashMap<>();
     props.put("SomeDates.last_index_time", oneSecondAgo);
     props.put("last_index_time", oneSecondAgo);
     spw.persist(props);

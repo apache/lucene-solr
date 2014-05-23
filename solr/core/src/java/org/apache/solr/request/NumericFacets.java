@@ -30,16 +30,16 @@ import java.util.Set;
 
 import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.params.FacetParams;
@@ -144,7 +144,7 @@ final class NumericFacets {
     final HashTable hashTable = new HashTable();
     final Iterator<AtomicReaderContext> ctxIt = leaves.iterator();
     AtomicReaderContext ctx = null;
-    FieldCache.Longs longs = null;
+    NumericDocValues longs = null;
     Bits docsWithField = null;
     int missingCount = 0;
     for (DocIterator docsIt = docs.iterator(); docsIt.hasNext(); ) {
@@ -156,42 +156,43 @@ final class NumericFacets {
         assert doc >= ctx.docBase;
         switch (numericType) {
           case LONG:
-            longs = FieldCache.DEFAULT.getLongs(ctx.reader(), fieldName, true);
+            longs = DocValues.getNumeric(ctx.reader(), fieldName);
             break;
           case INT:
-            final FieldCache.Ints ints = FieldCache.DEFAULT.getInts(ctx.reader(), fieldName, true);
-            longs = new FieldCache.Longs() {
-              @Override
-              public long get(int docID) {
-                return ints.get(docID);
-              }
-            };
+            longs = DocValues.getNumeric(ctx.reader(), fieldName);
             break;
           case FLOAT:
-            final FieldCache.Floats floats = FieldCache.DEFAULT.getFloats(ctx.reader(), fieldName, true);
-            longs = new FieldCache.Longs() {
+            final NumericDocValues floats = DocValues.getNumeric(ctx.reader(), fieldName);
+            // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
+            longs = new NumericDocValues() {
               @Override
               public long get(int docID) {
-                return NumericUtils.floatToSortableInt(floats.get(docID));
+                long bits = floats.get(docID);
+                if (bits<0) bits ^= 0x7fffffffffffffffL;
+                return bits;
               }
             };
             break;
           case DOUBLE:
-            final FieldCache.Doubles doubles = FieldCache.DEFAULT.getDoubles(ctx.reader(), fieldName, true);
-            longs = new FieldCache.Longs() {
+            final NumericDocValues doubles = DocValues.getNumeric(ctx.reader(), fieldName);
+            // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
+            longs = new NumericDocValues() {
               @Override
               public long get(int docID) {
-                return NumericUtils.doubleToSortableLong(doubles.get(docID));
+                long bits = doubles.get(docID);
+                if (bits<0) bits ^= 0x7fffffffffffffffL;
+                return bits;
               }
             };
             break;
           default:
             throw new AssertionError();
         }
-        docsWithField = FieldCache.DEFAULT.getDocsWithField(ctx.reader(), fieldName);
+        docsWithField = DocValues.getDocsWithField(ctx.reader(), fieldName);
       }
-      if (docsWithField.get(doc - ctx.docBase)) {
-        hashTable.add(doc, longs.get(doc - ctx.docBase), 1);
+      long v = longs.get(doc - ctx.docBase);
+      if (v != 0 || docsWithField.get(doc - ctx.docBase)) {
+        hashTable.add(doc, v, 1);
       } else {
         ++missingCount;
       }
@@ -234,13 +235,13 @@ final class NumericFacets {
 
     // 4. build the NamedList
     final ValueSource vs = ft.getValueSource(sf, null);
-    final NamedList<Integer> result = new NamedList<Integer>();
+    final NamedList<Integer> result = new NamedList<>();
 
     // This stuff is complicated because if facet.mincount=0, the counts needs
     // to be merged with terms from the terms dict
     if (!zeros || FacetParams.FACET_SORT_COUNT.equals(sort) || FacetParams.FACET_SORT_COUNT_LEGACY.equals(sort)) {
       // Only keep items we're interested in
-      final Deque<Entry> counts = new ArrayDeque<Entry>();
+      final Deque<Entry> counts = new ArrayDeque<>();
       while (pq.size() > offset) {
         counts.addFirst(pq.pop());
       }
@@ -254,10 +255,10 @@ final class NumericFacets {
 
       if (zeros && (limit < 0 || result.size() < limit)) { // need to merge with the term dict
         if (!sf.indexed()) {
-          throw new IllegalStateException("Cannot use " + FacetParams.FACET_MINCOUNT + "=0 on a field which is not indexed");
+          throw new IllegalStateException("Cannot use " + FacetParams.FACET_MINCOUNT + "=0 on field " + sf.getName() + " which is not indexed");
         }
         // Add zeros until there are limit results
-        final Set<String> alreadySeen = new HashSet<String>();
+        final Set<String> alreadySeen = new HashSet<>();
         while (pq.size() > 0) {
           Entry entry = pq.pop();
           final int readerIdx = ReaderUtil.subIndex(entry.docID, leaves);
@@ -313,7 +314,7 @@ final class NumericFacets {
       if (!sf.indexed()) {
         throw new IllegalStateException("Cannot use " + FacetParams.FACET_SORT + "=" + FacetParams.FACET_SORT_INDEX + " on a field which is not indexed");
       }
-      final Map<String, Integer> counts = new HashMap<String, Integer>();
+      final Map<String, Integer> counts = new HashMap<>();
       while (pq.size() > 0) {
         final Entry entry = pq.pop();
         final int readerIdx = ReaderUtil.subIndex(entry.docID, leaves);

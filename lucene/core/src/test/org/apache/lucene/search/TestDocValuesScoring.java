@@ -23,8 +23,10 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
@@ -62,7 +64,7 @@ public class TestDocValuesScoring extends LuceneTestCase {
     dvField.setFloatValue(4f); // boost x4
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
-    iw.close();
+    iw.shutdown();
     
     // no boosting
     IndexSearcher searcher1 = newSearcher(ir, false);
@@ -156,37 +158,14 @@ public class TestDocValuesScoring extends LuceneTestCase {
     }
 
     @Override
-    public ExactSimScorer exactSimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
-      final ExactSimScorer sub = sim.exactSimScorer(stats, context);
-      final FieldCache.Floats values = FieldCache.DEFAULT.getFloats(context.reader(), boostField, false);
-
-      return new ExactSimScorer() {
-        @Override
-        public float score(int doc, int freq) {
-          return values.get(doc) * sub.score(doc, freq);
-        }
-
-        @Override
-        public Explanation explain(int doc, Explanation freq) {
-          Explanation boostExplanation = new Explanation(values.get(doc), "indexDocValue(" + boostField + ")");
-          Explanation simExplanation = sub.explain(doc, freq);
-          Explanation expl = new Explanation(boostExplanation.getValue() * simExplanation.getValue(), "product of:");
-          expl.addDetail(boostExplanation);
-          expl.addDetail(simExplanation);
-          return expl;
-        }
-      };
-    }
-
-    @Override
-    public SloppySimScorer sloppySimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
-      final SloppySimScorer sub = sim.sloppySimScorer(stats, context);
-      final FieldCache.Floats values = FieldCache.DEFAULT.getFloats(context.reader(), boostField, false);
+    public SimScorer simScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
+      final SimScorer sub = sim.simScorer(stats, context);
+      final NumericDocValues values = DocValues.getNumeric(context.reader(), boostField);
       
-      return new SloppySimScorer() {
+      return new SimScorer() {
         @Override
         public float score(int doc, float freq) {
-          return values.get(doc) * sub.score(doc, freq);
+          return Float.intBitsToFloat((int)values.get(doc)) * sub.score(doc, freq);
         }
         
         @Override
@@ -201,7 +180,7 @@ public class TestDocValuesScoring extends LuceneTestCase {
 
         @Override
         public Explanation explain(int doc, Explanation freq) {
-          Explanation boostExplanation = new Explanation(values.get(doc), "indexDocValue(" + boostField + ")");
+          Explanation boostExplanation = new Explanation(Float.intBitsToFloat((int)values.get(doc)), "indexDocValue(" + boostField + ")");
           Explanation simExplanation = sub.explain(doc, freq);
           Explanation expl = new Explanation(boostExplanation.getValue() * simExplanation.getValue(), "product of:");
           expl.addDetail(boostExplanation);

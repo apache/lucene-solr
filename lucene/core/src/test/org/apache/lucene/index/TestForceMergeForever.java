@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestForceMergeForever extends LuceneTestCase {
 
@@ -54,10 +54,13 @@ public class TestForceMergeForever extends LuceneTestCase {
 
   public void test() throws Exception {
     final Directory d = newDirectory();
-    final MyIndexWriter w = new MyIndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
+
+    final MyIndexWriter w = new MyIndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
 
     // Try to make an index that requires merging:
-    w.getConfig().setMaxBufferedDocs(_TestUtil.nextInt(random(), 2, 11));
+    w.getConfig().setMaxBufferedDocs(TestUtil.nextInt(random(), 2, 11));
     final int numStartDocs = atLeast(20);
     final LineFileDocs docs = new LineFileDocs(random(), true);
     for(int docIDX=0;docIDX<numStartDocs;docIDX++) {
@@ -71,7 +74,7 @@ public class TestForceMergeForever extends LuceneTestCase {
       ((LogMergePolicy) mp).setMergeFactor(mergeAtOnce);
     } else {
       // skip test
-      w.close();
+      w.shutdown();
       d.close();
       return;
     }
@@ -98,7 +101,7 @@ public class TestForceMergeForever extends LuceneTestCase {
     doStop.set(true);
     t.join();
     assertTrue("merge count is " + w.mergeCount.get(), w.mergeCount.get() <= 1);
-    w.close();
+    w.shutdown();
     d.close();
     docs.close();
   }

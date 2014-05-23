@@ -18,15 +18,13 @@ package org.apache.lucene.benchmark.byTask.feeds;
  */
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.Properties;
 
 import org.apache.lucene.benchmark.byTask.utils.Config;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
@@ -43,7 +41,7 @@ public class EnwikiContentSourceTest extends LuceneTestCase {
     
     @Override
     protected InputStream openInputStream() throws IOException {
-      return new ByteArrayInputStream(docs.getBytes(IOUtils.CHARSET_UTF_8));
+      return new ByteArrayInputStream(docs.getBytes(StandardCharsets.UTF_8));
     }
 
   }

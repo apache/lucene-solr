@@ -79,7 +79,7 @@ public class TestStressLucene extends TestRTGBase {
 
     final AtomicInteger numCommitting = new AtomicInteger();
 
-    List<Thread> threads = new ArrayList<Thread>();
+    List<Thread> threads = new ArrayList<>();
 
 
     final FieldType idFt = new FieldType();
@@ -101,7 +101,7 @@ public class TestStressLucene extends TestRTGBase {
 
 
     // RAMDirectory dir = new RAMDirectory();
-    // final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LUCENE_40, new WhitespaceAnalyzer(Version.LUCENE_40)));
+    // final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
 
     Directory dir = newDirectory();
 
@@ -143,7 +143,7 @@ public class TestStressLucene extends TestRTGBase {
                   if (reopenLock != null) reopenLock.lock();
 
                   synchronized(globalLock) {
-                    newCommittedModel = new HashMap<Integer,DocInfo>(model);  // take a snapshot
+                    newCommittedModel = new HashMap<>(model);  // take a snapshot
                     version = snapshotCount++;
                     oldReader = reader;
                     oldReader.incRef();  // increment the reference since we will use this for reopening
@@ -368,7 +368,7 @@ public class TestStressLucene extends TestRTGBase {
       thread.join();
     }
 
-    writer.close();
+    writer.shutdown();
     reader.close();
     dir.close();
   }

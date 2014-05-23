@@ -1,7 +1,6 @@
 package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.Reader;
-import java.io.StringReader;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,38 +31,42 @@ public class TestPerFieldAnalyzerWrapper extends BaseTokenStreamTestCase {
   public void testPerField() throws Exception {
     String text = "Qwerty";
 
-    Map<String, Analyzer> analyzerPerField = new HashMap<String, Analyzer>();
+    Map<String, Analyzer> analyzerPerField = new HashMap<>();
     analyzerPerField.put("special", new SimpleAnalyzer(TEST_VERSION_CURRENT));
 
     PerFieldAnalyzerWrapper analyzer =
               new PerFieldAnalyzerWrapper(new WhitespaceAnalyzer(TEST_VERSION_CURRENT), analyzerPerField);
 
-    TokenStream tokenStream = analyzer.tokenStream("field",
-        new StringReader(text));
-    CharTermAttribute termAtt = tokenStream.getAttribute(CharTermAttribute.class);
-    tokenStream.reset();
+    try (TokenStream tokenStream = analyzer.tokenStream("field", text)) {
+      CharTermAttribute termAtt = tokenStream.getAttribute(CharTermAttribute.class);
+      tokenStream.reset();
 
-    assertTrue(tokenStream.incrementToken());
-    assertEquals("WhitespaceAnalyzer does not lowercase",
+      assertTrue(tokenStream.incrementToken());
+      assertEquals("WhitespaceAnalyzer does not lowercase",
                  "Qwerty",
                  termAtt.toString());
+      assertFalse(tokenStream.incrementToken());
+      tokenStream.end();
+    }
 
-    tokenStream = analyzer.tokenStream("special",
-        new StringReader(text));
-    termAtt = tokenStream.getAttribute(CharTermAttribute.class);
-    tokenStream.reset();
+    try (TokenStream tokenStream = analyzer.tokenStream("special", text)) {
+      CharTermAttribute termAtt = tokenStream.getAttribute(CharTermAttribute.class);
+      tokenStream.reset();
 
-    assertTrue(tokenStream.incrementToken());
-    assertEquals("SimpleAnalyzer lowercases",
+      assertTrue(tokenStream.incrementToken());
+      assertEquals("SimpleAnalyzer lowercases",
                  "qwerty",
                  termAtt.toString());
+      assertFalse(tokenStream.incrementToken());
+      tokenStream.end();
+    }
   }
   
   public void testCharFilters() throws Exception {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        return new TokenStreamComponents(new MockTokenizer(reader));
+      protected TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new MockTokenizer());
       }
 
       @Override

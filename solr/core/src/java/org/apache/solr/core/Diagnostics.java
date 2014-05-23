@@ -33,8 +33,8 @@ public class Diagnostics {
   public static void call(Callable callable, Object... data) {
     try {
       callable.call(data);
-    } catch (Throwable th) {
-      log.error("TEST HOOK EXCEPTION", th);
+    } catch (Exception e) {
+      log.error("TEST HOOK EXCEPTION", e);
     }
   }
 

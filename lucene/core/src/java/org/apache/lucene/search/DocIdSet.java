@@ -31,6 +31,13 @@ public abstract class DocIdSet {
    * are no docs that match. */
   public abstract DocIdSetIterator iterator() throws IOException;
 
+  // TODO: somehow this class should express the cost of
+  // iteration vs the cost of random access Bits; for
+  // expensive Filters (e.g. distance < 1 km) we should use
+  // bits() after all other Query/Filters have matched, but
+  // this is the opposite of what bits() is for now
+  // (down-low filtering using e.g. FixedBitSet)
+
   /** Optionally provides a {@link Bits} interface for random access
    * to matching documents.
    * @return {@code null}, if this {@code DocIdSet} does not support random access.
@@ -50,7 +57,7 @@ public abstract class DocIdSet {
 
   /**
    * This method is a hint for {@link CachingWrapperFilter}, if this <code>DocIdSet</code>
-   * should be cached without copying it into a BitSet. The default is to return
+   * should be cached without copying it. The default is to return
    * <code>false</code>. If you have an own <code>DocIdSet</code> implementation
    * that does its iteration very effective and fast without doing disk I/O,
    * override this method and return <code>true</code>.

@@ -44,7 +44,7 @@ import org.apache.lucene.analysis.Token;
  */
 public class PossibilityIterator implements
     Iterator<PossibilityIterator.RankedSpellPossibility> {
-  private List<List<SpellCheckCorrection>> possibilityList = new ArrayList<List<SpellCheckCorrection>>();
+  private List<List<SpellCheckCorrection>> possibilityList = new ArrayList<>();
   private Iterator<RankedSpellPossibility> rankedPossibilityIterator = null;
   private int correctionIndex[];
   private boolean done = false;
@@ -74,7 +74,7 @@ public class PossibilityIterator implements
       if (entry.getValue().size() == 0) {
         continue;
       }
-      List<SpellCheckCorrection> possibleCorrections = new ArrayList<SpellCheckCorrection>();
+      List<SpellCheckCorrection> possibleCorrections = new ArrayList<>();
       for (Map.Entry<String,Integer> entry1 : entry.getValue().entrySet()) {
         SpellCheckCorrection correction = new SpellCheckCorrection();
         correction.setOriginal(token);
@@ -99,11 +99,11 @@ public class PossibilityIterator implements
         correctionIndex[i] = 0;
       }
     }
-    PriorityQueue<RankedSpellPossibility> rankedPossibilities = new PriorityQueue<RankedSpellPossibility>(
+    PriorityQueue<RankedSpellPossibility> rankedPossibilities = new PriorityQueue<>(
         11, new RankComparator());
     Set<RankedSpellPossibility> removeDuplicates = null;
     if (suggestionsMayOverlap) {
-      removeDuplicates = new HashSet<RankedSpellPossibility>();
+      removeDuplicates = new HashSet<>();
     }
     long numEvaluations = 0;
     while (numEvaluations < maxEvaluations && internalHasNext()) {
@@ -206,7 +206,7 @@ public class PossibilityIterator implements
       if (done) {
         throw new NoSuchElementException();
       }
-      possibleCorrection = new ArrayList<SpellCheckCorrection>();
+      possibleCorrection = new ArrayList<>();
       List<List<SpellCheckCorrection>> possibleCorrections = null;
       int rank = 0;
       while (!done
@@ -244,7 +244,7 @@ public class PossibilityIterator implements
         if (suggestionsMayOverlap) {
           possibleCorrections = separateOverlappingTokens(possibleCorrection);
         } else {
-          possibleCorrections = new ArrayList<List<SpellCheckCorrection>>(1);
+          possibleCorrections = new ArrayList<>(1);
           possibleCorrections.add(possibleCorrection);
         }
       }
@@ -258,11 +258,11 @@ public class PossibilityIterator implements
       List<SpellCheckCorrection> possibleCorrection) {
     List<List<SpellCheckCorrection>> ret = null;
     if (possibleCorrection.size() == 1) {
-      ret = new ArrayList<List<SpellCheckCorrection>>(1);
+      ret = new ArrayList<>(1);
       ret.add(possibleCorrection);
       return ret;
     }
-    ret = new ArrayList<List<SpellCheckCorrection>>();
+    ret = new ArrayList<>();
     for (int i = 0; i < possibleCorrection.size(); i++) {
       List<SpellCheckCorrection> c = compatible(possibleCorrection, i);
       ret.add(c);
@@ -274,7 +274,7 @@ public class PossibilityIterator implements
       int pos) {
     List<SpellCheckCorrection> priorPassCompatibles = null;
     {
-      List<SpellCheckCorrection> firstPassCompatibles = new ArrayList<SpellCheckCorrection>(
+      List<SpellCheckCorrection> firstPassCompatibles = new ArrayList<>(
           all.size());
       SpellCheckCorrection sacred = all.get(pos);
       firstPassCompatibles.add(sacred);
@@ -303,7 +303,7 @@ public class PossibilityIterator implements
         if (pos == priorPassCompatibles.size() - 1) {
           return priorPassCompatibles;
         }
-        List<SpellCheckCorrection> subsequentPassCompatibles = new ArrayList<SpellCheckCorrection>(
+        List<SpellCheckCorrection> subsequentPassCompatibles = new ArrayList<>(
             priorPassCompatibles.size());
         SpellCheckCorrection sacred = null;
         for (int i = 0; i <= pos; i++) {

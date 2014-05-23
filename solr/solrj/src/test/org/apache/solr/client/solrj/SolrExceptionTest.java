@@ -42,6 +42,7 @@ public class SolrExceptionTest extends LuceneTestCase {
       SolrServer client = new HttpSolrServer("http://[ff01::114]:11235/solr/", httpClient);
       SolrQuery query = new SolrQuery("test123");
       client.query(query);
+      client.shutdown();
     } catch (SolrServerException sse) {
       gotExpectedError = true;
       /***

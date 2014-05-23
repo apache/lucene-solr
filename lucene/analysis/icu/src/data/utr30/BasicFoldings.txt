@@ -78,7 +78,6 @@ FF0D>002D
 ## Space Folding
 # Rule: [[:Zs:] - [:Changes_When_NFKC_Casefolded=Yes:] - [\u0020]] > 0020
 1680>0020
-180E>0020
 
 ## Spacing Accents folding (done by kd)
 

@@ -39,12 +39,12 @@ import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestLiveFieldValues extends LuceneTestCase {
   public void test() throws Exception {
 
-    Directory dir = newFSDirectory(_TestUtil.getTempDir("livefieldupdates"));
+    Directory dir = newFSDirectory(createTempDir("livefieldupdates"));
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
 
     final IndexWriter w = new IndexWriter(dir, iwc);
@@ -73,16 +73,16 @@ public class TestLiveFieldValues extends LuceneTestCase {
         }
     };
 
-    int numThreads = _TestUtil.nextInt(random(), 2, 5);
+    int numThreads = TestUtil.nextInt(random(), 2, 5);
     if (VERBOSE) {
       System.out.println(numThreads + " threads");
     }
 
     final CountDownLatch startingGun = new CountDownLatch(1);
-    List<Thread> threads = new ArrayList<Thread>();
+    List<Thread> threads = new ArrayList<>();
 
     final int iters = atLeast(1000);
-    final int idCount = _TestUtil.nextInt(random(), 100, 10000);
+    final int idCount = TestUtil.nextInt(random(), 100, 10000);
 
     final double reopenChance = random().nextDouble()*0.01;
     final double deleteChance = random().nextDouble()*0.25;
@@ -96,7 +96,7 @@ public class TestLiveFieldValues extends LuceneTestCase {
           @Override
           public void run() {
             try {
-              Map<String,Integer> values = new HashMap<String,Integer>();
+              Map<String,Integer> values = new HashMap<>();
               List<String> allIDs = Collections.synchronizedList(new ArrayList<String>());
 
               startingGun.await();
@@ -170,7 +170,7 @@ public class TestLiveFieldValues extends LuceneTestCase {
 
     rt.close();
     mgr.close();
-    w.close();
+    w.shutdown();
     dir.close();
   }
 }

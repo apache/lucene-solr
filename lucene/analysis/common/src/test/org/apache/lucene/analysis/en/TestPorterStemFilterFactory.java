@@ -33,7 +33,7 @@ public class TestPorterStemFilterFactory extends BaseTokenStreamFactoryTestCase 
    */
   public void testStemming() throws Exception {
     Reader reader = new StringReader("dogs");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("PorterStem").create(stream);
     assertTokenStreamContents(stream, new String[] { "dog" });
   }

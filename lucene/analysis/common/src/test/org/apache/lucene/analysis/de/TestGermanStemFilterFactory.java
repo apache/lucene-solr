@@ -22,6 +22,7 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 /**
@@ -33,7 +34,8 @@ public class TestGermanStemFilterFactory extends BaseTokenStreamFactoryTestCase 
    */
   public void testStemming() throws Exception {
     Reader reader = new StringReader("Tischen");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    ((Tokenizer)stream).setReader(reader);
     stream = tokenFilterFactory("GermanStem").create(stream);
     assertTokenStreamContents(stream, new String[] { "tisch" });
   }

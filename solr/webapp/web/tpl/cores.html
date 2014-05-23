@@ -14,7 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
-<div id="cores" class="clearfix">
+<div id="cores" class="clearfix empty">
 
   <div id="ui-block">&nbsp;</div>
 
@@ -23,11 +23,11 @@ limitations under the License.
     <div id="actions" class="actions clearfix">
       
       <button id="add" class="action"><span>Add Core</span></button>
-      <button id="unload" class="warn"><span>Unload</span></button>
-      <button id="rename" class="action"><span>Rename</span></button>
-      <button id="swap" class="action"><span>Swap</span></button>
-      <button id="reload"><span>Reload</span></button>
-      <button id="optimize"><span>Optimize</span></button>
+      <button id="unload" class="warn requires-core"><span>Unload</span></button>
+      <button id="rename" class="action requires-core"><span>Rename</span></button>
+      <button id="swap" class="action requires-core"><span>Swap</span></button>
+      <button id="reload" class="requires-core"><span>Reload</span></button>
+      <button id="optimize" class="requires-core"><span>Optimize</span></button>
 
       <div class="action add" data-rel="add">
 
@@ -60,7 +60,13 @@ limitations under the License.
 
           </div>
 
-          <p class="clearfix error">
+          <p class="clearfix note directory-note">
+
+            <span><code>instanceDir</code> and <code>dataDir</code> need to exist before you can create the core</span>
+
+          </p>
+
+          <p class="clearfix note error">
 
             <span></span>
 
@@ -118,7 +124,7 @@ limitations under the License.
 
     </div>
 
-    <div id="data">
+    <div id="data" class="requires-core">
 
       <div class="block" id="core-data">
 
@@ -213,7 +219,7 @@ limitations under the License.
   
   </div>
 
-  <div id="navigation" class="clearfix">
+  <div id="navigation" class="requires-core clearfix">
   
   </div>
 

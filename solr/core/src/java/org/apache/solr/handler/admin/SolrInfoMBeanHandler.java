@@ -52,7 +52,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
    * Set is guarantee to never be null (but may be empty)
    */
   private Set<String> arrayToSet(Object[] arr) {
-    HashSet<String> r = new HashSet<String>();
+    HashSet<String> r = new HashSet<>();
     if (null == arr) return r;
     for (Object o : arr) {
       if (null != o) r.add(o.toString());
@@ -114,7 +114,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
   
   protected NamedList<NamedList<NamedList<Object>>> getMBeanInfo(SolrQueryRequest req) {
 
-    NamedList<NamedList<NamedList<Object>>> cats = new NamedList<NamedList<NamedList<Object>>>();
+    NamedList<NamedList<NamedList<Object>>> cats = new NamedList<>();
     
     String[] requestedCats = req.getParams().getParams("cat");
     if (null == requestedCats || 0 == requestedCats.length) {
@@ -139,7 +139,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
       NamedList<NamedList<Object>> catInfo = cats.get(m.getCategory().name());
       if ( null == catInfo ) continue;
 
-      NamedList<Object> mBeanInfo = new SimpleOrderedMap<Object>();
+      NamedList<Object> mBeanInfo = new SimpleOrderedMap<>();
       mBeanInfo.add("class", m.getName());
       mBeanInfo.add("version", m.getVersion());
       mBeanInfo.add("description", m.getDescription());
@@ -148,7 +148,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
       // Use an external form
       URL[] urls = m.getDocs();
       if(urls!=null) {
-        List<String> docs = new ArrayList<String>(urls.length);
+        List<String> docs = new ArrayList<>(urls.length);
         for(URL url : urls) {
           docs.add(url.toExternalForm());
         }
@@ -168,7 +168,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
       NamedList<NamedList<NamedList<Object>>> now,
       boolean includeAll ) {
     
-    NamedList<NamedList<NamedList<Object>>> changed = new NamedList<NamedList<NamedList<Object>>>();
+    NamedList<NamedList<NamedList<Object>>> changed = new NamedList<>();
     
     // Cycle through each category
     for(int i=0;i<ref.size();i++) {
@@ -182,7 +182,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
           // Something in the category changed
           // Now iterate the real beans
           
-          NamedList<NamedList<Object>> cat = new SimpleOrderedMap<NamedList<Object>>();
+          NamedList<NamedList<Object>> cat = new SimpleOrderedMap<>();
           for(int j=0;j<ref_cat.size();j++) {
             String name = ref_cat.getName(j);
             NamedList<Object> ref_bean = ref_cat.get(name);

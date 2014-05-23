@@ -18,7 +18,7 @@ package org.apache.lucene.analysis.standard;
  */
 
 import org.apache.lucene.analysis.util.TokenizerFactory;
-import org.apache.lucene.util.AttributeSource.AttributeFactory;
+import org.apache.lucene.util.AttributeFactory;
 
 import java.io.Reader;
 import java.util.Map;
@@ -46,8 +46,8 @@ public class UAX29URLEmailTokenizerFactory extends TokenizerFactory {
   }
 
   @Override
-  public UAX29URLEmailTokenizer create(AttributeFactory factory, Reader input) {
-    UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(luceneMatchVersion, factory, input); 
+  public UAX29URLEmailTokenizer create(AttributeFactory factory) {
+    UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(luceneMatchVersion, factory);
     tokenizer.setMaxTokenLength(maxTokenLength);
     return tokenizer;
   }

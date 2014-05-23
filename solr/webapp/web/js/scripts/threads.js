@@ -21,7 +21,6 @@ sammy.get
   /^#\/(~threads)$/,
   function( context )
   {
-    var core_basepath = $( '[data-basepath]', app.menu_element ).attr( 'data-basepath' );
     var content_element = $( '#content' );
 
     $.get
@@ -35,7 +34,7 @@ sammy.get
         $.ajax
         (
           {
-            url : core_basepath + '/admin/threads?wt=json',
+            url : app.config.solr_path + '/admin/info/threads?wt=json',
             dataType : 'json',
             context : $( '#threads', content_element ),
             beforeSend : function( xhr, settings )

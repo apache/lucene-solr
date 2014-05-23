@@ -31,7 +31,7 @@ import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.similarities.Similarity.SloppySimScorer;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
@@ -50,15 +50,20 @@ import org.apache.lucene.util.ToStringUtils;
  */
 public class MultiPhraseQuery extends Query {
   private String field;
-  private ArrayList<Term[]> termArrays = new ArrayList<Term[]>();
-  private ArrayList<Integer> positions = new ArrayList<Integer>();
+  private ArrayList<Term[]> termArrays = new ArrayList<>();
+  private ArrayList<Integer> positions = new ArrayList<>();
 
   private int slop = 0;
 
   /** Sets the phrase slop for this query.
    * @see PhraseQuery#setSlop(int)
    */
-  public void setSlop(int s) { slop = s; }
+  public void setSlop(int s) {
+    if (s < 0) {
+      throw new IllegalArgumentException("slop value cannot be negative");
+    }
+    slop = s; 
+  }
 
   /** Sets the phrase slop for this query.
    * @see PhraseQuery#getSlop()
@@ -136,7 +141,7 @@ public class MultiPhraseQuery extends Query {
   private class MultiPhraseWeight extends Weight {
     private final Similarity similarity;
     private final Similarity.SimWeight stats;
-    private final Map<Term,TermContext> termContexts = new HashMap<Term,TermContext>();
+    private final Map<Term,TermContext> termContexts = new HashMap<>();
 
     public MultiPhraseWeight(IndexSearcher searcher)
       throws IOException {
@@ -144,12 +149,12 @@ public class MultiPhraseQuery extends Query {
       final IndexReaderContext context = searcher.getTopReaderContext();
       
       // compute idf
-      ArrayList<TermStatistics> allTermStats = new ArrayList<TermStatistics>();
+      ArrayList<TermStatistics> allTermStats = new ArrayList<>();
       for(final Term[] terms: termArrays) {
         for (Term term: terms) {
           TermContext termContext = termContexts.get(term);
           if (termContext == null) {
-            termContext = TermContext.build(context, term, true);
+            termContext = TermContext.build(context, term);
             termContexts.put(term, termContext);
           }
           allTermStats.add(searcher.termStatistics(term, termContext));
@@ -174,8 +179,7 @@ public class MultiPhraseQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, Bits acceptDocs) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
       assert !termArrays.isEmpty();
       final AtomicReader reader = context.reader();
       final Bits liveDocs = acceptDocs;
@@ -245,25 +249,25 @@ public class MultiPhraseQuery extends Query {
       }
 
       if (slop == 0) {
-        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity.exactSimScorer(stats, context));
+        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity.simScorer(stats, context));
         if (s.noDocs) {
           return null;
         } else {
           return s;
         }
       } else {
-        return new SloppyPhraseScorer(this, postingsFreqs, slop, similarity.sloppySimScorer(stats, context));
+        return new SloppyPhraseScorer(this, postingsFreqs, slop, similarity.simScorer(stats, context));
       }
     }
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context, true, false, context.reader().getLiveDocs());
+      Scorer scorer = scorer(context, context.reader().getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {
           float freq = slop == 0 ? scorer.freq() : ((SloppyPhraseScorer)scorer).sloppyFreq();
-          SloppySimScorer docScorer = similarity.sloppySimScorer(stats, context);
+          SimScorer docScorer = similarity.simScorer(stats, context);
           ComplexExplanation result = new ComplexExplanation();
           result.setDescription("weight("+getQuery()+" in "+doc+") [" + similarity.getClass().getSimpleName() + "], result of:");
           Explanation scoreExplanation = docScorer.explain(doc, new Explanation(freq, "phraseFreq=" + freq));
@@ -475,7 +479,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
   private long cost;
 
   public UnionDocsAndPositionsEnum(Bits liveDocs, AtomicReaderContext context, Term[] terms, Map<Term,TermContext> termContexts, TermsEnum termsEnum) throws IOException {
-    List<DocsAndPositionsEnum> docsEnums = new LinkedList<DocsAndPositionsEnum>();
+    List<DocsAndPositionsEnum> docsEnums = new LinkedList<>();
     for (int i = 0; i < terms.length; i++) {
       final Term term = terms[i];
       TermState termState = termContexts.get(term).get(context.ord);

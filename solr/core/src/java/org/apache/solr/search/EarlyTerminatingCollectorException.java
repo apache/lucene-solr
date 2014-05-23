@@ -23,23 +23,40 @@ package org.apache.solr.search;
  */
 public class EarlyTerminatingCollectorException extends RuntimeException {
   private static final long serialVersionUID = 5939241340763428118L;  
-  private int lastDocId = -1;
+  private int numberScanned;
   private int numberCollected;
   
-  public EarlyTerminatingCollectorException(int numberCollected, int lastDocId) {
+  public EarlyTerminatingCollectorException(int numberCollected, int numberScanned) {
+    assert numberCollected <= numberScanned : numberCollected+"<="+numberScanned;
+    assert 0 < numberCollected;
+    assert 0 < numberScanned;
+
     this.numberCollected = numberCollected;
-    this.lastDocId = lastDocId;
+    this.numberScanned = numberScanned;
   }
-  public int getLastDocId() {
-    return lastDocId;
+  /**
+   * The total number of documents in the index that were "scanned" by 
+   * the index when collecting the {@link #getNumberCollected()} documents 
+   * that triggered this exception.
+   * <p>
+   * This number represents the sum of:
+   * </p>
+   * <ul>
+   *  <li>The total number of documents in all AtomicReaders
+   *      that were fully exhausted during collection
+   *  </li>
+   *  <li>The id of the last doc collected in the last AtomicReader
+   *      consulted during collection.
+   *  </li>
+   * </ul>
+   **/
+  public int getNumberScanned() {
+    return numberScanned;
   }
-  public void setLastDocId(int lastDocId) {
-    this.lastDocId = lastDocId;
-  }
+  /**
+   * The number of documents collected that resulted in early termination
+   */
   public int getNumberCollected() {
     return numberCollected;
-  }
-  public void setNumberCollected(int numberCollected) {
-    this.numberCollected = numberCollected;
   }
 }

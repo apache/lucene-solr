@@ -17,15 +17,38 @@
 
 package org.apache.solr.update;
 
+import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase.FROMLEADER;
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.Future;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -34,9 +57,6 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
-import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
-import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
-import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.DefaultSolrThreadFactory;
@@ -44,15 +64,6 @@ import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
-import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase.FROMLEADER;
 
 
 /** @lucene.experimental */
@@ -64,6 +75,10 @@ public class UpdateLog implements PluginInfoInitialized {
   public boolean debug = log.isDebugEnabled();
   public boolean trace = log.isTraceEnabled();
 
+  // TODO: hack
+  public FileSystem getFs() {
+    return null;
+  }
 
   public enum SyncLevel { NONE, FLUSH, FSYNC;
     public static SyncLevel getSyncLevel(String level){
@@ -108,27 +123,27 @@ public class UpdateLog implements PluginInfoInitialized {
   }
 
   long id = -1;
-  private State state = State.ACTIVE;
-  private int operationFlags;  // flags to write in the transaction log with operations (i.e. FLAG_GAP)
+  protected State state = State.ACTIVE;
+  protected int operationFlags;  // flags to write in the transaction log with operations (i.e. FLAG_GAP)
 
-  private TransactionLog tlog;
-  private TransactionLog prevTlog;
-  private Deque<TransactionLog> logs = new LinkedList<TransactionLog>();  // list of recent logs, newest first
-  private LinkedList<TransactionLog> newestLogsOnStartup = new LinkedList<TransactionLog>();
-  private int numOldRecords;  // number of records in the recent logs
+  protected TransactionLog tlog;
+  protected TransactionLog prevTlog;
+  protected Deque<TransactionLog> logs = new LinkedList<>();  // list of recent logs, newest first
+  protected LinkedList<TransactionLog> newestLogsOnStartup = new LinkedList<>();
+  protected int numOldRecords;  // number of records in the recent logs
 
-  private Map<BytesRef,LogPtr> map = new HashMap<BytesRef, LogPtr>();
-  private Map<BytesRef,LogPtr> prevMap;  // used while committing/reopening is happening
-  private Map<BytesRef,LogPtr> prevMap2;  // used while committing/reopening is happening
-  private TransactionLog prevMapLog;  // the transaction log used to look up entries found in prevMap
-  private TransactionLog prevMapLog2;  // the transaction log used to look up entries found in prevMap
+  protected Map<BytesRef,LogPtr> map = new HashMap<>();
+  protected Map<BytesRef,LogPtr> prevMap;  // used while committing/reopening is happening
+  protected Map<BytesRef,LogPtr> prevMap2;  // used while committing/reopening is happening
+  protected TransactionLog prevMapLog;  // the transaction log used to look up entries found in prevMap
+  protected TransactionLog prevMapLog2;  // the transaction log used to look up entries found in prevMap
 
-  private final int numDeletesToKeep = 1000;
-  private final int numDeletesByQueryToKeep = 100;
+  protected final int numDeletesToKeep = 1000;
+  protected final int numDeletesByQueryToKeep = 100;
   public final int numRecordsToKeep = 100;
 
   // keep track of deletes only... this is not updated on an add
-  private LinkedHashMap<BytesRef, LogPtr> oldDeletes = new LinkedHashMap<BytesRef, LogPtr>(numDeletesToKeep) {
+  protected LinkedHashMap<BytesRef, LogPtr> oldDeletes = new LinkedHashMap<BytesRef, LogPtr>(numDeletesToKeep) {
     @Override
     protected boolean removeEldestEntry(Map.Entry eldest) {
       return size() > numDeletesToKeep;
@@ -145,21 +160,21 @@ public class UpdateLog implements PluginInfoInitialized {
     }
   }
 
-  private LinkedList<DBQ> deleteByQueries = new LinkedList<DBQ>();
+  protected LinkedList<DBQ> deleteByQueries = new LinkedList<>();
 
-  private String[] tlogFiles;
-  private File tlogDir;
-  private Collection<String> globalStrings;
+  protected String[] tlogFiles;
+  protected File tlogDir;
+  protected Collection<String> globalStrings;
 
-  private String dataDir;
-  private String lastDataDir;
+  protected String dataDir;
+  protected String lastDataDir;
 
-  private VersionInfo versionInfo;
+  protected VersionInfo versionInfo;
 
-  private SyncLevel defaultSyncLevel = SyncLevel.FLUSH;
+  protected SyncLevel defaultSyncLevel = SyncLevel.FLUSH;
 
   volatile UpdateHandler uhandler;    // a core reload can change this reference!
-  private volatile boolean cancelApplyBufferUpdate;
+  protected volatile boolean cancelApplyBufferUpdate;
   List<Long> startingVersions;
   int startingOperation;  // last operation in the logs on startup
 
@@ -178,6 +193,19 @@ public class UpdateLog implements PluginInfoInitialized {
     }
   }
 
+  public long getTotalLogsSize() {
+    long size = 0;
+    synchronized (logs) {
+      for (TransactionLog log : logs) {
+        size += log.getLogSize();
+      }
+    }
+    return size;
+  }
+
+  public long getTotalLogsNumber() {
+    return logs.size();
+  }
 
   public VersionInfo getVersionInfo() {
     return versionInfo;
@@ -189,16 +217,12 @@ public class UpdateLog implements PluginInfoInitialized {
     defaultSyncLevel = SyncLevel.getSyncLevel((String)info.initArgs.get("syncLevel"));
   }
 
+  /* Note, when this is called, uhandler is not completely constructed.
+   * This must be called when a new log is created, or
+   * for an existing log whenever the core or update handler changes.
+   */
   public void init(UpdateHandler uhandler, SolrCore core) {
-    // ulogDir from CoreDescriptor overrides
-    String ulogDir = core.getCoreDescriptor().getUlogDir();
-    if (ulogDir != null) {
-      dataDir = ulogDir;
-    }
-    
-    if (dataDir == null || dataDir.length()==0) {
-      dataDir = core.getDataDir();
-    }
+    dataDir = core.getUlogDir();
 
     this.uhandler = uhandler;
 
@@ -276,8 +300,8 @@ public class UpdateLog implements PluginInfoInitialized {
 
   }
   
-  public File getLogDir() {
-    return tlogDir;
+  public String getLogDir() {
+    return tlogDir.getAbsolutePath();
   }
   
   public List<Long> getStartingVersions() {
@@ -291,7 +315,7 @@ public class UpdateLog implements PluginInfoInitialized {
   /* Takes over ownership of the log, keeping it until no longer needed
      and then decrementing it's reference and dropping it.
    */
-  private void addOldLog(TransactionLog oldLog, boolean removeOld) {
+  protected void addOldLog(TransactionLog oldLog, boolean removeOld) {
     if (oldLog == null) return;
 
     numOldRecords += oldLog.numRecords();
@@ -322,7 +346,7 @@ public class UpdateLog implements PluginInfoInitialized {
   }
 
 
-  public static String[] getLogList(File directory) {
+  public String[] getLogList(File directory) {
     final String prefix = TLOG_NAME+'.';
     String[] names = directory.list(new FilenameFilter() {
       @Override
@@ -330,6 +354,9 @@ public class UpdateLog implements PluginInfoInitialized {
         return name.startsWith(prefix);
       }
     });
+    if (names == null) {
+      throw new RuntimeException(new FileNotFoundException(directory.getAbsolutePath()));
+    }
     Arrays.sort(names);
     return names;
   }
@@ -386,7 +413,7 @@ public class UpdateLog implements PluginInfoInitialized {
         try {
           RefCounted<SolrIndexSearcher> holder = uhandler.core.openNewSearcher(true, true);
           holder.decref();
-        } catch (Throwable e) {
+        } catch (Exception e) {
           SolrException.log(log, "Error opening realtime searcher for deleteByQuery", e);
         }
 
@@ -456,7 +483,7 @@ public class UpdateLog implements PluginInfoInitialized {
         try {
           RefCounted<SolrIndexSearcher> holder = uhandler.core.openNewSearcher(true, true);
           holder.decref();
-        } catch (Throwable e) {
+        } catch (Exception e) {
           SolrException.log(log, "Error opening realtime searcher for deleteByQuery", e);
         }
 
@@ -477,7 +504,7 @@ public class UpdateLog implements PluginInfoInitialized {
       try {
         RefCounted<SolrIndexSearcher> holder = uhandler.core.openNewSearcher(true, true);
         holder.decref();
-      } catch (Throwable e) {
+      } catch (Exception e) {
         SolrException.log(log, "Error opening realtime searcher for deleteByQuery", e);
       }
 
@@ -531,7 +558,7 @@ public class UpdateLog implements PluginInfoInitialized {
         return null;
       }
 
-      List<DBQ> dbqList = new ArrayList<DBQ>();
+      List<DBQ> dbqList = new ArrayList<>();
       for (DBQ dbq : deleteByQueries) {
         if (dbq.version <= version) break;
         dbqList.add(dbq);
@@ -540,14 +567,14 @@ public class UpdateLog implements PluginInfoInitialized {
     }
   }
 
-  private void newMap() {
+  protected void newMap() {
     prevMap2 = prevMap;
     prevMapLog2 = prevMapLog;
 
     prevMap = map;
     prevMapLog = tlog;
 
-    map = new HashMap<BytesRef, LogPtr>();
+    map = new HashMap<>();
   }
 
   private void clearOldMaps() {
@@ -621,7 +648,7 @@ public class UpdateLog implements PluginInfoInitialized {
       // any added documents will make it into this commit or not.
       // But we do know that any updates already added will definitely
       // show up in the latest reader after the commit succeeds.
-      map = new HashMap<BytesRef, LogPtr>();
+      map = new HashMap<>();
 
       if (debug) {
         log.debug("TLOG: preSoftCommit: prevMap="+ System.identityHashCode(prevMap) + " new map=" + System.identityHashCode(map));
@@ -757,7 +784,7 @@ public class UpdateLog implements PluginInfoInitialized {
   public Future<RecoveryInfo> recoverFromLog() {
     recoveryInfo = new RecoveryInfo();
 
-    List<TransactionLog> recoverLogs = new ArrayList<TransactionLog>(1);
+    List<TransactionLog> recoverLogs = new ArrayList<>(1);
     for (TransactionLog ll : newestLogsOnStartup) {
       if (!ll.try_incref()) continue;
 
@@ -777,7 +804,7 @@ public class UpdateLog implements PluginInfoInitialized {
 
     if (recoverLogs.isEmpty()) return null;
 
-    ExecutorCompletionService<RecoveryInfo> cs = new ExecutorCompletionService<RecoveryInfo>(recoveryExecutor);
+    ExecutorCompletionService<RecoveryInfo> cs = new ExecutorCompletionService<>(recoveryExecutor);
     LogReplayer replayer = new LogReplayer(recoverLogs, false);
 
     versionInfo.blockUpdates();
@@ -793,7 +820,7 @@ public class UpdateLog implements PluginInfoInitialized {
   }
 
 
-  private void ensureLog() {
+  protected void ensureLog() {
     if (tlog == null) {
       String newLogName = String.format(Locale.ROOT, LOG_FILENAME_PATTERN, TLOG_NAME, id);
       tlog = new TransactionLog(new File(tlogDir, newLogName), globalStrings);
@@ -824,7 +851,7 @@ public class UpdateLog implements PluginInfoInitialized {
     synchronized (this) {
       try {
         ExecutorUtil.shutdownNowAndAwaitTermination(recoveryExecutor);
-      } catch (Throwable e) {
+      } catch (Exception e) {
         SolrException.log(log, e);
       }
 
@@ -890,7 +917,7 @@ public class UpdateLog implements PluginInfoInitialized {
 
     /** Returns the list of deleteByQueries that happened after the given version */
     public List<Object> getDeleteByQuery(long afterVersion) {
-      List<Object> result = new ArrayList<Object>(deleteByQueryList.size());
+      List<Object> result = new ArrayList<>(deleteByQueryList.size());
       for (Update update : deleteByQueryList) {
         if (Math.abs(update.version) > afterVersion) {
           Object dbq = update.log.lookup(update.pointer);
@@ -907,13 +934,13 @@ public class UpdateLog implements PluginInfoInitialized {
 
     private void update() {
       int numUpdates = 0;
-      updateList = new ArrayList<List<Update>>(logList.size());
-      deleteByQueryList = new ArrayList<Update>();
-      deleteList = new ArrayList<DeleteUpdate>();
-      updates = new HashMap<Long,Update>(numRecordsToKeep);
+      updateList = new ArrayList<>(logList.size());
+      deleteByQueryList = new ArrayList<>();
+      deleteList = new ArrayList<>();
+      updates = new HashMap<>(numRecordsToKeep);
 
       for (TransactionLog oldLog : logList) {
-        List<Update> updatesForLog = new ArrayList<Update>();
+        List<Update> updatesForLog = new ArrayList<>();
 
         TransactionLog.ReverseReader reader = null;
         try {
@@ -968,6 +995,8 @@ public class UpdateLog implements PluginInfoInitialized {
               log.warn("Exception reverse reading log", ex);
               break;
             }
+
+            numUpdates++;
           }
 
         } catch (IOException e) {
@@ -993,7 +1022,7 @@ public class UpdateLog implements PluginInfoInitialized {
   public RecentUpdates getRecentUpdates() {
     Deque<TransactionLog> logList;
     synchronized (this) {
-      logList = new LinkedList<TransactionLog>(logs);
+      logList = new LinkedList<>(logs);
       for (TransactionLog log : logList) {
         log.incref();
       }
@@ -1119,7 +1148,7 @@ public class UpdateLog implements PluginInfoInitialized {
       tlog.decref();
       throw new RuntimeException("executor is not running...");
     }
-    ExecutorCompletionService<RecoveryInfo> cs = new ExecutorCompletionService<RecoveryInfo>(recoveryExecutor);
+    ExecutorCompletionService<RecoveryInfo> cs = new ExecutorCompletionService<>(recoveryExecutor);
     LogReplayer replayer = new LogReplayer(Arrays.asList(new TransactionLog[]{tlog}), true);
     return cs.submit(replayer, recoveryInfo);
   }
@@ -1139,7 +1168,7 @@ public class UpdateLog implements PluginInfoInitialized {
 
 
 
-  private RecoveryInfo recoveryInfo;
+  protected RecoveryInfo recoveryInfo;
 
   class LogReplayer implements Runnable {
     private Logger loglog = log;  // set to something different?
@@ -1151,7 +1180,7 @@ public class UpdateLog implements PluginInfoInitialized {
     boolean debug = loglog.isDebugEnabled();
 
     public LogReplayer(List<TransactionLog> translogs, boolean activeLog) {
-      this.translogs = new LinkedList<TransactionLog>();
+      this.translogs = new LinkedList<>();
       this.translogs.addAll(translogs);
       this.activeLog = activeLog;
     }
@@ -1185,7 +1214,7 @@ public class UpdateLog implements PluginInfoInitialized {
           recoveryInfo.errors++;
           SolrException.log(log, e);
         }
-      } catch (Throwable e) {
+      } catch (Exception e) {
         recoveryInfo.errors++;
         SolrException.log(log, e);
       } finally {
@@ -1258,7 +1287,7 @@ public class UpdateLog implements PluginInfoInitialized {
             SolrException.log(log,e);
           } catch (IOException e) {
             SolrException.log(log,e);
-          } catch (Throwable e) {
+          } catch (Exception e) {
             SolrException.log(log,e);
           }
 
@@ -1344,7 +1373,7 @@ public class UpdateLog implements PluginInfoInitialized {
             recoveryInfo.errors++;
             loglog.warn("REYPLAY_ERR: IOException reading log", ex);
             // could be caused by an incomplete flush if recovering from log
-          } catch (Throwable ex) {
+          } catch (Exception ex) {
             recoveryInfo.errors++;
             loglog.warn("REPLAY_ERR: Exception replaying log", ex);
             // something wrong with the request?
@@ -1416,7 +1445,7 @@ public class UpdateLog implements PluginInfoInitialized {
     }
   }
   
-  public static File getTlogDir(SolrCore core, PluginInfo info) {
+  protected String getTlogDir(SolrCore core, PluginInfo info) {
     String dataDir = (String) info.initArgs.get("dir");
     
     String ulogDir = core.getCoreDescriptor().getUlogDir();
@@ -1427,11 +1456,30 @@ public class UpdateLog implements PluginInfoInitialized {
     if (dataDir == null || dataDir.length() == 0) {
       dataDir = core.getDataDir();
     }
-    
-    return new File(dataDir, TLOG_NAME);
+
+    return dataDir + "/" + TLOG_NAME;
+  }
+  
+  /**
+   * Clears the logs on the file system. Only call before init.
+   * 
+   * @param core the SolrCore
+   * @param ulogPluginInfo the init info for the UpdateHandler
+   */
+  public void clearLog(SolrCore core, PluginInfo ulogPluginInfo) {
+    if (ulogPluginInfo == null) return;
+    File tlogDir = new File(getTlogDir(core, ulogPluginInfo));
+    if (tlogDir.exists()) {
+      String[] files = getLogList(tlogDir);
+      for (String file : files) {
+        File f = new File(tlogDir, file);
+        boolean s = f.delete();
+        if (!s) {
+          log.error("Could not remove tlog file:" + f);
+        }
+      }
+    }
   }
   
 }
-
-
 

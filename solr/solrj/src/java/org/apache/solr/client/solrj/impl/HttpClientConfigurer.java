@@ -17,6 +17,8 @@ package org.apache.solr.client.solrj.impl;
  * limitations under the License.
  */
 
+
+import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.solr.common.params.SolrParams;
 
@@ -69,5 +71,28 @@ public class HttpClientConfigurer {
       HttpClientUtil.setAllowCompression(httpClient,
           config.getBool(HttpClientUtil.PROP_ALLOW_COMPRESSION));
     }
+    
+    boolean sslCheckPeerName = toBooleanDefaultIfNull(
+        toBooleanObject(System.getProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME)), true);
+    if(sslCheckPeerName == false) {
+      HttpClientUtil.setHostNameVerifier(httpClient, SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
+    }
+  }
+  
+  public static boolean toBooleanDefaultIfNull(Boolean bool, boolean valueIfNull) {
+    if (bool == null) {
+      return valueIfNull;
+    }
+    return bool.booleanValue() ? true : false;
+  }
+  
+  public static Boolean toBooleanObject(String str) {
+    if ("true".equalsIgnoreCase(str)) {
+      return Boolean.TRUE;
+    } else if ("false".equalsIgnoreCase(str)) {
+      return Boolean.FALSE;
+    }
+    // no match
+    return null;
   }
 }

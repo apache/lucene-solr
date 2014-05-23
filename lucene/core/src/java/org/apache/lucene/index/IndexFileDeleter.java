@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NoSuchDirectoryException;
 import org.apache.lucene.util.CollectionUtil;
@@ -80,21 +82,21 @@ final class IndexFileDeleter implements Closeable {
   /* Reference count for all files in the index.
    * Counts how many existing commits reference a file.
    **/
-  private Map<String, RefCount> refCounts = new HashMap<String, RefCount>();
+  private Map<String, RefCount> refCounts = new HashMap<>();
 
   /* Holds all commits (segments_N) currently in the index.
    * This will have just 1 commit if you are using the
    * default delete policy (KeepOnlyLastCommitDeletionPolicy).
    * Other policies may leave commit points live for longer
    * in which case this list would be longer than 1: */
-  private List<CommitPoint> commits = new ArrayList<CommitPoint>();
+  private List<CommitPoint> commits = new ArrayList<>();
 
   /* Holds files we had incref'd from the previous
    * non-commit checkpoint: */
-  private List<Collection<String>> lastFiles = new ArrayList<Collection<String>>();
+  private final List<String> lastFiles = new ArrayList<>();
 
   /* Commits that the IndexDeletionPolicy have decided to delete: */
-  private List<CommitPoint> commitsToDelete = new ArrayList<CommitPoint>();
+  private List<CommitPoint> commitsToDelete = new ArrayList<>();
 
   private final InfoStream infoStream;
   private Directory directory;
@@ -170,7 +172,7 @@ final class IndexFileDeleter implements Closeable {
             SegmentInfos sis = new SegmentInfos();
             try {
               sis.read(directory, fileName);
-            } catch (FileNotFoundException e) {
+            } catch (FileNotFoundException | NoSuchFileException e) {
               // LUCENE-948: on NFS (and maybe others), if
               // you have writers switching back and forth
               // between machines, it's very likely that the
@@ -259,6 +261,14 @@ final class IndexFileDeleter implements Closeable {
     startingCommitDeleted = currentCommitPoint == null ? false : currentCommitPoint.isDeleted();
 
     deleteCommits();
+  }
+
+  private void ensureOpen() throws AlreadyClosedException {
+    if (writer == null) {
+      throw new AlreadyClosedException("this IndexWriter is closed");
+    } else {
+      writer.ensureOpen(false);
+    }
   }
 
   public SegmentInfos getLastSegmentInfos() {
@@ -360,14 +370,13 @@ final class IndexFileDeleter implements Closeable {
     refresh(null);
   }
 
+  @Override
   public void close() throws IOException {
     // DecRef old files from the last checkpoint, if any:
     assert locked();
-    int size = lastFiles.size();
-    if (size > 0) {
-      for(int i=0;i<size;i++) {
-        decRef(lastFiles.get(i));
-      }
+
+    if (!lastFiles.isEmpty()) {
+      decRef(lastFiles);
       lastFiles.clear();
     }
 
@@ -458,13 +467,11 @@ final class IndexFileDeleter implements Closeable {
       deleteCommits();
     } else {
       // DecRef old files from the last checkpoint, if any:
-      for (Collection<String> lastFile : lastFiles) {
-        decRef(lastFile);
-      }
+      decRef(lastFiles);
       lastFiles.clear();
 
       // Save files so we can decr on next checkpoint/commit:
-      lastFiles.add(segmentInfos.files(directory, false));
+      lastFiles.addAll(segmentInfos.files(directory, false));
     }
     if (infoStream.isEnabled("IFD")) {
       long t1 = System.nanoTime();
@@ -580,29 +587,27 @@ final class IndexFileDeleter implements Closeable {
   void deleteFile(String fileName)
        throws IOException {
     assert locked();
+    ensureOpen();
     try {
       if (infoStream.isEnabled("IFD")) {
         infoStream.message("IFD", "delete \"" + fileName + "\"");
       }
       directory.deleteFile(fileName);
     } catch (IOException e) {  // if delete fails
-      if (directory.fileExists(fileName)) {
+      // Some operating systems (e.g. Windows) don't
+      // permit a file to be deleted while it is opened
+      // for read (e.g. by another process or thread). So
+      // we assume that when a delete fails it is because
+      // the file is open in another process, and queue
+      // the file for subsequent deletion.
 
-        // Some operating systems (e.g. Windows) don't
-        // permit a file to be deleted while it is opened
-        // for read (e.g. by another process or thread). So
-        // we assume that when a delete fails it is because
-        // the file is open in another process, and queue
-        // the file for subsequent deletion.
-
-        if (infoStream.isEnabled("IFD")) {
-          infoStream.message("IFD", "unable to remove file \"" + fileName + "\": " + e.toString() + "; Will re-try later.");
-        }
-        if (deletable == null) {
-          deletable = new ArrayList<String>();
-        }
-        deletable.add(fileName);                  // add to deletable
+      if (infoStream.isEnabled("IFD")) {
+        infoStream.message("IFD", "unable to remove file \"" + fileName + "\": " + e.toString() + "; Will re-try later.");
       }
+      if (deletable == null) {
+        deletable = new ArrayList<>();
+      }
+      deletable.add(fileName);                  // add to deletable
     }
   }
 

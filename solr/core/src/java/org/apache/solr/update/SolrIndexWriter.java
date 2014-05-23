@@ -17,10 +17,7 @@
 
 package org.apache.solr.update;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.codecs.Codec;
@@ -29,11 +26,10 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.InfoStream;
-import org.apache.lucene.util.PrintStreamInfoStream;
-import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.util.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,13 +44,17 @@ public class SolrIndexWriter extends IndexWriter {
   // These should *only* be used for debugging or monitoring purposes
   public static final AtomicLong numOpens = new AtomicLong();
   public static final AtomicLong numCloses = new AtomicLong();
-
+  
   /** Stored into each Lucene commit to record the
    *  System.currentTimeMillis() when commit was called. */
   public static final String COMMIT_TIME_MSEC_KEY = "commitTimeMSec";
 
+  private final Object CLOSE_LOCK = new Object();
+  
   String name;
   private DirectoryFactory directoryFactory;
+  private InfoStream infoStream;
+  private Directory directory;
 
   public static SolrIndexWriter create(String name, String path, DirectoryFactory directoryFactory, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy, Codec codec) throws IOException {
 
@@ -77,30 +77,18 @@ public class SolrIndexWriter extends IndexWriter {
     super(directory,
           config.toIndexWriterConfig(schema).
           setOpenMode(create ? IndexWriterConfig.OpenMode.CREATE : IndexWriterConfig.OpenMode.APPEND).
-          setIndexDeletionPolicy(delPolicy).setCodec(codec).setInfoStream(toInfoStream(config))
+          setIndexDeletionPolicy(delPolicy).setCodec(codec)
           );
     log.debug("Opened Writer " + name);
     this.name = name;
+    infoStream = getConfig().getInfoStream();
+    this.directory = directory;
     numOpens.incrementAndGet();
   }
   
   private void setDirectoryFactory(DirectoryFactory factory) {
     this.directoryFactory = factory;
   }
-
-  private static InfoStream toInfoStream(SolrIndexConfig config) throws IOException {
-    String infoStreamFile = config.infoStreamFile;
-    if (infoStreamFile != null) {
-      File f = new File(infoStreamFile);
-      File parent = f.getParentFile();
-      if (parent != null) parent.mkdirs();
-      FileOutputStream fos = new FileOutputStream(f, true);
-      return new PrintStreamInfoStream(new PrintStream(fos, true, "UTF-8"));
-    } else {
-      return InfoStream.NO_OUTPUT;
-    }
-  }
-
 
   /**
    * use DocumentBuilder now...
@@ -134,62 +122,54 @@ public class SolrIndexWriter extends IndexWriter {
    */
   private volatile boolean isClosed = false;
 
-  
   @Override
   public void close() throws IOException {
     log.debug("Closing Writer " + name);
-    Directory directory = getDirectory();
-    final InfoStream infoStream = isClosed ? null : getConfig().getInfoStream();
     try {
-      while (true) {
-        try {
-          super.close();
-        } catch (ThreadInterruptedException e) {
-          // don't allow interruption
-          continue;
-        } catch (Throwable t) {
-          log.error("Error closing IndexWriter, trying rollback", t);
-          super.rollback();
-        }
-        if (IndexWriter.isLocked(directory)) {
-          try {
-            IndexWriter.unlock(directory);
-          } catch (Throwable t) {
-            log.error("Coud not unlock directory after seemingly failed IndexWriter#close()", t);
-          }
-        }
-        break;
+      super.close();
+    } catch (Throwable t) {
+      if (t instanceof OutOfMemoryError) {
+        throw (OutOfMemoryError) t;
       }
+      log.error("Error closing IndexWriter", t);
     } finally {
-      if (infoStream != null) {
-        infoStream.close();
-      }
-      
-      isClosed = true;
-      
-      directoryFactory.release(directory);
-      
-      numCloses.incrementAndGet();
+      cleanup();
     }
   }
 
   @Override
   public void rollback() throws IOException {
-    Directory dir = getDirectory();
+    log.debug("Rollback Writer " + name);
     try {
-      while (true) {
-        try {
-          super.rollback();
-        } catch (ThreadInterruptedException e) {
-          // don't allow interruption
-          continue;
-        }
-        break;
+      super.rollback();
+    } catch (Throwable t) {
+      if (t instanceof OutOfMemoryError) {
+        throw (OutOfMemoryError) t;
       }
+      log.error("Exception rolling back IndexWriter", t);
     } finally {
-      isClosed = true;
-      directoryFactory.release(dir);
+      cleanup();
+    }
+  }
+
+  private void cleanup() throws IOException {
+    // It's kind of an implementation detail whether
+    // or not IndexWriter#close calls rollback, so
+    // we assume it may or may not
+    boolean doClose = false;
+    synchronized (CLOSE_LOCK) {
+      if (!isClosed) {
+        doClose = true;
+        isClosed = true;
+      }
+    }
+    if (doClose) {
+      
+      if (infoStream != null) {
+        IOUtils.closeQuietly(infoStream);
+      }
       numCloses.incrementAndGet();
+      directoryFactory.release(directory);
     }
   }
 

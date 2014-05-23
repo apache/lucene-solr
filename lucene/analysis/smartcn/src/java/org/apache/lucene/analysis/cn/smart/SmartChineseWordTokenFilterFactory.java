@@ -32,7 +32,9 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * SmartChinese stoplist with a StopFilterFactory via:
  * <code>words="org/apache/lucene/analysis/cn/smart/stopwords.txt"</code>
  * @lucene.experimental
+ * @deprecated Use {@link HMMChineseTokenizerFactory} instead
  */
+@Deprecated
 public class SmartChineseWordTokenFilterFactory extends TokenFilterFactory {
   
   /** Creates a new SmartChineseWordTokenFilterFactory */

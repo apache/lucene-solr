@@ -17,20 +17,29 @@
 
 package org.apache.solr.response;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.util.Properties;
+
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.runtime.RuntimeConstants;
-import org.apache.velocity.tools.generic.*;
-
-import java.io.*;
-import java.util.Properties;
+import org.apache.velocity.tools.generic.ComparisonDateTool;
+import org.apache.velocity.tools.generic.EscapeTool;
+import org.apache.velocity.tools.generic.ListTool;
+import org.apache.velocity.tools.generic.MathTool;
+import org.apache.velocity.tools.generic.NumberTool;
+import org.apache.velocity.tools.generic.SortTool;
 
 public class VelocityResponseWriter implements QueryResponseWriter {
 
@@ -66,7 +75,6 @@ public class VelocityResponseWriter implements QueryResponseWriter {
     } catch (ClassCastException e) {
       // known edge case where QueryResponse's extraction assumes "response" is a SolrDocumentList
       // (AnalysisRequestHandler emits a "response")
-      e.printStackTrace();
       rsp = new SolrResponseBase();
       rsp.setResponse(parsedResponse);
     }
@@ -120,37 +128,22 @@ public class VelocityResponseWriter implements QueryResponseWriter {
     SolrVelocityResourceLoader resourceLoader =
         new SolrVelocityResourceLoader(request.getCore().getSolrConfig().getResourceLoader());
     engine.setProperty("solr.resource.loader.instance", resourceLoader);
-
-    File fileResourceLoaderBaseDir = null;
-    try {
-      String template_root = request.getParams().get("v.base_dir");
-      fileResourceLoaderBaseDir = new File(request.getCore().getResourceLoader().getConfigDir(), "velocity");
-      if (template_root != null) {
-        fileResourceLoaderBaseDir = new File(template_root);
-      }
-    } catch (SolrException e) {
-      // no worries... probably in ZooKeeper mode and getConfigDir() isn't available, so we'll just ignore omit
-      // the file system resource loader
-    }
-
-    if (fileResourceLoaderBaseDir != null) {
-      engine.setProperty(RuntimeConstants.FILE_RESOURCE_LOADER_PATH, fileResourceLoaderBaseDir.getAbsolutePath());
-      engine.setProperty(RuntimeConstants.RESOURCE_LOADER, "params,file,solr");
-    } else {
-      engine.setProperty(RuntimeConstants.RESOURCE_LOADER, "params,solr");
-    }
+    engine.setProperty(RuntimeConstants.RESOURCE_LOADER, "params,solr");
 
     // TODO: Externalize Velocity properties
     String propFile = request.getParams().get("v.properties");
     try {
-      if (propFile == null)
-        engine.init();
-      else {
+      Properties props = new Properties();
+      // Don't create a separate velocity log file by default.
+      props.put(RuntimeConstants.RUNTIME_LOG, "");
+
+      if (propFile == null) {
+        engine.init(props);
+      } else {
         InputStream is = null;
         try {
           is = resourceLoader.getResourceStream(propFile);
-          Properties props = new Properties();
-          props.load(is);
+          props.load(new InputStreamReader(is, StandardCharsets.UTF_8));
           engine.init(props);
         }
         finally {

@@ -237,7 +237,7 @@ public class FSTCompletionBuilder {
     // Build the automaton.
     final Outputs<Object> outputs = NoOutputs.getSingleton();
     final Object empty = outputs.getNoOutput();
-    final Builder<Object> builder = new Builder<Object>(
+    final Builder<Object> builder = new Builder<>(
         FST.INPUT_TYPE.BYTE1, 0, 0, true, true, 
         shareMaxTailLength, outputs, null, false, 
         PackedInts.DEFAULT, true, 15);

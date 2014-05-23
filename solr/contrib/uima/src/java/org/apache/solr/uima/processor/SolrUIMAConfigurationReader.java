@@ -65,7 +65,7 @@ public class SolrUIMAConfigurationReader {
 
   @SuppressWarnings("rawtypes")
   private Map<String, Map<String, MapField>> readTypesFeaturesFieldsMapping() {
-    Map<String, Map<String, MapField>> map = new HashMap<String, Map<String, MapField>>();
+    Map<String, Map<String, MapField>> map = new HashMap<>();
 
     NamedList fieldMappings = (NamedList) args.get("fieldMappings");
     /* iterate over UIMA types */
@@ -73,7 +73,7 @@ public class SolrUIMAConfigurationReader {
       NamedList type = (NamedList) fieldMappings.get("type", i);
       String typeName = (String)type.get("name");
 
-      Map<String, MapField> subMap = new HashMap<String, MapField>();
+      Map<String, MapField> subMap = new HashMap<>();
       /* iterate over mapping definitions */
       for(int j = 0; j < type.size() - 1; j++){
         NamedList mapping = (NamedList) type.get("mapping", j + 1);
@@ -96,7 +96,7 @@ public class SolrUIMAConfigurationReader {
 
   @SuppressWarnings("rawtypes")
   private Map<String, Object> readAEOverridingParameters() {
-    Map<String, Object> runtimeParameters = new HashMap<String, Object>();
+    Map<String, Object> runtimeParameters = new HashMap<>();
     NamedList runtimeParams = (NamedList) args.get("runtimeParameters");
     for (int i = 0; i < runtimeParams.size(); i++) {
       String name = runtimeParams.getName(i);

@@ -18,13 +18,17 @@ package org.apache.solr.handler.dataimport;
 
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.naming.InitialContext;
+import javax.naming.NamingException;
+
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <p> A DataSource implementation which can fetch data using JDBC. </p> <p/> <p> Refer to <a
@@ -45,7 +49,7 @@ public class JdbcDataSource extends
 
   private Connection conn;
 
-  private Map<String, Integer> fieldNameVsType = new HashMap<String, Integer>();
+  private Map<String, Integer> fieldNameVsType = new HashMap<>();
 
   private boolean convertType = false;
 
@@ -130,68 +134,92 @@ public class JdbcDataSource extends
         LOG.info("Creating a connection for entity "
                 + context.getEntityAttribute(DataImporter.NAME) + " with URL: "
                 + url);
-        long start = System.currentTimeMillis();
+        long start = System.nanoTime();
         Connection c = null;
-        try {
-          if(url != null){
+
+        if (jndiName != null) {
+          c = getFromJndi(initProps, jndiName);
+        } else if (url != null) {
+          try {
             c = DriverManager.getConnection(url, initProps);
-          } else if(jndiName != null){
-            InitialContext ctx =  new InitialContext();
-            Object jndival =  ctx.lookup(jndiName);
-            if (jndival instanceof javax.sql.DataSource) {
-              javax.sql.DataSource dataSource = (javax.sql.DataSource) jndival;
-              String user = (String) initProps.get("user");
-              String pass = (String) initProps.get("password");
-              if(user == null || user.trim().equals("")){
-                c = dataSource.getConnection();
-              } else {
-                c = dataSource.getConnection(user, pass);
-              }
-            } else {
-              throw new DataImportHandlerException(SEVERE,
-                      "the jndi name : '"+jndiName +"' is not a valid javax.sql.DataSource");
-            }
+          } catch (SQLException e) {
+            // DriverManager does not allow you to use a driver which is not loaded through
+            // the class loader of the class which is trying to make the connection.
+            // This is a workaround for cases where the user puts the driver jar in the
+            // solr.home/lib or solr.home/core/lib directories.
+            Driver d = (Driver) DocBuilder.loadClass(driver, context.getSolrCore()).newInstance();
+            c = d.connect(url, initProps);
           }
-        } catch (SQLException e) {
-          // DriverManager does not allow you to use a driver which is not loaded through
-          // the class loader of the class which is trying to make the connection.
-          // This is a workaround for cases where the user puts the driver jar in the
-          // solr.home/lib or solr.home/core/lib directories.
-          Driver d = (Driver) DocBuilder.loadClass(driver, context.getSolrCore()).newInstance();
-          c = d.connect(url, initProps);
         }
         if (c != null) {
-          if (Boolean.parseBoolean(initProps.getProperty("readOnly"))) {
-            c.setReadOnly(true);
-            // Add other sane defaults
-            c.setAutoCommit(true);
-            c.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
-            c.setHoldability(ResultSet.CLOSE_CURSORS_AT_COMMIT);
-          }
-          if (!Boolean.parseBoolean(initProps.getProperty("autoCommit"))) {
-            c.setAutoCommit(false);
-          }
-          String transactionIsolation = initProps.getProperty("transactionIsolation");
-          if ("TRANSACTION_READ_UNCOMMITTED".equals(transactionIsolation)) {
-            c.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
-          } else if ("TRANSACTION_READ_COMMITTED".equals(transactionIsolation)) {
-            c.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-          } else if ("TRANSACTION_REPEATABLE_READ".equals(transactionIsolation)) {
-            c.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
-          } else if ("TRANSACTION_SERIALIZABLE".equals(transactionIsolation)) {
-            c.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-          } else if ("TRANSACTION_NONE".equals(transactionIsolation)) {
-            c.setTransactionIsolation(Connection.TRANSACTION_NONE);
-          }
-          String holdability = initProps.getProperty("holdability");
-          if ("CLOSE_CURSORS_AT_COMMIT".equals(holdability)) {
-            c.setHoldability(ResultSet.CLOSE_CURSORS_AT_COMMIT);
-          } else if ("HOLD_CURSORS_OVER_COMMIT".equals(holdability)) {
-            c.setHoldability(ResultSet.HOLD_CURSORS_OVER_COMMIT);
+          try {
+            initializeConnection(c, initProps);
+          } catch (SQLException e) {
+            try {
+              c.close();
+            } catch (SQLException e2) {
+              LOG.warn("Exception closing connection during cleanup", e2);
+            }
+
+            throw new DataImportHandlerException(SEVERE, "Exception initializing SQL connection", e);
           }
         }
         LOG.info("Time taken for getConnection(): "
-                + (System.currentTimeMillis() - start));
+            + TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS));
+        return c;
+      }
+
+      private void initializeConnection(Connection c, final Properties initProps)
+          throws SQLException {
+        if (Boolean.parseBoolean(initProps.getProperty("readOnly"))) {
+          c.setReadOnly(true);
+          // Add other sane defaults
+          c.setAutoCommit(true);
+          c.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
+          c.setHoldability(ResultSet.CLOSE_CURSORS_AT_COMMIT);
+        }
+        if (!Boolean.parseBoolean(initProps.getProperty("autoCommit"))) {
+          c.setAutoCommit(false);
+        }
+        String transactionIsolation = initProps.getProperty("transactionIsolation");
+        if ("TRANSACTION_READ_UNCOMMITTED".equals(transactionIsolation)) {
+          c.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
+        } else if ("TRANSACTION_READ_COMMITTED".equals(transactionIsolation)) {
+          c.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+        } else if ("TRANSACTION_REPEATABLE_READ".equals(transactionIsolation)) {
+          c.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
+        } else if ("TRANSACTION_SERIALIZABLE".equals(transactionIsolation)) {
+          c.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+        } else if ("TRANSACTION_NONE".equals(transactionIsolation)) {
+          c.setTransactionIsolation(Connection.TRANSACTION_NONE);
+        }
+        String holdability = initProps.getProperty("holdability");
+        if ("CLOSE_CURSORS_AT_COMMIT".equals(holdability)) {
+          c.setHoldability(ResultSet.CLOSE_CURSORS_AT_COMMIT);
+        } else if ("HOLD_CURSORS_OVER_COMMIT".equals(holdability)) {
+          c.setHoldability(ResultSet.HOLD_CURSORS_OVER_COMMIT);
+        }
+      }
+
+      private Connection getFromJndi(final Properties initProps, final String jndiName) throws NamingException,
+          SQLException {
+
+        Connection c = null;
+        InitialContext ctx =  new InitialContext();
+        Object jndival =  ctx.lookup(jndiName);
+        if (jndival instanceof javax.sql.DataSource) {
+          javax.sql.DataSource dataSource = (javax.sql.DataSource) jndival;
+          String user = (String) initProps.get("user");
+          String pass = (String) initProps.get("password");
+          if(user == null || user.trim().equals("")){
+            c = dataSource.getConnection();
+          } else {
+            c = dataSource.getConnection(user, pass);
+          }
+        } else {
+          throw new DataImportHandlerException(SEVERE,
+                  "the jndi name : '"+jndiName +"' is not a valid javax.sql.DataSource");
+        }
         return c;
       }
     };
@@ -217,7 +245,7 @@ public class JdbcDataSource extends
 
   private List<String> readFieldNames(ResultSetMetaData metaData)
           throws SQLException {
-    List<String> colNames = new ArrayList<String>();
+    List<String> colNames = new ArrayList<>();
     int count = metaData.getColumnCount();
     for (int i = 0; i < count; i++) {
       colNames.add(metaData.getColumnLabel(i + 1));
@@ -242,12 +270,12 @@ public class JdbcDataSource extends
         stmt.setFetchSize(batchSize);
         stmt.setMaxRows(maxRows);
         LOG.debug("Executing SQL: " + query);
-        long start = System.currentTimeMillis();
+        long start = System.nanoTime();
         if (stmt.execute(query)) {
           resultSet = stmt.getResultSet();
         }
         LOG.trace("Time taken for sql :"
-                + (System.currentTimeMillis() - start));
+                + TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS));
         colNames = readFieldNames(resultSet.getMetaData());
       } catch (Exception e) {
         wrapAndThrow(SEVERE, e, "Unable to execute query: " + query);
@@ -281,7 +309,7 @@ public class JdbcDataSource extends
     private Map<String, Object> getARow() {
       if (resultSet == null)
         return null;
-      Map<String, Object> result = new HashMap<String, Object>();
+      Map<String, Object> result = new HashMap<>();
       for (String colName : colNames) {
         try {
           if (!convertType) {
@@ -307,7 +335,7 @@ public class JdbcDataSource extends
               result.put(colName, resultSet.getDouble(colName));
               break;
             case Types.DATE:
-              result.put(colName, resultSet.getDate(colName));
+              result.put(colName, resultSet.getTimestamp(colName));
               break;
             case Types.BOOLEAN:
               result.put(colName, resultSet.getBoolean(colName));
@@ -360,12 +388,12 @@ public class JdbcDataSource extends
   }
 
   private Connection getConnection() throws Exception {
-    long currTime = System.currentTimeMillis();
+    long currTime = System.nanoTime();
     if (currTime - connLastUsed > CONN_TIME_OUT) {
       synchronized (this) {
         Connection tmpConn = factory.call();
         closeConnection();
-        connLastUsed = System.currentTimeMillis();
+        connLastUsed = System.nanoTime();
         return conn = tmpConn;
       }
 
@@ -414,7 +442,7 @@ public class JdbcDataSource extends
     }
   }
 
-  private static final long CONN_TIME_OUT = 10 * 1000; // 10 seconds
+  private static final long CONN_TIME_OUT = TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);
 
   private static final int FETCH_SIZE = 500;
 

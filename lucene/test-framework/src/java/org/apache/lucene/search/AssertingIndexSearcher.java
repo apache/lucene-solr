@@ -25,7 +25,7 @@ import java.util.concurrent.ExecutorService;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Helper class that adds some extra checks to ensure correct
@@ -85,11 +85,12 @@ public class AssertingIndexSearcher extends IndexSearcher {
   protected Query wrapFilter(Query query, Filter filter) {
     if (random.nextBoolean())
       return super.wrapFilter(query, filter);
-    return (filter == null) ? query : new FilteredQuery(query, filter, _TestUtil.randomFilterStrategy(random));
+    return (filter == null) ? query : new FilteredQuery(query, filter, TestUtil.randomFilterStrategy(random));
   }
 
   @Override
   protected void search(List<AtomicReaderContext> leaves, Weight weight, Collector collector) throws IOException {
+    // TODO: shouldn't we AssertingCollector.wrap(collector) here?
     super.search(leaves, AssertingWeight.wrap(random, weight), collector);
   }
 

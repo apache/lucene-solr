@@ -20,7 +20,6 @@ package org.apache.solr.common.util;
 import java.io.IOException;
 import java.io.StringWriter;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.common.util.XML;
 
 /** Test (some of the) character escaping functions of the XML class
  */
@@ -30,7 +29,7 @@ public class TestXMLEscaping extends LuceneTestCase {
     final StringWriter sw = new StringWriter();
     XML.escapeCharData(input, sw);
     final String result = sw.toString();
-    assertEquals("Escaped output matches '" + expectedOutput + "'",result,expectedOutput);
+    assertEquals("Escaped output does not match expected value",expectedOutput,result);
   }
   
   public void testNoEscape() throws IOException {

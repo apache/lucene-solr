@@ -74,7 +74,7 @@ import java.util.*;
  *
  * @lucene.experimental
  */
-public class ToParentBlockJoinCollector extends Collector {
+public class ToParentBlockJoinCollector extends SimpleCollector {
 
   private final Sort sort;
 
@@ -269,7 +269,7 @@ public class ToParentBlockJoinCollector extends Collector {
   }
 
   @Override
-  public void setNextReader(AtomicReaderContext context) throws IOException {
+  protected void doSetNextReader(AtomicReaderContext context) throws IOException {
     currentReaderContext = context;
     docBase = context.docBase;
     for (int compIDX = 0; compIDX < comparators.length; compIDX++) {
@@ -283,6 +283,7 @@ public class ToParentBlockJoinCollector extends Collector {
   }
 
   private void enroll(ToParentBlockJoinQuery query, ToParentBlockJoinQuery.BlockJoinScorer scorer) {
+    scorer.trackPendingChildHits();
     final Integer slot = joinQueryID.get(query);
     if (slot == null) {
       joinQueryID.put(query, joinScorers.length);
@@ -308,7 +309,7 @@ public class ToParentBlockJoinCollector extends Collector {
     }
     Arrays.fill(joinScorers, null);
 
-    Queue<Scorer> queue = new LinkedList<Scorer>();
+    Queue<Scorer> queue = new LinkedList<>();
     //System.out.println("\nqueue: add top scorer=" + scorer);
     queue.add(scorer);
     while ((scorer = queue.poll()) != null) {
@@ -321,46 +322,6 @@ public class ToParentBlockJoinCollector extends Collector {
         //System.out.println("  add sub: " + sub.child + "; " + sub.child.getWeight().getQuery());
         queue.add(sub.child);
       }
-    }
-  }
-
-  private final static class FakeScorer extends Scorer {
-
-    float score;
-    int doc;
-
-    public FakeScorer() {
-      super((Weight) null);
-    }
-
-    @Override
-    public float score() {
-      return score;
-    }
-    
-    @Override
-    public int freq() {
-      return 1; // TODO: does anything else make sense?... duplicate of grouping's FakeScorer btw?
-    }
-
-    @Override
-    public int docID() {
-      return doc;
-    }
-
-    @Override
-    public int advance(int target) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int nextDoc() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public long cost() {
-      return 1;
     }
   }
 
@@ -460,7 +421,7 @@ public class ToParentBlockJoinCollector extends Collector {
       }
 
       collector.setScorer(fakeScorer);
-      collector.setNextReader(og.readerContext);
+      collector.getLeafCollector(og.readerContext);
       for(int docIDX=0;docIDX<numChildDocs;docIDX++) {
         //System.out.println("docIDX=" + docIDX + " vs " + og.docs[slot].length);
         final int doc = og.docs[slot][docIDX];

@@ -37,6 +37,8 @@ public abstract class DIHProperties {
   
   public abstract Map<String, Object> readIndexerProperties();
   
+  public abstract String convertDateToString(Date d);
+  
   public Date getCurrentTimestamp() {
     return new Date();
   }

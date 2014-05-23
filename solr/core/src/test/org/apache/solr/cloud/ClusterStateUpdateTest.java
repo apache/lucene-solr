@@ -17,11 +17,8 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
+import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ClusterState;
@@ -31,7 +28,6 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoreContainer.Initializer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.zookeeper.CreateMode;
@@ -40,6 +36,12 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 @Slow
 public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
@@ -66,26 +68,31 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
   
   private File dataDir4;
 
-  private Initializer init2;
-  
+
+  private static volatile File solrHomeDirectory;
+
   @BeforeClass
-  public static void beforeClass() {
+  public static void beforeClass() throws IOException {
+    solrHomeDirectory = createTempDir();
     System.setProperty("solrcloud.skip.autorecovery", "true");
+    System.setProperty("genericCoreNodeNames", "false");
+    copyMinFullSetup(solrHomeDirectory);
+
   }
-  
+
   @AfterClass
-  public static void afterClass() throws InterruptedException {
+  public static void afterClass() throws InterruptedException, IOException {
     System.clearProperty("solrcloud.skip.autorecovery");
+    System.clearProperty("genericCoreNodeNames");
   }
+
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    createTempDir();
     System.setProperty("zkClientTimeout", "3000");
-
-    zkDir = dataDir.getAbsolutePath() + File.separator
-        + "zookeeper/server1/data";
+    File tmpDir = createTempDir("zkData");
+    zkDir = tmpDir.getAbsolutePath();
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     System.setProperty("zkHost", zkServer.getZkAddress());
@@ -93,16 +100,16 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
         .getZkAddress(), "solrconfig.xml", "schema.xml");
     
     log.info("####SETUP_START " + getTestName());
-    dataDir1 = new File(dataDir + File.separator + "data1");
+    dataDir1 = new File(tmpDir + File.separator + "data1");
     dataDir1.mkdirs();
     
-    dataDir2 = new File(dataDir + File.separator + "data2");
+    dataDir2 = new File(tmpDir + File.separator + "data2");
     dataDir2.mkdirs();
     
-    dataDir3 = new File(dataDir + File.separator + "data3");
+    dataDir3 = new File(tmpDir + File.separator + "data3");
     dataDir3.mkdirs();
     
-    dataDir4 = new File(dataDir + File.separator + "data4");
+    dataDir4 = new File(tmpDir + File.separator + "data4");
     dataDir4.mkdirs();
     
     // set some system properties for use by tests
@@ -111,22 +118,21 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
     
     System.setProperty("solr.solr.home", TEST_HOME());
     System.setProperty("hostPort", "1661");
-    CoreContainer.Initializer init1 = new CoreContainer.Initializer();
     System.setProperty("solr.data.dir", ClusterStateUpdateTest.this.dataDir1.getAbsolutePath());
-    container1 = init1.initialize();
+    container1 = new CoreContainer(solrHomeDirectory.getAbsolutePath());
+    container1.load();
     System.clearProperty("hostPort");
     
     System.setProperty("hostPort", "1662");
-    init2 = new CoreContainer.Initializer();
     System.setProperty("solr.data.dir", ClusterStateUpdateTest.this.dataDir2.getAbsolutePath());
-    container2 = init2.initialize();
+    container2 = new CoreContainer(solrHomeDirectory.getAbsolutePath());
+    container2.load();
     System.clearProperty("hostPort");
     
     System.setProperty("hostPort", "1663");
-    CoreContainer.Initializer init3 = new CoreContainer.Initializer();
-   
     System.setProperty("solr.data.dir", ClusterStateUpdateTest.this.dataDir3.getAbsolutePath());
-    container3 = init3.initialize();
+    container3 = new CoreContainer(solrHomeDirectory.getAbsolutePath());
+    container3.load();
     System.clearProperty("hostPort");
     System.clearProperty("solr.solr.home");
     
@@ -140,7 +146,7 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
     System.setProperty("solrcloud.update.delay", "1");
     
    
-    Map<String,Object> props2 = new HashMap<String,Object>();
+    Map<String,Object> props2 = new HashMap<>();
     props2.put("configName", "conf1");
     ZkNodeProps zkProps2 = new ZkNodeProps(props2);
     
@@ -152,11 +158,13 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
         CreateMode.PERSISTENT, true);
     zkClient.close();
 
-    CoreDescriptor dcore = new CoreDescriptor(container1, "testcore",
-        "testcore");
-    
-    dcore.setDataDir(dataDir4.getAbsolutePath());
+    CoreDescriptor dcore = buildCoreDescriptor(container1, "testcore", "testcore")
+                              .withDataDir(dataDir4.getAbsolutePath()).build();
 
+    if (container1.getZkController() != null) {
+      container1.preRegisterInZk(dcore);
+    }
+    
     SolrCore core = container1.create(dcore);
     
     container1.register(core, false);
@@ -220,7 +228,11 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
         .disconnect();
     container2.shutdown();
 
-    container2 = init2.initialize();
+    System.setProperty("hostPort", "1662");
+    System.setProperty("solr.data.dir", ClusterStateUpdateTest.this.dataDir2.getAbsolutePath());
+    container2 = new CoreContainer(solrHomeDirectory.getAbsolutePath());
+    container2.load();
+    System.clearProperty("hostPort");
     
     // pause for watch to trigger
     for(int i = 0; i < 200; i++) {

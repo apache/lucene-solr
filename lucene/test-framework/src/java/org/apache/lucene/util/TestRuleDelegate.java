@@ -40,6 +40,6 @@ final class TestRuleDelegate<T extends TestRule> implements TestRule {
   }
 
   static <T extends TestRule> TestRuleDelegate<T> of(AtomicReference<T> delegate) {
-    return new TestRuleDelegate<T>(delegate);
+    return new TestRuleDelegate<>(delegate);
   }
 }

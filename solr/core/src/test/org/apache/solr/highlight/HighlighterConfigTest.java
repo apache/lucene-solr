@@ -52,7 +52,7 @@ public class HighlighterConfigTest extends AbstractSolrTestCase {
       assertTrue( highlighter instanceof DummyHighlighter );
 
       // check to see that doHighlight is called from the DummyHighlighter
-      HashMap<String,String> args = new HashMap<String,String>();
+      HashMap<String,String> args = new HashMap<>();
       args.put("hl", "true");
       args.put("df", "t_text");
       args.put("hl.fl", "");

@@ -57,7 +57,7 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
     addDocument(writer, "C", "It shouldn't.");
     addDocument(writer, "D", "Should we, should we, should we.");
     reader2 = writer.getReader();
-    writer.close();
+    writer.shutdown();
     
     // re-open the searcher since we added more docs
     searcher2 = newSearcher(reader2);

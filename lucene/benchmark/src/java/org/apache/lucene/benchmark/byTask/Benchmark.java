@@ -18,8 +18,8 @@ package org.apache.lucene.benchmark.byTask;
  */
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.lucene.benchmark.byTask.utils.Algorithm;
 import org.apache.lucene.benchmark.byTask.utils.Config;
@@ -107,7 +107,7 @@ public class Benchmark {
     
     Benchmark benchmark = null;
     try {
-      benchmark = new Benchmark(IOUtils.getDecodingReader(algFile, IOUtils.CHARSET_UTF_8));
+      benchmark = new Benchmark(IOUtils.getDecodingReader(algFile, StandardCharsets.UTF_8));
     } catch (Exception e) {
       e.printStackTrace();
       System.exit(1);

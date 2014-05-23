@@ -19,6 +19,7 @@ package org.apache.solr.handler.dataimport;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.*;
 
 import javax.sql.DataSource;
@@ -48,7 +49,7 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
   private Connection connection;
   private IMocksControl mockControl;
   private JdbcDataSource jdbcDataSource = new JdbcDataSource();
-  List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
+  List<Map<String, String>> fields = new ArrayList<>();
 
   Context context = AbstractDataImportHandlerTestCase.getContext(null, null,
           jdbcDataSource, Context.FULL_DUMP, fields, null);
@@ -127,6 +128,48 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
+  public void testRetrieveFromJndiFailureNotHidden() throws Exception {
+    MockInitialContextFactory.bind("java:comp/env/jdbc/JndiDB", dataSource);
+
+    props.put(JdbcDataSource.JNDI_NAME, "java:comp/env/jdbc/JndiDB");
+
+    SQLException sqlException = new SQLException("fake");
+    EasyMock.expect(dataSource.getConnection()).andThrow(sqlException);
+
+    mockControl.replay();
+    
+    try {
+      jdbcDataSource.createConnectionFactory(context, props).call();
+    } catch (SQLException ex) {
+      assertSame(sqlException, ex);
+    }
+    
+    mockControl.verify();
+  }
+  
+  @Test
+  public void testClosesConnectionWhenExceptionThrownOnSetAutocommit() throws Exception {
+    MockInitialContextFactory.bind("java:comp/env/jdbc/JndiDB", dataSource);
+
+    props.put(JdbcDataSource.JNDI_NAME, "java:comp/env/jdbc/JndiDB");
+
+    SQLException sqlException = new SQLException("fake");
+    EasyMock.expect(dataSource.getConnection()).andReturn(connection);
+    connection.setAutoCommit(false);
+    EasyMock.expectLastCall().andThrow(sqlException);
+    connection.close();
+    mockControl.replay();
+    
+    try {
+      jdbcDataSource.createConnectionFactory(context, props).call();
+    } catch (DataImportHandlerException ex) {
+      assertSame(sqlException, ex.getCause());
+    }
+    
+    mockControl.verify();
+  }
+  
+  @Test
   public void testRetrieveFromDriverManager() throws Exception {
     DriverManager.registerDriver(driver);
     try {
@@ -164,12 +207,12 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
     p.put("user", "root");
     p.put("password", "");
 
-    List<Map<String, String>> flds = new ArrayList<Map<String, String>>();
-    Map<String, String> f = new HashMap<String, String>();
+    List<Map<String, String>> flds = new ArrayList<>();
+    Map<String, String> f = new HashMap<>();
     f.put("column", "trim_id");
     f.put("type", "long");
     flds.add(f);
-    f = new HashMap<String, String>();
+    f = new HashMap<>();
     f.put("column", "msrp");
     f.put("type", "float");
     flds.add(f);

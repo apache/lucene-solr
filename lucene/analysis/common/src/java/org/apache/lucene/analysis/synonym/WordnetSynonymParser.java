@@ -32,17 +32,16 @@ import org.apache.lucene.util.CharsRef;
  * @lucene.experimental
  */
 // TODO: allow you to specify syntactic categories (e.g. just nouns, etc)
-public class WordnetSynonymParser extends SynonymMap.Builder {
+public class WordnetSynonymParser extends SynonymMap.Parser {
   private final boolean expand;
-  private final Analyzer analyzer;
   
   public WordnetSynonymParser(boolean dedup, boolean expand, Analyzer analyzer) {
-    super(dedup);
+    super(dedup, analyzer);
     this.expand = expand;
-    this.analyzer = analyzer;
   }
-  
-  public void add(Reader in) throws IOException, ParseException {
+
+  @Override
+  public void parse(Reader in) throws IOException, ParseException {
     LineNumberReader br = new LineNumberReader(in);
     try {
       String line = null;
@@ -89,7 +88,7 @@ public class WordnetSynonymParser extends SynonymMap.Builder {
     int end = line.lastIndexOf('\'');
     
     String text = line.substring(start, end).replace("''", "'");
-    return analyze(analyzer, text, reuse);
+    return analyze(text, reuse);
   }
   
   private void addInternal(CharsRef synset[], int size) {

@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.LinkedList;
 
 import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
@@ -192,12 +191,12 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   public static NumericRangeQuery<Long> newLongRange(final String field, final int precisionStep,
     Long min, Long max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery<Long>(field, precisionStep, NumericType.LONG, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<>(field, precisionStep, NumericType.LONG, min, max, minInclusive, maxInclusive);
   }
   
   /**
    * Factory that creates a <code>NumericRangeQuery</code>, that queries a <code>long</code>
-   * range using the default <code>precisionStep</code> {@link NumericUtils#PRECISION_STEP_DEFAULT} (4).
+   * range using the default <code>precisionStep</code> {@link NumericUtils#PRECISION_STEP_DEFAULT} (16).
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
    * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
    * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
@@ -205,7 +204,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   public static NumericRangeQuery<Long> newLongRange(final String field,
     Long min, Long max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery<Long>(field, NumericUtils.PRECISION_STEP_DEFAULT, NumericType.LONG, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<>(field, NumericUtils.PRECISION_STEP_DEFAULT, NumericType.LONG, min, max, minInclusive, maxInclusive);
   }
   
   /**
@@ -218,12 +217,12 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   public static NumericRangeQuery<Integer> newIntRange(final String field, final int precisionStep,
     Integer min, Integer max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery<Integer>(field, precisionStep, NumericType.INT, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<>(field, precisionStep, NumericType.INT, min, max, minInclusive, maxInclusive);
   }
   
   /**
    * Factory that creates a <code>NumericRangeQuery</code>, that queries a <code>int</code>
-   * range using the default <code>precisionStep</code> {@link NumericUtils#PRECISION_STEP_DEFAULT} (4).
+   * range using the default <code>precisionStep</code> {@link NumericUtils#PRECISION_STEP_DEFAULT_32} (8).
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
    * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
    * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
@@ -231,7 +230,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   public static NumericRangeQuery<Integer> newIntRange(final String field,
     Integer min, Integer max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery<Integer>(field, NumericUtils.PRECISION_STEP_DEFAULT, NumericType.INT, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<>(field, NumericUtils.PRECISION_STEP_DEFAULT_32, NumericType.INT, min, max, minInclusive, maxInclusive);
   }
   
   /**
@@ -246,12 +245,12 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   public static NumericRangeQuery<Double> newDoubleRange(final String field, final int precisionStep,
     Double min, Double max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery<Double>(field, precisionStep, NumericType.DOUBLE, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<>(field, precisionStep, NumericType.DOUBLE, min, max, minInclusive, maxInclusive);
   }
   
   /**
    * Factory that creates a <code>NumericRangeQuery</code>, that queries a <code>double</code>
-   * range using the default <code>precisionStep</code> {@link NumericUtils#PRECISION_STEP_DEFAULT} (4).
+   * range using the default <code>precisionStep</code> {@link NumericUtils#PRECISION_STEP_DEFAULT} (16).
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
    * by setting the min or max value to <code>null</code>.
    * {@link Double#NaN} will never match a half-open range, to hit {@code NaN} use a query
@@ -261,7 +260,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   public static NumericRangeQuery<Double> newDoubleRange(final String field,
     Double min, Double max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery<Double>(field, NumericUtils.PRECISION_STEP_DEFAULT, NumericType.DOUBLE, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<>(field, NumericUtils.PRECISION_STEP_DEFAULT, NumericType.DOUBLE, min, max, minInclusive, maxInclusive);
   }
   
   /**
@@ -276,12 +275,12 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   public static NumericRangeQuery<Float> newFloatRange(final String field, final int precisionStep,
     Float min, Float max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery<Float>(field, precisionStep, NumericType.FLOAT, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<>(field, precisionStep, NumericType.FLOAT, min, max, minInclusive, maxInclusive);
   }
   
   /**
    * Factory that creates a <code>NumericRangeQuery</code>, that queries a <code>float</code>
-   * range using the default <code>precisionStep</code> {@link NumericUtils#PRECISION_STEP_DEFAULT} (4).
+   * range using the default <code>precisionStep</code> {@link NumericUtils#PRECISION_STEP_DEFAULT_32} (8).
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
    * by setting the min or max value to <code>null</code>.
    * {@link Float#NaN} will never match a half-open range, to hit {@code NaN} use a query
@@ -291,7 +290,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   public static NumericRangeQuery<Float> newFloatRange(final String field,
     Float min, Float max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery<Float>(field, NumericUtils.PRECISION_STEP_DEFAULT, NumericType.FLOAT, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<>(field, NumericUtils.PRECISION_STEP_DEFAULT_32, NumericType.FLOAT, min, max, minInclusive, maxInclusive);
   }
 
   @Override @SuppressWarnings("unchecked")
@@ -391,8 +390,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
 
     private BytesRef currentLowerBound, currentUpperBound;
 
-    private final LinkedList<BytesRef> rangeBounds = new LinkedList<BytesRef>();
-    private final Comparator<BytesRef> termComp;
+    private final LinkedList<BytesRef> rangeBounds = new LinkedList<>();
 
     NumericRangeTermsEnum(final TermsEnum tenum) {
       super(tenum);
@@ -481,15 +479,13 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
           // should never happen
           throw new IllegalArgumentException("Invalid NumericType");
       }
-
-      termComp = getComparator();
     }
     
     private void nextRange() {
       assert rangeBounds.size() % 2 == 0;
 
       currentLowerBound = rangeBounds.removeFirst();
-      assert currentUpperBound == null || termComp.compare(currentUpperBound, currentLowerBound) <= 0 :
+      assert currentUpperBound == null || currentUpperBound.compareTo(currentLowerBound) <= 0 :
         "The current upper bound must be <= the new lower bound";
       
       currentUpperBound = rangeBounds.removeFirst();
@@ -501,10 +497,10 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
         nextRange();
         
         // if the new upper bound is before the term parameter, the sub-range is never a hit
-        if (term != null && termComp.compare(term, currentUpperBound) > 0)
+        if (term != null && term.compareTo(currentUpperBound) > 0)
           continue;
         // never seek backwards, so use current term if lower bound is smaller
-        return (term != null && termComp.compare(term, currentLowerBound) > 0) ?
+        return (term != null && term.compareTo(currentLowerBound) > 0) ?
           term : currentLowerBound;
       }
       
@@ -516,11 +512,11 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
     
     @Override
     protected final AcceptStatus accept(BytesRef term) {
-      while (currentUpperBound == null || termComp.compare(term, currentUpperBound) > 0) {
+      while (currentUpperBound == null || term.compareTo(currentUpperBound) > 0) {
         if (rangeBounds.isEmpty())
           return AcceptStatus.END;
         // peek next sub-range, only seek if the current term is smaller than next lower bound
-        if (termComp.compare(term, rangeBounds.getFirst()) < 0)
+        if (term.compareTo(rangeBounds.getFirst()) < 0)
           return AcceptStatus.NO_AND_SEEK;
         // step forward to next range without seeking, as next lower range bound is less or equal current term
         nextRange();

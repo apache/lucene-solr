@@ -20,7 +20,7 @@ package org.apache.lucene.analysis.icu.segmentation;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +28,7 @@ import java.util.Map;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenizerFactory;
-import org.apache.lucene.util.AttributeSource.AttributeFactory;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.IOUtils;
 
 import com.ibm.icu.lang.UCharacter;
@@ -70,7 +70,7 @@ import com.ibm.icu.text.RuleBasedBreakIterator;
  * <pre class="prettyprint" >
  * &lt;fieldType name="text_icu_custom" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
- *     &lt;tokenizer class="solr.ICUTokenizerFactory"
+ *     &lt;tokenizer class="solr.ICUTokenizerFactory" cjkAsWords="true"
  *                rulefiles="Latn:my.Latin.rules.rbbi,Cyrl:my.Cyrillic.rules.rbbi"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
@@ -79,11 +79,12 @@ public class ICUTokenizerFactory extends TokenizerFactory implements ResourceLoa
   static final String RULEFILES = "rulefiles";
   private final Map<Integer,String> tailored;
   private ICUTokenizerConfig config;
+  private final boolean cjkAsWords;
   
   /** Creates a new ICUTokenizerFactory */
   public ICUTokenizerFactory(Map<String,String> args) {
     super(args);
-    tailored = new HashMap<Integer,String>();
+    tailored = new HashMap<>();
     String rulefilesArg = get(args, RULEFILES);
     if (rulefilesArg != null) {
       List<String> scriptAndResourcePaths = splitFileNames(rulefilesArg);
@@ -94,6 +95,7 @@ public class ICUTokenizerFactory extends TokenizerFactory implements ResourceLoa
         tailored.put(UCharacter.getPropertyValueEnum(UProperty.SCRIPT, scriptCode), resourcePath);
       }
     }
+    cjkAsWords = getBoolean(args, "cjkAsWords", true);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -103,7 +105,7 @@ public class ICUTokenizerFactory extends TokenizerFactory implements ResourceLoa
   public void inform(ResourceLoader loader) throws IOException {
     assert tailored != null : "init must be called first!";
     if (tailored.isEmpty()) {
-      config = new DefaultICUTokenizerConfig();
+      config = new DefaultICUTokenizerConfig(cjkAsWords);
     } else {
       final BreakIterator breakers[] = new BreakIterator[UScript.CODE_LIMIT];
       for (Map.Entry<Integer,String> entry : tailored.entrySet()) {
@@ -111,7 +113,7 @@ public class ICUTokenizerFactory extends TokenizerFactory implements ResourceLoa
         String resourcePath = entry.getValue();
         breakers[code] = parseRules(resourcePath, loader);
       }
-      config = new DefaultICUTokenizerConfig() {
+      config = new DefaultICUTokenizerConfig(cjkAsWords) {
         
         @Override
         public BreakIterator getBreakIterator(int script) {
@@ -130,7 +132,7 @@ public class ICUTokenizerFactory extends TokenizerFactory implements ResourceLoa
     StringBuilder rules = new StringBuilder();
     InputStream rulesStream = loader.openResource(filename);
     BufferedReader reader = new BufferedReader
-        (IOUtils.getDecodingReader(rulesStream, IOUtils.CHARSET_UTF_8));
+        (IOUtils.getDecodingReader(rulesStream, StandardCharsets.UTF_8));
     String line = null;
     while ((line = reader.readLine()) != null) {
       if ( ! line.startsWith("#"))
@@ -142,8 +144,8 @@ public class ICUTokenizerFactory extends TokenizerFactory implements ResourceLoa
   }
 
   @Override
-  public ICUTokenizer create(AttributeFactory factory, Reader input) {
+  public ICUTokenizer create(AttributeFactory factory) {
     assert config != null : "inform must be called first!";
-    return new ICUTokenizer(factory, input, config);
+    return new ICUTokenizer(factory, config);
   }
 }

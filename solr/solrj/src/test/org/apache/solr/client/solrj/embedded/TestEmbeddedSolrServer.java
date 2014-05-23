@@ -60,7 +60,7 @@ public class TestEmbeddedSolrServer extends AbstractEmbeddedSolrServerTestCase {
     EmbeddedSolrServer solrServer = (EmbeddedSolrServer)getSolrCore0();
     
     Assert.assertEquals(3, cores.getCores().size());
-    List<SolrCore> solrCores = new ArrayList<SolrCore>();
+    List<SolrCore> solrCores = new ArrayList<>();
     for (SolrCore solrCore : cores.getCores()) {
       Assert.assertEquals(false, solrCore.isClosed());
       solrCores.add(solrCore);

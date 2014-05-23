@@ -34,8 +34,8 @@ public class TestIndonesianAnalyzer extends BaseTokenStreamTestCase {
   public void testBasics() throws IOException {
     Analyzer a = new IndonesianAnalyzer(TEST_VERSION_CURRENT);
     // stemming
-    checkOneTermReuse(a, "peledakan", "ledak");
-    checkOneTermReuse(a, "pembunuhan", "bunuh");
+    checkOneTerm(a, "peledakan", "ledak");
+    checkOneTerm(a, "pembunuhan", "bunuh");
     // stopword
     assertAnalyzesTo(a, "bahwa", new String[] {});
   }
@@ -45,8 +45,8 @@ public class TestIndonesianAnalyzer extends BaseTokenStreamTestCase {
     CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("peledakan"), false);
     Analyzer a = new IndonesianAnalyzer(TEST_VERSION_CURRENT, 
         IndonesianAnalyzer.getDefaultStopSet(), exclusionSet);
-    checkOneTermReuse(a, "peledakan", "peledakan");
-    checkOneTermReuse(a, "pembunuhan", "bunuh");
+    checkOneTerm(a, "peledakan", "peledakan");
+    checkOneTerm(a, "pembunuhan", "bunuh");
   }
   
   /** blast some random strings through the analyzer */

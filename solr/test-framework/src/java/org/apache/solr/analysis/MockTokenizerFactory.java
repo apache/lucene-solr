@@ -23,7 +23,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.util.TokenizerFactory;
-import org.apache.lucene.util.AttributeSource.AttributeFactory;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
@@ -52,8 +52,8 @@ public class MockTokenizerFactory extends TokenizerFactory {
   }
 
   @Override
-  public MockTokenizer create(AttributeFactory factory, Reader input) {
-    MockTokenizer t = new MockTokenizer(factory, input, pattern, false);
+  public MockTokenizer create(AttributeFactory factory) {
+    MockTokenizer t = new MockTokenizer(factory, pattern, false);
     t.setEnableChecks(enableChecks);
     return t;
   }

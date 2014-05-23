@@ -38,7 +38,7 @@ public class CachingDoubleValueSource extends ValueSource {
   public CachingDoubleValueSource( ValueSource source )
   {
     this.source = source;
-    cache = new HashMap<Integer, Double>();
+    cache = new HashMap<>();
   }
 
   @Override
