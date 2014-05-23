@@ -168,12 +168,15 @@ Other Changes
 * LUCENE-5650: Tests can no longer write to CWD. Update log dir is now made relative
   to the instance dir if it is not an absolute path. (Ryan Ernst, Dawid Weiss)
 
-* SOLR-5681: Make the processing of Collection API calls multi-threaded. (Anshum Gupta, shalin, Noble Paul)
-
 * SOLR-5495: Recovery strategy for leader partitioned from replica case. Hardening
   recovery scenarios after the leader receives an error trying to forward an
   update request to a replica. (Timothy Potter)
 
+Optimizations
+----------------------
+
+* SOLR-5681: Make the processing of Collection API calls multi-threaded. 
+  (Anshum Gupta, shalin, Noble Paul)
 
 Build
 ---------------------
