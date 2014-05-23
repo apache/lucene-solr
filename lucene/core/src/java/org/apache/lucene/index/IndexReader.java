@@ -100,6 +100,8 @@ public abstract class IndexReader implements Closeable {
 
   /** Expert: adds a {@link ReaderClosedListener}.  The
    * provided listener will be invoked when this reader is closed.
+   * At this point, it is safe for apps to evict this reader from
+   * any caches keyed on {@link #getCombinedCoreAndDeletesKey()}.
    *
    * @lucene.experimental */
   public final void addReaderClosedListener(ReaderClosedListener listener) {

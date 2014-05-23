@@ -749,7 +749,17 @@ public class MemoryIndex {
     private MemoryIndexReader() {
       super(); // avoid as much superclass baggage as possible
     }
-    
+
+    @Override
+    public void addCoreClosedListener(CoreClosedListener listener) {
+      addCoreClosedListenerAsReaderClosedListener(this, listener);
+    }
+
+    @Override
+    public void removeCoreClosedListener(CoreClosedListener listener) {
+      removeCoreClosedListenerAsReaderClosedListener(this, listener);
+    }
+
     private Info getInfo(String fieldName) {
       return fields.get(fieldName);
     }

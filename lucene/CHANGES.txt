@@ -86,6 +86,9 @@ API Changes
   removed, because buffering and checksumming is provided by FilterOutputStreams,
   provided by the JDK.  (Uwe Schindler, Mike McCandless)
 
+* LUCENE-5701: Core closed listeners are now available in the AtomicReader API,
+  they used to sit only in SegmentReader. (Adrien Grand, Robert Muir)
+
 Documentation
 
 * LUCENE-5392: Add/improve analysis package documentation to reflect

@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.search.SearcherManager; // javadocs
+import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.util.Bits;
 
 /** {@code AtomicReader} is an abstract class, providing an interface for accessing an
@@ -47,8 +47,8 @@ import org.apache.lucene.util.Bits;
 public abstract class AtomicReader extends IndexReader {
 
   private final AtomicReaderContext readerContext = new AtomicReaderContext(this);
-  
-  /** Sole constructor. (For invocation by subclass 
+
+  /** Sole constructor. (For invocation by subclass
    *  constructors, typically implicit.) */
   protected AtomicReader() {
     super();
@@ -61,12 +61,86 @@ public abstract class AtomicReader extends IndexReader {
   }
 
   /**
+   * Called when the shared core for this {@link AtomicReader}
+   * is closed.
+   * <p>
+   * If this {@link AtomicReader} impl has the ability to share
+   * resources across instances that might only vary through
+   * deleted documents and doc values updates, then this listener
+   * will only be called when the shared core is closed.
+   * Otherwise, this listener will be called when this reader is
+   * closed.</p>
+   * <p>
+   * This is typically useful to manage per-segment caches: when
+   * the listener is called, it is safe to evict this reader from
+   * any caches keyed on {@link #getCoreCacheKey}.</p>
+   *
+   * @lucene.experimental
+   */
+  public static interface CoreClosedListener {
+    /** Invoked when the shared core of the original {@code
+     *  SegmentReader} has closed. */
+    public void onClose(Object ownerCoreCacheKey);
+  }
+
+  private static class CoreClosedListenerWrapper implements ReaderClosedListener {
+
+    private final CoreClosedListener listener;
+
+    CoreClosedListenerWrapper(CoreClosedListener listener) {
+      this.listener = listener;
+    }
+
+    @Override
+    public void onClose(IndexReader reader) {
+      listener.onClose(reader.getCoreCacheKey());
+    }
+
+    @Override
+    public int hashCode() {
+      return listener.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object other) {
+      if (!(other instanceof CoreClosedListenerWrapper)) {
+        return false;
+      }
+      return listener.equals(((CoreClosedListenerWrapper) other).listener);
+    }
+
+  }
+
+  /** Add a {@link CoreClosedListener} as a {@link ReaderClosedListener}. This
+   * method is typically useful for {@link AtomicReader} implementations that
+   * don't have the concept of a core that is shared across several
+   * {@link AtomicReader} instances in which case the {@link CoreClosedListener}
+   * is called when closing the reader. */
+  protected static void addCoreClosedListenerAsReaderClosedListener(IndexReader reader, CoreClosedListener listener) {
+    reader.addReaderClosedListener(new CoreClosedListenerWrapper(listener));
+  }
+
+  /** Remove a {@link CoreClosedListener} which has been added with
+   * {@link #addCoreClosedListenerAsReaderClosedListener(IndexReader, CoreClosedListener)}. */
+  protected static void removeCoreClosedListenerAsReaderClosedListener(IndexReader reader, CoreClosedListener listener) {
+    reader.removeReaderClosedListener(new CoreClosedListenerWrapper(listener));
+  }
+
+  /** Expert: adds a CoreClosedListener to this reader's shared core
+   *  @lucene.experimental */
+  public abstract void addCoreClosedListener(CoreClosedListener listener);
+
+  /** Expert: removes a CoreClosedListener from this reader's shared core
+   *  @lucene.experimental */
+  public abstract void removeCoreClosedListener(CoreClosedListener listener);
+
+  /**
    * Returns {@link Fields} for this reader.
    * This method may return null if the reader has no
    * postings.
    */
   public abstract Fields fields() throws IOException;
-  
+
   @Override
   public final int docFreq(Term term) throws IOException {
     final Fields fields = fields();
@@ -107,7 +181,7 @@ public abstract class AtomicReader extends IndexReader {
       return 0;
     }
   }
-  
+
   @Override
   public final long getSumDocFreq(String field) throws IOException {
     final Terms terms = terms(field);
@@ -116,7 +190,7 @@ public abstract class AtomicReader extends IndexReader {
     }
     return terms.getSumDocFreq();
   }
-  
+
   @Override
   public final int getDocCount(String field) throws IOException {
     final Terms terms = terms(field);
@@ -125,7 +199,7 @@ public abstract class AtomicReader extends IndexReader {
     }
     return terms.getDocCount();
   }
-  
+
   @Override
   public final long getSumTotalTermFreq(String field) throws IOException {
     final Terms terms = terms(field);
@@ -146,7 +220,7 @@ public abstract class AtomicReader extends IndexReader {
 
   /** Returns {@link DocsEnum} for the specified term.
    *  This will return null if either the field or
-   *  term does not exist. 
+   *  term does not exist.
    *  @see TermsEnum#docs(Bits, DocsEnum) */
   public final DocsEnum termDocsEnum(Term term) throws IOException {
     assert term.field() != null;
@@ -166,7 +240,7 @@ public abstract class AtomicReader extends IndexReader {
 
   /** Returns {@link DocsAndPositionsEnum} for the specified
    *  term.  This will return null if the
-   *  field or term does not exist or positions weren't indexed. 
+   *  field or term does not exist or positions weren't indexed.
    *  @see TermsEnum#docsAndPositions(Bits, DocsAndPositionsEnum) */
   public final DocsAndPositionsEnum termPositionsEnum(Term term) throws IOException {
     assert term.field() != null;
@@ -201,14 +275,14 @@ public abstract class AtomicReader extends IndexReader {
    *  this field.  The returned instance should only be
    *  used by a single thread. */
   public abstract SortedDocValues getSortedDocValues(String field) throws IOException;
-  
+
   /** Returns {@link SortedSetDocValues} for this field, or
    *  null if no {@link SortedSetDocValues} were indexed for
    *  this field.  The returned instance should only be
    *  used by a single thread. */
   public abstract SortedSetDocValues getSortedSetDocValues(String field) throws IOException;
-  
-  /** Returns a {@link Bits} at the size of <code>reader.maxDoc()</code>, 
+
+  /** Returns a {@link Bits} at the size of <code>reader.maxDoc()</code>,
    *  with turned on bits for each docid that does have a value for this field,
    *  or null if no DocValues were indexed for this field. The
    *  returned instance should only be used by a single thread */
@@ -226,7 +300,7 @@ public abstract class AtomicReader extends IndexReader {
    * @lucene.experimental
    */
   public abstract FieldInfos getFieldInfos();
-  
+
   /** Returns the {@link Bits} representing live (not
    *  deleted) docs.  A set bit indicates the doc ID has not
    *  been deleted.  If this method returns null it means
@@ -238,11 +312,11 @@ public abstract class AtomicReader extends IndexReader {
    *  synchronization.
    */
   public abstract Bits getLiveDocs();
-  
-  /** 
+
+  /**
    * Checks consistency of this reader.
    * <p>
-   * Note that this may be costly in terms of I/O, e.g. 
+   * Note that this may be costly in terms of I/O, e.g.
    * may involve computing a checksum value against large data files.
    * @lucene.internal
    */

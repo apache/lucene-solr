@@ -557,33 +557,14 @@ public final class SegmentReader extends AtomicReader {
     ensureOpen();
     return core.getNormValues(fieldInfos, field);
   }
-
-  /**
-   * Called when the shared core for this SegmentReader
-   * is closed.
-   * <p>
-   * This listener is called only once all SegmentReaders 
-   * sharing the same core are closed.  At this point it 
-   * is safe for apps to evict this reader from any caches 
-   * keyed on {@link #getCoreCacheKey}.  This is the same 
-   * interface that {@link CachingWrapperFilter} uses, internally, 
-   * to evict entries.</p>
-   * 
-   * @lucene.experimental
-   */
-  public static interface CoreClosedListener {
-    /** Invoked when the shared core of the original {@code
-     *  SegmentReader} has closed. */
-    public void onClose(Object ownerCoreCacheKey);
-  }
   
-  /** Expert: adds a CoreClosedListener to this reader's shared core */
+  @Override
   public void addCoreClosedListener(CoreClosedListener listener) {
     ensureOpen();
     core.addCoreClosedListener(listener);
   }
   
-  /** Expert: removes a CoreClosedListener from this reader's shared core */
+  @Override
   public void removeCoreClosedListener(CoreClosedListener listener) {
     ensureOpen();
     core.removeCoreClosedListener(listener);

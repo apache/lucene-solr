@@ -332,6 +332,16 @@ public class FilterAtomicReader extends AtomicReader {
   }
 
   @Override
+  public void addCoreClosedListener(CoreClosedListener listener) {
+    in.addCoreClosedListener(listener);
+  }
+
+  @Override
+  public void removeCoreClosedListener(CoreClosedListener listener) {
+    in.removeCoreClosedListener(listener);
+  }
+
+  @Override
   public Bits getLiveDocs() {
     ensureOpen();
     return in.getLiveDocs();

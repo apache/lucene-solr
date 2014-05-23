@@ -110,30 +110,9 @@ class FieldCacheImpl implements FieldCache {
       FieldCacheImpl.this.purgeByCacheKey(ownerCoreCacheKey);
     }
   };
-
-  // composite/SlowMultiReaderWrapper fieldcaches don't purge until composite reader is closed.
-  final IndexReader.ReaderClosedListener purgeReader = new IndexReader.ReaderClosedListener() {
-    @Override
-    public void onClose(IndexReader owner) {
-      assert owner instanceof AtomicReader;
-      FieldCacheImpl.this.purgeByCacheKey(((AtomicReader) owner).getCoreCacheKey());
-    }
-  };
   
   private void initReader(AtomicReader reader) {
-    if (reader instanceof SegmentReader) {
-      ((SegmentReader) reader).addCoreClosedListener(purgeCore);
-    } else {
-      // we have a slow reader of some sort, try to register a purge event
-      // rather than relying on gc:
-      Object key = reader.getCoreCacheKey();
-      if (key instanceof AtomicReader) {
-        ((AtomicReader)key).addReaderClosedListener(purgeReader); 
-      } else {
-        // last chance
-        reader.addReaderClosedListener(purgeReader);
-      }
-    }
+    reader.addCoreClosedListener(purgeCore);
   }
 
   /** Expert: Internal cache. */

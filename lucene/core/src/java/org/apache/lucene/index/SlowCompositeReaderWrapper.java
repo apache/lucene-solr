@@ -78,6 +78,16 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
   }
 
   @Override
+  public void addCoreClosedListener(CoreClosedListener listener) {
+    addCoreClosedListenerAsReaderClosedListener(in, listener);
+  }
+
+  @Override
+  public void removeCoreClosedListener(CoreClosedListener listener) {
+    removeCoreClosedListenerAsReaderClosedListener(in, listener);
+  }
+
+  @Override
   public Fields fields() {
     ensureOpen();
     return fields;
