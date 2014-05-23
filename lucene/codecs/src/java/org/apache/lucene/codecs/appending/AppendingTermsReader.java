@@ -19,10 +19,10 @@ package org.apache.lucene.codecs.appending;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.BlockTreeTermsReader;
-import org.apache.lucene.codecs.BlockTreeTermsWriter;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsReaderBase;
+import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
+import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;

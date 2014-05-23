@@ -28,9 +28,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import org.apache.lucene.codecs.BlockTreeTermsReader;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.blocktree.FieldReader;
+import org.apache.lucene.codecs.blocktree.Stats;
 import org.apache.lucene.codecs.lucene3x.Lucene3xSegmentInfoFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
@@ -46,6 +47,7 @@ import org.apache.lucene.util.CommandLineUtil;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LongBitSet;
 import org.apache.lucene.util.StringHelper;
+
 
 /**
  * Basic tool and API to check the health of an index and
@@ -252,7 +254,7 @@ public class CheckIndex {
        *  tree terms dictionary (this is only set if the
        *  {@link PostingsFormat} for this segment uses block
        *  tree. */
-      public Map<String,BlockTreeTermsReader.Stats> blockTreeStats = null;
+      public Map<String,Stats> blockTreeStats = null;
     }
 
     /**
@@ -1137,8 +1139,8 @@ public class CheckIndex {
         // docs got deleted and then merged away):
         
       } else {
-        if (fieldTerms instanceof BlockTreeTermsReader.FieldReader) {
-          final BlockTreeTermsReader.Stats stats = ((BlockTreeTermsReader.FieldReader) fieldTerms).computeStats();
+        if (fieldTerms instanceof FieldReader) {
+          final Stats stats = ((FieldReader) fieldTerms).computeStats();
           assert stats != null;
           if (status.blockTreeStats == null) {
             status.blockTreeStats = new HashMap<>();
@@ -1280,7 +1282,7 @@ public class CheckIndex {
     }
     
     if (verbose && status.blockTreeStats != null && infoStream != null && status.termCount > 0) {
-      for(Map.Entry<String,BlockTreeTermsReader.Stats> ent : status.blockTreeStats.entrySet()) {
+      for(Map.Entry<String,Stats> ent : status.blockTreeStats.entrySet()) {
         infoStream.println("      field \"" + ent.getKey() + "\":");
         infoStream.println("      " + ent.getValue().toString().replace("\n", "\n      "));
       }
@@ -1670,6 +1672,7 @@ public class CheckIndex {
 
           // Only agg stats if the doc is live:
           final boolean doStats = liveDocs == null || liveDocs.get(j);
+
           if (doStats) {
             status.docCount++;
           }

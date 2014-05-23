@@ -20,8 +20,6 @@ package org.apache.lucene.codecs.lucene41;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.BlockTreeTermsReader;
-import org.apache.lucene.codecs.BlockTreeTermsWriter;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
@@ -29,6 +27,8 @@ import org.apache.lucene.codecs.MultiLevelSkipListWriter;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.PostingsWriterBase;
+import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
+import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;

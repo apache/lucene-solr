@@ -20,6 +20,7 @@ package org.apache.lucene.codecs;
 import java.io.IOException;
 import java.io.Closeable;
 
+import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.index.FieldInfo;

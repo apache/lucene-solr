@@ -22,6 +22,10 @@ New Features
   minimum numeric values from the provided Terms.  (Robert Muir, Mike
   McCandless)
 
+* LUCENE-5675: Add IDVersionPostingsFormat, a postings format
+  optimized for primary-key (ID) fields that also record a version
+  (long) for each ID.  (Robert Muir, Mike McCandless)
+
 Changes in Backwards Compatibility Policy
 
 * LUCENE-5634: Add reuse argument to IndexableField.tokenStream. This
