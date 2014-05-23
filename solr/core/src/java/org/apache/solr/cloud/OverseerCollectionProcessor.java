@@ -2709,9 +2709,17 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   }
 
   private void printTrackingMaps() {
-    log.debug("RunningTasks: {}", runningTasks.toString());
-    log.debug("CompletedTasks: {}", completedTasks.keySet().toString());
-    log.debug("RunningZKTasks: {}", runningZKTasks.toString());
+    if(log.isDebugEnabled()) {
+      synchronized (runningTasks) {
+        log.debug("RunningTasks: {}", runningTasks.toString());
+      }
+      synchronized (completedTasks) {
+        log.debug("CompletedTasks: {}", completedTasks.keySet().toString());
+      }
+      synchronized (runningZKTasks) {
+        log.debug("RunningZKTasks: {}", runningZKTasks.toString());
+      }
+    }
   }
 
 
