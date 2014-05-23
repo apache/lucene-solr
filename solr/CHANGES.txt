@@ -68,6 +68,9 @@ Bug Fixes
 * SOLR-6101: Shard splitting doesn't work when legacyCloud=false is set in
   cluster properties. (shalin)
 
+* SOLR-6111: The 'deleteshard' collection API should be able to delete a shard
+  in 'construction' state. (shalin)
+
 Other Changes
 ---------------------
 
