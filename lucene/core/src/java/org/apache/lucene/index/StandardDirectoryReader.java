@@ -54,7 +54,6 @@ final class StandardDirectoryReader extends DirectoryReader {
         sis.read(directory, segmentFileName);
         final SegmentReader[] readers = new SegmentReader[sis.size()];
         for (int i = sis.size()-1; i >= 0; i--) {
-          IOException prior = null;
           boolean success = false;
           try {
             readers[i] = new SegmentReader(sis.info(i), IOContext.READ);
@@ -145,82 +144,82 @@ final class StandardDirectoryReader extends DirectoryReader {
     
     SegmentReader[] newReaders = new SegmentReader[infos.size()];
     
-    // remember which readers are shared between the old and the re-opened
-    // DirectoryReader - we have to incRef those readers
-    boolean[] readerShared = new boolean[infos.size()];
-    
     for (int i = infos.size() - 1; i>=0; i--) {
+      SegmentCommitInfo commitInfo = infos.info(i);
+
       // find SegmentReader for this segment
-      Integer oldReaderIndex = segmentReaders.get(infos.info(i).info.name);
+      Integer oldReaderIndex = segmentReaders.get(commitInfo.info.name);
+      SegmentReader oldReader;
       if (oldReaderIndex == null) {
         // this is a new segment, no old SegmentReader can be reused
-        newReaders[i] = null;
+        oldReader = null;
       } else {
         // there is an old reader for this segment - we'll try to reopen it
-        newReaders[i] = (SegmentReader) oldReaders.get(oldReaderIndex.intValue());
+        oldReader = (SegmentReader) oldReaders.get(oldReaderIndex.intValue());
       }
 
       boolean success = false;
-      Throwable prior = null;
       try {
         SegmentReader newReader;
-        if (newReaders[i] == null || infos.info(i).info.getUseCompoundFile() != newReaders[i].getSegmentInfo().info.getUseCompoundFile()) {
+        if (oldReader == null || commitInfo.info.getUseCompoundFile() != oldReader.getSegmentInfo().info.getUseCompoundFile()) {
 
-          // this is a new reader; in case we hit an exception we can close it safely
-          newReader = new SegmentReader(infos.info(i), IOContext.READ);
-          readerShared[i] = false;
+          // this is a new reader; in case we hit an exception we can decRef it safely
+          newReader = new SegmentReader(commitInfo, IOContext.READ);
           newReaders[i] = newReader;
         } else {
-          if (newReaders[i].getSegmentInfo().getDelGen() == infos.info(i).getDelGen()
-              && newReaders[i].getSegmentInfo().getFieldInfosGen() == infos.info(i).getFieldInfosGen()) {
+          if (oldReader.getSegmentInfo().getDelGen() == commitInfo.getDelGen()
+              && oldReader.getSegmentInfo().getFieldInfosGen() == commitInfo.getFieldInfosGen()) {
             // No change; this reader will be shared between
             // the old and the new one, so we must incRef
             // it:
-            readerShared[i] = true;
-            newReaders[i].incRef();
+            oldReader.incRef();
+            newReaders[i] = oldReader;
           } else {
-            // there are changes to the reader, either liveDocs or DV updates
-            readerShared[i] = false;
             // Steal the ref returned by SegmentReader ctor:
-            assert infos.info(i).info.dir == newReaders[i].getSegmentInfo().info.dir;
-            assert infos.info(i).hasDeletions() || infos.info(i).hasFieldUpdates();
-            if (newReaders[i].getSegmentInfo().getDelGen() == infos.info(i).getDelGen()) {
+            assert commitInfo.info.dir == oldReader.getSegmentInfo().info.dir;
+
+            // Make a best effort to detect when the app illegally "rm -rf" their
+            // index while a reader was open, and then called openIfChanged:
+            boolean illegalDocCountChange = commitInfo.info.getDocCount() != oldReader.getSegmentInfo().info.getDocCount();
+            
+            boolean hasNeitherDeletionsNorUpdates = commitInfo.hasDeletions()== false && commitInfo.hasFieldUpdates() == false;
+
+            boolean deletesWereLost = commitInfo.getDelGen() == -1 && oldReader.getSegmentInfo().getDelGen() != -1;
+
+            if (illegalDocCountChange || hasNeitherDeletionsNorUpdates || deletesWereLost) {
+              throw new IllegalStateException("same segment " + commitInfo.info.name + " has invalid changes; likely you are re-opening a reader after illegally removing index files yourself and building a new index in their place.  Use IndexWriter.deleteAll or OpenMode.CREATE instead");
+            }
+
+            if (oldReader.getSegmentInfo().getDelGen() == commitInfo.getDelGen()) {
               // only DV updates
-              newReaders[i] = new SegmentReader(infos.info(i), newReaders[i], newReaders[i].getLiveDocs(), newReaders[i].numDocs());
+              newReaders[i] = new SegmentReader(commitInfo, oldReader, oldReader.getLiveDocs(), oldReader.numDocs());
             } else {
               // both DV and liveDocs have changed
-              newReaders[i] = new SegmentReader(infos.info(i), newReaders[i]);
+              newReaders[i] = new SegmentReader(commitInfo, oldReader);
             }
           }
         }
         success = true;
-      } catch (Throwable ex) {
-        prior = ex;
       } finally {
         if (!success) {
-          for (i++; i < infos.size(); i++) {
-            if (newReaders[i] != null) {
-              try {
-                if (!readerShared[i]) {
-                  // this is a new subReader that is not used by the old one,
-                  // we can close it
-                  newReaders[i].close();
-                } else {
-                  // this subReader is also used by the old reader, so instead
-                  // closing we must decRef it
-                  newReaders[i].decRef();
-                }
-              } catch (Throwable t) {
-                if (prior == null) prior = t;
-              }
-            }
-          }
+          decRefWhileHandlingException(newReaders);
         }
-        // throw the first exception
-        IOUtils.reThrow(prior);
       }
     }    
     return new StandardDirectoryReader(directory, newReaders, null, infos, false);
+  }
+
+  // TODO: move somewhere shared if it's useful elsewhere
+  private static void decRefWhileHandlingException(SegmentReader[] readers) {
+    for(SegmentReader reader : readers) {
+      if (reader != null) {
+        try {
+          reader.decRef();
+        } catch (Throwable t) {
+          // Ignore so we keep throwing original exception
+        }
+      }
+    }
   }
 
   @Override
