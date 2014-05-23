@@ -121,6 +121,12 @@ Bug fixes
   doc-values updates. Now doc-values field updates are written in separate file
   per field. (Shai Erera, Robert Muir)
 
+* LUCENE-5684: Make best effort to detect invalid usage of Lucene,
+  when IndexReader is reopened after all files in its index were
+  removed and recreated by the application (the proper way to do
+  this is IndexWriter.deleteAll, or opening an IndexWriter with
+  OpenMode.CREATE)  (Mike McCandless)
+
 Test Framework
 
 * LUCENE-5622: Fail tests if they print over the given limit of bytes to 
