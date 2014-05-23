@@ -103,11 +103,15 @@ Other Changes
 
 * SOLR-5340: Add support for named snapshots (Varun Thacker via Noble Paul)
 
-* SOLR-5681: Make the processing of Collection API calls multi-threaded. (Anshum Gupta, shalin, Noble Paul)
-
 * SOLR-5495: Recovery strategy for leader partitioned from replica case. Hardening
   recovery scenarios after the leader receives an error trying to forward an
   update request to a replica. (Timothy Potter)
+
+Optimizations
+----------------------
+
+* SOLR-5681: Make the processing of Collection API calls multi-threaded. 
+  (Anshum Gupta, shalin, Noble Paul)
 
 Build
 ---------------------
