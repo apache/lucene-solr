@@ -117,6 +117,10 @@ New Features
 
 * SOLR-6108: Add support for 'addreplica' Collection API in SolrJ. (shalin)
 
+* SOLR-5468: Allow a client application to request the minium achieved
+  replication factor for an update request (single or batch) by sending
+  an optional parameter "min_rf". (Timothy Potter)
+
 Bug Fixes
 ----------------------
 
@@ -169,10 +173,6 @@ Other Changes
 * SOLR-5495: Recovery strategy for leader partitioned from replica case. Hardening
   recovery scenarios after the leader receives an error trying to forward an
   update request to a replica. (Timothy Potter)
-
-* SOLR-5468: Allow a client application to request the minium achieved
-  replication factor for an update request (single or batch) by sending
-  an optional parameter "min_rf". (Timothy Potter)
 
 
 Build
