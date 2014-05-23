@@ -1686,10 +1686,11 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     }
     // For now, only allow for deletions of Inactive slices or custom hashes (range==null).
     // TODO: Add check for range gaps on Slice deletion
-    if (!(slice.getRange() == null || slice.getState().equals(Slice.INACTIVE) || slice.getState().equals(Slice.RECOVERY))) {
+    if (!(slice.getRange() == null || slice.getState().equals(Slice.INACTIVE)
+        || slice.getState().equals(Slice.RECOVERY) || slice.getState().equals(Slice.CONSTRUCTION))) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
           "The slice: " + slice.getName() + " is currently "
-          + slice.getState() + ". Only INACTIVE (or custom-hashed) slices can be deleted.");
+          + slice.getState() + ". Only non-active (or custom-hashed) slices can be deleted.");
     }
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
 
