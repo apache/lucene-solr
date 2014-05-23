@@ -68,6 +68,16 @@ public final class MultiTerms extends Terms {
     hasPayloads = hasPositions && _hasPayloads; // if all subs have pos, and at least one has payloads.
   }
 
+  /** Expert: returns the Terms being merged. */
+  public Terms[] getSubTerms() {
+    return subs;
+  }
+
+  /** Expert: returns  pointers to the sub-readers corresponding to the Terms being merged. */
+  public ReaderSlice[] getSubSlices() {
+    return subSlices;
+  }
+
   @Override
   public TermsEnum intersect(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
     final List<MultiTermsEnum.TermsEnumIndex> termsEnums = new ArrayList<>();
