@@ -149,18 +149,23 @@ final class SegmentCoreReaders {
     throw new AlreadyClosedException("SegmentCoreReaders is already closed");
   }
 
-  NumericDocValues getNormValues(FieldInfo fi) throws IOException {
-    assert normsProducer != null;
-
+  NumericDocValues getNormValues(FieldInfos infos, String field) throws IOException {
     Map<String,Object> normFields = normsLocal.get();
 
-    NumericDocValues norms = (NumericDocValues) normFields.get(fi.name);
-    if (norms == null) {
+    NumericDocValues norms = (NumericDocValues) normFields.get(field);
+    if (norms != null) {
+      return norms;
+    } else {
+      FieldInfo fi = infos.fieldInfo(field);
+      if (fi == null || !fi.hasNorms()) {
+        // Field does not exist or does not index norms
+        return null;
+      }
+      assert normsProducer != null;
       norms = normsProducer.getNumeric(fi);
-      normFields.put(fi.name, norms);
+      normFields.put(field, norms);
+      return norms;
     }
-
-    return norms;
   }
 
   void decRef() throws IOException {

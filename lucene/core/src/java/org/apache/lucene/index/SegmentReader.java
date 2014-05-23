@@ -445,48 +445,48 @@ public final class SegmentReader extends AtomicReader {
   @Override
   public NumericDocValues getNumericDocValues(String field) throws IOException {
     ensureOpen();
-    FieldInfo fi = getDVField(field, DocValuesType.NUMERIC);
-    if (fi == null) {
-      return null;
-    }
-
     Map<String,Object> dvFields = docValuesLocal.get();
 
-    NumericDocValues dvs = (NumericDocValues) dvFields.get(field);
-    if (dvs == null) {
+    Object previous = dvFields.get(field);
+    if (previous != null && previous instanceof NumericDocValues) {
+      return (NumericDocValues) previous;
+    } else {
+      FieldInfo fi = getDVField(field, DocValuesType.NUMERIC);
+      if (fi == null) {
+        return null;
+      }
       DocValuesProducer dvProducer = dvProducersByField.get(field);
       assert dvProducer != null;
-      dvs = dvProducer.getNumeric(fi);
-      dvFields.put(field, dvs);
+      NumericDocValues dv = dvProducer.getNumeric(fi);
+      dvFields.put(field, dv);
+      return dv;
     }
-
-    return dvs;
   }
 
   @Override
   public Bits getDocsWithField(String field) throws IOException {
     ensureOpen();
-    FieldInfo fi = fieldInfos.fieldInfo(field);
-    if (fi == null) {
-      // Field does not exist
-      return null;
-    }
-    if (fi.getDocValuesType() == null) {
-      // Field was not indexed with doc values
-      return null;
-    }
-
     Map<String,Bits> dvFields = docsWithFieldLocal.get();
 
-    Bits dvs = dvFields.get(field);
-    if (dvs == null) {
+    Bits previous = dvFields.get(field);
+    if (previous != null) {
+      return previous;
+    } else {
+      FieldInfo fi = fieldInfos.fieldInfo(field);
+      if (fi == null) {
+        // Field does not exist
+        return null;
+      }
+      if (fi.getDocValuesType() == null) {
+        // Field was not indexed with doc values
+        return null;
+      }
       DocValuesProducer dvProducer = dvProducersByField.get(field);
       assert dvProducer != null;
-      dvs = dvProducer.getDocsWithField(fi);
-      dvFields.put(field, dvs);
+      Bits dv = dvProducer.getDocsWithField(fi);
+      dvFields.put(field, dv);
+      return dv;
     }
-
-    return dvs;
   }
 
   @Override
@@ -513,54 +513,49 @@ public final class SegmentReader extends AtomicReader {
   @Override
   public SortedDocValues getSortedDocValues(String field) throws IOException {
     ensureOpen();
-    FieldInfo fi = getDVField(field, DocValuesType.SORTED);
-    if (fi == null) {
-      return null;
-    }
-
     Map<String,Object> dvFields = docValuesLocal.get();
-
-    SortedDocValues dvs = (SortedDocValues) dvFields.get(field);
-    if (dvs == null) {
+    
+    Object previous = dvFields.get(field);
+    if (previous != null && previous instanceof SortedDocValues) {
+      return (SortedDocValues) previous;
+    } else {
+      FieldInfo fi = getDVField(field, DocValuesType.SORTED);
+      if (fi == null) {
+        return null;
+      }
       DocValuesProducer dvProducer = dvProducersByField.get(field);
       assert dvProducer != null;
-      dvs = dvProducer.getSorted(fi);
-      dvFields.put(field, dvs);
+      SortedDocValues dv = dvProducer.getSorted(fi);
+      dvFields.put(field, dv);
+      return dv;
     }
-
-    return dvs;
   }
 
   @Override
   public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
     ensureOpen();
-    FieldInfo fi = getDVField(field, DocValuesType.SORTED_SET);
-    if (fi == null) {
-      return null;
-    }
-
     Map<String,Object> dvFields = docValuesLocal.get();
-
-    SortedSetDocValues dvs = (SortedSetDocValues) dvFields.get(field);
-    if (dvs == null) {
+    
+    Object previous = dvFields.get(field);
+    if (previous != null && previous instanceof SortedSetDocValues) {
+      return (SortedSetDocValues) previous;
+    } else {
+      FieldInfo fi = getDVField(field, DocValuesType.SORTED_SET);
+      if (fi == null) {
+        return null;
+      }
       DocValuesProducer dvProducer = dvProducersByField.get(field);
       assert dvProducer != null;
-      dvs = dvProducer.getSortedSet(fi);
-      dvFields.put(field, dvs);
+      SortedSetDocValues dv = dvProducer.getSortedSet(fi);
+      dvFields.put(field, dv);
+      return dv;
     }
-
-    return dvs;
   }
 
   @Override
   public NumericDocValues getNormValues(String field) throws IOException {
     ensureOpen();
-    FieldInfo fi = fieldInfos.fieldInfo(field);
-    if (fi == null || !fi.hasNorms()) {
-      // Field does not exist or does not index norms
-      return null;
-    }
-    return core.getNormValues(fi);
+    return core.getNormValues(fieldInfos, field);
   }
 
   /**
