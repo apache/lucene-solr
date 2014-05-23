@@ -45,6 +45,9 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+
+@SuppressCodecs("Lucene3x")
 public class TestDirectoryReaderReopen extends LuceneTestCase {
   
   public void testReopen() throws Exception {
