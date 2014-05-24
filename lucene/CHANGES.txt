@@ -223,6 +223,8 @@ Bug fixes
   this is IndexWriter.deleteAll, or opening an IndexWriter with
   OpenMode.CREATE)  (Mike McCandless)
 
+* LUCENE-5704: Fix compilation error with Java 8u20.  (Uwe Schindler)
+
 Test Framework
 
 * LUCENE-5622: Fail tests if they print over the given limit of bytes to 
