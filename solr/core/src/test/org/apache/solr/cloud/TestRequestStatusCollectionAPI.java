@@ -30,6 +30,8 @@ import java.io.IOException;
 
 public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
 
+  public static final int MAX_WAIT_TIMEOUT_SECONDS = 90;
+
   public TestRequestStatusCollectionAPI() {
     schemaString = "schema15.xml";      // we need a string id
   }
@@ -60,7 +62,6 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     }
 
     // Check for the request to be completed.
-    int maxCounter = 10;
 
     NamedList r = null;
     NamedList status = null;
@@ -72,7 +73,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     params.set(OverseerCollectionProcessor.REQUESTID, "1000");
 
     try {
-      message = sendStatusRequestWithRetry(params, 10);
+      message = sendStatusRequestWithRetry(params, MAX_WAIT_TIMEOUT_SECONDS);
     } catch (SolrServerException e) {
       e.printStackTrace();
     } catch (IOException e) {
@@ -115,7 +116,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
       params.set("action", CollectionParams.CollectionAction.REQUESTSTATUS.toString());
       params.set(OverseerCollectionProcessor.REQUESTID, "1001");
     try {
-      message = sendStatusRequestWithRetry(params, maxCounter);
+      message = sendStatusRequestWithRetry(params, MAX_WAIT_TIMEOUT_SECONDS);
     } catch (SolrServerException e) {
       e.printStackTrace();
     } catch (IOException e) {
@@ -147,7 +148,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
       params.set(OverseerCollectionProcessor.REQUESTID, "1002");
 
     try {
-      message = sendStatusRequestWithRetry(params, 10);
+      message = sendStatusRequestWithRetry(params, MAX_WAIT_TIMEOUT_SECONDS);
     } catch (SolrServerException e) {
       e.printStackTrace();
     } catch (IOException e) {
