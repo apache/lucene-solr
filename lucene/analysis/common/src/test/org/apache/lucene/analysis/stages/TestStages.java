@@ -89,7 +89,7 @@ public class TestStages extends BaseTokenStreamTestCase {
     }
   }
 
-  public void testBasic() throws Exception {
+  public void testSimple() throws Exception {
     assertMatches("This is a test",
                   new LowerCaseFilterStage(TEST_VERSION_CURRENT, new WhitespaceTokenizerStage()),
                   "this is a test");

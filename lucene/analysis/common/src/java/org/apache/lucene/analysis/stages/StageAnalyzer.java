@@ -28,10 +28,17 @@ public abstract class StageAnalyzer extends Analyzer {
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
     final Stage stage = getStages();
-    return new TokenStreamComponents(null, new StageToTokenStream(stage)) {
+    final StageToTokenStream ts = new StageToTokenStream(stage);
+    return new TokenStreamComponents(null, ts) {
       @Override
       protected void setReader(final Reader reader) throws IOException {
         stage.reset(reader);
+        // nocommit confusing
+        ts.resetCalled = false;
+        if (ts.closeCalled == false) {
+          throw new IllegalStateException("you forgot to call close");
+        }
+        ts.closeCalled = false;
       }
     };
   }

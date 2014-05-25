@@ -57,6 +57,9 @@ public class StageToTokenStream extends TokenStream {
   private final OffsetAttribute offsetAttIn;
   private final OffsetAttribute offsetAttOut;
 
+  protected boolean resetCalled;
+  protected boolean closeCalled = true;
+
   // Non-null when we are iterating through previously
   // buffered tokens:
   private Node[] pendingNodes;
@@ -182,6 +185,10 @@ public class StageToTokenStream extends TokenStream {
   public final boolean incrementToken() throws IOException {
     System.out.println("STS.inc");
 
+    if (resetCalled == false) {
+      throw new IllegalStateException("call reset first");
+    }
+
     // This is pointless (we always set all of the attrs we
     // export), but tests disagree:
     clearAttributes();
@@ -254,12 +261,20 @@ public class StageToTokenStream extends TokenStream {
   }
 
   @Override
-  public void end() {
+  public void end() throws IOException {
+    super.end();
     offsetAttOut.setOffset(finalEndOffset, finalEndOffset);
   }
 
   @Override
   public void reset() throws IOException {
+    super.reset();
     pendingNodes = null;
+    resetCalled = true;
+  }
+
+  @Override
+  public void close() throws IOException {
+    closeCalled = true;
   }
 }
