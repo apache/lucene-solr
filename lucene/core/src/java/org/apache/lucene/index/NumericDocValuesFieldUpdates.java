@@ -1,9 +1,7 @@
 package org.apache.lucene.index;
 
 import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PagedGrowableWriter;
@@ -37,16 +35,14 @@ class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
   final static class Iterator extends DocValuesFieldUpdates.Iterator {
     private final int size;
     private final PagedGrowableWriter values;
-    private final FixedBitSet docsWithField;
     private final PagedMutable docs;
     private long idx = 0; // long so we don't overflow if size == Integer.MAX_VALUE
     private int doc = -1;
     private Long value = null;
     
-    Iterator(int size, PagedGrowableWriter values, FixedBitSet docsWithField, PagedMutable docs) {
+    Iterator(int size, PagedGrowableWriter values, PagedMutable docs) {
       this.size = size;
       this.values = values;
-      this.docsWithField = docsWithField;
       this.docs = docs;
     }
     
@@ -66,12 +62,8 @@ class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
       while (idx < size && docs.get(idx) == doc) {
         ++idx;
       }
-      if (!docsWithField.get((int) (idx - 1))) {
-        value = null;
-      } else {
-        // idx points to the "next" element
-        value = Long.valueOf(values.get(idx - 1));
-      }
+      // idx points to the "next" element
+      value = Long.valueOf(values.get(idx - 1));
       return doc;
     }
     
@@ -89,14 +81,12 @@ class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
   }
 
   private final int bitsPerValue;
-  private FixedBitSet docsWithField;
   private PagedMutable docs;
   private PagedGrowableWriter values;
   private int size;
   
   public NumericDocValuesFieldUpdates(String field, int maxDoc) {
     super(field, Type.NUMERIC);
-    docsWithField = new FixedBitSet(64);
     bitsPerValue = PackedInts.bitsRequired(maxDoc - 1);
     docs = new PagedMutable(1, PAGE_SIZE, bitsPerValue, PackedInts.COMPACT);
     values = new PagedGrowableWriter(1, PAGE_SIZE, 1, PackedInts.FAST);
@@ -111,20 +101,11 @@ class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
     }
 
     Long val = (Long) value;
-    if (val == null) {
-      val = NumericDocValuesUpdate.MISSING;
-    }
     
     // grow the structures to have room for more elements
     if (docs.size() == size) {
       docs = docs.grow(size + 1);
       values = values.grow(size + 1);
-      docsWithField = FixedBitSet.ensureCapacity(docsWithField, (int) docs.size());
-    }
-    
-    if (val != NumericDocValuesUpdate.MISSING) {
-      // only mark the document as having a value in that field if the value wasn't set to null (MISSING)
-      docsWithField.set(size);
     }
     
     docs.set(size, doc);
@@ -136,7 +117,6 @@ class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
   public Iterator iterator() {
     final PagedMutable docs = this.docs;
     final PagedGrowableWriter values = this.values;
-    final FixedBitSet docsWithField = this.docsWithField;
     new InPlaceMergeSorter() {
       @Override
       protected void swap(int i, int j) {
@@ -147,18 +127,6 @@ class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
         long tmpVal = values.get(j);
         values.set(j, values.get(i));
         values.set(i, tmpVal);
-        
-        boolean tmpBool = docsWithField.get(j);
-        if (docsWithField.get(i)) {
-          docsWithField.set(j);
-        } else {
-          docsWithField.clear(j);
-        }
-        if (tmpBool) {
-          docsWithField.set(i);
-        } else {
-          docsWithField.clear(i);
-        }
       }
       
       @Override
@@ -169,7 +137,7 @@ class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
       }
     }.sort(0, size);
     
-    return new Iterator(size, values, docsWithField, docs);
+    return new Iterator(size, values, docs);
   }
   
   @Override
@@ -183,12 +151,8 @@ class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
     }
     docs = docs.grow(size + otherUpdates.size);
     values = values.grow(size + otherUpdates.size);
-    docsWithField = FixedBitSet.ensureCapacity(docsWithField, (int) docs.size());
     for (int i = 0; i < otherUpdates.size; i++) {
       int doc = (int) otherUpdates.docs.get(i);
-      if (otherUpdates.docsWithField.get(i)) {
-        docsWithField.set(size);
-      }
       docs.set(size, doc);
       values.set(size, otherUpdates.values.get(i));
       ++size;
@@ -202,7 +166,7 @@ class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
 
   @Override
   public long ramBytesPerDoc() {
-    long bytesPerDoc = (long) Math.ceil((double) (bitsPerValue + 1 /* docsWithField */) / 8);
+    long bytesPerDoc = (long) Math.ceil((double) (bitsPerValue) / 8);
     final int capacity = estimateCapacity(size);
     bytesPerDoc += (long) Math.ceil((double) values.ramBytesUsed() / capacity); // values
     return bytesPerDoc;

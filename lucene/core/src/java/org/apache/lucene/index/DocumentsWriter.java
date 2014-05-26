@@ -156,9 +156,9 @@ final class DocumentsWriter implements Closeable {
     return applyAllDeletes( deleteQueue);
   }
 
-  synchronized boolean updateNumericDocValue(Term term, String field, Long value) throws IOException {
+  synchronized boolean updateNumericDocValue(Term term, String field, long value) throws IOException {
     final DocumentsWriterDeleteQueue deleteQueue = this.deleteQueue;
-    deleteQueue.addNumericUpdate(new NumericDocValuesUpdate(term, field, value));
+    deleteQueue.addNumericUpdate(new NumericDocValuesUpdate(term, field, Long.valueOf(value)));
     flushControl.doOnDelete();
     return applyAllDeletes(deleteQueue);
   }

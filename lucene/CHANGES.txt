@@ -69,6 +69,9 @@ API Changes
   IndexWriter.deleteDocuments(Query) with their varargs counterparts.
   (Shai Erera)
 
+* LUCENE-5706: Removed the option to unset a DocValues field through DocValues
+  updates. (Shai Erera)
+  
 Optimizations
 
 * LUCENE-5603: hunspell stemmer more efficiently strips prefixes
