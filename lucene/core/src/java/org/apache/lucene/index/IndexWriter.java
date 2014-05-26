@@ -1404,10 +1404,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
 
   /**
    * Updates a document's {@link NumericDocValues} for <code>field</code> to the
-   * given <code>value</code>. This method can be used to 'unset' a document's
-   * value by passing {@code null} as the new value. Also, you can only update
-   * fields that already exist in the index, not add new fields through this
-   * method.
+   * given <code>value</code>. You can only update fields that already exist in
+   * the index, not add new fields through this method.
    * 
    * <p>
    * <b>NOTE</b>: if this method hits an OutOfMemoryError you should immediately
@@ -1425,7 +1423,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
    * @throws IOException
    *           if there is a low-level IO error
    */
-  public void updateNumericDocValue(Term term, String field, Long value) throws IOException {
+  public void updateNumericDocValue(Term term, String field, long value) throws IOException {
     ensureOpen();
     if (!globalFieldNumberMap.contains(field, DocValuesType.NUMERIC)) {
       throw new IllegalArgumentException("can only update existing numeric-docvalues fields!");
@@ -1441,10 +1439,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
 
   /**
    * Updates a document's {@link BinaryDocValues} for <code>field</code> to the
-   * given <code>value</code>. This method can be used to 'unset' a document's
-   * value by passing {@code null} as the new value. Also, you can only update
-   * fields that already exist in the index, not add new fields through this
-   * method.
+   * given <code>value</code>. You can only update fields that already exist in
+   * the index, not add new fields through this method.
    * 
    * <p>
    * <b>NOTE:</b> this method currently replaces the existing value of all
@@ -1468,6 +1464,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
    */
   public void updateBinaryDocValue(Term term, String field, BytesRef value) throws IOException {
     ensureOpen();
+    if (value == null) {
+      throw new IllegalArgumentException("cannot update a field to a null value: " + field);
+    }
     if (!globalFieldNumberMap.contains(field, DocValuesType.BINARY)) {
       throw new IllegalArgumentException("can only update existing binary-docvalues fields!");
     }

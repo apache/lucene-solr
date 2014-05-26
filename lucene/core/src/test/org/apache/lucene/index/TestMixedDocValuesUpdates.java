@@ -1,7 +1,6 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
@@ -65,8 +64,6 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     final int numFields = random.nextInt(4) + 3; // 3-7
     final int numNDVFields = random.nextInt(numFields/2) + 1; // 1-3
     final long[] fieldValues = new long[numFields];
-    final boolean[] fieldHasValue = new boolean[numFields];
-    Arrays.fill(fieldHasValue, true);
     for (int i = 0; i < fieldValues.length; i++) {
       fieldValues[i] = 1;
     }
@@ -92,36 +89,14 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
         ++docID;
       }
       
-      // if field's value was unset before, unset it from all new added documents too
-      for (int field = 0; field < fieldHasValue.length; field++) {
-        if (!fieldHasValue[field]) {
-          if (field < numNDVFields) {
-            writer.updateNumericDocValue(new Term("key", "all"), "f" + field, null);
-          } else {
-            writer.updateBinaryDocValue(new Term("key", "all"), "f" + field, null);
-          }
-        }
-      }
-      
       int fieldIdx = random.nextInt(fieldValues.length);
       String updateField = "f" + fieldIdx;
-      if (random.nextBoolean()) {
-//        System.out.println("[" + Thread.currentThread().getName() + "]: unset field '" + updateField + "'");
-        fieldHasValue[fieldIdx] = false;
-        if (fieldIdx < numNDVFields) {
-          writer.updateNumericDocValue(new Term("key", "all"), updateField, null);
-        } else {
-          writer.updateBinaryDocValue(new Term("key", "all"), updateField, null);
-        }
+      if (fieldIdx < numNDVFields) {
+        writer.updateNumericDocValue(new Term("key", "all"), updateField, ++fieldValues[fieldIdx]);
       } else {
-        fieldHasValue[fieldIdx] = true;
-        if (fieldIdx < numNDVFields) {
-          writer.updateNumericDocValue(new Term("key", "all"), updateField, ++fieldValues[fieldIdx]);
-        } else {
-          writer.updateBinaryDocValue(new Term("key", "all"), updateField, TestBinaryDocValuesUpdates.toBytes(++fieldValues[fieldIdx]));
-        }
-//        System.out.println("[" + Thread.currentThread().getName() + "]: updated field '" + updateField + "' to value " + fieldValues[fieldIdx]);
+        writer.updateBinaryDocValue(new Term("key", "all"), updateField, TestBinaryDocValuesUpdates.toBytes(++fieldValues[fieldIdx]));
       }
+//      System.out.println("[" + Thread.currentThread().getName() + "]: updated field '" + updateField + "' to value " + fieldValues[fieldIdx]);
       
       if (random.nextDouble() < 0.2) {
         int deleteDoc = random.nextInt(docID); // might also delete an already deleted document, ok!
@@ -162,15 +137,11 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
           for (int doc = 0; doc < maxDoc; doc++) {
             if (liveDocs == null || liveDocs.get(doc)) {
 //              System.out.println("doc=" + (doc + context.docBase) + " f='" + f + "' vslue=" + getValue(bdv, doc, scratch));
-              if (fieldHasValue[field]) {
-                assertTrue(docsWithField.get(doc));
-                if (field < numNDVFields) {
-                  assertEquals("invalid value for doc=" + doc + ", field=" + f + ", reader=" + r, fieldValues[field], ndv.get(doc));
-                } else {
-                  assertEquals("invalid value for doc=" + doc + ", field=" + f + ", reader=" + r, fieldValues[field], TestBinaryDocValuesUpdates.getValue(bdv, doc, scratch));
-                }
+              assertTrue(docsWithField.get(doc));
+              if (field < numNDVFields) {
+                assertEquals("invalid value for doc=" + doc + ", field=" + f + ", reader=" + r, fieldValues[field], ndv.get(doc));
               } else {
-                assertFalse(docsWithField.get(doc));
+                assertEquals("invalid value for doc=" + doc + ", field=" + f + ", reader=" + r, fieldValues[field], TestBinaryDocValuesUpdates.getValue(bdv, doc, scratch));
               }
             }
           }
@@ -232,16 +203,10 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
               else if (group < 0.8) t = new Term("updKey", "g2");
               else t = new Term("updKey", "g3");
 //              System.out.println("[" + Thread.currentThread().getName() + "] numUpdates=" + numUpdates + " updateTerm=" + t);
-              if (random.nextBoolean()) { // sometimes unset a value
-//                System.err.println("[" + Thread.currentThread().getName() + "] t=" + t + ", f=" + f + ", updValue=UNSET");
-                writer.updateBinaryDocValue(t, f, null);
-                writer.updateNumericDocValue(t, cf, null);
-              } else {
-                long updValue = random.nextInt();
-//                System.err.println("[" + Thread.currentThread().getName() + "] t=" + t + ", f=" + f + ", updValue=" + updValue);
-                writer.updateBinaryDocValue(t, f, TestBinaryDocValuesUpdates.toBytes(updValue));
-                writer.updateNumericDocValue(t, cf, updValue * 2);
-              }
+              long updValue = random.nextInt();
+//              System.err.println("[" + Thread.currentThread().getName() + "] t=" + t + ", f=" + f + ", updValue=" + updValue);
+              writer.updateBinaryDocValue(t, f, TestBinaryDocValuesUpdates.toBytes(updValue));
+              writer.updateNumericDocValue(t, cf, updValue * 2);
               
               if (random.nextDouble() < 0.2) {
                 // delete a random document

@@ -1,7 +1,6 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
@@ -445,77 +444,6 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
   }
   
   @Test
-  public void testUnsetValue() throws Exception {
-    assumeTrue("codec does not support docsWithField", defaultCodecSupportsDocsWithField());
-    Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    IndexWriter writer = new IndexWriter(dir, conf);
-    
-    for (int i = 0; i < 2; i++) {
-      Document doc = new Document();
-      doc.add(new StringField("id", "doc" + i, Store.NO));
-      doc.add(new NumericDocValuesField("ndv", 5));
-      writer.addDocument(doc);
-    }
-    writer.commit();
-    
-    // unset the value of 'doc0'
-    writer.updateNumericDocValue(new Term("id", "doc0"), "ndv", null);
-    writer.shutdown();
-    
-    final DirectoryReader reader = DirectoryReader.open(dir);
-    AtomicReader r = reader.leaves().get(0).reader();
-    NumericDocValues ndv = r.getNumericDocValues("ndv");
-    for (int i = 0; i < r.maxDoc(); i++) {
-      if (i == 0) {
-        assertEquals(0, ndv.get(i));
-      } else {
-        assertEquals(5, ndv.get(i));
-      }
-    }
-    
-    Bits docsWithField = r.getDocsWithField("ndv");
-    assertFalse(docsWithField.get(0));
-    assertTrue(docsWithField.get(1));
-    
-    reader.close();
-    dir.close();
-  }
-  
-  public void testUnsetAllValues() throws Exception {
-    assumeTrue("codec does not support docsWithField", defaultCodecSupportsDocsWithField());
-    Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    IndexWriter writer = new IndexWriter(dir, conf);
-    
-    for (int i = 0; i < 2; i++) {
-      Document doc = new Document();
-      doc.add(new StringField("id", "doc", Store.NO));
-      doc.add(new NumericDocValuesField("ndv", 5));
-      writer.addDocument(doc);
-    }
-    writer.commit();
-    
-    // unset the value of 'doc'
-    writer.updateNumericDocValue(new Term("id", "doc"), "ndv", null);
-    writer.shutdown();
-    
-    final DirectoryReader reader = DirectoryReader.open(dir);
-    AtomicReader r = reader.leaves().get(0).reader();
-    NumericDocValues ndv = r.getNumericDocValues("ndv");
-    for (int i = 0; i < r.maxDoc(); i++) {
-      assertEquals(0, ndv.get(i));
-    }
-    
-    Bits docsWithField = r.getDocsWithField("ndv");
-    assertFalse(docsWithField.get(0));
-    assertFalse(docsWithField.get(1));
-    
-    reader.close();
-    dir.close();
-  }
-  
-  @Test
   public void testUpdateNonNumericDocValuesField() throws Exception {
     // we don't support adding new fields or updating existing non-numeric-dv
     // fields through numeric updates
@@ -735,8 +663,6 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     
     final int numFields = random.nextInt(4) + 3; // 3-7
     final long[] fieldValues = new long[numFields];
-    final boolean[] fieldHasValue = new boolean[numFields];
-    Arrays.fill(fieldHasValue, true);
     for (int i = 0; i < fieldValues.length; i++) {
       fieldValues[i] = 1;
     }
@@ -758,24 +684,10 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
         ++docID;
       }
       
-      // if field's value was unset before, unset it from all new added documents too
-      for (int field = 0; field < fieldHasValue.length; field++) {
-        if (!fieldHasValue[field]) {
-          writer.updateNumericDocValue(new Term("key", "all"), "f" + field, null);
-        }
-      }
-      
       int fieldIdx = random.nextInt(fieldValues.length);
       String updateField = "f" + fieldIdx;
-      if (random.nextBoolean()) {
-//        System.out.println("[" + Thread.currentThread().getName() + "]: unset field '" + updateField + "'");
-        fieldHasValue[fieldIdx] = false;
-        writer.updateNumericDocValue(new Term("key", "all"), updateField, null);
-      } else {
-        fieldHasValue[fieldIdx] = true;
-        writer.updateNumericDocValue(new Term("key", "all"), updateField, ++fieldValues[fieldIdx]);
-//        System.out.println("[" + Thread.currentThread().getName() + "]: updated field '" + updateField + "' to value " + fieldValues[fieldIdx]);
-      }
+      writer.updateNumericDocValue(new Term("key", "all"), updateField, ++fieldValues[fieldIdx]);
+//      System.out.println("[" + Thread.currentThread().getName() + "]: updated field '" + updateField + "' to value " + fieldValues[fieldIdx]);
       
       if (random.nextDouble() < 0.2) {
         int deleteDoc = random.nextInt(docID); // might also delete an already deleted document, ok!
@@ -808,12 +720,8 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
           for (int doc = 0; doc < maxDoc; doc++) {
             if (liveDocs == null || liveDocs.get(doc)) {
 //              System.out.println("doc=" + (doc + context.docBase) + " f='" + f + "' vslue=" + ndv.get(doc));
-              if (fieldHasValue[field]) {
-                assertTrue(docsWithField.get(doc));
-                assertEquals("invalid value for doc=" + doc + ", field=" + f + ", reader=" + r, fieldValues[field], ndv.get(doc));
-              } else {
-                assertFalse(docsWithField.get(doc));
-              }
+              assertTrue(docsWithField.get(doc));
+              assertEquals("invalid value for doc=" + doc + ", field=" + f + ", reader=" + r, fieldValues[field], ndv.get(doc));
             }
           }
         }
@@ -1028,14 +936,9 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
               else if (group < 0.8) t = new Term("updKey", "g2");
               else t = new Term("updKey", "g3");
 //              System.out.println("[" + Thread.currentThread().getName() + "] numUpdates=" + numUpdates + " updateTerm=" + t);
-              if (random.nextBoolean()) { // sometimes unset a value
-                writer.updateNumericDocValue(t, f, null);
-                writer.updateNumericDocValue(t, cf, null);
-              } else {
-                long updValue = random.nextInt();
-                writer.updateNumericDocValue(t, f, updValue);
-                writer.updateNumericDocValue(t, cf, updValue * 2);
-              }
+              long updValue = random.nextInt();
+              writer.updateNumericDocValue(t, f, updValue);
+              writer.updateNumericDocValue(t, cf, updValue * 2);
               
               if (random.nextDouble() < 0.2) {
                 // delete a random document
@@ -1098,10 +1001,9 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
         Bits liveDocs = r.getLiveDocs();
         for (int j = 0; j < r.maxDoc(); j++) {
           if (liveDocs == null || liveDocs.get(j)) {
-            assertEquals(docsWithNdv.get(j), docsWithControl.get(j));
-            if (docsWithNdv.get(j)) {
-              assertEquals(control.get(j), ndv.get(j) * 2);
-            }
+            assertTrue(docsWithNdv.get(j));
+            assertTrue(docsWithControl.get(j));
+            assertEquals(control.get(j), ndv.get(j) * 2);
           }
         }
       }

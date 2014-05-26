@@ -81,10 +81,8 @@ abstract class DocValuesUpdate {
     /* Size of BytesRef: 2*INT + ARRAY_HEADER + PTR */
     private static final long RAW_VALUE_SIZE_IN_BYTES = NUM_BYTES_ARRAY_HEADER + 2*NUM_BYTES_INT + NUM_BYTES_OBJECT_REF;
     
-    static final BytesRef MISSING = new BytesRef();
-    
     BinaryDocValuesUpdate(Term term, String field, BytesRef value) {
-      super(DocValuesFieldUpdates.Type.BINARY, term, field, value == null ? MISSING : value);
+      super(DocValuesFieldUpdates.Type.BINARY, term, field, value);
     }
 
     @Override
@@ -97,10 +95,8 @@ abstract class DocValuesUpdate {
   /** An in-place update to a numeric DocValues field */
   static final class NumericDocValuesUpdate extends DocValuesUpdate {
     
-    static final Long MISSING = new Long(0);
-    
     NumericDocValuesUpdate(Term term, String field, Long value) {
-      super(DocValuesFieldUpdates.Type.NUMERIC, term, field, value == null ? MISSING : value);
+      super(DocValuesFieldUpdates.Type.NUMERIC, term, field, value);
     }
 
     @Override

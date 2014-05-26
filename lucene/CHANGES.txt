@@ -165,6 +165,9 @@ API Changes
 * LUCENE-5701: Core closed listeners are now available in the AtomicReader API,
   they used to sit only in SegmentReader. (Adrien Grand, Robert Muir)
 
+* LUCENE-5706: Removed the option to unset a DocValues field through DocValues
+  updates. (Shai Erera)
+  
 Optimizations
 
 * LUCENE-5603: hunspell stemmer more efficiently strips prefixes
