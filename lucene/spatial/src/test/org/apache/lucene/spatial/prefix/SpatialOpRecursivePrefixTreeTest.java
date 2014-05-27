@@ -67,23 +67,30 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
   static final int ITERATIONS = 10;
 
   private SpatialPrefixTree grid;
-
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
-    deleteAll();
-  }
+  private SpatialContext ctx2D;
 
   public void setupGrid(int maxLevels) throws IOException {
     if (randomBoolean())
       setupQuadGrid(maxLevels);
     else
       setupGeohashGrid(maxLevels);
+    setupCtx2D(ctx);
+
     //((PrefixTreeStrategy) strategy).setDistErrPct(0);//fully precise to grid
 
     ((RecursivePrefixTreeStrategy)strategy).setPruneLeafyBranches(randomBoolean());
 
     System.out.println("Strategy: " + strategy.toString());
+  }
+
+  private void setupCtx2D(SpatialContext ctx) {
+    if (!ctx.isGeo())
+      ctx2D = ctx;
+    //A non-geo version of ctx.
+    SpatialContextFactory ctxFactory = new SpatialContextFactory();
+    ctxFactory.geo = false;
+    ctxFactory.worldBounds = ctx.getWorldBounds();
+    ctx2D = ctxFactory.newSpatialContext();
   }
 
   private void setupQuadGrid(int maxLevels) {
@@ -184,6 +191,16 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
     assertTrue(executeQuery(strategy.makeQuery(
         new SpatialArgs(SpatialOperation.IsWithin, ctx.makeRectangle(38, 192, -72, 80))
     ), 1).numFound==1);//match
+  }
+
+  @Test
+  public void testShapePair() {
+    ctx = SpatialContext.GEO;
+    setupCtx2D(ctx);
+
+    Shape leftShape = new ShapePair(ctx.makeRectangle(-74, -56, -8, 1), ctx.makeRectangle(-180, 134, -90, 90), true);
+    Shape queryShape = ctx.makeRectangle(-180, 180, -90, 90);
+    assertEquals(SpatialRelation.WITHIN, leftShape.relate(queryShape));
   }
 
   //Override so we can index parts of a pair separately, resulting in the detailLevel
@@ -404,21 +421,42 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
   private class ShapePair extends ShapeCollection<Shape> {
 
     final Shape shape1, shape2;
-    final boolean biasContainsThenWithin;//a hack
+    final Shape shape1_2D, shape2_2D;//not geo (bit of a hack)
+    final boolean biasContainsThenWithin;
 
     public ShapePair(Shape shape1, Shape shape2, boolean containsThenWithin) {
       super(Arrays.asList(shape1, shape2), ctx);
       this.shape1 = shape1;
       this.shape2 = shape2;
+      this.shape1_2D = toNonGeo(shape1);
+      this.shape2_2D = toNonGeo(shape2);
       biasContainsThenWithin = containsThenWithin;
+    }
+
+    private Shape toNonGeo(Shape shape) {
+      if (!ctx.isGeo())
+        return shape;//already non-geo
+      if (shape instanceof Rectangle) {
+        Rectangle rect = (Rectangle) shape;
+        if (rect.getCrossesDateLine()) {
+          return new ShapePair(
+              ctx2D.makeRectangle(rect.getMinX(), 180, rect.getMinY(), rect.getMaxY()),
+              ctx2D.makeRectangle(-180, rect.getMaxX(), rect.getMinY(), rect.getMaxY()),
+              biasContainsThenWithin);
+        } else {
+          return ctx2D.makeRectangle(rect.getMinX(), rect.getMaxX(), rect.getMinY(), rect.getMaxY());
+        }
+      }
+      //no need to do others; this addresses the -180/+180 ambiguity corner test problem
+      return shape;
     }
 
     @Override
     public SpatialRelation relate(Shape other) {
       SpatialRelation r = relateApprox(other);
-      if (r == CONTAINS)
-        return r;
       if (r == DISJOINT)
+        return r;
+      if (r == CONTAINS)
         return r;
       if (r == WITHIN && !biasContainsThenWithin)
         return r;
@@ -429,13 +467,21 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
       if (!pairTouches)
         return r;
       //test all 4 corners
+      // Note: awkwardly, we use a non-geo context for this because in geo, -180 & +180 are the same place, which means
+      //  that "other" might wrap the world horizontally and yet all it's corners could be in shape1 (or shape2) even
+      //  though shape1 is only adjacent to the dateline. I couldn't think of a better way to handle this.
       Rectangle oRect = (Rectangle)other;
-      if (relate(ctx.makePoint(oRect.getMinX(), oRect.getMinY())) == CONTAINS
-          && relate(ctx.makePoint(oRect.getMinX(), oRect.getMaxY())) == CONTAINS
-          && relate(ctx.makePoint(oRect.getMaxX(), oRect.getMinY())) == CONTAINS
-          && relate(ctx.makePoint(oRect.getMaxX(), oRect.getMaxY())) == CONTAINS)
+      if (cornerContainsNonGeo(oRect.getMinX(), oRect.getMinY())
+          && cornerContainsNonGeo(oRect.getMinX(), oRect.getMaxY())
+          && cornerContainsNonGeo(oRect.getMaxX(), oRect.getMinY())
+          && cornerContainsNonGeo(oRect.getMaxX(), oRect.getMaxY()) )
         return CONTAINS;
       return r;
+    }
+
+    private boolean cornerContainsNonGeo(double x, double y) {
+      Shape pt = ctx2D.makePoint(x, y);
+      return shape1_2D.relate(pt).intersects() || shape2_2D.relate(pt).intersects();
     }
 
     private SpatialRelation relateApprox(Shape other) {
