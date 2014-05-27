@@ -85,12 +85,10 @@ public class TestRankQueryPlugin extends QParserPlugin {
     }
 
     public Query parse() throws SyntaxError {
-      String qs = localParams.get("q");
-      QParser parser = QParser.getParser(qs, null, req);
-      Query q = parser.getQuery();
+
       int mergeStrategy = localParams.getInt("mergeStrategy", 0);
       int collector = localParams.getInt("collector", 0);
-      return new TestRankQuery(collector, mergeStrategy, q);
+      return new TestRankQuery(collector, mergeStrategy);
     }
   }
 
@@ -134,13 +132,17 @@ public class TestRankQueryPlugin extends QParserPlugin {
       return q.toString(field);
     }
 
-    public TestRankQuery(int collector, int mergeStrategy, Query q) {
+    public RankQuery wrap(Query q) {
       this.q = q;
+      return this;
+    }
+
+    public TestRankQuery(int collector, int mergeStrategy) {
       this.collector = collector;
       this.mergeStrategy = mergeStrategy;
     }
 
-    public TopDocsCollector getTopDocsCollector(int len, SolrIndexSearcher.QueryCommand cmd) {
+    public TopDocsCollector getTopDocsCollector(int len, SolrIndexSearcher.QueryCommand cmd, IndexSearcher searcher) {
       if(collector == 0)
         return new TestCollector(null);
       else

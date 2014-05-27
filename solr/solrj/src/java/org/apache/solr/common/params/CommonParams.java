@@ -47,6 +47,9 @@ public interface CommonParams {
   
   /** query string */
   public static final String Q ="q";
+
+  /** rank query */
+  public static final String RQ ="rq";
   
   /** distrib string */
   public static final String DISTRIB = "distrib";

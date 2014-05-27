@@ -70,8 +70,8 @@ public class RankQueryTest extends SolrTestCaseJ4 {
 
     ModifiableSolrParams params = new ModifiableSolrParams();
 
-    params.add("qq", "*:*");
-    params.add("q", "{!rank q=$qq}");
+    params.add("q", "*:*");
+    params.add("rq", "{!rank}");
     params.add("sort","sort_i asc");
 
     assertQ(req(params), "*[count(//doc)=6]",
@@ -84,9 +84,9 @@ public class RankQueryTest extends SolrTestCaseJ4 {
     );
 
     params = new ModifiableSolrParams();
-    params.add("qq", "{!edismax bf=$bff}*:*");
+    params.add("q", "{!edismax bf=$bff}*:*");
     params.add("bff", "field(sort_i)");
-    params.add("q", "{!rank q=$qq collector=1}");
+    params.add("rq", "{!rank collector=1}");
 
     assertQ(req(params), "*[count(//doc)=6]",
         "//result/doc[6]/str[@name='id'][.='4']",

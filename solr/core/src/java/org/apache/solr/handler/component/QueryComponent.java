@@ -151,17 +151,28 @@ public class QueryComponent extends SearchComponent
         q = new BooleanQuery();        
       }
 
-      if(q instanceof RankQuery) {
-        MergeStrategy mergeStrategy = ((RankQuery)q).getMergeStrategy();
-        if(mergeStrategy != null) {
-          rb.addMergeStrategy(mergeStrategy);
-          if(mergeStrategy.handlesMergeFields()) {
-            rb.mergeFieldHandler = mergeStrategy;
+      rb.setQuery( q );
+
+
+      String rankQueryString = rb.req.getParams().get(CommonParams.RQ);
+      if(rankQueryString != null) {
+        QParser rqparser = QParser.getParser(rankQueryString, defType, req);
+        Query rq = rqparser.getQuery();
+        if(rq instanceof RankQuery) {
+          RankQuery rankQuery = (RankQuery)rq;
+          rb.setQuery(rankQuery.wrap(q)); //Wrap the RankQuery around the main query.
+          MergeStrategy mergeStrategy = rankQuery.getMergeStrategy();
+          if(mergeStrategy != null) {
+            rb.addMergeStrategy(mergeStrategy);
+            if(mergeStrategy.handlesMergeFields()) {
+              rb.mergeFieldHandler = mergeStrategy;
+            }
           }
+        } else {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"rq parameter must be a RankQuery");
         }
       }
 
-      rb.setQuery( q );
       rb.setSortSpec( parser.getSort(true) );
       rb.setQparser(parser);
       
