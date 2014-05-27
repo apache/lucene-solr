@@ -23,8 +23,10 @@ import java.util.Comparator;
 import java.io.IOException;
 
 /**
- * The MergeStrategy class defines custom merge logic for distributed searches.
- **/
+* The MergeStrategy class defines custom merge logic for distributed searches.
+*
+*  <b>Note: This API is experimental and may change in non backward-compatible ways in the future</b>
+**/
 
 
 public interface MergeStrategy {

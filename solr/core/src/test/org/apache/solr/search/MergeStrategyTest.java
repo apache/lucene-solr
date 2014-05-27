@@ -80,18 +80,18 @@ public class MergeStrategyTest extends BaseDistributedSearchTestCase {
     handle.put("_version_", SKIP);
 
     //Test mergeStrategy that uses score
-    query("q", "{!rank q=$qq}", "qq", "*:*", "rows","12",  "sort",  "sort_i asc", "fl","*,score");
+    query("rq", "{!rank}", "q", "*:*", "rows","12",  "sort",  "sort_i asc", "fl","*,score");
 
     //Test without mergeStrategy
     query("q", "*:*", "rows","12", "sort", "sort_i asc");
 
     //Test mergeStrategy1 that uses a sort field.
-    query("q", "{!rank mergeStrategy=1 q=$qq}", "qq", "*:*", "rows","12", "sort", "sort_i asc");
+    query("rq", "{!rank mergeStrategy=1}", "q", "*:*", "rows","12", "sort", "sort_i asc");
 
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add("qq", "*:*");
+    params.add("q", "*:*");
     params.add("rows", "12");
-    params.add("q", "{!rank q=$qq}");
+    params.add("rq", "{!rank}");
     params.add("sort", "sort_i asc");
     params.add("fl","*,score");
     setDistributedParams(params);
