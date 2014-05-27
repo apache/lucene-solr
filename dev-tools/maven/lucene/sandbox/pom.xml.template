@@ -55,6 +55,11 @@
   </dependencies>
   <build>
     <sourceDirectory>${module-path}/src/java</sourceDirectory>
+    <resources>
+      <resource>
+        <directory>${module-path}/src/resources</directory>
+      </resource>
+    </resources>
     <testSourceDirectory>${module-path}/src/test</testSourceDirectory>
     <testResources>
       <testResource>
