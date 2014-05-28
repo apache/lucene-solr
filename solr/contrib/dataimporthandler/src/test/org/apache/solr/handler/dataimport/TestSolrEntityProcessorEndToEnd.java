@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -291,7 +292,6 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
   }
   
   private static class SolrInstance {
-
     File homeDir;
     File confDir;
     
@@ -316,8 +316,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     }
 
     public void setUp() throws Exception {
-      String home = createTempDir().getAbsolutePath();
-      homeDir = new File(home  + "inst");
+      homeDir = createTempDir();
       initCoreDataDir = new File(homeDir + "/collection1", "data");
       confDir = new File(homeDir + "/collection1", "conf");
       
@@ -334,11 +333,10 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
       f = new File(confDir, "data-config.xml");
       FileUtils.copyFile(getFile(SOURCE_CONF_DIR + "dataconfig-contentstream.xml"), f);
     }
-    
+
     public void tearDown() throws Exception {
-      recurseDelete(homeDir);
+      TestUtil.rm(homeDir);
     }
-    
   }
   
   private JettySolrRunner createJetty(SolrInstance instance) throws Exception {
