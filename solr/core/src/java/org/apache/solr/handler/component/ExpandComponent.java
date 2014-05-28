@@ -103,6 +103,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public void process(ResponseBuilder rb) throws IOException {
 
@@ -220,7 +221,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     BytesRef bytesRef = new BytesRef();
     CharsRef charsRef = new CharsRef();
     FieldType fieldType = searcher.getSchema().getField(field).getType();
-    for (IntObjectCursor cursor : groups) {
+    for (IntObjectCursor cursor : (Iterable<IntObjectCursor>) groups) {
       int ord = cursor.key;
       TopDocsCollector topDocsCollector = (TopDocsCollector) cursor.value;
       TopDocs topDocs = topDocsCollector.topDocs();
