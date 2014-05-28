@@ -26,6 +26,7 @@ import java.util.regex.Pattern;
 
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicResponseHandler;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
@@ -487,7 +488,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     assertEquals(Arrays.asList(files).toString(), 1, files.length);
     File snapDir = files[0];
     
-    AbstractSolrTestCase.recurseDelete(snapDir); // clean up the snap dir
+    TestUtil.rm(snapDir);
   }
   
   private void addNewReplica() throws Exception {

@@ -1012,17 +1012,18 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     public String toString() { return xml; }
   }
 
+  /**
+   * @see TestUtil#rm(File...)
+   */
+  @Deprecated()
   public static boolean recurseDelete(File f) {
-    if(f == null || !f.exists()) return false;
-    if (f.isDirectory()) {
-      for (File sub : f.listFiles()) {
-        if (!recurseDelete(sub)) {
-          System.err.println("!!!! WARNING: best effort to remove " + sub.getAbsolutePath() + " FAILED !!!!!");
-          return false;
-        }
-      }
+    try {
+      TestUtil.rm(f);
+      return true;
+    } catch (IOException e) {
+      System.err.println(e.toString());
+      return false;
     }
-    return f.delete();
   }
   
   public void clearIndex() {

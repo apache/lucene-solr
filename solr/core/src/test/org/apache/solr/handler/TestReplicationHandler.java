@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -1549,11 +1550,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
           fail(deleteBackupThread.fail);
         }
       }
-    }finally {
-      for (File dir : snapDir) if(dir !=null) AbstractSolrTestCase.recurseDelete(dir);
+    } finally {
+      TestUtil.rm(snapDir);
     }
-    
-
   }
 
   /* character copy of file using UTF-8 */
@@ -1703,7 +1702,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     }
 
     public void tearDown() throws Exception {
-      AbstractSolrTestCase.recurseDelete(homeDir.getParentFile());
+      TestUtil.rm(homeDir);
     }
 
     public void copyConfigFile(String srcFile, String destFile) 

@@ -302,11 +302,8 @@ public class TestLBHttpSolrServer extends SolrTestCaseJ4 {
     }
 
     public void tearDown() throws Exception {
-      try {
-        jetty.stop();
-      } catch (Exception e) {
-      }
-      AbstractSolrTestCase.recurseDelete(homeDir);
+      if (jetty != null) jetty.stop();
+      TestUtil.rm(homeDir);
     }
 
     public void startJetty() throws Exception {

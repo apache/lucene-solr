@@ -59,7 +59,6 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
 
   private void setUpZkAndDiskXml(boolean toZk, boolean leaveOnLocal) throws Exception {
     File tmpDir = createTempDir();
-    recurseDelete(tmpDir);
     File solrHome = new File(tmpDir, "home");
     copyMinConf(new File(solrHome, "myCollect"));
     if (leaveOnLocal) {
