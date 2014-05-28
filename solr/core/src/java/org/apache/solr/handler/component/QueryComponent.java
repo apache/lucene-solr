@@ -153,14 +153,13 @@ public class QueryComponent extends SearchComponent
 
       rb.setQuery( q );
 
-
       String rankQueryString = rb.req.getParams().get(CommonParams.RQ);
       if(rankQueryString != null) {
         QParser rqparser = QParser.getParser(rankQueryString, defType, req);
         Query rq = rqparser.getQuery();
         if(rq instanceof RankQuery) {
           RankQuery rankQuery = (RankQuery)rq;
-          rb.setQuery(rankQuery.wrap(q)); //Wrap the RankQuery around the main query.
+          rb.setRankQuery(rankQuery);
           MergeStrategy mergeStrategy = rankQuery.getMergeStrategy();
           if(mergeStrategy != null) {
             rb.addMergeStrategy(mergeStrategy);
