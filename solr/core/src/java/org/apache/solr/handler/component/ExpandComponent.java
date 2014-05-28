@@ -84,7 +84,7 @@ import java.util.Map;
   * expand.fq=type:child (optional, overrides the main filter queries)<br/>
   * expand.field=field (mandatory if the not used with the CollapsingQParserPlugin)<br/>
   **/
-    
+
 public class ExpandComponent extends SearchComponent implements PluginInfoInitialized, SolrCoreAware {
   public static final String COMPONENT_NAME = "expand";
   private PluginInfo info = PluginInfo.EMPTY_INFO;
@@ -205,6 +205,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
 
     Collector collector = null;
+    if (sort != null)
+      sort = sort.rewrite(searcher);
     GroupExpandCollector groupExpandCollector = new GroupExpandCollector(values, groupBits, collapsedSet, limit, sort);
     SolrIndexSearcher.ProcessedFilter pfilter = searcher.getProcessedFilter(null, newFilters);
     if(pfilter.postFilter != null) {
@@ -326,14 +328,14 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
         leafCollectors.put(entry.key, entry.value.getLeafCollector(context));
       }
       return new LeafCollector() {
-        
+
         @Override
         public void setScorer(Scorer scorer) throws IOException {
           for (ObjectCursor<LeafCollector> c : leafCollectors.values()) {
             c.value.setScorer(scorer);
           }
         }
-        
+
         @Override
         public void collect(int docId) throws IOException {
           int doc = docId+docBase;
@@ -343,7 +345,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
             c.collect(docId);
           }
         }
-        
+
         @Override
         public boolean acceptsDocsOutOfOrder() {
           return false;

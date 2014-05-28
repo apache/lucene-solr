@@ -114,7 +114,7 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     params.add("defType", "edismax");
     params.add("bf", "field(test_ti)");
     params.add("expand", "true");
-    params.add("expand.sort", "test_tl desc");
+    params.add("expand.sort", "test_tl desc, sub(1,1) asc");//the "sub()" just testing function queries
     assertQ(req(params), "*[count(/response/result/doc)=2]",
         "*[count(/response/lst[@name='expanded']/result)=2]",
         "/response/result/doc[1]/float[@name='id'][.='2.0']",
