@@ -79,7 +79,7 @@ import java.util.Map;
   * expand.fq=type:child (optional, overrides the main filter queries)<br/>
   * expand.field=field (mandatory if the not used with the CollapsingQParserPlugin)<br/>
   **/
-    
+
 public class ExpandComponent extends SearchComponent implements PluginInfoInitialized, SolrCoreAware {
   public static final String COMPONENT_NAME = "expand";
   private PluginInfo info = PluginInfo.EMPTY_INFO;
@@ -200,6 +200,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
 
     Collector collector = null;
+    if (sort != null)
+      sort = sort.rewrite(searcher);
     GroupExpandCollector groupExpandCollector = new GroupExpandCollector(values, groupBits, collapsedSet, limit, sort);
     SolrIndexSearcher.ProcessedFilter pfilter = searcher.getProcessedFilter(null, newFilters);
     if(pfilter.postFilter != null) {
