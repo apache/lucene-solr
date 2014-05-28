@@ -98,7 +98,7 @@ Other Changes
 * SOLR-6022: Deprecate getAnalyzer() in IndexField and FieldType, and add getIndexAnalyzer().
   (Ryan Ernst)
 
-* SOLR_3671: Fix DIHWriter interface usage so users may implement writers that output
+* SOLR-3671: Fix DIHWriter interface usage so users may implement writers that output
   documents to a location external to Solr (ex. a NoSql db). (Roman Chyla via James Dyer)
 
 * SOLR-5340: Add support for named snapshots (Varun Thacker via Noble Paul)
