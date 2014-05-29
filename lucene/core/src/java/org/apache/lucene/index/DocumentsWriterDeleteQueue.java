@@ -24,6 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
 import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * {@link DocumentsWriterDeleteQueue} is a non-blocking linked pending deletes
@@ -109,16 +110,11 @@ final class DocumentsWriterDeleteQueue {
     tryApplyGlobalSlice();
   }
 
-  void addNumericUpdate(NumericDocValuesUpdate update) {
-    add(new NumericUpdateNode(update));
+  void addDocValuesUpdates(DocValuesUpdate... updates) {
+    add(new DocValuesUpdatesNode(updates));
     tryApplyGlobalSlice();
   }
   
-  void addBinaryUpdate(BinaryDocValuesUpdate update) {
-    add(new BinaryUpdateNode(update));
-    tryApplyGlobalSlice();
-  }
-
   /**
    * invariant for document update
    */
@@ -392,40 +388,43 @@ final class DocumentsWriterDeleteQueue {
     }
   }
 
-  private static final class NumericUpdateNode extends Node<NumericDocValuesUpdate> {
+  private static final class DocValuesUpdatesNode extends Node<DocValuesUpdate[]> {
 
-    NumericUpdateNode(NumericDocValuesUpdate update) {
-      super(update);
+    DocValuesUpdatesNode(DocValuesUpdate... updates) {
+      super(updates);
     }
 
     @Override
     void apply(BufferedUpdates bufferedUpdates, int docIDUpto) {
-      bufferedUpdates.addNumericUpdate(item, docIDUpto);
+      for (DocValuesUpdate update : item) {
+        switch (update.type) {
+          case NUMERIC:
+            bufferedUpdates.addNumericUpdate(new NumericDocValuesUpdate(update.term, update.field, (Long) update.value), docIDUpto);
+            break;
+          case BINARY:
+            bufferedUpdates.addBinaryUpdate(new BinaryDocValuesUpdate(update.term, update.field, (BytesRef) update.value), docIDUpto);
+            break;
+          default:
+            throw new IllegalArgumentException(update.type + " DocValues updates not supported yet!");
+        }
+      }
     }
 
     @Override
     public String toString() {
-      return "update=" + item;
+      StringBuilder sb = new StringBuilder();
+      sb.append("docValuesUpdates: ");
+      if (item.length > 0) {
+        sb.append("term=").append(item[0].term).append("; updates: [");
+        for (DocValuesUpdate update : item) {
+          sb.append(update.field).append(':').append(update.value).append(',');
+        }
+        sb.setCharAt(sb.length()-1, ']');
+      }
+      return sb.toString();
     }
   }
   
-  private static final class BinaryUpdateNode extends Node<BinaryDocValuesUpdate> {
-    
-    BinaryUpdateNode(BinaryDocValuesUpdate update) {
-      super(update);
-    }
-    
-    @Override
-    void apply(BufferedUpdates bufferedUpdates, int docIDUpto) {
-      bufferedUpdates.addBinaryUpdate(item, docIDUpto);
-    }
-    
-    @Override
-    public String toString() {
-      return "update=" + item;
-    }
-  }
-
   private boolean forceApplyGlobalSlice() {
     globalBufferLock.lock();
     final Node<?> currentTail = tail;

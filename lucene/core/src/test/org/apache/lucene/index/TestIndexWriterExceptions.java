@@ -35,7 +35,6 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -1979,8 +1978,6 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
       shouldFail.set(true);
       boolean doClose = false;
-      int updatingDocID = -1;
-      long updatingValue = -1;
       try {
         boolean defaultCodecSupportsFieldUpdates = defaultCodecSupportsFieldUpdates();
         for(int i=0;i<numDocs;i++) {
@@ -1993,28 +1990,18 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
                 System.out.println("  update id=" + docid + " to value " + value);
               }
               Term idTerm = new Term("id", Integer.toString(docid));
-              updatingDocID = docid; // record that we're updating that document
-              updatingValue = value; // and its updating value
               if (random().nextBoolean()) { // update only numeric field
-                w.updateNumericDocValue(idTerm, "f", value);
-                w.updateNumericDocValue(idTerm, "cf", value * 2);
+                w.updateDocValues(idTerm, new NumericDocValuesField("f", value), new NumericDocValuesField("cf", value*2));
               } else if (random().nextBoolean()) {
-                w.updateBinaryDocValue(idTerm, "bf", TestBinaryDocValuesUpdates.toBytes(value));
-                w.updateBinaryDocValue(idTerm, "bcf", TestBinaryDocValuesUpdates.toBytes(value * 2));
+                w.updateDocValues(idTerm, new BinaryDocValuesField("bf", TestBinaryDocValuesUpdates.toBytes(value)),
+                    new BinaryDocValuesField("bcf", TestBinaryDocValuesUpdates.toBytes(value*2)));
               } else {
-                w.updateNumericDocValue(idTerm, "f", value);
-                w.updateNumericDocValue(idTerm, "cf", value * 2);
-                w.updateBinaryDocValue(idTerm, "bf", TestBinaryDocValuesUpdates.toBytes(value));
-                w.updateBinaryDocValue(idTerm, "bcf", TestBinaryDocValuesUpdates.toBytes(value * 2));
+                w.updateDocValues(idTerm, 
+                    new NumericDocValuesField("f", value), 
+                    new NumericDocValuesField("cf", value*2),
+                    new BinaryDocValuesField("bf", TestBinaryDocValuesUpdates.toBytes(value)),
+                    new BinaryDocValuesField("bcf", TestBinaryDocValuesUpdates.toBytes(value*2)));
               }
-              // record that we successfully updated the document. this is
-              // important when we later assert the value of the DV fields of
-              // that document - since we update two fields that depend on each
-              // other, could be that one of the fields successfully updates,
-              // while the other fails (since we turn on random exceptions).
-              // while this is supported, it makes the test raise false alarms.
-              updatingDocID = -1;
-              updatingValue = -1;
             }
             
             // sometimes do both deletes and updates
@@ -2062,18 +2049,6 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       }
       shouldFail.set(false);
 
-      if (updatingDocID != -1) {
-        // Updating this document did not succeed. Since the fields we assert on
-        // depend on each other, and the update may have gone through halfway,
-        // replay the update on both numeric and binary DV fields, so later
-        // asserts succeed.
-        Term idTerm = new Term("id", ""+updatingDocID);
-        w.updateNumericDocValue(idTerm, "f", updatingValue);
-        w.updateNumericDocValue(idTerm, "cf", updatingValue * 2);
-        w.updateBinaryDocValue(idTerm, "bf", TestBinaryDocValuesUpdates.toBytes(updatingValue));
-        w.updateBinaryDocValue(idTerm, "bcf", TestBinaryDocValuesUpdates.toBytes(updatingValue * 2));
-      }
-      
       IndexReader r;
 
       if (doClose && w != null) {

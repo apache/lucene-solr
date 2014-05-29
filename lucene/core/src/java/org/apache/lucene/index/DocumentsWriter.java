@@ -30,13 +30,10 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DocumentsWriterFlushQueue.SegmentFlushTicket;
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
-import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
-import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
 import org.apache.lucene.index.IndexWriter.Event;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InfoStream;
 
 /**
@@ -156,20 +153,13 @@ final class DocumentsWriter implements Closeable {
     return applyAllDeletes( deleteQueue);
   }
 
-  synchronized boolean updateNumericDocValue(Term term, String field, long value) throws IOException {
+  synchronized boolean updateDocValues(DocValuesUpdate... updates) throws IOException {
     final DocumentsWriterDeleteQueue deleteQueue = this.deleteQueue;
-    deleteQueue.addNumericUpdate(new NumericDocValuesUpdate(term, field, Long.valueOf(value)));
+    deleteQueue.addDocValuesUpdates(updates);
     flushControl.doOnDelete();
     return applyAllDeletes(deleteQueue);
   }
   
-  synchronized boolean updateBinaryDocValue(Term term, String field, BytesRef value) throws IOException {
-    final DocumentsWriterDeleteQueue deleteQueue = this.deleteQueue;
-    deleteQueue.addBinaryUpdate(new BinaryDocValuesUpdate(term, field, value));
-    flushControl.doOnDelete();
-    return applyAllDeletes(deleteQueue);
-  }
-
   DocumentsWriterDeleteQueue currentDeleteSession() {
     return deleteQueue;
   }

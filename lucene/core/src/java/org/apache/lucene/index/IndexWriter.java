@@ -32,14 +32,17 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map.Entry;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
+import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfos.FieldNumbers;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -1429,7 +1432,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
       throw new IllegalArgumentException("can only update existing numeric-docvalues fields!");
     }
     try {
-      if (docWriter.updateNumericDocValue(term, field, value)) {
+      if (docWriter.updateDocValues(new NumericDocValuesUpdate(term, field, value))) {
         processEvents(true, false);
       }
     } catch (OutOfMemoryError oom) {
@@ -1471,14 +1474,64 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
       throw new IllegalArgumentException("can only update existing binary-docvalues fields!");
     }
     try {
-      if (docWriter.updateBinaryDocValue(term, field, value)) {
+      if (docWriter.updateDocValues(new BinaryDocValuesUpdate(term, field, value))) {
         processEvents(true, false);
       }
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "updateBinaryDocValue");
     }
   }
-
+  
+  /**
+   * Updates documents' DocValues fields to the given values. Each field update
+   * is applied to the set of documents that are associated with the
+   * {@link Term} to the same value. All updates are atomically applied and
+   * flushed together.
+   * 
+   * <p>
+   * <b>NOTE</b>: if this method hits an OutOfMemoryError you should immediately
+   * close the writer. See <a href="#OOME">above</a> for details.
+   * </p>
+   * 
+   * @param updates
+   *          the updates to apply
+   * @throws CorruptIndexException
+   *           if the index is corrupt
+   * @throws IOException
+   *           if there is a low-level IO error
+   */
+  public void updateDocValues(Term term, Field... updates) throws IOException {
+    ensureOpen();
+    DocValuesUpdate[] dvUpdates = new DocValuesUpdate[updates.length];
+    for (int i = 0; i < updates.length; i++) {
+      final Field f = updates[i];
+      final DocValuesType dvType = f.fieldType().docValueType();
+      if (dvType == null) {
+        throw new IllegalArgumentException("can only update NUMERIC or BINARY fields! field=" + f.name());
+      }
+      if (!globalFieldNumberMap.contains(f.name(), dvType)) {
+        throw new IllegalArgumentException("can only update existing docvalues fields! field=" + f.name() + ", type=" + dvType);
+      }
+      switch (dvType) {
+        case NUMERIC:
+          dvUpdates[i] = new NumericDocValuesUpdate(term, f.name(), (Long) f.numericValue());
+          break;
+        case BINARY:
+          dvUpdates[i] = new BinaryDocValuesUpdate(term, f.name(), f.binaryValue());
+          break;
+        default:
+          throw new IllegalArgumentException("can only update NUMERIC or BINARY fields: field=" + f.name() + ", type=" + dvType);
+      }
+    }
+    try {
+      if (docWriter.updateDocValues(dvUpdates)) {
+        processEvents(true, false);
+      }
+    } catch (OutOfMemoryError oom) {
+      handleOOM(oom, "updateDocValues");
+    }
+  }
+  
   // for test purpose
   final synchronized int getSegmentCount(){
     return segmentInfos.size();

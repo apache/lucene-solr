@@ -25,6 +25,7 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -237,6 +238,11 @@ public class RandomIndexWriter implements Closeable {
   public void updateBinaryDocValue(Term term, String field, BytesRef value) throws IOException {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
     w.updateBinaryDocValue(term, field, value);
+  }
+  
+  public void updateDocValues(Term term, Field... updates) throws IOException {
+    LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
+    w.updateDocValues(term, updates);
   }
   
   public void deleteDocuments(Term term) throws IOException {

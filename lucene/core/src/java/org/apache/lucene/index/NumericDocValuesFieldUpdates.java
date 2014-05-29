@@ -86,7 +86,7 @@ class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
   private int size;
   
   public NumericDocValuesFieldUpdates(String field, int maxDoc) {
-    super(field, Type.NUMERIC);
+    super(field, FieldInfo.DocValuesType.NUMERIC);
     bitsPerValue = PackedInts.bitsRequired(maxDoc - 1);
     docs = new PagedMutable(1, PAGE_SIZE, bitsPerValue, PackedInts.COMPACT);
     values = new PagedGrowableWriter(1, PAGE_SIZE, 1, PackedInts.FAST);

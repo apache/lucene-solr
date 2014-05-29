@@ -33,8 +33,6 @@ abstract class DocValuesFieldUpdates {
   
   protected static final int PAGE_SIZE = 1024;
 
-  static enum Type { NUMERIC, BINARY }
-  
   /**
    * An iterator over documents and their updated values. Only documents with
    * updates are returned by this iterator, and the documents are returned in
@@ -100,7 +98,7 @@ abstract class DocValuesFieldUpdates {
       return ramBytesPerDoc;
     }
     
-    DocValuesFieldUpdates getUpdates(String field, Type type) {
+    DocValuesFieldUpdates getUpdates(String field, FieldInfo.DocValuesType type) {
       switch (type) {
         case NUMERIC:
           return numericDVUpdates.get(field);
@@ -111,7 +109,7 @@ abstract class DocValuesFieldUpdates {
       }
     }
     
-    DocValuesFieldUpdates newUpdates(String field, Type type, int maxDoc) {
+    DocValuesFieldUpdates newUpdates(String field, FieldInfo.DocValuesType type, int maxDoc) {
       switch (type) {
         case NUMERIC:
           assert numericDVUpdates.get(field) == null;
@@ -135,9 +133,9 @@ abstract class DocValuesFieldUpdates {
   }
   
   final String field;
-  final Type type;
+  final FieldInfo.DocValuesType type;
   
-  protected DocValuesFieldUpdates(String field, Type type) {
+  protected DocValuesFieldUpdates(String field, FieldInfo.DocValuesType type) {
     this.field = field;
     this.type = type;
   }

@@ -118,6 +118,9 @@ New Features
 * LUCENE-5675: Add IDVersionPostingsFormat, a postings format
   optimized for primary-key (ID) fields that also record a version
   (long) for each ID.  (Robert Muir, Mike McCandless)
+  
+* LUCENE-5680: Add ability to atomically update a set of DocValues
+  fields. (Shai Erera)
 
 Changes in Backwards Compatibility Policy
 

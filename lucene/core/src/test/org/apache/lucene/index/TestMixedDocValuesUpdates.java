@@ -160,6 +160,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     final IndexWriter writer = new IndexWriter(dir, conf);
     
     // create index
+    final int numFields = TestUtil.nextInt(random(), 2, 4);
     final int numThreads = TestUtil.nextInt(random(), 3, 6);
     final int numDocs = atLeast(2000);
     for (int i = 0; i < numDocs; i++) {
@@ -172,7 +173,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       else if (group < 0.8) g = "g2";
       else g = "g3";
       doc.add(new StringField("updKey", g, Store.NO));
-      for (int j = 0; j < numThreads; j++) {
+      for (int j = 0; j < numFields; j++) {
         long value = random().nextInt();
         doc.add(new BinaryDocValuesField("f" + j, TestBinaryDocValuesUpdates.toBytes(value)));
         doc.add(new NumericDocValuesField("cf" + j, value * 2)); // control, always updated to f * 2
@@ -186,8 +187,6 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     // same thread updates a field as well as reopens
     Thread[] threads = new Thread[numThreads];
     for (int i = 0; i < threads.length; i++) {
-      final String f = "f" + i;
-      final String cf = "cf" + i;
       threads[i] = new Thread("UpdateThread-" + i) {
         @Override
         public void run() {
@@ -203,10 +202,13 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
               else if (group < 0.8) t = new Term("updKey", "g2");
               else t = new Term("updKey", "g3");
 //              System.out.println("[" + Thread.currentThread().getName() + "] numUpdates=" + numUpdates + " updateTerm=" + t);
+              int field = random().nextInt(numFields);
+              final String f = "f" + field;
+              final String cf = "cf" + field;
               long updValue = random.nextInt();
 //              System.err.println("[" + Thread.currentThread().getName() + "] t=" + t + ", f=" + f + ", updValue=" + updValue);
-              writer.updateBinaryDocValue(t, f, TestBinaryDocValuesUpdates.toBytes(updValue));
-              writer.updateNumericDocValue(t, cf, updValue * 2);
+              writer.updateDocValues(t, new BinaryDocValuesField(f, TestBinaryDocValuesUpdates.toBytes(updValue)),
+                  new NumericDocValuesField(cf, updValue*2));
               
               if (random.nextDouble() < 0.2) {
                 // delete a random document
@@ -262,7 +264,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     BytesRef scratch = new BytesRef();
     for (AtomicReaderContext context : reader.leaves()) {
       AtomicReader r = context.reader();
-      for (int i = 0; i < numThreads; i++) {
+      for (int i = 0; i < numFields; i++) {
         BinaryDocValues bdv = r.getBinaryDocValues("f" + i);
         NumericDocValues control = r.getNumericDocValues("cf" + i);
         Bits docsWithBdv = r.getDocsWithField("f" + i);
@@ -270,15 +272,14 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
         Bits liveDocs = r.getLiveDocs();
         for (int j = 0; j < r.maxDoc(); j++) {
           if (liveDocs == null || liveDocs.get(j)) {
-            assertEquals(docsWithBdv.get(j), docsWithControl.get(j));
-            if (docsWithBdv.get(j)) {
-              long ctrlValue = control.get(j);
-              long bdvValue = TestBinaryDocValuesUpdates.getValue(bdv, j, scratch) * 2;
+            assertTrue(docsWithBdv.get(j));
+            assertTrue(docsWithControl.get(j));
+            long ctrlValue = control.get(j);
+            long bdvValue = TestBinaryDocValuesUpdates.getValue(bdv, j, scratch) * 2;
 //              if (ctrlValue != bdvValue) {
 //                System.out.println("seg=" + r + ", f=f" + i + ", doc=" + j + ", group=" + r.document(j).get("updKey") + ", ctrlValue=" + ctrlValue + ", bdvBytes=" + scratch);
 //              }
-              assertEquals(ctrlValue, bdvValue);
-            }
+            assertEquals(ctrlValue, bdvValue);
           }
         }
       }
@@ -310,8 +311,8 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       int doc = random().nextInt(numDocs);
       Term t = new Term("id", "doc" + doc);
       long value = random().nextLong();
-      writer.updateBinaryDocValue(t, "f", TestBinaryDocValuesUpdates.toBytes(value));
-      writer.updateNumericDocValue(t, "cf", value * 2);
+      writer.updateDocValues(t, new BinaryDocValuesField("f", TestBinaryDocValuesUpdates.toBytes(value)),
+          new NumericDocValuesField("cf", value*2));
       DirectoryReader reader = DirectoryReader.open(writer, true);
       for (AtomicReaderContext context : reader.leaves()) {
         AtomicReader r = context.reader();
@@ -373,8 +374,8 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       int field = random.nextInt(numBinaryFields);
       Term updateTerm = new Term("upd", RandomPicks.randomFrom(random, updateTerms));
       long value = random.nextInt();
-      writer.updateBinaryDocValue(updateTerm, "f" + field, TestBinaryDocValuesUpdates.toBytes(value));
-      writer.updateNumericDocValue(updateTerm, "cf" + field, value * 2);
+      writer.updateDocValues(updateTerm, new BinaryDocValuesField("f"+field, TestBinaryDocValuesUpdates.toBytes(value)),
+          new NumericDocValuesField("cf"+field, value*2));
     }
 
     writer.shutdown();
