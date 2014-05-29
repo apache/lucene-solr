@@ -137,6 +137,8 @@ Bug Fixes
 * SOLR-6111: The 'deleteshard' collection API should be able to delete a shard
   in 'construction' state. (shalin)
 
+* SOLR-6118: 'expand.sort' didn't support function queries. (David Smiley)
+
 Other Changes
 ---------------------
 
