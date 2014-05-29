@@ -101,7 +101,7 @@ class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
   private final int bitsPerValue;
   
   public BinaryDocValuesFieldUpdates(String field, int maxDoc) {
-    super(field, Type.BINARY);
+    super(field, FieldInfo.DocValuesType.BINARY);
     bitsPerValue = PackedInts.bitsRequired(maxDoc - 1);
     docs = new PagedMutable(1, PAGE_SIZE, bitsPerValue, PackedInts.COMPACT);
     offsets = new PagedGrowableWriter(1, PAGE_SIZE, 1, PackedInts.FAST);

@@ -57,7 +57,7 @@ import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 @SuppressCodecs({"Appending","Lucene3x","Lucene40","Lucene41","Lucene42","Lucene45"})
 @SuppressWarnings("resource")
 public class TestNumericDocValuesUpdates extends LuceneTestCase {
-  
+
   private Document doc(int id) {
     Document doc = new Document();
     doc.add(new StringField("id", "doc-" + id, Store.NO));
@@ -891,7 +891,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     final IndexWriter writer = new IndexWriter(dir, conf);
     
     // create index
-    final int numThreads = TestUtil.nextInt(random(), 3, 6);
+    final int numFields = TestUtil.nextInt(random(), 1, 4);
     final int numDocs = atLeast(2000);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
@@ -903,7 +903,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
       else if (group < 0.8) g = "g2";
       else g = "g3";
       doc.add(new StringField("updKey", g, Store.NO));
-      for (int j = 0; j < numThreads; j++) {
+      for (int j = 0; j < numFields; j++) {
         long value = random().nextInt();
         doc.add(new NumericDocValuesField("f" + j, value));
         doc.add(new NumericDocValuesField("cf" + j, value * 2)); // control, always updated to f * 2
@@ -911,14 +911,13 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
       writer.addDocument(doc);
     }
     
+    final int numThreads = TestUtil.nextInt(random(), 3, 6);
     final CountDownLatch done = new CountDownLatch(numThreads);
     final AtomicInteger numUpdates = new AtomicInteger(atLeast(100));
     
     // same thread updates a field as well as reopens
     Thread[] threads = new Thread[numThreads];
     for (int i = 0; i < threads.length; i++) {
-      final String f = "f" + i;
-      final String cf = "cf" + i;
       threads[i] = new Thread("UpdateThread-" + i) {
         @Override
         public void run() {
@@ -933,10 +932,13 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
               else if (group < 0.5) t = new Term("updKey", "g1");
               else if (group < 0.8) t = new Term("updKey", "g2");
               else t = new Term("updKey", "g3");
-//              System.out.println("[" + Thread.currentThread().getName() + "] numUpdates=" + numUpdates + " updateTerm=" + t);
+
+              final int field = random().nextInt(numFields);
+              final String f = "f" + field;
+              final String cf = "cf" + field;
+//              System.out.println("[" + Thread.currentThread().getName() + "] numUpdates=" + numUpdates + " updateTerm=" + t + " field=" + field);
               long updValue = random.nextInt();
-              writer.updateNumericDocValue(t, f, updValue);
-              writer.updateNumericDocValue(t, cf, updValue * 2);
+              writer.updateDocValues(t, new NumericDocValuesField(f, updValue), new NumericDocValuesField(cf, updValue*2));
               
               if (random.nextDouble() < 0.2) {
                 // delete a random document
@@ -991,7 +993,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     DirectoryReader reader = DirectoryReader.open(dir);
     for (AtomicReaderContext context : reader.leaves()) {
       AtomicReader r = context.reader();
-      for (int i = 0; i < numThreads; i++) {
+      for (int i = 0; i < numFields; i++) {
         NumericDocValues ndv = r.getNumericDocValues("f" + i);
         NumericDocValues control = r.getNumericDocValues("cf" + i);
         Bits docsWithNdv = r.getDocsWithField("f" + i);
@@ -1033,8 +1035,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
       int doc = random().nextInt(numDocs);
       Term t = new Term("id", "doc" + doc);
       long value = random().nextLong();
-      writer.updateNumericDocValue(t, "f", value);
-      writer.updateNumericDocValue(t, "cf", value * 2);
+      writer.updateDocValues(t, new NumericDocValuesField("f", value), new NumericDocValuesField("cf", value*2));
       DirectoryReader reader = DirectoryReader.open(writer, true);
       for (AtomicReaderContext context : reader.leaves()) {
         AtomicReader r = context.reader();
@@ -1126,8 +1127,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     // update some docs to a random value
     long value = random().nextInt();
     Term term = new Term("id", RandomPicks.randomFrom(random(), randomTerms));
-    writer.updateNumericDocValue(term, "ndv", value);
-    writer.updateNumericDocValue(term, "control", value * 2);
+    writer.updateDocValues(term, new NumericDocValuesField("ndv", value), new NumericDocValuesField("control", value*2));
     writer.close();
     
     Directory dir2 = newDirectory();
@@ -1233,8 +1233,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
       int field = random.nextInt(numNumericFields);
       Term updateTerm = new Term("upd", RandomPicks.randomFrom(random, updateTerms));
       long value = random.nextInt();
-      writer.updateNumericDocValue(updateTerm, "f" + field, value);
-      writer.updateNumericDocValue(updateTerm, "cf" + field, value * 2);
+      writer.updateDocValues(updateTerm, new NumericDocValuesField("f"+field, value), new NumericDocValuesField("cf"+field, value*2));
     }
 
     writer.close();

@@ -39,7 +39,7 @@ abstract class DocValuesUpdate {
    */
   private static final int RAW_SIZE_IN_BYTES = 8*NUM_BYTES_OBJECT_HEADER + 8*NUM_BYTES_OBJECT_REF + 8*NUM_BYTES_INT;
   
-  final DocValuesFieldUpdates.Type type;
+  final FieldInfo.DocValuesType type;
   final Term term;
   final String field;
   final Object value;
@@ -52,7 +52,7 @@ abstract class DocValuesUpdate {
    * @param field the {@link NumericDocValuesField} to update
    * @param value the updated value
    */
-  protected DocValuesUpdate(DocValuesFieldUpdates.Type type, Term term, String field, Object value) {
+  protected DocValuesUpdate(FieldInfo.DocValuesType type, Term term, String field, Object value) {
     this.type = type;
     this.term = term;
     this.field = field;
@@ -82,7 +82,7 @@ abstract class DocValuesUpdate {
     private static final long RAW_VALUE_SIZE_IN_BYTES = NUM_BYTES_ARRAY_HEADER + 2*NUM_BYTES_INT + NUM_BYTES_OBJECT_REF;
     
     BinaryDocValuesUpdate(Term term, String field, BytesRef value) {
-      super(DocValuesFieldUpdates.Type.BINARY, term, field, value);
+      super(FieldInfo.DocValuesType.BINARY, term, field, value);
     }
 
     @Override
@@ -94,9 +94,9 @@ abstract class DocValuesUpdate {
 
   /** An in-place update to a numeric DocValues field */
   static final class NumericDocValuesUpdate extends DocValuesUpdate {
-    
+
     NumericDocValuesUpdate(Term term, String field, Long value) {
-      super(DocValuesFieldUpdates.Type.NUMERIC, term, field, value);
+      super(FieldInfo.DocValuesType.NUMERIC, term, field, value);
     }
 
     @Override
