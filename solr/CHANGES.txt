@@ -139,6 +139,9 @@ Bug Fixes
 
 * SOLR-6118: 'expand.sort' didn't support function queries. (David Smiley)
 
+* SOLR-6120: zkcli.sh should expand solr.war automatically instead of throwing
+  ClassNotFoundException. (sebastian badea, shalin)
+
 Other Changes
 ---------------------
 
