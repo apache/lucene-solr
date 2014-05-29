@@ -1551,7 +1551,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         }
       }
     } finally {
-      TestUtil.rm(snapDir);
+      // FIXME: SOLR-6119 This is a test bug in that it tries to remove snapDirs that are still open.
+      try {
+        TestUtil.rm(snapDir);
+      } catch (IOException e) {
+        // Ignore failures.
+      }
     }
   }
 
