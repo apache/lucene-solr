@@ -97,6 +97,8 @@ public class TestExceedMaxTermLength extends LuceneTestCase {
                    msg.contains(maxLengthMsg));
         assertTrue("IllegalArgumentException didn't mention field name ("+name+"): " + msg,
                    msg.contains(name));
+        assertTrue("IllegalArgumentException didn't mention original message: " + msg,
+            msg.contains("bytes can be at most") && msg.contains("in length; got"));
       }
     } finally {
       w.shutdown();
