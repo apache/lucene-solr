@@ -43,7 +43,7 @@ public abstract class DocRouter {
   public static final DocRouter DEFAULT = new CompositeIdRouter();
 
 
-  public static DocRouter getDocRouter(Object routerName) {
+  public static DocRouter getDocRouter(String routerName) {
     DocRouter router = routerMap.get(routerName);
     if (router != null) return router;
     throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown document router '"+ routerName + "'");
