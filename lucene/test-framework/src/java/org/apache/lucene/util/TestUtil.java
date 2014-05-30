@@ -120,14 +120,16 @@ public final class TestUtil {
   }
 
   private static LinkedHashSet<File> rm(LinkedHashSet<File> unremoved, File... locations) {
-    for (File location : locations) {
-      if (location != null && location.exists()) {
-        if (location.isDirectory()) {
-          rm(unremoved, location.listFiles());
-        }
-
-        if (!location.delete()) {
-          unremoved.add(location);
+    if (locations != null) {
+      for (File location : locations) {
+        if (location != null && location.exists()) {
+          if (location.isDirectory()) {
+            rm(unremoved, location.listFiles());
+          }
+  
+          if (!location.delete()) {
+            unremoved.add(location);
+          }
         }
       }
     }
