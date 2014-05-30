@@ -17,6 +17,15 @@ package org.apache.lucene.validation;
  * limitations under the License.
  */
 
+import org.apache.ivy.Ivy;
+import org.apache.ivy.core.LogOptions;
+import org.apache.ivy.core.report.ResolveReport;
+import org.apache.ivy.core.resolve.ResolveOptions;
+import org.apache.ivy.core.settings.IvySettings;
+import org.apache.ivy.plugins.conflict.NoConflictManager;
+import org.apache.lucene.dependencies.InterpolatedProperties;
+import org.apache.lucene.validation.ivyde.IvyNodeElement;
+import org.apache.lucene.validation.ivyde.IvyNodeElementAdapter;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.Task;
@@ -24,7 +33,6 @@ import org.apache.tools.ant.types.Resource;
 import org.apache.tools.ant.types.ResourceCollection;
 import org.apache.tools.ant.types.resources.FileResource;
 import org.apache.tools.ant.types.resources.Resources;
-import org.apache.tools.ant.util.FileNameMapper;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -33,23 +41,35 @@ import org.xml.sax.helpers.DefaultHandler;
 import org.xml.sax.helpers.XMLReaderFactory;
 
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.Reader;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
-import java.nio.charset.CodingErrorAction;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -62,7 +82,7 @@ import java.util.regex.Pattern;
 public class LibVersionsCheckTask extends Task {
 
   private static final String IVY_XML_FILENAME = "ivy.xml";
-  private static final Pattern COORDINATE_KEY_PATTERN = Pattern.compile("(/[^/ \t\f]+/[^=:/ \t\f]+).*");
+  private static final Pattern COORDINATE_KEY_PATTERN = Pattern.compile("(/([^/ \t\f]+)/([^=:/ \t\f]+))");
   private static final Pattern BLANK_OR_COMMENT_LINE_PATTERN = Pattern.compile("[ \t\f]*(?:[#!].*)?");
   private static final Pattern TRAILING_BACKSLASH_PATTERN = Pattern.compile("[^\\\\]*(\\\\+)$");
   private static final Pattern LEADING_WHITESPACE_PATTERN = Pattern.compile("[ \t\f]+(.*)");
@@ -70,6 +90,10 @@ public class LibVersionsCheckTask extends Task {
       = Pattern.compile("[ \t\f]*(.*?)(?:(?<!\\\\)[ \t\f]*)?\\\\");
   private static final Pattern TRAILING_WHITESPACE_BACKSLASH_PATTERN
       = Pattern.compile("(.*?)(?:(?<!\\\\)[ \t\f]*)?\\\\");
+  private static final Pattern MODULE_NAME_PATTERN = Pattern.compile("\\smodule\\s*=\\s*[\"']([^\"']+)[\"']");
+  private static final Pattern MODULE_DIRECTORY_PATTERN 
+      = Pattern.compile(".*[/\\\\]((?:lucene|solr)[/\\\\].*)[/\\\\].*");
+  private Ivy ivy;
 
   /**
    * All ivy.xml files to check.
@@ -77,31 +101,54 @@ public class LibVersionsCheckTask extends Task {
   private Resources ivyXmlResources = new Resources();
 
   /**
-   * Centralized Ivy versions properties file
+   * Centralized Ivy versions properties file: ivy-versions.properties
    */
   private File centralizedVersionsFile;
 
   /**
-   * License file mapper.
+   * Centralized Ivy ignore conflicts file: ivy-ignore-conflicts.properties
    */
-  private FileNameMapper licenseMapper;
+  private File ignoreConflictsFile;
+
+  /**
+   * Ivy settings file: ivy-settings.xml
+   */
+  private File ivySettingsFile;
+
+  /**
+   * Location of common build dir: lucene/build/
+   */
+  private File commonBuildDir;
 
   /**
    * A logging level associated with verbose logging.
    */
   private int verboseLevel = Project.MSG_VERBOSE;
-
-  /**
-   * Failure flag.
-   */
-  private boolean failures;
   
   /**
-   * All /org/name version keys found in ivy-versions.properties, and whether they
-   * are referenced in any ivy.xml file.
+   * All /org/name keys found in ivy-versions.properties,
+   * mapped to info about direct dependence and what would
+   * be conflicting indirect dependencies if Lucene/Solr
+   * were to use transitive dependencies.
    */
-  private Map<String,Boolean> referencedCoordinateKeys = new LinkedHashMap<>();
+  private Map<String,Versions> directDependencies = new LinkedHashMap<>();
 
+  /**
+   * All /org/name keys found in ivy-ignore-conflicts.properties,
+   * mapped to the set of indirect dependency versions that will
+   * be ignored, i.e. not trigger a conflict.
+   */
+  private Map<String,HashSet<String>> ignoreConflictVersions = new HashMap<>();
+
+  private class Versions {
+    String direct;
+    LinkedHashMap<IvyNodeElement,Set<String>> conflictLocations = new LinkedHashMap<>(); // dependency path -> moduleNames
+    boolean directlyReferenced = false;
+    Versions(String direct) {
+      this.direct = direct;
+    }
+  }
+  
   /**
    * Adds a set of ivy.xml resources to check.
    */
@@ -117,6 +164,18 @@ public class LibVersionsCheckTask extends Task {
     centralizedVersionsFile = file;
   }
 
+  public void setIvySettingsFile(File file) {
+    ivySettingsFile = file;
+  }
+
+  public void setCommonBuildDir(File file) {
+    commonBuildDir = file;
+  }
+  
+  public void setIgnoreConflictsFile(File file) {
+    ignoreConflictsFile = file;
+  }
+
   /**
    * Execute the task.
    */
@@ -125,8 +184,21 @@ public class LibVersionsCheckTask extends Task {
     log("Starting scan.", verboseLevel);
     long start = System.currentTimeMillis();
 
-    int errors = verifySortedCentralizedVersionsFile() ? 0 : 1;
-    int checked = 0;
+    setupIvy();
+
+    int numErrors = 0;
+    if ( ! verifySortedCoordinatesPropertiesFile(centralizedVersionsFile)) {
+      ++numErrors;
+    }
+    if ( ! verifySortedCoordinatesPropertiesFile(ignoreConflictsFile)) {
+      ++numErrors;
+    }
+    collectDirectDependencies();
+    if ( ! collectVersionConflictsToIgnore()) {
+      ++numErrors;
+    }
+
+    int numChecked = 0;
 
     @SuppressWarnings("unchecked")
     Iterator<Resource> iter = (Iterator<Resource>)ivyXmlResources.iterator();
@@ -142,89 +214,434 @@ public class LibVersionsCheckTask extends Task {
 
       File ivyXmlFile = ((FileResource)resource).getFile();
       try {
-        if ( ! checkIvyXmlFile(ivyXmlFile) ) {
-          failures = true;
-          errors++;
+        if ( ! checkIvyXmlFile(ivyXmlFile)) {
+          ++numErrors;
+        }
+        if ( ! resolveTransitively(ivyXmlFile)) {
+          ++numErrors;
         }
       } catch (Exception e) {
-        throw new BuildException("Exception reading file " + ivyXmlFile.getPath(), e);
+        throw new BuildException("Exception reading file " + ivyXmlFile.getPath() + " - " + e.toString(), e);
       }
-      checked++;
+      ++numChecked;
     }
+
     log("Checking for orphans in " + centralizedVersionsFile.getName(), verboseLevel);
-    for (Map.Entry<String,Boolean> entry : referencedCoordinateKeys.entrySet()) {
+    for (Map.Entry<String,Versions> entry : directDependencies.entrySet()) {
       String coordinateKey = entry.getKey();
-      boolean isReferenced = entry.getValue();
-      if ( ! isReferenced) {
+      if ( ! entry.getValue().directlyReferenced) {
         log("ORPHAN coordinate key '" + coordinateKey + "' in " + centralizedVersionsFile.getName()
             + " is not found in any " + IVY_XML_FILENAME + " file.",
             Project.MSG_ERR);
-        failures = true;
-        errors++;
+        ++numErrors;
       }
     }
 
-    log(String.format(Locale.ROOT, "Checked that %s has lexically sorted "
-        + "'/org/name' keys and no duplicates or orphans, and scanned %d %s "
-        + "file(s) for rev=\"${/org/name}\" format (in %.2fs.), %d error(s).",
-        centralizedVersionsFile.getName(), checked, IVY_XML_FILENAME, 
-        (System.currentTimeMillis() - start) / 1000.0, errors),
-        errors > 0 ? Project.MSG_ERR : Project.MSG_INFO);
+    int numConflicts = emitConflicts();
 
-    if (failures) {
+    int messageLevel = numErrors > 0 ? Project.MSG_ERR : Project.MSG_INFO;
+    log("Checked that " + centralizedVersionsFile.getName() + " and " + ignoreConflictsFile.getName()
+        + " have lexically sorted '/org/name' keys and no duplicates or orphans.",
+        messageLevel);
+    log("Scanned " + numChecked + " " + IVY_XML_FILENAME + " files for rev=\"${/org/name}\" format.",
+        messageLevel);
+    log("Found " + numConflicts + " indirect dependency version conflicts.");
+    log(String.format(Locale.ROOT, "Completed in %.2fs., %d error(s).",
+                      (System.currentTimeMillis() - start) / 1000.0, numErrors),
+        messageLevel);
+
+    if (numConflicts > 0 || numErrors > 0) {
       throw new BuildException("Lib versions check failed. Check the logs.");
     }
   }
 
   /**
-   * Returns true if the "/org/name" coordinate keys in ivy-versions.properties
-   * are lexically sorted and are not duplicates.
+   * Collects indirect dependency version conflicts to ignore 
+   * in ivy-ignore-conflicts.properties, and also checks for orphans
+   * (coordinates not included in ivy-versions.properties).
+   * 
+   * Returns true if no orphans are found.
    */
-  private boolean verifySortedCentralizedVersionsFile() {
-    log("Checking for lexically sorted non-duplicated '/org/name' keys in: " + centralizedVersionsFile, verboseLevel);
-    final InputStream stream;
-    try {
-      stream = new FileInputStream(centralizedVersionsFile);
-    } catch (FileNotFoundException e) {
-      throw new BuildException("Centralized versions file does not exist: "
-          + centralizedVersionsFile.getPath());
+  private boolean collectVersionConflictsToIgnore() {
+    log("Checking for orphans in " + ignoreConflictsFile.getName(), verboseLevel);
+    boolean orphansFound = false;
+    InterpolatedProperties properties = new InterpolatedProperties();
+    try (InputStream inputStream = new FileInputStream(ignoreConflictsFile);
+         Reader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
+      properties.load(reader);
+    } catch (IOException e) {
+      throw new BuildException("Exception reading " + ignoreConflictsFile + ": " + e.toString(), e);
     }
-    // Properties files are encoded as Latin-1
-    final Reader reader = new InputStreamReader(stream, StandardCharsets.ISO_8859_1);
-    final BufferedReader bufferedReader = new BufferedReader(reader);
-    
+    for (Object obj : properties.keySet()) {
+      String coordinate = (String)obj;
+      if (COORDINATE_KEY_PATTERN.matcher(coordinate).matches()) {
+        if ( ! directDependencies.containsKey(coordinate)) {
+          orphansFound = true;
+          log("ORPHAN coordinate key '" + coordinate + "' in " + ignoreConflictsFile.getName()
+                  + " is not found in " + centralizedVersionsFile.getName(),
+              Project.MSG_ERR);
+        } else {
+          String versionsToIgnore = properties.getProperty(coordinate);
+          List<String> ignore = Arrays.asList(versionsToIgnore.trim().split("\\s*,\\s*|\\s+"));
+          ignoreConflictVersions.put(coordinate, new HashSet<>(ignore));
+        }
+      }
+    }
+    return ! orphansFound;
+  }
+
+  private void collectDirectDependencies() {
+    InterpolatedProperties properties = new InterpolatedProperties();
+    try (InputStream inputStream = new FileInputStream(centralizedVersionsFile);
+         Reader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
+      properties.load(reader);
+    } catch (IOException e) {
+      throw new BuildException("Exception reading " + centralizedVersionsFile + ": " + e.toString(), e);
+    }
+    for (Object obj : properties.keySet()) {
+      String coordinate = (String)obj;
+      if (COORDINATE_KEY_PATTERN.matcher(coordinate).matches()) {
+        String direct = properties.getProperty(coordinate);
+        Versions versions = new Versions(direct);
+        directDependencies.put(coordinate, versions);
+      }
+    }
+  }
+
+  /**
+   * Transitively resolves all dependencies in the given ivy.xml file,
+   * looking for indirect dependencies with versions that conflict
+   * with those of direct dependencies.  Versions conflict when a
+   * direct dependency's version is older than that of an indirect
+   * dependency with the same /org/name.
+   * 
+   * Returns true if no version conflicts are found and no resolution
+   * errors occurred, false otherwise.
+   */
+  private boolean resolveTransitively(File ivyXmlFile) {
+    boolean success = true;
+
+    ResolveOptions options = new ResolveOptions();
+    options.setDownload(false);           // Download only module descriptors, not artifacts
+    options.setTransitive(true);          // Resolve transitively, if not already specified in the ivy.xml file
+    options.setUseCacheOnly(false);       // Download the internet!
+    options.setOutputReport(false);       // Don't print to the console
+    options.setLog(LogOptions.LOG_QUIET); // Don't log to the console
+    options.setConfs(new String[] {"*"}); // Resolve all configurations
+
+    // Rewrite the ivy.xml, replacing all 'transitive="false"' with 'transitive="true"'
+    // The Ivy API is file-based, so we have to write the result to the filesystem.
+    String moduleName = "unknown";
+    String ivyXmlContent = xmlToString(ivyXmlFile);
+    Matcher matcher = MODULE_NAME_PATTERN.matcher(ivyXmlContent);
+    if (matcher.find()) {
+      moduleName = matcher.group(1);
+    }
+    ivyXmlContent = ivyXmlContent.replaceAll("\\btransitive\\s*=\\s*[\"']false[\"']", "transitive=\"true\"");
+    File transitiveIvyXmlFile = null;
+    try {
+      File buildDir = new File(commonBuildDir, "ivy-transitive-resolve");
+      if ( ! buildDir.exists() && ! buildDir.mkdirs()) {
+        throw new BuildException("Could not create temp directory " + buildDir.getPath());
+      }
+      matcher = MODULE_DIRECTORY_PATTERN.matcher(ivyXmlFile.getCanonicalPath());
+      if ( ! matcher.matches()) {
+        throw new BuildException("Unknown ivy.xml module directory: " + ivyXmlFile.getCanonicalPath());
+      }
+      String moduleDirPrefix = matcher.group(1).replaceAll("[/\\\\]", ".");
+      transitiveIvyXmlFile = new File(buildDir, "transitive." + moduleDirPrefix + ".ivy.xml");
+      try (Writer writer = new OutputStreamWriter(new FileOutputStream(transitiveIvyXmlFile), StandardCharsets.UTF_8)) {
+        writer.write(ivyXmlContent);
+      }
+      ResolveReport resolveReport = ivy.resolve(transitiveIvyXmlFile.toURI().toURL(), options);
+      IvyNodeElement root = IvyNodeElementAdapter.adapt(resolveReport);
+      for (IvyNodeElement directDependency : root.getDependencies()) {
+        String coordinate = "/" + directDependency.getOrganization() + "/" + directDependency.getName();
+        Versions versions = directDependencies.get(coordinate);
+        if (null == versions) {
+          log("ERROR: the following coordinate key does not appear in " 
+              + centralizedVersionsFile.getName() + ": " + coordinate);
+          success = false;
+        } else {
+          versions.directlyReferenced = true;
+          if (collectConflicts(directDependency, directDependency, moduleName)) {
+            success = false;
+          }
+        }
+      }
+    } catch (ParseException | IOException e) {
+      if (null != transitiveIvyXmlFile) {
+        log("Exception reading " + transitiveIvyXmlFile.getPath() + ": " + e.toString());
+      }
+      success = false;
+    }
+    return success;
+  }
+
+  /**
+   * Recursively finds indirect dependencies that have a version conflict with a direct dependency.
+   * Returns true if one or more conflicts are found, false otherwise
+   */
+  private boolean collectConflicts(IvyNodeElement root, IvyNodeElement parent, String moduleName) {
+    boolean conflicts = false;
+    for (IvyNodeElement child : parent.getDependencies()) {
+      String coordinate = "/" + child.getOrganization() + "/" + child.getName();
+      Versions versions = directDependencies.get(coordinate);
+      if (null != versions) { // Ignore this indirect dependency if it's not also a direct dependency
+        String indirectVersion = child.getRevision();
+        if (isConflict(coordinate, versions.direct, indirectVersion)) {
+          conflicts = true;
+          Set<String> moduleNames = versions.conflictLocations.get(root);
+          if (null == moduleNames) {
+            moduleNames = new HashSet<>();
+            versions.conflictLocations.put(root, moduleNames);
+          }
+          moduleNames.add(moduleName);
+        }
+        conflicts |= collectConflicts(root, child, moduleName);
+      }
+    }
+    return conflicts;
+  }
+
+  /**
+   * Copy-pasted from Ivy's 
+   * org.apache.ivy.plugins.latest.LatestRevisionStrategy
+   * with minor modifications
+   */
+  private static final Map<String,Integer> SPECIAL_MEANINGS;
+  static {
+    SPECIAL_MEANINGS = new HashMap<>();
+    SPECIAL_MEANINGS.put("dev", -1);
+    SPECIAL_MEANINGS.put("rc", 1);
+    SPECIAL_MEANINGS.put("final", 2);
+  }
+
+  /**
+   * Copy-pasted from Ivy's 
+   * org.apache.ivy.plugins.latest.LatestRevisionStrategy.MridComparator
+   * with minor modifications
+   */
+  private static class LatestVersionComparator implements Comparator<String> {
+    @Override
+    public int compare(String rev1, String rev2) {
+      rev1 = rev1.replaceAll("([a-zA-Z])(\\d)", "$1.$2");
+      rev1 = rev1.replaceAll("(\\d)([a-zA-Z])", "$1.$2");
+      rev2 = rev2.replaceAll("([a-zA-Z])(\\d)", "$1.$2");
+      rev2 = rev2.replaceAll("(\\d)([a-zA-Z])", "$1.$2");
+
+      String[] parts1 = rev1.split("[-._+]");
+      String[] parts2 = rev2.split("[-._+]");
+
+      int i = 0;
+      for (; i < parts1.length && i < parts2.length; i++) {
+        if (parts1[i].equals(parts2[i])) {
+          continue;
+        }
+        boolean is1Number = isNumber(parts1[i]);
+        boolean is2Number = isNumber(parts2[i]);
+        if (is1Number && !is2Number) {
+          return 1;
+        }
+        if (is2Number && !is1Number) {
+          return -1;
+        }
+        if (is1Number && is2Number) {
+          return Long.valueOf(parts1[i]).compareTo(Long.valueOf(parts2[i]));
+        }
+        // both are strings, we compare them taking into account special meaning
+        Integer sm1 = SPECIAL_MEANINGS.get(parts1[i].toLowerCase(Locale.ROOT));
+        Integer sm2 = SPECIAL_MEANINGS.get(parts2[i].toLowerCase(Locale.ROOT));
+        if (sm1 != null) {
+          sm2 = sm2 == null ? new Integer(0) : sm2;
+          return sm1.compareTo(sm2);
+        }
+        if (sm2 != null) {
+          return new Integer(0).compareTo(sm2);
+        }
+        return parts1[i].compareTo(parts2[i]);
+      }
+      if (i < parts1.length) {
+        return isNumber(parts1[i]) ? 1 : -1;
+      }
+      if (i < parts2.length) {
+        return isNumber(parts2[i]) ? -1 : 1;
+      }
+      return 0;
+    }
+
+    private static final Pattern IS_NUMBER = Pattern.compile("\\d+");
+    private static boolean isNumber(String str) {
+      return IS_NUMBER.matcher(str).matches();
+    }
+  }
+  private static LatestVersionComparator LATEST_VERSION_COMPARATOR = new LatestVersionComparator();
+
+  /**
+   * Returns true if directVersion is less than indirectVersion, and 
+   * coordinate=indirectVersion is not present in ivy-ignore-conflicts.properties. 
+   */
+  private boolean isConflict(String coordinate, String directVersion, String indirectVersion) {
+    boolean isConflict = LATEST_VERSION_COMPARATOR.compare(directVersion, indirectVersion) < 0;
+    if (isConflict) {
+      Set<String> ignoredVersions = ignoreConflictVersions.get(coordinate);
+      if (null != ignoredVersions && ignoredVersions.contains(indirectVersion)) {
+        isConflict = false;
+      }
+    }
+    return isConflict;
+  }
+
+  /**
+   * Returns the number of direct dependencies in conflict with indirect
+   * dependencies.
+   */
+  private int emitConflicts() {
+    int conflicts = 0;
+    StringBuilder builder = new StringBuilder();
+    for (Map.Entry<String,Versions> directDependency : directDependencies.entrySet()) {
+      String coordinate = directDependency.getKey();
+      Set<Map.Entry<IvyNodeElement,Set<String>>> entrySet
+          = directDependency.getValue().conflictLocations.entrySet();
+      if (entrySet.isEmpty()) {
+        continue;
+      }
+      ++conflicts;
+      Map.Entry<IvyNodeElement,Set<String>> first = entrySet.iterator().next();
+      int notPrinted = entrySet.size() - 1;
+      builder.append("VERSION CONFLICT: transitive dependency in module(s) ");
+      boolean isFirst = true;
+      for (String moduleName : first.getValue()) {
+        if (isFirst) {
+          isFirst = false;
+        } else {
+          builder.append(", ");
+        }
+        builder.append(moduleName);
+      }
+      builder.append(":\n");
+      IvyNodeElement element = first.getKey();
+      builder.append('/').append(element.getOrganization()).append('/').append(element.getName())
+             .append('=').append(element.getRevision()).append('\n');
+      emitConflict(builder, coordinate, first.getKey(), 1);
+        
+      if (notPrinted > 0) {
+        builder.append("... and ").append(notPrinted).append(" more\n");
+      }
+      builder.append("\n");
+    }
+    if (builder.length() > 0) {
+      log(builder.toString());
+    }
+    return conflicts;
+  }
+  
+  private boolean emitConflict(StringBuilder builder, String conflictCoordinate, IvyNodeElement parent, int depth) {
+    for (IvyNodeElement child : parent.getDependencies()) {
+      String indirectCoordinate = "/" + child.getOrganization() + "/" + child.getName();
+      if (conflictCoordinate.equals(indirectCoordinate)) {
+        String directVersion = directDependencies.get(conflictCoordinate).direct;
+        if (isConflict(conflictCoordinate, directVersion, child.getRevision())) {
+          for (int i = 0 ; i < depth - 1 ; ++i) {
+            builder.append("    ");
+          }
+          builder.append("+-- ");
+          builder.append(indirectCoordinate).append("=").append(child.getRevision());
+          builder.append(" <<< Conflict (direct=").append(directVersion).append(")\n");
+          return true;
+        }
+      } else if (hasConflicts(conflictCoordinate, child)) {
+        for (int i = 0 ; i < depth -1 ; ++i) {
+          builder.append("    ");
+        }
+        builder.append("+-- ");
+        builder.append(indirectCoordinate).append("=").append(child.getRevision()).append("\n");
+        if (emitConflict(builder, conflictCoordinate, child, depth + 1)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  
+  private boolean hasConflicts(String conflictCoordinate, IvyNodeElement parent) {
+    // the element itself will never be in conflict, since its coordinate is different
+    for (IvyNodeElement child : parent.getDependencies()) {
+      String indirectCoordinate = "/" + child.getOrganization() + "/" + child.getName();
+      if (conflictCoordinate.equals(indirectCoordinate)) {
+        if (isConflict(conflictCoordinate, directDependencies.get(conflictCoordinate).direct, child.getRevision())) {
+          return true;
+        }
+      } else if (hasConflicts(conflictCoordinate, child)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private String xmlToString(File ivyXmlFile) {
+    StringWriter writer = new StringWriter();
+    try {
+      StreamSource inputSource = new StreamSource(new FileInputStream(ivyXmlFile.getPath()));
+      Transformer serializer = TransformerFactory.newInstance().newTransformer();
+      serializer.transform(inputSource, new StreamResult(writer));
+    } catch (TransformerException | IOException e) {
+      throw new BuildException("Exception reading " + ivyXmlFile.getPath() + ": " + e.toString(), e);
+    }
+    return writer.toString();
+  }
+
+  private void setupIvy() {
+    IvySettings ivySettings = new IvySettings();
+    try {
+      ivySettings.setVariable("common.build.dir", commonBuildDir.getAbsolutePath());
+      ivySettings.setVariable("ivy.exclude.types", "source|javadoc");
+      ivySettings.setBaseDir(commonBuildDir);
+      ivySettings.setDefaultConflictManager(new NoConflictManager());
+      ivy = Ivy.newInstance(ivySettings);
+      ivy.configure(ivySettingsFile);
+    } catch (Exception e) {
+      throw new BuildException("Exception reading " + ivySettingsFile.getPath() + ": " + e.toString(), e);
+    }
+  }
+
+  /**
+   * Returns true if the "/org/name" coordinate keys in the given
+   * properties file are lexically sorted and are not duplicates.
+   */
+  private boolean verifySortedCoordinatesPropertiesFile(File coordinatePropertiesFile) {
+    log("Checking for lexically sorted non-duplicated '/org/name' keys in: " + coordinatePropertiesFile, verboseLevel);
+    boolean success = true;
     String line = null;
     String currentKey = null;
     String previousKey = null;
-    try {
+    try (InputStream stream = new FileInputStream(coordinatePropertiesFile);
+         Reader reader = new InputStreamReader(stream, StandardCharsets.ISO_8859_1);
+         BufferedReader bufferedReader = new BufferedReader(reader)) {
       while (null != (line = readLogicalPropertiesLine(bufferedReader))) {
         final Matcher keyMatcher = COORDINATE_KEY_PATTERN.matcher(line);
-        if ( ! keyMatcher.matches()) {
+        if ( ! keyMatcher.lookingAt()) {
           continue; // Ignore keys that don't look like "/org/name"
         }
         currentKey = keyMatcher.group(1);
         if (null != previousKey) {
           int comparison = currentKey.compareTo(previousKey);
           if (0 == comparison) {
-            log("DUPLICATE coordinate key '" + currentKey + "' in " + centralizedVersionsFile.getName(),
+            log("DUPLICATE coordinate key '" + currentKey + "' in " + coordinatePropertiesFile.getName(),
                 Project.MSG_ERR);
-            failures = true;
+            success = false;
           } else if (comparison < 0) {
-            log("OUT-OF-ORDER coordinate key '" + currentKey + "' in " + centralizedVersionsFile.getName(),
+            log("OUT-OF-ORDER coordinate key '" + currentKey + "' in " + coordinatePropertiesFile.getName(),
                 Project.MSG_ERR);
-            failures = true;
+            success = false;
           }
         }
-        referencedCoordinateKeys.put(currentKey, false);
         previousKey = currentKey;
       }
     } catch (IOException e) {
-      throw new BuildException("Exception reading centralized versions file: " 
-          + centralizedVersionsFile.getPath(), e);
-    } finally {
-      try { reader.close(); } catch (IOException e) { }
+      throw new BuildException("Exception reading " + coordinatePropertiesFile.getPath() + ": " + e.toString(), e);
     }
-    return ! failures;
+    return success;
   }
 
   /**
@@ -294,7 +711,7 @@ public class LibVersionsCheckTask extends Task {
     for (int pos = 0 ; pos < numChars - 1 ; ++pos) {
       char ch = leadingWhitespaceStripped.charAt(pos);
       if (ch == '\\') {
-        ch = leadingWhitespaceStripped.charAt(++pos); 
+        ch = leadingWhitespaceStripped.charAt(++pos);
       }
       output.append(ch);
     }
@@ -360,11 +777,10 @@ public class LibVersionsCheckTask extends Task {
                 + " in " + ivyXmlFile.getPath(), Project.MSG_ERR);
             fail = true;
           }
-          if ( ! referencedCoordinateKeys.containsKey(coordinateKey)) {
+          if ( ! directDependencies.containsKey(coordinateKey)) {
             log("MISSING key '" + coordinateKey + "' in " + centralizedVersionsFile.getPath(), Project.MSG_ERR);
             fail = true;
           }
-          referencedCoordinateKeys.put(coordinateKey, true);
         }
       }
       tags.push(localName);
