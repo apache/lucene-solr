@@ -10,6 +10,7 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="Ant" level="project" />
+    <orderEntry type="library" name="Ivy" level="project" />
     <orderEntry type="module-library">
       <library>
         <CLASSES>

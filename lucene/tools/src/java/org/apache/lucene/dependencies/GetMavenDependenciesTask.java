@@ -39,7 +39,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -83,7 +82,6 @@ public class GetMavenDependenciesTask extends Task {
   // lucene/build/core/classes/java
   private static final Pattern COMPILATION_OUTPUT_DIRECTORY_PATTERN 
       = Pattern.compile("(lucene|solr)/build/(?:contrib/)?(.*)/classes/(?:java|test)");
-  private static final Pattern PROPERTY_REFERENCE_PATTERN = Pattern.compile("\\$\\{([^}]+)\\}");
   private static final String UNWANTED_INTERNAL_DEPENDENCIES
       = "/(?:test-)?lib/|test-framework/classes/java|/test-files|/resources";
   private static final Pattern SHARED_EXTERNAL_DEPENDENCIES_PATTERN
@@ -437,7 +435,13 @@ public class GetMavenDependenciesTask extends Task {
   private void appendAllExternalDependencies(StringBuilder dependenciesBuilder, Map<String,String> versionsMap) {
     log("Loading centralized ivy versions from: " + centralizedVersionsFile, verboseLevel);
     ivyCacheDir = getIvyCacheDir();
-    Properties versions = loadPropertiesFile(centralizedVersionsFile);
+    Properties versions = new InterpolatedProperties();
+    try (InputStream inputStream = new FileInputStream(centralizedVersionsFile);
+         Reader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
+      versions.load(reader);
+    } catch (IOException e) {
+      throw new BuildException("Exception reading centralized versions file " + centralizedVersionsFile.getPath(), e);
+    } 
     SortedSet<Map.Entry> sortedEntries = new TreeSet<>(new Comparator<Map.Entry>() {
       @Override public int compare(Map.Entry o1, Map.Entry o2) {
         return ((String)o1.getKey()).compareTo((String)o2.getKey());
@@ -510,7 +514,15 @@ public class GetMavenDependenciesTask extends Task {
    */
   private void  setInternalDependencyProperties() {
     log("Loading module dependencies from: " + moduleDependenciesPropertiesFile, verboseLevel);
-    Properties moduleDependencies = loadPropertiesFile(moduleDependenciesPropertiesFile);
+    Properties moduleDependencies = new Properties();
+    try (InputStream inputStream = new FileInputStream(moduleDependenciesPropertiesFile);
+         Reader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
+      moduleDependencies.load(reader);
+    } catch (FileNotFoundException e) {
+      throw new BuildException("Properties file does not exist: " + moduleDependenciesPropertiesFile.getPath());
+    } catch (IOException e) {
+      throw new BuildException("Exception reading properties file " + moduleDependenciesPropertiesFile.getPath(), e);
+    }
     Map<String,SortedSet<String>> testScopeDependencies = new HashMap<>();
     Map<String, String> testScopePropertyKeys = new HashMap<>();
     for (Map.Entry entry : moduleDependencies.entrySet()) {
@@ -807,48 +819,6 @@ public class GetMavenDependenciesTask extends Task {
     builder.append('-');
     builder.append(matcher.group(4));
     return builder.toString().replace("solr-solr-", "solr-");
-  }
-
-  /**
-   * Parse the given properties file, performing non-recursive Ant-like
-   * property value interpolation, and return the resulting Properties.
-   */
-  private Properties loadPropertiesFile(File file) {
-    final InputStream stream;
-    try {
-      stream = new FileInputStream(file);
-    } catch (FileNotFoundException e) {
-      throw new BuildException("Properties file does not exist: " + file.getPath());
-    }
-    // Properties files are encoded as Latin-1
-    final Reader reader = new InputStreamReader(stream, StandardCharsets.ISO_8859_1);
-    final Properties properties = new Properties(); 
-    try {
-      properties.load(reader);
-    } catch (IOException e) {
-      throw new BuildException("Exception reading properties file " + file, e);
-    } finally {
-      try {
-        reader.close();
-      } catch (IOException e) {
-        // do nothing
-      }
-    }
-    // Perform non-recursive Ant-like property value interpolation
-    StringBuffer buffer = new StringBuffer();
-    for (Map.Entry entry : properties.entrySet()) {
-      buffer.setLength(0);
-      Matcher matcher = PROPERTY_REFERENCE_PATTERN.matcher((String)entry.getValue());
-      while (matcher.find()) {
-        String interpolatedValue = properties.getProperty(matcher.group(1));
-        if (null != interpolatedValue) {
-          matcher.appendReplacement(buffer, interpolatedValue);
-        }
-      }
-      matcher.appendTail(buffer);
-      properties.setProperty((String)entry.getKey(), buffer.toString());
-    }
-    return properties;
   }
 
 /**

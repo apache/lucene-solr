@@ -249,6 +249,15 @@ Test Framework
   
 * LUCENE-5619: Added backwards compatibility tests to ensure we can update existing
   indexes with doc-values updates. (Shai Erera, Robert Muir)
+  
+Build
+  
+* LUCENE-5442: The Ant check-lib-versions target now runs Ivy resolution
+  transitively, then fails the build when it finds a version conflict: when a
+  transitive dependency's version is more recent than the direct dependency's
+  version specified in lucene/ivy-versions.properties.  Exceptions are
+  specifiable in lucene/ivy-ignore-conflicts.properties.
+  (Steve Rowe)
 
 ======================= Lucene 4.8.1 =======================
 
