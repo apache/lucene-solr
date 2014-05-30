@@ -565,7 +565,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     Directory dir = newDirectory();
     Random random = random();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
-    IndexWriter writer = new IndexWriter(dir, conf.clone());
+    IndexWriter writer = new IndexWriter(dir, conf);
     
     int docid = 0;
     int numRounds = atLeast(10);
@@ -592,7 +592,8 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
         writer.commit();
       } else if (random.nextDouble() < 0.1) {
         writer.close();
-        writer = new IndexWriter(dir, conf.clone());
+        conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+        writer = new IndexWriter(dir, conf);
       }
 
       // add another document with the current value, to be sure forceMerge has
@@ -1080,7 +1081,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
         return new Lucene45DocValuesFormat();
       }
     });
-    IndexWriter writer = new IndexWriter(dir, conf.clone());
+    IndexWriter writer = new IndexWriter(dir, conf);
     Document doc = new Document();
     doc.add(new StringField("id", "d0", Store.NO));
     doc.add(new BinaryDocValuesField("f1", toBytes(5L)));
@@ -1089,13 +1090,14 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     writer.close();
     
     // change format
+    conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     conf.setCodec(new Lucene46Codec() {
       @Override
       public DocValuesFormat getDocValuesFormatForField(String field) {
         return new AssertingDocValuesFormat();
       }
     });
-    writer = new IndexWriter(dir, conf.clone());
+    writer = new IndexWriter(dir, conf);
     doc = new Document();
     doc.add(new StringField("id", "d1", Store.NO));
     doc.add(new BinaryDocValuesField("f1", toBytes(17L)));
@@ -1356,7 +1358,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     conf.setMergePolicy(NoMergePolicy.INSTANCE);
     conf.setMaxBufferedDocs(Integer.MAX_VALUE); // manually flush
     conf.setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-    IndexWriter writer = new IndexWriter(dir, conf.clone());
+    IndexWriter writer = new IndexWriter(dir, conf);
     for (int i = 0; i < 100; i++) {
       writer.addDocument(doc(i));
     }
@@ -1364,7 +1366,8 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     writer.close();
     
     NRTCachingDirectory cachingDir = new NRTCachingDirectory(dir, 100, 1/(1024.*1024.));
-    writer = new IndexWriter(cachingDir, conf.clone());
+    conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    writer = new IndexWriter(cachingDir, conf);
     writer.updateBinaryDocValue(new Term("id", "doc-0"), "val", toBytes(100L));
     DirectoryReader reader = DirectoryReader.open(writer, true); // flush
     assertEquals(0, cachingDir.listCachedFiles().length);

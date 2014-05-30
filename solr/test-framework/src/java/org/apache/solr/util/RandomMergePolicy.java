@@ -41,23 +41,18 @@ public final class RandomMergePolicy extends MergePolicy {
    * Not private so tests can inspect it, 
    * Not final so it can be set on clone
    */
-  MergePolicy inner;
+  final MergePolicy inner;
 
   public RandomMergePolicy() {
     this(LuceneTestCase.newMergePolicy());
   }
+
   private RandomMergePolicy(MergePolicy inner) {
     super(inner.getNoCFSRatio(), 
           (long) (inner.getMaxCFSSegmentSizeMB() * 1024 * 1024));
     this.inner = inner;
     log.info("RandomMergePolicy wrapping {}: {}",
              inner.getClass(), inner);
-  }
-
-  public RandomMergePolicy clone() {
-    RandomMergePolicy clone = (RandomMergePolicy) super.clone();
-    clone.inner = this.inner.clone();
-    return clone;
   }
 
   public void close() {

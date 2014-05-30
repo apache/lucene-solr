@@ -47,7 +47,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   private int mergeThreadPriority = -1;
 
   /** List of currently active {@link MergeThread}s. */
-  protected List<MergeThread> mergeThreads = new ArrayList<>();
+  protected final List<MergeThread> mergeThreads = new ArrayList<>();
   
   /** 
    * Default {@code maxThreadCount}.
@@ -564,14 +564,5 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     sb.append("maxMergeCount=").append(maxMergeCount).append(", ");    
     sb.append("mergeThreadPriority=").append(mergeThreadPriority);
     return sb.toString();
-  }
-
-  @Override
-  public MergeScheduler clone() {
-    ConcurrentMergeScheduler clone = (ConcurrentMergeScheduler) super.clone();
-    clone.writer = null;
-    clone.dir = null;
-    clone.mergeThreads = new ArrayList<>();
-    return clone;
   }
 }

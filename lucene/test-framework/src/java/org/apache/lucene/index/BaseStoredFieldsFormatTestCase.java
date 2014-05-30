@@ -497,7 +497,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     Directory dir = newDirectory();
     IndexWriterConfig iwConf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwConf.setMaxBufferedDocs(RandomInts.randomIntBetween(random(), 2, 30));
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConf.clone());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConf);
     
     final int docCount = atLeast(200);
     final byte[][][] data = new byte [docCount][][];
@@ -530,13 +530,15 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
       iw.w.addDocument(doc);
       if (random().nextBoolean() && (i % (data.length / 10) == 0)) {
         iw.w.close();
+        IndexWriterConfig iwConfNew = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
         // test merging against a non-compressing codec
         if (iwConf.getCodec() == otherCodec) {
-          iwConf.setCodec(Codec.getDefault());
+          iwConfNew.setCodec(Codec.getDefault());
         } else {
-          iwConf.setCodec(otherCodec);
+          iwConfNew.setCodec(otherCodec);
         }
-        iw = new RandomIndexWriter(random(), dir, iwConf.clone());
+        iwConf = iwConfNew;
+        iw = new RandomIndexWriter(random(), dir, iwConf);
       }
     }
 

@@ -21,7 +21,6 @@ import java.util.Iterator;
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.InfoStream;
-import org.apache.lucene.util.SetOnce;
 
 /**
  * {@link FlushPolicy} controls when segments are flushed from a RAM resident
@@ -52,7 +51,7 @@ import org.apache.lucene.util.SetOnce;
  * @see DocumentsWriterPerThread
  * @see IndexWriterConfig#setFlushPolicy(FlushPolicy)
  */
-abstract class FlushPolicy implements Cloneable {
+abstract class FlushPolicy {
   protected LiveIndexWriterConfig indexWriterConfig;
   protected InfoStream infoStream;
 
@@ -142,19 +141,5 @@ abstract class FlushPolicy implements Cloneable {
       infoStream.message("FP", s);
     }
     return true;
-  }
-
-  @Override
-  public FlushPolicy clone() {
-    FlushPolicy clone;
-    try {
-      clone = (FlushPolicy) super.clone();
-    } catch (CloneNotSupportedException e) {
-      // should not happen
-      throw new RuntimeException(e);
-    }
-    clone.indexWriterConfig = null;
-    clone.infoStream = null; 
-    return clone;
   }
 }

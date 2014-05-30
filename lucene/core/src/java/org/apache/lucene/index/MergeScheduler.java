@@ -29,7 +29,7 @@ import java.io.IOException;
  *  instance.</p>
  * @lucene.experimental
 */
-public abstract class MergeScheduler implements Closeable, Cloneable {
+public abstract class MergeScheduler implements Closeable {
 
   /** Sole constructor. (For invocation by subclass 
    *  constructors, typically implicit.) */
@@ -46,13 +46,4 @@ public abstract class MergeScheduler implements Closeable, Cloneable {
   /** Close this MergeScheduler. */
   @Override
   public abstract void close() throws IOException;
-
-  @Override
-  public MergeScheduler clone() {
-    try {
-      return (MergeScheduler) super.clone();
-    } catch (CloneNotSupportedException e) {
-      throw new Error(e);
-    }
-  }
 }
