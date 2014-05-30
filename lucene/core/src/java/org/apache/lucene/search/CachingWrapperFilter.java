@@ -26,6 +26,7 @@ import java.util.WeakHashMap;
 
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.WAH8DocIdSet;
@@ -35,7 +36,7 @@ import org.apache.lucene.util.WAH8DocIdSet;
  * filters to simply filter, and then wrap with this class
  * to add caching.
  */
-public class CachingWrapperFilter extends Filter {
+public class CachingWrapperFilter extends Filter implements Accountable {
   private final Filter filter;
   private final Map<Object,DocIdSet> cache = Collections.synchronizedMap(new WeakHashMap<Object,DocIdSet>());
 
@@ -149,8 +150,8 @@ public class CachingWrapperFilter extends Filter {
     }
   };
 
-  /** Returns total byte size used by cached filters. */
-  public long sizeInBytes() {
+  @Override
+  public long ramBytesUsed() {
 
     // Sync only to pull the current set of values:
     List<DocIdSet> docIdSets;

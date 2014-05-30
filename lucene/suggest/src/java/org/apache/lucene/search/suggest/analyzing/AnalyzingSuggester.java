@@ -251,8 +251,8 @@ public class AnalyzingSuggester extends Lookup {
 
   /** Returns byte size of the underlying FST. */
   @Override
-  public long sizeInBytes() {
-    return fst == null ? 0 : fst.sizeInBytes();
+  public long ramBytesUsed() {
+    return fst == null ? 0 : fst.ramBytesUsed();
   }
 
   private void copyDestTransitions(State from, State to, List<Transition> transitions) {

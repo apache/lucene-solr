@@ -515,8 +515,8 @@ public class Builder<T> {
     boolean isCompiled();
   }
 
-  public long fstSizeInBytes() {
-    return fst.sizeInBytes();
+  public long fstRamBytesUsed() {
+    return fst.ramBytesUsed();
   }
 
   static final class CompiledNode implements Node {

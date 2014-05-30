@@ -26,6 +26,7 @@ import static org.apache.lucene.util.packed.PackedInts.numBlocks;
 import java.io.IOException;
 
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -34,7 +35,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * {@link MonotonicBlockPackedWriter}.
  * @lucene.internal
  */
-public final class MonotonicBlockPackedReader extends LongValues {
+public final class MonotonicBlockPackedReader extends LongValues implements Accountable {
 
   private final int blockShift, blockMask;
   private final long valueCount;
@@ -86,7 +87,7 @@ public final class MonotonicBlockPackedReader extends LongValues {
     return valueCount;
   }
   
-  /** Returns the approximate RAM bytes used */
+  @Override
   public long ramBytesUsed() {
     long sizeInBytes = 0;
     sizeInBytes += RamUsageEstimator.sizeOf(minValues);

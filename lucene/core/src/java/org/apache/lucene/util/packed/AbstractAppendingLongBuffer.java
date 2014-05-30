@@ -17,6 +17,7 @@ package org.apache.lucene.util.packed;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -26,7 +27,7 @@ import java.util.Arrays;
 import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
 
 /** Common functionality shared by {@link AppendingDeltaPackedLongBuffer} and {@link MonotonicAppendingLongBuffer}. */
-abstract class AbstractAppendingLongBuffer extends LongValues {
+abstract class AbstractAppendingLongBuffer extends LongValues implements Accountable {
 
   static final int MIN_PAGE_SIZE = 64;
   // More than 1M doesn't really makes sense with these appending buffers
@@ -188,7 +189,7 @@ abstract class AbstractAppendingLongBuffer extends LongValues {
         + RamUsageEstimator.NUM_BYTES_LONG; // valuesBytes
   }
 
-  /** Return the number of bytes used by this instance. */
+  @Override
   public long ramBytesUsed() {
     // TODO: this is called per-doc-per-norms/dv-field, can we optimize this?
     long bytesUsed = RamUsageEstimator.alignObjectSize(baseRamBytesUsed())

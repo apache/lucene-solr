@@ -145,7 +145,7 @@ public class LookupBenchmarkTest extends LuceneTestCase {
     System.err.println("-- RAM consumption");
     for (Class<? extends Lookup> cls : benchmarkClasses) {
       Lookup lookup = buildLookup(cls, dictionaryInput);
-      long sizeInBytes = lookup.sizeInBytes();
+      long sizeInBytes = lookup.ramBytesUsed();
       System.err.println(
           String.format(Locale.ROOT, "%-15s size[B]:%,13d",
               lookup.getClass().getSimpleName(), 

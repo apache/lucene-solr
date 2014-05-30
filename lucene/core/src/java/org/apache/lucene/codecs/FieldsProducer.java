@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.util.Accountable;
 
 /** Abstract API that produces terms, doc, freq, prox, offset and
  *  payloads postings.  
@@ -28,7 +29,7 @@ import org.apache.lucene.index.Fields;
  * @lucene.experimental
  */
 
-public abstract class FieldsProducer extends Fields implements Closeable {
+public abstract class FieldsProducer extends Fields implements Closeable, Accountable {
   /** Sole constructor. (For invocation by subclass 
    *  constructors, typically implicit.) */
   protected FieldsProducer() {
@@ -36,9 +37,6 @@ public abstract class FieldsProducer extends Fields implements Closeable {
 
   @Override
   public abstract void close() throws IOException;
-  
-  /** Returns approximate RAM bytes used */
-  public abstract long ramBytesUsed();
   
   /** 
    * Checks consistency of this reader.

@@ -164,7 +164,7 @@ public class TokenInfoDictionaryBuilder {
     
     final FST<Long> fst = fstBuilder.finish();
     
-    System.out.print("  " + fst.getNodeCount() + " nodes, " + fst.getArcCount() + " arcs, " + fst.sizeInBytes() + " bytes...  ");
+    System.out.print("  " + fst.getNodeCount() + " nodes, " + fst.getArcCount() + " arcs, " + fst.ramBytesUsed() + " bytes...  ");
     dictionary.setFST(fst);
     System.out.println(" done");
     

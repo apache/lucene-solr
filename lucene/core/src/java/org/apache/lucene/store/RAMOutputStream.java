@@ -21,12 +21,14 @@ import java.io.IOException;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
 
+import org.apache.lucene.util.Accountable;
+
 /**
  * A memory-resident {@link IndexOutput} implementation.
  *
  * @lucene.internal
  */
-public class RAMOutputStream extends IndexOutput {
+public class RAMOutputStream extends IndexOutput implements Accountable {
   static final int BUFFER_SIZE = 1024;
 
   private RAMFile file;
@@ -194,7 +196,8 @@ public class RAMOutputStream extends IndexOutput {
   }
 
   /** Returns byte usage of all buffers. */
-  public long sizeInBytes() {
+  @Override
+  public long ramBytesUsed() {
     return (long) file.numBuffers() * (long) BUFFER_SIZE;
   }
 

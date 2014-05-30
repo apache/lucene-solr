@@ -33,7 +33,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * <p>On the contrary to the original PFOR paper, exceptions are encoded with
  * FOR instead of Simple16.</p>
  */
-public final class PForDeltaDocIdSet extends DocIdSet {
+public final class PForDeltaDocIdSet extends DocIdSet implements Accountable {
 
   static final int BLOCK_SIZE = 128;
   static final int MAX_EXCEPTIONS = 24; // no more than 24 exceptions per block
@@ -511,7 +511,7 @@ public final class PForDeltaDocIdSet extends DocIdSet {
     return cardinality;
   }
 
-  /** Return the memory usage of this instance. */
+  @Override
   public long ramBytesUsed() {
     return RamUsageEstimator.alignObjectSize(3 * RamUsageEstimator.NUM_BYTES_OBJECT_REF) + docIDs.ramBytesUsed() + offsets.ramBytesUsed();
   }

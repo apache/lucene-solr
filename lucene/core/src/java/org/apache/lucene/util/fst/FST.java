@@ -25,7 +25,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -36,6 +35,7 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.store.RAMOutputStream;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
@@ -44,8 +44,6 @@ import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.fst.Builder.UnCompiledNode;
 import org.apache.lucene.util.packed.GrowableWriter;
 import org.apache.lucene.util.packed.PackedInts;
-//import java.io.Writer;
-//import java.io.OutputStreamWriter;
 
 // TODO: break this into WritableFST and ReadOnlyFST.. then
 // we can have subclasses of ReadOnlyFST to handle the
@@ -70,7 +68,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *
  * @lucene.experimental
  */
-public final class FST<T> {
+public final class FST<T> implements Accountable {
   /** Specifies allowed range of each int input label for
    *  this FST. */
   public static enum INPUT_TYPE {BYTE1, BYTE2, BYTE4};
@@ -392,8 +390,8 @@ public final class FST<T> {
     return inputType;
   }
 
-  /** Returns bytes used to represent the FST */
-  public long sizeInBytes() {
+  @Override
+  public long ramBytesUsed() {
     long size = bytes.getPosition();
     if (packed) {
       size += nodeRefToAddress.ramBytesUsed();

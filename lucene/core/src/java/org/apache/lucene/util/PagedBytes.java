@@ -34,7 +34,7 @@ import org.apache.lucene.store.IndexInput;
  **/
 // TODO: refactor this, byteblockpool, fst.bytestore, and any
 // other "shift/mask big arrays". there are too many of these classes!
-public final class PagedBytes {
+public final class PagedBytes implements Accountable {
   private final List<byte[]> blocks = new ArrayList<>();
   // TODO: these are unused?
   private final List<Integer> blockEnd = new ArrayList<>();
@@ -53,7 +53,7 @@ public final class PagedBytes {
    *  PagedBytes.
    *
    * @see #freeze */
-  public final static class Reader {
+  public final static class Reader implements Accountable {
     private final byte[][] blocks;
     private final int[] blockEnds;
     private final int blockBits;
@@ -130,7 +130,7 @@ public final class PagedBytes {
       }
     }
 
-    /** Returns approximate RAM bytes used */
+    @Override
     public long ramBytesUsed() {
       return ((blocks!=null) ? (blockSize * blocks.length) : 0);
     }
@@ -229,7 +229,7 @@ public final class PagedBytes {
     }
   }
 
-  /** Return approx RAM usage in bytes. */
+  @Override
   public long ramBytesUsed() {
     return (blocks.size() + (currentBlock != null ? 1 : 0)) * bytesUsedPerBlock;
   }

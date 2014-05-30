@@ -29,13 +29,14 @@ import static org.apache.lucene.util.packed.PackedInts.numBlocks;
 import java.io.IOException;
 
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.LongValues;
 
 /**
  * Provides random access to a stream written with {@link BlockPackedWriter}.
  * @lucene.internal
  */
-public final class BlockPackedReader extends LongValues {
+public final class BlockPackedReader extends LongValues implements Accountable {
 
   private final int blockShift, blockMask;
   private final long valueCount;
@@ -86,7 +87,7 @@ public final class BlockPackedReader extends LongValues {
     return (minValues == null ? 0 : minValues[block]) + subReaders[block].get(idx);
   }
 
-  /** Returns approximate RAM bytes used */
+  @Override
   public long ramBytesUsed() {
     long size = 0;
     for (PackedInts.Reader reader : subReaders) {

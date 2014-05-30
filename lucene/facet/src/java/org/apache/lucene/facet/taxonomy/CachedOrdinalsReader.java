@@ -24,6 +24,7 @@ import java.util.WeakHashMap;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -53,7 +54,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * for all facet implementations (the cache is per-instance,
  * not static).
  */
-public class CachedOrdinalsReader extends OrdinalsReader {
+public class CachedOrdinalsReader extends OrdinalsReader implements Accountable {
 
   private final OrdinalsReader source;
 
@@ -94,7 +95,7 @@ public class CachedOrdinalsReader extends OrdinalsReader {
   }
 
   /** Holds the cached ordinals in two parallel {@code int[]} arrays. */
-  public static final class CachedOrds {
+  public static final class CachedOrds implements Accountable {
 
     /** Index into {@link #ordinals} for each document. */
     public final int[] offsets;
@@ -137,7 +138,7 @@ public class CachedOrdinalsReader extends OrdinalsReader {
       }
     }
 
-    /** Returns number of bytes used by this cache entry */
+    @Override
     public long ramBytesUsed() {
       long mem = RamUsageEstimator.shallowSizeOf(this) + RamUsageEstimator.sizeOf(offsets);
       if (offsets != ordinals) {
@@ -147,7 +148,7 @@ public class CachedOrdinalsReader extends OrdinalsReader {
     }
   }
 
-  /** How many bytes is this cache using? */
+  @Override
   public synchronized long ramBytesUsed() {
     long bytes = 0;
     for(CachedOrds ords : ordsCache.values()) {

@@ -34,8 +34,8 @@ import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
@@ -48,6 +48,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -792,7 +793,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     }
   }
 
-  private final static class TermsReader extends Terms {
+  private final static class TermsReader extends Terms implements Accountable {
 
     private final long sumTotalTermFreq;
     private final long sumDocFreq;
@@ -867,8 +868,9 @@ public final class MemoryPostingsFormat extends PostingsFormat {
       return field.hasPayloads();
     }
 
+    @Override
     public long ramBytesUsed() {
-      return ((fst!=null) ? fst.sizeInBytes() : 0);
+      return ((fst!=null) ? fst.ramBytesUsed() : 0);
     }
   }
 

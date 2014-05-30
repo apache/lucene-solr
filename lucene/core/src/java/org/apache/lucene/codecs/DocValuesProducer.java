@@ -25,6 +25,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 
 /** Abstract API that produces numeric, binary and
@@ -32,7 +33,7 @@ import org.apache.lucene.util.Bits;
  *
  * @lucene.experimental
  */
-public abstract class DocValuesProducer implements Closeable {
+public abstract class DocValuesProducer implements Closeable, Accountable {
   
   /** Sole constructor. (For invocation by subclass 
    *  constructors, typically implicit.) */
@@ -63,9 +64,6 @@ public abstract class DocValuesProducer implements Closeable {
    *  The returned instance need not be thread-safe: it will only be
    *  used by a single thread. */
   public abstract Bits getDocsWithField(FieldInfo field) throws IOException;
-  
-  /** Returns approximate RAM bytes used */
-  public abstract long ramBytesUsed();
   
   /** 
    * Checks consistency of this producer

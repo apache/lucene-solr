@@ -295,8 +295,8 @@ public class WFSTCompletionLookup extends Lookup {
 
   /** Returns byte size of the underlying FST. */
   @Override
-  public long sizeInBytes() {
-    return (fst == null) ? 0 : fst.sizeInBytes();
+  public long ramBytesUsed() {
+    return (fst == null) ? 0 : fst.ramBytesUsed();
   }
   
   @Override

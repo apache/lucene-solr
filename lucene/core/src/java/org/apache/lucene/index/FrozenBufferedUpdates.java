@@ -112,7 +112,7 @@ class FrozenBufferedUpdates {
     }
     binaryDVUpdates = allBinaryUpdates.toArray(new BinaryDocValuesUpdate[allBinaryUpdates.size()]);
     
-    bytesUsed = (int) terms.getSizeInBytes() + queries.length * BYTES_PER_DEL_QUERY 
+    bytesUsed = (int) terms.ramBytesUsed() + queries.length * BYTES_PER_DEL_QUERY 
         + numericUpdatesSize + numericDVUpdates.length * RamUsageEstimator.NUM_BYTES_OBJECT_REF
         + binaryUpdatesSize + binaryDVUpdates.length * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
     

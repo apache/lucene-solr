@@ -29,6 +29,7 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.store.OutputStreamDataOutput;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PriorityQueue;
@@ -37,7 +38,7 @@ import org.apache.lucene.util.PriorityQueue;
  * Simple Lookup interface for {@link CharSequence} suggestions.
  * @lucene.experimental
  */
-public abstract class Lookup {
+public abstract class Lookup implements Accountable {
 
   /**
    * Result of a lookup.
@@ -266,11 +267,5 @@ public abstract class Lookup {
    * @throws IOException when fatal IO error occurs.
    */
   public abstract boolean load(DataInput input) throws IOException;
-  
-  /**
-   * Get the size of the underlying lookup implementation in memory
-   * @return ram size of the lookup implementation in bytes
-   */
-  public abstract long sizeInBytes();
 
 }

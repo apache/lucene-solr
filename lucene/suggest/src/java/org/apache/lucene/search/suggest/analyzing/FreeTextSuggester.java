@@ -203,11 +203,11 @@ public class FreeTextSuggester extends Lookup {
 
   /** Returns byte size of the underlying FST. */ 
   @Override
-  public long sizeInBytes() {
+  public long ramBytesUsed() {
     if (fst == null) {
       return 0;
     }
-    return fst.sizeInBytes();
+    return fst.ramBytesUsed();
   }
 
   private static class AnalyzingComparator implements Comparator<BytesRef> {

@@ -380,7 +380,7 @@ public class TestFSTs extends LuceneTestCase {
       }
       FST<Long> fst = builder.finish();
       if (VERBOSE) {
-        System.out.println("FST: " + docCount + " docs; " + ord + " terms; " + fst.getNodeCount() + " nodes; " + fst.getArcCount() + " arcs;" + " " + fst.sizeInBytes() + " bytes");
+        System.out.println("FST: " + docCount + " docs; " + ord + " terms; " + fst.getNodeCount() + " nodes; " + fst.getArcCount() + " arcs;" + " " + fst.ramBytesUsed() + " bytes");
       }
 
       if (ord > 0) {
@@ -516,7 +516,7 @@ public class TestFSTs extends LuceneTestCase {
           return;
         }
 
-        System.out.println(ord + " terms; " + fst.getNodeCount() + " nodes; " + fst.getArcCount() + " arcs; " + fst.getArcWithOutputCount() + " arcs w/ output; tot size " + fst.sizeInBytes());
+        System.out.println(ord + " terms; " + fst.getNodeCount() + " nodes; " + fst.getArcCount() + " arcs; " + fst.getArcWithOutputCount() + " arcs w/ output; tot size " + fst.ramBytesUsed());
         if (fst.getNodeCount() < 100) {
           Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"), StandardCharsets.UTF_8);
           Util.toDot(fst, w, false, false);

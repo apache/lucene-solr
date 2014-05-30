@@ -23,13 +23,14 @@ import java.io.IOException;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute; // javadocs
 import org.apache.lucene.index.DocsAndPositionsEnum; // javadocs
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.util.Accountable;
 
 /**
  * Codec API for reading term vectors:
  * 
  * @lucene.experimental
  */
-public abstract class TermVectorsReader implements Cloneable, Closeable {
+public abstract class TermVectorsReader implements Cloneable, Closeable, Accountable {
 
   /** Sole constructor. (For invocation by subclass 
    *  constructors, typically implicit.) */
@@ -41,9 +42,6 @@ public abstract class TermVectorsReader implements Cloneable, Closeable {
    *  available they are in an {@link OffsetAttribute}
    *  available from the {@link DocsAndPositionsEnum}. */
   public abstract Fields get(int doc) throws IOException;
-
-  /** Returns approximate RAM bytes used */
-  public abstract long ramBytesUsed();
   
   /** 
    * Checks consistency of this reader.

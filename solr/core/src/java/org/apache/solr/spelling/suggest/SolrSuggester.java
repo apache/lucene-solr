@@ -24,8 +24,9 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.lucene.search.spell.Dictionary;
-import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.search.suggest.Lookup;
+import org.apache.lucene.search.suggest.Lookup.LookupResult;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -39,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * Interacts (query/build/reload) with Lucene Suggesters through {@link Lookup} and
  * {@link Dictionary}
  * */
-public class SolrSuggester {
+public class SolrSuggester implements Accountable {
   private static final Logger LOG = LoggerFactory.getLogger(SolrSuggester.class);
   
   /** Name used when an unnamed suggester config is passed */
@@ -187,10 +188,10 @@ public class SolrSuggester {
   public String getName() {
     return name;
   }
-  
-  /** Returns the size of the in-memory data structure used by the underlying lookup implementation */
-  public long sizeInBytes() {
-    return lookup.sizeInBytes();
+
+  @Override
+  public long ramBytesUsed() {
+    return lookup.ramBytesUsed();
   }
   
   @Override
@@ -200,7 +201,7 @@ public class SolrSuggester {
         + "storeDir=" + ((storeDir == null) ? "" : storeDir.getAbsoluteFile()) + ", "
         + "lookupImpl=" + lookupImpl + ", "
         + "dictionaryImpl=" + dictionaryImpl + ", "
-        + "sizeInBytes=" + ((lookup!=null) ? String.valueOf(sizeInBytes()) : "0") + " ]";
+        + "sizeInBytes=" + ((lookup!=null) ? String.valueOf(ramBytesUsed()) : "0") + " ]";
   }
 
 }

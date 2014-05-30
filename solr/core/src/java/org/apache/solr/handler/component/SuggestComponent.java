@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.solr.common.params.CommonParams;
@@ -56,7 +57,7 @@ import org.slf4j.LoggerFactory;
  * Responsible for routing commands and queries to the appropriate {@link SolrSuggester}
  * and for initializing them as specified by SolrConfig
  */
-public class SuggestComponent extends SearchComponent implements SolrCoreAware, SuggesterParams {
+public class SuggestComponent extends SearchComponent implements SolrCoreAware, SuggesterParams, Accountable {
   private static final Logger LOG = LoggerFactory.getLogger(SuggestComponent.class);
   
   /** Name used to identify whether the user query concerns this component */
@@ -326,7 +327,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
   @Override
   public NamedList getStatistics() {
     NamedList<String> stats = new SimpleOrderedMap<>();
-    stats.add("totalSizeInBytes", String.valueOf(sizeInBytes()));
+    stats.add("totalSizeInBytes", String.valueOf(ramBytesUsed()));
     for (Map.Entry<String, SolrSuggester> entry : suggesters.entrySet()) {
       SolrSuggester suggester = entry.getValue();
       stats.add(entry.getKey(), suggester.toString());
@@ -334,11 +335,11 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
     return stats;
   }
   
-  /** Returns the total size of all the suggester */
-  public long sizeInBytes() {
+  @Override
+  public long ramBytesUsed() {
     long sizeInBytes = 0;
     for (SolrSuggester suggester : suggesters.values()) {
-      sizeInBytes += suggester.sizeInBytes();
+      sizeInBytes += suggester.ramBytesUsed();
     }
     return sizeInBytes;
   }
