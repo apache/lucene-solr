@@ -86,7 +86,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat()));
     // TODO we could actually add more fields implemented with different PFs
     // or, just put this test into the usual rotation?
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc.clone());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
     FieldType docsOnlyType = new FieldType(TextField.TYPE_NOT_STORED);
     // turn this on for a cross-check
@@ -137,8 +137,9 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
     iw.shutdown();
     verify(dir);
     TestUtil.checkIndex(dir); // for some extra coverage, checkIndex before we forceMerge
+    iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
     iwc.setOpenMode(OpenMode.APPEND);
-    IndexWriter iw2 = new IndexWriter(dir, iwc.clone());
+    IndexWriter iw2 = new IndexWriter(dir, iwc);
     iw2.forceMerge(1);
     iw2.shutdown();
     verify(dir);

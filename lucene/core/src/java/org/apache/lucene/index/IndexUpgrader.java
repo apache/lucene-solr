@@ -27,7 +27,6 @@ import org.apache.lucene.util.Version;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.Collection;
 
 /**
@@ -155,13 +154,12 @@ public final class IndexUpgrader {
       }
     }
     
-    final IndexWriterConfig c = iwc.clone();
-    c.setMergePolicy(new UpgradeIndexMergePolicy(c.getMergePolicy()));
-    c.setIndexDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
+    iwc.setMergePolicy(new UpgradeIndexMergePolicy(iwc.getMergePolicy()));
+    iwc.setIndexDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
     
-    final IndexWriter w = new IndexWriter(dir, c);
+    final IndexWriter w = new IndexWriter(dir, iwc);
     try {
-      InfoStream infoStream = c.getInfoStream();
+      InfoStream infoStream = iwc.getInfoStream();
       if (infoStream.isEnabled("IndexUpgrader")) {
         infoStream.message("IndexUpgrader", "Upgrading all pre-" + Constants.LUCENE_MAIN_VERSION + " segments of index directory '" + dir + "' to version " + Constants.LUCENE_MAIN_VERSION + "...");
       }

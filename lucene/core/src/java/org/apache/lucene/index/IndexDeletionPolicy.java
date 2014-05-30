@@ -54,7 +54,7 @@ import org.apache.lucene.store.Directory;
  * or {@link Directory} instance.</p>
  */
 
-public abstract class IndexDeletionPolicy implements Cloneable {
+public abstract class IndexDeletionPolicy {
 
   /** Sole constructor, typically called by sub-classes constructors. */
   protected IndexDeletionPolicy() {}
@@ -106,14 +106,4 @@ public abstract class IndexDeletionPolicy implements Cloneable {
    *  sorted by age (the 0th one is the oldest commit).
    */
   public abstract void onCommit(List<? extends IndexCommit> commits) throws IOException;
-
-  @Override
-  public IndexDeletionPolicy clone() {
-    try {
-      return (IndexDeletionPolicy) super.clone();
-    } catch (CloneNotSupportedException e) {
-      throw new Error(e);
-    }
-  }
-
 }

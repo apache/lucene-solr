@@ -154,19 +154,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
       // expected
     }
 
-    // also cloning it won't help, after it has been used already
-    try {
-      assertNotNull(new RandomIndexWriter(random(), dir, conf.clone()));
-      fail("should have hit AlreadySetException");
-    } catch (AlreadySetException e) {
-      // expected
-    }
-    
-    // if it's cloned in advance, it should be ok
-    conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
-    new RandomIndexWriter(random(), dir, conf.clone()).shutdown();
-    new RandomIndexWriter(random(), dir, conf.clone()).shutdown();
-    
     dir.close();
   }
   
@@ -222,36 +209,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
       }
       assertTrue(f.getName() + " not found in toString", str.indexOf(f.getName()) != -1);
     }
-  }
-
-  @Test
-  public void testClone() throws Exception {
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    IndexWriterConfig clone = conf.clone();
-
-    // Make sure parameters that can't be reused are cloned
-    IndexDeletionPolicy delPolicy = conf.delPolicy;
-    IndexDeletionPolicy delPolicyClone = clone.delPolicy;
-    assertTrue(delPolicy.getClass() == delPolicyClone.getClass() && (delPolicy != delPolicyClone || delPolicy.clone() == delPolicyClone.clone()));
-
-    FlushPolicy flushPolicy = conf.flushPolicy;
-    FlushPolicy flushPolicyClone = clone.flushPolicy;
-    assertTrue(flushPolicy.getClass() == flushPolicyClone.getClass() && (flushPolicy != flushPolicyClone || flushPolicy.clone() == flushPolicyClone.clone()));
-
-    DocumentsWriterPerThreadPool pool = conf.indexerThreadPool;
-    DocumentsWriterPerThreadPool poolClone = clone.indexerThreadPool;
-    assertTrue(pool.getClass() == poolClone.getClass() && (pool != poolClone || pool.clone() == poolClone.clone()));
-
-    MergePolicy mergePolicy = conf.mergePolicy;
-    MergePolicy mergePolicyClone = clone.mergePolicy;
-    assertTrue(mergePolicy.getClass() == mergePolicyClone.getClass() && (mergePolicy != mergePolicyClone || mergePolicy.clone() == mergePolicyClone.clone()));
-
-    MergeScheduler mergeSched = conf.mergeScheduler;
-    MergeScheduler mergeSchedClone = clone.mergeScheduler;
-    assertTrue(mergeSched.getClass() == mergeSchedClone.getClass() && (mergeSched != mergeSchedClone || mergeSched.clone() == mergeSchedClone.clone()));
-
-    conf.setMergeScheduler(new SerialMergeScheduler());
-    assertEquals(ConcurrentMergeScheduler.class, clone.getMergeScheduler().getClass());
   }
 
   @Test

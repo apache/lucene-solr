@@ -57,7 +57,7 @@ import java.util.Map;
  *
  * @lucene.experimental
  */
-public abstract class MergePolicy implements java.io.Closeable, Cloneable {
+public abstract class MergePolicy implements java.io.Closeable {
 
   /** A map of doc IDs. */
   public static abstract class DocMap {
@@ -383,19 +383,6 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
   /** If the size of the merged segment exceeds
    *  this value then it will not use compound file format. */
   protected long maxCFSSegmentSize = DEFAULT_MAX_CFS_SEGMENT_SIZE;
-
-  @Override
-  public MergePolicy clone() {
-    MergePolicy clone;
-    try {
-      clone = (MergePolicy) super.clone();
-    } catch (CloneNotSupportedException e) {
-      // should not happen
-      throw new RuntimeException(e);
-    }
-    clone.writer = new SetOnce<>();
-    return clone;
-  }
 
   /**
    * Creates a new merge policy instance. Note that if you intend to use it

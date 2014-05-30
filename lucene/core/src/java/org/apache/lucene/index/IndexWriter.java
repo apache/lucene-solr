@@ -700,7 +700,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
    */
   public IndexWriter(Directory d, IndexWriterConfig conf) throws IOException {
     conf.setIndexWriter(this); // prevent reuse by other instances
-    config = new LiveIndexWriterConfig(conf);
+    config = conf;
     directory = d;
     analyzer = config.getAnalyzer();
     infoStream = config.getInfoStream();

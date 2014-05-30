@@ -129,35 +129,6 @@ public class LiveIndexWriterConfig {
     perThreadHardLimitMB = IndexWriterConfig.DEFAULT_RAM_PER_THREAD_HARD_LIMIT_MB;
   }
   
-  /**
-   * Creates a new config that that handles the live {@link IndexWriter}
-   * settings.
-   */
-  LiveIndexWriterConfig(IndexWriterConfig config) {
-    maxBufferedDeleteTerms = config.getMaxBufferedDeleteTerms();
-    maxBufferedDocs = config.getMaxBufferedDocs();
-    mergedSegmentWarmer = config.getMergedSegmentWarmer();
-    ramBufferSizeMB = config.getRAMBufferSizeMB();
-    matchVersion = config.matchVersion;
-    analyzer = config.getAnalyzer();
-    delPolicy = config.getIndexDeletionPolicy();
-    commit = config.getIndexCommit();
-    openMode = config.getOpenMode();
-    similarity = config.getSimilarity();
-    mergeScheduler = config.getMergeScheduler();
-    writeLockTimeout = config.getWriteLockTimeout();
-    indexingChain = config.getIndexingChain();
-    codec = config.getCodec();
-    infoStream = config.getInfoStream();
-    mergePolicy = config.getMergePolicy();
-    indexerThreadPool = config.getIndexerThreadPool();
-    readerPooling = config.getReaderPooling();
-    flushPolicy = config.getFlushPolicy();
-    perThreadHardLimitMB = config.getRAMPerThreadHardLimitMB();
-    useCompoundFile = config.getUseCompoundFile();
-    checkIntegrityAtMerge = config.getCheckIntegrityAtMerge();
-  }
-
   /** Returns the default analyzer to use for indexing documents. */
   public Analyzer getAnalyzer() {
     return analyzer;

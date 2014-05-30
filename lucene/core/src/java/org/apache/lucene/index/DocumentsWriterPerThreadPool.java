@@ -35,7 +35,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * new {@link DocumentsWriterPerThread} instance.
  * </p>
  */
-final class DocumentsWriterPerThreadPool implements Cloneable {
+final class DocumentsWriterPerThreadPool {
   
   /**
    * {@link ThreadState} references and guards a
@@ -148,16 +148,6 @@ final class DocumentsWriterPerThreadPool implements Cloneable {
     freeList = new ThreadState[maxNumThreadStates];
   }
 
-  @Override
-  public DocumentsWriterPerThreadPool clone() {
-    // We should only be cloned before being used:
-    if (numThreadStatesActive != 0) {
-      throw new IllegalStateException("clone this object before it is used!");
-    }
-
-    return new DocumentsWriterPerThreadPool(threadStates.length);
-  }
-  
   /**
    * Returns the max number of {@link ThreadState} instances available in this
    * {@link DocumentsWriterPerThreadPool}

@@ -74,10 +74,4 @@ public final class SetOnce<T> implements Cloneable {
   public final T get() {
     return obj;
   }
-  
-  @Override
-  public SetOnce<T> clone() {
-    return obj == null ? new SetOnce<T>() : new SetOnce<>(obj);
-  }
-  
 }
