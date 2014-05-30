@@ -29,6 +29,10 @@ New Features
 * LUCENE-5680: Add ability to atomically update a set of DocValues
   fields. (Shai Erera)
 
+* LUCENE-5717: Add support for multiterm queries nested inside
+  filtered and constant-score queries to postings highlighter.
+  (Luca Cavanna via Robert Muir)
+
 Changes in Backwards Compatibility Policy
 
 * LUCENE-5634: Add reuse argument to IndexableField.tokenStream. This
