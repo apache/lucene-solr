@@ -78,6 +78,9 @@ API Changes
 * LUCENE-5700: Added oal.util.Accountable that is now implemented by all
   classes whose memory usage can be estimated. (Robert Muir, Adrien Grand)
   
+* LUCENE-5701: Core closed listeners are now available in the AtomicReader API,
+  they used to sit only in SegmentReader. (Adrien Grand, Robert Muir)
+
 Optimizations
 
 * LUCENE-5603: hunspell stemmer more efficiently strips prefixes

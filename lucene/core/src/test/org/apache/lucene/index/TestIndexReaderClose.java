@@ -17,15 +17,18 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.lucene.util.TestUtil;
 
 /**
  */
@@ -50,7 +53,6 @@ public class TestIndexReaderClose extends LuceneTestCase {
           }
         }
       };
-      List<IndexReader.ReaderClosedListener> listeners = new ArrayList<>();
       int listenerCount = random().nextInt(20);
       AtomicInteger count = new AtomicInteger();
       boolean faultySet = false;
@@ -90,6 +92,64 @@ public class TestIndexReaderClose extends LuceneTestCase {
       wrap.close();
       dir.close();
     }
+  }
+
+  public void testCoreListenerOnWrapper() throws IOException {
+    RandomIndexWriter w = new RandomIndexWriter(random(), newDirectory());
+    final int numDocs = TestUtil.nextInt(random(), 1, 5);
+    for (int i = 0; i < numDocs; ++i) {
+      w.addDocument(new Document());
+      if (random().nextBoolean()) {
+        w.commit();
+      }
+    }
+    w.commit();
+    w.close();
+
+    final IndexReader reader = DirectoryReader.open(w.w.getDirectory());
+    final AtomicReader atomicReader = SlowCompositeReaderWrapper.wrap(reader);
+    
+    final int numListeners = TestUtil.nextInt(random(), 1, 10);
+    final List<AtomicReader.CoreClosedListener> listeners = new ArrayList<>();
+    AtomicInteger counter = new AtomicInteger(numListeners);
+    
+    for (int i = 0; i < numListeners; ++i) {
+      CountCoreListener listener = new CountCoreListener(counter);
+      listeners.add(listener);
+      atomicReader.addCoreClosedListener(listener);
+    }
+    for (int i = 0; i < 100; ++i) {
+      atomicReader.addCoreClosedListener(listeners.get(random().nextInt(listeners.size())));
+    }
+    final int removed = random().nextInt(numListeners);
+    Collections.shuffle(listeners);
+    for (int i = 0; i < removed; ++i) {
+      atomicReader.removeCoreClosedListener(listeners.get(i));
+    }
+    assertEquals(numListeners, counter.get());
+    // make sure listeners are registered on the wrapped reader and that closing any of them has the same effect
+    if (random().nextBoolean()) {
+      reader.close();
+    } else {
+      atomicReader.close();
+    }
+    assertEquals(removed, counter.get());
+    w.w.getDirectory().close();
+  }
+
+  private static final class CountCoreListener implements AtomicReader.CoreClosedListener {
+
+    private final AtomicInteger count;
+
+    public CountCoreListener(AtomicInteger count) {
+      this.count = count;
+    }
+
+    @Override
+    public void onClose(Object coreCacheKey) {
+      count.decrementAndGet();
+    }
+
   }
 
   private static final class CountListener implements IndexReader.ReaderClosedListener  {
