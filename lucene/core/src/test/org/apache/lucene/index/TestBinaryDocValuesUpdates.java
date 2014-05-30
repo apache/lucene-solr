@@ -1093,6 +1093,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     
     // change format
     conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    conf.setMergePolicy(NoMergePolicy.INSTANCE); // disable merges to simplify test assertions.
     conf.setCodec(new Lucene46Codec() {
       @Override
       public DocValuesFormat getDocValuesFormatForField(String field) {
@@ -1369,6 +1370,10 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     
     NRTCachingDirectory cachingDir = new NRTCachingDirectory(dir, 100, 1/(1024.*1024.));
     conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    // we want a single large enough segment so that a doc-values update writes a large file
+    conf.setMergePolicy(NoMergePolicy.INSTANCE);
+    conf.setMaxBufferedDocs(Integer.MAX_VALUE); // manually flush
+    conf.setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
     writer = new IndexWriter(cachingDir, conf);
     writer.updateBinaryDocValue(new Term("id", "doc-0"), "val", toBytes(100L));
     DirectoryReader reader = DirectoryReader.open(writer, true); // flush
