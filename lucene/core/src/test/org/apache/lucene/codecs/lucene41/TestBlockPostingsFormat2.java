@@ -22,11 +22,11 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
@@ -36,6 +36,7 @@ import org.apache.lucene.util.TestUtil;
 /** 
  * Tests special cases of BlockPostingsFormat 
  */
+
 public class TestBlockPostingsFormat2 extends LuceneTestCase {
   Directory dir;
   RandomIndexWriter iw;
@@ -55,6 +56,7 @@ public class TestBlockPostingsFormat2 extends LuceneTestCase {
     iw.close();
     TestUtil.checkIndex(dir); // for some extra coverage, checkIndex before we forceMerge
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setCodec(TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat()));
     iwc.setOpenMode(OpenMode.APPEND);
     IndexWriter iw = new IndexWriter(dir, iwc);
     iw.forceMerge(1);
