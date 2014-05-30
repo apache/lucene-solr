@@ -138,6 +138,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
     verify(dir);
     TestUtil.checkIndex(dir); // for some extra coverage, checkIndex before we forceMerge
     iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    iwc.setCodec(TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat()));
     iwc.setOpenMode(OpenMode.APPEND);
     IndexWriter iw2 = new IndexWriter(dir, iwc);
     iw2.forceMerge(1);
