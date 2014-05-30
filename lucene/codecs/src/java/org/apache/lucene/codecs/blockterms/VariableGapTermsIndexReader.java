@@ -18,9 +18,6 @@ package org.apache.lucene.codecs.blockterms;
  */
 
 import java.io.IOException;
-import java.io.FileOutputStream;   // for toDot
-import java.io.OutputStreamWriter; // for toDot
-import java.io.Writer;             // for toDot
 import java.util.HashMap;
 
 import org.apache.lucene.codecs.CodecUtil;
@@ -31,12 +28,12 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
-import org.apache.lucene.util.fst.Util; // for toDot
 
 /** See {@link VariableGapTermsIndexWriter}
  * 
@@ -156,7 +153,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
     return false;
   }
 
-  private final class FieldIndexData {
+  private final class FieldIndexData implements Accountable {
     private final FST<Long> fst;
 
     public FieldIndexData(IndexInput in, FieldInfo fieldInfo, long indexStart) throws IOException {
@@ -174,9 +171,9 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
       */
     }
 
-    /** Returns approximate RAM bytes used */
+    @Override
     public long ramBytesUsed() {
-      return fst == null ? 0 : fst.sizeInBytes();
+      return fst == null ? 0 : fst.ramBytesUsed();
     }
   }
 

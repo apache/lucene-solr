@@ -25,6 +25,7 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -452,7 +453,7 @@ public class PackedInts {
    * A read-only random access array of positive integers.
    * @lucene.internal
    */
-  public static abstract class Reader extends NumericDocValues {
+  public static abstract class Reader extends NumericDocValues implements Accountable {
 
     /**
      * Bulk get: read at least one and at most <code>len</code> longs starting
@@ -483,11 +484,6 @@ public class PackedInts {
      * @return the number of values.
      */
     public abstract int size();
-
-    /**
-     * Return the in-memory size in bytes.
-     */
-    public abstract long ramBytesUsed();
 
     /**
      * Expert: if the bit-width of this reader matches one of

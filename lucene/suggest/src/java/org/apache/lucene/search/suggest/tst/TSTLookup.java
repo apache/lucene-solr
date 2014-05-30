@@ -222,7 +222,7 @@ public class TSTLookup extends Lookup {
 
   /** Returns byte size of the underlying TST */
   @Override
-  public long sizeInBytes() {
+  public long ramBytesUsed() {
     long mem = RamUsageEstimator.shallowSizeOf(this);
     if (root != null) {
       mem += root.sizeInBytes();

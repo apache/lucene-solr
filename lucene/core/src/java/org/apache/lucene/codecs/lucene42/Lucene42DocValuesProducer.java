@@ -319,7 +319,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       if (instance == null) {
         data.seek(entry.offset);
         instance = new FST<>(data, PositiveIntOutputs.getSingleton());
-        ramBytesUsed.addAndGet(instance.sizeInBytes());
+        ramBytesUsed.addAndGet(instance.ramBytesUsed());
         fstInstances.put(field.number, instance);
       }
     }
@@ -394,7 +394,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       if (instance == null) {
         data.seek(entry.offset);
         instance = new FST<>(data, PositiveIntOutputs.getSingleton());
-        ramBytesUsed.addAndGet(instance.sizeInBytes());
+        ramBytesUsed.addAndGet(instance.ramBytesUsed());
         fstInstances.put(field.number, instance);
       }
     }

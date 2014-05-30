@@ -19,10 +19,12 @@ package org.apache.lucene.store;
 
 import java.util.ArrayList;
 
+import org.apache.lucene.util.Accountable;
+
 /** 
  * Represents a file in RAM as a list of byte[] buffers.
  * @lucene.internal */
-public class RAMFile {
+public class RAMFile implements Accountable {
   protected ArrayList<byte[]> buffers = new ArrayList<>();
   long length;
   RAMDirectory directory;
@@ -75,7 +77,8 @@ public class RAMFile {
     return new byte[size];
   }
 
-  public synchronized long getSizeInBytes() {
+  @Override
+  public synchronized long ramBytesUsed() {
     return sizeInBytes;
   }
   

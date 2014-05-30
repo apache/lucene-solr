@@ -27,6 +27,7 @@ import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.jaspell.JaspellTernarySearchTrie.TSTNode;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.UnicodeUtil;
@@ -37,7 +38,7 @@ import org.apache.lucene.util.UnicodeUtil;
  * 
  * @see JaspellTernarySearchTrie
  */
-public class JaspellLookup extends Lookup {
+public class JaspellLookup extends Lookup implements Accountable {
   JaspellTernarySearchTrie trie = new JaspellTernarySearchTrie();
   private boolean usePrefix = true;
   private int editDistance = 2;
@@ -201,10 +202,9 @@ public class JaspellLookup extends Lookup {
     return true;
   }
 
-  /** Returns byte size of the underlying TST. */
   @Override
-  public long sizeInBytes() {
-    return trie.sizeInBytes();
+  public long ramBytesUsed() {
+    return trie.ramBytesUsed();
   }
   
   @Override

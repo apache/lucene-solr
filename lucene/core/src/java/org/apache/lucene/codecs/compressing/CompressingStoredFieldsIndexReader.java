@@ -25,6 +25,7 @@ import java.util.Arrays;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
@@ -33,7 +34,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * Random-access reader for {@link CompressingStoredFieldsIndexWriter}.
  * @lucene.internal
  */
-public final class CompressingStoredFieldsIndexReader implements Cloneable {
+public final class CompressingStoredFieldsIndexReader implements Cloneable, Accountable {
 
   final int maxDoc;
   final int[] docBases;
@@ -159,8 +160,9 @@ public final class CompressingStoredFieldsIndexReader implements Cloneable {
   public CompressingStoredFieldsIndexReader clone() {
     return this;
   }
-  
-  long ramBytesUsed() {
+
+  @Override
+  public long ramBytesUsed() {
     long res = 0;
     
     for(PackedInts.Reader r : docBasesDeltas) {

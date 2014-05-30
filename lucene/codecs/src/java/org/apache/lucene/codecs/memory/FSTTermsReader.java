@@ -734,7 +734,7 @@ public class FSTTermsReader extends FieldsProducer {
   public long ramBytesUsed() {
     long ramBytesUsed = 0;
     for (TermsReader r : fields.values()) {
-      ramBytesUsed += r.dict == null ? 0 : r.dict.sizeInBytes();
+      ramBytesUsed += r.dict == null ? 0 : r.dict.ramBytesUsed();
     }
     return ramBytesUsed;
   }

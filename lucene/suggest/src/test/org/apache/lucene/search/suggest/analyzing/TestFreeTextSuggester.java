@@ -184,7 +184,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
         }
       });
     if (VERBOSE) {
-      System.out.println(sug.sizeInBytes() + " bytes");
+      System.out.println(sug.ramBytesUsed() + " bytes");
 
       List<LookupResult> results = sug.lookup("general r", 10);
       System.out.println("results:");

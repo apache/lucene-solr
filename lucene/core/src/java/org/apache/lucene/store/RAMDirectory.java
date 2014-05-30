@@ -27,6 +27,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.lucene.util.Accountable;
+
 
 /**
  * A memory-resident {@link Directory} implementation.  Locking
@@ -45,7 +47,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * implementation working directly on the file system cache of the
  * operating system, so copying data to Java heap space is not useful.
  */
-public class RAMDirectory extends BaseDirectory {
+public class RAMDirectory extends BaseDirectory implements Accountable {
   protected final Map<String,RAMFile> fileMap = new ConcurrentHashMap<>();
   protected final AtomicLong sizeInBytes = new AtomicLong();
   
@@ -140,7 +142,8 @@ public class RAMDirectory extends BaseDirectory {
    * Return total size in bytes of all files in this directory. This is
    * currently quantized to RAMOutputStream.BUFFER_SIZE.
    */
-  public final long sizeInBytes() {
+  @Override
+  public final long ramBytesUsed() {
     ensureOpen();
     return sizeInBytes.get();
   }

@@ -37,6 +37,7 @@ import org.apache.lucene.search.CachingWrapperFilter;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.IOUtils;
@@ -49,7 +50,7 @@ import org.apache.lucene.util.Version;
  * may share the same core data.
  * @lucene.experimental
  */
-public final class SegmentReader extends AtomicReader {
+public final class SegmentReader extends AtomicReader implements Accountable {
 
   private final SegmentCommitInfo si;
   private final Bits liveDocs;
@@ -570,7 +571,7 @@ public final class SegmentReader extends AtomicReader {
     core.removeCoreClosedListener(listener);
   }
   
-  /** Returns approximate RAM Bytes used */
+  @Override
   public long ramBytesUsed() {
     ensureOpen();
     long ramBytesUsed = 0;

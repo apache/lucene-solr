@@ -17,11 +17,12 @@ package org.apache.lucene.codecs.blockterms;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.util.BytesRef;
-
-import java.io.IOException;
 import java.io.Closeable;
+import java.io.IOException;
+
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.BytesRef;
 
 
 // TODO
@@ -38,7 +39,7 @@ import java.io.Closeable;
  * text. 
  * @lucene.experimental */
 
-public abstract class TermsIndexReaderBase implements Closeable {
+public abstract class TermsIndexReaderBase implements Closeable, Accountable {
 
   public abstract FieldIndexEnum getFieldEnum(FieldInfo fieldInfo);
 
@@ -71,6 +72,4 @@ public abstract class TermsIndexReaderBase implements Closeable {
     public abstract long ord();
   }
 
-  /** Returns approximate RAM bytes used */
-  public abstract long ramBytesUsed();
 }

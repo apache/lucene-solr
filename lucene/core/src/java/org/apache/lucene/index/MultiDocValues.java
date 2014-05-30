@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.apache.lucene.index.MultiTermsEnum.TermsEnumIndex;
 import org.apache.lucene.index.MultiTermsEnum.TermsEnumWithSlice;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.packed.AppendingPackedLongBuffer;
@@ -318,7 +319,7 @@ public class MultiDocValues {
   /** maps per-segment ordinals to/from global ordinal space */
   // TODO: use more efficient packed ints structures?
   // TODO: pull this out? its pretty generic (maps between N ord()-enabled TermsEnums) 
-  public static class OrdinalMap {
+  public static class OrdinalMap implements Accountable {
     // cache key of whoever asked for this awful thing
     final Object owner;
     // globalOrd -> (globalOrd - segmentOrd) where segmentOrd is the the ordinal in the first segment that contains this term
@@ -412,10 +413,8 @@ public class MultiDocValues {
     public long getValueCount() {
       return globalOrdDeltas.size();
     }
-    
-    /** 
-     * Returns total byte size used by this ordinal map. 
-     */
+
+    @Override
     public long ramBytesUsed() {
       long size = globalOrdDeltas.ramBytesUsed() + firstSegments.ramBytesUsed();
       for (int i = 0; i < ordDeltas.length; i++) {

@@ -19,21 +19,20 @@ package org.apache.lucene.codecs.idversion;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.automaton.CompiledAutomaton;
-import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PairOutputs.Pair;
 
 /** BlockTree's implementation of {@link Terms}. */
 // public for CheckIndex:
-final class VersionFieldReader extends Terms {
+final class VersionFieldReader extends Terms implements Accountable {
   final long numTerms;
   final FieldInfo fieldInfo;
   final long sumTotalTermFreq;
@@ -156,8 +155,8 @@ final class VersionFieldReader extends Terms {
     return docCount;
   }
 
-  /** Returns approximate RAM bytes used */
+  @Override
   public long ramBytesUsed() {
-    return ((index!=null)? index.sizeInBytes() : 0);
+    return ((index!=null)? index.ramBytesUsed() : 0);
   }
 }

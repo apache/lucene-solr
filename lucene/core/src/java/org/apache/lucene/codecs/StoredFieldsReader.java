@@ -20,6 +20,7 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.util.Accountable;
 
 /**
  * Codec API for reading stored fields.
@@ -29,7 +30,7 @@ import org.apache.lucene.index.StoredFieldVisitor;
  * clones of any IndexInputs used, etc), and {@link #close()}
  * @lucene.experimental
  */
-public abstract class StoredFieldsReader implements Cloneable, Closeable {
+public abstract class StoredFieldsReader implements Cloneable, Closeable, Accountable {
   /** Sole constructor. (For invocation by subclass 
    *  constructors, typically implicit.) */
   protected StoredFieldsReader() {
@@ -40,9 +41,6 @@ public abstract class StoredFieldsReader implements Cloneable, Closeable {
 
   @Override
   public abstract StoredFieldsReader clone();
-  
-  /** Returns approximate RAM bytes used */
-  public abstract long ramBytesUsed();
   
   /** 
    * Checks consistency of this reader.

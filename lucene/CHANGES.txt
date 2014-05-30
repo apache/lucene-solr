@@ -170,6 +170,9 @@ API Changes
 
 * LUCENE-5706: Removed the option to unset a DocValues field through DocValues
   updates. (Shai Erera)
+
+* LUCENE-5700: Added oal.util.Accountable that is now implemented by all
+  classes whose memory usage can be estimated. (Robert Muir, Adrien Grand)
   
 Optimizations
 

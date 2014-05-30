@@ -126,7 +126,7 @@ final class SegmentTermsEnum extends TermsEnum {
     if (fr.index != null) {
       stats.indexNodeCount = fr.index.getNodeCount();
       stats.indexArcCount = fr.index.getArcCount();
-      stats.indexNumBytes = fr.index.sizeInBytes();
+      stats.indexNumBytes = fr.index.ramBytesUsed();
     }
         
     currentFrame = staticFrame;

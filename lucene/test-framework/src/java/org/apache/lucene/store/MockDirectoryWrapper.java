@@ -219,7 +219,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
 
   public synchronized final long sizeInBytes() throws IOException {
     if (in instanceof RAMDirectory)
-      return ((RAMDirectory) in).sizeInBytes();
+      return ((RAMDirectory) in).ramBytesUsed();
     else {
       // hack
       long size = 0;
@@ -607,7 +607,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       return sizeInBytes();
     long size = 0;
     for(final RAMFile file: ((RAMDirectory)in).fileMap.values()) {
-      size += file.getSizeInBytes();
+      size += file.ramBytesUsed();
     }
     return size;
   }

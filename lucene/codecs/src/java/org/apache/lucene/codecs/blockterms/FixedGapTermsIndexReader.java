@@ -24,6 +24,7 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PagedBytes;
@@ -223,7 +224,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
     return true;
   }
 
-  private final class FieldIndexData {
+  private final class FieldIndexData implements Accountable {
     // where this field's terms begin in the packed byte[]
     // data
     final long termBytesStart;
@@ -264,7 +265,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       }
     }
     
-    /** Returns approximate RAM bytes used */
+    @Override
     public long ramBytesUsed() {
       return ((termOffsets!=null)? termOffsets.ramBytesUsed() : 0) + 
           ((termsDictOffsets!=null)? termsDictOffsets.ramBytesUsed() : 0);

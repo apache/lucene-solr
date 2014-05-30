@@ -148,8 +148,8 @@ public class NRTCachingDirectory extends Directory {
 
   /** Returns how many bytes are being used by the
    *  RAMDirectory cache */
-  public long sizeInBytes()  {
-    return cache.sizeInBytes();
+  public long cacheRamBytesUsed()  {
+    return cache.ramBytesUsed();
   }
 
   @Override
@@ -256,7 +256,7 @@ public class NRTCachingDirectory extends Directory {
       bytes = context.flushInfo.estimatedSegmentSize;
     }
 
-    return !name.equals(IndexFileNames.SEGMENTS_GEN) && (bytes <= maxMergeSizeBytes) && (bytes + cache.sizeInBytes()) <= maxCachedBytes;
+    return !name.equals(IndexFileNames.SEGMENTS_GEN) && (bytes <= maxMergeSizeBytes) && (bytes + cache.ramBytesUsed()) <= maxCachedBytes;
   }
 
   private final Object uncacheLock = new Object();

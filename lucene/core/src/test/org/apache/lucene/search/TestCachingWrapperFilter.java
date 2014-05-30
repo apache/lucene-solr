@@ -302,7 +302,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     CachingWrapperFilter filter = new CachingWrapperFilter(startFilter);
 
     docs = searcher.search(new MatchAllDocsQuery(), filter, 1);
-    assertTrue(filter.sizeInBytes() > 0);
+    assertTrue(filter.ramBytesUsed() > 0);
 
     assertEquals("[query + filter] Should find a hit...", 1, docs.totalHits);
 

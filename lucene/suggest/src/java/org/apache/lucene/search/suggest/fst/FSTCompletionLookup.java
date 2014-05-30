@@ -31,12 +31,13 @@ import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.OfflineSorter.SortInfo;
 import org.apache.lucene.util.OfflineSorter;
+import org.apache.lucene.util.OfflineSorter.SortInfo;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.fst.FST;
@@ -66,7 +67,7 @@ import org.apache.lucene.util.fst.NoOutputs;
  * @see FSTCompletion
  * @lucene.experimental
  */
-public class FSTCompletionLookup extends Lookup {
+public class FSTCompletionLookup extends Lookup implements Accountable {
   /** 
    * An invalid bucket count if we're creating an object
    * of this class from an existing FST.
@@ -298,14 +299,14 @@ public class FSTCompletionLookup extends Lookup {
   }
 
   @Override
-  public long sizeInBytes() {
+  public long ramBytesUsed() {
     long mem = RamUsageEstimator.shallowSizeOf(this) + RamUsageEstimator.shallowSizeOf(normalCompletion) + RamUsageEstimator.shallowSizeOf(higherWeightsCompletion);
     if (normalCompletion != null) {
-      mem += normalCompletion.getFST().sizeInBytes();
+      mem += normalCompletion.getFST().ramBytesUsed();
     }
     if (higherWeightsCompletion != null && (normalCompletion == null || normalCompletion.getFST() != higherWeightsCompletion.getFST())) {
       // the fst should be shared between the 2 completion instances, don't count it twice
-      mem += higherWeightsCompletion.getFST().sizeInBytes();
+      mem += higherWeightsCompletion.getFST().ramBytesUsed();
     }
     return mem;
   }

@@ -45,6 +45,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
@@ -99,7 +100,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     public void checkIntegrity() throws IOException {}
   } 
 
-  static class RAMField extends Terms {
+  static class RAMField extends Terms implements Accountable {
     final String field;
     final SortedMap<String,RAMTerm> termToDocs = new TreeMap<>();
     long sumTotalTermFreq;
@@ -112,7 +113,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
       this.info = info;
     }
 
-    /** Returns approximate RAM bytes used */
+    @Override
     public long ramBytesUsed() {
       long sizeInBytes = 0;
       for(RAMTerm term : termToDocs.values()) {
@@ -167,7 +168,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
   }
 
-  static class RAMTerm {
+  static class RAMTerm implements Accountable {
     final String term;
     long totalTermFreq;
     final List<RAMDoc> docs = new ArrayList<>();
@@ -175,7 +176,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
       this.term = term;
     }
 
-    /** Returns approximate RAM bytes used */
+    @Override
     public long ramBytesUsed() {
       long sizeInBytes = 0;
       for(RAMDoc rDoc : docs) {
@@ -185,7 +186,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
   }
 
-  static class RAMDoc {
+  static class RAMDoc implements Accountable {
     final int docID;
     final int[] positions;
     byte[][] payloads;
@@ -195,7 +196,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
       positions = new int[freq];
     }
 
-    /** Returns approximate RAM bytes used */
+    @Override
     public long ramBytesUsed() {
       long sizeInBytes = 0;
       sizeInBytes +=  (positions!=null) ? RamUsageEstimator.sizeOf(positions) : 0;

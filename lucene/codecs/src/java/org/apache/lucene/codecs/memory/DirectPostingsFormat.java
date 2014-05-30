@@ -29,8 +29,8 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat; // javadocs
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.SegmentReadState;
@@ -40,6 +40,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.RAMOutputStream;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -166,13 +167,10 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
   }
 
-  private final static class DirectField extends Terms {
+  private final static class DirectField extends Terms implements Accountable {
 
-    private static abstract class TermAndSkip {
+    private static abstract class TermAndSkip implements Accountable {
       public int[] skips;
-
-      /** Returns the approximate number of RAM bytes used */
-      public abstract long ramBytesUsed();
     }
 
     private static final class LowFreqTerm extends TermAndSkip {
@@ -494,7 +492,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       assert skipOffset == skipCount;
     }
 
-    /** Returns approximate RAM bytes used */
+    @Override
     public long ramBytesUsed() {
       long sizeInBytes = 0;
       sizeInBytes += ((termBytes!=null) ? RamUsageEstimator.sizeOf(termBytes) : 0);
