@@ -49,14 +49,14 @@ public class MockRandomMergePolicy extends MergePolicy {
   }
 
   @Override
-  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos) {
+  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, IndexWriter writer) {
     MergeSpecification mergeSpec = null;
     //System.out.println("MRMP: findMerges sis=" + segmentInfos);
 
     int numSegments = segmentInfos.size();
 
     List<SegmentCommitInfo> segments = new ArrayList<>();
-    final Collection<SegmentCommitInfo> merging = writer.get().getMergingSegments();
+    final Collection<SegmentCommitInfo> merging = writer.getMergingSegments();
 
     for(SegmentCommitInfo sipc : segmentInfos) {
       if (!merging.contains(sipc)) {
@@ -85,7 +85,7 @@ public class MockRandomMergePolicy extends MergePolicy {
 
   @Override
   public MergeSpecification findForcedMerges(
-       SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge)
+       SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge, IndexWriter writer)
     throws IOException {
 
     final List<SegmentCommitInfo> eligibleSegments = new ArrayList<>();
@@ -126,8 +126,8 @@ public class MockRandomMergePolicy extends MergePolicy {
   }
 
   @Override
-  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos) throws IOException {
-    return findMerges(null, segmentInfos);
+  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, IndexWriter writer) throws IOException {
+    return findMerges(null, segmentInfos, writer);
   }
 
   @Override
@@ -135,7 +135,7 @@ public class MockRandomMergePolicy extends MergePolicy {
   }
 
   @Override
-  public boolean useCompoundFile(SegmentInfos infos, SegmentCommitInfo mergedInfo) throws IOException {
+  public boolean useCompoundFile(SegmentInfos infos, SegmentCommitInfo mergedInfo, IndexWriter writer) throws IOException {
     // 80% of the time we create CFS:
     return random.nextInt(5) != 1;
   }

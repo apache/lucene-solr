@@ -705,7 +705,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     analyzer = config.getAnalyzer();
     infoStream = config.getInfoStream();
     mergePolicy = config.getMergePolicy();
-    mergePolicy.setIndexWriter(this);
     mergeScheduler = config.getMergeScheduler();
     codec = config.getCodec();
 
@@ -1781,7 +1780,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     MergePolicy.MergeSpecification spec;
     boolean newMergesFound = false;
     synchronized(this) {
-      spec = mergePolicy.findForcedDeletesMerges(segmentInfos);
+      spec = mergePolicy.findForcedDeletesMerges(segmentInfos, this);
       newMergesFound = spec != null;
       if (newMergesFound) {
         final int numMerges = spec.merges.size();
@@ -1901,7 +1900,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     if (maxNumSegments != UNBOUNDED_MAX_MERGE_SEGMENTS) {
       assert trigger == MergeTrigger.EXPLICIT || trigger == MergeTrigger.MERGE_FINISHED :
         "Expected EXPLICT or MERGE_FINISHED as trigger even with maxNumSegments set but was: " + trigger.name();
-      spec = mergePolicy.findForcedMerges(segmentInfos, maxNumSegments, Collections.unmodifiableMap(segmentsToMerge));
+      spec = mergePolicy.findForcedMerges(segmentInfos, maxNumSegments, Collections.unmodifiableMap(segmentsToMerge), this);
       newMergesFound = spec != null;
       if (newMergesFound) {
         final int numMerges = spec.merges.size();
@@ -1911,7 +1910,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         }
       }
     } else {
-      spec = mergePolicy.findMerges(trigger, segmentInfos);
+      spec = mergePolicy.findMerges(trigger, segmentInfos, this);
     }
     newMergesFound = spec != null;
     if (newMergesFound) {
@@ -2598,7 +2597,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
           return;
         }
         ensureOpen();
-        useCompoundFile = mergePolicy.useCompoundFile(segmentInfos, infoPerCommit);
+        useCompoundFile = mergePolicy.useCompoundFile(segmentInfos, infoPerCommit, this);
       }
 
       // Now create the compound file if needed
@@ -4019,7 +4018,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
       //System.out.println("merger set hasProx=" + merger.hasProx() + " seg=" + merge.info.name);
       boolean useCompoundFile;
       synchronized (this) { // Guard segmentInfos
-        useCompoundFile = mergePolicy.useCompoundFile(segmentInfos, merge.info);
+        useCompoundFile = mergePolicy.useCompoundFile(segmentInfos, merge.info, this);
       }
 
       if (useCompoundFile) {

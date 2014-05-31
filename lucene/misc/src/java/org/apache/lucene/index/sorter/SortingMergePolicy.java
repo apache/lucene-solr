@@ -186,21 +186,21 @@ public final class SortingMergePolicy extends MergePolicy {
 
   @Override
   public MergeSpecification findMerges(MergeTrigger mergeTrigger,
-      SegmentInfos segmentInfos) throws IOException {
-    return sortedMergeSpecification(in.findMerges(mergeTrigger, segmentInfos));
+      SegmentInfos segmentInfos, IndexWriter writer) throws IOException {
+    return sortedMergeSpecification(in.findMerges(mergeTrigger, segmentInfos, writer));
   }
 
   @Override
   public MergeSpecification findForcedMerges(SegmentInfos segmentInfos,
-      int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge)
+      int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge, IndexWriter writer)
       throws IOException {
-    return sortedMergeSpecification(in.findForcedMerges(segmentInfos, maxSegmentCount, segmentsToMerge));
+    return sortedMergeSpecification(in.findForcedMerges(segmentInfos, maxSegmentCount, segmentsToMerge, writer));
   }
 
   @Override
-  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos)
+  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, IndexWriter writer)
       throws IOException {
-    return sortedMergeSpecification(in.findForcedDeletesMerges(segmentInfos));
+    return sortedMergeSpecification(in.findForcedDeletesMerges(segmentInfos, writer));
   }
 
   @Override
@@ -210,13 +210,8 @@ public final class SortingMergePolicy extends MergePolicy {
 
   @Override
   public boolean useCompoundFile(SegmentInfos segments,
-      SegmentCommitInfo newSegment) throws IOException {
-    return in.useCompoundFile(segments, newSegment);
-  }
-
-  @Override
-  public void setIndexWriter(IndexWriter writer) {
-    in.setIndexWriter(writer);
+      SegmentCommitInfo newSegment, IndexWriter writer) throws IOException {
+    return in.useCompoundFile(segments, newSegment, writer);
   }
 
   @Override

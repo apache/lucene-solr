@@ -38,25 +38,22 @@ public final class NoMergePolicy extends MergePolicy {
   public void close() {}
 
   @Override
-  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos) { return null; }
+  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, IndexWriter writer) { return null; }
 
   @Override
   public MergeSpecification findForcedMerges(SegmentInfos segmentInfos,
-             int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge) { return null; }
+             int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge, IndexWriter writer) { return null; }
 
   @Override
-  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos) { return null; }
+  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, IndexWriter writer) { return null; }
 
   @Override
-  public boolean useCompoundFile(SegmentInfos segments, SegmentCommitInfo newSegment) {
+  public boolean useCompoundFile(SegmentInfos segments, SegmentCommitInfo newSegment, IndexWriter writer) {
     return newSegment.info.getUseCompoundFile();
   }
 
   @Override
-  public void setIndexWriter(IndexWriter writer) {}
-  
-  @Override
-  protected long size(SegmentCommitInfo info) throws IOException {
+  protected long size(SegmentCommitInfo info, IndexWriter writer) throws IOException {
     return Long.MAX_VALUE;
   }
 
