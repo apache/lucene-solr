@@ -55,39 +55,44 @@ public final class RandomMergePolicy extends MergePolicy {
              inner.getClass(), inner);
   }
 
+  @Override
   public void close() {
     inner.close();
   }
 
-  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos) 
+  @Override
+  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, IndexWriter writer) 
     throws IOException {
 
-    return inner.findForcedDeletesMerges(segmentInfos);
+    return inner.findForcedDeletesMerges(segmentInfos, writer);
   }
+
+  @Override
   public MergeSpecification findForcedMerges(SegmentInfos segmentInfos, 
                                              int maxSegmentCount, 
-                                             Map<SegmentCommitInfo,Boolean> segmentsToMerge) 
+                                             Map<SegmentCommitInfo,Boolean> segmentsToMerge,
+                                             IndexWriter writer) 
     throws IOException {
     
-    return inner.findForcedMerges(segmentInfos, maxSegmentCount, segmentsToMerge);
+    return inner.findForcedMerges(segmentInfos, maxSegmentCount, segmentsToMerge, writer);
   }
 
+  @Override
   public MergeSpecification findMerges(MergeTrigger mergeTrigger, 
-                                       SegmentInfos segmentInfos)
+                                       SegmentInfos segmentInfos,
+                                       IndexWriter writer)
     throws IOException {
 
-    return inner.findMerges(mergeTrigger, segmentInfos);
+    return inner.findMerges(mergeTrigger, segmentInfos, writer);
   }
 
-  public void setIndexWriter(IndexWriter writer) {
-    inner.setIndexWriter(writer);
-  }
-
+  @Override
   public boolean useCompoundFile(SegmentInfos infos,
-                                 SegmentCommitInfo mergedInfo)
+                                 SegmentCommitInfo mergedInfo,
+                                 IndexWriter writer)
     throws IOException {
     
-    return inner.useCompoundFile(infos, mergedInfo);
+    return inner.useCompoundFile(infos, mergedInfo, writer);
   }
 
 }

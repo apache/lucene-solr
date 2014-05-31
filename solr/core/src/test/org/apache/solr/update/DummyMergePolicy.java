@@ -30,6 +30,5 @@ class DummyMergePolicy extends LogByteSizeMergePolicy {
 
   public DummyMergePolicy(IndexWriter writer) {
     super();
-    setIndexWriter(writer);
   }
 }
