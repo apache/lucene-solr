@@ -69,18 +69,12 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
   }
 
   @Override
-  public void setIndexWriter(IndexWriter writer) {
-    super.setIndexWriter(writer);
-    base.setIndexWriter(writer);
+  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, IndexWriter writer) throws IOException {
+    return base.findMerges(null, segmentInfos, writer);
   }
   
   @Override
-  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos) throws IOException {
-    return base.findMerges(null, segmentInfos);
-  }
-  
-  @Override
-  public MergeSpecification findForcedMerges(SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge) throws IOException {
+  public MergeSpecification findForcedMerges(SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge, IndexWriter writer) throws IOException {
     // first find all old segments
     final Map<SegmentCommitInfo,Boolean> oldSegments = new HashMap<>();
     for (final SegmentCommitInfo si : segmentInfos) {
@@ -90,14 +84,14 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
       }
     }
     
-    if (verbose()) {
-      message("findForcedMerges: segmentsToUpgrade=" + oldSegments);
+    if (verbose(writer)) {
+      message("findForcedMerges: segmentsToUpgrade=" + oldSegments, writer);
     }
       
     if (oldSegments.isEmpty())
       return null;
 
-    MergeSpecification spec = base.findForcedMerges(segmentInfos, maxSegmentCount, oldSegments);
+    MergeSpecification spec = base.findForcedMerges(segmentInfos, maxSegmentCount, oldSegments, writer);
     
     if (spec != null) {
       // remove all segments that are in merge specification from oldSegments,
@@ -109,9 +103,9 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
     }
 
     if (!oldSegments.isEmpty()) {
-      if (verbose()) {
+      if (verbose(writer)) {
         message("findForcedMerges: " +  base.getClass().getSimpleName() +
-        " does not want to merge all old segments, merge remaining ones into new segment: " + oldSegments);
+        " does not want to merge all old segments, merge remaining ones into new segment: " + oldSegments, writer);
       }
       final List<SegmentCommitInfo> newInfos = new ArrayList<>();
       for (final SegmentCommitInfo si : segmentInfos) {
@@ -130,13 +124,13 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
   }
   
   @Override
-  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos) throws IOException {
-    return base.findForcedDeletesMerges(segmentInfos);
+  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, IndexWriter writer) throws IOException {
+    return base.findForcedDeletesMerges(segmentInfos, writer);
   }
   
   @Override
-  public boolean useCompoundFile(SegmentInfos segments, SegmentCommitInfo newSegment) throws IOException {
-    return base.useCompoundFile(segments, newSegment);
+  public boolean useCompoundFile(SegmentInfos segments, SegmentCommitInfo newSegment, IndexWriter writer) throws IOException {
+    return base.useCompoundFile(segments, newSegment, writer);
   }
   
   @Override
@@ -149,12 +143,11 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
     return "[" + getClass().getSimpleName() + "->" + base + "]";
   }
   
-  private boolean verbose() {
-    final IndexWriter w = writer.get();
-    return w != null && w.infoStream.isEnabled("UPGMP");
+  private boolean verbose(IndexWriter writer) {
+    return writer != null && writer.infoStream.isEnabled("UPGMP");
   }
 
-  private void message(String message) {
-    writer.get().infoStream.message("UPGMP", message);
+  private void message(String message, IndexWriter writer) {
+    writer.infoStream.message("UPGMP", message);
   }
 }

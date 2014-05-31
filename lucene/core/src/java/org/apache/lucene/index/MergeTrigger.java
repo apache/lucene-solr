@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 /**
  * MergeTrigger is passed to
- * {@link org.apache.lucene.index.MergePolicy#findMerges(MergeTrigger, org.apache.lucene.index.SegmentInfos)} to indicate the
+ * {@link org.apache.lucene.index.MergePolicy#findMerges(MergeTrigger, org.apache.lucene.index.SegmentInfos, IndexWriter)} to indicate the
  * event that triggered the merge.
  */
 public enum MergeTrigger {

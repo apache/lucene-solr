@@ -45,6 +45,10 @@ Changes in Backwards Compatibility Policy
 
 API Changes
 
+* LUCENE-5711: MergePolicy accepts an IndexWriter instance
+  on each method rather than holding state against a single
+  IndexWriter instance. (Simon Willnauer)
+
 * LUCENE-5582: Deprecate IndexOutput.length (just use
   IndexOutput.getFilePointer instead) and IndexOutput.setLength.
   (Mike McCandless)

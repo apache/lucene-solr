@@ -43,8 +43,8 @@ public class LogByteSizeMergePolicy extends LogMergePolicy {
   }
   
   @Override
-  protected long size(SegmentCommitInfo info) throws IOException {
-    return sizeBytes(info);
+  protected long size(SegmentCommitInfo info, IndexWriter writer) throws IOException {
+    return sizeBytes(info, writer);
   }
 
   /** <p>Determines the largest segment (measured by total
