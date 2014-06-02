@@ -123,4 +123,21 @@ public class TestNRTCachingDirectory extends BaseDirectoryTestCase {
     writer.close();
     cachedFSDir.close();
   }
+
+  // LUCENE-5724
+  public void testLargeCFS() throws IOException {
+    Directory dir = new NRTCachingDirectory(newFSDirectory(createTempDir()), 2.0, 25.0);
+    IOContext context = new IOContext(new FlushInfo(0, 512*1024*1024));
+    IndexOutput out = dir.createOutput("big.bin", context);
+    byte[] bytes = new byte[512];
+    for(int i=0;i<1024*1024;i++) {
+      out.writeBytes(bytes, 0, bytes.length);
+    }
+    out.close();
+
+    Directory cfsDir = new CompoundFileDirectory(dir, "big.cfs", context, true);
+    dir.copy(cfsDir, "big.bin", "big.bin", context);
+    cfsDir.close();
+    dir.close();
+  }
 }
