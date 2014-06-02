@@ -22,6 +22,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.util.stats.TimerContext;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -118,7 +119,39 @@ public class DistributedQueue {
     
     return orderedChildren;
   }
-  
+
+
+  /**
+   * Returns true if the queue contains a task with the specified async id.
+   */
+  public boolean containsTaskWithRequestId(String requestId)
+      throws KeeperException, InterruptedException {
+
+    List<String> childNames = null;
+    try {
+      childNames = zookeeper.getChildren(dir, null, true);
+    } catch (KeeperException.NoNodeException e) {
+      throw e;
+    }
+
+    for (String childName : childNames) {
+      if (childName != null) {
+        try {
+          ZkNodeProps message = ZkNodeProps.load(zookeeper.getData(dir + "/" + childName, null, null, true));
+          if (message.containsKey(OverseerCollectionProcessor.ASYNC)) {
+            LOG.info(">>>> {}", message.get(OverseerCollectionProcessor.ASYNC));
+            if(message.get(OverseerCollectionProcessor.ASYNC).equals(requestId)) return true;
+          }
+        } catch (KeeperException.NoNodeException e) {
+          // Another client removed the node first, try next
+        }
+      }
+    }
+
+    return false;
+  }
+
+
   /**
    * Return the head of the queue without modifying the queue.
    * 

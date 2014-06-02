@@ -179,6 +179,9 @@ Other Changes
 
 * SOLR-6116: Refactor DocRouter.getDocRouter to accept routerName as a String. (shalin)
 
+* SOLR-6026: REQUESTSTATUS Collection API now also checks for submitted tasks which are
+  yet to begin execution.
+
 Optimizations
 ----------------------
 

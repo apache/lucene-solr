@@ -55,7 +55,7 @@ public class AsyncMigrateRouteKeyTest extends MigrateRouteKeyTest {
     params.set(OverseerCollectionProcessor.REQUESTID, asyncId);
     // This task takes long enough to run. Also check for the current state of the task to be running.
     message = sendStatusRequestWithRetry(params, 2);
-    assertEquals("found " + asyncId + " in submitted tasks", message);
+    assertEquals("found " + asyncId + " in running tasks", message);
     // Now wait until the task actually completes successfully/fails.
     message = sendStatusRequestWithRetry(params, 20);
     assertEquals("Task " + asyncId + " not found in completed tasks.",

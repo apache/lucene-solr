@@ -64,6 +64,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
     testParallelCollectionAPICalls();
     testTaskExclusivity();
+    testDeduplicationOfSubmittedTasks();
     testLongAndShortRunningParallelApiCalls();
   }
 
@@ -139,6 +140,25 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
     }
   }
 
+  private void testDeduplicationOfSubmittedTasks() throws IOException, SolrServerException {
+    SolrServer server = createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(0)));
+    CollectionAdminRequest.createCollection("ocptest_shardsplit2", 4, "conf1", server, "3000");
+
+    CollectionAdminRequest.splitShard("ocptest_shardsplit2", SHARD1, server, "3001");
+    CollectionAdminRequest.splitShard("ocptest_shardsplit2", SHARD2, server, "3002");
+
+    // Now submit another task with the same id. At this time, hopefully the previous 2002 should still be in the queue.
+    CollectionAdminResponse response = CollectionAdminRequest.splitShard("ocptest_shardsplit2", SHARD1, server, "3002");
+    NamedList r = response.getResponse();
+    assertEquals("Duplicate request was supposed to exist but wasn't found. De-duplication of submitted task failed.",
+        "Task with the same requestid already exists.", r.get("error"));
+
+    for (int i=3001;i<=3002;i++) {
+      String state = getRequestStateAfterCompletion(i + "", 30, server);
+      assertTrue("Task " + i + " did not complete, final state: " + state,state.equals("completed"));
+    }
+  }
+
   private void testLongAndShortRunningParallelApiCalls() throws InterruptedException, IOException, SolrServerException {
 
     Thread indexThread = new Thread() {
@@ -158,17 +178,14 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
     indexThread.start();
 
     try {
-      Thread.sleep(5000);
 
       SolrServer server = createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(0)));
       CollectionAdminRequest.splitShard("collection1", SHARD1, server, "2000");
 
       String state = getRequestState("2000", server);
-      while (!state.equals("running")) {
+      while (state.equals("submitted")) {
         state = getRequestState("2000", server);
-        if (state.equals("completed") || state.equals("failed"))
-          break;
-        Thread.sleep(100);
+        Thread.sleep(10);
       }
       assertTrue("SplitShard task [2000] was supposed to be in [running] but isn't. It is [" + state + "]", state.equals("running"));
 
