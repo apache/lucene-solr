@@ -58,13 +58,16 @@ import org.apache.lucene.store.DataOutput;
  * @lucene.internal
  */
 public final class BlockPackedWriter extends AbstractBlockPackedWriter {
-
+  final float acceptableOverheadRatio;
+  
   /**
    * Sole constructor.
    * @param blockSize the number of values of a single block, must be a power of 2
+   * @param acceptableOverheadRatio an acceptable overhead ratio per value
    */
-  public BlockPackedWriter(DataOutput out, int blockSize) {
+  public BlockPackedWriter(DataOutput out, int blockSize, float acceptableOverheadRatio) {
     super(out, blockSize);
+    this.acceptableOverheadRatio = acceptableOverheadRatio;
   }
 
   protected void flush() throws IOException {
@@ -76,7 +79,8 @@ public final class BlockPackedWriter extends AbstractBlockPackedWriter {
     }
 
     final long delta = max - min;
-    final int bitsRequired = delta < 0 ? 64 : delta == 0L ? 0 : PackedInts.bitsRequired(delta);
+    int bitsRequired = delta < 0 ? 64 : delta == 0L ? 0 : PackedInts.bitsRequired(delta);
+    bitsRequired = PackedInts.fastestDirectBits(bitsRequired, acceptableOverheadRatio);
     if (bitsRequired == 64) {
       // no need to delta-encode
       min = 0L;

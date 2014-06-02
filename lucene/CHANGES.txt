@@ -126,6 +126,8 @@ Optimizations
 * LUCENE-5694: Don't score() subscorers in DisjunctionSumScorer or 
   DisjunctionMaxScorer unless score() is called.  (Robert Muir)
 
+* LUCENE-5720: Optimize DirectPackedReader's decompression. (Robert Muir)
+
 Bug fixes
 
 * LUCENE-5673: MMapDirectory: Work around a "bug" in the JDK that throws
