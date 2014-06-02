@@ -25,6 +25,7 @@ import static org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer.GCD_CO
 import static org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer.SORTED_SET_SINGLE_VALUED_SORTED;
 import static org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer.SORTED_SET_WITH_ADDRESSES;
 import static org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer.TABLE_COMPRESSED;
+import static org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer.BITPACK_COMPRESSED;
 import static org.apache.lucene.codecs.lucene45.Lucene45DocValuesFormat.VERSION_SORTED_SET_SINGLE_VALUE_OPTIMIZED;
 
 import java.io.Closeable; // javadocs
@@ -264,6 +265,9 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
           entry.table[i] = meta.readLong();
         }
         break;
+      case BITPACK_COMPRESSED:
+        entry.bitsRequired = meta.readVInt();
+        break;
       case DELTA_COMPRESSED:
         break;
       default:
@@ -339,6 +343,14 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
       case DELTA_COMPRESSED:
         final BlockPackedReader reader = new BlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, entry.count, true);
         return reader;
+      case BITPACK_COMPRESSED:
+        final PackedInts.Reader bits = PackedInts.getDirectReaderNoHeader(data, PackedInts.Format.PACKED, entry.packedIntsVersion, (int) entry.count, entry.bitsRequired);
+        return new LongValues() {
+          @Override
+          public long get(long id) {
+            return bits.get((int) id) - 1;
+          }
+        };
       case GCD_COMPRESSED:
         final long min = entry.minValue;
         final long mult = entry.gcd;
@@ -484,10 +496,7 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
     final int valueCount = (int) binaries.get(field.number).count;
     final BinaryDocValues binary = getBinary(field);
     NumericEntry entry = ords.get(field.number);
-    IndexInput data = this.data.clone();
-    data.seek(entry.offset);
-    final BlockPackedReader ordinals = new BlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, entry.count, true);
-    
+    final LongValues ordinals = getNumeric(entry);
     return new SortedDocValues() {
 
       @Override
@@ -685,6 +694,8 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
     public long count;
     /** packed ints blocksize */
     public int blockSize;
+    
+    int bitsRequired;
     
     long minValue;
     long gcd;

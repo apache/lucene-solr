@@ -241,7 +241,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
 
       vectorsStream.writeVInt(PackedInts.VERSION_CURRENT);
       vectorsStream.writeVInt(chunkSize);
-      writer = new BlockPackedWriter(vectorsStream, BLOCK_SIZE);
+      writer = new BlockPackedWriter(vectorsStream, BLOCK_SIZE, PackedInts.COMPACT);
 
       positionsBuf = new int[1024];
       startOffsetsBuf = new int[1024];

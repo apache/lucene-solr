@@ -51,6 +51,8 @@ public class Lucene45DocValuesConsumer extends DocValuesConsumer implements Clos
   public static final int GCD_COMPRESSED = 1;
   /** Compressed by giving IDs to unique values. */
   public static final int TABLE_COMPRESSED = 2;
+  /** Compressed using just bitpacked integers */
+  public static final int BITPACK_COMPRESSED = 3;
   
   /** Uncompressed binary, written directly (fixed length). */
   public static final int BINARY_FIXED_UNCOMPRESSED = 0;
@@ -99,6 +101,7 @@ public class Lucene45DocValuesConsumer extends DocValuesConsumer implements Clos
     long maxValue = Long.MIN_VALUE;
     long gcd = 0;
     boolean missing = false;
+    boolean block = true;
     // TODO: more efficient?
     HashSet<Long> uniqueValues = null;
     if (optimizeStorage) {
@@ -138,8 +141,18 @@ public class Lucene45DocValuesConsumer extends DocValuesConsumer implements Clos
         ++count;
       }
     } else {
-      for (@SuppressWarnings("unused") Number nv : values) {
+      for (Number nv : values) {
+        long value = nv.longValue();
+        assert value >= -1;
+        minValue = Math.min(minValue, value);
+        maxValue = Math.max(maxValue, value);
         ++count;
+      }
+
+      // packed ints doesnt support valueCount > maxValue, and 
+      // we must represent missing ordinal (-1)
+      if (count < Integer.MAX_VALUE && maxValue < Long.MAX_VALUE) {
+        block = false;
       }
     }
     
@@ -152,6 +165,8 @@ public class Lucene45DocValuesConsumer extends DocValuesConsumer implements Clos
       format = TABLE_COMPRESSED;
     } else if (gcd != 0 && gcd != 1) {
       format = GCD_COMPRESSED;
+    } else if (block == false) {
+      format = BITPACK_COMPRESSED;
     } else {
       format = DELTA_COMPRESSED;
     }
@@ -173,7 +188,7 @@ public class Lucene45DocValuesConsumer extends DocValuesConsumer implements Clos
       case GCD_COMPRESSED:
         meta.writeLong(minValue);
         meta.writeLong(gcd);
-        final BlockPackedWriter quotientWriter = new BlockPackedWriter(data, BLOCK_SIZE);
+        final BlockPackedWriter quotientWriter = new BlockPackedWriter(data, BLOCK_SIZE, PackedInts.DEFAULT);
         for (Number nv : values) {
           long value = nv == null ? 0 : nv.longValue();
           quotientWriter.add((value - minValue) / gcd);
@@ -181,7 +196,7 @@ public class Lucene45DocValuesConsumer extends DocValuesConsumer implements Clos
         quotientWriter.finish();
         break;
       case DELTA_COMPRESSED:
-        final BlockPackedWriter writer = new BlockPackedWriter(data, BLOCK_SIZE);
+        final BlockPackedWriter writer = new BlockPackedWriter(data, BLOCK_SIZE, PackedInts.DEFAULT);
         for (Number nv : values) {
           writer.add(nv == null ? 0 : nv.longValue());
         }
@@ -201,6 +216,18 @@ public class Lucene45DocValuesConsumer extends DocValuesConsumer implements Clos
           ordsWriter.add(encode.get(nv == null ? 0 : nv.longValue()));
         }
         ordsWriter.finish();
+        break;
+      case BITPACK_COMPRESSED:
+        assert count > 0 && count < Integer.MAX_VALUE;
+        assert maxValue >= -1 && maxValue < Long.MAX_VALUE : maxValue;
+        int bpv = PackedInts.bitsRequired(maxValue+1);
+        bpv = PackedInts.fastestDirectBits(bpv, PackedInts.DEFAULT);
+        meta.writeVInt(bpv);
+        final PackedInts.Writer bitWriter = PackedInts.getWriterNoHeader(data, PackedInts.Format.PACKED, (int) count, bpv, PackedInts.DEFAULT_BUFFER_SIZE);
+        for (Number nv : values) {
+          bitWriter.add(nv.longValue()+1);
+        }
+        bitWriter.finish();
         break;
       default:
         throw new AssertionError();

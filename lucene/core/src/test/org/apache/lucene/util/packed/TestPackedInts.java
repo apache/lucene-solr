@@ -1123,7 +1123,7 @@ public class TestPackedInts extends LuceneTestCase {
   
       final Directory dir = newDirectory();
       final IndexOutput out = dir.createOutput("out.bin", IOContext.DEFAULT);
-      final BlockPackedWriter writer = new BlockPackedWriter(out, blockSize);
+      final BlockPackedWriter writer = new BlockPackedWriter(out, blockSize, PackedInts.COMPACT);
       for (int i = 0; i < valueCount; ++i) {
         assertEquals(i, writer.ord());
         writer.add(values[i]);
@@ -1247,7 +1247,7 @@ public class TestPackedInts extends LuceneTestCase {
     final int blockSize = 1 << TestUtil.nextInt(random(), 20, 22);
     final Directory dir = newDirectory();
     final IndexOutput out = dir.createOutput("out.bin", IOContext.DEFAULT);
-    final BlockPackedWriter writer = new BlockPackedWriter(out, blockSize);
+    final BlockPackedWriter writer = new BlockPackedWriter(out, blockSize, PackedInts.COMPACT);
     long value = random().nextInt() & 0xFFFFFFFFL;
     long valueOffset = TestUtil.nextLong(random(), 0, valueCount - 1);
     for (long i = 0; i < valueCount; ) {

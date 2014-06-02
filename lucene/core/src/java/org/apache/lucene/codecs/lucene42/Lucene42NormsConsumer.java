@@ -153,7 +153,7 @@ class Lucene42NormsConsumer extends DocValuesConsumer {
       data.writeLong(gcd);
       data.writeVInt(BLOCK_SIZE);
 
-      final BlockPackedWriter writer = new BlockPackedWriter(data, BLOCK_SIZE);
+      final BlockPackedWriter writer = new BlockPackedWriter(data, BLOCK_SIZE, PackedInts.DEFAULT);
       for (Number nv : values) {
         long value = nv == null ? 0 : nv.longValue();
         writer.add((value - minValue) / gcd);
@@ -165,7 +165,7 @@ class Lucene42NormsConsumer extends DocValuesConsumer {
       meta.writeVInt(PackedInts.VERSION_CURRENT);
       data.writeVInt(BLOCK_SIZE);
 
-      final BlockPackedWriter writer = new BlockPackedWriter(data, BLOCK_SIZE);
+      final BlockPackedWriter writer = new BlockPackedWriter(data, BLOCK_SIZE, PackedInts.DEFAULT);
       for (Number nv : values) {
         writer.add(nv == null ? 0 : nv.longValue());
       }
