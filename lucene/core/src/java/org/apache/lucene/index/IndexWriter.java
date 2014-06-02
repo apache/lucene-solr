@@ -261,6 +261,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
   private List<MergePolicy.OneMerge> mergeExceptions = new ArrayList<>();
   private long mergeGen;
   private boolean stopMerges;
+  private boolean didMessageState;
 
   final AtomicInteger flushCount = new AtomicInteger();
   final AtomicInteger flushDeletesCount = new AtomicInteger();
@@ -842,7 +843,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
   }
 
   private void messageState() {
-    if (infoStream.isEnabled("IW")) {
+    if (infoStream.isEnabled("IW") && didMessageState == false) {
+      didMessageState = true;
       infoStream.message("IW", "\ndir=" + directory + "\n" +
             "index=" + segString() + "\n" +
             "version=" + Constants.LUCENE_VERSION + "\n" +
@@ -1885,6 +1887,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
 
   private synchronized boolean updatePendingMerges(MergeTrigger trigger, int maxNumSegments)
     throws IOException {
+
+    // In case infoStream was disabled on init, but then enabled at some
+    // point, try again to log the config here:
+    messageState();
+
     assert maxNumSegments == -1 || maxNumSegments > 0;
     assert trigger != null;
     if (stopMerges) {
