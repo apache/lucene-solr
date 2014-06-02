@@ -91,11 +91,11 @@ final class CompoundFileWriter implements Closeable{
     
   }
   
-  private synchronized IndexOutput getOutput() throws IOException {
+  private synchronized IndexOutput getOutput(IOContext context) throws IOException {
     if (dataOut == null) {
       boolean success = false;
       try {
-        dataOut = directory.createOutput(dataFileName, IOContext.DEFAULT);
+        dataOut = directory.createOutput(dataFileName, context);
         CodecUtil.writeHeader(dataOut, DATA_CODEC, VERSION_CURRENT);
         success = true;
       } finally {
@@ -138,8 +138,10 @@ final class CompoundFileWriter implements Closeable{
         throw new IllegalStateException("CFS has pending open files");
       }
       closed = true;
-      // open the compound stream
-      getOutput();
+      // open the compound stream; we can safely use IOContext.DEFAULT
+      // here because this will only open the output if no file was
+      // added to the CFS
+      getOutput(IOContext.DEFAULT);
       assert dataOut != null;
       CodecUtil.writeFooter(dataOut);
       success = true;
@@ -232,7 +234,7 @@ final class CompoundFileWriter implements Closeable{
       final DirectCFSIndexOutput out;
 
       if ((outputLocked = outputTaken.compareAndSet(false, true))) {
-        out = new DirectCFSIndexOutput(getOutput(), entry, false);
+        out = new DirectCFSIndexOutput(getOutput(context), entry, false);
       } else {
         entry.dir = this.directory;
         out = new DirectCFSIndexOutput(directory.createOutput(name, context), entry,
@@ -261,7 +263,7 @@ final class CompoundFileWriter implements Closeable{
       try {
         while (!pendingEntries.isEmpty()) {
           FileEntry entry = pendingEntries.poll();
-          copyFileEntry(getOutput(), entry);
+          copyFileEntry(getOutput(new IOContext(new FlushInfo(0, entry.length))), entry);
           entries.put(entry.file, entry);
         }
       } finally {
