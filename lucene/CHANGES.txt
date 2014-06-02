@@ -256,6 +256,11 @@ Bug fixes
   exception message when an immense term is hit during indexing (Lee
   Hinman via Mike McCandless)
 
+* LUCENE-5724: CompoundFileWriter was failing to pass through the
+  IOContext in some cases, causing NRTCachingDirectory to cache
+  compound files when it shouldn't, then causing OOMEs.  (Mike
+  McCandless)
+
 Test Framework
 
 * LUCENE-5622: Fail tests if they print over the given limit of bytes to 
