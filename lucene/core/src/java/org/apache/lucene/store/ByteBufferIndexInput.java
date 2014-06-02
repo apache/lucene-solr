@@ -46,7 +46,7 @@ abstract class ByteBufferIndexInput extends IndexInput {
   private long length;
   private String sliceDescription;
 
-  private int curBufIndex;
+  private int curBufIndex = -1;
 
   private ByteBuffer curBuf; // redundant for speed: buffers[curBufIndex]
 
@@ -163,11 +163,15 @@ abstract class ByteBufferIndexInput extends IndexInput {
     // in case pos + offset overflows.
     final int bi = (int) (pos >> chunkSizePower);
     try {
-      final ByteBuffer b = buffers[bi];
-      b.position((int) (pos & chunkSizeMask));
-      // write values, on exception all is unchanged
-      this.curBufIndex = bi;
-      this.curBuf = b;
+      if (bi == curBufIndex) {
+        curBuf.position((int) (pos & chunkSizeMask));
+      } else {
+        final ByteBuffer b = buffers[bi];
+        b.position((int) (pos & chunkSizeMask));
+        // write values, on exception all is unchanged
+        this.curBufIndex = bi;
+        this.curBuf = b;
+      }
     } catch (ArrayIndexOutOfBoundsException aioobe) {
       throw new EOFException("seek past EOF: " + this);
     } catch (IllegalArgumentException iae) {
@@ -228,6 +232,7 @@ abstract class ByteBufferIndexInput extends IndexInput {
     clone.buffers = buildSlice(buffers, offset, length);
     clone.offset = (int) (offset & chunkSizeMask);
     clone.length = length;
+    clone.curBufIndex = -1;
 
     // register the new clone in our clone list to clean it up on closing:
     if (clones != null) {
