@@ -327,8 +327,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
           System.out.println("TEST: got expected exc:");
           e.printStackTrace(System.out);
         }
-        // Make sure exc message includes a path=
-        assertTrue("got exc message: " + e.getMessage(), e.getMessage().indexOf("path=\"") != -1);
+        // TODO: test *SOMEWHERE ELSE* that exc message includes a path=
       } finally {
         // we should fail to open IW, and so it should be null when we get here.
         // However, if the test fails (i.e., IW did not fail on open), we need
