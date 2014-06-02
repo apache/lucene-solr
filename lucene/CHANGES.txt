@@ -221,6 +221,10 @@ Optimizations
 
 * LUCENE-5720: Optimize DirectPackedReader's decompression. (Robert Muir)
 
+* LUCENE-5722: Optimize ByteBufferIndexInput#seek() by specializing
+  implementations. This improves random access as used by docvalues codecs
+  if used with MMapDirectory.  (Robert Muir, Uwe Schindler)
+
 Bug fixes
 
 * LUCENE-5673: MMapDirectory: Work around a "bug" in the JDK that throws
