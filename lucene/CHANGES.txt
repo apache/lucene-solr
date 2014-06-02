@@ -77,9 +77,6 @@ API Changes
   takes the same selectors. Add helper methods to DocValues.java that are better 
   suited for search code (never return null, etc).  (Mike McCandless, Robert Muir)
 
-* LUCENE-4371: Removed IndexInputSlicer and Directory.createSlicer() and replaced
-  with IndexInput.slice(). (Robert Muir)
-
 * LUCENE-5678: IndexOutput no longer allows seeking, so it is no longer required
   to use RandomAccessFile to write Indexes. Lucene now uses standard FileOutputStream
   wrapped with OutputStreamIndexOutput to write index data. BufferedIndexOutput was
@@ -135,6 +132,9 @@ Changes in Backwards Compatibility Policy
 * LUCENE-5640: AttributeSource.AttributeFactory was moved to a
   top-level class: org.apache.lucene.util.AttributeFactory
   (Uwe Schindler, Robert Muir)
+
+* LUCENE-4371: Removed IndexInputSlicer and Directory.createSlicer() and replaced
+  with IndexInput.slice(). (Robert Muir)
 
 API Changes
 
