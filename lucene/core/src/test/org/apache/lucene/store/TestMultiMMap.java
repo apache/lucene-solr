@@ -26,7 +26,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.store.Directory.IndexInputSlicer;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TestUtil;
 
@@ -113,9 +112,9 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
     io.writeInt(1);
     io.writeInt(2);
     io.close();
-    IndexInputSlicer slicer = mmapDir.createSlicer("bytes", newIOContext(random()));
-    IndexInput one = slicer.openSlice("first int", 0, 4);
-    IndexInput two = slicer.openSlice("second int", 4, 4);
+    IndexInput slicer = mmapDir.openInput("bytes", newIOContext(random()));
+    IndexInput one = slicer.slice("first int", 0, 4);
+    IndexInput two = slicer.slice("second int", 4, 4);
     IndexInput three = one.clone(); // clone of clone
     IndexInput four = two.clone(); // clone of clone
     slicer.close();
@@ -158,9 +157,9 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
     io.writeInt(1);
     io.writeInt(2);
     io.close();
-    IndexInputSlicer slicer = mmapDir.createSlicer("bytes", newIOContext(random()));
-    IndexInput one = slicer.openSlice("first int", 0, 4);
-    IndexInput two = slicer.openSlice("second int", 4, 4);
+    IndexInput slicer = mmapDir.openInput("bytes", newIOContext(random()));
+    IndexInput one = slicer.slice("first int", 0, 4);
+    IndexInput two = slicer.slice("second int", 4, 4);
     one.close();
     try {
       one.readInt();
@@ -170,7 +169,7 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
     }
     assertEquals(2, two.readInt());
     // reopen a new slice "one":
-    one = slicer.openSlice("first int", 0, 4);
+    one = slicer.slice("first int", 0, 4);
     assertEquals(1, one.readInt());
     one.close();
     two.close();
@@ -195,8 +194,8 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
       MMapDirectory mmapDir = new MMapDirectory(createTempDir("testSeekSliceZero"), null, 1<<i);
       IndexOutput io = mmapDir.createOutput("zeroBytes", newIOContext(random()));
       io.close();
-      IndexInputSlicer slicer = mmapDir.createSlicer("zeroBytes", newIOContext(random()));
-      IndexInput ii = slicer.openSlice("zero-length slice", 0, 0);
+      IndexInput slicer = mmapDir.openInput("zeroBytes", newIOContext(random()));
+      IndexInput ii = slicer.slice("zero-length slice", 0, 0);
       ii.seek(0L);
       ii.close();
       slicer.close();
@@ -230,8 +229,8 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
       random().nextBytes(bytes);
       io.writeBytes(bytes, bytes.length);
       io.close();
-      IndexInputSlicer slicer = mmapDir.createSlicer("bytes", newIOContext(random()));
-      IndexInput ii = slicer.openSlice("full slice", 0, bytes.length);
+      IndexInput slicer = mmapDir.openInput("bytes", newIOContext(random()));
+      IndexInput ii = slicer.slice("full slice", 0, bytes.length);
       byte actual[] = new byte[1<<i];
       ii.readBytes(actual, 0, actual.length);
       assertEquals(new BytesRef(bytes), new BytesRef(actual));
@@ -282,11 +281,11 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
       ii.readBytes(actual, 0, actual.length);
       ii.close();
       assertEquals(new BytesRef(bytes), new BytesRef(actual));
-      IndexInputSlicer slicer = mmapDir.createSlicer("bytes", newIOContext(random()));
+      IndexInput slicer = mmapDir.openInput("bytes", newIOContext(random()));
       for (int sliceStart = 0; sliceStart < bytes.length; sliceStart++) {
         for (int sliceLength = 0; sliceLength < bytes.length - sliceStart; sliceLength++) {
           byte slice[] = new byte[sliceLength];
-          IndexInput input = slicer.openSlice("bytesSlice", sliceStart, slice.length);
+          IndexInput input = slicer.slice("bytesSlice", sliceStart, slice.length);
           input.readBytes(slice, 0, slice.length);
           input.close();
           assertEquals(new BytesRef(bytes, sliceStart, sliceLength), new BytesRef(slice));

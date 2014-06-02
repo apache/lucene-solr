@@ -75,9 +75,4 @@ public class BaseDirectoryWrapper extends FilterDirectory {
   public void copy(Directory to, String src, String dest, IOContext context) throws IOException {
     in.copy(to, src, dest, context);
   }
-
-  @Override
-  public IndexInputSlicer createSlicer(String name, IOContext context) throws IOException {
-    return in.createSlicer(name, context);
-  }  
 }

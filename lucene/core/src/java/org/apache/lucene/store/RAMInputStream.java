@@ -118,4 +118,10 @@ public class RAMInputStream extends IndexInput implements Cloneable {
     }
     bufferPosition = (int) (pos % BUFFER_SIZE);
   }
+
+  // TODO: improve this, kinda stupid
+  @Override
+  public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
+    return BufferedIndexInput.wrap(sliceDescription, this, offset, length);
+  }
 }

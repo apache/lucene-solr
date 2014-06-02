@@ -87,7 +87,7 @@ public final class CompoundFileDirectory extends BaseDirectory {
   private final boolean openForWrite;
   private static final Map<String,FileEntry> SENTINEL = Collections.emptyMap();
   private final CompoundFileWriter writer;
-  private final IndexInputSlicer handle;
+  private final IndexInput handle;
   
   /**
    * Create a new CompoundFileDirectory.
@@ -100,7 +100,7 @@ public final class CompoundFileDirectory extends BaseDirectory {
     this.openForWrite = openForWrite;
     if (!openForWrite) {
       boolean success = false;
-      handle = directory.createSlicer(fileName, context);
+      handle = directory.openInput(fileName, context);
       try {
         this.entries = readEntries(handle, directory, fileName);
         success = true;
@@ -127,7 +127,7 @@ public final class CompoundFileDirectory extends BaseDirectory {
 
   /** Helper method that reads CFS entries from an input stream */
   private static final Map<String, FileEntry> readEntries(
-      IndexInputSlicer handle, Directory dir, String name) throws IOException {
+      IndexInput handle, Directory dir, String name) throws IOException {
     IndexInput stream = null; 
     ChecksumIndexInput entriesStream = null;
     Map<String,FileEntry> mapping = null;
@@ -135,7 +135,7 @@ public final class CompoundFileDirectory extends BaseDirectory {
     // otherwise it's the count (pre-3.1 indexes)
     boolean success = false;
     try {
-      stream = handle.openFullSlice();
+      stream = handle.clone();
       final int firstInt = stream.readVInt();
       // impossible for 3.0 to have 63 files in a .cfs, CFS writer was not visible
       // and separate norms/etc are outside of cfs.
@@ -276,7 +276,7 @@ public final class CompoundFileDirectory extends BaseDirectory {
     if (entry == null) {
       throw new FileNotFoundException("No sub-file with id " + id + " found (fileName=" + name + " files: " + entries.keySet() + ")");
     }
-    return handle.openSlice(name, entry.offset, entry.length);
+    return handle.slice(name, entry.offset, entry.length);
   }
   
   /** Returns an array of strings, one for each file in the directory. */
@@ -350,33 +350,6 @@ public final class CompoundFileDirectory extends BaseDirectory {
   @Override
   public Lock makeLock(String name) {
     throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public IndexInputSlicer createSlicer(final String name, IOContext context)
-      throws IOException {
-    ensureOpen();
-    assert !openForWrite;
-    final String id = IndexFileNames.stripSegmentName(name);
-    final FileEntry entry = entries.get(id);
-    if (entry == null) {
-      throw new FileNotFoundException("No sub-file with id " + id + " found (fileName=" + name + " files: " + entries.keySet() + ")");
-    }
-    return new IndexInputSlicer() {
-      @Override
-      public void close() {
-      }
-      
-      @Override
-      public IndexInput openSlice(String sliceDescription, long offset, long length) throws IOException {
-        return handle.openSlice(sliceDescription, entry.offset + offset, length);
-      }
-
-      @Override
-      public IndexInput openFullSlice() throws IOException {
-        return openSlice("full-slice", 0, entry.length);
-      }
-    };
   }
 
   @Override
