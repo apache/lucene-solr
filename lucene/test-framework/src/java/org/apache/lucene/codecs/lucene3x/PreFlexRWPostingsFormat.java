@@ -21,8 +21,12 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.LuceneTestCase;
 
 /** Codec, only for testing, that can write and read the
@@ -68,6 +72,17 @@ class PreFlexRWPostingsFormat extends Lucene3xPostingsFormat {
         }
 
         return unicodeSortOrder;
+      }
+
+      // we don't seek-on-write when testing
+      @Override
+      protected TermInfosReader newTermInfosReader(Directory dir, String name, FieldInfos fieldInfos, IOContext context, int indexDivisor) throws IOException {
+        return new TermInfosReader(dir, name, fieldInfos, context, indexDivisor) {
+          @Override
+          protected SegmentTermEnum newSegmentTermEnum(IndexInput input, FieldInfos fieldInfos, boolean isIndex) throws IOException {
+            return new PreflexRWSegmentTermEnum(input, fieldInfos, isIndex);
+          }
+        };
       }
     };
   }

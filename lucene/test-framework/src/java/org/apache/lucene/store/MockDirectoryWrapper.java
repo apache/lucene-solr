@@ -973,12 +973,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     }
 
     @Override
-    public void seek(long pos) throws IOException {
-      flush();
-      io.seek(pos);
-    }
-
-    @Override
     public void flush() throws IOException {
       try {
         super.flush();

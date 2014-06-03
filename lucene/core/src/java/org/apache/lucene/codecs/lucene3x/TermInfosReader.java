@@ -27,6 +27,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.DoubleBarrelLRUCache;
@@ -40,7 +41,7 @@ import org.apache.lucene.util.IOUtils;
  * @lucene.experimental
  */
 @Deprecated
-final class TermInfosReader implements Closeable {
+class TermInfosReader implements Closeable {
   private final Directory directory;
   private final String segment;
   private final FieldInfos fieldInfos;
@@ -111,7 +112,7 @@ final class TermInfosReader implements Closeable {
       segment = seg;
       fieldInfos = fis;
 
-      origEnum = new SegmentTermEnum(directory.openInput(IndexFileNames.segmentFileName(segment, "", Lucene3xPostingsFormat.TERMS_EXTENSION),
+      origEnum = newSegmentTermEnum(directory.openInput(IndexFileNames.segmentFileName(segment, "", Lucene3xPostingsFormat.TERMS_EXTENSION),
                                                          context), fieldInfos, false);
       size = origEnum.size;
 
@@ -121,7 +122,7 @@ final class TermInfosReader implements Closeable {
         totalIndexInterval = origEnum.indexInterval * indexDivisor;
 
         final String indexFileName = IndexFileNames.segmentFileName(segment, "", Lucene3xPostingsFormat.TERMS_INDEX_EXTENSION);
-        final SegmentTermEnum indexEnum = new SegmentTermEnum(directory.openInput(indexFileName,
+        final SegmentTermEnum indexEnum = newSegmentTermEnum(directory.openInput(indexFileName,
                                                                                    context), fieldInfos, true);
 
         try {
@@ -147,6 +148,11 @@ final class TermInfosReader implements Closeable {
         close();
       }
     }
+  }
+  
+  // only overridden for testing
+  protected SegmentTermEnum newSegmentTermEnum(IndexInput input, FieldInfos fieldInfos, boolean isIndex) throws IOException {
+    return new SegmentTermEnum(input, fieldInfos, isIndex);
   }
 
   public int getSkipInterval() {

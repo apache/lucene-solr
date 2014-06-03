@@ -43,16 +43,8 @@ public abstract class IndexOutput extends DataOutput implements Closeable {
 
   /** Returns the current position in this file, where the next write will
    * occur.
-   * @see #seek(long)
    */
   public abstract long getFilePointer();
-
-  /** Sets current position in this file, where the next write will occur.
-   * @see #getFilePointer()
-   * @deprecated (4.1) This method will be removed in Lucene 5.0
-   */
-  @Deprecated
-  public abstract void seek(long pos) throws IOException;
 
   /** Returns the current checksum of bytes written so far */
   public abstract long getChecksum() throws IOException;

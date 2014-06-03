@@ -82,7 +82,7 @@ class Lucene3xFields extends FieldsProducer {
     
     boolean success = false;
     try {
-      TermInfosReader r = new TermInfosReader(dir, info.name, fieldInfos, context, indexDivisor);    
+      TermInfosReader r = newTermInfosReader(dir, info.name, fieldInfos, context, indexDivisor);    
       if (indexDivisor == -1) {
         tisNoIndex = r;
       } else {
@@ -132,6 +132,11 @@ class Lucene3xFields extends FieldsProducer {
   // index, using the test-only PreFlexRW.
   protected boolean sortTermsByUnicode() {
     return true;
+  }
+  
+  // only overridden during testing
+  protected TermInfosReader newTermInfosReader(Directory dir, String name, FieldInfos fieldInfos, IOContext context, int indexDivisor) throws IOException {
+    return new TermInfosReader(dir, name, fieldInfos, context, indexDivisor);    
   }
 
   @Override

@@ -342,12 +342,6 @@ final class CompoundFileWriter implements Closeable{
     }
 
     @Override
-    public void seek(long pos) throws IOException {
-      assert !closed;
-      delegate.seek(offset + pos);
-    }
-
-    @Override
     public long length() throws IOException {
       assert !closed;
       return delegate.length() - offset;

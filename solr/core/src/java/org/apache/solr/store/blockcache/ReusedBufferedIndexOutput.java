@@ -98,23 +98,6 @@ public abstract class ReusedBufferedIndexOutput extends IndexOutput {
   protected abstract void seekInternal(long pos) throws IOException;
   
   @Override
-  public void seek(long pos) throws IOException {
-    if (pos > fileLength) {
-      fileLength = pos;
-    }
-
-    if (pos >= bufferStart && pos < (bufferStart + bufferLength))
-      bufferPosition = (int)(pos - bufferStart);  // seek within buffer
-    else {
-      flushBufferToCache();
-      bufferStart = pos;
-      bufferPosition = 0;
-      bufferLength = 0;
-      seekInternal(pos);
-    }
-  }
-  
-  @Override
   public long length() throws IOException {
     return fileLength;
   }

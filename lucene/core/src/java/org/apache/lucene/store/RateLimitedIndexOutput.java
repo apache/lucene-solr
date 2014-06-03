@@ -64,13 +64,6 @@ final class RateLimitedIndexOutput extends BufferedIndexOutput {
   }
 
   @Override
-  public void seek(long pos) throws IOException {
-    flush();
-    delegate.seek(pos);
-  }
-
-
-  @Override
   public void flush() throws IOException {
     try {
       super.flush();

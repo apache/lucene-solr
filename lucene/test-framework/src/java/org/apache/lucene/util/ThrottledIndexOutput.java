@@ -89,12 +89,6 @@ public class ThrottledIndexOutput extends IndexOutput {
   }
 
   @Override
-  public void seek(long pos) throws IOException {
-    sleep(seekDelayMillis);
-    delegate.seek(pos);
-  }
-
-  @Override
   public long length() throws IOException {
     return delegate.length();
   }

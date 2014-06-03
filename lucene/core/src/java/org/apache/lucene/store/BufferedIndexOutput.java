@@ -136,12 +136,6 @@ public abstract class BufferedIndexOutput extends IndexOutput {
   }
 
   @Override
-  public void seek(long pos) throws IOException {
-    flush();
-    bufferStart = pos;
-  }
-
-  @Override
   public abstract long length() throws IOException;
   
   /**

@@ -32,7 +32,7 @@ import org.apache.lucene.index.IndexFormatTooNewException;
  * @lucene.experimental */
 
 @Deprecated
-final class SegmentTermEnum implements Cloneable,Closeable {
+class SegmentTermEnum implements Cloneable,Closeable {
   private IndexInput input;
   FieldInfos fieldInfos;
   long size;
@@ -90,7 +90,7 @@ final class SegmentTermEnum implements Cloneable,Closeable {
       if (format < FORMAT_CURRENT)
         throw new IndexFormatTooNewException(input, format, FORMAT_MINIMUM, FORMAT_CURRENT);
 
-      size = input.readLong();                    // read the size
+      size = readSize(input);                    // read the size
       
       indexInterval = input.readInt();
       skipInterval = input.readInt();
@@ -98,6 +98,11 @@ final class SegmentTermEnum implements Cloneable,Closeable {
       assert indexInterval > 0: "indexInterval=" + indexInterval + " is negative; must be > 0";
       assert skipInterval > 0: "skipInterval=" + skipInterval + " is negative; must be > 0";
     }
+  }
+  
+  // only overridden for testing
+  protected long readSize(IndexInput input) throws IOException {
+    return input.readLong();
   }
 
   @Override

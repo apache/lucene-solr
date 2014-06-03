@@ -427,13 +427,6 @@ public abstract class FSDirectory extends BaseDirectory {
       }
     }
 
-    /** Random-access methods */
-    @Override
-    public void seek(long pos) throws IOException {
-      super.seek(pos);
-      file.seek(pos);
-    }
-
     @Override
     public long length() throws IOException {
       return file.length();

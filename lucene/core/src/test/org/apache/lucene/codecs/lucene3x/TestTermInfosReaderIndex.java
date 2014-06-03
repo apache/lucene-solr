@@ -102,10 +102,10 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
     String segmentFileName = IndexFileNames.segmentFileName(segment, "", Lucene3xPostingsFormat.TERMS_INDEX_EXTENSION);
     long tiiFileLength = directory.fileLength(segmentFileName);
     IndexInput input = directory.openInput(segmentFileName, newIOContext(random()));
-    termEnum = new SegmentTermEnum(directory.openInput(IndexFileNames.segmentFileName(segment, "", Lucene3xPostingsFormat.TERMS_EXTENSION), newIOContext(random())), fieldInfos, false);
+    termEnum = new PreflexRWSegmentTermEnum(directory.openInput(IndexFileNames.segmentFileName(segment, "", Lucene3xPostingsFormat.TERMS_EXTENSION), newIOContext(random())), fieldInfos, false);
     int totalIndexInterval = termEnum.indexInterval * indexDivisor;
     
-    SegmentTermEnum indexEnum = new SegmentTermEnum(input, fieldInfos, true);
+    SegmentTermEnum indexEnum = new PreflexRWSegmentTermEnum(input, fieldInfos, true);
     index = new TermInfosReaderIndex(indexEnum, indexDivisor, tiiFileLength, totalIndexInterval);
     indexEnum.close();
     input.close();

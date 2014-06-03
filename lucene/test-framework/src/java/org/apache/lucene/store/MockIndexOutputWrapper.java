@@ -147,11 +147,6 @@ public class MockIndexOutputWrapper extends IndexOutput {
   }
 
   @Override
-  public void seek(long pos) throws IOException {
-    delegate.seek(pos);
-  }
-
-  @Override
   public long length() throws IOException {
     return delegate.length();
   }

@@ -167,7 +167,6 @@ public class SlowRAMDirectory extends RAMDirectory {
       io.writeBytes(b, offset, length);
     }
     
-    @Deprecated @Override public void seek(long pos) throws IOException { io.seek(pos); }
     @Override public void close() throws IOException { io.close(); }
     @Override public void flush() throws IOException { io.flush(); }
     @Override public long getFilePointer() { return io.getFilePointer(); }
