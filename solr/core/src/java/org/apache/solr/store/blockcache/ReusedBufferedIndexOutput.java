@@ -95,8 +95,6 @@ public abstract class ReusedBufferedIndexOutput extends IndexOutput {
     return bufferStart + bufferPosition;
   }
   
-  protected abstract void seekInternal(long pos) throws IOException;
-  
   @Override
   public void writeByte(byte b) throws IOException {
     if (bufferPosition >= bufferSize) {
@@ -170,10 +168,5 @@ public abstract class ReusedBufferedIndexOutput extends IndexOutput {
       }
       
     }
-  }
-  
-  @Override
-  protected Object clone() throws CloneNotSupportedException {
-    throw new CloneNotSupportedException();
   }
 }
