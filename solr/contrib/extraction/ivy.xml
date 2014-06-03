@@ -57,7 +57,7 @@
     <dependency org="com.googlecode.juniversalchardet" name="juniversalchardet" rev="${/com.googlecode.juniversalchardet/juniversalchardet}" conf="compile->*"/>
     <dependency org="org.tukaani" name="xz" rev="${/org.tukaani/xz}" conf="compile->*"/>
     <dependency org="com.adobe.xmp" name="xmpcore" rev="${/com.adobe.xmp/xmpcore}" conf="compile->*"/>
-    <dependency org="asm" name="asm" rev="${/asm/asm}" conf="compile->*"/>
+    <dependency org="com.uwyn" name="jhighlight" rev="${/com.uwyn/jhighlight}" conf="compile->*"/>
 
     <!-- Other ExtractingRequestHandler dependencies -->
     <dependency org="com.ibm.icu" name="icu4j" rev="${/com.ibm.icu/icu4j}" conf="compile->*"/>

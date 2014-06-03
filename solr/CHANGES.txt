@@ -194,6 +194,10 @@ Build
 * SOLR-6006: Separate test and compile scope dependencies in the Solrj and
   Solr contrib ivy.xml files, so that the derived Maven dependencies get
   filled out properly in the corresponding POMs. (Steven Scott, Steve Rowe)
+  
+* SOLR-6130: Added com.uwyn:jhighlight dependency to, and removed asm:asm
+  dependency from the extraction contrib - dependencies weren't fully
+  upgraded with the Tika 1.4->1.5 upgrade (SOLR-5763). (Steve Rowe)
 
 ==================  4.8.1 ==================
 
