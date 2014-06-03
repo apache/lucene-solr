@@ -52,11 +52,6 @@ public class CachedIndexOutput extends ReusedBufferedIndexOutput {
     cache.renameCacheFile(location, directory.getFileCacheName(name));
   }
   
-  @Override
-  public void seekInternal(long pos) throws IOException {
-    throw new IOException("Seek not supported");
-  }
-  
   private int writeBlock(long position, byte[] b, int offset, int length)
       throws IOException {
     // read whole block into cache and then provide needed data
