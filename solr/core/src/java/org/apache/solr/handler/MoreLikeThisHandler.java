@@ -370,7 +370,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     public DocListAndSet getMoreLikeThis( Reader reader, int start, int rows, List<Query> filters, List<InterestingTerm> terms, int flags ) throws IOException
     {
       // analyzing with the first field: previous (stupid) behavior
-      rawMLTQuery = mlt.like(reader, mlt.getFieldNames()[0]);
+      rawMLTQuery = mlt.like(mlt.getFieldNames()[0], reader);
       boostedMLTQuery = getBoostedQuery( rawMLTQuery );
       if( terms != null ) {
         fillInterestingTermsFromMLTQuery( boostedMLTQuery, terms );
