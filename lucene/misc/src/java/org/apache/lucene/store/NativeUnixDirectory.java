@@ -237,11 +237,6 @@ public class NativeUnixDirectory extends FSDirectory {
     }
 
     @Override
-    public long length() {
-      return fileLength + bufferPos;
-    }
-    
-    @Override
     public long getChecksum() throws IOException {
       throw new UnsupportedOperationException("this directory currently does not work at all!");
     }

@@ -46,7 +46,8 @@ Changes in Backwards Compatibility Policy
 * LUCENE-4371: Removed IndexInputSlicer and Directory.createSlicer() and replaced
   with IndexInput.slice(). (Robert Muir)
 
-* LUCENE-5727: Remove IndexOutput.seek (Robert Muir)
+* LUCENE-5727, LUCENE-5678: Remove IndexOutput.seek, IndexOutput.setLength().
+  (Robert Muir, Uwe Schindler)
 
 API Changes
 
@@ -101,6 +102,12 @@ API Changes
   
 * LUCENE-5701: Core closed listeners are now available in the AtomicReader API,
   they used to sit only in SegmentReader. (Adrien Grand, Robert Muir)
+
+* LUCENE-5678: IndexOutput no longer allows seeking, so it is no longer required
+  to use RandomAccessFile to write Indexes. Lucene now uses standard FileOutputStream
+  wrapped with OutputStreamIndexOutput to write index data. BufferedIndexOutput was
+  removed, because buffering and checksumming is provided by FilterOutputStreams,
+  provided by the JDK.  (Uwe Schindler, Mike McCandless)
 
 Optimizations
 

@@ -304,7 +304,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         // Totally truncate the file to zero bytes
         deleteFile(name, true);
         IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState));
-        out.setLength(0);
         out.close();
       }
       if (LuceneTestCase.VERBOSE) {
@@ -525,10 +524,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     }
     //System.out.println(Thread.currentThread().getName() + ": MDW: create " + name);
     IndexOutput delegateOutput = in.createOutput(name, LuceneTestCase.newIOContext(randomState, context));
-    if (randomState.nextInt(10) == 0){
-      // once in a while wrap the IO in a Buffered IO with random buffer sizes
-      delegateOutput = new BufferedIndexOutputWrapper(1+randomState.nextInt(BufferedIndexOutput.DEFAULT_BUFFER_SIZE), delegateOutput);
-    } 
     final IndexOutput io = new MockIndexOutputWrapper(this, delegateOutput, name);
     addFileHandle(io, name, Handle.Output);
     openFilesForWrite.add(name);
@@ -954,43 +949,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     in.copy(to, src, dest, context);
   }
   
-  final class BufferedIndexOutputWrapper extends BufferedIndexOutput {
-    private final IndexOutput io;
-    
-    public BufferedIndexOutputWrapper(int bufferSize, IndexOutput io) {
-      super(bufferSize);
-      this.io = io;
-    }
-    
-    @Override
-    public long length() throws IOException {
-      return io.length();
-    }
-    
-    @Override
-    protected void flushBuffer(byte[] b, int offset, int len) throws IOException {
-      io.writeBytes(b, offset, len);
-    }
-
-    @Override
-    public void flush() throws IOException {
-      try {
-        super.flush();
-      } finally { 
-        io.flush();
-      }
-    }
-    
-    @Override
-    public void close() throws IOException {
-      try {
-        super.close();
-      } finally {
-        io.close();
-      }
-    }
-  }
-
   /** Use this when throwing fake {@code IOException},
    *  e.g. from {@link MockDirectoryWrapper.Failure}. */
   public static class FakeIOException extends IOException {

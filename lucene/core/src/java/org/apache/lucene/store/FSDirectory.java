@@ -22,9 +22,10 @@ import org.apache.lucene.util.IOUtils;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FilenameFilter;
+import java.io.FilterOutputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -279,7 +280,7 @@ public abstract class FSDirectory extends BaseDirectory {
     ensureOpen();
 
     ensureCanWrite(name);
-    return new FSIndexOutput(this, name);
+    return new FSIndexOutput(name);
   }
 
   protected void ensureCanWrite(String name) throws IOException {
@@ -292,8 +293,12 @@ public abstract class FSDirectory extends BaseDirectory {
       throw new IOException("Cannot overwrite: " + file);
   }
 
-  protected void onIndexOutputClosed(FSIndexOutput io) {
-    staleFiles.add(io.name);
+  /**
+   * Sub classes should call this method on closing an open {@link IndexOutput}, reporting the name of the file
+   * that was closed. {@code FSDirectory} needs this information to take care of syncing stale files.
+   */
+  protected void onIndexOutputClosed(String name) {
+    staleFiles.add(name);
   }
 
   @Override
@@ -372,69 +377,38 @@ public abstract class FSDirectory extends BaseDirectory {
     return chunkSize;
   }
 
-  /**
-   * Writes output with {@link RandomAccessFile#write(byte[], int, int)}
-   */
-  protected static class FSIndexOutput extends BufferedIndexOutput {
+  final class FSIndexOutput extends OutputStreamIndexOutput {
     /**
-     * The maximum chunk size is 8192 bytes, because {@link RandomAccessFile} mallocs
+     * The maximum chunk size is 8192 bytes, because {@link FileOutputStream} mallocs
      * a native buffer outside of stack if the write buffer size is larger.
      */
-    private static final int CHUNK_SIZE = 8192;
+    static final int CHUNK_SIZE = 8192;
     
-    private final FSDirectory parent;
     private final String name;
-    private final RandomAccessFile file;
-    private volatile boolean isOpen; // remember if the file is open, so that we don't try to close it more than once
-    
-    public FSIndexOutput(FSDirectory parent, String name) throws IOException {
-      super(CHUNK_SIZE);
-      this.parent = parent;
-      this.name = name;
-      file = new RandomAccessFile(new File(parent.directory, name), "rw");
-      isOpen = true;
-    }
 
-    @Override
-    protected void flushBuffer(byte[] b, int offset, int size) throws IOException {
-      assert isOpen;
-      while (size > 0) {
-        final int toWrite = Math.min(CHUNK_SIZE, size);
-        file.write(b, offset, toWrite);
-        offset += toWrite;
-        size -= toWrite;
-      }
-      assert size == 0;
+    public FSIndexOutput(String name) throws IOException {
+      super(new FilterOutputStream(new FileOutputStream(new File(directory, name))) {
+        // This implementation ensures, that we never write more than CHUNK_SIZE bytes:
+        @Override
+        public void write(byte[] b, int offset, int length) throws IOException {
+          while (length > 0) {
+            final int chunk = Math.min(length, CHUNK_SIZE);
+            out.write(b, offset, chunk);
+            length -= chunk;
+            offset += chunk;
+          }
+        }
+      }, CHUNK_SIZE);
+      this.name = name;
     }
     
     @Override
     public void close() throws IOException {
-      parent.onIndexOutputClosed(this);
-      // only close the file if it has not been closed yet
-      if (isOpen) {
-        boolean success = false;
-        try {
-          super.close();
-          success = true;
-        } finally {
-          isOpen = false;
-          if (success) {
-            IOUtils.close(file);
-          } else {
-            IOUtils.closeWhileHandlingException(file);
-          }
-        }
+      try {
+        onIndexOutputClosed(name);
+      } finally {
+        super.close();
       }
-    }
-
-    @Override
-    public long length() throws IOException {
-      return file.length();
-    }
-
-    @Override
-    public void setLength(long length) throws IOException {
-      file.setLength(length);
     }
   }
 
