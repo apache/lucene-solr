@@ -1444,9 +1444,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     };
 
     File[] snapDir = new File[2];
+    boolean namedBackup = random().nextBoolean();
     try {
       String firstBackupTimestamp = null;
-      boolean namedBackup = true;
+
       String[] backupNames = null;
       if (namedBackup) {
         backupNames = new String[2];
@@ -1503,7 +1504,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
           files = dataDir.listFiles(new FilenameFilter() {
             @Override
             public boolean accept(File dir, String name) {
-              if (name.startsWith("snapshot." + backupName)) {
+              if (name.equals("snapshot." + backupName)) {
                 return true;
               }
               return false;
@@ -1520,49 +1521,46 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         reader.close();
         dir.close();
 
-        if (!namedBackup && snapDir[0].exists()) {
-          fail("The first backup should have been cleaned up because " + backupKeepParamName + " was set to 1.");
+      }
+
+      if (!namedBackup && snapDir[0].exists()) {
+        fail("The first backup should have been cleaned up because " + backupKeepParamName + " was set to 1.");
+      }
+
+      //Test Deletion of named backup
+      if(namedBackup) {
+        for (int i = 0; i < 2; i++) {
+          BackupThread deleteBackupThread = new BackupThread(backupNames[i], ReplicationHandler.CMD_DELETE_BACKUP);
+          deleteBackupThread.start();
+          int waitCnt = 0;
+          CheckDeleteBackupStatus checkDeleteBackupStatus = new CheckDeleteBackupStatus();
+          while (true) {
+            checkDeleteBackupStatus.fetchStatus();
+            if (checkDeleteBackupStatus.fail != null) {
+              fail(checkDeleteBackupStatus.fail);
+            }
+            if (checkDeleteBackupStatus.success) {
+              break;
+            }
+            Thread.sleep(200);
+            if (waitCnt == 20) {
+              fail("Delete Backup success not detected:" + checkDeleteBackupStatus.response);
+            }
+            waitCnt++;
+          }
+
+          if (deleteBackupThread.fail != null) {
+            fail(deleteBackupThread.fail);
+          }
         }
       }
 
-      for (int i = 0; i < 2; i++) {
-        //Test Deletion of named backup
-        BackupThread deleteBackupThread = new BackupThread(backupNames[i], ReplicationHandler.CMD_DELETE_BACKUP);
-        deleteBackupThread.start();
-        int waitCnt = 0;
-        CheckDeleteBackupStatus checkDeleteBackupStatus = new CheckDeleteBackupStatus();
-        while (true) {
-          checkDeleteBackupStatus.fetchStatus();
-          if (checkDeleteBackupStatus.fail != null) {
-            fail(checkDeleteBackupStatus.fail);
-          }
-          if (checkDeleteBackupStatus.success) {
-            break;
-          }
-          Thread.sleep(200);
-          if (waitCnt == 20) {
-            fail("Delete Backup success not detected:" + checkDeleteBackupStatus.response);
-          }
-          waitCnt++;
-        }
-
-        if (deleteBackupThread.fail != null) {
-          fail(deleteBackupThread.fail);
-        }
-      }
     } finally {
-      // FIXME: SOLR-6119 This is a test bug in that it tries to remove snapDirs that are still open.
-      try {
+      if(!namedBackup) {
         TestUtil.rm(snapDir);
-      } catch (IOException e) {
-        // Ignore failures.
       }
-    }
-  }
 
-  /* character copy of file using UTF-8 */
-  private static void copyFile(File src, File dst) throws IOException {
-    copyFile(src, dst, null, false);
+    }
   }
 
   /**
