@@ -232,6 +232,9 @@ Optimizations
   implementations. This improves random access as used by docvalues codecs
   if used with MMapDirectory.  (Robert Muir, Uwe Schindler)
 
+* LUCENE-5730: FSDirectory.open returns MMapDirectory for 64-bit operating
+  systems, not just Linux and Windows. (Robert Muir)
+
 Bug fixes
 
 * LUCENE-5673: MMapDirectory: Work around a "bug" in the JDK that throws
