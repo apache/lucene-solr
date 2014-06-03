@@ -136,6 +136,8 @@ Changes in Backwards Compatibility Policy
 * LUCENE-4371: Removed IndexInputSlicer and Directory.createSlicer() and replaced
   with IndexInput.slice(). (Robert Muir)
 
+* LUCENE-5727: Remove IndexOutput.seek (Robert Muir)
+
 API Changes
 
 * LUCENE-5725: MoreLikeThis#like now accetps multiple values per field.
