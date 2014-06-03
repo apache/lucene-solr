@@ -26,7 +26,6 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Arrays;
@@ -71,7 +70,7 @@ public class MoreLikeThisQuery extends Query {
     }
     mlt.setMaxQueryTerms(maxQueryTerms);
     mlt.setStopWords(stopWords);
-    BooleanQuery bq = (BooleanQuery) mlt.like(new StringReader(likeText), fieldName);
+    BooleanQuery bq = (BooleanQuery) mlt.like(fieldName, new StringReader(likeText));
     BooleanClause[] clauses = bq.getClauses();
     //make at least half the terms match
     bq.setMinimumNumberShouldMatch((int) (clauses.length * percentTermsToMatch));

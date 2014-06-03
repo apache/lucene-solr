@@ -84,7 +84,7 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
     }
     BooleanQuery mltQuery = new BooleanQuery();
     for (String textFieldName : textFieldNames) {
-      mltQuery.add(new BooleanClause(mlt.like(new StringReader(text), textFieldName), BooleanClause.Occur.SHOULD));
+      mltQuery.add(new BooleanClause(mlt.like(textFieldName, new StringReader(text)), BooleanClause.Occur.SHOULD));
     }
     Query classFieldQuery = new WildcardQuery(new Term(classFieldName, "*"));
     mltQuery.add(new BooleanClause(classFieldQuery, BooleanClause.Occur.MUST));

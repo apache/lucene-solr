@@ -19,17 +19,18 @@ package org.apache.lucene.queries.mlt;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
@@ -53,6 +54,8 @@ public class TestMoreLikeThis extends LuceneTestCase {
     // Add series of docs with specific information for MoreLikeThis
     addDoc(writer, "lucene");
     addDoc(writer, "lucene release");
+    addDoc(writer, "apache");
+    addDoc(writer, "apache lucene");
 
     reader = writer.getReader();
     writer.shutdown();
@@ -88,8 +91,8 @@ public class TestMoreLikeThis extends LuceneTestCase {
     float boostFactor = 5;
     mlt.setBoostFactor(boostFactor);
     
-    BooleanQuery query = (BooleanQuery) mlt.like(new StringReader(
-        "lucene release"), "text");
+    BooleanQuery query = (BooleanQuery) mlt.like("text", new StringReader(
+        "lucene release"));
     List<BooleanClause> clauses = query.clauses();
     
     assertEquals("Expected " + originalValues.size() + " clauses.",
@@ -116,8 +119,8 @@ public class TestMoreLikeThis extends LuceneTestCase {
     mlt.setMinWordLen(1);
     mlt.setFieldNames(new String[] {"text"});
     mlt.setBoost(true);
-    BooleanQuery query = (BooleanQuery) mlt.like(new StringReader(
-        "lucene release"), "text");
+    BooleanQuery query = (BooleanQuery) mlt.like("text", new StringReader(
+        "lucene release"));
     List<BooleanClause> clauses = query.clauses();
 
     for (BooleanClause clause : clauses) {
@@ -135,9 +138,29 @@ public class TestMoreLikeThis extends LuceneTestCase {
     mlt.setMinTermFreq(1);
     mlt.setMinWordLen(1);
     mlt.setFieldNames(new String[] {"text", "foobar"});
-    mlt.like(new StringReader("this is a test"), "foobar");
+    mlt.like("foobar", new StringReader("this is a test"));
   }
-  
+
+  // LUCENE-5725
+  public void testMultiValues() throws Exception {
+    MoreLikeThis mlt = new MoreLikeThis(reader);
+    mlt.setAnalyzer(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false));
+    mlt.setMinDocFreq(1);
+    mlt.setMinTermFreq(1);
+    mlt.setMinWordLen(1);
+    mlt.setFieldNames(new String[] {"text"});
+
+    BooleanQuery query = (BooleanQuery) mlt.like("text",
+        new StringReader("lucene"), new StringReader("lucene release"),
+        new StringReader("apache"), new StringReader("apache lucene"));
+    List<BooleanClause> clauses = query.clauses();
+    assertEquals("Expected 2 clauses only!", 2, clauses.size());
+    for (BooleanClause clause : clauses) {
+      Term term = ((TermQuery) clause.getQuery()).getTerm();
+      assertTrue(Arrays.asList(new Term("text", "lucene"), new Term("text", "apache")).contains(term));
+    }
+  }
+
   // just basic equals/hashcode etc
   public void testMoreLikeThisQuery() throws Exception {
     Query query = new MoreLikeThisQuery("this is a test", new String[] { "text" }, new MockAnalyzer(random()), "text");
