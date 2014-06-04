@@ -36,7 +36,7 @@ import org.apache.lucene.util.WeakIdentityMap;
  * For efficiency, this class requires that the buffers
  * are a power-of-two (<code>chunkSizePower</code>).
  */
-abstract class ByteBufferIndexInput extends IndexInput {
+abstract class ByteBufferIndexInput extends IndexInput implements RandomAccessInput {
   protected final BufferCleaner cleaner;  
   protected final long length;
   protected final long chunkSizeMask;
@@ -178,6 +178,76 @@ abstract class ByteBufferIndexInput extends IndexInput {
       throw new AlreadyClosedException("Already closed: " + this);
     }
   }
+  
+  @Override
+  public byte readByte(long pos) throws IOException {
+    try {
+      final int bi = (int) (pos >> chunkSizePower);
+      return buffers[bi].get((int) (pos & chunkSizeMask));
+    } catch (IndexOutOfBoundsException ioobe) {
+      throw new EOFException("seek past EOF: " + this);
+    } catch (NullPointerException npe) {
+      throw new AlreadyClosedException("Already closed: " + this);
+    }
+  }
+  
+  // used only by random access methods to handle reads across boundaries
+  private void setPos(long pos, int bi) throws IOException {
+    try {
+      final ByteBuffer b = buffers[bi];
+      b.position((int) (pos & chunkSizeMask));
+      this.curBufIndex = bi;
+      this.curBuf = b;
+    } catch (ArrayIndexOutOfBoundsException aioobe) {
+      throw new EOFException("seek past EOF: " + this);
+    } catch (IllegalArgumentException iae) {
+      throw new EOFException("seek past EOF: " + this);
+    } catch (NullPointerException npe) {
+      throw new AlreadyClosedException("Already closed: " + this);
+    }
+  }
+
+  @Override
+  public short readShort(long pos) throws IOException {
+    final int bi = (int) (pos >> chunkSizePower);
+    try {
+      return buffers[bi].getShort((int) (pos & chunkSizeMask));
+    } catch (IndexOutOfBoundsException ioobe) {
+      // either its a boundary, or read past EOF, fall back:
+      setPos(pos, bi);
+      return readShort();
+    } catch (NullPointerException npe) {
+      throw new AlreadyClosedException("Already closed: " + this);
+    }
+  }
+
+  @Override
+  public int readInt(long pos) throws IOException {
+    final int bi = (int) (pos >> chunkSizePower);
+    try {
+      return buffers[bi].getInt((int) (pos & chunkSizeMask));
+    } catch (IndexOutOfBoundsException ioobe) {
+      // either its a boundary, or read past EOF, fall back:
+      setPos(pos, bi);
+      return readInt();
+    } catch (NullPointerException npe) {
+      throw new AlreadyClosedException("Already closed: " + this);
+    }
+  }
+
+  @Override
+  public long readLong(long pos) throws IOException {
+    final int bi = (int) (pos >> chunkSizePower);
+    try {
+      return buffers[bi].getLong((int) (pos & chunkSizeMask));
+    } catch (IndexOutOfBoundsException ioobe) {
+      // either its a boundary, or read past EOF, fall back:
+      setPos(pos, bi);
+      return readLong();
+    } catch (NullPointerException npe) {
+      throw new AlreadyClosedException("Already closed: " + this);
+    }
+  }
 
   @Override
   public final long length() {
@@ -208,6 +278,12 @@ abstract class ByteBufferIndexInput extends IndexInput {
     return buildSlice(sliceDescription, offset, length);
   }
   
+  @Override
+  public RandomAccessInput randomAccessSlice(long offset, long length) throws IOException {
+    // note: technically we could even avoid the clone...
+    return slice(null, offset, length);
+  }
+
   /** Builds the actual sliced IndexInput (may apply extra offset in subclasses). **/
   protected ByteBufferIndexInput buildSlice(String sliceDescription, long offset, long length) {
     if (buffers == null) {
@@ -373,6 +449,66 @@ abstract class ByteBufferIndexInput extends IndexInput {
         throw new AlreadyClosedException("Already closed: " + this);
       }
     }
+
+    @Override
+    public byte readByte(long pos) throws IOException {
+      try {
+        return curBuf.get((int) pos);
+      } catch (IllegalArgumentException e) {
+        if (pos < 0) {
+          throw new IllegalArgumentException("Seeking to negative position: " + this, e);
+        } else {
+          throw new EOFException("seek past EOF: " + this);
+        }
+      } catch (NullPointerException npe) {
+        throw new AlreadyClosedException("Already closed: " + this);
+      }
+    }
+
+    @Override
+    public short readShort(long pos) throws IOException {
+      try {
+        return curBuf.getShort((int) pos);
+      } catch (IllegalArgumentException e) {
+        if (pos < 0) {
+          throw new IllegalArgumentException("Seeking to negative position: " + this, e);
+        } else {
+          throw new EOFException("seek past EOF: " + this);
+        }
+      } catch (NullPointerException npe) {
+        throw new AlreadyClosedException("Already closed: " + this);
+      }
+    }
+
+    @Override
+    public int readInt(long pos) throws IOException {
+      try {
+        return curBuf.getInt((int) pos);
+      } catch (IllegalArgumentException e) {
+        if (pos < 0) {
+          throw new IllegalArgumentException("Seeking to negative position: " + this, e);
+        } else {
+          throw new EOFException("seek past EOF: " + this);
+        }
+      } catch (NullPointerException npe) {
+        throw new AlreadyClosedException("Already closed: " + this);
+      }
+    }
+
+    @Override
+    public long readLong(long pos) throws IOException {
+      try {
+        return curBuf.getLong((int) pos);
+      } catch (IllegalArgumentException e) {
+        if (pos < 0) {
+          throw new IllegalArgumentException("Seeking to negative position: " + this, e);
+        } else {
+          throw new EOFException("seek past EOF: " + this);
+        }
+      } catch (NullPointerException npe) {
+        throw new AlreadyClosedException("Already closed: " + this);
+      }
+    }
   }
   
   /** This class adds offset support to ByteBufferIndexInput, which is needed for slices. */
@@ -404,6 +540,26 @@ abstract class ByteBufferIndexInput extends IndexInput {
       return super.getFilePointer() - offset;
     }
     
+    @Override
+    public byte readByte(long pos) throws IOException {
+      return super.readByte(pos + offset);
+    }
+
+    @Override
+    public short readShort(long pos) throws IOException {
+      return super.readShort(pos + offset);
+    }
+
+    @Override
+    public int readInt(long pos) throws IOException {
+      return super.readInt(pos + offset);
+    }
+
+    @Override
+    public long readLong(long pos) throws IOException {
+      return super.readLong(pos + offset);
+    }
+
     @Override
     protected ByteBufferIndexInput buildSlice(String sliceDescription, long ofs, long length) {
       return super.buildSlice(sliceDescription, this.offset + ofs, length);

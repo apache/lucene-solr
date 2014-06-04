@@ -46,7 +46,7 @@ import java.util.zip.ZipFile;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene46.Lucene46Codec;
+import org.apache.lucene.codecs.lucene49.Lucene49Codec;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.document.BinaryDocValuesField;
@@ -682,7 +682,7 @@ public final class TestUtil {
     if (LuceneTestCase.VERBOSE) {
       System.out.println("forcing postings format to:" + format);
     }
-    return new Lucene46Codec() {
+    return new Lucene49Codec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
         return format;
@@ -700,7 +700,7 @@ public final class TestUtil {
     if (LuceneTestCase.VERBOSE) {
       System.out.println("forcing docvalues format to:" + format);
     }
-    return new Lucene46Codec() {
+    return new Lucene49Codec() {
       @Override
       public DocValuesFormat getDocValuesFormatForField(String field) {
         return format;

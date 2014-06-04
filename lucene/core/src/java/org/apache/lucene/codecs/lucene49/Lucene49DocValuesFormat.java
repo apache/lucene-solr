@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene45;
+package org.apache.lucene.codecs.lucene49;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -29,27 +29,26 @@ import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.SmallFloat;
 import org.apache.lucene.util.fst.FST;
-import org.apache.lucene.util.packed.BlockPackedWriter;
+import org.apache.lucene.util.packed.DirectWriter;
 import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
-import org.apache.lucene.util.packed.PackedInts;
 
 /**
- * Lucene 4.5 DocValues format.
+ * Lucene 4.9 DocValues format.
  * <p>
  * Encodes the four per-document value types (Numeric,Binary,Sorted,SortedSet) with these strategies:
  * <p>
  * {@link DocValuesType#NUMERIC NUMERIC}:
  * <ul>
- *    <li>Delta-compressed: per-document integers written in blocks of 16k. For each block
- *        the minimum value in that block is encoded, and each entry is a delta from that 
- *        minimum value. Each block of deltas is compressed with bitpacking. For more 
- *        information, see {@link BlockPackedWriter}.
+ *    <li>Delta-compressed: per-document integers written as deltas from the minimum value,
+ *        compressed with bitpacking. For more information, see {@link DirectWriter}.
  *    <li>Table-compressed: when the number of unique values is very small (&lt; 256), and
  *        when there are unused "gaps" in the range of values used (such as {@link SmallFloat}), 
  *        a lookup table is written instead. Each per-document entry is instead the ordinal 
- *        to this table, and those ordinals are compressed with bitpacking ({@link PackedInts}). 
+ *        to this table, and those ordinals are compressed with bitpacking ({@link DirectWriter}). 
  *    <li>GCD-compressed: when all numbers share a common divisor, such as dates, the greatest
  *        common denominator (GCD) is computed, and quotients are stored using Delta-compressed Numerics.
+ *    <li>Monotonic-compressed: when all numbers are monotonically increasing offsets, they are written
+ *        as blocks of bitpacked integers, encoding the deviation from the expected delta.
  * </ul>
  * <p>
  * {@link DocValuesType#BINARY BINARY}:
@@ -57,13 +56,10 @@ import org.apache.lucene.util.packed.PackedInts;
  *    <li>Fixed-width Binary: one large concatenated byte[] is written, along with the fixed length.
  *        Each document's value can be addressed directly with multiplication ({@code docID * length}). 
  *    <li>Variable-width Binary: one large concatenated byte[] is written, along with end addresses 
- *        for each document. The addresses are written in blocks of 16k, with the current absolute
- *        start for the block, and the average (expected) delta per entry. For each document the 
- *        deviation from the delta (actual - expected) is written.
+ *        for each document. The addresses are written as Monotonic-compressed numerics.
  *    <li>Prefix-compressed Binary: values are written in chunks of 16, with the first value written
- *        completely and other values sharing prefixes. chunk addresses are written in blocks of 16k,
- *        with the current absolute start for the block, and the average (expected) delta per entry. 
- *        For each chunk the deviation from the delta (actual - expected) is written.
+ *        completely and other values sharing prefixes. chunk addresses are written as Monotonic-compressed
+ *        numerics.
  * </ul>
  * <p>
  * {@link DocValuesType#SORTED SORTED}:
@@ -93,10 +89,11 @@ import org.apache.lucene.util.packed.PackedInts;
  *   <ul>
  *     <li>Entry --&gt; NumericEntry | BinaryEntry | SortedEntry | SortedSetEntry</li>
  *     <li>NumericEntry --&gt; GCDNumericEntry | TableNumericEntry | DeltaNumericEntry</li>
- *     <li>GCDNumericEntry --&gt; NumericHeader,MinValue,GCD</li>
- *     <li>TableNumericEntry --&gt; NumericHeader,TableSize,{@link DataOutput#writeLong Int64}<sup>TableSize</sup></li>
- *     <li>DeltaNumericEntry --&gt; NumericHeader</li>
- *     <li>NumericHeader --&gt; FieldNumber,EntryType,NumericType,MissingOffset,PackedVersion,DataOffset,Count,BlockSize</li>
+ *     <li>GCDNumericEntry --&gt; NumericHeader,MinValue,GCD,BitsPerValue</li>
+ *     <li>TableNumericEntry --&gt; NumericHeader,TableSize,{@link DataOutput#writeLong Int64}<sup>TableSize</sup>,BitsPerValue</li>
+ *     <li>DeltaNumericEntry --&gt; NumericHeader,MinValue,BitsPerValue</li>
+ *     <li>MonotonicNumericEntry --&gt; NumericHeader,PackedVersion,BlockSize</li>
+ *     <li>NumericHeader --&gt; FieldNumber,EntryType,NumericType,MissingOffset,DataOffset,Count,EndOffset</li>
  *     <li>BinaryEntry --&gt; FixedBinaryEntry | VariableBinaryEntry | PrefixBinaryEntry</li>
  *     <li>FixedBinaryEntry --&gt; BinaryHeader</li>
  *     <li>VariableBinaryEntry --&gt; BinaryHeader,AddressOffset,PackedVersion,BlockSize</li>
@@ -107,8 +104,8 @@ import org.apache.lucene.util.packed.PackedInts;
  *     <li>FieldNumber,PackedVersion,MinLength,MaxLength,BlockSize,ValueCount --&gt; {@link DataOutput#writeVInt VInt}</li>
  *     <li>EntryType,CompressionType --&gt; {@link DataOutput#writeByte Byte}</li>
  *     <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
- *     <li>MinValue,GCD,MissingOffset,AddressOffset,DataOffset --&gt; {@link DataOutput#writeLong Int64}</li>
- *     <li>TableSize --&gt; {@link DataOutput#writeVInt vInt}</li>
+ *     <li>MinValue,GCD,MissingOffset,AddressOffset,DataOffset,EndOffset --&gt; {@link DataOutput#writeLong Int64}</li>
+ *     <li>TableSize,BitsPerValue --&gt; {@link DataOutput#writeVInt vInt}</li>
  *     <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  *   </ul>
  *   <p>Sorted fields have two entries: a BinaryEntry with the value metadata,
@@ -118,6 +115,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *   <p>FieldNumber of -1 indicates the end of metadata.</p>
  *   <p>EntryType is a 0 (NumericEntry) or 1 (BinaryEntry)</p>
  *   <p>DataOffset is the pointer to the start of the data in the DocValues data (.dvd)</p>
+ *   <p>EndOffset is the pointer to the end of the data in the DocValues data (.dvd)</p>
  *   <p>NumericType indicates how Numeric values will be compressed:
  *      <ul>
  *         <li>0 --&gt; delta-compressed. For each block of 16k integers, every integer is delta-encoded
@@ -150,45 +148,36 @@ import org.apache.lucene.util.packed.PackedInts;
  *     <li>NumericData --&gt; DeltaCompressedNumerics | TableCompressedNumerics | GCDCompressedNumerics</li>
  *     <li>BinaryData --&gt;  {@link DataOutput#writeByte Byte}<sup>DataLength</sup>,Addresses</li>
  *     <li>SortedData --&gt; {@link FST FST&lt;Int64&gt;}</li>
- *     <li>DeltaCompressedNumerics --&gt; {@link BlockPackedWriter BlockPackedInts(blockSize=16k)}</li>
- *     <li>TableCompressedNumerics --&gt; {@link PackedInts PackedInts}</li>
- *     <li>GCDCompressedNumerics --&gt; {@link BlockPackedWriter BlockPackedInts(blockSize=16k)}</li>
+ *     <li>DeltaCompressedNumerics,TableCompressedNumerics,GCDCompressedNumerics --&gt; {@link DirectWriter PackedInts}</li>
  *     <li>Addresses --&gt; {@link MonotonicBlockPackedWriter MonotonicBlockPackedInts(blockSize=16k)}</li>
  *     <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  *   </ul>
- *   <p>SortedSet entries store the list of ordinals in their BinaryData as a
- *      sequences of increasing {@link DataOutput#writeVLong vLong}s, delta-encoded.</p>
  * </ol>
- * @deprecated Only for reading old 4.3-4.5 segments
  * @lucene.experimental
  */
-@Deprecated
-public class Lucene45DocValuesFormat extends DocValuesFormat {
+public final class Lucene49DocValuesFormat extends DocValuesFormat {
 
   /** Sole Constructor */
-  public Lucene45DocValuesFormat() {
-    super("Lucene45");
+  public Lucene49DocValuesFormat() {
+    super("Lucene49");
   }
 
   @Override
   public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    // really we should be read-only, but to allow posting of dv updates against old segments...
-    return new Lucene45DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
+    return new Lucene49DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
   }
 
   @Override
   public DocValuesProducer fieldsProducer(SegmentReadState state) throws IOException {
-    return new Lucene45DocValuesProducer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
+    return new Lucene49DocValuesProducer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
   }
   
-  static final String DATA_CODEC = "Lucene45DocValuesData";
+  static final String DATA_CODEC = "Lucene49DocValuesData";
   static final String DATA_EXTENSION = "dvd";
-  static final String META_CODEC = "Lucene45ValuesMetadata";
+  static final String META_CODEC = "Lucene49ValuesMetadata";
   static final String META_EXTENSION = "dvm";
   static final int VERSION_START = 0;
-  static final int VERSION_SORTED_SET_SINGLE_VALUE_OPTIMIZED = 1;
-  static final int VERSION_CHECKSUM = 2;
-  static final int VERSION_CURRENT = VERSION_CHECKSUM;
+  static final int VERSION_CURRENT = VERSION_START;
   static final byte NUMERIC = 0;
   static final byte BINARY = 1;
   static final byte SORTED = 2;

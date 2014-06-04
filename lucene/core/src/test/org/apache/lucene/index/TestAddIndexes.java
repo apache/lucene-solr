@@ -28,7 +28,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene46.Lucene46Codec;
+import org.apache.lucene.codecs.lucene49.Lucene49Codec;
 import org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -1061,7 +1061,7 @@ public class TestAddIndexes extends LuceneTestCase {
     aux2.close();
   }
 
-  private static final class CustomPerFieldCodec extends Lucene46Codec {
+  private static final class CustomPerFieldCodec extends Lucene49Codec {
     private final PostingsFormat simpleTextFormat = PostingsFormat.forName("SimpleText");
     private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene41");
     private final PostingsFormat mockSepFormat = PostingsFormat.forName("MockSep");
@@ -1112,7 +1112,7 @@ public class TestAddIndexes extends LuceneTestCase {
   
   private static final class UnRegisteredCodec extends FilterCodec {
     public UnRegisteredCodec() {
-      super("NotRegistered", new Lucene46Codec());
+      super("NotRegistered", new Lucene49Codec());
     }
   }
   

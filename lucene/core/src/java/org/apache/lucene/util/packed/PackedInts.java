@@ -282,39 +282,6 @@ public class PackedInts {
 
     return new FormatAndBits(format, actualBitsPerValue);
   }
-  
-  /**
-   * Try to find the number of bits per value that would
-   * read from disk the fastest reader whose overhead is less than
-   * <code>acceptableOverheadRatio</code>.
-   * </p><p>
-   * The <code>acceptableOverheadRatio</code> parameter makes sense for
-   * random-access {@link Reader}s. In case you only plan to perform
-   * sequential access on this stream later on, you should probably use
-   * {@link PackedInts#COMPACT}.
-   * </p><p>
-   */
-  public static int fastestDirectBits(int bitsPerValue, float acceptableOverheadRatio) {
-    acceptableOverheadRatio = Math.max(COMPACT, acceptableOverheadRatio);
-    acceptableOverheadRatio = Math.min(FASTEST, acceptableOverheadRatio);
-    float acceptableOverheadPerValue = acceptableOverheadRatio * bitsPerValue; // in bits
-
-    int maxBitsPerValue = bitsPerValue + (int) acceptableOverheadPerValue;
-
-    // first see if we can upgrade to byte
-    int byteAlign = (bitsPerValue + 7) & 0xF8;
-    if (byteAlign <= maxBitsPerValue) {
-      return byteAlign;
-    }
-      
-    // otherwise try to upgrade to a nibble boundary (for numbers < 32)
-    int nibbleAlign = (bitsPerValue + 3) & 0xFC;
-    if (bitsPerValue < 32 && nibbleAlign <= maxBitsPerValue) {
-      return nibbleAlign;
-    }
-      
-    return bitsPerValue;
-  }
 
   /**
    * A decoder for packed integers.
@@ -997,7 +964,7 @@ public class PackedInts {
             }
           };
         } else {
-          return DirectPackedReader.getInstance(bitsPerValue, valueCount, in);
+          return new DirectPackedReader(bitsPerValue, valueCount, in);
         }
       case PACKED_SINGLE_BLOCK:
         return new DirectPacked64SingleBlockReader(bitsPerValue, valueCount, in);

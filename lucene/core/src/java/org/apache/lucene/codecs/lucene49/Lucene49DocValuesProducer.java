@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene45;
+package org.apache.lucene.codecs.lucene49;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,15 +17,15 @@ package org.apache.lucene.codecs.lucene45;
  * limitations under the License.
  */
 
-import static org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer.BINARY_FIXED_UNCOMPRESSED;
-import static org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer.BINARY_PREFIX_COMPRESSED;
-import static org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer.BINARY_VARIABLE_UNCOMPRESSED;
-import static org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer.DELTA_COMPRESSED;
-import static org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer.GCD_COMPRESSED;
-import static org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer.SORTED_SET_SINGLE_VALUED_SORTED;
-import static org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer.SORTED_SET_WITH_ADDRESSES;
-import static org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer.TABLE_COMPRESSED;
-import static org.apache.lucene.codecs.lucene45.Lucene45DocValuesFormat.VERSION_SORTED_SET_SINGLE_VALUE_OPTIMIZED;
+import static org.apache.lucene.codecs.lucene49.Lucene49DocValuesConsumer.BINARY_FIXED_UNCOMPRESSED;
+import static org.apache.lucene.codecs.lucene49.Lucene49DocValuesConsumer.BINARY_PREFIX_COMPRESSED;
+import static org.apache.lucene.codecs.lucene49.Lucene49DocValuesConsumer.BINARY_VARIABLE_UNCOMPRESSED;
+import static org.apache.lucene.codecs.lucene49.Lucene49DocValuesConsumer.DELTA_COMPRESSED;
+import static org.apache.lucene.codecs.lucene49.Lucene49DocValuesConsumer.GCD_COMPRESSED;
+import static org.apache.lucene.codecs.lucene49.Lucene49DocValuesConsumer.MONOTONIC_COMPRESSED;
+import static org.apache.lucene.codecs.lucene49.Lucene49DocValuesConsumer.SORTED_SET_SINGLE_VALUED_SORTED;
+import static org.apache.lucene.codecs.lucene49.Lucene49DocValuesConsumer.SORTED_SET_WITH_ADDRESSES;
+import static org.apache.lucene.codecs.lucene49.Lucene49DocValuesConsumer.TABLE_COMPRESSED;
 
 import java.io.Closeable; // javadocs
 import java.io.IOException;
@@ -53,18 +53,17 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.RandomAccessInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.Version;
-import org.apache.lucene.util.packed.BlockPackedReader;
+import org.apache.lucene.util.packed.DirectReader;
 import org.apache.lucene.util.packed.MonotonicBlockPackedReader;
-import org.apache.lucene.util.packed.PackedInts;
 
-/** reader for {@link Lucene45DocValuesFormat} */
-public class Lucene45DocValuesProducer extends DocValuesProducer implements Closeable {
+/** reader for {@link Lucene49DocValuesFormat} */
+public class Lucene49DocValuesProducer extends DocValuesProducer implements Closeable {
   private final Map<Integer,NumericEntry> numerics;
   private final Map<Integer,BinaryEntry> binaries;
   private final Map<Integer,SortedSetEntry> sortedSets;
@@ -74,29 +73,13 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
   private final IndexInput data;
   private final int maxDoc;
   private final int version;
-  
-  // We need this for pre-4.9 indexes which recorded multiple fields' DocValues
-  // updates under the same generation, and therefore the passed FieldInfos may
-  // not include all the fields that are encoded in this generation. In that
-  // case, we are more lenient about the fields we read and the passed-in
-  // FieldInfos.
-  @Deprecated
-  private final boolean lenientFieldInfoCheck;
 
   // memory-resident structures
   private final Map<Integer,MonotonicBlockPackedReader> addressInstances = new HashMap<>();
   private final Map<Integer,MonotonicBlockPackedReader> ordIndexInstances = new HashMap<>();
   
   /** expert: instantiates a new reader */
-  @SuppressWarnings("deprecation")
-  protected Lucene45DocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
-    Version ver;
-    try {
-      ver = Version.parseLeniently(state.segmentInfo.getVersion());
-    } catch (IllegalArgumentException e) {
-      ver = null;
-    }
-    lenientFieldInfoCheck = ver == null || !ver.onOrAfter(Version.LUCENE_4_9);
+  protected Lucene49DocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     // read in the entries from the metadata file.
     ChecksumIndexInput in = state.directory.openChecksumInput(metaName, state.context);
@@ -104,8 +87,8 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
     boolean success = false;
     try {
       version = CodecUtil.checkHeader(in, metaCodec, 
-                                      Lucene45DocValuesFormat.VERSION_START,
-                                      Lucene45DocValuesFormat.VERSION_CURRENT);
+                                      Lucene49DocValuesFormat.VERSION_START,
+                                      Lucene49DocValuesFormat.VERSION_CURRENT);
       numerics = new HashMap<>();
       ords = new HashMap<>();
       ordIndexes = new HashMap<>();
@@ -113,12 +96,7 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
       sortedSets = new HashMap<>();
       readFields(in, state.fieldInfos);
 
-      if (version >= Lucene45DocValuesFormat.VERSION_CHECKSUM) {
-        CodecUtil.checkFooter(in);
-      } else {
-        CodecUtil.checkEOF(in);
-      }
-
+      CodecUtil.checkFooter(in);
       success = true;
     } finally {
       if (success) {
@@ -133,8 +111,8 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
     success = false;
     try {
       final int version2 = CodecUtil.checkHeader(data, dataCodec, 
-                                                 Lucene45DocValuesFormat.VERSION_START,
-                                                 Lucene45DocValuesFormat.VERSION_CURRENT);
+                                                 Lucene49DocValuesFormat.VERSION_START,
+                                                 Lucene49DocValuesFormat.VERSION_CURRENT);
       if (version != version2) {
         throw new CorruptIndexException("Format versions mismatch");
       }
@@ -154,7 +132,7 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
     if (meta.readVInt() != fieldNumber) {
       throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
     }
-    if (meta.readByte() != Lucene45DocValuesFormat.BINARY) {
+    if (meta.readByte() != Lucene49DocValuesFormat.BINARY) {
       throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
     }
     BinaryEntry b = readBinaryEntry(meta);
@@ -163,7 +141,7 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
     if (meta.readVInt() != fieldNumber) {
       throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
     }
-    if (meta.readByte() != Lucene45DocValuesFormat.NUMERIC) {
+    if (meta.readByte() != Lucene49DocValuesFormat.NUMERIC) {
       throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
     }
     NumericEntry n = readNumericEntry(meta);
@@ -175,7 +153,7 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
     if (meta.readVInt() != fieldNumber) {
       throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
     }
-    if (meta.readByte() != Lucene45DocValuesFormat.BINARY) {
+    if (meta.readByte() != Lucene49DocValuesFormat.BINARY) {
       throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
     }
     BinaryEntry b = readBinaryEntry(meta);
@@ -184,7 +162,7 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
     if (meta.readVInt() != fieldNumber) {
       throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
     }
-    if (meta.readByte() != Lucene45DocValuesFormat.NUMERIC) {
+    if (meta.readByte() != Lucene49DocValuesFormat.NUMERIC) {
       throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
     }
     NumericEntry n1 = readNumericEntry(meta);
@@ -193,7 +171,7 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
     if (meta.readVInt() != fieldNumber) {
       throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
     }
-    if (meta.readByte() != Lucene45DocValuesFormat.NUMERIC) {
+    if (meta.readByte() != Lucene49DocValuesFormat.NUMERIC) {
       throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
     }
     NumericEntry n2 = readNumericEntry(meta);
@@ -203,20 +181,20 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
   private void readFields(IndexInput meta, FieldInfos infos) throws IOException {
     int fieldNumber = meta.readVInt();
     while (fieldNumber != -1) {
-      if ((lenientFieldInfoCheck && fieldNumber < 0) || (!lenientFieldInfoCheck && infos.fieldInfo(fieldNumber) == null)) {
+      if (infos.fieldInfo(fieldNumber) == null) {
         // trickier to validate more: because we re-use for norms, because we use multiple entries
         // for "composite" types like sortedset, etc.
         throw new CorruptIndexException("Invalid field number: " + fieldNumber + " (resource=" + meta + ")");
       }
       byte type = meta.readByte();
-      if (type == Lucene45DocValuesFormat.NUMERIC) {
+      if (type == Lucene49DocValuesFormat.NUMERIC) {
         numerics.put(fieldNumber, readNumericEntry(meta));
-      } else if (type == Lucene45DocValuesFormat.BINARY) {
+      } else if (type == Lucene49DocValuesFormat.BINARY) {
         BinaryEntry b = readBinaryEntry(meta);
         binaries.put(fieldNumber, b);
-      } else if (type == Lucene45DocValuesFormat.SORTED) {
+      } else if (type == Lucene49DocValuesFormat.SORTED) {
         readSortedField(fieldNumber, meta, infos);
-      } else if (type == Lucene45DocValuesFormat.SORTED_SET) {
+      } else if (type == Lucene49DocValuesFormat.SORTED_SET) {
         SortedSetEntry ss = readSortedSetEntry(meta);
         sortedSets.put(fieldNumber, ss);
         if (ss.format == SORTED_SET_WITH_ADDRESSES) {
@@ -225,7 +203,7 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
           if (meta.readVInt() != fieldNumber) {
             throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
           }
-          if (meta.readByte() != Lucene45DocValuesFormat.SORTED) {
+          if (meta.readByte() != Lucene49DocValuesFormat.SORTED) {
             throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
           }
           readSortedField(fieldNumber, meta, infos);
@@ -243,19 +221,15 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
     NumericEntry entry = new NumericEntry();
     entry.format = meta.readVInt();
     entry.missingOffset = meta.readLong();
-    entry.packedIntsVersion = meta.readVInt();
     entry.offset = meta.readLong();
     entry.count = meta.readVLong();
-    entry.blockSize = meta.readVInt();
     switch(entry.format) {
       case GCD_COMPRESSED:
         entry.minValue = meta.readLong();
         entry.gcd = meta.readLong();
+        entry.bitsPerValue = meta.readVInt();
         break;
       case TABLE_COMPRESSED:
-        if (entry.count > Integer.MAX_VALUE) {
-          throw new CorruptIndexException("Cannot use TABLE_COMPRESSED with more than MAX_VALUE values, input=" + meta);
-        }
         final int uniqueValues = meta.readVInt();
         if (uniqueValues > 256) {
           throw new CorruptIndexException("TABLE_COMPRESSED cannot have more than 256 distinct values, input=" + meta);
@@ -264,12 +238,20 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
         for (int i = 0; i < uniqueValues; ++i) {
           entry.table[i] = meta.readLong();
         }
+        entry.bitsPerValue = meta.readVInt();
         break;
       case DELTA_COMPRESSED:
+        entry.minValue = meta.readLong();
+        entry.bitsPerValue = meta.readVInt();
+        break;
+      case MONOTONIC_COMPRESSED:
+        entry.packedIntsVersion = meta.readVInt();
+        entry.blockSize = meta.readVInt();
         break;
       default:
         throw new CorruptIndexException("Unknown format: " + entry.format + ", input=" + meta);
     }
+    entry.endOffset = meta.readLong();
     return entry;
   }
   
@@ -303,11 +285,7 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
 
   SortedSetEntry readSortedSetEntry(IndexInput meta) throws IOException {
     SortedSetEntry entry = new SortedSetEntry();
-    if (version >= VERSION_SORTED_SET_SINGLE_VALUE_OPTIMIZED) {
-      entry.format = meta.readVInt();
-    } else {
-      entry.format = SORTED_SET_WITH_ADDRESSES;
-    }
+    entry.format = meta.readVInt();
     if (entry.format != SORTED_SET_SINGLE_VALUED_SORTED && entry.format != SORTED_SET_WITH_ADDRESSES) {
       throw new CorruptIndexException("Unknown format: " + entry.format + ", input=" + meta);
     }
@@ -327,23 +305,26 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
   
   @Override
   public void checkIntegrity() throws IOException {
-    if (version >= Lucene45DocValuesFormat.VERSION_CHECKSUM) {
-      CodecUtil.checksumEntireFile(data);
-    }
+    CodecUtil.checksumEntireFile(data);
   }
 
   LongValues getNumeric(NumericEntry entry) throws IOException {
-    final IndexInput data = this.data.clone();
-    data.seek(entry.offset);
-
+    RandomAccessInput slice = this.data.randomAccessSlice(entry.offset, entry.endOffset - entry.offset);
+    
     switch (entry.format) {
       case DELTA_COMPRESSED:
-        final BlockPackedReader reader = new BlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, entry.count, true);
-        return reader;
+        final long delta = entry.minValue;
+        final LongValues values = DirectReader.getInstance(slice, entry.bitsPerValue);
+        return new LongValues() {
+          @Override
+          public long get(long id) {
+            return delta + values.get(id);
+          }
+        };
       case GCD_COMPRESSED:
         final long min = entry.minValue;
         final long mult = entry.gcd;
-        final BlockPackedReader quotientReader = new BlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, entry.count, true);
+        final LongValues quotientReader = DirectReader.getInstance(slice, entry.bitsPerValue);
         return new LongValues() {
           @Override
           public long get(long id) {
@@ -352,12 +333,11 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
         };
       case TABLE_COMPRESSED:
         final long table[] = entry.table;
-        final int bitsRequired = PackedInts.bitsRequired(table.length - 1);
-        final PackedInts.Reader ords = PackedInts.getDirectReaderNoHeader(data, PackedInts.Format.PACKED, entry.packedIntsVersion, (int) entry.count, bitsRequired);
+        final LongValues ords = DirectReader.getInstance(slice, entry.bitsPerValue);
         return new LongValues() {
           @Override
           public long get(long id) {
-            return table[(int) ords.get((int) id)];
+            return table[(int) ords.get(id)];
           }
         };
       default:
@@ -485,9 +465,7 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
     final int valueCount = (int) binaries.get(field.number).count;
     final BinaryDocValues binary = getBinary(field);
     NumericEntry entry = ords.get(field.number);
-    IndexInput data = this.data.clone();
-    data.seek(entry.offset);
-    final BlockPackedReader ordinals = new BlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, entry.count, true);
+    final LongValues ordinals = getNumeric(entry);
     
     return new SortedDocValues() {
 
@@ -627,14 +605,13 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
     if (offset == -1) {
       return new Bits.MatchAllBits(maxDoc);
     } else {
-      final IndexInput in = data.clone();
+      int length = (int) ((maxDoc + 7L) >>> 3);
+      final RandomAccessInput in = data.randomAccessSlice(offset, length);
       return new Bits() {
-
         @Override
         public boolean get(int index) {
           try {
-            in.seek(offset + (index >> 3));
-            return (in.readByte() & (1 << (index & 7))) != 0;
+            return (in.readByte(index >> 3) & (1 << (index & 7))) != 0;
           } catch (IOException e) {
             throw new RuntimeException(e);
           }
@@ -678,6 +655,10 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
     long missingOffset;
     /** offset to the actual numeric values */
     public long offset;
+    /** end offset to the actual numeric values */
+    public long endOffset;
+    /** bits per value used to pack the numeric values */
+    public int bitsPerValue;
 
     int format;
     /** packed ints version used to encode these numerics */
@@ -902,11 +883,6 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
         public long ord() throws IOException {
           return currentOrd;
         }
-        
-        @Override
-        public Comparator<BytesRef> getComparator() {
-          return BytesRef.getUTF8SortedAsUnicodeComparator();
-        }
 
         @Override
         public int docFreq() throws IOException {
@@ -926,6 +902,11 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
         @Override
         public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
           throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Comparator<BytesRef> getComparator() {
+          return BytesRef.getUTF8SortedAsUnicodeComparator();
         }
       };
     }

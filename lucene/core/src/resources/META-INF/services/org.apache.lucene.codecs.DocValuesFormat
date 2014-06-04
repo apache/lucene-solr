@@ -15,3 +15,4 @@
 
 org.apache.lucene.codecs.lucene42.Lucene42DocValuesFormat
 org.apache.lucene.codecs.lucene45.Lucene45DocValuesFormat
+org.apache.lucene.codecs.lucene49.Lucene49DocValuesFormat

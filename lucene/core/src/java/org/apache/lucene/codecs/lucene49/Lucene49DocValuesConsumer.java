@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene45;
+package org.apache.lucene.codecs.lucene49;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -34,12 +34,12 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.MathUtil;
 import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.util.packed.BlockPackedWriter;
+import org.apache.lucene.util.packed.DirectWriter;
 import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
-/** writer for {@link Lucene45DocValuesFormat} */
-class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
+/** writer for {@link Lucene49DocValuesFormat} */
+public class Lucene49DocValuesConsumer extends DocValuesConsumer implements Closeable {
 
   static final int BLOCK_SIZE = 16384;
   static final int ADDRESS_INTERVAL = 16;
@@ -51,6 +51,8 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
   public static final int GCD_COMPRESSED = 1;
   /** Compressed by giving IDs to unique values. */
   public static final int TABLE_COMPRESSED = 2;
+  /** Compressed with monotonically increasing values */
+  public static final int MONOTONIC_COMPRESSED = 3;
   
   /** Uncompressed binary, written directly (fixed length). */
   public static final int BINARY_FIXED_UNCOMPRESSED = 0;
@@ -70,15 +72,15 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
   final int maxDoc;
   
   /** expert: Creates a new writer */
-  public Lucene45DocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
+  public Lucene49DocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     boolean success = false;
     try {
       String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
       data = state.directory.createOutput(dataName, state.context);
-      CodecUtil.writeHeader(data, dataCodec, Lucene45DocValuesFormat.VERSION_CURRENT);
+      CodecUtil.writeHeader(data, dataCodec, Lucene49DocValuesFormat.VERSION_CURRENT);
       String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
       meta = state.directory.createOutput(metaName, state.context);
-      CodecUtil.writeHeader(meta, metaCodec, Lucene45DocValuesFormat.VERSION_CURRENT);
+      CodecUtil.writeHeader(meta, metaCodec, Lucene49DocValuesFormat.VERSION_CURRENT);
       maxDoc = state.segmentInfo.getDocCount();
       success = true;
     } finally {
@@ -138,7 +140,10 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
         ++count;
       }
     } else {
-      for (@SuppressWarnings("unused") Number nv : values) {
+      for (Number nv : values) {
+        long v = nv.longValue();
+        minValue = Math.min(minValue, v);
+        maxValue = Math.max(maxValue, v);
         ++count;
       }
     }
@@ -147,8 +152,7 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
 
     final int format;
     if (uniqueValues != null
-        && (delta < 0L || PackedInts.bitsRequired(uniqueValues.size() - 1) < PackedInts.bitsRequired(delta))
-        && count <= Integer.MAX_VALUE) {
+        && (delta < 0L || PackedInts.bitsRequired(uniqueValues.size() - 1) < PackedInts.bitsRequired(delta))) {
       format = TABLE_COMPRESSED;
     } else if (gcd != 0 && gcd != 1) {
       format = GCD_COMPRESSED;
@@ -156,7 +160,7 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
       format = DELTA_COMPRESSED;
     }
     meta.writeVInt(field.number);
-    meta.writeByte(Lucene45DocValuesFormat.NUMERIC);
+    meta.writeByte(Lucene49DocValuesFormat.NUMERIC);
     meta.writeVInt(format);
     if (missing) {
       meta.writeLong(data.getFilePointer());
@@ -164,16 +168,17 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
     } else {
       meta.writeLong(-1L);
     }
-    meta.writeVInt(PackedInts.VERSION_CURRENT);
     meta.writeLong(data.getFilePointer());
     meta.writeVLong(count);
-    meta.writeVInt(BLOCK_SIZE);
 
     switch (format) {
       case GCD_COMPRESSED:
         meta.writeLong(minValue);
         meta.writeLong(gcd);
-        final BlockPackedWriter quotientWriter = new BlockPackedWriter(data, BLOCK_SIZE);
+        final long maxDelta = (maxValue - minValue) / gcd;
+        final int bits = maxDelta < 0 ? 64 : DirectWriter.bitsRequired(maxDelta);
+        meta.writeVInt(bits);
+        final DirectWriter quotientWriter = DirectWriter.getInstance(data, count, bits);
         for (Number nv : values) {
           long value = nv == null ? 0 : nv.longValue();
           quotientWriter.add((value - minValue) / gcd);
@@ -181,9 +186,14 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
         quotientWriter.finish();
         break;
       case DELTA_COMPRESSED:
-        final BlockPackedWriter writer = new BlockPackedWriter(data, BLOCK_SIZE);
+        final long minDelta = delta < 0 ? 0 : minValue;
+        meta.writeLong(minDelta);
+        final int bpv = delta < 0 ? 64 : DirectWriter.bitsRequired(delta);
+        meta.writeVInt(bpv);
+        final DirectWriter writer = DirectWriter.getInstance(data, count, bpv);
         for (Number nv : values) {
-          writer.add(nv == null ? 0 : nv.longValue());
+          long v = nv == null ? 0 : nv.longValue();
+          writer.add(v - minDelta);
         }
         writer.finish();
         break;
@@ -195,8 +205,9 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
           meta.writeLong(decode[i]);
           encode.put(decode[i], i);
         }
-        final int bitsRequired = PackedInts.bitsRequired(uniqueValues.size() - 1);
-        final PackedInts.Writer ordsWriter = PackedInts.getWriterNoHeader(data, PackedInts.Format.PACKED, (int) count, bitsRequired, PackedInts.DEFAULT_BUFFER_SIZE);
+        final int bitsRequired = DirectWriter.bitsRequired(uniqueValues.size() - 1);
+        meta.writeVInt(bitsRequired);
+        final DirectWriter ordsWriter = DirectWriter.getInstance(data, count, bitsRequired);
         for (Number nv : values) {
           ordsWriter.add(encode.get(nv == null ? 0 : nv.longValue()));
         }
@@ -205,6 +216,7 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
       default:
         throw new AssertionError();
     }
+    meta.writeLong(data.getFilePointer());
   }
   
   // TODO: in some cases representing missing with minValue-1 wouldn't take up additional space and so on,
@@ -232,7 +244,7 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
   public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
     // write the byte[] data
     meta.writeVInt(field.number);
-    meta.writeByte(Lucene45DocValuesFormat.BINARY);
+    meta.writeByte(Lucene49DocValuesFormat.BINARY);
     int minLength = Integer.MAX_VALUE;
     int maxLength = Integer.MIN_VALUE;
     final long startFP = data.getFilePointer();
@@ -299,7 +311,7 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
     } else {
       // header
       meta.writeVInt(field.number);
-      meta.writeByte(Lucene45DocValuesFormat.BINARY);
+      meta.writeByte(Lucene49DocValuesFormat.BINARY);
       meta.writeVInt(BINARY_PREFIX_COMPRESSED);
       meta.writeLong(-1L);
       // now write the bytes: sharing prefixes within a block
@@ -345,7 +357,7 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
   @Override
   public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
     meta.writeVInt(field.number);
-    meta.writeByte(Lucene45DocValuesFormat.SORTED);
+    meta.writeByte(Lucene49DocValuesFormat.SORTED);
     addTermsDict(field, values);
     addNumericField(field, docToOrd, false);
   }
@@ -362,7 +374,7 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
   @Override
   public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, final Iterable<Number> docToOrdCount, final Iterable<Number> ords) throws IOException {
     meta.writeVInt(field.number);
-    meta.writeByte(Lucene45DocValuesFormat.SORTED_SET);
+    meta.writeByte(Lucene49DocValuesFormat.SORTED_SET);
 
     if (isSingleValued(docToOrdCount)) {
       meta.writeVInt(SORTED_SET_SINGLE_VALUED_SORTED);
@@ -415,12 +427,12 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
 
     // write the doc -> ord count as a absolute index to the stream
     meta.writeVInt(field.number);
-    meta.writeByte(Lucene45DocValuesFormat.NUMERIC);
-    meta.writeVInt(DELTA_COMPRESSED);
+    meta.writeByte(Lucene49DocValuesFormat.NUMERIC);
+    meta.writeVInt(MONOTONIC_COMPRESSED);
     meta.writeLong(-1L);
-    meta.writeVInt(PackedInts.VERSION_CURRENT);
     meta.writeLong(data.getFilePointer());
     meta.writeVLong(maxDoc);
+    meta.writeVInt(PackedInts.VERSION_CURRENT);
     meta.writeVInt(BLOCK_SIZE);
 
     final MonotonicBlockPackedWriter writer = new MonotonicBlockPackedWriter(data, BLOCK_SIZE);
@@ -430,6 +442,7 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
       writer.add(addr);
     }
     writer.finish();
+    meta.writeLong(data.getFilePointer());
   }
 
   @Override
