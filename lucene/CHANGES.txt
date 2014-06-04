@@ -292,6 +292,14 @@ Build
   version specified in lucene/ivy-versions.properties.  Exceptions are
   specifiable in lucene/ivy-ignore-conflicts.properties.
   (Steve Rowe)
+  
+* LUCENE-5715: Upgrade direct dependencies known to be older than transitive
+  dependencies: com.sun.jersey.version:1.8->1.9; com.sun.xml.bind:jaxb-impl:2.2.2->2.2.3-1;
+  commons-beanutils:commons-beanutils:1.7.0->1.8.3; commons-digester:commons-digester:2.0->2.1;
+  commons-io:commons-io:2.1->2.3; commons-logging:commons-logging:1.1.1->1.1.3;
+  io.netty:netty:3.6.2.Final->3.7.0.Final; javax.activation:activation:1.1->1.1.1;
+  javax.mail:mail:1.4.1->1.4.3; log4j:log4j:1.2.16->1.2.17; org.apache.avro:avro:1.7.4->1.7.5;
+  org.tukaani:xz:1.2->1.4; org.xerial.snappy:snappy-java:1.0.4.1->1.0.5 (Steve Rowe)
 
 ======================= Lucene 4.8.1 =======================
 

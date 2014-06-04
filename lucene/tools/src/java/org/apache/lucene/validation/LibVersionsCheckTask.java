@@ -29,6 +29,7 @@ import org.apache.lucene.validation.ivyde.IvyNodeElementAdapter;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.Task;
+import org.apache.tools.ant.types.LogLevel;
 import org.apache.tools.ant.types.Resource;
 import org.apache.tools.ant.types.ResourceCollection;
 import org.apache.tools.ant.types.resources.FileResource;
@@ -131,7 +132,7 @@ public class LibVersionsCheckTask extends Task {
    * be conflicting indirect dependencies if Lucene/Solr
    * were to use transitive dependencies.
    */
-  private Map<String,Versions> directDependencies = new LinkedHashMap<>();
+  private Map<String,Dependency> directDependencies = new LinkedHashMap<>();
 
   /**
    * All /org/name keys found in ivy-ignore-conflicts.properties,
@@ -140,12 +141,18 @@ public class LibVersionsCheckTask extends Task {
    */
   private Map<String,HashSet<String>> ignoreConflictVersions = new HashMap<>();
 
-  private class Versions {
-    String direct;
-    LinkedHashMap<IvyNodeElement,Set<String>> conflictLocations = new LinkedHashMap<>(); // dependency path -> moduleNames
+  private class Dependency {
+    String org;
+    String name;
+    String directVersion;
+    String latestVersion;
     boolean directlyReferenced = false;
-    Versions(String direct) {
-      this.direct = direct;
+    LinkedHashMap<IvyNodeElement,Set<String>> conflictLocations = new LinkedHashMap<>(); // dependency path -> moduleNames
+    
+    Dependency(String org, String name, String directVersion) {
+      this.org = org;
+      this.name = name;
+      this.directVersion = directVersion;
     }
   }
   
@@ -220,6 +227,9 @@ public class LibVersionsCheckTask extends Task {
         if ( ! resolveTransitively(ivyXmlFile)) {
           ++numErrors;
         }
+        if ( ! findLatestConflictVersions()) {
+          ++numErrors;
+        }
       } catch (Exception e) {
         throw new BuildException("Exception reading file " + ivyXmlFile.getPath() + " - " + e.toString(), e);
       }
@@ -227,7 +237,7 @@ public class LibVersionsCheckTask extends Task {
     }
 
     log("Checking for orphans in " + centralizedVersionsFile.getName(), verboseLevel);
-    for (Map.Entry<String,Versions> entry : directDependencies.entrySet()) {
+    for (Map.Entry<String,Dependency> entry : directDependencies.entrySet()) {
       String coordinateKey = entry.getKey();
       if ( ! entry.getValue().directlyReferenced) {
         log("ORPHAN coordinate key '" + coordinateKey + "' in " + centralizedVersionsFile.getName()
@@ -253,6 +263,67 @@ public class LibVersionsCheckTask extends Task {
     if (numConflicts > 0 || numErrors > 0) {
       throw new BuildException("Lib versions check failed. Check the logs.");
     }
+  }
+
+  private boolean findLatestConflictVersions() {
+    boolean success = true;
+    StringBuilder latestIvyXml = new StringBuilder();
+    latestIvyXml.append("<ivy-module version=\"2.0\">\n");
+    latestIvyXml.append("  <info organisation=\"org.apache.lucene\" module=\"core-tools-find-latest-revision\"/>\n");
+    latestIvyXml.append("  <configurations>\n");
+    latestIvyXml.append("    <conf name=\"default\" transitive=\"false\"/>\n");
+    latestIvyXml.append("  </configurations>\n");
+    latestIvyXml.append("  <dependencies>\n");
+    for (Map.Entry<String, Dependency> directDependency : directDependencies.entrySet()) {
+      Dependency dependency = directDependency.getValue();
+      if (dependency.conflictLocations.entrySet().isEmpty()) {
+        continue;
+      }
+      latestIvyXml.append("    <dependency org=\"");
+      latestIvyXml.append(dependency.org);
+      latestIvyXml.append("\" name=\"");
+      latestIvyXml.append(dependency.name);
+      latestIvyXml.append("\" rev=\"latest.release\" conf=\"default->*\"/>\n");
+    }
+    latestIvyXml.append("  </dependencies>\n");
+    latestIvyXml.append("</ivy-module>\n");
+    File buildDir = new File(commonBuildDir, "ivy-transitive-resolve");
+    if ( ! buildDir.exists() && ! buildDir.mkdirs()) {
+      throw new BuildException("Could not create temp directory " + buildDir.getPath());
+    }
+    File findLatestIvyXmlFile = new File(buildDir, "find.latest.conflicts.ivy.xml");
+    try {
+      try (Writer writer = new OutputStreamWriter(new FileOutputStream(findLatestIvyXmlFile), StandardCharsets.UTF_8)) {
+        writer.write(latestIvyXml.toString());
+      }
+      ResolveOptions options = new ResolveOptions();
+      options.setDownload(false);           // Download only module descriptors, not artifacts
+      options.setTransitive(false);         // Resolve only direct dependencies
+      options.setUseCacheOnly(false);       // Download the internet!
+      options.setOutputReport(false);       // Don't print to the console
+      options.setLog(LogOptions.LOG_QUIET); // Don't log to the console
+      options.setConfs(new String[] {"*"}); // Resolve all configurations
+      ResolveReport resolveReport = ivy.resolve(findLatestIvyXmlFile.toURI().toURL(), options);
+      IvyNodeElement root = IvyNodeElementAdapter.adapt(resolveReport);
+      for (IvyNodeElement element : root.getDependencies()) {
+        String coordinate = "/" + element.getOrganization() + "/" + element.getName();
+        Dependency dependency = directDependencies.get(coordinate);
+        if (null == dependency) {
+          log("ERROR: the following coordinate key does not appear in "
+              + centralizedVersionsFile.getName() + ": " + coordinate, Project.MSG_ERR);
+          success = false;
+        } else {
+          dependency.latestVersion = element.getRevision();
+        }
+      }
+    } catch (IOException e) {
+      log("Exception writing to " + findLatestIvyXmlFile.getPath() + ": " + e.toString(), Project.MSG_ERR);
+      success = false;
+    } catch (ParseException e) {
+      log("Exception parsing filename " + findLatestIvyXmlFile.getPath() + ": " + e.toString(), Project.MSG_ERR);
+      success = false;
+    }
+    return success;
   }
 
   /**
@@ -300,10 +371,13 @@ public class LibVersionsCheckTask extends Task {
     }
     for (Object obj : properties.keySet()) {
       String coordinate = (String)obj;
-      if (COORDINATE_KEY_PATTERN.matcher(coordinate).matches()) {
-        String direct = properties.getProperty(coordinate);
-        Versions versions = new Versions(direct);
-        directDependencies.put(coordinate, versions);
+      Matcher matcher = COORDINATE_KEY_PATTERN.matcher(coordinate);
+      if (matcher.matches()) {
+        String org = matcher.group(2);
+        String name = matcher.group(3);
+        String directVersion = properties.getProperty(coordinate);
+        Dependency dependency = new Dependency(org, name, directVersion);
+        directDependencies.put(coordinate, dependency);
       }
     }
   }
@@ -311,7 +385,7 @@ public class LibVersionsCheckTask extends Task {
   /**
    * Transitively resolves all dependencies in the given ivy.xml file,
    * looking for indirect dependencies with versions that conflict
-   * with those of direct dependencies.  Versions conflict when a
+   * with those of direct dependencies.  Dependency conflict when a
    * direct dependency's version is older than that of an indirect
    * dependency with the same /org/name.
    * 
@@ -357,13 +431,13 @@ public class LibVersionsCheckTask extends Task {
       IvyNodeElement root = IvyNodeElementAdapter.adapt(resolveReport);
       for (IvyNodeElement directDependency : root.getDependencies()) {
         String coordinate = "/" + directDependency.getOrganization() + "/" + directDependency.getName();
-        Versions versions = directDependencies.get(coordinate);
-        if (null == versions) {
+        Dependency dependency = directDependencies.get(coordinate);
+        if (null == dependency) {
           log("ERROR: the following coordinate key does not appear in " 
               + centralizedVersionsFile.getName() + ": " + coordinate);
           success = false;
         } else {
-          versions.directlyReferenced = true;
+          dependency.directlyReferenced = true;
           if (collectConflicts(directDependency, directDependency, moduleName)) {
             success = false;
           }
@@ -386,15 +460,15 @@ public class LibVersionsCheckTask extends Task {
     boolean conflicts = false;
     for (IvyNodeElement child : parent.getDependencies()) {
       String coordinate = "/" + child.getOrganization() + "/" + child.getName();
-      Versions versions = directDependencies.get(coordinate);
-      if (null != versions) { // Ignore this indirect dependency if it's not also a direct dependency
+      Dependency dependency = directDependencies.get(coordinate);
+      if (null != dependency) { // Ignore this indirect dependency if it's not also a direct dependency
         String indirectVersion = child.getRevision();
-        if (isConflict(coordinate, versions.direct, indirectVersion)) {
+        if (isConflict(coordinate, dependency.directVersion, indirectVersion)) {
           conflicts = true;
-          Set<String> moduleNames = versions.conflictLocations.get(root);
+          Set<String> moduleNames = dependency.conflictLocations.get(root);
           if (null == moduleNames) {
             moduleNames = new HashSet<>();
-            versions.conflictLocations.put(root, moduleNames);
+            dependency.conflictLocations.put(root, moduleNames);
           }
           moduleNames.add(moduleName);
         }
@@ -499,7 +573,7 @@ public class LibVersionsCheckTask extends Task {
   private int emitConflicts() {
     int conflicts = 0;
     StringBuilder builder = new StringBuilder();
-    for (Map.Entry<String,Versions> directDependency : directDependencies.entrySet()) {
+    for (Map.Entry<String,Dependency> directDependency : directDependencies.entrySet()) {
       String coordinate = directDependency.getKey();
       Set<Map.Entry<IvyNodeElement,Set<String>>> entrySet
           = directDependency.getValue().conflictLocations.entrySet();
@@ -540,14 +614,16 @@ public class LibVersionsCheckTask extends Task {
     for (IvyNodeElement child : parent.getDependencies()) {
       String indirectCoordinate = "/" + child.getOrganization() + "/" + child.getName();
       if (conflictCoordinate.equals(indirectCoordinate)) {
-        String directVersion = directDependencies.get(conflictCoordinate).direct;
+        Dependency dependency = directDependencies.get(conflictCoordinate);
+        String directVersion = dependency.directVersion;
         if (isConflict(conflictCoordinate, directVersion, child.getRevision())) {
           for (int i = 0 ; i < depth - 1 ; ++i) {
             builder.append("    ");
           }
           builder.append("+-- ");
           builder.append(indirectCoordinate).append("=").append(child.getRevision());
-          builder.append(" <<< Conflict (direct=").append(directVersion).append(")\n");
+          builder.append(" <<< Conflict (direct=").append(directVersion);
+          builder.append(", latest=").append(dependency.latestVersion).append(")\n");
           return true;
         }
       } else if (hasConflicts(conflictCoordinate, child)) {
@@ -569,7 +645,8 @@ public class LibVersionsCheckTask extends Task {
     for (IvyNodeElement child : parent.getDependencies()) {
       String indirectCoordinate = "/" + child.getOrganization() + "/" + child.getName();
       if (conflictCoordinate.equals(indirectCoordinate)) {
-        if (isConflict(conflictCoordinate, directDependencies.get(conflictCoordinate).direct, child.getRevision())) {
+        Dependency dependency = directDependencies.get(conflictCoordinate);
+        if (isConflict(conflictCoordinate, dependency.directVersion, child.getRevision())) {
           return true;
         }
       } else if (hasConflicts(conflictCoordinate, child)) {
