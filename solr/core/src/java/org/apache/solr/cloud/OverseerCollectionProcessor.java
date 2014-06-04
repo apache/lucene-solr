@@ -325,7 +325,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
             }
 
             try {
-              markTaskAsRunning(head, collectionName, asyncId);
+              markTaskAsRunning(head, collectionName, asyncId, message);
               log.debug("Marked task [{}] as running", head.getId());
             } catch (KeeperException.NodeExistsException e) {
               // This should never happen
@@ -368,6 +368,10 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         message.getStr(COLLECTION_PROP) : message.getStr("name");
 
     if(collectionName == null)
+      return true;
+
+    // CLUSTERSTATUS is always mutually exclusive
+    if(CLUSTERSTATUS.isEqual(message.getStr(Overseer.QUEUE_OPERATION)))
       return true;
 
     if(collectionWip.contains(collectionName))
@@ -2561,7 +2565,8 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     } while(true);
   }
 
-  private void markTaskAsRunning(QueueEvent head, String collectionName,String asyncId)
+  private void markTaskAsRunning(QueueEvent head, String collectionName,
+                                 String asyncId, ZkNodeProps message)
       throws KeeperException, InterruptedException {
     synchronized (runningZKTasks) {
       runningZKTasks.add(head.getId());
@@ -2570,7 +2575,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     synchronized (runningTasks) {
       runningTasks.add(head.getId());
     }
-    if(collectionName != null) {
+    if(!CLUSTERSTATUS.isEqual(message.getStr(Overseer.QUEUE_OPERATION)) && collectionName != null) {
       synchronized (collectionWip) {
         collectionWip.add(collectionName);
       }
@@ -2663,7 +2668,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       if(asyncId != null)
         runningMap.remove(asyncId);
 
-      if(collectionName != null) {
+      if(!CLUSTERSTATUS.isEqual(operation) && collectionName != null) {
         synchronized (collectionWip) {
           collectionWip.remove(collectionName);
         }
@@ -2680,7 +2685,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
           runningTasks.remove(id);
         }
 
-        if (collectionName != null) {
+        if (!CLUSTERSTATUS.isEqual(operation) && collectionName != null) {
           synchronized (collectionWip) {
             collectionWip.remove(collectionName);
           }

@@ -17,12 +17,15 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.junit.Before;
@@ -190,6 +193,16 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
       assertTrue("SplitShard task [2000] was supposed to be in [running] but isn't. It is [" + state + "]", state.equals("running"));
 
       invokeCollectionApi("action", CollectionParams.CollectionAction.OVERSEERSTATUS.toLower());
+
+      // CLUSTERSTATE is always mutually exclusive, it should return with a response before the split completes
+
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
+      params.set("collection", "collection1");
+      SolrRequest request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+
+      server.request(request);
 
       state = getRequestState("2000", server);
 
