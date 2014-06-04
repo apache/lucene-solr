@@ -153,7 +153,9 @@ public class SnapShooter {
 
       details.add("fileCount", files.size());
       details.add("status", "success");
-      details.add("snapshotCompletedAt", new Date().toString());
+      String date = new Date().toString();
+      details.add("snapshotCompletedAt", date);
+      LOG.info("Done creating backup snapshot, completed at: " + date);
     } catch (Exception e) {
       SnapPuller.delTree(snapShotDir);
       LOG.error("Exception while creating snapshot", e);
