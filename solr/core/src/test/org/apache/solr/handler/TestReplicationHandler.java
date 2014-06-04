@@ -20,7 +20,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -33,21 +32,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
-import java.util.List;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.SimpleFSDirectory;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -72,7 +60,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.StandardDirectoryFactory;
 import org.apache.solr.servlet.SolrDispatchFilter;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -1308,261 +1295,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     checkForSingleIndex(masterJetty);
     checkForSingleIndex(slaveJetty);
   }
-
-
-  @Test
-  public void doTestBackup() throws Exception {
-    String configFile = "solrconfig-master1.xml";
-    boolean addNumberToKeepInRequest = true;
-    String backupKeepParamName = ReplicationHandler.NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM;
-    if(random().nextBoolean()) {
-      configFile = "solrconfig-master1-keepOneBackup.xml";
-      addNumberToKeepInRequest = false;
-      backupKeepParamName = ReplicationHandler.NUMBER_BACKUPS_TO_KEEP_INIT_PARAM;
-    }
-
-    masterJetty.stop();
-    master.copyConfigFile(CONF_DIR + configFile,
-                          "solrconfig.xml");
-
-    masterJetty = createJetty(master);
-    masterClient.shutdown();
-    masterClient = createNewSolrServer(masterJetty.getLocalPort());
-
-    nDocs--;
-    masterClient.deleteByQuery("*:*");
-    for (int i = 0; i < nDocs; i++)
-      index(masterClient, "id", i, "name", "name = " + i);
-
-    masterClient.commit();
-
-    class BackupThread extends Thread {
-      volatile String fail = null;
-      final boolean addNumberToKeepInRequest;
-      String backupKeepParamName;
-      String backupName;
-      String cmd;
-      BackupThread(boolean addNumberToKeepInRequest, String backupKeepParamName, String command) {
-        this.addNumberToKeepInRequest = addNumberToKeepInRequest;
-        this.backupKeepParamName = backupKeepParamName;
-        this.cmd = command;
-      }
-      BackupThread(String backupName, String command) {
-        this.backupName = backupName;
-        addNumberToKeepInRequest = false;
-        this.cmd = command;
-      }
-      @Override
-      public void run() {
-        String masterUrl = null;
-        if(backupName != null) {
-          masterUrl = buildUrl(masterJetty.getLocalPort()) + "/replication?command=" + cmd +
-              "&name=" +  backupName;
-        } else {
-          masterUrl = buildUrl(masterJetty.getLocalPort()) + "/replication?command=" + cmd +
-              (addNumberToKeepInRequest ? "&" + backupKeepParamName + "=1" : "");
-        }
-
-        URL url;
-        InputStream stream = null;
-        try {
-          url = new URL(masterUrl);
-          stream = url.openStream();
-          stream.close();
-        } catch (Exception e) {
-          fail = e.getMessage();
-        } finally {
-          IOUtils.closeQuietly(stream);
-        }
-
-      };
-    };
-
-    class CheckDeleteBackupStatus {
-      String response = null;
-      boolean success = false;
-      String fail = null;
-
-      public void fetchStatus() {
-        String masterUrl = buildUrl(masterJetty.getLocalPort()) + "/replication?command=" + ReplicationHandler.CMD_DETAILS;
-        URL url;
-        InputStream stream = null;
-        try {
-          url = new URL(masterUrl);
-          stream = url.openStream();
-          response = IOUtils.toString(stream, "UTF-8");
-          if(response.contains("<str name=\"status\">success</str>")) {
-            success = true;
-          }
-          stream.close();
-        } catch (Exception e) {
-          fail = e.getMessage();
-        } finally {
-          IOUtils.closeQuietly(stream);
-        }
-      };
-    }
-
-    class CheckBackupStatus {
-      String fail = null;
-      String response = null;
-      boolean success = false;
-      String backupTimestamp = null;
-      final String lastBackupTimestamp;
-      final Pattern p = Pattern.compile("<str name=\"snapshotCompletedAt\">(.*?)</str>");
-
-      CheckBackupStatus(String lastBackupTimestamp) {
-        this.lastBackupTimestamp = lastBackupTimestamp;
-      }
-
-      public void fetchStatus() {
-        String masterUrl = buildUrl(masterJetty.getLocalPort()) + "/replication?command=" + ReplicationHandler.CMD_DETAILS;
-        URL url;
-        InputStream stream = null;
-        try {
-          url = new URL(masterUrl);
-          stream = url.openStream();
-          response = IOUtils.toString(stream, "UTF-8");
-          if(response.contains("<str name=\"status\">success</str>")) {
-            Matcher m = p.matcher(response);
-            if(!m.find()) {
-              fail("could not find the completed timestamp in response.");
-            }
-            backupTimestamp = m.group(1);
-            if(!backupTimestamp.equals(lastBackupTimestamp)) {
-              success = true;
-            }
-          }
-          stream.close();
-        } catch (Exception e) {
-          fail = e.getMessage();
-        } finally {
-          IOUtils.closeQuietly(stream);
-        }
-
-      };
-    };
-
-    File[] snapDir = new File[2];
-    boolean namedBackup = random().nextBoolean();
-    try {
-      String firstBackupTimestamp = null;
-
-      String[] backupNames = null;
-      if (namedBackup) {
-        backupNames = new String[2];
-      }
-      for (int i = 0; i < 2; i++) {
-        BackupThread backupThread;
-        final String backupName = TestUtil.randomSimpleString(random(), 1, 20);
-        if (!namedBackup) {
-          backupThread = new BackupThread(addNumberToKeepInRequest, backupKeepParamName, ReplicationHandler.CMD_BACKUP);
-        } else {
-          backupThread = new BackupThread(backupName, ReplicationHandler.CMD_BACKUP);
-          backupNames[i] = backupName;
-        }
-        backupThread.start();
-
-        File dataDir = new File(master.getDataDir());
-
-        int waitCnt = 0;
-        CheckBackupStatus checkBackupStatus = new CheckBackupStatus(firstBackupTimestamp);
-        while (true) {
-          checkBackupStatus.fetchStatus();
-          if (checkBackupStatus.fail != null) {
-            fail(checkBackupStatus.fail);
-          }
-          if (checkBackupStatus.success) {
-            if (i == 0) {
-              firstBackupTimestamp = checkBackupStatus.backupTimestamp;
-              Thread.sleep(1000); //ensure the next backup will have a different timestamp.
-            }
-            break;
-          }
-          Thread.sleep(200);
-          if (waitCnt == 20) {
-            fail("Backup success not detected:" + checkBackupStatus.response);
-          }
-          waitCnt++;
-        }
-
-        if (backupThread.fail != null) {
-          fail(backupThread.fail);
-        }
-        File[] files = null;
-        if (!namedBackup) {
-          files = dataDir.listFiles(new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-              if (name.startsWith("snapshot")) {
-                return true;
-              }
-              return false;
-            }
-          });
-        } else {
-          files = dataDir.listFiles(new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-              if (name.equals("snapshot." + backupName)) {
-                return true;
-              }
-              return false;
-            }
-          });
-        }
-        assertEquals(1, files.length);
-        snapDir[i] = files[0];
-        Directory dir = new SimpleFSDirectory(snapDir[i].getAbsoluteFile());
-        IndexReader reader = DirectoryReader.open(dir);
-        IndexSearcher searcher = new IndexSearcher(reader);
-        TopDocs hits = searcher.search(new MatchAllDocsQuery(), 1);
-        assertEquals(nDocs, hits.totalHits);
-        reader.close();
-        dir.close();
-
-      }
-
-      if (!namedBackup && snapDir[0].exists()) {
-        fail("The first backup should have been cleaned up because " + backupKeepParamName + " was set to 1.");
-      }
-
-      //Test Deletion of named backup
-      if(namedBackup) {
-        for (int i = 0; i < 2; i++) {
-          BackupThread deleteBackupThread = new BackupThread(backupNames[i], ReplicationHandler.CMD_DELETE_BACKUP);
-          deleteBackupThread.start();
-          int waitCnt = 0;
-          CheckDeleteBackupStatus checkDeleteBackupStatus = new CheckDeleteBackupStatus();
-          while (true) {
-            checkDeleteBackupStatus.fetchStatus();
-            if (checkDeleteBackupStatus.fail != null) {
-              fail(checkDeleteBackupStatus.fail);
-            }
-            if (checkDeleteBackupStatus.success) {
-              break;
-            }
-            Thread.sleep(200);
-            if (waitCnt == 20) {
-              fail("Delete Backup success not detected:" + checkDeleteBackupStatus.response);
-            }
-            waitCnt++;
-          }
-
-          if (deleteBackupThread.fail != null) {
-            fail(deleteBackupThread.fail);
-          }
-        }
-      }
-
-    } finally {
-      if(!namedBackup) {
-        TestUtil.rm(snapDir);
-      }
-
-    }
-  }
-
+  
   /**
    * character copy of file using UTF-8. If port is non-null, will be substituted any time "TEST_PORT" is found.
    */
@@ -1640,7 +1373,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     return buildUrl(port, context);
   }
 
-  private static class SolrInstance {
+  static class SolrInstance {
 
     private String name;
     private Integer testPort;
