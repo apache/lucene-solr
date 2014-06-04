@@ -32,7 +32,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ngram.EdgeNGramTokenFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.codecs.lucene46.Lucene46Codec;
+import org.apache.lucene.codecs.lucene49.Lucene49Codec;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -184,7 +184,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    *  codec to use. */
   protected IndexWriterConfig getIndexWriterConfig(Version matchVersion, Analyzer indexAnalyzer, IndexWriterConfig.OpenMode openMode) {
     IndexWriterConfig iwc = new IndexWriterConfig(matchVersion, indexAnalyzer);
-    iwc.setCodec(new Lucene46Codec());
+    iwc.setCodec(new Lucene49Codec());
     iwc.setOpenMode(openMode);
 
     // This way all merged segments will be sorted at

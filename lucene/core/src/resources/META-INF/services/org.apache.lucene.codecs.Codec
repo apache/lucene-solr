@@ -18,3 +18,4 @@ org.apache.lucene.codecs.lucene41.Lucene41Codec
 org.apache.lucene.codecs.lucene42.Lucene42Codec
 org.apache.lucene.codecs.lucene45.Lucene45Codec
 org.apache.lucene.codecs.lucene46.Lucene46Codec
+org.apache.lucene.codecs.lucene49.Lucene49Codec

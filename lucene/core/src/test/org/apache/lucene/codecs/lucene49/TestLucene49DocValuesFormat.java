@@ -1,8 +1,4 @@
-package org.apache.lucene.util;
-
-import java.util.Set;
-
-import org.apache.lucene.codecs.Codec;
+package org.apache.lucene.codecs.lucene49;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,25 +17,18 @@ import org.apache.lucene.codecs.Codec;
  * limitations under the License.
  */
 
-// TODO: maybe we should test this with mocks, but its easy
-// enough to test the basics via Codec
-public class TestNamedSPILoader extends LuceneTestCase {
-  
-  public void testLookup() {
-    Codec codec = Codec.forName("Lucene49");
-    assertEquals("Lucene49", codec.getName());
-  }
-  
-  // we want an exception if its not found.
-  public void testBogusLookup() {
-    try {
-      Codec.forName("dskfdskfsdfksdfdsf");
-      fail();
-    } catch (IllegalArgumentException expected) {}
-  }
-  
-  public void testAvailableServices() {
-    Set<String> codecs = Codec.availableCodecs();
-    assertTrue(codecs.contains("Lucene49"));
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.index.BaseCompressingDocValuesFormatTestCase;
+import org.apache.lucene.util.TestUtil;
+
+/**
+ * Tests Lucene49DocValuesFormat
+ */
+public class TestLucene49DocValuesFormat extends BaseCompressingDocValuesFormatTestCase {
+  private final Codec codec = TestUtil.alwaysDocValuesFormat(new Lucene49DocValuesFormat());
+
+  @Override
+  protected Codec getCodec() {
+    return codec;
   }
 }

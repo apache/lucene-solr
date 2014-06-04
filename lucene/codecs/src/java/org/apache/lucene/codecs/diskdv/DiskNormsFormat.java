@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.NormsFormat;
-import org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer;
+import org.apache.lucene.codecs.lucene49.Lucene49DocValuesConsumer;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
@@ -31,7 +31,7 @@ public final class DiskNormsFormat extends NormsFormat {
 
   @Override
   public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
-    return new Lucene45DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
+    return new Lucene49DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
   }
 
   @Override

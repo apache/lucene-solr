@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.codecs.lucene46.Lucene46Codec;
+import org.apache.lucene.codecs.lucene49.Lucene49Codec;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -80,9 +80,9 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
     Directory directory = newDirectory();
     // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    final DocValuesFormat fast = DocValuesFormat.forName("Lucene45");
+    final DocValuesFormat fast = DocValuesFormat.forName("Lucene49");
     final DocValuesFormat slow = DocValuesFormat.forName("SimpleText");
-    iwc.setCodec(new Lucene46Codec() {
+    iwc.setCodec(new Lucene49Codec() {
       @Override
       public DocValuesFormat getDocValuesFormatForField(String field) {
         if ("dv1".equals(field)) {

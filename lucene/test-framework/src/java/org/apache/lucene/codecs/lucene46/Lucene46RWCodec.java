@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene45;
+package org.apache.lucene.codecs.lucene46;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,38 +17,14 @@ package org.apache.lucene.codecs.lucene45;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
-import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.codecs.FieldInfosFormat;
-import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.NormsFormat;
-import org.apache.lucene.codecs.lucene42.Lucene42FieldInfosFormat;
-import org.apache.lucene.codecs.lucene42.Lucene42FieldInfosWriter;
 import org.apache.lucene.codecs.lucene42.Lucene42NormsFormat;
-import org.apache.lucene.util.LuceneTestCase;
 
 /**
- * Read-write version of {@link Lucene45Codec} for testing.
+ * Read-write version of {@link Lucene46Codec} for testing.
  */
 @SuppressWarnings("deprecation")
-public class Lucene45RWCodec extends Lucene45Codec {
-  
-  private final FieldInfosFormat fieldInfosFormat = new Lucene42FieldInfosFormat() {
-    @Override
-    public FieldInfosWriter getFieldInfosWriter() throws IOException {
-      if (!LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
-        return super.getFieldInfosWriter();
-      } else {
-        return new Lucene42FieldInfosWriter();
-      }
-    }
-  };
-
-  @Override
-  public FieldInfosFormat fieldInfosFormat() {
-    return fieldInfosFormat;
-  }
+public class Lucene46RWCodec extends Lucene46Codec {
   
   private static final NormsFormat norms = new Lucene42NormsFormat();
 

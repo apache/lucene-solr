@@ -19,13 +19,13 @@ package org.apache.lucene.codecs.diskdv;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.lucene45.Lucene45DocValuesProducer;
+import org.apache.lucene.codecs.lucene49.Lucene49DocValuesProducer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.packed.MonotonicBlockPackedReader;
 
-class DiskDocValuesProducer extends Lucene45DocValuesProducer {
+class DiskDocValuesProducer extends Lucene49DocValuesProducer {
 
   DiskDocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     super(state, dataCodec, dataExtension, metaCodec, metaExtension);
