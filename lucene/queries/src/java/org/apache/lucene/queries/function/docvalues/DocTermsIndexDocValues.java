@@ -40,7 +40,6 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
   protected final SortedDocValues termsIndex;
   protected final ValueSource vs;
   protected final MutableValueStr val = new MutableValueStr();
-  protected final BytesRef spare = new BytesRef();
   protected final CharsRef spareChars = new CharsRef();
 
   public DocTermsIndexDocValues(ValueSource vs, AtomicReaderContext context, String field) throws IOException {
@@ -71,17 +70,18 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
 
   @Override
   public boolean bytesVal(int doc, BytesRef target) {
-    termsIndex.get(doc, target);
+    target.length = 0;
+    target.copyBytes(termsIndex.get(doc));
     return target.length > 0;
   }
 
   @Override
   public String strVal(int doc) {
-    termsIndex.get(doc, spare);
-    if (spare.length == 0) {
+    final BytesRef term = termsIndex.get(doc);
+    if (term.length == 0) {
       return null;
     }
-    UnicodeUtil.UTF8toUTF16(spare, spareChars);
+    UnicodeUtil.UTF8toUTF16(term, spareChars);
     return spareChars.toString();
   }
 
@@ -149,14 +149,10 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
       @Override
       public void fillValue(int doc) {
         int ord = termsIndex.getOrd(doc);
-        if (ord == -1) {
-          mval.value.bytes = BytesRef.EMPTY_BYTES;
-          mval.value.offset = 0;
-          mval.value.length = 0;
-          mval.exists = false;
-        } else {
-          termsIndex.lookupOrd(ord, mval.value);
-          mval.exists = true;
+        mval.value.length = 0;
+        mval.exists = ord >= 0;
+        if (mval.exists) {
+          mval.value.copyBytes(termsIndex.lookupOrd(ord));
         }
       }
     };

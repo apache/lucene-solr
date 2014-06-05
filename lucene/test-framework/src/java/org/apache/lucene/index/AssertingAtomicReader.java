@@ -449,11 +449,11 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     }
 
     @Override
-    public void get(int docID, BytesRef result) {
+    public BytesRef get(int docID) {
       assert docID >= 0 && docID < maxDoc;
+      final BytesRef result = in.get(docID);
       assert result.isValid();
-      in.get(docID, result);
-      assert result.isValid();
+      return result;
     }
   }
   
@@ -479,11 +479,11 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     }
 
     @Override
-    public void lookupOrd(int ord, BytesRef result) {
+    public BytesRef lookupOrd(int ord) {
       assert ord >= 0 && ord < valueCount;
+      final BytesRef result = in.lookupOrd(ord);
       assert result.isValid();
-      in.lookupOrd(ord, result);
-      assert result.isValid();
+      return result;
     }
 
     @Override
@@ -494,11 +494,11 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     }
 
     @Override
-    public void get(int docID, BytesRef result) {
+    public BytesRef get(int docID) {
       assert docID >= 0 && docID < maxDoc;
+      final BytesRef result = in.get(docID);
       assert result.isValid();
-      in.get(docID, result);
-      assert result.isValid();
+      return result;
     }
 
     @Override
@@ -543,11 +543,11 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     }
 
     @Override
-    public void lookupOrd(long ord, BytesRef result) {
+    public BytesRef lookupOrd(long ord) {
       assert ord >= 0 && ord < valueCount;
+      final BytesRef result = in.lookupOrd(ord);
       assert result.isValid();
-      in.lookupOrd(ord, result);
-      assert result.isValid();
+      return result;
     }
 
     @Override

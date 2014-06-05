@@ -116,7 +116,6 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       reader = newReader;
 //      System.out.println("[" + Thread.currentThread().getName() + "]: reopened reader: " + reader);
       assertTrue(reader.numDocs() > 0); // we delete at most one document per round
-      BytesRef scratch = new BytesRef();
       for (AtomicReaderContext context : reader.leaves()) {
         AtomicReader r = context.reader();
 //        System.out.println(((SegmentReader) r).getSegmentName());
@@ -141,7 +140,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
               if (field < numNDVFields) {
                 assertEquals("invalid value for doc=" + doc + ", field=" + f + ", reader=" + r, fieldValues[field], ndv.get(doc));
               } else {
-                assertEquals("invalid value for doc=" + doc + ", field=" + f + ", reader=" + r, fieldValues[field], TestBinaryDocValuesUpdates.getValue(bdv, doc, scratch));
+                assertEquals("invalid value for doc=" + doc + ", field=" + f + ", reader=" + r, fieldValues[field], TestBinaryDocValuesUpdates.getValue(bdv, doc));
               }
             }
           }
@@ -275,7 +274,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
             assertTrue(docsWithBdv.get(j));
             assertTrue(docsWithControl.get(j));
             long ctrlValue = control.get(j);
-            long bdvValue = TestBinaryDocValuesUpdates.getValue(bdv, j, scratch) * 2;
+            long bdvValue = TestBinaryDocValuesUpdates.getValue(bdv, j) * 2;
 //              if (ctrlValue != bdvValue) {
 //                System.out.println("seg=" + r + ", f=f" + i + ", doc=" + j + ", group=" + r.document(j).get("updKey") + ", ctrlValue=" + ctrlValue + ", bdvBytes=" + scratch);
 //              }
@@ -306,7 +305,6 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     }
     
     int numGens = atLeast(5);
-    BytesRef scratch = new BytesRef();
     for (int i = 0; i < numGens; i++) {
       int doc = random().nextInt(numDocs);
       Term t = new Term("id", "doc" + doc);
@@ -319,7 +317,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
         BinaryDocValues fbdv = r.getBinaryDocValues("f");
         NumericDocValues cfndv = r.getNumericDocValues("cf");
         for (int j = 0; j < r.maxDoc(); j++) {
-          assertEquals(cfndv.get(j), TestBinaryDocValuesUpdates.getValue(fbdv, j, scratch) * 2);
+          assertEquals(cfndv.get(j), TestBinaryDocValuesUpdates.getValue(fbdv, j) * 2);
         }
       }
       reader.close();
@@ -381,14 +379,13 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     writer.shutdown();
     
     DirectoryReader reader = DirectoryReader.open(dir);
-    BytesRef scratch = new BytesRef();
     for (AtomicReaderContext context : reader.leaves()) {
       for (int i = 0; i < numBinaryFields; i++) {
         AtomicReader r = context.reader();
         BinaryDocValues f = r.getBinaryDocValues("f" + i);
         NumericDocValues cf = r.getNumericDocValues("cf" + i);
         for (int j = 0; j < r.maxDoc(); j++) {
-          assertEquals("reader=" + r + ", field=f" + i + ", doc=" + j, cf.get(j), TestBinaryDocValuesUpdates.getValue(f, j, scratch) * 2);
+          assertEquals("reader=" + r + ", field=f" + i + ", doc=" + j, cf.get(j), TestBinaryDocValuesUpdates.getValue(f, j) * 2);
         }
       }
     }

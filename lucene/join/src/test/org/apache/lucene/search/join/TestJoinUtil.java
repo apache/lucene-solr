@@ -662,14 +662,13 @@ public class TestJoinUtil extends LuceneTestCase {
 
           private Scorer scorer;
           private SortedSetDocValues docTermOrds;
-          final BytesRef joinValue = new BytesRef();
 
           @Override
           public void collect(int doc) throws IOException {
             docTermOrds.setDocument(doc);
             long ord;
             while ((ord = docTermOrds.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
-              docTermOrds.lookupOrd(ord, joinValue);
+              final BytesRef joinValue = docTermOrds.lookupOrd(ord);
               JoinScore joinScore = joinValueToJoinScores.get(joinValue);
               if (joinScore == null) {
                 joinValueToJoinScores.put(BytesRef.deepCopyOf(joinValue), joinScore = new JoinScore());
@@ -699,12 +698,10 @@ public class TestJoinUtil extends LuceneTestCase {
           private Scorer scorer;
           private BinaryDocValues terms;
           private Bits docsWithField;
-          private final BytesRef spare = new BytesRef();
 
           @Override
           public void collect(int doc) throws IOException {
-            terms.get(doc, spare);
-            BytesRef joinValue = spare;
+            final BytesRef joinValue = terms.get(doc);
             if (joinValue.length == 0 && !docsWithField.get(doc)) {
               return;
             }
@@ -764,7 +761,6 @@ public class TestJoinUtil extends LuceneTestCase {
           toSearcher.search(new MatchAllDocsQuery(), new SimpleCollector() {
 
             private SortedSetDocValues docTermOrds;
-            private final BytesRef scratch = new BytesRef();
             private int docBase;
 
             @Override
@@ -772,8 +768,8 @@ public class TestJoinUtil extends LuceneTestCase {
               docTermOrds.setDocument(doc);
               long ord;
               while ((ord = docTermOrds.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
-                docTermOrds.lookupOrd(ord, scratch);
-                JoinScore joinScore = joinValueToJoinScores.get(scratch);
+                final BytesRef joinValue = docTermOrds.lookupOrd(ord);
+                JoinScore joinScore = joinValueToJoinScores.get(joinValue);
                 if (joinScore == null) {
                   continue;
                 }
@@ -803,12 +799,11 @@ public class TestJoinUtil extends LuceneTestCase {
 
           private BinaryDocValues terms;
           private int docBase;
-          private final BytesRef spare = new BytesRef();
 
           @Override
           public void collect(int doc) {
-            terms.get(doc, spare);
-            JoinScore joinScore = joinValueToJoinScores.get(spare);
+            final BytesRef joinValue = terms.get(doc);
+            JoinScore joinScore = joinValueToJoinScores.get(joinValue);
             if (joinScore == null) {
               return;
             }

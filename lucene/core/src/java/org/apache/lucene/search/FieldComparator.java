@@ -831,7 +831,7 @@ public abstract class FieldComparator<T> {
         if (values[slot] == null) {
           values[slot] = new BytesRef();
         }
-        termsIndex.lookupOrd(ord, values[slot]);
+        values[slot].copyBytes(termsIndex.lookupOrd(ord));
       }
       ords[slot] = ord;
       readerGen[slot] = currentReaderGen;
@@ -960,21 +960,25 @@ public abstract class FieldComparator<T> {
 
     // sentinels, just used internally in this comparator
     private static final byte[] MISSING_BYTES = new byte[0];
-    private static final byte[] NON_MISSING_BYTES = new byte[0];
-
-    private BytesRef[] values;
+    // TODO: this is seriously not good, we should nuke this comparator, or
+    // instead we should represent missing as null, or use missingValue from the user...
+    // but it was always this way...
+    private final BytesRef MISSING_BYTESREF = new BytesRef(MISSING_BYTES);
+    
+    private final BytesRef[] values;
+    private final BytesRef[] tempBRs;
     private BinaryDocValues docTerms;
     private Bits docsWithField;
     private final String field;
     private BytesRef bottom;
     private BytesRef topValue;
-    private final BytesRef tempBR = new BytesRef();
 
     // TODO: add missing first/last support here?
 
     /** Sole constructor. */
     TermValComparator(int numHits, String field) {
       values = new BytesRef[numHits];
+      tempBRs = new BytesRef[numHits];
       this.field = field;
     }
 
@@ -982,32 +986,27 @@ public abstract class FieldComparator<T> {
     public int compare(int slot1, int slot2) {
       final BytesRef val1 = values[slot1];
       final BytesRef val2 = values[slot2];
-      if (val1.bytes == MISSING_BYTES) {
-        if (val2.bytes == MISSING_BYTES) {
-          return 0;
-        }
-        return -1;
-      } else if (val2.bytes == MISSING_BYTES) {
-        return 1;
-      }
-
-      return val1.compareTo(val2);
+      return compareValues(val1, val2);
     }
 
     @Override
     public int compareBottom(int doc) {
-      docTerms.get(doc, tempBR);
-      setMissingBytes(doc, tempBR);
-      return compareValues(bottom, tempBR);
+      final BytesRef comparableBytes = getComparableBytes(doc, docTerms.get(doc));
+      return compareValues(bottom, comparableBytes);
     }
 
     @Override
     public void copy(int slot, int doc) {
-      if (values[slot] == null) {
-        values[slot] = new BytesRef();
+      final BytesRef comparableBytes = getComparableBytes(doc, docTerms.get(doc));
+      if (comparableBytes == MISSING_BYTESREF) {
+        values[slot] = MISSING_BYTESREF;
+      } else {
+        if (tempBRs[slot] == null) {
+          tempBRs[slot] = new BytesRef();
+        }
+        values[slot] = tempBRs[slot];
+        values[slot].copyBytes(comparableBytes);
       }
-      docTerms.get(doc, values[slot]);
-      setMissingBytes(doc, values[slot]);
     }
 
     @Override
@@ -1027,6 +1026,9 @@ public abstract class FieldComparator<T> {
       if (value == null) {
         throw new IllegalArgumentException("value cannot be null");
       }
+      if (value.bytes == MISSING_BYTES) {
+        value = MISSING_BYTESREF;
+      }
       topValue = value;
     }
 
@@ -1038,12 +1040,12 @@ public abstract class FieldComparator<T> {
     @Override
     public int compareValues(BytesRef val1, BytesRef val2) {
       // missing always sorts first:
-      if (val1.bytes == MISSING_BYTES) {
-        if (val2.bytes == MISSING_BYTES) {
+      if (val1 == MISSING_BYTESREF) {
+        if (val2 == MISSING_BYTESREF) {
           return 0;
         }
         return -1;
-      } else if (val2.bytes == MISSING_BYTES) {
+      } else if (val2 == MISSING_BYTESREF) {
         return 1;
       }
       return val1.compareTo(val2);
@@ -1051,20 +1053,19 @@ public abstract class FieldComparator<T> {
 
     @Override
     public int compareTop(int doc) {
-      docTerms.get(doc, tempBR);
-      setMissingBytes(doc, tempBR);
-      return compareValues(topValue, tempBR);
+      final BytesRef comparableBytes = getComparableBytes(doc, docTerms.get(doc));
+      return compareValues(topValue, comparableBytes);
     }
 
-    private void setMissingBytes(int doc, BytesRef br) {
-      if (br.length == 0) {
-        br.offset = 0;
-        if (docsWithField.get(doc) == false) {
-          br.bytes = MISSING_BYTES;
-        } else {
-          br.bytes = NON_MISSING_BYTES;
-        }
+    /**
+     * Given a document and a term, return the term itself if it exists or
+     * {@link #MISSING_BYTESREF} otherwise.
+     */
+    private BytesRef getComparableBytes(int doc, BytesRef term) {
+      if (term.length == 0 && docsWithField.get(doc) == false) {
+        return MISSING_BYTESREF;
       }
+      return term;
     }
   }
 }

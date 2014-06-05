@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.grouping.AbstractFirstPassGroupingCollector;
 import org.apache.lucene.util.BytesRef;
@@ -36,7 +35,6 @@ import org.apache.lucene.util.BytesRef;
  */
 public class TermFirstPassGroupingCollector extends AbstractFirstPassGroupingCollector<BytesRef> {
 
-  private final BytesRef scratchBytesRef = new BytesRef();
   private SortedDocValues index;
 
   private String groupField;
@@ -68,8 +66,7 @@ public class TermFirstPassGroupingCollector extends AbstractFirstPassGroupingCol
     if (ord == -1) {
       return null;
     } else {
-      index.lookupOrd(ord, scratchBytesRef);
-      return scratchBytesRef;
+      return index.lookupOrd(ord);
     }
   }
 

@@ -32,7 +32,6 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -773,7 +772,7 @@ public class DocTermOrds {
   /** Returns a SortedSetDocValues view of this instance */
   public SortedSetDocValues iterator(AtomicReader reader) throws IOException {
     if (isEmpty()) {
-      return DocValues.EMPTY_SORTED_SET;
+      return DocValues.emptySortedSet();
     } else {
       return new Iterator(reader);
     }
@@ -874,16 +873,12 @@ public class DocTermOrds {
     }
 
     @Override
-    public void lookupOrd(long ord, BytesRef result) {
-      BytesRef ref = null;
+    public BytesRef lookupOrd(long ord) {
       try {
-        ref = DocTermOrds.this.lookupTerm(te, (int) ord);
+        return DocTermOrds.this.lookupTerm(te, (int) ord);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
-      result.bytes = ref.bytes;
-      result.offset = ref.offset;
-      result.length = ref.length;
     }
 
     @Override

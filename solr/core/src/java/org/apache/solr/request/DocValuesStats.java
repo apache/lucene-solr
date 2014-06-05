@@ -84,7 +84,7 @@ public class DocValuesStats {
       }
     }
     if (si == null) {
-      si = DocValues.EMPTY_SORTED_SET;
+      si = DocValues.emptySortedSet();
     }
     if (si.getValueCount() >= Integer.MAX_VALUE) {
       throw new UnsupportedOperationException("Currently this stats method is limited to " + Integer.MAX_VALUE + " unique terms");
@@ -112,7 +112,7 @@ public class DocValuesStats {
         if (multiValued) {
           SortedSetDocValues sub = leaf.reader().getSortedSetDocValues(fieldName);
           if (sub == null) {
-            sub = DocValues.EMPTY_SORTED_SET;
+            sub = DocValues.emptySortedSet();
           }
           final SortedDocValues singleton = DocValues.unwrapSingleton(sub);
           if (singleton != null) {
@@ -124,7 +124,7 @@ public class DocValuesStats {
         } else {
           SortedDocValues sub = leaf.reader().getSortedDocValues(fieldName);
           if (sub == null) {
-            sub = DocValues.EMPTY_SORTED;
+            sub = DocValues.emptySorted();
           }
           accumSingle(counts, docBase, facetStats, sub, disi, subIndex, ordinalMap);
         }
@@ -132,11 +132,10 @@ public class DocValuesStats {
     }
     
     // add results in index order
-    BytesRef value = new BytesRef();
     for (int ord = 0; ord < counts.length; ord++) {
       int count = counts[ord];
       if (count > 0) {
-        si.lookupOrd(ord, value);
+        final BytesRef value = si.lookupOrd(ord);
         res.accumulate(value, count);
         for (FieldFacetStats f : facetStats) {
           f.accumulateTermNum(ord, value);

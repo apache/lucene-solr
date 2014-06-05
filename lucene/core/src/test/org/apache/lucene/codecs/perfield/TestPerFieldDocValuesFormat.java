@@ -110,7 +110,6 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
     Query query = new TermQuery(new Term("fieldname", "text"));
     TopDocs hits = isearcher.search(query, null, 1);
     assertEquals(1, hits.totalHits);
-    BytesRef scratch = new BytesRef();
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
       StoredDocument hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
@@ -119,8 +118,8 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
       NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv1");
       assertEquals(5, dv.get(hits.scoreDocs[i].doc));
       BinaryDocValues dv2 = ireader.leaves().get(0).reader().getBinaryDocValues("dv2");
-      dv2.get(hits.scoreDocs[i].doc, scratch);
-      assertEquals(new BytesRef("hello world"), scratch);
+      final BytesRef term = dv2.get(hits.scoreDocs[i].doc);
+      assertEquals(new BytesRef("hello world"), term);
     }
 
     ireader.close();

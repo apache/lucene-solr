@@ -199,7 +199,7 @@ public abstract class DocValuesConsumer implements Closeable {
                        return new Iterator<BytesRef>() {
                          int readerUpto = -1;
                          int docIDUpto;
-                         BytesRef nextValue = new BytesRef();
+                         BytesRef nextValue;
                          BytesRef nextPointer; // points to null if missing, or nextValue
                          AtomicReader currentReader;
                          BinaryDocValues currentValues;
@@ -248,7 +248,7 @@ public abstract class DocValuesConsumer implements Closeable {
                              if (currentLiveDocs == null || currentLiveDocs.get(docIDUpto)) {
                                nextIsSet = true;
                                if (currentDocsWithField.get(docIDUpto)) {
-                                 currentValues.get(docIDUpto, nextValue);
+                                 nextValue = currentValues.get(docIDUpto);
                                  nextPointer = nextValue;
                                } else {
                                  nextPointer = null;
@@ -308,7 +308,6 @@ public abstract class DocValuesConsumer implements Closeable {
           @Override
           public Iterator<BytesRef> iterator() {
             return new Iterator<BytesRef>() {
-              final BytesRef scratch = new BytesRef();
               int currentOrd;
 
               @Override
@@ -323,9 +322,9 @@ public abstract class DocValuesConsumer implements Closeable {
                 }
                 int segmentNumber = map.getFirstSegmentNumber(currentOrd);
                 int segmentOrd = (int)map.getFirstSegmentOrd(currentOrd);
-                dvs[segmentNumber].lookupOrd(segmentOrd, scratch);
+                final BytesRef term = dvs[segmentNumber].lookupOrd(segmentOrd);
                 currentOrd++;
-                return scratch;
+                return term;
               }
 
               @Override
@@ -444,7 +443,6 @@ public abstract class DocValuesConsumer implements Closeable {
           @Override
           public Iterator<BytesRef> iterator() {
             return new Iterator<BytesRef>() {
-              final BytesRef scratch = new BytesRef();
               long currentOrd;
 
               @Override
@@ -459,9 +457,9 @@ public abstract class DocValuesConsumer implements Closeable {
                 }
                 int segmentNumber = map.getFirstSegmentNumber(currentOrd);
                 long segmentOrd = map.getFirstSegmentOrd(currentOrd);
-                dvs[segmentNumber].lookupOrd(segmentOrd, scratch);
+                final BytesRef term = dvs[segmentNumber].lookupOrd(segmentOrd);
                 currentOrd++;
-                return scratch;
+                return term;
               }
 
               @Override

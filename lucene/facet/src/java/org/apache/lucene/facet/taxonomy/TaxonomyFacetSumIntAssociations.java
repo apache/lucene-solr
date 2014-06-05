@@ -54,8 +54,7 @@ public class TaxonomyFacetSumIntAssociations extends IntTaxonomyFacets {
       if (dv == null) { // this reader does not have DocValues for the requested category list
         continue;
       }
-      
-      BytesRef scratch = new BytesRef();
+
       DocIdSetIterator docs = hits.bits.iterator();
       
       int doc;
@@ -63,10 +62,10 @@ public class TaxonomyFacetSumIntAssociations extends IntTaxonomyFacets {
         //System.out.println("  doc=" + doc);
         // TODO: use OrdinalsReader?  we'd need to add a
         // BytesRef getAssociation()?
-        dv.get(doc, scratch);
-        byte[] bytes = scratch.bytes;
-        int end = scratch.offset + scratch.length;
-        int offset = scratch.offset;
+        final BytesRef bytesRef = dv.get(doc);
+        byte[] bytes = bytesRef.bytes;
+        int end = bytesRef.offset + bytesRef.length;
+        int offset = bytesRef.offset;
         while (offset < end) {
           int ord = ((bytes[offset]&0xFF) << 24) |
             ((bytes[offset+1]&0xFF) << 16) |

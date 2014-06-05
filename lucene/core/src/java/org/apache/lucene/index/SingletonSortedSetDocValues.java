@@ -58,9 +58,9 @@ final class SingletonSortedSetDocValues extends SortedSetDocValues {
   }
 
   @Override
-  public void lookupOrd(long ord, BytesRef result) {
+  public BytesRef lookupOrd(long ord) {
     // cast is ok: single-valued cannot exceed Integer.MAX_VALUE
-    in.lookupOrd((int)ord, result);
+    return in.lookupOrd((int) ord);
   }
 
   @Override

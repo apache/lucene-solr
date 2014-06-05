@@ -200,8 +200,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     BinaryDocValues s = FieldCache.DEFAULT.getTerms(ar, "field", false);
     for(int docID=0;docID<docBytes.size();docID++) {
       StoredDocument doc = ar.document(docID);
-      BytesRef bytes = new BytesRef();
-      s.get(docID, bytes);
+      BytesRef bytes = s.get(docID);
       byte[] expected = docBytes.get(Integer.parseInt(doc.get("id")));
       assertEquals(expected.length, bytes.length);
       assertEquals(new BytesRef(expected), bytes);
@@ -272,8 +271,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     BinaryDocValues s = FieldCache.DEFAULT.getTerms(ar, "field", false);
     for(int docID=0;docID<docBytes.size();docID++) {
       StoredDocument doc = ar.document(docID);
-      BytesRef bytes = new BytesRef();
-      s.get(docID, bytes);
+      BytesRef bytes = s.get(docID);
       byte[] expected = docBytes.get(Integer.parseInt(doc.get("id")));
       assertEquals(expected.length, bytes.length);
       assertEquals(new BytesRef(expected), bytes);
@@ -495,7 +493,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     // can be null for the segment if no docs actually had any SortedDocValues
     // in this case FC.getDocTermsOrds returns EMPTY
     if (actual == null) {
-      assertEquals(DocValues.EMPTY_SORTED_SET, expected);
+      assertEquals(expected.getValueCount(), 0);
       return;
     }
     assertEquals(expected.getValueCount(), actual.getValueCount());
@@ -511,11 +509,9 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     }
     
     // compare ord dictionary
-    BytesRef expectedBytes = new BytesRef();
-    BytesRef actualBytes = new BytesRef();
     for (long i = 0; i < expected.getValueCount(); i++) {
-      expected.lookupOrd(i, expectedBytes);
-      actual.lookupOrd(i, actualBytes);
+      final BytesRef expectedBytes = BytesRef.deepCopyOf(expected.lookupOrd(i));
+      final BytesRef actualBytes = actual.lookupOrd(i);
       assertEquals(expectedBytes, actualBytes);
     }
     

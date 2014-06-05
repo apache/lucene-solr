@@ -1392,12 +1392,11 @@ public class CheckIndex {
   }
   
   private static void checkBinaryDocValues(String fieldName, AtomicReader reader, BinaryDocValues dv, Bits docsWithField) {
-    BytesRef scratch = new BytesRef();
     for (int i = 0; i < reader.maxDoc(); i++) {
-      dv.get(i, scratch);
-      assert scratch.isValid();
-      if (docsWithField.get(i) == false && scratch.length > 0) {
-        throw new RuntimeException("dv for field: " + fieldName + " is missing but has value=" + scratch + " for doc: " + i);
+      final BytesRef term = dv.get(i);
+      assert term.isValid();
+      if (docsWithField.get(i) == false && term.length > 0) {
+        throw new RuntimeException("dv for field: " + fieldName + " is missing but has value=" + term + " for doc: " + i);
       }
     }
   }
@@ -1430,16 +1429,15 @@ public class CheckIndex {
       throw new RuntimeException("dv for field: " + fieldName + " has holes in its ords, valueCount=" + dv.getValueCount() + " but only used: " + seenOrds.cardinality());
     }
     BytesRef lastValue = null;
-    BytesRef scratch = new BytesRef();
     for (int i = 0; i <= maxOrd; i++) {
-      dv.lookupOrd(i, scratch);
-      assert scratch.isValid();
+      final BytesRef term = dv.lookupOrd(i);
+      assert term.isValid();
       if (lastValue != null) {
-        if (scratch.compareTo(lastValue) <= 0) {
-          throw new RuntimeException("dv for field: " + fieldName + " has ords out of order: " + lastValue + " >=" + scratch);
+        if (term.compareTo(lastValue) <= 0) {
+          throw new RuntimeException("dv for field: " + fieldName + " has ords out of order: " + lastValue + " >=" + term);
         }
       }
-      lastValue = BytesRef.deepCopyOf(scratch);
+      lastValue = BytesRef.deepCopyOf(term);
     }
   }
   
@@ -1501,16 +1499,15 @@ public class CheckIndex {
     }
     
     BytesRef lastValue = null;
-    BytesRef scratch = new BytesRef();
     for (long i = 0; i <= maxOrd; i++) {
-      dv.lookupOrd(i, scratch);
-      assert scratch.isValid();
+      final BytesRef term = dv.lookupOrd(i);
+      assert term.isValid();
       if (lastValue != null) {
-        if (scratch.compareTo(lastValue) <= 0) {
-          throw new RuntimeException("dv for field: " + fieldName + " has ords out of order: " + lastValue + " >=" + scratch);
+        if (term.compareTo(lastValue) <= 0) {
+          throw new RuntimeException("dv for field: " + fieldName + " has ords out of order: " + lastValue + " >=" + term);
         }
       }
-      lastValue = BytesRef.deepCopyOf(scratch);
+      lastValue = BytesRef.deepCopyOf(term);
     }
   }
 

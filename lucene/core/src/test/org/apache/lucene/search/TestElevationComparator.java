@@ -148,7 +148,6 @@ class ElevationComparatorSource extends FieldComparatorSource {
 
      SortedDocValues idIndex;
      private final int[] values = new int[numHits];
-     private final BytesRef tempBR = new BytesRef();
      int bottomVal;
 
      @Override
@@ -171,8 +170,8 @@ class ElevationComparatorSource extends FieldComparatorSource {
        if (ord == -1) {
          return 0;
        } else {
-         idIndex.lookupOrd(ord, tempBR);
-         Integer prio = priority.get(tempBR);
+         final BytesRef term = idIndex.lookupOrd(ord);
+         Integer prio = priority.get(term);
          return prio == null ? 0 : prio.intValue();
        }
      }

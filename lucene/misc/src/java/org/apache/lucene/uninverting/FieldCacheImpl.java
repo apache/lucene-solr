@@ -431,11 +431,11 @@ class FieldCacheImpl implements FieldCache {
     } else {
       final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
       if (info == null) {
-        return DocValues.EMPTY_NUMERIC;
+        return DocValues.emptyNumeric();
       } else if (info.hasDocValues()) {
         throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
       } else if (!info.isIndexed()) {
-        return DocValues.EMPTY_NUMERIC;
+        return DocValues.emptyNumeric();
       }
       return (NumericDocValues) caches.get(Long.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
     }
@@ -523,7 +523,7 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  public static class SortedDocValuesImpl extends SortedDocValues {
+  public static class SortedDocValuesImpl {
     private final PagedBytes.Reader bytes;
     private final MonotonicAppendingLongBuffer termOrdToBytesOffset;
     private final PackedInts.Reader docToTermOrd;
@@ -535,26 +535,33 @@ class FieldCacheImpl implements FieldCache {
       this.termOrdToBytesOffset = termOrdToBytesOffset;
       this.numOrd = numOrd;
     }
+    
+    public SortedDocValues iterator() {
+      final BytesRef term = new BytesRef();
+      return new SortedDocValues() {
 
-    @Override
-    public int getValueCount() {
-      return numOrd;
-    }
+        @Override
+        public int getValueCount() {
+          return numOrd;
+        }
 
-    @Override
-    public int getOrd(int docID) {
-      // Subtract 1, matching the 1+ord we did when
-      // storing, so that missing values, which are 0 in the
-      // packed ints, are returned as -1 ord:
-      return (int) docToTermOrd.get(docID)-1;
-    }
+        @Override
+        public int getOrd(int docID) {
+          // Subtract 1, matching the 1+ord we did when
+          // storing, so that missing values, which are 0 in the
+          // packed ints, are returned as -1 ord:
+          return (int) docToTermOrd.get(docID)-1;
+        }
 
-    @Override
-    public void lookupOrd(int ord, BytesRef ret) {
-      if (ord < 0) {
-        throw new IllegalArgumentException("ord must be >=0 (got ord=" + ord + ")");
-      }
-      bytes.fill(ret, termOrdToBytesOffset.get(ord));
+        @Override
+        public BytesRef lookupOrd(int ord) {
+          if (ord < 0) {
+            throw new IllegalArgumentException("ord must be >=0 (got ord=" + ord + ")");
+          }
+          bytes.fill(term, termOrdToBytesOffset.get(ord));
+          return term;
+        }
+      };
     }
   }
 
@@ -571,15 +578,16 @@ class FieldCacheImpl implements FieldCache {
     } else {
       final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
       if (info == null) {
-        return DocValues.EMPTY_SORTED;
+        return DocValues.emptySorted();
       } else if (info.hasDocValues()) {
         // we don't try to build a sorted instance from numeric/binary doc
         // values because dedup can be very costly
         throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
       } else if (!info.isIndexed()) {
-        return DocValues.EMPTY_SORTED;
+        return DocValues.emptySorted();
       }
-      return (SortedDocValues) caches.get(SortedDocValues.class).get(reader, new CacheKey(field, acceptableOverheadRatio), false);
+      SortedDocValuesImpl impl = (SortedDocValuesImpl) caches.get(SortedDocValues.class).get(reader, new CacheKey(field, acceptableOverheadRatio), false);
+      return impl.iterator();
     }
   }
 
@@ -674,22 +682,23 @@ class FieldCacheImpl implements FieldCache {
   private static class BinaryDocValuesImpl extends BinaryDocValues {
     private final PagedBytes.Reader bytes;
     private final PackedInts.Reader docToOffset;
+    private final BytesRef term;
 
     public BinaryDocValuesImpl(PagedBytes.Reader bytes, PackedInts.Reader docToOffset) {
       this.bytes = bytes;
       this.docToOffset = docToOffset;
+      term = new BytesRef();
     }
 
     @Override
-    public void get(int docID, BytesRef ret) {
+    public BytesRef get(int docID) {
       final int pointer = (int) docToOffset.get(docID);
       if (pointer == 0) {
-        ret.bytes = BytesRef.EMPTY_BYTES;
-        ret.offset = 0;
-        ret.length = 0;
+        term.length = 0;
       } else {
-        bytes.fill(ret, pointer);
+        bytes.fill(term, pointer);
       }
+      return term;
     }
   }
 
@@ -713,11 +722,11 @@ class FieldCacheImpl implements FieldCache {
 
     final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
     if (info == null) {
-      return DocValues.EMPTY_BINARY;
+      return DocValues.emptyBinary();
     } else if (info.hasDocValues()) {
       throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
     } else if (!info.isIndexed()) {
-      return DocValues.EMPTY_BINARY;
+      return DocValues.emptyBinary();
     }
 
     return (BinaryDocValues) caches.get(BinaryDocValues.class).get(reader, new CacheKey(field, acceptableOverheadRatio), setDocsWithField);
@@ -835,18 +844,18 @@ class FieldCacheImpl implements FieldCache {
     
     final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
     if (info == null) {
-      return DocValues.EMPTY_SORTED_SET;
+      return DocValues.emptySortedSet();
     } else if (info.hasDocValues()) {
       throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
     } else if (!info.isIndexed()) {
-      return DocValues.EMPTY_SORTED_SET;
+      return DocValues.emptySortedSet();
     }
     
     // ok we need to uninvert. check if we can optimize a bit.
     
     Terms terms = reader.terms(field);
     if (terms == null) {
-      return DocValues.EMPTY_SORTED_SET;
+      return DocValues.emptySortedSet();
     } else {
       // if #postings = #docswithfield we know that the field is "single valued enough".
       // its possible the same term might appear twice in the same document, but SORTED_SET discards frequency.

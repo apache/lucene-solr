@@ -1054,7 +1054,10 @@ public class TestFieldCacheSort extends LuceneTestCase {
     // this should not throw AIOOBE or RuntimeEx
     IndexReader reader = UninvertingReader.wrap(DirectoryReader.open(indexStore),
                          Collections.singletonMap("string", Type.SORTED));
-    IndexSearcher searcher = newSearcher(reader);
+    // NOTE: we can't wrap this with newSearcher, because when the API is abused in this way,
+    // the number of ords can exceed the number of documents, and AssertingAtomicReader will get angry,
+    // rightfully so (its a broken dv)
+    IndexSearcher searcher = new IndexSearcher(reader);
     searcher.search(new MatchAllDocsQuery(), null, 500, sort);
     reader.close();
     indexStore.close();

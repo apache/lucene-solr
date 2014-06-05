@@ -62,14 +62,13 @@ public class JoinDocFreqValueSource extends FieldCacheSource {
     final TermsEnum termsEnum = t == null ? TermsEnum.EMPTY : t.iterator(null);
     
     return new IntDocValues(this) {
-      final BytesRef ref = new BytesRef();
 
       @Override
       public int intVal(int doc) 
       {
         try {
-          terms.get(doc, ref);
-          if (termsEnum.seekExact(ref)) {
+          final BytesRef term = terms.get(doc);
+          if (termsEnum.seekExact(term)) {
             return termsEnum.docFreq();
           } else {
             return 0;

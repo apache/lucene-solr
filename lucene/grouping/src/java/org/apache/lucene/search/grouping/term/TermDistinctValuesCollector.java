@@ -20,7 +20,6 @@ package org.apache.lucene.search.grouping.term;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.grouping.AbstractDistinctValuesCollector;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.util.BytesRef;
@@ -80,9 +79,8 @@ public class TermDistinctValuesCollector extends AbstractDistinctValuesCollector
       if (countOrd == -1) {
         gc.uniqueValues.add(null);
       } else {
-        BytesRef br = new BytesRef();
-        countFieldTermIndex.lookupOrd(countOrd, br);
-        gc.uniqueValues.add(br);
+        BytesRef term = BytesRef.deepCopyOf(countFieldTermIndex.lookupOrd(countOrd));
+        gc.uniqueValues.add(term);
       }
 
       gc.ords = Arrays.copyOf(gc.ords, gc.ords.length + 1);

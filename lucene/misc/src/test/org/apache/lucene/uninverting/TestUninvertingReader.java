@@ -72,11 +72,10 @@ public class TestUninvertingReader extends LuceneTestCase {
     assertEquals(1, v.nextOrd());
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
-    BytesRef value = new BytesRef();
-    v.lookupOrd(0, value);
+    BytesRef value = v.lookupOrd(0);
     assertEquals(-3, NumericUtils.prefixCodedToInt(value));
     
-    v.lookupOrd(1, value);
+    value = v.lookupOrd(1);
     assertEquals(5, NumericUtils.prefixCodedToInt(value));
     
     ir.close();
@@ -117,11 +116,10 @@ public class TestUninvertingReader extends LuceneTestCase {
     assertEquals(1, v.nextOrd());
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
-    BytesRef value = new BytesRef();
-    v.lookupOrd(0, value);
+    BytesRef value = v.lookupOrd(0);
     assertEquals(Float.floatToRawIntBits(-3f), NumericUtils.prefixCodedToInt(value));
     
-    v.lookupOrd(1, value);
+    value = v.lookupOrd(1);
     assertEquals(Float.floatToRawIntBits(5f), NumericUtils.prefixCodedToInt(value));
     
     ir.close();
@@ -161,11 +159,10 @@ public class TestUninvertingReader extends LuceneTestCase {
     assertEquals(1, v.nextOrd());
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
-    BytesRef value = new BytesRef();
-    v.lookupOrd(0, value);
+    BytesRef value = v.lookupOrd(0);
     assertEquals(-3, NumericUtils.prefixCodedToLong(value));
     
-    v.lookupOrd(1, value);
+    value = v.lookupOrd(1);
     assertEquals(5, NumericUtils.prefixCodedToLong(value));
     
     ir.close();
@@ -205,11 +202,10 @@ public class TestUninvertingReader extends LuceneTestCase {
     assertEquals(1, v.nextOrd());
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
-    BytesRef value = new BytesRef();
-    v.lookupOrd(0, value);
+    BytesRef value = v.lookupOrd(0);
     assertEquals(Double.doubleToRawLongBits(-3d), NumericUtils.prefixCodedToLong(value));
     
-    v.lookupOrd(1, value);
+    value = v.lookupOrd(1);
     assertEquals(Double.doubleToRawLongBits(5d), NumericUtils.prefixCodedToLong(value));
     
     ir.close();

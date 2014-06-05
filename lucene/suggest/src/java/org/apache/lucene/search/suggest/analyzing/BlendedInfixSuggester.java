@@ -155,18 +155,15 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
     // we reduce the num to the one initially requested
     int actualNum = num / numFactor;
 
-    BytesRef scratch = new BytesRef();
     for (int i = 0; i < hits.scoreDocs.length; i++) {
       FieldDoc fd = (FieldDoc) hits.scoreDocs[i];
 
-      textDV.get(fd.doc, scratch);
-      String text = scratch.utf8ToString();
+      final String text = textDV.get(fd.doc).utf8ToString();
       long weight = (Long) fd.fields[0];
 
       BytesRef payload;
       if (payloadsDV != null) {
-        payload = new BytesRef();
-        payloadsDV.get(fd.doc, payload);
+        payload = BytesRef.deepCopyOf(payloadsDV.get(fd.doc));
       } else {
         payload = null;
       }

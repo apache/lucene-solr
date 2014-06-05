@@ -923,60 +923,8 @@ public class TestFaceting extends SolrTestCaseJ4 {
           , "*[count(//lst[@name='facet_fields']/lst)=50]"
           , "*[count(//lst[@name='facet_fields']/lst/int)=100]"
       );
-
-      // Now, are all the UnInvertedFields still the same? Meaning they weren't re-fetched even when a bunch were
-      // requested at the same time?
-      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
-          ui0, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f0_ws"));
-      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
-          ui1, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f1_ws"));
-      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
-          ui2, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f2_ws"));
-      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
-          ui3, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f3_ws"));
-      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
-          ui4, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f4_ws"));
-      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
-          ui5, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f5_ws"));
-      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
-          ui6, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f6_ws"));
-      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
-          ui7, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f7_ws"));
-      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
-          ui8, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f8_ws"));
-      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
-          ui9, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f9_ws"));
     } finally {
       currentSearcherRef.decref();
-    }
-  }
-  
-  // assert same instance: either same object, or both wrapping same single-valued object
-  private void assertEquals(String msg, SortedSetDocValues dv1, SortedSetDocValues dv2) {
-    SortedDocValues singleton1 = DocValues.unwrapSingleton(dv1);
-    SortedDocValues singleton2 = DocValues.unwrapSingleton(dv2);
-    if (singleton1 == null || singleton2 == null) {
-      // actually a multi-valued field
-      if (dv1 instanceof MultiDocValues.MultiSortedSetDocValues) {
-        // if we produced more than one segment, ensure the core ordinal map is the same object
-        assertTrue(dv2 instanceof MultiDocValues.MultiSortedSetDocValues);
-        assertSame(((MultiDocValues.MultiSortedSetDocValues) dv1).mapping, 
-                   ((MultiDocValues.MultiSortedSetDocValues) dv2).mapping);
-      } else {
-        // otherwise, same atomic instance
-        assertSame(dv1, dv2);
-      }
-    } else {
-      // just wrapping a field that is actually single-valued
-      if (singleton1 instanceof MultiDocValues.MultiSortedDocValues) {
-        // if we produced more than one segment, ensure the core ordinal map is the same object
-        assertTrue(singleton2 instanceof MultiDocValues.MultiSortedDocValues);
-        assertSame(((MultiDocValues.MultiSortedDocValues) singleton1).mapping, 
-                   ((MultiDocValues.MultiSortedDocValues) singleton2).mapping);
-      } else {
-        // otherwise, same atomic instance
-        assertSame(singleton1, singleton2);
-      }
     }
   }
 }

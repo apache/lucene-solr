@@ -59,7 +59,7 @@ public class BytesRefFieldSource extends FieldCacheSource {
 
         @Override
         public boolean bytesVal(int doc, BytesRef target) {
-          binaryValues.get(doc, target);
+          target.copyBytes(binaryValues.get(doc));
           return target.length > 0;
         }
 
@@ -93,13 +93,8 @@ public class BytesRefFieldSource extends FieldCacheSource {
             @Override
             public void fillValue(int doc) {
               mval.exists = docsWithField.get(doc);
-              if (mval.exists) {
-                binaryValues.get(doc, mval.value);
-              } else {
-                mval.value.bytes = BytesRef.EMPTY_BYTES;
-                mval.value.offset = 0;
-                mval.value.length = 0;
-              }
+              mval.value.length = 0;
+              mval.value.copyBytes(binaryValues.get(doc));
             }
           };
         }

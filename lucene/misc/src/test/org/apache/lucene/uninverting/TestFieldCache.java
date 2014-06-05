@@ -201,28 +201,23 @@ public class TestFieldCache extends LuceneTestCase {
 
     // getTermsIndex
     SortedDocValues termsIndex = cache.getTermsIndex(reader, "theRandomUnicodeString");
-    assertSame("Second request to cache return same array", termsIndex, cache.getTermsIndex(reader, "theRandomUnicodeString"));
-    final BytesRef br = new BytesRef();
     for (int i = 0; i < NUM_DOCS; i++) {
-      final BytesRef term;
+      final String s;
       final int ord = termsIndex.getOrd(i);
       if (ord == -1) {
-        term = null;
+        s = null;
       } else {
-        termsIndex.lookupOrd(ord, br);
-        term = br;
+        s = termsIndex.lookupOrd(ord).utf8ToString();
       }
-      final String s = term == null ? null : term.utf8ToString();
       assertTrue("for doc " + i + ": " + s + " does not equal: " + unicodeStrings[i], unicodeStrings[i] == null || unicodeStrings[i].equals(s));
     }
 
     int nTerms = termsIndex.getValueCount();
 
     TermsEnum tenum = termsIndex.termsEnum();
-    BytesRef val = new BytesRef();
     for (int i=0; i<nTerms; i++) {
-      BytesRef val1 = tenum.next();
-      termsIndex.lookupOrd(i, val);
+      BytesRef val1 = BytesRef.deepCopyOf(tenum.next());
+      final BytesRef val = termsIndex.lookupOrd(i);
       // System.out.println("i="+i);
       assertEquals(val, val1);
     }
@@ -231,13 +226,13 @@ public class TestFieldCache extends LuceneTestCase {
     int num = atLeast(100);
     for (int i = 0; i < num; i++) {
       int k = random().nextInt(nTerms);
-      termsIndex.lookupOrd(k, val);
+      final BytesRef val = BytesRef.deepCopyOf(termsIndex.lookupOrd(k));
       assertEquals(TermsEnum.SeekStatus.FOUND, tenum.seekCeil(val));
       assertEquals(val, tenum.term());
     }
 
     for(int i=0;i<nTerms;i++) {
-      termsIndex.lookupOrd(i, val);
+      final BytesRef val = BytesRef.deepCopyOf(termsIndex.lookupOrd(i));
       assertEquals(TermsEnum.SeekStatus.FOUND, tenum.seekCeil(val));
       assertEquals(val, tenum.term());
     }
@@ -250,14 +245,12 @@ public class TestFieldCache extends LuceneTestCase {
     assertSame("Second request to cache return same array", terms, cache.getTerms(reader, "theRandomUnicodeString", true));
     Bits bits = cache.getDocsWithField(reader, "theRandomUnicodeString");
     for (int i = 0; i < NUM_DOCS; i++) {
-      terms.get(i, br);
-      final BytesRef term;
+      final String s;
       if (!bits.get(i)) {
-        term = null;
+        s = null;
       } else {
-        term = br;
+        s = terms.get(i).utf8ToString();
       }
-      final String s = term == null ? null : term.utf8ToString();
       assertTrue("for doc " + i + ": " + s + " does not equal: " + unicodeStrings[i], unicodeStrings[i] == null || unicodeStrings[i].equals(s));
     }
 
@@ -282,8 +275,7 @@ public class TestFieldCache extends LuceneTestCase {
         }
         long ord = termOrds.nextOrd();
         assert ord != SortedSetDocValues.NO_MORE_ORDS;
-        BytesRef scratch = new BytesRef();
-        termOrds.lookupOrd(ord, scratch);
+        BytesRef scratch = termOrds.lookupOrd(ord);
         assertEquals(v, scratch);
       }
       assertEquals(SortedSetDocValues.NO_MORE_ORDS, termOrds.nextOrd());
@@ -448,8 +440,6 @@ public class TestFieldCache extends LuceneTestCase {
     iw.shutdown();
     AtomicReader ar = getOnlySegmentReader(ir);
     
-    BytesRef scratch = new BytesRef();
-    
     // Binary type: can be retrieved via getTerms()
     try {
       FieldCache.DEFAULT.getNumerics(ar, "binary", FieldCache.NUMERIC_UTILS_INT_PARSER, false);
@@ -457,8 +447,8 @@ public class TestFieldCache extends LuceneTestCase {
     } catch (IllegalStateException expected) {}
     
     BinaryDocValues binary = FieldCache.DEFAULT.getTerms(ar, "binary", true);
-    binary.get(0, scratch);
-    assertEquals("binary value", scratch.utf8ToString());
+    final BytesRef term = binary.get(0);
+    assertEquals("binary value", term.utf8ToString());
     
     try {
       FieldCache.DEFAULT.getTermsIndex(ar, "binary");
@@ -490,13 +480,13 @@ public class TestFieldCache extends LuceneTestCase {
     } catch (IllegalStateException expected) {}
     
     binary = FieldCache.DEFAULT.getTerms(ar, "sorted", true);
-    binary.get(0, scratch);
+    BytesRef scratch = binary.get(0);
     assertEquals("sorted value", scratch.utf8ToString());
     
     SortedDocValues sorted = FieldCache.DEFAULT.getTermsIndex(ar, "sorted");
     assertEquals(0, sorted.getOrd(0));
     assertEquals(1, sorted.getValueCount());
-    sorted.get(0, scratch);
+    scratch = sorted.get(0);
     assertEquals("sorted value", scratch.utf8ToString());
     
     SortedSetDocValues sortedSet = FieldCache.DEFAULT.getDocTermOrds(ar, "sorted", null);
@@ -598,14 +588,13 @@ public class TestFieldCache extends LuceneTestCase {
     NumericDocValues doubles = cache.getNumerics(ar, "bogusdoubles", FieldCache.NUMERIC_UTILS_DOUBLE_PARSER, true);
     assertEquals(0, doubles.get(0));
     
-    BytesRef scratch = new BytesRef();
     BinaryDocValues binaries = cache.getTerms(ar, "bogusterms", true);
-    binaries.get(0, scratch);
+    BytesRef scratch = binaries.get(0);
     assertEquals(0, scratch.length);
     
     SortedDocValues sorted = cache.getTermsIndex(ar, "bogustermsindex");
     assertEquals(-1, sorted.getOrd(0));
-    sorted.get(0, scratch);
+    scratch = sorted.get(0);
     assertEquals(0, scratch.length);
     
     SortedSetDocValues sortedSet = cache.getDocTermOrds(ar, "bogusmultivalued", null);
@@ -657,14 +646,13 @@ public class TestFieldCache extends LuceneTestCase {
     NumericDocValues doubles = cache.getNumerics(ar, "bogusdoubles", FieldCache.NUMERIC_UTILS_DOUBLE_PARSER, true);
     assertEquals(0, doubles.get(0));
     
-    BytesRef scratch = new BytesRef();
     BinaryDocValues binaries = cache.getTerms(ar, "bogusterms", true);
-    binaries.get(0, scratch);
+    BytesRef scratch = binaries.get(0);
     assertEquals(0, scratch.length);
     
     SortedDocValues sorted = cache.getTermsIndex(ar, "bogustermsindex");
     assertEquals(-1, sorted.getOrd(0));
-    sorted.get(0, scratch);
+    scratch = sorted.get(0);
     assertEquals(0, scratch.length);
     
     SortedSetDocValues sortedSet = cache.getDocTermOrds(ar, "bogusmultivalued", null);

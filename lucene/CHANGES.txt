@@ -205,6 +205,10 @@ API Changes
   removed, because buffering and checksumming is provided by FilterOutputStreams,
   provided by the JDK.  (Uwe Schindler, Mike McCandless)
 
+* LUCENE-5703: BinaryDocValues API changed to work like TermsEnum and not allocate/
+  copy bytes on each access, you are responsible for cloning if you want to keep
+  data around. (Adrien Grand)
+
 Optimizations
 
 * LUCENE-5603: hunspell stemmer more efficiently strips prefixes
@@ -246,6 +250,9 @@ Optimizations
 
 * LUCENE-5730: FSDirectory.open returns MMapDirectory for 64-bit operating
   systems, not just Linux and Windows. (Robert Muir)
+
+* LUCENE-5703: BinaryDocValues producers don't allocate or copy bytes on 
+  each access anymore.  (Adrien Grand)
 
 Bug fixes
 

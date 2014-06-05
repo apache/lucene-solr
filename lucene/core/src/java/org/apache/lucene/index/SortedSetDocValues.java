@@ -53,12 +53,14 @@ public abstract class SortedSetDocValues {
    */
   public abstract void setDocument(int docID);
 
-  /** Retrieves the value for the specified ordinal.
+  /** Retrieves the value for the specified ordinal. The returned
+   * {@link BytesRef} may be re-used across calls to lookupOrd so make sure to
+   * {@link BytesRef#deepCopyOf(BytesRef) copy it} if you want to keep it
+   * around.
    * @param ord ordinal to lookup
-   * @param result will be populated with the ordinal's value
    * @see #nextOrd
    */
-  public abstract void lookupOrd(long ord, BytesRef result);
+  public abstract BytesRef lookupOrd(long ord);
 
   /**
    * Returns the number of unique values.
@@ -74,14 +76,13 @@ public abstract class SortedSetDocValues {
    *  @param key Key to look up
    **/
   public long lookupTerm(BytesRef key) {
-    BytesRef spare = new BytesRef();
     long low = 0;
     long high = getValueCount()-1;
 
     while (low <= high) {
       long mid = (low + high) >>> 1;
-      lookupOrd(mid, spare);
-      int cmp = spare.compareTo(key);
+      final BytesRef term = lookupOrd(mid);
+      int cmp = term.compareTo(key);
 
       if (cmp < 0) {
         low = mid + 1;

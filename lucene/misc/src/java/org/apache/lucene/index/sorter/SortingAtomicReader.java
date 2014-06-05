@@ -201,8 +201,8 @@ public class SortingAtomicReader extends FilterAtomicReader {
     }
 
     @Override
-    public void get(int docID, BytesRef result) {
-      in.get(docMap.newToOld(docID), result);
+    public BytesRef get(int docID) {
+      return in.get(docMap.newToOld(docID));
     }
   }
   
@@ -259,8 +259,8 @@ public class SortingAtomicReader extends FilterAtomicReader {
     }
 
     @Override
-    public void lookupOrd(int ord, BytesRef result) {
-      in.lookupOrd(ord, result);
+    public BytesRef lookupOrd(int ord) {
+      return in.lookupOrd(ord);
     }
 
     @Override
@@ -269,8 +269,8 @@ public class SortingAtomicReader extends FilterAtomicReader {
     }
 
     @Override
-    public void get(int docID, BytesRef result) {
-      in.get(docMap.newToOld(docID), result);
+    public BytesRef get(int docID) {
+      return in.get(docMap.newToOld(docID));
     }
 
     @Override
@@ -300,8 +300,8 @@ public class SortingAtomicReader extends FilterAtomicReader {
     }
 
     @Override
-    public void lookupOrd(long ord, BytesRef result) {
-      in.lookupOrd(ord, result);
+    public BytesRef lookupOrd(long ord) {
+      return in.lookupOrd(ord);
     }
 
     @Override

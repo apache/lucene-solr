@@ -131,13 +131,11 @@ public class SortedSetDocValuesFacetCounts extends Facets {
       return null;
     }
 
-    BytesRef scratch = new BytesRef();
-
     LabelAndValue[] labelValues = new LabelAndValue[q.size()];
     for(int i=labelValues.length-1;i>=0;i--) {
       TopOrdAndIntQueue.OrdAndValue ordAndValue = q.pop();
-      dv.lookupOrd(ordAndValue.ord, scratch);
-      String[] parts = FacetsConfig.stringToPath(scratch.utf8ToString());
+      final BytesRef term = dv.lookupOrd(ordAndValue.ord);
+      String[] parts = FacetsConfig.stringToPath(term.utf8ToString());
       labelValues[i] = new LabelAndValue(parts[1], ordAndValue.value);
     }
 

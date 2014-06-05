@@ -46,17 +46,15 @@ public class DocValuesOrdinalsReader extends OrdinalsReader {
   public OrdinalsSegmentReader getReader(AtomicReaderContext context) throws IOException {
     BinaryDocValues values0 = context.reader().getBinaryDocValues(field);
     if (values0 == null) {
-      values0 = DocValues.EMPTY_BINARY;
+      values0 = DocValues.emptyBinary();
     }
 
     final BinaryDocValues values = values0;
 
     return new OrdinalsSegmentReader() {
-      private final BytesRef bytes = new BytesRef(32);
-
       @Override
       public void get(int docID, IntsRef ordinals) throws IOException {
-        values.get(docID, bytes);
+        final BytesRef bytes = values.get(docID);
         decode(bytes, ordinals);
       }
     };

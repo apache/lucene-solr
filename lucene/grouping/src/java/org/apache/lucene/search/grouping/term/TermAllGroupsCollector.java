@@ -20,7 +20,6 @@ package org.apache.lucene.search.grouping.term;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.grouping.AbstractAllGroupsCollector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SentinelIntSet;
@@ -87,12 +86,11 @@ public class TermAllGroupsCollector extends AbstractAllGroupsCollector<BytesRef>
     int key = index.getOrd(doc);
     if (!ordSet.exists(key)) {
       ordSet.put(key);
-      BytesRef term;
+      final BytesRef term;
       if (key == -1) {
         term = null;
       } else {
-        term =  new BytesRef();
-        index.lookupOrd(key, term);
+        term = BytesRef.deepCopyOf(index.lookupOrd(key));
       }
       groups.add(term);
     }

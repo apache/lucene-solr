@@ -85,8 +85,6 @@ public class DocValuesFacets {
       throw new UnsupportedOperationException("Currently this faceting method is limited to " + Integer.MAX_VALUE + " unique terms");
     }
 
-    final BytesRef br = new BytesRef();
-
     final BytesRef prefixRef;
     if (prefix == null) {
       prefixRef = null;
@@ -132,7 +130,7 @@ public class DocValuesFacets {
           if (multiValued) {
             SortedSetDocValues sub = leaf.reader().getSortedSetDocValues(fieldName);
             if (sub == null) {
-              sub = DocValues.EMPTY_SORTED_SET;
+              sub = DocValues.emptySortedSet();
             }
             final SortedDocValues singleton = DocValues.unwrapSingleton(sub);
             if (singleton != null) {
@@ -144,7 +142,7 @@ public class DocValuesFacets {
           } else {
             SortedDocValues sub = leaf.reader().getSortedDocValues(fieldName);
             if (sub == null) {
-              sub = DocValues.EMPTY_SORTED;
+              sub = DocValues.emptySorted();
             }
             accumSingle(counts, startTermIndex, sub, disi, subIndex, ordinalMap);
           }
@@ -194,8 +192,8 @@ public class DocValuesFacets {
           long pair = sorted[i];
           int c = (int)(pair >>> 32);
           int tnum = Integer.MAX_VALUE - (int)pair;
-          si.lookupOrd(startTermIndex+tnum, br);
-          ft.indexedToReadable(br, charsRef);
+          final BytesRef term = si.lookupOrd(startTermIndex+tnum);
+          ft.indexedToReadable(term, charsRef);
           res.add(charsRef.toString(), c);
         }
       
@@ -213,8 +211,8 @@ public class DocValuesFacets {
           int c = counts[i];
           if (c<mincount || --off>=0) continue;
           if (--lim<0) break;
-          si.lookupOrd(startTermIndex+i, br);
-          ft.indexedToReadable(br, charsRef);
+          final BytesRef term = si.lookupOrd(startTermIndex+i);
+          ft.indexedToReadable(term, charsRef);
           res.add(charsRef.toString(), c);
         }
       }

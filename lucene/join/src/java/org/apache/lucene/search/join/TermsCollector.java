@@ -23,9 +23,6 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.search.LeafCollector;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
@@ -78,8 +75,8 @@ abstract class TermsCollector extends SimpleCollector {
       docTermOrds.setDocument(doc);
       long ord;
       while ((ord = docTermOrds.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
-        docTermOrds.lookupOrd(ord, scratch);
-        collectorTerms.add(scratch);
+        final BytesRef term = docTermOrds.lookupOrd(ord);
+        collectorTerms.add(term);
       }
     }
 
@@ -101,8 +98,8 @@ abstract class TermsCollector extends SimpleCollector {
 
     @Override
     public void collect(int doc) throws IOException {
-      fromDocTerms.get(doc, spare);
-      collectorTerms.add(spare);
+      final BytesRef term = fromDocTerms.get(doc);
+      collectorTerms.add(term);
     }
 
     @Override

@@ -400,7 +400,6 @@ class ReadersAndUpdates {
               
               int curDoc = -1;
               int updateDoc = updatesIter.nextDoc();
-              BytesRef scratch = new BytesRef();
               
               @Override
               public boolean hasNext() {
@@ -421,8 +420,7 @@ class ReadersAndUpdates {
                   assert curDoc < updateDoc;
                   if (currentValues != null && docsWithField.get(curDoc)) {
                     // only read the current value if the document had a value before
-                    currentValues.get(curDoc, scratch);
-                    return scratch;
+                    return currentValues.get(curDoc);
                   } else {
                     return null;
                   }

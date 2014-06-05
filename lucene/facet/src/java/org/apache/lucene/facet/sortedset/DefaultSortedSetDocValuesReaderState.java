@@ -73,17 +73,16 @@ public class DefaultSortedSetDocValuesReaderState extends SortedSetDocValuesRead
     // each term/ord it's assigning as it goes...
     String lastDim = null;
     int startOrd = -1;
-    BytesRef spare = new BytesRef();
 
     // TODO: this approach can work for full hierarchy?;
     // TaxoReader can't do this since ords are not in
     // "sorted order" ... but we should generalize this to
     // support arbitrary hierarchy:
     for(int ord=0;ord<valueCount;ord++) {
-      dv.lookupOrd(ord, spare);
-      String[] components = FacetsConfig.stringToPath(spare.utf8ToString());
+      final BytesRef term = dv.lookupOrd(ord);
+      String[] components = FacetsConfig.stringToPath(term.utf8ToString());
       if (components.length != 2) {
-        throw new IllegalArgumentException("this class can only handle 2 level hierarchy (dim/value); got: " + Arrays.toString(components) + " " + spare.utf8ToString());
+        throw new IllegalArgumentException("this class can only handle 2 level hierarchy (dim/value); got: " + Arrays.toString(components) + " " + term.utf8ToString());
       }
       if (!components[0].equals(lastDim)) {
         if (lastDim != null) {

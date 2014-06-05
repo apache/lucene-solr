@@ -55,17 +55,16 @@ public class FastTaxonomyFacetCounts extends IntTaxonomyFacets {
       if (dv == null) { // this reader does not have DocValues for the requested category list
         continue;
       }
-      
-      BytesRef scratch = new BytesRef();
+
       DocIdSetIterator docs = hits.bits.iterator();
       
       int doc;
       while ((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-        dv.get(doc, scratch);
-        byte[] bytes = scratch.bytes;
-        int end = scratch.offset + scratch.length;
+        final BytesRef bytesRef = dv.get(doc);
+        byte[] bytes = bytesRef.bytes;
+        int end = bytesRef.offset + bytesRef.length;
         int ord = 0;
-        int offset = scratch.offset;
+        int offset = bytesRef.offset;
         int prev = 0;
         while (offset < end) {
           byte b = bytes[offset++];
