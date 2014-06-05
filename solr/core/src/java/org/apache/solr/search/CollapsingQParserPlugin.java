@@ -19,32 +19,20 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.LeafCollector;
-import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.FilterCollector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.TopFieldCollector;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrException;
@@ -56,15 +44,14 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieFloatField;
 import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.schema.TrieLongField;
 
 import com.carrotsearch.hppc.FloatArrayList;
 import com.carrotsearch.hppc.IntOpenHashSet;
-import com.carrotsearch.hppc.cursors.IntCursor;
+import com.carrotsearch.hppc.IntIntOpenHashMap;
+import com.carrotsearch.hppc.cursors.IntIntCursor;
 
 /**
 
@@ -141,7 +128,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private String min;
     private boolean needsScores = true;
     private int nullPolicy;
-    private Set<String> boosted;
+    private Map<BytesRef, Integer> boosted;
     public static final int NULL_POLICY_IGNORE = 0;
     public static final int NULL_POLICY_COLLAPSE = 1;
     public static final int NULL_POLICY_EXPAND = 2;
@@ -168,24 +155,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     public int hashCode() {
-
-      /*
-      *  Checking for boosted here because the request context will not have the elevated docs
-      *  until after the query is constructed. So to be sure there are no elevated docs in the query
-      *  while checking the cache we must check the request context during the call to hashCode().
-      */
-
-      if(this.boosted == null) {
-        SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
-        if(info != null) {
-          this.boosted = (Set<String>)info.getReq().getContext().get(QueryElevationComponent.BOOSTED);
-        }
-      }
-
       int hashCode = field.hashCode();
       hashCode = max!=null ? hashCode+max.hashCode():hashCode;
       hashCode = min!=null ? hashCode+min.hashCode():hashCode;
-      hashCode = boosted!=null ? hashCode+boosted.hashCode():hashCode;
       hashCode = hashCode+nullPolicy;
       hashCode = hashCode*((1+Float.floatToIntBits(this.getBoost()))*31);
       return hashCode;
@@ -199,7 +171,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
            ((this.max == null && c.max == null) || (this.max != null && c.max != null && this.max.equals(c.max))) &&
            ((this.min == null && c.min == null) || (this.min != null && c.min != null && this.min.equals(c.min))) &&
            this.nullPolicy == c.nullPolicy &&
-           ((this.boosted == null && c.boosted == null) || (this.boosted == c.boosted)) &&
            this.getBoost()==c.getBoost()) {
           return true;
         }
@@ -236,47 +207,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       } else {
         throw new IOException("Invalid nullPolicy:"+nPolicy);
       }
+
     }
 
-    private IntOpenHashSet getBoostDocs(SolrIndexSearcher indexSearcher, Set<String> boosted) throws IOException {
-      IntOpenHashSet boostDocs = null;
-
-      if(boosted != null) {
-        SchemaField idField = indexSearcher.getSchema().getUniqueKeyField();
-        String fieldName = idField.getName();
-        HashSet<BytesRef> localBoosts = new HashSet(boosted.size()*2);
-        Iterator<String> boostedIt = boosted.iterator();
-        while(boostedIt.hasNext()) {
-          localBoosts.add(new BytesRef(boostedIt.next()));
-        }
-
-        boostDocs = new IntOpenHashSet(boosted.size()*2);
-
-        List<AtomicReaderContext>leaves = indexSearcher.getTopReaderContext().leaves();
-        TermsEnum termsEnum = null;
-        DocsEnum docsEnum = null;
-        for(AtomicReaderContext leaf : leaves) {
-          AtomicReader reader = leaf.reader();
-          int docBase = leaf.docBase;
-          Bits liveDocs = reader.getLiveDocs();
-          Terms terms = reader.terms(fieldName);
-          termsEnum = terms.iterator(termsEnum);
-          Iterator<BytesRef> it = localBoosts.iterator();
-          while(it.hasNext()) {
-            BytesRef ref = it.next();
-            if(termsEnum.seekExact(ref)) {
-              docsEnum = termsEnum.docs(liveDocs, docsEnum);
-              int doc = docsEnum.nextDoc();
-              if(doc != DocsEnum.NO_MORE_DOCS) {
-                //Found the document.
-                boostDocs.add(doc+docBase);
-                it.remove();
-              }
-            }
-          }
-        }
-      }
-
+    private IntIntOpenHashMap getBoostDocs(SolrIndexSearcher indexSearcher, Map<BytesRef, Integer> boosted, Map context) throws IOException {
+      IntIntOpenHashMap boostDocs = QueryElevationComponent.getBoostDocs(indexSearcher, boosted, context);
       return boostDocs;
     }
 
@@ -284,8 +219,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       try {
 
         SolrIndexSearcher searcher = (SolrIndexSearcher)indexSearcher;
-        IndexSchema schema = searcher.getSchema();
-        SchemaField schemaField = schema.getField(this.field);
 
         SortedDocValues docValues = null;
         FunctionQuery funcQuery = null;
@@ -332,14 +265,22 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         int maxDoc = searcher.maxDoc();
         int leafCount = searcher.getTopReaderContext().leaves().size();
 
-        if(this.boosted == null) {
-          SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
-          if(info != null) {
-            this.boosted = (Set<String>)info.getReq().getContext().get(QueryElevationComponent.BOOSTED);
-          }
+        //Deal with boosted docs.
+        //We have to deal with it here rather then the constructor because
+        //because the QueryElevationComponent runs after the Queries are constructed.
+
+        IntIntOpenHashMap boostDocs = null;
+        Map context = null;
+        SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
+        if(info != null) {
+          context = info.getReq().getContext();
         }
 
-        IntOpenHashSet boostDocs = getBoostDocs(searcher, this.boosted);
+        if(this.boosted == null && context != null) {
+          this.boosted = (Map<BytesRef, Integer>)context.get(QueryElevationComponent.BOOSTED_PRIORITY);
+        }
+
+        boostDocs = getBoostDocs(searcher, this.boosted, context);
 
         if (this.min != null || this.max != null) {
 
@@ -442,14 +383,14 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private float nullScore = -Float.MAX_VALUE;
     private int nullDoc;
     private FloatArrayList nullScores;
-    private IntOpenHashSet boostDocs;
+    private IntIntOpenHashMap boostDocs;
     private int[] boostOrds;
 
     public CollapsingScoreCollector(int maxDoc,
                                     int segments,
                                     SortedDocValues values,
                                     int nullPolicy,
-                                    IntOpenHashSet boostDocs) {
+                                    IntIntOpenHashMap boostDocs) {
       this.maxDoc = maxDoc;
       this.contexts = new AtomicReaderContext[segments];
       this.collapsedSet = new FixedBitSet(maxDoc);
@@ -457,10 +398,10 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       if(this.boostDocs != null) {
         //Set the elevated docs now.
         IntOpenHashSet boostG = new IntOpenHashSet();
-        Iterator<IntCursor> it = this.boostDocs.iterator();
+        Iterator<IntIntCursor> it = this.boostDocs.iterator();
         while(it.hasNext()) {
-          IntCursor cursor = it.next();
-          int i = cursor.value;
+          IntIntCursor cursor = it.next();
+          int i = cursor.key;
           this.collapsedSet.set(i);
           int ord = values.getOrd(i);
           if(ord > -1) {
@@ -558,7 +499,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
         if(ord > -1) {
           dummy.score = scores[ord];
-        } else if(this.boostDocs != null && boostDocs.contains(docId)) {
+        } else if(this.boostDocs != null && boostDocs.containsKey(docId)) {
           //Elevated docs don't need a score.
           dummy.score = 0F;
         } else if (nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
@@ -595,7 +536,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     private FieldValueCollapse fieldValueCollapse;
     private boolean needsScores;
-    private IntOpenHashSet boostDocs;
+    private IntIntOpenHashMap boostDocs;
 
     public CollapsingFieldValueCollector(int maxDoc,
                                          int segments,
@@ -605,7 +546,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                                          boolean max,
                                          boolean needsScores,
                                          FieldType fieldType,
-                                         IntOpenHashSet boostDocs,
+                                         IntIntOpenHashMap boostDocs,
                                          FunctionQuery funcQuery, IndexSearcher searcher) throws IOException{
 
       this.maxDoc = maxDoc;
@@ -674,7 +615,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           int ord = values.getOrd(docId);
           if(ord > -1) {
             dummy.score = scores[ord];
-          } else if (boostDocs != null && boostDocs.contains(docId)) {
+          } else if (boostDocs != null && boostDocs.containsKey(docId)) {
             //Its an elevated doc so no score is needed
             dummy.score = 0F;
           } else if (nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
@@ -711,7 +652,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     protected float nullScore;
     protected float[] scores;
     protected FixedBitSet collapsedSet;
-    protected IntOpenHashSet boostDocs;
+    protected IntIntOpenHashMap boostDocs;
     protected int[] boostOrds;
     protected int nullDoc = -1;
     protected boolean needsScores;
@@ -726,7 +667,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                               int nullPolicy,
                               boolean max,
                               boolean needsScores,
-                              IntOpenHashSet boostDocs,
+                              IntIntOpenHashMap boostDocs,
                               SortedDocValues values) {
       this.field = field;
       this.nullPolicy = nullPolicy;
@@ -736,10 +677,10 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       this.boostDocs = boostDocs;
       if(this.boostDocs != null) {
         IntOpenHashSet boostG = new IntOpenHashSet();
-        Iterator<IntCursor> it = boostDocs.iterator();
+        Iterator<IntIntCursor> it = boostDocs.iterator();
         while(it.hasNext()) {
-          IntCursor cursor = it.next();
-          int i = cursor.value;
+          IntIntCursor cursor = it.next();
+          int i = cursor.key;
           this.collapsedSet.set(i);
           int ord = values.getOrd(i);
           if(ord > -1) {
@@ -802,7 +743,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                             int[] ords,
                             boolean max,
                             boolean needsScores,
-                            IntOpenHashSet boostDocs, SortedDocValues values) throws IOException {
+                            IntIntOpenHashMap boostDocs, SortedDocValues values) throws IOException {
       super(maxDoc, field, nullPolicy, max, needsScores, boostDocs, values);
       this.ords = ords;
       this.ordVals = new int[ords.length];
@@ -870,7 +811,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                              int[] ords,
                              boolean max,
                              boolean needsScores,
-                             IntOpenHashSet boostDocs, SortedDocValues values) throws IOException {
+                             IntIntOpenHashMap boostDocs, SortedDocValues values) throws IOException {
       super(maxDoc, field, nullPolicy, max, needsScores, boostDocs, values);
       this.ords = ords;
       this.ordVals = new long[ords.length];
@@ -939,7 +880,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                               int[] ords,
                               boolean max,
                               boolean needsScores,
-                              IntOpenHashSet boostDocs, SortedDocValues values) throws IOException {
+                              IntIntOpenHashMap boostDocs, SortedDocValues values) throws IOException {
       super(maxDoc, field, nullPolicy, max, needsScores, boostDocs, values);
       this.ords = ords;
       this.ordVals = new float[ords.length];
@@ -1013,7 +954,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                                int[] ords,
                                boolean max,
                                boolean needsScores,
-                               IntOpenHashSet boostDocs,
+                               IntIntOpenHashMap boostDocs,
                                FunctionQuery funcQuery, IndexSearcher searcher, SortedDocValues values) throws IOException {
       super(maxDoc, null, nullPolicy, max, needsScores, boostDocs, values);
       this.valueSource = funcQuery.getValueSource();

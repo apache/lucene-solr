@@ -427,7 +427,7 @@ public class ResponseBuilder
     return cmd;
   }
 
-  private Query wrap(Query q) {
+  Query wrap(Query q) {
     if(this.rankQuery != null) {
       return this.rankQuery.wrap(q);
     } else {
