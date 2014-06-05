@@ -234,19 +234,20 @@ public abstract class StrategyTestCase extends SpatialTestCase {
     CheckHits.checkExplanations(q, "", indexSearcher);
   }
 
-  protected void assertOperation(Map<String,Shape> indexedDocs,
-                                 SpatialOperation operation, Shape queryShape) {
-    //Generate truth via brute force
-    Set<String> expectedIds = new HashSet<>();
-    for (Map.Entry<String, Shape> stringShapeEntry : indexedDocs.entrySet()) {
-      if (operation.evaluate(stringShapeEntry.getValue(), queryShape))
-        expectedIds.add(stringShapeEntry.getKey());
-    }
-
-    SpatialTestQuery testQuery = new SpatialTestQuery();
-    testQuery.args = new SpatialArgs(operation, queryShape);
-    testQuery.ids = new ArrayList<>(expectedIds);
-    runTestQuery(SpatialMatchConcern.FILTER, testQuery);
+  protected void testOperation(Shape indexedShape, SpatialOperation operation,
+                               Shape queryShape, boolean match) throws IOException {
+    assertTrue("Faulty test",
+        operation.evaluate(indexedShape, queryShape) == match ||
+            indexedShape.equals(queryShape) &&
+              (operation == SpatialOperation.Contains || operation == SpatialOperation.IsWithin));
+    adoc("0", indexedShape);
+    commit();
+    Query query = strategy.makeQuery(new SpatialArgs(operation, queryShape));
+    SearchResults got = executeQuery(query, 1);
+    assert got.numFound <= 1 : "unclean test env";
+    if ((got.numFound == 1) != match)
+      fail(operation+" I:" + indexedShape + " Q:" + queryShape);
+    deleteAll();//clean up after ourselves
   }
 
 }

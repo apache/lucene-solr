@@ -21,6 +21,13 @@ New Features
   PushPostingsWriterBase for single-pass push of docs/positions to the
   postings format.  (Mike McCandless)
 
+* LUCENE-5648: Index and search date ranges, particularly multi-valued ones. It's
+  implemented in the spatial module as DateRangePrefixTree used with
+  NumberRangePrefixTreeStrategy. (David Smiley)
+
+* LUCENE-4175: Index and search rectangles with spatial BBoxSpatialStrategy.
+  Sort documents by relative overlap of query areas. (Ryan McKinley)
+
 API Changes
 
 * LUCENE-4535: oal.util.FilterIterator is now an internal API.
