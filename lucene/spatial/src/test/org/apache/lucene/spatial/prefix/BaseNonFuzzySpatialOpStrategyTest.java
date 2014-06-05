@@ -22,6 +22,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.StrategyTestCase;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
+import org.junit.Ignore;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,6 +36,7 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween
 /** Base test harness, ideally for SpatialStrategy impls that have exact results
  * (not grid approximated), hence "not fuzzy".
  */
+@Ignore("not actually a test: can this be renamed to *TestCase????")
 public abstract class BaseNonFuzzySpatialOpStrategyTest extends StrategyTestCase {
 
   //TODO this is partially redundant with StrategyTestCase.runTestQuery & testOperation
