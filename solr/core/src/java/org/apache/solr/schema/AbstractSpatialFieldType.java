@@ -251,10 +251,10 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
 
   @Override
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
-    return getQueryFromSpatialArgs(parser, field, parseSpatialArgs(externalVal));
+    return getQueryFromSpatialArgs(parser, field, parseSpatialArgs(parser, externalVal));
   }
 
-  protected SpatialArgs parseSpatialArgs(String externalVal) {
+  protected SpatialArgs parseSpatialArgs(QParser parser, String externalVal) {
     try {
       return argsParser.parse(externalVal, ctx);
     } catch (SolrException e) {
@@ -264,7 +264,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
     }
   }
 
-  private Query getQueryFromSpatialArgs(QParser parser, SchemaField field, SpatialArgs spatialArgs) {
+  protected Query getQueryFromSpatialArgs(QParser parser, SchemaField field, SpatialArgs spatialArgs) {
     T strategy = getStrategy(field.getName());
 
     SolrParams localParams = parser.getLocalParams();
