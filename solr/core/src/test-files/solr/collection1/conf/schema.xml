@@ -84,6 +84,7 @@
     <fieldtype name="date" class="solr.TrieDateField" precisionStep="0"/>
     <fieldtype name="tdate" class="solr.TrieDateField" precisionStep="6"/>
 
+    <fieldtype name="dateRange" class="solr.DateRangeField" />
 
     <!-- solr.TextField allows the specification of custom
          text analyzers specified as a tokenizer and a list
@@ -498,6 +499,7 @@
 
    <field name="nullfirst" type="string" indexed="true" stored="true" sortMissingFirst="true" multiValued="false"/>
 
+   <field name="dateRange" type="dateRange" multiValued="false" />
 
    <field name="cat" type="string" indexed="true" stored="true" multiValued="true"/>
    <field name="price"  type="float" indexed="true" stored="true" multiValued="false"/>
