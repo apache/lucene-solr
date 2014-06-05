@@ -72,7 +72,7 @@ class MemoryDocValuesProducer extends DocValuesProducer {
   // ram instances we have already loaded
   private final Map<Integer,NumericDocValues> numericInstances = 
       new HashMap<>();
-  private final Map<Integer,BinaryDocValues> binaryInstances =
+  private final Map<Integer,BytesAndAddresses> pagedBytesInstances =
       new HashMap<>();
   private final Map<Integer,FST<Long>> fstInstances =
       new HashMap<>();
@@ -280,50 +280,68 @@ class MemoryDocValuesProducer extends DocValuesProducer {
   }
 
   @Override
-  public synchronized BinaryDocValues getBinary(FieldInfo field) throws IOException {
-    BinaryDocValues instance = binaryInstances.get(field.number);
-    if (instance == null) {
-      instance = loadBinary(field);
-      binaryInstances.put(field.number, instance);
+  public BinaryDocValues getBinary(FieldInfo field) throws IOException {
+    BinaryEntry entry = binaries.get(field.number);
+
+    BytesAndAddresses instance;
+    synchronized (this) {
+      instance = pagedBytesInstances.get(field.number);
+      if (instance == null) {
+        instance = loadBinary(field);
+        pagedBytesInstances.put(field.number, instance);
+      }
     }
-    return instance;
+    final PagedBytes.Reader bytesReader = instance.reader;
+    final MonotonicBlockPackedReader addresses = instance.addresses;
+
+    if (addresses == null) {
+      assert entry.minLength == entry.maxLength;
+      final int fixedLength = entry.minLength;
+      return new BinaryDocValues() {
+        final BytesRef term = new BytesRef();
+
+        @Override
+        public BytesRef get(int docID) {
+          bytesReader.fillSlice(term, fixedLength * (long)docID, fixedLength);
+          return term;
+        }
+      };
+    } else {
+      return new BinaryDocValues() {
+        final BytesRef term = new BytesRef();
+
+        @Override
+        public BytesRef get(int docID) {
+          long startAddress = docID == 0 ? 0 : addresses.get(docID-1);
+          long endAddress = addresses.get(docID);
+          bytesReader.fillSlice(term, startAddress, (int) (endAddress - startAddress));
+          return term;
+        }
+      };
+    }
   }
   
-  private BinaryDocValues loadBinary(FieldInfo field) throws IOException {
+  private BytesAndAddresses loadBinary(FieldInfo field) throws IOException {
+    BytesAndAddresses bytesAndAddresses = new BytesAndAddresses();
     BinaryEntry entry = binaries.get(field.number);
     data.seek(entry.offset);
     PagedBytes bytes = new PagedBytes(16);
     bytes.copy(data, entry.numBytes);
-    final PagedBytes.Reader bytesReader = bytes.freeze(true);
-    if (entry.minLength == entry.maxLength) {
-      final int fixedLength = entry.minLength;
-      ramBytesUsed.addAndGet(bytes.ramBytesUsed());
-      return new BinaryDocValues() {
-        @Override
-        public void get(int docID, BytesRef result) {
-          bytesReader.fillSlice(result, fixedLength * (long)docID, fixedLength);
-        }
-      };
-    } else {
+    bytesAndAddresses.reader = bytes.freeze(true);
+    ramBytesUsed.addAndGet(bytesAndAddresses.reader.ramBytesUsed());
+    if (entry.minLength != entry.maxLength) {
       data.seek(data.getFilePointer() + entry.missingBytes);
-      final MonotonicBlockPackedReader addresses = new MonotonicBlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, maxDoc, false);
-      ramBytesUsed.addAndGet(bytes.ramBytesUsed() + addresses.ramBytesUsed());
-      return new BinaryDocValues() {
-        @Override
-        public void get(int docID, BytesRef result) {
-          long startAddress = docID == 0 ? 0 : addresses.get(docID-1);
-          long endAddress = addresses.get(docID); 
-          bytesReader.fillSlice(result, startAddress, (int) (endAddress - startAddress));
-        }
-      };
+      bytesAndAddresses.addresses = new MonotonicBlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, maxDoc, false);
+      ramBytesUsed.addAndGet(bytesAndAddresses.addresses.ramBytesUsed());
     }
+    return bytesAndAddresses;
   }
   
   @Override
   public SortedDocValues getSorted(FieldInfo field) throws IOException {
     final FSTEntry entry = fsts.get(field.number);
     if (entry.numOrds == 0) {
-      return DocValues.EMPTY_SORTED;
+      return DocValues.emptySorted();
     }
     FST<Long> instance;
     synchronized(this) {
@@ -346,21 +364,21 @@ class MemoryDocValuesProducer extends DocValuesProducer {
     final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<>(fst);
     
     return new SortedDocValues() {
+      final BytesRef term = new BytesRef();
+
       @Override
       public int getOrd(int docID) {
         return (int) docToOrd.get(docID);
       }
 
       @Override
-      public void lookupOrd(int ord, BytesRef result) {
+      public BytesRef lookupOrd(int ord) {
         try {
           in.setPosition(0);
           fst.getFirstArc(firstArc);
           IntsRef output = Util.getByOutput(fst, ord, in, firstArc, scratchArc, scratchInts);
-          result.bytes = new byte[output.length];
-          result.offset = 0;
-          result.length = 0;
-          Util.toBytesRef(output, result);
+          Util.toBytesRef(output, term);
+          return term;
         } catch (IOException bogus) {
           throw new RuntimeException(bogus);
         }
@@ -398,7 +416,7 @@ class MemoryDocValuesProducer extends DocValuesProducer {
   public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
     final FSTEntry entry = fsts.get(field.number);
     if (entry.numOrds == 0) {
-      return DocValues.EMPTY_SORTED_SET; // empty FST!
+      return DocValues.emptySortedSet(); // empty FST!
     }
     FST<Long> instance;
     synchronized(this) {
@@ -419,9 +437,10 @@ class MemoryDocValuesProducer extends DocValuesProducer {
     final Arc<Long> scratchArc = new Arc<>();
     final IntsRef scratchInts = new IntsRef();
     final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<>(fst);
-    final BytesRef ref = new BytesRef();
     final ByteArrayDataInput input = new ByteArrayDataInput();
     return new SortedSetDocValues() {
+      final BytesRef term = new BytesRef();
+      BytesRef ref;
       long currentOrd;
 
       @Override
@@ -436,21 +455,19 @@ class MemoryDocValuesProducer extends DocValuesProducer {
       
       @Override
       public void setDocument(int docID) {
-        docToOrds.get(docID, ref);
+        ref = docToOrds.get(docID);
         input.reset(ref.bytes, ref.offset, ref.length);
         currentOrd = 0;
       }
 
       @Override
-      public void lookupOrd(long ord, BytesRef result) {
+      public BytesRef lookupOrd(long ord) {
         try {
           in.setPosition(0);
           fst.getFirstArc(firstArc);
           IntsRef output = Util.getByOutput(fst, ord, in, firstArc, scratchArc, scratchInts);
-          result.bytes = new byte[output.length];
-          result.offset = 0;
-          result.length = 0;
-          Util.toBytesRef(output, result);
+          Util.toBytesRef(output, term);
+          return term;
         } catch (IOException bogus) {
           throw new RuntimeException(bogus);
         }
@@ -553,7 +570,12 @@ class MemoryDocValuesProducer extends DocValuesProducer {
     long offset;
     long numOrds;
   }
-  
+
+  static class BytesAndAddresses {
+    PagedBytes.Reader reader;
+    MonotonicBlockPackedReader addresses;
+  }
+
   // exposes FSTEnum directly as a TermsEnum: avoids binary-search next()
   static class FSTTermsEnum extends TermsEnum {
     final BytesRefFSTEnum<Long> in;

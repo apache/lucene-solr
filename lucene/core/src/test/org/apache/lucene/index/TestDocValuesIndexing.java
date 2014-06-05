@@ -180,13 +180,12 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     DirectoryReader r = w.getReader();
     BinaryDocValues s = FieldCache.DEFAULT.getTerms(getOnlySegmentReader(r), "field", false);
 
-    BytesRef bytes1 = new BytesRef();
-    s.get(0, bytes1);
+    BytesRef bytes1 = s.get(0);
     assertEquals(bytes.length, bytes1.length);
     bytes[0] = 0;
     assertEquals(b, bytes1);
     
-    s.get(1, bytes1);
+    bytes1 = s.get(1);
     assertEquals(bytes.length, bytes1.length);
     bytes[0] = 1;
     assertEquals(b, bytes1);

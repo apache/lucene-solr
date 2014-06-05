@@ -28,7 +28,7 @@ import org.apache.lucene.util.BytesRef;
  * are dense and in increasing sorted order.
  */
 public abstract class SortedDocValues extends BinaryDocValues {
-  
+
   /** Sole constructor. (For invocation by subclass 
    * constructors, typically implicit.) */
   protected SortedDocValues() {}
@@ -42,12 +42,14 @@ public abstract class SortedDocValues extends BinaryDocValues {
    */
   public abstract int getOrd(int docID);
 
-  /** Retrieves the value for the specified ordinal.
+  /** Retrieves the value for the specified ordinal. The returned
+   * {@link BytesRef} may be re-used across calls to {@link #lookupOrd(int)}
+   * so make sure to {@link BytesRef#deepCopyOf(BytesRef) copy it} if you want
+   * to keep it around.
    * @param ord ordinal to lookup (must be &gt;= 0 and &lt {@link #getValueCount()})
-   * @param result will be populated with the ordinal's value
    * @see #getOrd(int) 
    */
-  public abstract void lookupOrd(int ord, BytesRef result);
+  public abstract BytesRef lookupOrd(int ord);
 
   /**
    * Returns the number of unique values.
@@ -56,15 +58,15 @@ public abstract class SortedDocValues extends BinaryDocValues {
    */
   public abstract int getValueCount();
 
+  private final BytesRef empty = new BytesRef();
+
   @Override
-  public void get(int docID, BytesRef result) {
+  public BytesRef get(int docID) {
     int ord = getOrd(docID);
     if (ord == -1) {
-      result.bytes = BytesRef.EMPTY_BYTES;
-      result.length = 0;
-      result.offset = 0;
+      return empty;
     } else {
-      lookupOrd(ord, result);
+      return lookupOrd(ord);
     }
   }
 
@@ -75,14 +77,13 @@ public abstract class SortedDocValues extends BinaryDocValues {
    *  @param key Key to look up
    **/
   public int lookupTerm(BytesRef key) {
-    BytesRef spare = new BytesRef();
     int low = 0;
     int high = getValueCount()-1;
 
     while (low <= high) {
       int mid = (low + high) >>> 1;
-      lookupOrd(mid, spare);
-      int cmp = spare.compareTo(key);
+      final BytesRef term = lookupOrd(mid);
+      int cmp = term.compareTo(key);
 
       if (cmp < 0) {
         low = mid + 1;

@@ -246,9 +246,8 @@ public abstract class SorterTestBase extends LuceneTestCase {
   @Test
   public void testBinaryDocValuesField() throws Exception {
     BinaryDocValues dv = reader.getBinaryDocValues(BINARY_DV_FIELD);
-    BytesRef bytes = new BytesRef();
     for (int i = 0; i < reader.maxDoc(); i++) {
-      dv.get(i, bytes);
+      final BytesRef bytes = dv.get(i);
       assertEquals("incorrect binary DocValues for doc " + i, sortedValues[i].toString(), bytes.utf8ToString());
     }
   }
@@ -378,9 +377,8 @@ public abstract class SorterTestBase extends LuceneTestCase {
   public void testSortedDocValuesField() throws Exception {
     SortedDocValues dv = reader.getSortedDocValues(SORTED_DV_FIELD);
     int maxDoc = reader.maxDoc();
-    BytesRef bytes = new BytesRef();
     for (int i = 0; i < maxDoc; i++) {
-      dv.get(i, bytes);
+      final BytesRef bytes = dv.get(i);
       assertEquals("incorrect sorted DocValues for doc " + i, sortedValues[i].toString(), bytes.utf8ToString());
     }
   }
@@ -390,13 +388,12 @@ public abstract class SorterTestBase extends LuceneTestCase {
     assumeTrue("default codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
     SortedSetDocValues dv = reader.getSortedSetDocValues(SORTED_SET_DV_FIELD);
     int maxDoc = reader.maxDoc();
-    BytesRef bytes = new BytesRef();
     for (int i = 0; i < maxDoc; i++) {
       dv.setDocument(i);
-      dv.lookupOrd(dv.nextOrd(), bytes);
+      BytesRef bytes = dv.lookupOrd(dv.nextOrd());
       int value = sortedValues[i].intValue();
       assertEquals("incorrect sorted-set DocValues for doc " + i, Integer.valueOf(value).toString(), bytes.utf8ToString());
-      dv.lookupOrd(dv.nextOrd(), bytes);
+      bytes = dv.lookupOrd(dv.nextOrd());
       assertEquals("incorrect sorted-set DocValues for doc " + i, Integer.valueOf(value + 1).toString(), bytes.utf8ToString());
       assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
     }

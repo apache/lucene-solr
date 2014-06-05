@@ -206,8 +206,8 @@ public class SortedSetSortField extends SortField {
     }
 
     @Override
-    public void lookupOrd(int ord, BytesRef result) {
-      in.lookupOrd(ord, result);
+    public BytesRef lookupOrd(int ord) {
+      return in.lookupOrd(ord);
     }
 
     @Override
@@ -241,8 +241,8 @@ public class SortedSetSortField extends SortField {
     }
 
     @Override
-    public void lookupOrd(int ord, BytesRef result) {
-      in.lookupOrd(ord, result);
+    public BytesRef lookupOrd(int ord) {
+      return in.lookupOrd(ord);
     }
 
     @Override
@@ -276,8 +276,8 @@ public class SortedSetSortField extends SortField {
     }
 
     @Override
-    public void lookupOrd(int ord, BytesRef result) {
-      in.lookupOrd(ord, result);
+    public BytesRef lookupOrd(int ord) {
+      return in.lookupOrd(ord);
     }
 
     @Override
@@ -311,8 +311,8 @@ public class SortedSetSortField extends SortField {
     }
 
     @Override
-    public void lookupOrd(int ord, BytesRef result) {
-      in.lookupOrd(ord, result);
+    public BytesRef lookupOrd(int ord) {
+      return in.lookupOrd(ord);
     }
 
     @Override

@@ -496,17 +496,15 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     BinaryDocValues payloadsDV = MultiDocValues.getBinaryValues(searcher.getIndexReader(), "payloads");
     List<AtomicReaderContext> leaves = searcher.getIndexReader().leaves();
     List<LookupResult> results = new ArrayList<>();
-    BytesRef scratch = new BytesRef();
     for (int i=0;i<hits.scoreDocs.length;i++) {
       FieldDoc fd = (FieldDoc) hits.scoreDocs[i];
-      textDV.get(fd.doc, scratch);
-      String text = scratch.utf8ToString();
+      BytesRef term = textDV.get(fd.doc);
+      String text = term.utf8ToString();
       long score = (Long) fd.fields[0];
 
       BytesRef payload;
       if (payloadsDV != null) {
-        payload = new BytesRef();
-        payloadsDV.get(fd.doc, payload);
+        payload = BytesRef.deepCopyOf(payloadsDV.get(fd.doc));
       } else {
         payload = null;
       }
@@ -520,8 +518,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
         contextsDV.setDocument(fd.doc - leaves.get(segment).docBase);
         long ord;
         while ((ord = contextsDV.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
-          BytesRef context = new BytesRef();
-          contextsDV.lookupOrd(ord, context);
+          BytesRef context = BytesRef.deepCopyOf(contextsDV.lookupOrd(ord));
           contexts.add(context);
         }
       } else {

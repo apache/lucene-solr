@@ -105,16 +105,14 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
       if (groupOrd == -1) {
         groupKey = null;
       } else {
-        groupKey = new BytesRef();
-        groupFieldTermsIndex.lookupOrd(groupOrd, groupKey);
+        groupKey = BytesRef.deepCopyOf(groupFieldTermsIndex.lookupOrd(groupOrd));
       }
 
       BytesRef facetKey;
       if (facetOrd == -1) {
         facetKey = null;
       } else {
-        facetKey = new BytesRef();
-        facetFieldTermsIndex.lookupOrd(facetOrd, facetKey);
+        facetKey = BytesRef.deepCopyOf(facetFieldTermsIndex.lookupOrd(facetOrd));
       }
 
       groupedFacetHits.add(new GroupedFacetHit(groupKey, facetKey));
@@ -222,8 +220,7 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
         if (groupOrd == -1) {
           groupKey = null;
         } else {
-          groupKey = new BytesRef();
-          groupFieldTermsIndex.lookupOrd(groupOrd, groupKey);
+          groupKey = BytesRef.deepCopyOf(groupFieldTermsIndex.lookupOrd(groupOrd));
         }
         groupedFacetHits.add(new GroupedFacetHit(groupKey, null));
         return;
@@ -261,16 +258,14 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
       if (groupOrd == -1) {
         groupKey = null;
       } else {
-        groupKey = new BytesRef();
-        groupFieldTermsIndex.lookupOrd(groupOrd, groupKey);
+        groupKey = BytesRef.deepCopyOf(groupFieldTermsIndex.lookupOrd(groupOrd));
       }
 
       final BytesRef facetValue;
       if (facetOrd == facetFieldNumTerms) {
         facetValue = null;
       } else {
-        facetFieldDocTermOrds.lookupOrd(facetOrd, scratch);
-        facetValue = BytesRef.deepCopyOf(scratch); // must we?
+        facetValue = BytesRef.deepCopyOf(facetFieldDocTermOrds.lookupOrd(facetOrd));
       }
       groupedFacetHits.add(new GroupedFacetHit(groupKey, facetValue));
     }

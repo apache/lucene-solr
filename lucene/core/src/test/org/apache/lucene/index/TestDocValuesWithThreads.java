@@ -86,8 +86,6 @@ public class TestDocValuesWithThreads extends LuceneTestCase {
               SortedDocValues sdv = FieldCache.DEFAULT.getTermsIndex(ar, "sorted");
               startingGun.await();
               int iters = atLeast(1000);
-              BytesRef scratch = new BytesRef();
-              BytesRef scratch2 = new BytesRef();
               for(int iter=0;iter<iters;iter++) {
                 int docID = threadRandom.nextInt(numDocs);
                 switch(threadRandom.nextInt(6)) {
@@ -110,10 +108,10 @@ public class TestDocValuesWithThreads extends LuceneTestCase {
                   assertEquals(Double.longBitsToDouble(numbers.get(docID).longValue()), FieldCache.DEFAULT.getDoubles(ar, "number", false).get(docID), 0.0);
                   break;
                 }
-                bdv.get(docID, scratch);
+                BytesRef scratch = bdv.get(docID);
                 assertEquals(binary.get(docID), scratch);
                 // Cannot share a single scratch against two "sources":
-                sdv.get(docID, scratch2);
+                BytesRef scratch2 = sdv.get(docID);
                 assertEquals(sorted.get(docID), scratch2);
               }
             } catch (Exception e) {
@@ -209,11 +207,10 @@ public class TestDocValuesWithThreads extends LuceneTestCase {
             while(System.currentTimeMillis() < END_TIME) {
               final SortedDocValues source;
               source = stringDVDirect;
-              final BytesRef scratch = new BytesRef();
 
               for(int iter=0;iter<100;iter++) {
                 final int docID = random.nextInt(sr.maxDoc());
-                source.get(docID, scratch);
+                BytesRef scratch = source.get(docID);
                 assertEquals(docValues.get((int) docIDToID.get(docID)), scratch);
               }
             }

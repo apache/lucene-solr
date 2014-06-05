@@ -74,7 +74,7 @@ public class MultiDocValues {
       AtomicReaderContext context = leaves.get(i);
       NumericDocValues v = context.reader().getNormValues(field);
       if (v == null) {
-        v = DocValues.EMPTY_NUMERIC;
+        v = DocValues.emptyNumeric();
       } else {
         anyReal = true;
       }
@@ -116,7 +116,7 @@ public class MultiDocValues {
       AtomicReaderContext context = leaves.get(i);
       NumericDocValues v = context.reader().getNumericDocValues(field);
       if (v == null) {
-        v = DocValues.EMPTY_NUMERIC;
+        v = DocValues.emptyNumeric();
       } else {
         anyReal = true;
       }
@@ -206,7 +206,7 @@ public class MultiDocValues {
       AtomicReaderContext context = leaves.get(i);
       BinaryDocValues v = context.reader().getBinaryDocValues(field);
       if (v == null) {
-        v = DocValues.EMPTY_BINARY;
+        v = DocValues.emptyBinary();
       } else {
         anyReal = true;
       }
@@ -220,9 +220,9 @@ public class MultiDocValues {
     } else {
       return new BinaryDocValues() {
         @Override
-        public void get(int docID, BytesRef result) {
+        public BytesRef get(int docID) {
           int subIndex = ReaderUtil.subIndex(docID, starts);
-          values[subIndex].get(docID - starts[subIndex], result);
+          return values[subIndex].get(docID - starts[subIndex]);
         }
       };
     }
@@ -251,7 +251,7 @@ public class MultiDocValues {
       AtomicReaderContext context = leaves.get(i);
       SortedDocValues v = context.reader().getSortedDocValues(field);
       if (v == null) {
-        v = DocValues.EMPTY_SORTED;
+        v = DocValues.emptySorted();
       } else {
         anyReal = true;
       }
@@ -295,7 +295,7 @@ public class MultiDocValues {
       AtomicReaderContext context = leaves.get(i);
       SortedSetDocValues v = context.reader().getSortedSetDocValues(field);
       if (v == null) {
-        v = DocValues.EMPTY_SORTED_SET;
+        v = DocValues.emptySortedSet();
       } else {
         anyReal = true;
       }
@@ -453,10 +453,10 @@ public class MultiDocValues {
     }
  
     @Override
-    public void lookupOrd(int ord, BytesRef result) {
+    public BytesRef lookupOrd(int ord) {
       int subIndex = mapping.getFirstSegmentNumber(ord);
       int segmentOrd = (int) mapping.getFirstSegmentOrd(ord);
-      values[subIndex].lookupOrd(segmentOrd, result);
+      return values[subIndex].lookupOrd(segmentOrd);
     }
  
     @Override
@@ -504,10 +504,10 @@ public class MultiDocValues {
     }
  
     @Override
-    public void lookupOrd(long ord, BytesRef result) {
+    public BytesRef lookupOrd(long ord) {
       int subIndex = mapping.getFirstSegmentNumber(ord);
       long segmentOrd = mapping.getFirstSegmentOrd(ord);
-      values[subIndex].lookupOrd(segmentOrd, result);
+      return values[subIndex].lookupOrd(segmentOrd);
     }
  
     @Override

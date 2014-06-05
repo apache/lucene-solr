@@ -62,8 +62,6 @@ public class FieldFacetStats {
 
   SortedDocValues topLevelSortedValues = null;
 
-  private final BytesRef tempBR = new BytesRef();
-
   public FieldFacetStats(SolrIndexSearcher searcher, String name, SchemaField field_sf, SchemaField facet_sf, boolean calcDistinct) {
     this.name = name;
     this.field_sf = field_sf;
@@ -106,14 +104,12 @@ public class FieldFacetStats {
     int term = topLevelSortedValues.getOrd(docID);
     int arrIdx = term;
     if (arrIdx >= 0 && arrIdx < topLevelSortedValues.getValueCount()) {
-      final BytesRef br;
+      final String key;
       if (term == -1) {
-        br = null;
+        key = null;
       } else {
-        br = tempBR;
-        topLevelSortedValues.lookupOrd(term, tempBR);
+        key = topLevelSortedValues.lookupOrd(term).utf8ToString();
       }
-      String key = br == null ? null : br.utf8ToString();
       while (facetStatsTerms.size() <= statsTermNum) {
         facetStatsTerms.add(new HashMap<String, Integer>());
       }

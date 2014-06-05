@@ -76,9 +76,8 @@ public class TermDistinctValuesCollector extends AbstractDistinctValuesCollector
       if (countOrd == -1) {
         gc.uniqueValues.add(null);
       } else {
-        BytesRef br = new BytesRef();
-        countFieldTermIndex.lookupOrd(countOrd, br);
-        gc.uniqueValues.add(br);
+        BytesRef term = BytesRef.deepCopyOf(countFieldTermIndex.lookupOrd(countOrd));
+        gc.uniqueValues.add(term);
       }
 
       gc.ords = Arrays.copyOf(gc.ords, gc.ords.length + 1);

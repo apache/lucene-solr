@@ -149,7 +149,6 @@ class SortableLongFieldSource extends FieldCacheSource {
     final long def = defVal;
 
     return new DocTermsIndexDocValues(this, readerContext, field) {
-      private final BytesRef spare = new BytesRef();
 
       @Override
       protected String toTerm(String readableValue) {
@@ -177,7 +176,7 @@ class SortableLongFieldSource extends FieldCacheSource {
         if (ord==-1) {
           return def;
         } else {
-          termsIndex.lookupOrd(ord, spare);
+          BytesRef spare = termsIndex.lookupOrd(ord);
           return NumberUtils.SortableStr2long(spare,0,5);
         }
       }
@@ -219,7 +218,7 @@ class SortableLongFieldSource extends FieldCacheSource {
               mval.value = def;
               mval.exists = false;
             } else {
-              termsIndex.lookupOrd(ord, spare);
+              BytesRef spare = termsIndex.lookupOrd(ord);
               mval.value = NumberUtils.SortableStr2long(spare,0,5);
               mval.exists = true;
             }

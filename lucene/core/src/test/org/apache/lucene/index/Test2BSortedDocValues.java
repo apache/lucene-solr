@@ -78,13 +78,12 @@ public class Test2BSortedDocValues extends LuceneTestCase {
     int expectedValue = 0;
     for (AtomicReaderContext context : r.leaves()) {
       AtomicReader reader = context.reader();
-      BytesRef scratch = new BytesRef();
       BinaryDocValues dv = reader.getSortedDocValues("dv");
       for (int i = 0; i < reader.maxDoc(); i++) {
         bytes[0] = (byte)(expectedValue >> 8);
         bytes[1] = (byte) expectedValue;
-        dv.get(i, scratch);
-        assertEquals(data, scratch);
+        final BytesRef term = dv.get(i);
+        assertEquals(data, term);
         expectedValue++;
       }
     }
@@ -144,8 +143,8 @@ public class Test2BSortedDocValues extends LuceneTestCase {
         bytes[2] = (byte) (counter >> 8);
         bytes[3] = (byte) counter;
         counter++;
-        dv.get(i, scratch);
-        assertEquals(data, scratch);
+        final BytesRef term = dv.get(i);
+        assertEquals(data, term);
       }
     }
     

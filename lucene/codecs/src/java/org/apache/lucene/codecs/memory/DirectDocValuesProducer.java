@@ -57,9 +57,9 @@ class DirectDocValuesProducer extends DocValuesProducer {
   // ram instances we have already loaded
   private final Map<Integer,NumericDocValues> numericInstances = 
       new HashMap<>();
-  private final Map<Integer,BinaryDocValues> binaryInstances =
+  private final Map<Integer,BinaryRawValues> binaryInstances =
       new HashMap<>();
-  private final Map<Integer,SortedDocValues> sortedInstances =
+  private final Map<Integer,SortedRawValues> sortedInstances =
       new HashMap<>();
   private final Map<Integer,SortedSetRawValues> sortedSetInstances =
       new HashMap<>();
@@ -178,9 +178,13 @@ class DirectDocValuesProducer extends DocValuesProducer {
       } else if (fieldType == BYTES) {
         binaries.put(fieldNumber, readBinaryEntry(meta));
       } else if (fieldType == SORTED) {
-        sorteds.put(fieldNumber, readSortedEntry(meta));
+        SortedEntry entry = readSortedEntry(meta);
+        sorteds.put(fieldNumber, entry);
+        binaries.put(fieldNumber, entry.values);
       } else if (fieldType == SORTED_SET) {
-        sortedSets.put(fieldNumber, readSortedSetEntry(meta));
+        SortedSetEntry entry = readSortedSetEntry(meta);
+        sortedSets.put(fieldNumber, entry);
+        binaries.put(fieldNumber, entry.values);
       } else {
         throw new CorruptIndexException("invalid entry type: " + fieldType + ", input=" + meta);
       }
@@ -279,16 +283,29 @@ class DirectDocValuesProducer extends DocValuesProducer {
 
   @Override
   public synchronized BinaryDocValues getBinary(FieldInfo field) throws IOException {
-    BinaryDocValues instance = binaryInstances.get(field.number);
+    BinaryRawValues instance = binaryInstances.get(field.number);
     if (instance == null) {
       // Lazy load
       instance = loadBinary(binaries.get(field.number));
       binaryInstances.put(field.number, instance);
     }
-    return instance;
+    final byte[] bytes = instance.bytes;
+    final int[] address = instance.address;
+
+    return new BinaryDocValues() {
+      final BytesRef term = new BytesRef();
+
+      @Override
+      public BytesRef get(int docID) {
+        term.bytes = bytes;
+        term.offset = address[docID];
+        term.length = address[docID+1] - term.offset;
+        return term;
+      }
+    };
   }
   
-  private BinaryDocValues loadBinary(BinaryEntry entry) throws IOException {
+  private BinaryRawValues loadBinary(BinaryEntry entry) throws IOException {
     data.seek(entry.offset);
     final byte[] bytes = new byte[entry.numBytes];
     data.readBytes(bytes, 0, entry.numBytes);
@@ -302,31 +319,26 @@ class DirectDocValuesProducer extends DocValuesProducer {
 
     ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(bytes) + RamUsageEstimator.sizeOf(address));
 
-    return new BinaryDocValues() {
-      @Override
-      public void get(int docID, BytesRef result) {
-        result.bytes = bytes;
-        result.offset = address[docID];
-        result.length = address[docID+1] - result.offset;
-      };
-    };
+    BinaryRawValues values = new BinaryRawValues();
+    values.bytes = bytes;
+    values.address = address;
+    return values;
   }
   
   @Override
-  public synchronized SortedDocValues getSorted(FieldInfo field) throws IOException {
-    SortedDocValues instance = sortedInstances.get(field.number);
-    if (instance == null) {
-      // Lazy load
-      instance = loadSorted(field);
-      sortedInstances.put(field.number, instance);
-    }
-    return instance;
-  }
-
-  private SortedDocValues loadSorted(FieldInfo field) throws IOException {
+  public SortedDocValues getSorted(FieldInfo field) throws IOException {
     final SortedEntry entry = sorteds.get(field.number);
-    final NumericDocValues docToOrd = loadNumeric(entry.docToOrd);
-    final BinaryDocValues values = loadBinary(entry.values);
+    SortedRawValues instance;
+    synchronized (this) {
+      instance = sortedInstances.get(field.number);
+      if (instance == null) {
+        // Lazy load
+        instance = loadSorted(field);
+        sortedInstances.put(field.number, instance);
+      }
+    }
+    final NumericDocValues docToOrd = instance.docToOrd;
+    final BinaryDocValues values = getBinary(field);
 
     return new SortedDocValues() {
 
@@ -336,8 +348,8 @@ class DirectDocValuesProducer extends DocValuesProducer {
       }
 
       @Override
-      public void lookupOrd(int ord, BytesRef result) {
-        values.get(ord, result);
+      public BytesRef lookupOrd(int ord) {
+        return values.get(ord);
       }
 
       @Override
@@ -349,6 +361,14 @@ class DirectDocValuesProducer extends DocValuesProducer {
 
       // Leave termsEnum to super
     };
+  }
+
+  private SortedRawValues loadSorted(FieldInfo field) throws IOException {
+    final SortedEntry entry = sorteds.get(field.number);
+    final NumericDocValues docToOrd = loadNumeric(entry.docToOrd);
+    final SortedRawValues values = new SortedRawValues();
+    values.docToOrd = docToOrd;
+    return values;
   }
 
   @Override
@@ -363,7 +383,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
 
     final NumericDocValues docToOrdAddress = instance.docToOrdAddress;
     final NumericDocValues ords = instance.ords;
-    final BinaryDocValues values = instance.values;
+    final BinaryDocValues values = getBinary(field);
 
     // Must make a new instance since the iterator has state:
     return new RandomAccessOrds() {
@@ -387,8 +407,8 @@ class DirectDocValuesProducer extends DocValuesProducer {
       }
 
       @Override
-      public void lookupOrd(long ord, BytesRef result) {
-        values.get((int) ord, result);
+      public BytesRef lookupOrd(long ord) {
+        return values.get((int) ord);
       }
 
       @Override
@@ -416,7 +436,6 @@ class DirectDocValuesProducer extends DocValuesProducer {
     SortedSetRawValues instance = new SortedSetRawValues();
     instance.docToOrdAddress = loadNumeric(entry.docToOrdAddress);
     instance.ords = loadNumeric(entry.ords);
-    instance.values = loadBinary(entry.values);
     return instance;
   }
 
@@ -465,11 +484,19 @@ class DirectDocValuesProducer extends DocValuesProducer {
   public void close() throws IOException {
     data.close();
   }
-  
+
+  static class BinaryRawValues {
+    byte[] bytes;
+    int[] address;
+  }
+
+  static class SortedRawValues {
+    NumericDocValues docToOrd;
+  }
+
   static class SortedSetRawValues {
     NumericDocValues docToOrdAddress;
     NumericDocValues ords;
-    BinaryDocValues values;
   }
 
   static class NumericEntry {

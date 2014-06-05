@@ -91,7 +91,6 @@ abstract class TermsWithScoreCollector extends Collector {
   // impl that works with single value per document
   static class SV extends TermsWithScoreCollector {
 
-    final BytesRef spare = new BytesRef();
     BinaryDocValues fromDocTerms;
 
     SV(String field, ScoreMode scoreMode) {
@@ -100,8 +99,7 @@ abstract class TermsWithScoreCollector extends Collector {
 
     @Override
     public void collect(int doc) throws IOException {
-      fromDocTerms.get(doc, spare);
-      int ord = collectedTerms.add(spare);
+      int ord = collectedTerms.add(fromDocTerms.get(doc));
       if (ord < 0) {
         ord = -ord - 1;
       } else {
@@ -142,8 +140,7 @@ abstract class TermsWithScoreCollector extends Collector {
 
       @Override
       public void collect(int doc) throws IOException {
-        fromDocTerms.get(doc, spare);
-        int ord = collectedTerms.add(spare);
+        int ord = collectedTerms.add(fromDocTerms.get(doc));
         if (ord < 0) {
           ord = -ord - 1;
         } else {
@@ -181,7 +178,6 @@ abstract class TermsWithScoreCollector extends Collector {
   static class MV extends TermsWithScoreCollector {
 
     SortedSetDocValues fromDocTermOrds;
-    final BytesRef scratch = new BytesRef();
 
     MV(String field, ScoreMode scoreMode) {
       super(field, scoreMode);
@@ -192,9 +188,7 @@ abstract class TermsWithScoreCollector extends Collector {
       fromDocTermOrds.setDocument(doc);
       long ord;
       while ((ord = fromDocTermOrds.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
-        fromDocTermOrds.lookupOrd(ord, scratch);
-        
-        int termID = collectedTerms.add(scratch);
+        int termID = collectedTerms.add(fromDocTermOrds.lookupOrd(ord));
         if (termID < 0) {
           termID = -termID - 1;
         } else {
@@ -231,9 +225,7 @@ abstract class TermsWithScoreCollector extends Collector {
         fromDocTermOrds.setDocument(doc);
         long ord;
         while ((ord = fromDocTermOrds.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
-          fromDocTermOrds.lookupOrd(ord, scratch);
-          
-          int termID = collectedTerms.add(scratch);
+          int termID = collectedTerms.add(fromDocTermOrds.lookupOrd(ord));
           if (termID < 0) {
             termID = -termID - 1;
           } else {

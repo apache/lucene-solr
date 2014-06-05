@@ -2294,12 +2294,10 @@ public abstract class LuceneTestCase extends Assert {
         BinaryDocValues leftValues = MultiDocValues.getBinaryValues(leftReader, field);
         BinaryDocValues rightValues = MultiDocValues.getBinaryValues(rightReader, field);
         if (leftValues != null && rightValues != null) {
-          BytesRef scratchLeft = new BytesRef();
-          BytesRef scratchRight = new BytesRef();
           for(int docID=0;docID<leftReader.maxDoc();docID++) {
-            leftValues.get(docID, scratchLeft);
-            rightValues.get(docID, scratchRight);
-            assertEquals(info, scratchLeft, scratchRight);
+            final BytesRef left = BytesRef.deepCopyOf(leftValues.get(docID));
+            final BytesRef right = rightValues.get(docID);
+            assertEquals(info, left, right);
           }
         } else {
           assertNull(info, leftValues);
@@ -2317,15 +2315,15 @@ public abstract class LuceneTestCase extends Assert {
           BytesRef scratchLeft = new BytesRef();
           BytesRef scratchRight = new BytesRef();
           for (int i = 0; i < leftValues.getValueCount(); i++) {
-            leftValues.lookupOrd(i, scratchLeft);
-            rightValues.lookupOrd(i, scratchRight);
-            assertEquals(info, scratchLeft, scratchRight);
+            final BytesRef left = BytesRef.deepCopyOf(leftValues.lookupOrd(i));
+            final BytesRef right = rightValues.lookupOrd(i);
+            assertEquals(info, left, right);
           }
           // bytes
           for(int docID=0;docID<leftReader.maxDoc();docID++) {
-            leftValues.get(docID, scratchLeft);
-            rightValues.get(docID, scratchRight);
-            assertEquals(info, scratchLeft, scratchRight);
+            final BytesRef left = BytesRef.deepCopyOf(leftValues.get(docID));
+            final BytesRef right = rightValues.get(docID);
+            assertEquals(info, left, right);
           }
         } else {
           assertNull(info, leftValues);
@@ -2340,12 +2338,10 @@ public abstract class LuceneTestCase extends Assert {
           // numOrds
           assertEquals(info, leftValues.getValueCount(), rightValues.getValueCount());
           // ords
-          BytesRef scratchLeft = new BytesRef();
-          BytesRef scratchRight = new BytesRef();
           for (int i = 0; i < leftValues.getValueCount(); i++) {
-            leftValues.lookupOrd(i, scratchLeft);
-            rightValues.lookupOrd(i, scratchRight);
-            assertEquals(info, scratchLeft, scratchRight);
+            final BytesRef left = BytesRef.deepCopyOf(leftValues.lookupOrd(i));
+            final BytesRef right = rightValues.lookupOrd(i);
+            assertEquals(info, left, right);
           }
           // ord lists
           for(int docID=0;docID<leftReader.maxDoc();docID++) {

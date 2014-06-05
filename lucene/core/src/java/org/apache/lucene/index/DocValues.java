@@ -17,6 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
@@ -24,87 +26,92 @@ import org.apache.lucene.util.BytesRef;
  * This class contains utility methods and constants for DocValues
  */
 public final class DocValues {
-  
+
   /* no instantiation */
   private DocValues() {}
-  
+
   /** 
    * An empty BinaryDocValues which returns {@link BytesRef#EMPTY_BYTES} for every document 
    */
-  public static final BinaryDocValues EMPTY_BINARY = new BinaryDocValues() {
-    @Override
-    public void get(int docID, BytesRef result) {
-      result.bytes = BytesRef.EMPTY_BYTES;
-      result.offset = 0;
-      result.length = 0;
-    }
-  };
+  public static final BinaryDocValues emptyBinary() {
+    final BytesRef empty = new BytesRef();
+    return new BinaryDocValues() {
+      @Override
+      public BytesRef get(int docID) {
+        return empty;
+      }
+    };
+  }
 
   /** 
    * An empty NumericDocValues which returns zero for every document 
    */
-  public static final NumericDocValues EMPTY_NUMERIC = new NumericDocValues() {
-    @Override
-    public long get(int docID) {
-      return 0;
-    }
-  };
+  public static final NumericDocValues emptyNumeric() {
+    return new NumericDocValues() {
+      @Override
+      public long get(int docID) {
+        return 0;
+      }
+    };
+  }
 
   /** 
    * An empty SortedDocValues which returns {@link BytesRef#EMPTY_BYTES} for every document 
    */
-  public static final SortedDocValues EMPTY_SORTED = new SortedDocValues() {
-    @Override
-    public int getOrd(int docID) {
-      return -1;
-    }
+  public static final SortedDocValues emptySorted() {
+    final BytesRef empty = new BytesRef();
+    return new SortedDocValues() {
+      @Override
+      public int getOrd(int docID) {
+        return -1;
+      }
 
-    @Override
-    public void lookupOrd(int ord, BytesRef result) {
-      result.bytes = BytesRef.EMPTY_BYTES;
-      result.offset = 0;
-      result.length = 0;
-    }
+      @Override
+      public BytesRef lookupOrd(int ord) {
+        return empty;
+      }
 
-    @Override
-    public int getValueCount() {
-      return 0;
-    }
-  };
+      @Override
+      public int getValueCount() {
+        return 0;
+      }
+    };
+  }
 
   /** 
    * An empty SortedDocValues which returns {@link SortedSetDocValues#NO_MORE_ORDS} for every document 
    */
-  public static final SortedSetDocValues EMPTY_SORTED_SET = new RandomAccessOrds() {
-
-    @Override
-    public long nextOrd() {
-      return NO_MORE_ORDS;
-    }
-
-    @Override
-    public void setDocument(int docID) {}
-
-    @Override
-    public void lookupOrd(long ord, BytesRef result) {
-      throw new IndexOutOfBoundsException();
-    }
-
-    @Override
-    public long getValueCount() {
-      return 0;
-    }
-
-    @Override
-    public long ordAt(int index) {
-      throw new IndexOutOfBoundsException();
-    }
-
-    @Override
-    public int cardinality() {
-      return 0;
-    }
-  };
+  public static final SortedSetDocValues emptySortedSet() {
+    return new RandomAccessOrds() {
+      @Override
+      public long nextOrd() {
+        return NO_MORE_ORDS;
+      }
+      
+      @Override
+      public void setDocument(int docID) {}
+      
+      @Override
+      public BytesRef lookupOrd(long ord) {
+        throw new IndexOutOfBoundsException();
+      }
+      
+      @Override
+      public long getValueCount() {
+        return 0;
+      }
+      
+      @Override
+      public long ordAt(int index) {
+        throw new IndexOutOfBoundsException();
+      }
+      
+      @Override
+      public int cardinality() {
+        return 0;
+      }
+    };
+  }
   
   /** 
    * Returns a multi-valued view over the provided SortedDocValues 
@@ -158,5 +165,73 @@ public final class DocValues {
         return maxDoc;
       }
     };
+  }
+  
+  // some helpers, for transition from fieldcache apis.
+  // as opposed to the AtomicReader apis (which must be strict for consistency), these are lenient
+  
+  /**
+   * Returns NumericDocValues for the reader, or {@link #emptyNumeric()} if it has none. 
+   */
+  public static NumericDocValues getNumeric(AtomicReader in, String field) throws IOException {
+    NumericDocValues dv = in.getNumericDocValues(field);
+    if (dv == null) {
+      return emptyNumeric();
+    } else {
+      return dv;
+    }
+  }
+  
+  /**
+   * Returns BinaryDocValues for the reader, or {@link #emptyBinary} if it has none. 
+   */
+  public static BinaryDocValues getBinary(AtomicReader in, String field) throws IOException {
+    BinaryDocValues dv = in.getBinaryDocValues(field);
+    if (dv == null) {
+      dv = in.getSortedDocValues(field);
+      if (dv == null) {
+        return emptyBinary();
+      }
+    }
+    return dv;
+  }
+  
+  /**
+   * Returns SortedDocValues for the reader, or {@link #emptySorted} if it has none. 
+   */
+  public static SortedDocValues getSorted(AtomicReader in, String field) throws IOException {
+    SortedDocValues dv = in.getSortedDocValues(field);
+    if (dv == null) {
+      return emptySorted();
+    } else {
+      return dv;
+    }
+  }
+  
+  /**
+   * Returns SortedSetDocValues for the reader, or {@link #emptySortedSet} if it has none. 
+   */
+  public static SortedSetDocValues getSortedSet(AtomicReader in, String field) throws IOException {
+    SortedSetDocValues dv = in.getSortedSetDocValues(field);
+    if (dv == null) {
+      SortedDocValues sorted = in.getSortedDocValues(field);
+      if (sorted == null) {
+        return emptySortedSet();
+      }
+      return singleton(sorted);
+    }
+    return dv;
+  }
+  
+  /**
+   * Returns Bits for the reader, or {@link Bits} matching nothing if it has none. 
+   */
+  public static Bits getDocsWithField(AtomicReader in, String field) throws IOException {
+    Bits dv = in.getDocsWithField(field);
+    if (dv == null) {
+      return new Bits.MatchNoBits(in.maxDoc());
+    } else {
+      return dv;
+    }
   }
 }

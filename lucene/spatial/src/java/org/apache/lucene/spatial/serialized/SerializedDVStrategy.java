@@ -215,7 +215,7 @@ public class SerializedDVStrategy extends SpatialStrategy {
 
         boolean fillBytes(int doc) {
           if (bytesRefDoc != doc) {
-            docValues.get(doc, bytesRef);
+            bytesRef.copyBytes(docValues.get(doc));
             bytesRefDoc = doc;
           }
           return bytesRef.length != 0;

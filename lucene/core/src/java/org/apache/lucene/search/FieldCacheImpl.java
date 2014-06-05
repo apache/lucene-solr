@@ -1106,7 +1106,7 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  public static class SortedDocValuesImpl extends SortedDocValues {
+  public static class SortedDocValuesImpl {
     private final PagedBytes.Reader bytes;
     private final MonotonicAppendingLongBuffer termOrdToBytesOffset;
     private final PackedInts.Reader docToTermOrd;
@@ -1118,26 +1118,33 @@ class FieldCacheImpl implements FieldCache {
       this.termOrdToBytesOffset = termOrdToBytesOffset;
       this.numOrd = numOrd;
     }
+    
+    public SortedDocValues iterator() {
+      final BytesRef term = new BytesRef();
+      
+      return new SortedDocValues() {
+        @Override
+        public int getValueCount() {
+          return numOrd;
+        }
 
-    @Override
-    public int getValueCount() {
-      return numOrd;
-    }
-
-    @Override
-    public int getOrd(int docID) {
-      // Subtract 1, matching the 1+ord we did when
-      // storing, so that missing values, which are 0 in the
-      // packed ints, are returned as -1 ord:
-      return (int) docToTermOrd.get(docID)-1;
-    }
-
-    @Override
-    public void lookupOrd(int ord, BytesRef ret) {
-      if (ord < 0) {
-        throw new IllegalArgumentException("ord must be >=0 (got ord=" + ord + ")");
-      }
-      bytes.fill(ret, termOrdToBytesOffset.get(ord));
+        @Override
+        public int getOrd(int docID) {
+          // Subtract 1, matching the 1+ord we did when
+          // storing, so that missing values, which are 0 in the
+          // packed ints, are returned as -1 ord:
+          return (int) docToTermOrd.get(docID)-1;
+        }
+        
+        @Override
+        public BytesRef lookupOrd(int ord) {
+          if (ord < 0) {
+            throw new IllegalArgumentException("ord must be >=0 (got ord=" + ord + ")");
+          }
+          bytes.fill(term, termOrdToBytesOffset.get(ord));
+          return term;
+        }   
+      };
     }
   }
 
@@ -1154,15 +1161,16 @@ class FieldCacheImpl implements FieldCache {
     } else {
       final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
       if (info == null) {
-        return DocValues.EMPTY_SORTED;
+        return DocValues.emptySorted();
       } else if (info.hasDocValues()) {
         // we don't try to build a sorted instance from numeric/binary doc
         // values because dedup can be very costly
         throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
       } else if (!info.isIndexed()) {
-        return DocValues.EMPTY_SORTED;
+        return DocValues.emptySorted();
       }
-      return (SortedDocValues) caches.get(SortedDocValues.class).get(reader, new CacheKey(field, acceptableOverheadRatio), false);
+      SortedDocValuesImpl impl = (SortedDocValuesImpl) caches.get(SortedDocValues.class).get(reader, new CacheKey(field, acceptableOverheadRatio), false);
+      return impl.iterator();
     }
   }
 
@@ -1254,7 +1262,7 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  private static class BinaryDocValuesImpl extends BinaryDocValues {
+  private static class BinaryDocValuesImpl {
     private final PagedBytes.Reader bytes;
     private final PackedInts.Reader docToOffset;
 
@@ -1262,17 +1270,21 @@ class FieldCacheImpl implements FieldCache {
       this.bytes = bytes;
       this.docToOffset = docToOffset;
     }
-
-    @Override
-    public void get(int docID, BytesRef ret) {
-      final int pointer = (int) docToOffset.get(docID);
-      if (pointer == 0) {
-        ret.bytes = BytesRef.EMPTY_BYTES;
-        ret.offset = 0;
-        ret.length = 0;
-      } else {
-        bytes.fill(ret, pointer);
-      }
+    
+    public BinaryDocValues iterator() {
+      final BytesRef term = new BytesRef();
+      return new BinaryDocValues() {
+        @Override
+        public BytesRef get(int docID) {
+          final int pointer = (int) docToOffset.get(docID);
+          if (pointer == 0) {
+            term.length = 0;
+          } else {
+            bytes.fill(term, pointer);
+          }
+          return term;
+        }
+      };
     }
   }
 
@@ -1296,14 +1308,15 @@ class FieldCacheImpl implements FieldCache {
 
     final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
     if (info == null) {
-      return DocValues.EMPTY_BINARY;
+      return DocValues.emptyBinary();
     } else if (info.hasDocValues()) {
       throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
     } else if (!info.isIndexed()) {
-      return DocValues.EMPTY_BINARY;
+      return DocValues.emptyBinary();
     }
 
-    return (BinaryDocValues) caches.get(BinaryDocValues.class).get(reader, new CacheKey(field, acceptableOverheadRatio), setDocsWithField);
+    BinaryDocValuesImpl impl = (BinaryDocValuesImpl) caches.get(BinaryDocValues.class).get(reader, new CacheKey(field, acceptableOverheadRatio), setDocsWithField);
+    return impl.iterator();
   }
 
   static final class BinaryDocValuesCache extends Cache {
@@ -1415,11 +1428,11 @@ class FieldCacheImpl implements FieldCache {
     
     final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
     if (info == null) {
-      return DocValues.EMPTY_SORTED_SET;
+      return DocValues.emptySortedSet();
     } else if (info.hasDocValues()) {
       throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
     } else if (!info.isIndexed()) {
-      return DocValues.EMPTY_SORTED_SET;
+      return DocValues.emptySortedSet();
     }
     
     DocTermOrds dto = (DocTermOrds) caches.get(DocTermOrds.class).get(reader, new CacheKey(field, null), false);

@@ -29,6 +29,8 @@ import org.apache.lucene.queries.function.docvalues.DocTermsIndexDocValues;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.mutable.MutableValue;
+import org.apache.lucene.util.mutable.MutableValueStr;
 
 /**
  * An implementation for retrieving {@link FunctionValues} instances for string based fields.
@@ -56,7 +58,7 @@ public class BytesRefFieldSource extends FieldCacheSource {
 
         @Override
         public boolean bytesVal(int doc, BytesRef target) {
-          binaryValues.get(doc, target);
+          target.copyBytes(binaryValues.get(doc));
           return target.length > 0;
         }
 
@@ -76,6 +78,26 @@ public class BytesRefFieldSource extends FieldCacheSource {
         public String toString(int doc) {
           return description() + '=' + strVal(doc);
         }
+
+        @Override
+        public ValueFiller getValueFiller() {
+          return new ValueFiller() {
+            private final MutableValueStr mval = new MutableValueStr();
+
+            @Override
+            public MutableValue getValue() {
+              return mval;
+            }
+
+            @Override
+            public void fillValue(int doc) {
+              mval.exists = docsWithField.get(doc);
+              mval.value.length = 0;
+              mval.value.copyBytes(binaryValues.get(doc));
+            }
+          };
+        }
+
       };
     } else {
       return new DocTermsIndexDocValues(this, readerContext, field) {

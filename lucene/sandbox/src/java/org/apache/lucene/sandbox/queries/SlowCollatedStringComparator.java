@@ -45,7 +45,6 @@ public final class SlowCollatedStringComparator extends FieldComparator<String> 
   final Collator collator;
   private String bottom;
   private String topValue;
-  private final BytesRef tempBR = new BytesRef();
 
   public SlowCollatedStringComparator(int numHits, String field, Collator collator) {
     values = new String[numHits];
@@ -70,8 +69,8 @@ public final class SlowCollatedStringComparator extends FieldComparator<String> 
 
   @Override
   public int compareBottom(int doc) {
-    currentDocTerms.get(doc, tempBR);
-    final String val2 = tempBR.length == 0 && docsWithField.get(doc) == false ? null : tempBR.utf8ToString();
+    final BytesRef term = currentDocTerms.get(doc);
+    final String val2 = term.length == 0 && docsWithField.get(doc) == false ? null : term.utf8ToString();
     if (bottom == null) {
       if (val2 == null) {
         return 0;
@@ -85,11 +84,11 @@ public final class SlowCollatedStringComparator extends FieldComparator<String> 
 
   @Override
   public void copy(int slot, int doc) {
-    currentDocTerms.get(doc, tempBR);
-    if (tempBR.length == 0 && docsWithField.get(doc) == false) {
+    final BytesRef term = currentDocTerms.get(doc);
+    if (term.length == 0 && docsWithField.get(doc) == false) {
       values[slot] = null;
     } else {
-      values[slot] = tempBR.utf8ToString();
+      values[slot] = term.utf8ToString();
     }
   }
 
@@ -131,12 +130,12 @@ public final class SlowCollatedStringComparator extends FieldComparator<String> 
 
   @Override
   public int compareTop(int doc) {
-    currentDocTerms.get(doc, tempBR);
+    final BytesRef term = currentDocTerms.get(doc);
     final String docValue;
-    if (tempBR.length == 0 && docsWithField.get(doc) == false) {
+    if (term.length == 0 && docsWithField.get(doc) == false) {
       docValue = null;
     } else {
-      docValue = tempBR.utf8ToString();
+      docValue = term.utf8ToString();
     }
     return compareValues(topValue, docValue);
   }

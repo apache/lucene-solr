@@ -140,7 +140,7 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
       AtomicReaderContext context = in.leaves().get(i);
       SortedDocValues v = context.reader().getSortedDocValues(field);
       if (v == null) {
-        v = DocValues.EMPTY_SORTED;
+        v = DocValues.emptySorted();
       }
       values[i] = v;
       starts[i] = context.docBase;
@@ -179,7 +179,7 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
       AtomicReaderContext context = in.leaves().get(i);
       SortedSetDocValues v = context.reader().getSortedSetDocValues(field);
       if (v == null) {
-        v = DocValues.EMPTY_SORTED_SET;
+        v = DocValues.emptySortedSet();
       }
       values[i] = v;
       starts[i] = context.docBase;

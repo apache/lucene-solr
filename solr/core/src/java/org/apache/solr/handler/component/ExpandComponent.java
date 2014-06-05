@@ -216,7 +216,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     searcher.search(query, pfilter.filter, collector);
     IntObjectMap groups = groupExpandCollector.getGroups();
     Map<String, DocSlice> outMap = new HashMap();
-    BytesRef bytesRef = new BytesRef();
     CharsRef charsRef = new CharsRef();
     FieldType fieldType = searcher.getSchema().getField(field).getType();
     for (IntObjectCursor cursor : (Iterable<IntObjectCursor>) groups) {
@@ -233,7 +232,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
           scores[i] = scoreDoc.score;
         }
         DocSlice slice = new DocSlice(0, docs.length, docs, scores, topDocs.totalHits, topDocs.getMaxScore());
-        values.lookupOrd(ord, bytesRef);
+        final BytesRef bytesRef = values.lookupOrd(ord);
         fieldType.indexedToReadable(bytesRef, charsRef);
         String group = charsRef.toString();
         outMap.put(group, slice);

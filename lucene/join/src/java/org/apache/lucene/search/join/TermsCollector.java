@@ -80,8 +80,8 @@ abstract class TermsCollector extends Collector {
       docTermOrds.setDocument(doc);
       long ord;
       while ((ord = docTermOrds.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
-        docTermOrds.lookupOrd(ord, scratch);
-        collectorTerms.add(scratch);
+        final BytesRef term = docTermOrds.lookupOrd(ord);
+        collectorTerms.add(term);
       }
     }
 
@@ -103,8 +103,8 @@ abstract class TermsCollector extends Collector {
 
     @Override
     public void collect(int doc) throws IOException {
-      fromDocTerms.get(doc, spare);
-      collectorTerms.add(spare);
+      final BytesRef term = fromDocTerms.get(doc);
+      collectorTerms.add(term);
     }
 
     @Override

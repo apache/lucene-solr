@@ -98,11 +98,9 @@ public class TestMultiDocValues extends LuceneTestCase {
     
     BinaryDocValues multi = MultiDocValues.getBinaryValues(ir, "bytes");
     BinaryDocValues single = merged.getBinaryDocValues("bytes");
-    BytesRef actual = new BytesRef();
-    BytesRef expected = new BytesRef();
     for (int i = 0; i < numDocs; i++) {
-      single.get(i, expected);
-      multi.get(i, actual);
+      final BytesRef expected = BytesRef.deepCopyOf(single.get(i));
+      final BytesRef actual = multi.get(i);
       assertEquals(expected, actual);
     }
     ir.close();
@@ -141,14 +139,12 @@ public class TestMultiDocValues extends LuceneTestCase {
     SortedDocValues multi = MultiDocValues.getSortedValues(ir, "bytes");
     SortedDocValues single = merged.getSortedDocValues("bytes");
     assertEquals(single.getValueCount(), multi.getValueCount());
-    BytesRef actual = new BytesRef();
-    BytesRef expected = new BytesRef();
     for (int i = 0; i < numDocs; i++) {
       // check ord
       assertEquals(single.getOrd(i), multi.getOrd(i));
       // check value
-      single.get(i, expected);
-      multi.get(i, actual);
+      final BytesRef expected = BytesRef.deepCopyOf(single.get(i));
+      final BytesRef actual = multi.get(i);
       assertEquals(expected, actual);
     }
     ir.close();
@@ -185,14 +181,12 @@ public class TestMultiDocValues extends LuceneTestCase {
     SortedDocValues multi = MultiDocValues.getSortedValues(ir, "bytes");
     SortedDocValues single = merged.getSortedDocValues("bytes");
     assertEquals(single.getValueCount(), multi.getValueCount());
-    BytesRef actual = new BytesRef();
-    BytesRef expected = new BytesRef();
     for (int i = 0; i < numDocs; i++) {
       // check ord
       assertEquals(single.getOrd(i), multi.getOrd(i));
       // check ord value
-      single.get(i, expected);
-      multi.get(i, actual);
+      final BytesRef expected = BytesRef.deepCopyOf(single.get(i));
+      final BytesRef actual = multi.get(i);
       assertEquals(expected, actual);
     }
     ir.close();
@@ -232,12 +226,10 @@ public class TestMultiDocValues extends LuceneTestCase {
       assertNull(single);
     } else {
       assertEquals(single.getValueCount(), multi.getValueCount());
-      BytesRef actual = new BytesRef();
-      BytesRef expected = new BytesRef();
       // check values
       for (long i = 0; i < single.getValueCount(); i++) {
-        single.lookupOrd(i, expected);
-        multi.lookupOrd(i, actual);
+        final BytesRef expected = BytesRef.deepCopyOf(single.lookupOrd(i));
+        final BytesRef actual = multi.lookupOrd(i);
         assertEquals(expected, actual);
       }
       // check ord list
@@ -297,12 +289,10 @@ public class TestMultiDocValues extends LuceneTestCase {
       assertNull(single);
     } else {
       assertEquals(single.getValueCount(), multi.getValueCount());
-      BytesRef actual = new BytesRef();
-      BytesRef expected = new BytesRef();
       // check values
       for (long i = 0; i < single.getValueCount(); i++) {
-        single.lookupOrd(i, expected);
-        multi.lookupOrd(i, actual);
+        final BytesRef expected = BytesRef.deepCopyOf(single.lookupOrd(i));
+        final BytesRef actual = multi.lookupOrd(i);
         assertEquals(expected, actual);
       }
       // check ord list

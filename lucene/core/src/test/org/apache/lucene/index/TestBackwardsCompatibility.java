@@ -514,20 +514,19 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
             (byte)(id >>> 24), (byte)(id >>> 16),(byte)(id >>> 8),(byte)id
         };
         BytesRef expectedRef = new BytesRef(bytes);
-        BytesRef scratch = new BytesRef();
         
-        dvBytesDerefFixed.get(i, scratch);
-        assertEquals(expectedRef, scratch);
-        dvBytesDerefVar.get(i, scratch);
-        assertEquals(expectedRef, scratch);
-        dvBytesSortedFixed.get(i, scratch);
-        assertEquals(expectedRef, scratch);
-        dvBytesSortedVar.get(i, scratch);
-        assertEquals(expectedRef, scratch);
-        dvBytesStraightFixed.get(i, scratch);
-        assertEquals(expectedRef, scratch);
-        dvBytesStraightVar.get(i, scratch);
-        assertEquals(expectedRef, scratch);
+        BytesRef term = dvBytesDerefFixed.get(i);
+        assertEquals(expectedRef, term);
+        term = dvBytesDerefVar.get(i);
+        assertEquals(expectedRef, term);
+        term = dvBytesSortedFixed.get(i);
+        assertEquals(expectedRef, term);
+        term = dvBytesSortedVar.get(i);
+        assertEquals(expectedRef, term);
+        term = dvBytesStraightFixed.get(i);
+        assertEquals(expectedRef, term);
+        term = dvBytesStraightVar.get(i);
+        assertEquals(expectedRef, term);
         
         assertEquals((double)id, Double.longBitsToDouble(dvDouble.get(i)), 0D);
         assertEquals((float)id, Float.intBitsToFloat((int)dvFloat.get(i)), 0F);
@@ -539,8 +538,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
           dvSortedSet.setDocument(i);
           long ord = dvSortedSet.nextOrd();
           assertEquals(SortedSetDocValues.NO_MORE_ORDS, dvSortedSet.nextOrd());
-          dvSortedSet.lookupOrd(ord, scratch);
-          assertEquals(expectedRef, scratch);
+          term = dvSortedSet.lookupOrd(ord);
+          assertEquals(expectedRef, term);
         }
       }
     }
@@ -1046,9 +1045,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   private void assertBinaryDocValues(AtomicReader r, String f, String cf) throws IOException {
     BinaryDocValues bdvf = r.getBinaryDocValues(f);
     BinaryDocValues bdvcf = r.getBinaryDocValues(cf);
-    BytesRef scratch = new BytesRef();
     for (int i = 0; i < r.maxDoc(); i++) {
-      assertEquals(TestBinaryDocValuesUpdates.getValue(bdvcf, i, scratch ), TestBinaryDocValuesUpdates.getValue(bdvf, i, scratch)*2);
+      assertEquals(TestBinaryDocValuesUpdates.getValue(bdvcf, i), TestBinaryDocValuesUpdates.getValue(bdvf, i)*2);
     }
   }
   

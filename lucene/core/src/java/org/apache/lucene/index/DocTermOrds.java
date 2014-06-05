@@ -768,7 +768,7 @@ public class DocTermOrds {
   /** Returns a SortedSetDocValues view of this instance */
   public SortedSetDocValues iterator(AtomicReader reader) throws IOException {
     if (isEmpty()) {
-      return DocValues.EMPTY_SORTED_SET;
+      return DocValues.emptySortedSet();
     } else {
       return new Iterator(reader);
     }
@@ -869,16 +869,12 @@ public class DocTermOrds {
     }
 
     @Override
-    public void lookupOrd(long ord, BytesRef result) {
-      BytesRef ref = null;
+    public BytesRef lookupOrd(long ord) {
       try {
-        ref = DocTermOrds.this.lookupTerm(te, (int) ord);
+        return DocTermOrds.this.lookupTerm(te, (int) ord);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
-      result.bytes = ref.bytes;
-      result.offset = ref.offset;
-      result.length = ref.length;
     }
 
     @Override
