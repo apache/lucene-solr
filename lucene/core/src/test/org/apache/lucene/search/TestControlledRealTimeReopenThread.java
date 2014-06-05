@@ -45,8 +45,9 @@ import org.apache.lucene.index.TrackingIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.Version;
 
@@ -455,6 +456,8 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     dir.close();
   }
 
+  // Relies on wall clock time, so it can easily false-fail when the machine is otherwise busy:
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-5737")
   // LUCENE-5461
   public void testCRTReopen() throws Exception {
     //test behaving badly
