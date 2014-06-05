@@ -127,6 +127,39 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testReRankQuery() throws Exception {
+    SolrQueryRequest req = req("q", "*:*",
+                               "rqq", "{!edismax}hello",
+                               "rdocs", "20",
+                               "rweight", "2",
+                               "rows", "10",
+                               "start", "0");
+    try {
+      assertQueryEquals("rerank", req,
+          "{!rerank reRankQuery=$rqq reRankDocs=$rdocs reRankWeight=$rweight}",
+          "{!rerank reRankQuery=$rqq reRankDocs=20 reRankWeight=2}");
+
+    } finally {
+      req.close();
+    }
+
+
+    req = req("qq", "*:*",
+        "rqq", "{!edismax}hello",
+        "rdocs", "20",
+        "rweight", "2",
+        "rows", "100",
+        "start", "50");
+    try {
+      assertQueryEquals("rerank", req,
+          "{!rerank mainQuery=$qq reRankQuery=$rqq reRankDocs=$rdocs reRankWeight=$rweight}",
+          "{!rerank mainQuery=$qq reRankQuery=$rqq reRankDocs=20 reRankWeight=2}");
+
+    } finally {
+      req.close();
+    }
+  }
+
   public void testQuerySwitch() throws Exception {
     SolrQueryRequest req = req("myXXX", "XXX", 
                                "myField", "foo_s",
