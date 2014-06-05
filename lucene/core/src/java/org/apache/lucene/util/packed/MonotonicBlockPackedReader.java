@@ -35,16 +35,32 @@ import org.apache.lucene.util.RamUsageEstimator;
  * {@link MonotonicBlockPackedWriter}.
  * @lucene.internal
  */
-public final class MonotonicBlockPackedReader extends LongValues implements Accountable {
+public class MonotonicBlockPackedReader extends LongValues implements Accountable {
 
-  private final int blockShift, blockMask;
-  private final long valueCount;
-  private final long[] minValues;
-  private final float[] averages;
-  private final PackedInts.Reader[] subReaders;
+  static long expected(long origin, float average, int index) {
+    return origin + (long) (average * (long) index);
+  }
+
+  final int blockShift, blockMask;
+  final long valueCount;
+  final long[] minValues;
+  final float[] averages;
+  final PackedInts.Reader[] subReaders;
 
   /** Sole constructor. */
-  public MonotonicBlockPackedReader(IndexInput in, int packedIntsVersion, int blockSize, long valueCount, boolean direct) throws IOException {
+  public static MonotonicBlockPackedReader of(IndexInput in, int packedIntsVersion, int blockSize, long valueCount, boolean direct) throws IOException {
+    if (packedIntsVersion < PackedInts.VERSION_MONOTONIC_WITHOUT_ZIGZAG) {
+      return new MonotonicBlockPackedReader(in, packedIntsVersion, blockSize, valueCount, direct) {
+        @Override
+        protected long decodeDelta(long delta) {
+          return zigZagDecode(delta);
+        }
+      };
+    }
+    return new MonotonicBlockPackedReader(in, packedIntsVersion, blockSize, valueCount, direct);
+  }
+
+  private MonotonicBlockPackedReader(IndexInput in, int packedIntsVersion, int blockSize, long valueCount, boolean direct) throws IOException {
     this.valueCount = valueCount;
     blockShift = checkBlockSize(blockSize, MIN_BLOCK_SIZE, MAX_BLOCK_SIZE);
     blockMask = blockSize - 1;
@@ -53,7 +69,11 @@ public final class MonotonicBlockPackedReader extends LongValues implements Acco
     averages = new float[numBlocks];
     subReaders = new PackedInts.Reader[numBlocks];
     for (int i = 0; i < numBlocks; ++i) {
-      minValues[i] = in.readVLong();
+      if (packedIntsVersion < PackedInts.VERSION_MONOTONIC_WITHOUT_ZIGZAG) {
+        minValues[i] = in.readVLong();
+      } else {
+        minValues[i] = zigZagDecode(in.readVLong());
+      }
       averages[i] = Float.intBitsToFloat(in.readInt());
       final int bitsPerValue = in.readVInt();
       if (bitsPerValue > 64) {
@@ -79,7 +99,11 @@ public final class MonotonicBlockPackedReader extends LongValues implements Acco
     assert index >= 0 && index < valueCount;
     final int block = (int) (index >>> blockShift);
     final int idx = (int) (index & blockMask);
-    return minValues[block] + (long) (idx * averages[block]) + zigZagDecode(subReaders[block].get(idx));
+    return expected(minValues[block], averages[block], idx) + decodeDelta(subReaders[block].get(idx));
+  }
+
+  protected long decodeDelta(long delta) {
+    return delta;
   }
 
   /** Returns the number of values */

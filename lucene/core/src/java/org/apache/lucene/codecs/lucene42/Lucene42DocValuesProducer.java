@@ -301,7 +301,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
         }
       };
     } else {
-      final MonotonicBlockPackedReader addresses = new MonotonicBlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, maxDoc, false);
+      final MonotonicBlockPackedReader addresses = MonotonicBlockPackedReader.of(data, entry.packedIntsVersion, entry.blockSize, maxDoc, false);
       ramBytesUsed.addAndGet(bytes.ramBytesUsed() + addresses.ramBytesUsed());
       return new BinaryDocValues() {
 
