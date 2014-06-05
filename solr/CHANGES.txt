@@ -123,6 +123,9 @@ New Features
   replication factor for an update request (single or batch) by sending
   an optional parameter "min_rf". (Timothy Potter)
 
+* SOLR-6088: Add query re-ranking with the ReRankingQParserPlugin
+  (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
