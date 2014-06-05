@@ -823,7 +823,6 @@ public class TestPackedInts extends LuceneTestCase {
 
         IndexInput in = directory.openInput("packed-ints.bin", IOContext.DEFAULT);
         PackedInts.Reader reader = PackedInts.getReader(in);
-        assertEquals(mutable.getBitsPerValue(), reader.getBitsPerValue());
         assertEquals(valueCount, reader.size());
         if (mutable instanceof Packed64SingleBlock) {
           // make sure that we used the right format so that the reader has

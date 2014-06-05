@@ -25,12 +25,14 @@ import java.io.IOException;
 // just for back compat, use DirectReader/DirectWriter for more efficient impl
 class DirectPackedReader extends PackedInts.ReaderImpl {
   final IndexInput in;
+  final int bitsPerValue;
   final long startPointer;
   final long valueMask;
 
   DirectPackedReader(int bitsPerValue, int valueCount, IndexInput in) {
-    super(valueCount, bitsPerValue);
+    super(valueCount);
     this.in = in;
+    this.bitsPerValue = bitsPerValue;
 
     startPointer = in.getFilePointer();
     if (bitsPerValue == 64) {

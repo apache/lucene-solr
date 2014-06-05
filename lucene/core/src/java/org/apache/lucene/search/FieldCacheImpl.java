@@ -576,7 +576,6 @@ class FieldCacheImpl implements FieldCache {
     private final int minValue;
 
     public IntsFromArray(PackedInts.Reader values, int minValue) {
-      assert values.getBitsPerValue() <= 32;
       this.values = values;
       this.minValue = minValue;
     }
@@ -684,6 +683,7 @@ class FieldCacheImpl implements FieldCache {
       if (values == null) {
         return new IntsFromArray(new PackedInts.NullReader(reader.maxDoc()), 0);
       }
+      assert values.writer.getBitsPerValue() <= 32;
       return new IntsFromArray(values.writer.getMutable(), (int) values.minValue);
     }
   }
