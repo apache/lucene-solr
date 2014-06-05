@@ -473,41 +473,9 @@ public class PackedInts {
     }
 
     /**
-     * @return the number of bits used to store any given value.
-     *         Note: This does not imply that memory usage is
-     *         {@code bitsPerValue * #values} as implementations are free to
-     *         use non-space-optimal packing of bits.
-     */
-    public abstract int getBitsPerValue();
-
-    /**
      * @return the number of values.
      */
     public abstract int size();
-
-    /**
-     * Expert: if the bit-width of this reader matches one of
-     * java's native types, returns the underlying array
-     * (ie, byte[], short[], int[], long[]); else, returns
-     * null.  Note that when accessing the array you must
-     * upgrade the type (bitwise AND with all ones), to
-     * interpret the full value as unsigned.  Ie,
-     * bytes[idx]&0xFF, shorts[idx]&0xFFFF, etc.
-     */
-    public Object getArray() {
-      assert !hasArray();
-      return null;
-    }
-
-    /**
-     * Returns true if this implementation is backed by a
-     * native java array.
-     *
-     * @see #getArray
-     */
-    public boolean hasArray() {
-      return false;
-    }
 
   }
 
@@ -566,6 +534,14 @@ public class PackedInts {
    * @lucene.internal
    */
   public static abstract class Mutable extends Reader {
+
+    /**
+     * @return the number of bits used to store any given value.
+     *         Note: This does not imply that memory usage is
+     *         {@code bitsPerValue * #values} as implementations are free to
+     *         use non-space-optimal packing of bits.
+     */
+    public abstract int getBitsPerValue();
 
     /**
      * Set the value at the given index in the array.
@@ -637,22 +613,14 @@ public class PackedInts {
    * @lucene.internal
    */
   static abstract class ReaderImpl extends Reader {
-    protected final int bitsPerValue;
     protected final int valueCount;
 
-    protected ReaderImpl(int valueCount, int bitsPerValue) {
-      this.bitsPerValue = bitsPerValue;
-      assert bitsPerValue > 0 && bitsPerValue <= 64 : "bitsPerValue=" + bitsPerValue;
+    protected ReaderImpl(int valueCount) {
       this.valueCount = valueCount;
     }
 
     @Override
     public abstract long get(int index);
-
-    @Override
-    public final int getBitsPerValue() {
-      return bitsPerValue;
-    }
 
     @Override
     public final int size() {
@@ -706,11 +674,6 @@ public class PackedInts {
       len = Math.min(len, valueCount - index);
       Arrays.fill(arr, off, off + len, 0);
       return len;
-    }
-
-    @Override
-    public int getBitsPerValue() {
-      return 0;
     }
 
     @Override

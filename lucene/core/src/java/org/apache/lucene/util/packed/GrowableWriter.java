@@ -70,16 +70,6 @@ public class GrowableWriter extends PackedInts.Mutable {
     return current;
   }
 
-  @Override
-  public Object getArray() {
-    return current.getArray();
-  }
-
-  @Override
-  public boolean hasArray() {
-    return current.hasArray();
-  }
-
   private void ensureCapacity(long value) {
     if ((value & currentMask) == value) {
       return;

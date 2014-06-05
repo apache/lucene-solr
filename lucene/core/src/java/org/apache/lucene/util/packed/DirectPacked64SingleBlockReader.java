@@ -24,14 +24,16 @@ import org.apache.lucene.store.IndexInput;
 final class DirectPacked64SingleBlockReader extends PackedInts.ReaderImpl {
 
   private final IndexInput in;
+  private final int bitsPerValue;
   private final long startPointer;
   private final int valuesPerBlock;
   private final long mask;
 
   DirectPacked64SingleBlockReader(int bitsPerValue, int valueCount,
       IndexInput in) {
-    super(valueCount, bitsPerValue);
+    super(valueCount);
     this.in = in;
+    this.bitsPerValue = bitsPerValue;
     startPointer = in.getFilePointer();
     valuesPerBlock = 64 / bitsPerValue;
     mask = ~(~0L << bitsPerValue);
