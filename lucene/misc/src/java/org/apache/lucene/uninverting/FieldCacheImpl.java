@@ -679,26 +679,29 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  private static class BinaryDocValuesImpl extends BinaryDocValues {
+  private static class BinaryDocValuesImpl {
     private final PagedBytes.Reader bytes;
     private final PackedInts.Reader docToOffset;
-    private final BytesRef term;
 
     public BinaryDocValuesImpl(PagedBytes.Reader bytes, PackedInts.Reader docToOffset) {
       this.bytes = bytes;
       this.docToOffset = docToOffset;
-      term = new BytesRef();
     }
-
-    @Override
-    public BytesRef get(int docID) {
-      final int pointer = (int) docToOffset.get(docID);
-      if (pointer == 0) {
-        term.length = 0;
-      } else {
-        bytes.fill(term, pointer);
-      }
-      return term;
+    
+    public BinaryDocValues iterator() {
+      final BytesRef term = new BytesRef();
+      return new BinaryDocValues() {
+        @Override
+        public BytesRef get(int docID) {
+          final int pointer = (int) docToOffset.get(docID);
+          if (pointer == 0) {
+            term.length = 0;
+          } else {
+            bytes.fill(term, pointer);
+          }
+          return term;
+        }   
+      };
     }
   }
 
@@ -729,7 +732,8 @@ class FieldCacheImpl implements FieldCache {
       return DocValues.emptyBinary();
     }
 
-    return (BinaryDocValues) caches.get(BinaryDocValues.class).get(reader, new CacheKey(field, acceptableOverheadRatio), setDocsWithField);
+    BinaryDocValuesImpl impl = (BinaryDocValuesImpl) caches.get(BinaryDocValues.class).get(reader, new CacheKey(field, acceptableOverheadRatio), setDocsWithField);
+    return impl.iterator();
   }
 
   static final class BinaryDocValuesCache extends Cache {

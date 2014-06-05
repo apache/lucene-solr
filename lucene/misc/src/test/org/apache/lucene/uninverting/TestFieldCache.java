@@ -242,7 +242,6 @@ public class TestFieldCache extends LuceneTestCase {
 
     // getTerms
     BinaryDocValues terms = cache.getTerms(reader, "theRandomUnicodeString", true);
-    assertSame("Second request to cache return same array", terms, cache.getTerms(reader, "theRandomUnicodeString", true));
     Bits bits = cache.getDocsWithField(reader, "theRandomUnicodeString");
     for (int i = 0; i < NUM_DOCS; i++) {
       final String s;
