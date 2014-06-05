@@ -45,7 +45,7 @@ Bug Fixes
 * SOLR-6017: Fix SimpleQParser to use query analyzer
   (Ryan Ernst)
 
-* SOLR_6029: CollapsingQParserPlugin throws ArrayIndexOutOfBoundsException
+* SOLR-6029: CollapsingQParserPlugin throws ArrayIndexOutOfBoundsException
   if elevated doc has been deleted from a segment. (Greg Harris, Joel Bernstein)
 
 * SOLR-6030: Use System.nanoTime() instead of currentTimeInMills() in LRUCache.warm.
