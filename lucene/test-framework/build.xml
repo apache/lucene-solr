@@ -17,7 +17,9 @@
     limitations under the License.
  -->
 
-<project name="test-framework" default="default">
+<project name="test-framework" default="default" 
+	xmlns:ivy="antlib:org.apache.ivy.ant"
+	xmlns:aspectj="antlib:org.aspectj">
   <description>Framework for testing Lucene-based applications</description>
 
   <property name="build.dir" location="../build/test-framework"/>
@@ -35,8 +37,24 @@
   <!-- 
       Specialize compile-core to depend on lucene-core and lucene-codecs compilation.
    -->
-  <target name="compile-core" depends="init,compile-lucene-core,compile-codecs,common.compile-core"
-          description="Compiles test-framework classes"/>
+  <target name="compile-core" depends="init,compile-lucene-core,compile-codecs,common.compile-core,ivy-availability-check,ivy-configure"
+          description="Compiles test-framework classes">
+  	<!-- Compile aspectj aspects. -->
+  	<ivy:cachepath organisation="org.aspectj" module="aspectjtools" revision="1.8.0"
+  	             inline="true" conf="master" type="jar" pathid="aspectjtools.classpath" />
+    <taskdef resource="org/aspectj/antlib.xml" 
+             uri="antlib:org.aspectj" 
+             classpathref="aspectjtools.classpath"/>
+  	
+  	<echo>## AspectJ aspects compilation.</echo>
+  	<aspectj:iajc 
+  		sourceRoots="src/aspects"
+  		outJar="${build.dir}/aspects.jar"
+  		sourceRootCopyFilter="**/*.java,**/*.aj">
+  	  <classpath location="${build.dir}/classes/java" />
+  	  <classpath refid="classpath" />
+  	</aspectj:iajc>
+  </target>
 
   <!-- redefine the clover setup, because we dont want to run clover for the test-framework -->
   <target name="-clover.setup" if="run.clover"/>

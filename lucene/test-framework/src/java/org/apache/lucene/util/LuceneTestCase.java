@@ -576,6 +576,7 @@ public abstract class LuceneTestCase extends Assert {
     .around(ignoreAfterMaxFailures)
     .around(suiteFailureMarker = new TestRuleMarkFailure())
     .around(new TestRuleAssertionsRequired())
+    .around(new TestRuleAspectJAspects(suiteFailureMarker))
     .around(new TestRuleLimitSysouts(suiteFailureMarker))
     .around(tempFilesCleanupRule = new TestRuleTemporaryFilesCleanup(suiteFailureMarker))
     .around(new StaticFieldsInvariantRule(STATIC_LEAK_THRESHOLD, true) {

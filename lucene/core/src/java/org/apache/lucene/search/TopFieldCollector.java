@@ -1091,7 +1091,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
    *          the sort criteria (SortFields).
    * @param numHits
    *          the number of results to collect.
-   * @param after
+   * @param after0
    *          only hits after this FieldDoc will be collected
    * @param fillFields
    *          specifies whether the actual field values should be returned on
@@ -1117,7 +1117,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
    *         the sort criteria.
    * @throws IOException if there is a low-level I/O error
    */
-  public static TopFieldCollector create(Sort sort, int numHits, FieldDoc after,
+  public static TopFieldCollector create(Sort sort, int numHits, FieldDoc after0,
       boolean fillFields, boolean trackDocScores, boolean trackMaxScore,
       boolean docsScoredInOrder)
       throws IOException {
@@ -1132,7 +1132,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
     FieldValueHitQueue<Entry> queue = FieldValueHitQueue.create(sort.fields, numHits);
 
-    if (after == null) {
+    if (after0 == null) {
       if (queue.getComparators().length == 1) {
         if (docsScoredInOrder) {
           if (trackMaxScore) {
@@ -1172,15 +1172,15 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
         }
       }
     } else {
-      if (after.fields == null) {
+      if (after0.fields == null) {
         throw new IllegalArgumentException("after.fields wasn't set; you must pass fillFields=true for the previous search");
       }
 
-      if (after.fields.length != sort.getSort().length) {
-        throw new IllegalArgumentException("after.fields has " + after.fields.length + " values but sort has " + sort.getSort().length);
+      if (after0.fields.length != sort.getSort().length) {
+        throw new IllegalArgumentException("after.fields has " + after0.fields.length + " values but sort has " + sort.getSort().length);
       }
 
-      return new PagingFieldCollector(queue, after, numHits, fillFields, trackDocScores, trackMaxScore);
+      return new PagingFieldCollector(queue, after0, numHits, fillFields, trackDocScores, trackMaxScore);
     }
   }
   

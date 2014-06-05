@@ -1,0 +1,17 @@
+<aspectj>
+  <aspects>
+    <aspect name="org.apache.lucene.util.NoDescriptorLeaksAspect" />
+  </aspects>
+
+  <weaver options="-XnoInline -Xlint:ignore" />
+    
+    <!--
+    <weaver
+    options="
+    -XnoInline
+    -verbose
+    -showWeaveInfo
+    -Xlint:ignore" />
+     -->
+</aspectj>
+

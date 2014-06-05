@@ -921,12 +921,15 @@
             <!-- Classpaths. -->
             <classpath refid="@{junit.classpath}"/>
             <classpath refid="clover.classpath" />
+        	<classpath location="${common.dir}/build/test-framework/aspects.jar" />
 
             <!-- Assertions. -->
             <assertions>
               <enable package="org.apache.lucene"/>
               <enable package="org.apache.solr"/>
             </assertions>  
+
+            <jvmarg line="-javaagent:${common.dir}/test-framework/lib/aspectjweaver-1.8.0.jar" />
 
             <!-- JVM arguments and system properties. -->
             <jvmarg line="${args}"/>

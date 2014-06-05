@@ -28,7 +28,7 @@ import org.junit.runners.model.Statement;
  */
 
 /**
- * A {@link TestRule} that guarantees the execution of {@link #after} even
+ * A {@link TestRule} that guarantees the execution of <code>after</code> even
  * if an exception has been thrown from delegate {@link Statement}. This is much
  * like {@link AfterClass} or {@link After} annotations but can be used with
  * {@link RuleChain} to guarantee the order of execution.
