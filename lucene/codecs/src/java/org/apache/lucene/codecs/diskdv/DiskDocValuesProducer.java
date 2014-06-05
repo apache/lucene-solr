@@ -34,7 +34,7 @@ class DiskDocValuesProducer extends Lucene49DocValuesProducer {
   @Override
   protected MonotonicBlockPackedReader getAddressInstance(IndexInput data, FieldInfo field, BinaryEntry bytes) throws IOException {
     data.seek(bytes.addressesOffset);
-    return new MonotonicBlockPackedReader(data.clone(), bytes.packedIntsVersion, bytes.blockSize, bytes.count, true);
+    return MonotonicBlockPackedReader.of(data.clone(), bytes.packedIntsVersion, bytes.blockSize, bytes.count, true);
   }
 
   @Override
@@ -45,6 +45,6 @@ class DiskDocValuesProducer extends Lucene49DocValuesProducer {
   @Override
   protected MonotonicBlockPackedReader getOrdIndexInstance(IndexInput data, FieldInfo field, NumericEntry entry) throws IOException {
     data.seek(entry.offset);
-    return new MonotonicBlockPackedReader(data.clone(), entry.packedIntsVersion, entry.blockSize, entry.count, true);
+    return MonotonicBlockPackedReader.of(data.clone(), entry.packedIntsVersion, entry.blockSize, entry.count, true);
   }
 }

@@ -330,7 +330,7 @@ class MemoryDocValuesProducer extends DocValuesProducer {
     ramBytesUsed.addAndGet(bytesAndAddresses.reader.ramBytesUsed());
     if (entry.minLength != entry.maxLength) {
       data.seek(data.getFilePointer() + entry.missingBytes);
-      bytesAndAddresses.addresses = new MonotonicBlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, maxDoc, false);
+      bytesAndAddresses.addresses = MonotonicBlockPackedReader.of(data, entry.packedIntsVersion, entry.blockSize, maxDoc, false);
       ramBytesUsed.addAndGet(bytesAndAddresses.addresses.ramBytesUsed());
     }
     return bytesAndAddresses;

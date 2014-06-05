@@ -254,6 +254,9 @@ Optimizations
 * LUCENE-5703: BinaryDocValues producers don't allocate or copy bytes on 
   each access anymore.  (Adrien Grand)
 
+* LUCENE-5721: Monotonic compression doesn't use zig-zag encoding anymore.
+  (Robert Muir, Adrien Grand)
+
 Bug fixes
 
 * LUCENE-5673: MMapDirectory: Work around a "bug" in the JDK that throws

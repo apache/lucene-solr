@@ -392,7 +392,7 @@ public class Lucene49DocValuesProducer extends DocValuesProducer implements Clos
       MonotonicBlockPackedReader addrInstance = addressInstances.get(field.number);
       if (addrInstance == null) {
         data.seek(bytes.addressesOffset);
-        addrInstance = new MonotonicBlockPackedReader(data, bytes.packedIntsVersion, bytes.blockSize, bytes.count, false);
+        addrInstance = MonotonicBlockPackedReader.of(data, bytes.packedIntsVersion, bytes.blockSize, bytes.count, false);
         addressInstances.put(field.number, addrInstance);
         ramBytesUsed.addAndGet(addrInstance.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
       }
@@ -441,7 +441,7 @@ public class Lucene49DocValuesProducer extends DocValuesProducer implements Clos
         } else {
           size = 1L + bytes.count / interval;
         }
-        addrInstance = new MonotonicBlockPackedReader(data, bytes.packedIntsVersion, bytes.blockSize, size, false);
+        addrInstance = MonotonicBlockPackedReader.of(data, bytes.packedIntsVersion, bytes.blockSize, size, false);
         addressInstances.put(field.number, addrInstance);
         ramBytesUsed.addAndGet(addrInstance.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
       }
@@ -511,7 +511,7 @@ public class Lucene49DocValuesProducer extends DocValuesProducer implements Clos
       MonotonicBlockPackedReader ordIndexInstance = ordIndexInstances.get(field.number);
       if (ordIndexInstance == null) {
         data.seek(entry.offset);
-        ordIndexInstance = new MonotonicBlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, entry.count, false);
+        ordIndexInstance = MonotonicBlockPackedReader.of(data, entry.packedIntsVersion, entry.blockSize, entry.count, false);
         ordIndexInstances.put(field.number, ordIndexInstance);
         ramBytesUsed.addAndGet(ordIndexInstance.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
       }

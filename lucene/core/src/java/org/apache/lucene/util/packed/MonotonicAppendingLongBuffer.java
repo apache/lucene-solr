@@ -17,9 +17,11 @@ package org.apache.lucene.util.packed;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.RamUsageEstimator;
+import static org.apache.lucene.util.packed.MonotonicBlockPackedReader.expected;
 
 import java.util.Arrays;
+
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Utility class to buffer signed longs in memory, which is optimized for the
@@ -29,14 +31,6 @@ import java.util.Arrays;
  * @lucene.internal
  */
 public final class MonotonicAppendingLongBuffer extends AbstractAppendingLongBuffer {
-
-  static long zigZagDecode(long n) {
-    return ((n >>> 1) ^ -(n & 1));
-  }
-
-  static long zigZagEncode(long n) {
-    return (n >> 63) ^ (n << 1);
-  }
 
   float[] averages;
   long[] minValues;
@@ -68,18 +62,12 @@ public final class MonotonicAppendingLongBuffer extends AbstractAppendingLongBuf
     this(16, 1024, acceptableOverheadRatio);
   }
 
-
   @Override
   long get(int block, int element) {
     if (block == valuesOff) {
       return pending[element];
     } else {
-      final long base = minValues[block] + (long) (averages[block] * (long) element);
-      if (values[block] == null) {
-        return base;
-      } else {
-        return base + zigZagDecode(values[block].get(element));
-      }
+      return expected(minValues[block], averages[block], element) + values[block].get(element);
     }
   }
 
@@ -90,21 +78,11 @@ public final class MonotonicAppendingLongBuffer extends AbstractAppendingLongBuf
       System.arraycopy(pending, element, arr, off, sysCopyToRead);
       return sysCopyToRead;
     } else {
-      if (values[block] == null) {
-        int toFill = Math.min(len, pending.length - element);
-        for (int r = 0; r < toFill; r++, off++, element++) {
-          arr[off] = minValues[block] + (long) (averages[block] * (long) element);
-        }
-        return toFill;
-      } else {
-
-    /* packed block */
-        int read = values[block].get(element, arr, off, len);
-        for (int r = 0; r < read; r++, off++, element++) {
-          arr[off] = minValues[block] + (long) (averages[block] * (long) element) + zigZagDecode(arr[off]);
-        }
-        return read;
+      int read = values[block].get(element, arr, off, len);
+      for (int r = 0; r < read; r++, off++, element++) {
+        arr[off] += expected(minValues[block], averages[block], element);
       }
+      return read;
     }
   }
 
@@ -118,11 +96,22 @@ public final class MonotonicAppendingLongBuffer extends AbstractAppendingLongBuf
   @Override
   void packPendingValues() {
     assert pendingOff > 0;
-    minValues[valuesOff] = pending[0];
-    averages[valuesOff] = pendingOff == 1 ? 0 : (float) (pending[pendingOff - 1] - pending[0]) / (pendingOff - 1);
+    final float average = pendingOff == 1 ? 0 : (float) (pending[pendingOff - 1] - pending[0]) / (pendingOff - 1);
+    long minValue = pending[0];
+    // adjust minValue so that all deltas will be positive
+    for (int i = 1; i < pendingOff; ++i) {
+      final long actual = pending[i];
+      final long expected = expected(minValue, average, i);
+      if (expected > actual) {
+        minValue -= (expected - actual);
+      }
+    }
+
+    minValues[valuesOff] = minValue;
+    averages[valuesOff] = average;
 
     for (int i = 0; i < pendingOff; ++i) {
-      pending[i] = zigZagEncode(pending[i] - minValues[valuesOff] - (long) (averages[valuesOff] * (long) i));
+      pending[i] = pending[i] - expected(minValue, average, i);
     }
     long maxDelta = 0;
     for (int i = 0; i < pendingOff; ++i) {

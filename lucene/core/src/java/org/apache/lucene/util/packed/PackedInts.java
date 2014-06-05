@@ -67,7 +67,8 @@ public class PackedInts {
   public final static String CODEC_NAME = "PackedInts";
   public final static int VERSION_START = 0; // PackedInts were long-aligned
   public final static int VERSION_BYTE_ALIGNED = 1;
-  public final static int VERSION_CURRENT = VERSION_BYTE_ALIGNED;
+  public static final int VERSION_MONOTONIC_WITHOUT_ZIGZAG = 2;
+  public final static int VERSION_CURRENT = VERSION_MONOTONIC_WITHOUT_ZIGZAG;
 
   /**
    * Check the validity of a version number.

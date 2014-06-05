@@ -256,10 +256,10 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
         termBytes.copy(clone, numTermBytes);
         
         // records offsets into main terms dict file
-        termsDictOffsets = new MonotonicBlockPackedReader(clone, packedIntsVersion, blocksize, numIndexTerms, false);
+        termsDictOffsets = MonotonicBlockPackedReader.of(clone, packedIntsVersion, blocksize, numIndexTerms, false);
         
         // records offsets into byte[] term data
-        termOffsets = new MonotonicBlockPackedReader(clone, packedIntsVersion, blocksize, 1+numIndexTerms, false);
+        termOffsets = MonotonicBlockPackedReader.of(clone, packedIntsVersion, blocksize, 1+numIndexTerms, false);
       } finally {
         clone.close();
       }

@@ -1230,7 +1230,7 @@ public class TestPackedInts extends LuceneTestCase {
       out.close();
 
       final IndexInput in = dir.openInput("out.bin", IOContext.DEFAULT);
-      final MonotonicBlockPackedReader reader = new MonotonicBlockPackedReader(in, PackedInts.VERSION_CURRENT, blockSize, valueCount, random().nextBoolean());
+      final MonotonicBlockPackedReader reader = MonotonicBlockPackedReader.of(in, PackedInts.VERSION_CURRENT, blockSize, valueCount, random().nextBoolean());
       assertEquals(fp, in.getFilePointer());
       for (int i = 0; i < valueCount; ++i) {
         assertEquals("i=" +i, values[i], reader.get(i));
