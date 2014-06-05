@@ -53,7 +53,7 @@
       <dependency org="com.googlecode.juniversalchardet" name="juniversalchardet" rev="${/com.googlecode.juniversalchardet/juniversalchardet}" transitive="false"/>
       <dependency org="org.tukaani" name="xz" rev="${/org.tukaani/xz}" transitive="false"/>
       <dependency org="com.adobe.xmp" name="xmpcore" rev="${/com.adobe.xmp/xmpcore}" transitive="false"/>
-      <dependency org="asm" name="asm" rev="${/asm/asm}" transitive="false"/>
+      <dependency org="com.uwyn" name="jhighlight" rev="${/com.uwyn/jhighlight}" transitive="false"/>
 
       <!-- Other ExtracingRequestHandler dependencies -->
       <dependency org="com.ibm.icu" name="icu4j" rev="${/com.ibm.icu/icu4j}" transitive="false"/>
