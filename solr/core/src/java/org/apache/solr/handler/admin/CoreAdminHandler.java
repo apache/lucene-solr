@@ -119,6 +119,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
     // Unlike most request handlers, CoreContainer initialization 
     // should happen in the constructor...  
     this.coreContainer = null;
+    this.parallelExecutor = Executors.newFixedThreadPool(50,
+        new DefaultSolrThreadFactory("parallelCoreAdminExecutor"));
   }
 
 
@@ -129,6 +131,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
    */
   public CoreAdminHandler(final CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
+    this.parallelExecutor = Executors.newFixedThreadPool(50,
+        new DefaultSolrThreadFactory("parallelCoreAdminExecutor"));
   }
 
 
@@ -186,10 +190,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       handleRequestInternal(req, rsp, action);
     } else {
       ParallelCoreAdminHandlerThread parallelHandlerThread = new ParallelCoreAdminHandlerThread(req, rsp, action, taskObject);
-      if(parallelExecutor == null || parallelExecutor.isShutdown())
-        parallelExecutor = Executors.newFixedThreadPool(50,
-                  new DefaultSolrThreadFactory("parallelCoreAdminExecutor"));
-        parallelExecutor.execute(parallelHandlerThread);
+      parallelExecutor.execute(parallelHandlerThread);
     }
   }
 
