@@ -72,19 +72,7 @@ public class LockStressTest {
     final int sleepTimeMS = Integer.parseInt(args[arg++]);
     final int count = Integer.parseInt(args[arg++]);
 
-    LockFactory lockFactory;
-    try {
-      lockFactory = Class.forName(lockFactoryClassName).asSubclass(LockFactory.class).newInstance();          
-    } catch (IllegalAccessException | InstantiationException | ClassCastException | ClassNotFoundException e) {
-      throw new IOException("Cannot instantiate lock factory " + lockFactoryClassName);
-    }
-
-    File lockDir = new File(lockDirName);
-
-    if (lockFactory instanceof FSLockFactory) {
-      ((FSLockFactory) lockFactory).setLockDir(lockDir);
-    }
-
+    final LockFactory lockFactory = getNewLockFactory(lockFactoryClassName, lockDirName);
     final InetSocketAddress addr = new InetSocketAddress(verifierHost, verifierPort);
     System.out.println("Connecting to server " + addr +
         " and registering as client " + myID + "...");
@@ -96,10 +84,8 @@ public class LockStressTest {
       
       out.write(myID);
       out.flush();
-  
-      lockFactory.setLockPrefix("test");
-      final LockFactory verifyLF = new VerifyingLockFactory(lockFactory, in, out);
-      final Lock l = verifyLF.makeLock("test.lock");
+      LockFactory verifyLF = new VerifyingLockFactory(lockFactory, in, out);
+      Lock l = verifyLF.makeLock("test.lock");
       final Random rnd = new Random();
       
       // wait for starting gun
@@ -109,13 +95,20 @@ public class LockStressTest {
       
       for (int i = 0; i < count; i++) {
         boolean obtained = false;
-  
         try {
           obtained = l.obtain(rnd.nextInt(100) + 10);
-        } catch (LockObtainFailedException e) {
-        }
+        } catch (LockObtainFailedException e) {}
         
         if (obtained) {
+          if (rnd.nextInt(10) == 0) {
+            if (rnd.nextBoolean()) {
+              verifyLF = new VerifyingLockFactory(getNewLockFactory(lockFactoryClassName, lockDirName), in, out);
+            }
+            final Lock secondLock = verifyLF.makeLock("test.lock");
+            if (secondLock.obtain()) {
+              throw new IOException("Double Obtain");
+            }
+          }
           Thread.sleep(sleepTimeMS);
           l.close();
         }
@@ -129,5 +122,23 @@ public class LockStressTest {
     }
     
     System.out.println("Finished " + count + " tries.");
+  }
+
+
+  private static LockFactory getNewLockFactory(String lockFactoryClassName, String lockDirName) throws IOException {
+    LockFactory lockFactory;
+    try {
+      lockFactory = Class.forName(lockFactoryClassName).asSubclass(LockFactory.class).newInstance();
+    } catch (IllegalAccessException | InstantiationException | ClassCastException | ClassNotFoundException e) {
+      throw new IOException("Cannot instantiate lock factory " + lockFactoryClassName);
+    }
+
+    File lockDir = new File(lockDirName);
+
+    if (lockFactory instanceof FSLockFactory) {
+      ((FSLockFactory) lockFactory).setLockDir(lockDir);
+    }
+    lockFactory.setLockPrefix("test");
+    return lockFactory;
   }
 }

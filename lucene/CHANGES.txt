@@ -259,6 +259,12 @@ Optimizations
 
 Bug fixes
 
+* LUCENE-5738: Ensure NativeFSLock prevents opening the file channel for the
+  lock if the lock is already obtained by the JVM. Trying to obtain an already
+  obtained lock in the same JVM can unlock the file might allow other processes
+  to lock the file even without explicitly unlocking the FileLock. This behavior
+  is operating system dependent. (Simon Willnauer) 
+
 * LUCENE-5673: MMapDirectory: Work around a "bug" in the JDK that throws
   a confusing OutOfMemoryError wrapped inside IOException if the FileChannel
   mapping failed because of lack of virtual address space. The IOException is
