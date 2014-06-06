@@ -126,6 +126,13 @@ New Features
 * SOLR-6088: Add query re-ranking with the ReRankingQParserPlugin
   (Joel Bernstein)
 
+* SOLR-5285: Added a new [child ...] DocTransformer for optionally including 
+  Block-Join decendent documents inline in the results of a search.  This works 
+  independent of whether the search itself is a block-join related query and is 
+  supported by he xml, json, and javabin response formats.
+  (Varun Thacker via hossman)
+
+
 Bug Fixes
 ----------------------
 

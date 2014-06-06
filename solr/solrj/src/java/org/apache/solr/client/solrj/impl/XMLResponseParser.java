@@ -410,6 +410,15 @@ public class XMLResponseParser extends ResponseParser
             break;
           }
         }
+
+        //Nested documents
+        while( type == KnownType.DOC) {
+          doc.addChildDocument(readDocument(parser));
+          int event = parser.next();
+          if (event == XMLStreamConstants.END_ELEMENT) { //Doc ends
+            return doc;
+          }
+        }
         
         if( name == null ) {
           throw new XMLStreamException( "requires 'name' attribute: "+parser.getLocalName(), parser.getLocation() );

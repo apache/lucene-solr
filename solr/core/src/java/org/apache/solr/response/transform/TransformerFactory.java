@@ -47,5 +47,6 @@ public abstract class TransformerFactory implements NamedListInitializedPlugin
     defaultFactories.put( "value", new ValueAugmenterFactory() );
     defaultFactories.put( "docid", new DocIdAugmenterFactory() );
     defaultFactories.put( "shard", new ShardAugmenterFactory() );
+    defaultFactories.put( "child", new ChildDocTransformerFactory() );
   }
 }

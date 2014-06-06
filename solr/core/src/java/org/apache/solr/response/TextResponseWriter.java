@@ -80,8 +80,6 @@ public abstract class TextResponseWriter {
     returnFields = rsp.getReturnFields();
   }
 
-
-
   /** done with this ResponseWriter... make sure any buffers are flushed to writer */
   public void close() throws IOException {
     writer.flushBuffer();
@@ -226,28 +224,9 @@ public abstract class TextResponseWriter {
     writeEndDocumentList();
   }
 
-  public final SolrDocument toSolrDocument( StoredDocument doc )
+  public final SolrDocument toSolrDocument( StoredDocument doc ) 
   {
-    SolrDocument out = new SolrDocument();
-    for( StorableField f : doc.getFields()) {
-      // Make sure multivalued fields are represented as lists
-      Object existing = out.get(f.name());
-      if (existing == null) {
-        SchemaField sf = schema.getFieldOrNull(f.name());
-        if (sf != null && sf.multiValued()) {
-          List<Object> vals = new ArrayList<>();
-          vals.add( f );
-          out.setField( f.name(), vals );
-        } 
-        else{
-          out.setField( f.name(), f );
-        }
-      }
-      else {
-        out.addField( f.name(), f );
-      }
-    }
-    return out;
+    return ResponseWriterUtil.toSolrDocument(doc, schema);
   }
   
   public final void writeDocuments(String name, ResultContext res, ReturnFields fields ) throws IOException {
