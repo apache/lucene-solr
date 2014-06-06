@@ -35,6 +35,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.ReturnFields;
+import org.apache.solr.search.SolrReturnFields;
 
 /**
  *
@@ -354,6 +355,21 @@ class JSONWriter extends TextResponseWriter {
       } else {
         writeVal(fname, val);
       }
+    }
+
+    if(doc.hasChildDocuments()) {
+      if(first == false) {
+        writeMapSeparator();
+        indent();
+      }
+      writeKey("_childDocuments_", true);
+      writeArrayOpener(doc.getChildDocumentCount());
+      List<SolrDocument> childDocs = doc.getChildDocuments();
+      ReturnFields rf = new SolrReturnFields();
+      for(int i=0; i<childDocs.size(); i++) {
+        writeSolrDocument(null, childDocs.get(i), rf, i);
+      }
+      writeArrayCloser();
     }
     
     decLevel();

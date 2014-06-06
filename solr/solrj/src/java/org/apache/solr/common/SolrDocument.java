@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -43,6 +44,8 @@ import org.apache.solr.common.util.NamedList;
 public class SolrDocument implements Map<String,Object>, Iterable<Map.Entry<String, Object>>, Serializable
 {
   private final Map<String,Object> _fields;
+  
+  private List<SolrDocument> _childDocuments;
   
   public SolrDocument()
   {
@@ -68,6 +71,10 @@ public class SolrDocument implements Map<String,Object>, Iterable<Map.Entry<Stri
   public void clear()
   {
     _fields.clear();
+
+    if(_childDocuments != null) {
+      _childDocuments.clear();
+    }
   }
   
   /**
@@ -358,5 +365,32 @@ public class SolrDocument implements Map<String,Object>, Iterable<Map.Entry<Stri
   @Override
   public Collection<Object> values() {
     return _fields.values();
+  }
+  
+  public void addChildDocument(SolrDocument child) {
+    if (_childDocuments == null) {
+      _childDocuments = new ArrayList<>();
+    }
+     _childDocuments.add(child);
+   }
+   
+   public void addChildDocuments(Collection<SolrDocument> childs) {
+     for (SolrDocument child : childs) {
+       addChildDocument(child);
+     }
+   }
+
+   /** Returns the list of child documents, or null if none. */
+   public List<SolrDocument> getChildDocuments() {
+     return _childDocuments;
+   }
+   
+   public boolean hasChildDocuments() {
+     boolean isEmpty = (_childDocuments == null || _childDocuments.isEmpty());
+     return !isEmpty;
+   }
+
+  public int getChildDocumentCount() {
+    return _childDocuments.size();
   }
 }

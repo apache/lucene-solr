@@ -18,19 +18,8 @@
 package org.apache.solr.client.solrj;
 
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-
 import com.google.common.collect.Maps;
-
 import junit.framework.Assert;
-
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -38,29 +27,42 @@ import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
-import org.apache.solr.client.solrj.request.LukeRequest;
-import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.response.FieldStatsInfo;
-import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
+import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.request.LukeRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.FacetField;
+import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.client.solrj.response.PivotField;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
+import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 
 /**
  * This should include tests against the example solr config
@@ -1259,5 +1261,189 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
         "true",
         ((NamedList) resp.getResponseHeader().get("params")).get("debug"));
   }
-  
+
+
+  @Test
+  public void testChildDoctransformer() throws IOException, SolrServerException {
+    SolrServer server = getSolrServer();
+    server.deleteByQuery("*:*");
+    server.commit();
+
+    int numRootDocs = TestUtil.nextInt(random(), 10, 100);
+    int maxDepth = TestUtil.nextInt(random(), 2, 5);
+
+    Map<String,SolrInputDocument> allDocs = new HashMap<>();
+
+    for (int i =0; i < numRootDocs; i++) {
+      server.add(genNestedDocuments(allDocs, 0, maxDepth));
+    }
+
+    server.commit();
+
+    // sanity check
+    SolrQuery q = new SolrQuery("*:*");
+    QueryResponse resp = server.query(q);
+    assertEquals("Doc count does not match", 
+                 allDocs.size(), resp.getResults().getNumFound());
+
+
+    // base check - we know there is an exact number of these root docs
+    q = new SolrQuery("level_i:0");
+    q.setFields("*", "[child parentFilter=\"level_i:0\"]");
+    resp = server.query(q);
+    assertEquals("topLevel count does not match", numRootDocs,
+                 resp.getResults().getNumFound());
+    for (SolrDocument outDoc : resp.getResults()) {
+      String docId = (String)outDoc.getFieldValue("id");
+      SolrInputDocument origDoc = allDocs.get(docId);
+      assertNotNull("docId not found: " + docId, origDoc);
+      assertEquals("kids mismatch", 
+                   origDoc.hasChildDocuments(), outDoc.hasChildDocuments());
+      if (outDoc.hasChildDocuments()) {
+        for (SolrDocument kid : outDoc.getChildDocuments()) {
+          String kidId = (String)kid.getFieldValue("id");
+          SolrInputDocument origChild = findDecendent(origDoc, kidId);
+          assertNotNull(docId + " doesn't have decendent " + kidId,
+                        origChild);
+        }
+      }
+    }
+
+    // simple check: direct verification of direct children on random docs
+    {
+      int parentLevel = TestUtil.nextInt(random(), 0, maxDepth);
+      int kidLevel = parentLevel+1;
+      String parentFilter = "level_i:" + parentLevel;
+      String childFilter = "level_i:" + kidLevel;
+      int maxKidCount = TestUtil.nextInt(random(), 1, 37);
+      
+      q = new SolrQuery("*:*");
+      q.setFilterQueries(parentFilter);
+      q.setFields("id,[child parentFilter=\"" + parentFilter +
+                  "\" childFilter=\"" + childFilter + 
+                  "\" limit=\"" + maxKidCount + "\"]");
+      resp = server.query(q);
+      for (SolrDocument outDoc : resp.getResults()) {
+        String docId = (String)outDoc.getFieldValue("id");
+        SolrInputDocument origDoc = allDocs.get(docId);
+        assertNotNull("docId not found: " + docId, origDoc);
+        assertEquals("kids mismatch", 
+                     origDoc.hasChildDocuments(), outDoc.hasChildDocuments());
+        if (outDoc.hasChildDocuments()) {
+          // since we know we are looking at our direct children
+          // we can verify the count
+          int numOrigKids = origDoc.getChildDocuments().size();
+          int numOutKids = outDoc.getChildDocuments().size();
+          assertEquals("Num kids mismatch: " + numOrigKids + "/" + maxKidCount,
+                       (maxKidCount < numOrigKids ? maxKidCount : numOrigKids),
+                       numOutKids);
+          
+          for (SolrDocument kid : outDoc.getChildDocuments()) {
+            String kidId = (String)kid.getFieldValue("id");
+            assertEquals("kid is the wrong level",
+                         kidLevel, (int)kid.getFieldValue("level_i"));
+            SolrInputDocument origChild = findDecendent(origDoc, kidId);
+            assertNotNull(docId + " doesn't have decendent " + kidId,
+                          origChild);
+          }
+        }
+      }
+    }
+
+    // fully randomized
+    // verifications are driven only by the results
+    {
+      int parentLevel = TestUtil.nextInt(random(), 0, maxDepth-1);
+      int kidLevelMin = TestUtil.nextInt(random(), parentLevel, maxDepth);
+      int kidLevelMax = TestUtil.nextInt(random(), kidLevelMin, maxDepth);
+
+      String parentFilter = "level_i:" + parentLevel;
+      String childFilter = "level_i:[" + kidLevelMin + " TO " + kidLevelMax + "]";
+      int maxKidCount = TestUtil.nextInt(random(), 1, 7);
+      
+      q = new SolrQuery("*:*");
+      if (random().nextBoolean()) {
+        String name = names[TestUtil.nextInt(random(), 0, names.length-1)];
+        q = new SolrQuery("name:" + name);
+      }
+      q.setFilterQueries(parentFilter);
+      q.setFields("id,[child parentFilter=\"" + parentFilter +
+                  "\" childFilter=\"" + childFilter + 
+                  "\" limit=\"" + maxKidCount + "\"]");
+      resp = server.query(q);
+      for (SolrDocument outDoc : resp.getResults()) {
+        String docId = (String)outDoc.getFieldValue("id");
+        SolrInputDocument origDoc = allDocs.get(docId);
+        assertNotNull("docId not found: " + docId, origDoc);
+        // we can't always assert origHasKids==outHasKids, original kids
+        // might not go deep enough for childFilter...
+        if (outDoc.hasChildDocuments()) {
+          // ...however if there are out kids, there *have* to be orig kids
+          assertTrue("orig doc had no kids at all", origDoc.hasChildDocuments());
+          for (SolrDocument kid : outDoc.getChildDocuments()) {
+            String kidId = (String)kid.getFieldValue("id");
+            int kidLevel = (int)kid.getFieldValue("level_i");
+            assertTrue("kid level to high: " + kidLevelMax + "<" + kidLevel,
+                       kidLevel <= kidLevelMax);
+            assertTrue("kid level to low: " + kidLevelMin + ">" + kidLevel,
+                       kidLevelMin <= kidLevel);
+            SolrInputDocument origChild = findDecendent(origDoc, kidId);
+            assertNotNull(docId + " doesn't have decendent " + kidId,
+                          origChild);
+          }
+        }
+      }
+    }
+  }
+
+  /** 
+   * Depth first search of a SolrInputDocument looking for a decendent by id, 
+   * returns null if it's not a decendent 
+   */
+  private SolrInputDocument findDecendent(SolrInputDocument parent, String childId) {
+    if (childId.equals(parent.getFieldValue("id"))) {
+      return parent;
+    }
+    if (! parent.hasChildDocuments() ) {
+      return null;
+    }
+    for (SolrInputDocument kid : parent.getChildDocuments()) {
+      SolrInputDocument result = findDecendent(kid, childId);
+      if (null != result) {
+        return result;
+      }
+    }
+    return null;
+  }
+
+  /** used by genNestedDocuments */
+  private int idCounter = 0;
+  /** used by genNestedDocuments */
+  private static final String[] names 
+    = new String[] { "java","pyhon","scala","ruby","clojure" };
+
+  /**
+   * recursive method for generating a document, which may also have child documents;
+   * adds all documents constructed (including decendents) to allDocs via their id 
+   */
+  private SolrInputDocument genNestedDocuments(Map<String,SolrInputDocument> allDocs, 
+                                               int thisLevel,
+                                               int maxDepth) {
+    String id = "" + (idCounter++);
+    SolrInputDocument sdoc = new SolrInputDocument();
+    allDocs.put(id, sdoc);
+
+    sdoc.addField("id", id);
+    sdoc.addField("level_i", thisLevel);
+    sdoc.addField("name", names[TestUtil.nextInt(random(), 0, names.length-1)]);
+    
+    if (0 < maxDepth) {
+      // NOTE: range include negative to increase odds of no kids
+      int numKids = TestUtil.nextInt(random(), -2, 7);
+      for(int i=0; i<numKids; i++) {
+        sdoc.addChildDocument(genNestedDocuments(allDocs, thisLevel+1, maxDepth-1));
+      }
+    }
+    return sdoc;
+  }
 }

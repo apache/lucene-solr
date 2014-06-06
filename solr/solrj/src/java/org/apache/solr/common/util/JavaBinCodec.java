@@ -327,23 +327,38 @@ public class JavaBinCodec {
   }
 
   public void writeSolrDocument(SolrDocument doc) throws IOException {
+    List<SolrDocument> children = doc.getChildDocuments();
+    int sz = doc.size() + (children==null ? 0 : children.size());
     writeTag(SOLRDOC);
-    writeTag(ORDERED_MAP, doc.size());
+    writeTag(ORDERED_MAP, sz);
     for (Map.Entry<String, Object> entry : doc) {
       String name = entry.getKey();
       writeExternString(name);
       Object val = entry.getValue();
       writeVal(val);
     }
+    if (children != null) {
+      for (SolrDocument child : children) {
+        writeSolrDocument(child);
+      }
+    }
   }
 
   public SolrDocument readSolrDocument(DataInputInputStream dis) throws IOException {
-    NamedList nl = (NamedList) readVal(dis);
+    tagByte = dis.readByte();
+    int size = readSize(dis);
     SolrDocument doc = new SolrDocument();
-    for (int i = 0; i < nl.size(); i++) {
-      String name = nl.getName(i);
-      Object val = nl.getVal(i);
-      doc.setField(name, val);
+    for (int i = 0; i < size; i++) {
+      String fieldName;
+      Object obj = readVal(dis); // could be a field name, or a child document
+      if (obj instanceof SolrDocument) {
+        doc.addChildDocument((SolrDocument)obj);
+        continue;
+      } else {
+        fieldName = (String)obj;
+      }
+      Object fieldVal = readVal(dis);
+      doc.setField(fieldName, fieldVal);
     }
     return doc;
   }
@@ -409,7 +424,7 @@ public class JavaBinCodec {
       writeVal(inputField.getValue());
     }
     if (children != null) {
-      for (SolrInputDocument child : sdoc.getChildDocuments()) {
+      for (SolrInputDocument child : children) {
         writeSolrInputDocument(child);
       }
     }

@@ -1065,9 +1065,20 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   private static Pattern escapedSingleQuotePattern = Pattern.compile("\\\\\'");
 
 
-  /** Creates JSON from a SolrInputDocument.  Doesn't currently handle boosts. */
+  /** Creates JSON from a SolrInputDocument.  Doesn't currently handle boosts.
+   *  @see #json(SolrInputDocument,CharArr)
+   */
   public static String json(SolrInputDocument doc) {
-     CharArr out = new CharArr();
+    CharArr out = new CharArr();
+    json(doc, out);
+    return out.toString();
+  }
+
+  /**
+   * Appends to the <code>out</code> array with JSON from the <code>doc</code>.
+   * Doesn't currently handle boosts, but does recursively handle child documents
+   */
+  public static void json(SolrInputDocument doc, CharArr out) {
     try {
       out.append('{');
       boolean firstField = true;
@@ -1090,11 +1101,22 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
           out.append(JSONUtil.toJSON(sfield.getValue()));
         }
       }
+
+      boolean firstChildDoc = true;
+      if(doc.hasChildDocuments()) {
+        out.append(",\"_childDocuments_\": [");
+        List<SolrInputDocument> childDocuments = doc.getChildDocuments();
+        for(SolrInputDocument childDocument : childDocuments) {
+          if (firstChildDoc) firstChildDoc=false;
+          else out.append(',');
+          json(childDocument, out);
+        }
+        out.append(']');
+      }
       out.append('}');
     } catch (IOException e) {
       // should never happen
     }
-    return out.toString();
   }
 
   /** Creates a JSON add command from a SolrInputDocument list.  Doesn't currently handle boosts. */
@@ -1867,7 +1889,23 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       }
     }
 
-    return true;
+    if(solrDocument1.getChildDocuments() == null && solrDocument2.getChildDocuments() == null) {
+      return true;
+    }
+    if(solrDocument1.getChildDocuments() == null || solrDocument2.getChildDocuments() == null) {
+      return false;
+    } else if(solrDocument1.getChildDocuments().size() != solrDocument2.getChildDocuments().size()) {
+      return false;
+    } else {
+      Iterator<SolrDocument> childDocsIter1 = solrDocument1.getChildDocuments().iterator();
+      Iterator<SolrDocument> childDocsIter2 = solrDocument2.getChildDocuments().iterator();
+      while(childDocsIter1.hasNext()) {
+        if(!assertSolrDocumentEquals(childDocsIter1.next(), childDocsIter2.next())) {
+          return false;
+        }
+      }
+      return true;
+    }
   }
 
   public boolean assertSolrDocumentList(Object expected, Object actual) {
