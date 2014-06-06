@@ -20,6 +20,7 @@ package org.apache.lucene;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.io.FileInputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 

@@ -50,7 +50,8 @@
   	<aspectj:iajc 
   		sourceRoots="src/aspects"
   		outJar="${build.dir}/aspects.jar"
-  		sourceRootCopyFilter="**/*.java,**/*.aj">
+  		sourceRootCopyFilter="**/*.java,**/*.aj"
+  		source="1.7">
   	  <classpath location="${build.dir}/classes/java" />
   	  <classpath refid="classpath" />
   	</aspectj:iajc>

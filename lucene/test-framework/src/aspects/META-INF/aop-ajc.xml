@@ -1,6 +1,8 @@
 <aspectj>
   <aspects>
     <aspect name="org.apache.lucene.util.NoDescriptorLeaksAspect" />
+
+    <aspect name="com.carrotsearch.aspects.FileInputStreamTracker" />
   </aspects>
 
   <weaver options="-XnoInline -Xlint:ignore" />

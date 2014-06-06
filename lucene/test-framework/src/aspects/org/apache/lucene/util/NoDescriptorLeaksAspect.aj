@@ -17,14 +17,53 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import com.carrotsearch.aspects.*;
+import com.carrotsearch.aspects.Tracker.TrackingInfo;
+import com.carrotsearch.aspects.Tracker.TrackingStats;
+
+import java.io.*;
+import java.util.Locale;
+
 public aspect NoDescriptorLeaksAspect {
   void around(): execution(void org.apache.lucene.util.TestRuleAspectJAspects.pointcutBeforeSuite(..)) {
-    System.out.println("## Before rule!");
+    Tracker.startTracking();
     proceed();
   }
   
   void around(): execution(void org.apache.lucene.util.TestRuleAspectJAspects.pointcutAfterSuite(..)) {
-    System.out.println("## After rule!");
+    TrackingStats stats = Tracker.snapshot();
+
+    // Close any unclosed resources.
+    for (Object o : stats.open.keySet()) {
+      try {
+        ((Closeable) o).close();
+      } catch (IOException e) {
+        // Ignore if we cannot close it.
+      }
+    }
+
+    // Disable tracking and reset tracking buffers.
+    Tracker.endTracking();
+    Tracker.reset();
+
+    // Verify assertions.
+    System.out.println(String.format(Locale.ENGLISH, 
+        "Tracked %d objects, %d closed, %d open.",
+        stats.closed.size() + stats.open.size(),
+        stats.closed.size(),
+        stats.open.size()));
+    
+    for (TrackingInfo i : stats.closed.values()) {
+      System.out.println(i);
+    }
+    for (TrackingInfo i : stats.open.values()) {
+      System.out.println(i);
+    }
+    
+    if (!stats.open.isEmpty()) {
+      throw new AssertionError("Unclosed file handles: " + stats.open.values());
+    }
+
     proceed();
   }  
 }
