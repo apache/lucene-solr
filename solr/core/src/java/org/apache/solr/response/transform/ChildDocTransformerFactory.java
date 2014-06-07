@@ -21,8 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.LazyDocument;
-import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
@@ -42,6 +40,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.ResponseWriterUtil;
+import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
@@ -75,7 +74,6 @@ public class ChildDocTransformerFactory extends TransformerFactory {
       throw new SolrException( ErrorCode.BAD_REQUEST,
           " ChildDocTransformer requires the schema to have a uniqueKeyField." );
     }
-    String idField = uniqueKeyField.getName();
 
     String parentFilter = params.get( "parentFilter" );
     if( parentFilter == null ) {
@@ -102,19 +100,20 @@ public class ChildDocTransformerFactory extends TransformerFactory {
       }
     }
 
-    return new ChildDocTransformer( field, parentsFilter, idField, req.getSchema(), childFilterQuery, limit);
+    return new ChildDocTransformer( field, parentsFilter, uniqueKeyField, req.getSchema(), childFilterQuery, limit);
   }
 }
 
 class ChildDocTransformer extends TransformerWithContext {
   private final String name;
-  private final String idField;
+  private final SchemaField idField;
   private final IndexSchema schema;
   private Filter parentsFilter;
   private Query childFilterQuery;
   private int limit;
 
-  public ChildDocTransformer( String name, final Filter parentsFilter, String idField, IndexSchema schema,
+  public ChildDocTransformer( String name, final Filter parentsFilter, 
+                              final SchemaField idField, IndexSchema schema,
                               final Query childFilterQuery, int limit) {
     this.name = name;
     this.idField = idField;
@@ -132,21 +131,15 @@ class ChildDocTransformer extends TransformerWithContext {
   @Override
   public void transform(SolrDocument doc, int docid) {
 
-    String parentId;
-    Object parentIdField = doc.get(idField);
-    if (parentIdField instanceof StoredField) {
-      parentId = ((StoredField) parentIdField).stringValue();
-    } else if (parentIdField instanceof Field){
-      parentId = ((Field) parentIdField).stringValue();
-      if(parentId == null) {
-        parentId = ((Field) parentIdField).binaryValue().utf8ToString();
-      }
-    } else {
-      parentId = (String) parentIdField;
-    }
+    FieldType idFt = idField.getType();
+    Object parentIdField = doc.getFirstValue(idField.getName());
+    
+    String parentIdExt = parentIdField instanceof StorableField
+      ? idFt.toExternal((StorableField)parentIdField)
+      : parentIdField.toString();
 
     try {
-      Query parentQuery = new TermQuery(new Term(idField, schema.getFieldType(idField).readableToIndexed(parentId)));
+      Query parentQuery = idFt.getFieldQuery(null, idField, parentIdExt);
       Query query = new ToChildBlockJoinQuery(parentQuery, parentsFilter, false);
       DocList children = context.searcher.getDocList(query, childFilterQuery, new Sort(), 0, limit);
       if(children.matches() > 0) {
