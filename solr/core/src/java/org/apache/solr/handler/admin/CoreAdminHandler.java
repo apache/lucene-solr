@@ -98,7 +98,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
   protected static HashMap<String, Map<String, TaskObject>> requestStatusMap =
       new HashMap<String,Map<String, TaskObject>>();
 
-  protected ExecutorService parallelExecutor = null;
+  protected final ExecutorService parallelExecutor = Executors.newFixedThreadPool(50,
+      new DefaultSolrThreadFactory("parallelCoreAdminExecutor"));
 
   protected static int MAX_TRACKED_REQUESTS = 100;
   public static String RUNNING = "running";
@@ -119,8 +120,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
     // Unlike most request handlers, CoreContainer initialization 
     // should happen in the constructor...  
     this.coreContainer = null;
-    this.parallelExecutor = Executors.newFixedThreadPool(50,
-        new DefaultSolrThreadFactory("parallelCoreAdminExecutor"));
   }
 
 
@@ -131,8 +130,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
    */
   public CoreAdminHandler(final CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
-    this.parallelExecutor = Executors.newFixedThreadPool(50,
-        new DefaultSolrThreadFactory("parallelCoreAdminExecutor"));
   }
 
 
