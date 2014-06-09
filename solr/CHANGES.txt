@@ -154,6 +154,9 @@ Bug Fixes
 * SOLR-6120: zkcli.sh should expand solr.war automatically instead of throwing
   ClassNotFoundException. (sebastian badea, shalin)
 
+* SOLR-6149: Specifying the query value without any index value does not work in
+  Analysis browser. (Aman Tandon, shalin)
+
 Other Changes
 ---------------------
 
