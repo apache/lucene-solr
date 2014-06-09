@@ -32,9 +32,19 @@ import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 // javadocs
 
-/** IndexReader is an abstract class, providing an interface for accessing an
- index.  Search of an index is done entirely through this abstract interface,
- so that any subclass which implements it is searchable.
+/**
+ IndexReader is an abstract class, providing an interface for accessing a
+ point-in-time view of an index.  Any changes made to the index
+ via {@link IndexWriter} will not be visible until a new
+ {@code IndexReader} is opened.  It's best to use {@link
+ DirectoryReader#open(IndexWriter,boolean)} to obtain an
+ {@code IndexReader}, if your {@link IndexWriter} is
+ in-process.  When you need to re-open to see changes to the
+ index, it's best to use {@link DirectoryReader#openIfChanged(DirectoryReader)}
+ since the new reader will share resources with the previous
+ one when possible.  Search of an index is done entirely
+ through this abstract interface, so that any subclass which
+ implements it is searchable.
 
  <p>There are two different types of IndexReaders:
  <ul>
