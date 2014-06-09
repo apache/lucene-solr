@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.request.FieldAnalysisRequest;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -62,7 +63,7 @@ import java.util.Set;
  * <tr>
  * <td>analysis.fieldvalue</td>
  * <td>string</td>
- * <td>yes</td>
+ * <td>no</td>
  * <td>The text that will be analyzed. The analysis will mimic the index-time analysis.</td>
  * <td>No</td>
  * </tr>
@@ -85,7 +86,7 @@ import java.util.Set;
  * </table>
  * <p>Note that if neither analysis.fieldname and analysis.fieldtype is specified, then the default search field's
  * analyzer is used.</p>
- *
+ * <p>Note that if one of analysis.value or analysis.query or q must be specified</p>
  *
  * @since solr 1.4 
  */
@@ -139,7 +140,11 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
     }
     analysisRequest.setQuery(solrParams.get(AnalysisParams.QUERY, solrParams.get(CommonParams.Q)));
 
-    String value = solrParams.required().get(AnalysisParams.FIELD_VALUE);
+    String value = solrParams.get(AnalysisParams.FIELD_VALUE);
+    if (analysisRequest.getQuery() == null && value == null)  {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "One of analysis.value or q or analysis.query parameters must be specified");
+    }
 
     Iterable<ContentStream> streams = req.getContentStreams();
     if (streams != null) {

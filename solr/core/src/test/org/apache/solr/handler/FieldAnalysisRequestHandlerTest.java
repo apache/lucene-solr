@@ -108,6 +108,37 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     request = handler.resolveAnalysisRequest(req);
     assertNull(request.getQuery());
     req.close();
+
+    // test absence of index-time value and presence of q
+    params.remove(AnalysisParams.FIELD_VALUE);
+    params.add(CommonParams.Q, "quick lazy");
+    request = handler.resolveAnalysisRequest(req);
+    assertEquals("quick lazy", request.getQuery());
+    req.close();
+
+    // test absence of index-time value and presence of query
+    params.remove(CommonParams.Q);
+    params.add(AnalysisParams.QUERY, "quick lazy");
+    request = handler.resolveAnalysisRequest(req);
+    assertEquals("quick lazy", request.getQuery());
+    req.close();
+
+    // must fail if all of q, analysis.query or analysis.value are absent
+    params.remove(CommonParams.Q);
+    params.remove(AnalysisParams.QUERY);
+    params.remove(AnalysisParams.FIELD_VALUE);
+    try {
+      request = handler.resolveAnalysisRequest(req);
+      fail("Analysis request must fail if all of q, analysis.query or analysis.value are absent");
+    } catch (SolrException e) {
+      if (e.code() != SolrException.ErrorCode.BAD_REQUEST.code)  {
+        fail("Unexpected exception");
+      }
+    } catch (Exception e) {
+      fail("Unexpected exception");
+    }
+
+    req.close();
   }
 
   /**
@@ -379,21 +410,5 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     assertToken(tokenList.get(3), new TokenInfo("12", null, "word", 9, 11, 3, new int[]{2,3,3}, null, false));
     assertToken(tokenList.get(4), new TokenInfo("a", null, "word", 12, 13, 4, new int[]{3,4,4}, null, false));
     assertToken(tokenList.get(5), new TokenInfo("test", null, "word", 14, 18, 5, new int[]{4,5,5}, null, false));
-  }
-
-  public void testRequiredParamHandling() throws Exception {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(CommonParams.Q, "fox brown");
-
-    SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), params);
-    try {
-      FieldAnalysisRequest request = handler.resolveAnalysisRequest(req);
-      fail("A request with no parameters should not have succeeded");
-    } catch (NullPointerException npe) {
-      fail("A request with no paramters should not result in NPE");
-    } catch (SolrException e) {
-      assertEquals("A request with no parameters should have returned a BAD_REQUEST error", e.code(),
-          SolrException.ErrorCode.BAD_REQUEST.code);
-    }
   }
 }
