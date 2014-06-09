@@ -197,6 +197,9 @@ Other Changes
 * SOLR-6026: REQUESTSTATUS Collection API now also checks for submitted tasks which are
   yet to begin execution.
 
+* SOLR-6067: Refactor duplicate Collector code in SolrIndexSearcher 
+  (Christine Poerschke via hossman)
+
 Optimizations
 ----------------------
 
