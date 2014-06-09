@@ -192,8 +192,6 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
       }
       assertTrue("SplitShard task [2000] was supposed to be in [running] but isn't. It is [" + state + "]", state.equals("running"));
 
-      invokeCollectionApi("action", CollectionParams.CollectionAction.OVERSEERSTATUS.toLower());
-
       // CLUSTERSTATE is always mutually exclusive, it should return with a response before the split completes
 
       ModifiableSolrParams params = new ModifiableSolrParams();
