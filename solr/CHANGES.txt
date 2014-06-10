@@ -157,6 +157,9 @@ Bug Fixes
 * SOLR-6149: Specifying the query value without any index value does not work in
   Analysis browser. (Aman Tandon, shalin)
 
+* SOLR-6146: Incorrect configuration such as wrong chroot in zk server address can
+  cause CloudSolrServer to leak resources. (Jessica Cheng, Varun Thacker, shalin)
+
 Other Changes
 ---------------------
 
