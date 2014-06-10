@@ -288,6 +288,7 @@ public class Lucene49DocValuesConsumer extends DocValuesConsumer implements Clos
 
       final MonotonicBlockPackedWriter writer = new MonotonicBlockPackedWriter(data, BLOCK_SIZE);
       long addr = 0;
+      writer.add(addr);
       for (BytesRef v : values) {
         if (v != null) {
           addr += v.length;
@@ -439,6 +440,7 @@ public class Lucene49DocValuesConsumer extends DocValuesConsumer implements Clos
 
     final MonotonicBlockPackedWriter writer = new MonotonicBlockPackedWriter(data, BLOCK_SIZE);
     long addr = 0;
+    writer.add(addr);
     for (Number v : docToOrdCount) {
       addr += v.longValue();
       writer.add(addr);
