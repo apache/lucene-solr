@@ -131,7 +131,7 @@ public class Lucene49Codec extends Codec {
   private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene41");
   private final DocValuesFormat defaultDVFormat = DocValuesFormat.forName("Lucene49");
 
-  private final NormsFormat normsFormat = new Lucene42NormsFormat();
+  private final NormsFormat normsFormat = new Lucene49NormsFormat();
 
   @Override
   public final NormsFormat normsFormat() {
