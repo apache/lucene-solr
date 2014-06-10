@@ -135,6 +135,10 @@ public class DateRangePrefixTreeTest extends LuceneTestCase {
   }
 
   public void testShapeRelations() throws ParseException {
+    //note: left range is 264000 at the thousand year level whereas right value is exact year
+    assertEquals(SpatialRelation.WITHIN,
+        tree.parseShape("[-264000 TO -264000-11-20]").relate(tree.parseShape("-264000")));
+
     Shape shapeA = tree.parseShape("[3122-01-23 TO 3122-11-27]");
     Shape shapeB = tree.parseShape("[3122-08 TO 3122-11]");
     assertEquals(SpatialRelation.INTERSECTS, shapeA.relate(shapeB));

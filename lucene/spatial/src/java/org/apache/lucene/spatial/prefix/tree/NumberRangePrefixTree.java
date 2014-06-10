@@ -730,13 +730,24 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
       if (endCmp < 0) {//end comes before this cell
         return SpatialRelation.DISJOINT;
       }
-      if ((startCmp < 0 || startCmp == 0 && nrShape.getMinLV().getLevel() <= getLevel())
-          && (endCmp > 0 || endCmp == 0 && nrShape.getMaxLV().getLevel() <= getLevel()))
+      int nrMinLevel = nrShape.getMinLV().getLevel();
+      int nrMaxLevel = nrShape.getMaxLV().getLevel();
+      if ((startCmp < 0 || startCmp == 0 && nrMinLevel <= getLevel())
+          && (endCmp > 0 || endCmp == 0 && nrMaxLevel <= getLevel()))
         return SpatialRelation.WITHIN;//or equals
-      if (startCmp == 0 && endCmp == 0
-          && nrShape.getMinLV().getLevel() >= getLevel() && nrShape.getMaxLV().getLevel() >= getLevel())
-        return SpatialRelation.CONTAINS;
-      return SpatialRelation.INTERSECTS;
+      //At this point it's Contains or Within.
+      if (startCmp != 0 || endCmp != 0)
+        return SpatialRelation.INTERSECTS;
+      //if min or max Level is less, it might be on the equivalent edge.
+      for (;nrMinLevel < getLevel(); nrMinLevel++) {
+        if (getValAtLevel(nrMinLevel + 1) != 0)
+          return SpatialRelation.INTERSECTS;
+      }
+      for (;nrMaxLevel < getLevel(); nrMaxLevel++) {
+        if (getValAtLevel(nrMaxLevel + 1) != getNumSubCells(getLVAtLevel(nrMaxLevel-1)) - 1)
+          return SpatialRelation.INTERSECTS;
+      }
+      return SpatialRelation.CONTAINS;
     }
 
     @Override
@@ -806,6 +817,24 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
         str += "•";//bullet (won't be confused with textual representation)
       return str;
     }
+
+    /** Configure your IDE to use this. */
+    public String toStringDebug() {
+      String pretty = toString();
+      if (getLevel() == 0)
+        return pretty;
+      //now prefix it by an array of integers of the cell levels
+      StringBuilder buf = new StringBuilder(100);
+      buf.append('[');
+      for (int level = 1; level <= getLevel(); level++) {
+        if (level != 1)
+          buf.append(',');
+        buf.append(getLVAtLevel(level).cellNumber);
+      }
+      buf.append("] ").append(pretty);
+      return buf.toString();
+    }
+
   } // END OF NRCell
 
 }
