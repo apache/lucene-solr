@@ -132,6 +132,9 @@ New Features
   supported by he xml, json, and javabin response formats.
   (Varun Thacker via hossman)
 
+* SOLR-6150: Add new AnalyticsQuery to support pluggable analytics
+  (Joel Bernstein)
+
 
 Bug Fixes
 ----------------------
