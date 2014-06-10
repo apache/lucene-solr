@@ -113,7 +113,7 @@ public abstract class ConfigSetService {
    */
   public static class Default extends ConfigSetService {
 
-    private final String configSetBase;
+    private final File configSetBase;
 
     /**
      * Create a new ConfigSetService.Default
@@ -122,7 +122,19 @@ public abstract class ConfigSetService {
      */
     public Default(SolrResourceLoader loader, String configSetBase) {
       super(loader);
-      this.configSetBase = configSetBase;
+      this.configSetBase = resolveBaseDirectory(loader, configSetBase);
+    }
+
+    private File resolveBaseDirectory(SolrResourceLoader loader, String configSetBase) {
+      File csBase = new File(configSetBase);
+      if (!csBase.isAbsolute())
+        csBase = new File(loader.getInstanceDir(), configSetBase);
+      return csBase;
+    }
+
+    // for testing
+    File getConfigSetBase() {
+      return this.configSetBase;
     }
 
     @Override
