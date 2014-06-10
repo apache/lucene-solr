@@ -24,6 +24,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.rest.GETable;
 import org.apache.solr.rest.POSTable;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.noggit.ObjectBuilder;
 import org.restlet.data.MediaType;
@@ -139,9 +140,9 @@ public class FieldCollectionResource extends BaseFieldResource implements GETabl
           } else {
             List<Map<String, Object>> list = (List<Map<String, Object>>) object;
             List<SchemaField> newFields = new ArrayList<>();
+            List<NewFieldArguments> newFieldArguments = new ArrayList<>();
             IndexSchema oldSchema = getSchema();
             Map<String, Collection<String>> copyFields = new HashMap<>();
-            Set<String> malformed = new HashSet<>();
             for (Map<String, Object> map : list) {
               String fieldName = (String) map.remove(IndexSchema.NAME);
               if (null == fieldName) {
@@ -174,10 +175,38 @@ public class FieldCollectionResource extends BaseFieldResource implements GETabl
                 copyFields.put(fieldName, copyTo);
               }
               newFields.add(oldSchema.newField(fieldName, fieldType, map));
+              newFieldArguments.add(new NewFieldArguments(fieldName, fieldType, map));
             }
-            IndexSchema newSchema = oldSchema.addFields(newFields, copyFields);
-
-            getSolrCore().setLatestSchema(newSchema);
+            boolean firstAttempt = true;
+            boolean success = false;
+            while (!success) {
+              try {
+                if (!firstAttempt) {
+                  // If this isn't the first attempt, we must have failed due to
+                  // the schema changing in Zk during optimistic concurrency control.
+                  // In that case, rerun creating the new fields, because they may
+                  // fail now due to changes in the schema.  This behavior is consistent
+                  // with what would happen if we locked the schema and the other schema
+                  // change went first.
+                  newFields.clear();
+                  for (NewFieldArguments args : newFieldArguments) {
+                    newFields.add(oldSchema.newField(
+                      args.getName(), args.getType(), args.getMap()));
+                  }
+                }
+                firstAttempt = false;
+                IndexSchema newSchema = oldSchema.addFields(newFields, copyFields);
+                if (null != newSchema) {
+                  getSolrCore().setLatestSchema(newSchema);
+                  success = true;
+                } else {
+                  throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to add fields.");
+                }
+              } catch (ManagedIndexSchema.SchemaChangedInZkException e) {
+                log.debug("Schema changed while processing request, retrying");
+                oldSchema = getSolrCore().getLatestSchema();
+              }
+            }
           }
         }
       }
@@ -187,5 +216,20 @@ public class FieldCollectionResource extends BaseFieldResource implements GETabl
     handlePostExecution(log);
 
     return new SolrOutputRepresentation();
+  }
+
+  private static class NewFieldArguments {
+    private String name;
+    private String type;
+    Map<String, Object> map;
+    NewFieldArguments(String name, String type, Map<String, Object> map){
+      this.name = name;
+      this.type = type;
+      this.map = map;
+    }
+
+    public String getName() { return name; }
+    public String getType() { return type; }
+    public Map<String, Object> getMap() { return map; }
   }
 }

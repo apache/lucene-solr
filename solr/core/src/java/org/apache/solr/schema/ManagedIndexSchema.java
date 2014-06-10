@@ -129,6 +129,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     final SolrZkClient zkClient = zkController.getZkClient();
     final String managedSchemaPath = zkLoader.getCollectionZkPath() + "/" + managedSchemaResourceName;
     boolean success = true;
+    boolean schemaChangedInZk = false;
     try {
       // Persist the managed schema
       StringWriter writer = new StringWriter();
@@ -151,9 +152,8 @@ public final class ManagedIndexSchema extends IndexSchema {
           schemaZkVersion = stat.getVersion();
           log.info("Persisted managed schema at " + managedSchemaPath);
         } catch (KeeperException.BadVersionException e) {
-          log.info("Failed to persist managed schema at " + managedSchemaPath 
-                  + " - version mismatch");
           success = false;
+          schemaChangedInZk = true;
         }
       }
     } catch (Exception e) {
@@ -163,6 +163,12 @@ public final class ManagedIndexSchema extends IndexSchema {
       final String msg = "Error persisting managed schema at " + managedSchemaPath;
       log.error(msg, e);
       throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
+    }
+    if (schemaChangedInZk) {
+      String msg = "Failed to persist managed schema at " + managedSchemaPath
+        + " - version mismatch";
+      log.info(msg);
+      throw new SchemaChangedInZkException(ErrorCode.CONFLICT, msg + ", retry.");
     }
     return success; 
   }
@@ -183,6 +189,12 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
   }
 
+  public class SchemaChangedInZkException extends SolrException {
+    public SchemaChangedInZkException(ErrorCode code, String msg) {
+      super(code, msg);
+    }
+  }
+
   @Override
   public ManagedIndexSchema addFields(Collection<SchemaField> newFields) {
     return addFields(newFields, Collections.<String, Collection<String>>emptyMap());
@@ -196,45 +208,44 @@ public final class ManagedIndexSchema extends IndexSchema {
       if (copyFieldNames == null){
         copyFieldNames = Collections.emptyMap();
       }
-      while ( ! success) { // optimistic concurrency
-        // even though fields is volatile, we need to synchronize to avoid two addFields
-        // happening concurrently (and ending up missing one of them)
-        synchronized (getSchemaUpdateLock()) {
-          newSchema = shallowCopy(true);
+      // even though fields is volatile, we need to synchronize to avoid two addFields
+      // happening concurrently (and ending up missing one of them)
+      synchronized (getSchemaUpdateLock()) {
+        newSchema = shallowCopy(true);
 
-          for (SchemaField newField : newFields) {
-            if (null != newSchema.getFieldOrNull(newField.getName())) {
-              String msg = "Field '" + newField.getName() + "' already exists.";
-              throw new FieldExistsException(ErrorCode.BAD_REQUEST, msg);
-            }
-            newSchema.fields.put(newField.getName(), newField);
+        for (SchemaField newField : newFields) {
+          if (null != newSchema.getFieldOrNull(newField.getName())) {
+            String msg = "Field '" + newField.getName() + "' already exists.";
+            throw new FieldExistsException(ErrorCode.BAD_REQUEST, msg);
+          }
+          newSchema.fields.put(newField.getName(), newField);
 
-            if (null != newField.getDefaultValue()) {
-              log.debug(newField.getName() + " contains default value: " + newField.getDefaultValue());
-              newSchema.fieldsWithDefaultValue.add(newField);
-            }
-            if (newField.isRequired()) {
-              log.debug("{} is required in this schema", newField.getName());
-              newSchema.requiredFields.add(newField);
-            }
-            Collection<String> copyFields = copyFieldNames.get(newField.getName());
-            if (copyFields != null) {
-              for (String copyField : copyFields) {
-                newSchema.registerCopyField(newField.getName(), copyField);
-              }
-            }
+          if (null != newField.getDefaultValue()) {
+            log.debug(newField.getName() + " contains default value: " + newField.getDefaultValue());
+            newSchema.fieldsWithDefaultValue.add(newField);
           }
-          // Run the callbacks on SchemaAware now that everything else is done
-          for (SchemaAware aware : newSchema.schemaAware) {
-            aware.inform(newSchema);
+          if (newField.isRequired()) {
+            log.debug("{} is required in this schema", newField.getName());
+            newSchema.requiredFields.add(newField);
           }
-          newSchema.refreshAnalyzers();
-          success = newSchema.persistManagedSchema(false); // don't just create - update it if it already exists
-          if (success) {
-            log.debug("Added field(s): {}", newFields);
+          Collection<String> copyFields = copyFieldNames.get(newField.getName());
+          if (copyFields != null) {
+            for (String copyField : copyFields) {
+              newSchema.registerCopyField(newField.getName(), copyField);
+            }
           }
         }
-        // release the lock between tries to allow the schema reader to update the schema & schemaZkVersion
+        // Run the callbacks on SchemaAware now that everything else is done
+        for (SchemaAware aware : newSchema.schemaAware) {
+          aware.inform(newSchema);
+        }
+        newSchema.refreshAnalyzers();
+        success = newSchema.persistManagedSchema(false); // don't just create - update it if it already exists
+        if (success) {
+          log.debug("Added field(s): {}", newFields);
+        } else {
+          log.error("Failed to add field(s): {}", newFields);
+        }
       }
     } else {
       String msg = "This ManagedIndexSchema is not mutable.";
@@ -249,28 +260,28 @@ public final class ManagedIndexSchema extends IndexSchema {
     ManagedIndexSchema newSchema = null;
     if (isMutable) {
       boolean success = false;
-      while (!success) { // optimistic concurrency
-        // even though fields is volatile, we need to synchronize to avoid two addCopyFields
-        // happening concurrently (and ending up missing one of them)
-        synchronized (getSchemaUpdateLock()) {
-          newSchema = shallowCopy(true);
-          for (Map.Entry<String, Collection<String>> entry : copyFields.entrySet()) {
-            //Key is the name of the field, values are the destinations
+      // even though fields is volatile, we need to synchronize to avoid two addCopyFields
+      // happening concurrently (and ending up missing one of them)
+      synchronized (getSchemaUpdateLock()) {
+        newSchema = shallowCopy(true);
+        for (Map.Entry<String, Collection<String>> entry : copyFields.entrySet()) {
+          //Key is the name of the field, values are the destinations
 
-            for (String destination : entry.getValue()) {
-              newSchema.registerCopyField(entry.getKey(), destination);
-            }
+          for (String destination : entry.getValue()) {
+            newSchema.registerCopyField(entry.getKey(), destination);
           }
-          //TODO: move this common stuff out to shared methods
-           // Run the callbacks on SchemaAware now that everything else is done
-          for (SchemaAware aware : newSchema.schemaAware) {
-            aware.inform(newSchema);
-          }
-          newSchema.refreshAnalyzers();
-          success = newSchema.persistManagedSchema(false); // don't just create - update it if it already exists
-          if (success) {
-            log.debug("Added copy fields for {} sources", copyFields.size());
-          }
+        }
+        //TODO: move this common stuff out to shared methods
+        // Run the callbacks on SchemaAware now that everything else is done
+        for (SchemaAware aware : newSchema.schemaAware) {
+          aware.inform(newSchema);
+        }
+        newSchema.refreshAnalyzers();
+        success = newSchema.persistManagedSchema(false); // don't just create - update it if it already exists
+        if (success) {
+          log.debug("Added copy fields for {} sources", copyFields.size());
+        } else {
+          log.error("Failed to add copy fields for {} sources", copyFields.size());
         }
       }
     }

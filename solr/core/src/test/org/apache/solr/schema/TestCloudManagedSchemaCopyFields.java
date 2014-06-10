@@ -18,7 +18,6 @@ package org.apache.solr.schema;
 
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.util.BaseTestHarness;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -33,10 +32,10 @@ import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-public class TestCloudManagedSchemaAddField extends AbstractFullDistribZkTestBase {
+public class TestCloudManagedSchemaCopyFields extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(TestCloudManagedSchemaAddField.class);
 
-  public TestCloudManagedSchemaAddField() {
+  public TestCloudManagedSchemaCopyFields() {
     super();
     fixShardCount = true;
 
@@ -83,40 +82,32 @@ public class TestCloudManagedSchemaAddField extends AbstractFullDistribZkTestBas
   public void doTest() throws Exception {
     setupHarnesses();
     
-    // First. add a bunch of fields, but do it fast enough
-    // and verify shards' schemas after all of them are added
-    int numFields = 25;
+    // First, add the same copy field directive a bunch of times.    
+    // Then verify each shard's schema has it.
+    int numFields = 200;
     for (int i = 1 ; i <= numFields ; ++i) {
       RestTestHarness publisher = restTestHarnesses.get(r.nextInt(restTestHarnesses.size()));
-      String newFieldName = "newfield" + i;
-      final String content = "{\"type\":\"text\",\"stored\":\"false\"}";
-      String request = "/schema/fields/" + newFieldName + "?wt=xml";             
-      String response = publisher.put(request, content);
+      final String content = "[{\"source\":\""+"sku1"+"\",\"dest\":[\"sku2\"]}]";
+      String request = "/schema/copyfields/?wt=xml";             
+      String response = publisher.post(request, content);
       String result = publisher.validateXPath
           (response, "/response/lst[@name='responseHeader']/int[@name='status'][.='0']");
       if (null != result) {
-        fail("PUT REQUEST FAILED: xpath=" + result + "  request=" + request 
+        fail("POST REQUEST FAILED: xpath=" + result + "  request=" + request 
             + "  content=" + content + "  response=" + response);
       }
     }
     
     Thread.sleep(100000);
-
-    for (int i = 1 ; i <= numFields ; ++i) {
-      String newFieldName = "newfield" + i;
-      for (RestTestHarness client : restTestHarnesses) {
-        String request = "/schema/fields/" + newFieldName + "?wt=xml";
-        String response = client.query(request);
-        String result = client.validateXPath(response,
-                                      "/response/lst[@name='responseHeader']/int[@name='status'][.='0']",
-                                      "/response/lst[@name='field']/str[@name='name'][.='" + newFieldName + "']");
-        if (null != result) {
-          if (response.contains("Field '" + newFieldName + "' not found.")) {
-            String msg = "QUERY FAILED: xpath=" + result + "  request=" + request + "  response=" + response;
-            log.error(msg);
-            fail(msg);
-          }
-        }
+    
+    String request = "/schema/copyfields/?wt=xml&indent=on&source.fl=sku1";
+    for (RestTestHarness client : restTestHarnesses) {
+      String response = client.query(request);
+      String result = client.validateXPath(response,
+          "/response/lst[@name='responseHeader']/int[@name='status'][.='0']",
+          "/response/arr[@name='copyFields']/lst/str[@name='dest'][.='sku2']");
+      if (null != result) {
+        fail("QUERY FAILED: xpath=" + result + "  request=" + request + "  response=" + response);
       }
     }
   }

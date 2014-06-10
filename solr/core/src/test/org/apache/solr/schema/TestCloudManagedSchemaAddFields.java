@@ -33,10 +33,10 @@ import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-public class TestCloudManagedSchemaAddField extends AbstractFullDistribZkTestBase {
+public class TestCloudManagedSchemaAddFields extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(TestCloudManagedSchemaAddField.class);
 
-  public TestCloudManagedSchemaAddField() {
+  public TestCloudManagedSchemaAddFields() {
     super();
     fixShardCount = true;
 
@@ -85,17 +85,17 @@ public class TestCloudManagedSchemaAddField extends AbstractFullDistribZkTestBas
     
     // First. add a bunch of fields, but do it fast enough
     // and verify shards' schemas after all of them are added
-    int numFields = 25;
+    int numFields = 200;
     for (int i = 1 ; i <= numFields ; ++i) {
       RestTestHarness publisher = restTestHarnesses.get(r.nextInt(restTestHarnesses.size()));
       String newFieldName = "newfield" + i;
-      final String content = "{\"type\":\"text\",\"stored\":\"false\"}";
-      String request = "/schema/fields/" + newFieldName + "?wt=xml";             
-      String response = publisher.put(request, content);
+      final String content = "[{\"name\":\""+newFieldName+"\",\"type\":\"text\",\"stored\":\"false\"}]";
+      String request = "/schema/fields/?wt=xml";             
+      String response = publisher.post(request, content);
       String result = publisher.validateXPath
           (response, "/response/lst[@name='responseHeader']/int[@name='status'][.='0']");
       if (null != result) {
-        fail("PUT REQUEST FAILED: xpath=" + result + "  request=" + request 
+        fail("POST REQUEST FAILED: xpath=" + result + "  request=" + request 
             + "  content=" + content + "  response=" + response);
       }
     }
