@@ -744,7 +744,7 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
           return SpatialRelation.INTERSECTS;
       }
       for (;nrMaxLevel < getLevel(); nrMaxLevel++) {
-        if (getValAtLevel(nrMaxLevel + 1) != getNumSubCells(getLVAtLevel(nrMaxLevel-1)) - 1)
+        if (getValAtLevel(nrMaxLevel + 1) != getNumSubCells(getLVAtLevel(nrMaxLevel)) - 1)
           return SpatialRelation.INTERSECTS;
       }
       return SpatialRelation.CONTAINS;
