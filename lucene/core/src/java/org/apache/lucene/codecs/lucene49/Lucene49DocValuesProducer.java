@@ -392,7 +392,7 @@ public class Lucene49DocValuesProducer extends DocValuesProducer implements Clos
       MonotonicBlockPackedReader addrInstance = addressInstances.get(field.number);
       if (addrInstance == null) {
         data.seek(bytes.addressesOffset);
-        addrInstance = MonotonicBlockPackedReader.of(data, bytes.packedIntsVersion, bytes.blockSize, bytes.count, false);
+        addrInstance = MonotonicBlockPackedReader.of(data, bytes.packedIntsVersion, bytes.blockSize, bytes.count+1, false);
         addressInstances.put(field.number, addrInstance);
         ramBytesUsed.addAndGet(addrInstance.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
       }
@@ -411,8 +411,8 @@ public class Lucene49DocValuesProducer extends DocValuesProducer implements Clos
       
       @Override
       public BytesRef get(long id) {
-        long startAddress = bytes.offset + (id == 0 ? 0 : addresses.get(id-1));
-        long endAddress = bytes.offset + addresses.get(id);
+        long startAddress = bytes.offset + addresses.get(id);
+        long endAddress = bytes.offset + addresses.get(id+1);
         int length = (int) (endAddress - startAddress);
         try {
           data.seek(startAddress);
@@ -511,7 +511,7 @@ public class Lucene49DocValuesProducer extends DocValuesProducer implements Clos
       MonotonicBlockPackedReader ordIndexInstance = ordIndexInstances.get(field.number);
       if (ordIndexInstance == null) {
         data.seek(entry.offset);
-        ordIndexInstance = MonotonicBlockPackedReader.of(data, entry.packedIntsVersion, entry.blockSize, entry.count, false);
+        ordIndexInstance = MonotonicBlockPackedReader.of(data, entry.packedIntsVersion, entry.blockSize, entry.count+1, false);
         ordIndexInstances.put(field.number, ordIndexInstance);
         ramBytesUsed.addAndGet(ordIndexInstance.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
       }
@@ -556,8 +556,8 @@ public class Lucene49DocValuesProducer extends DocValuesProducer implements Clos
 
       @Override
       public void setDocument(int docID) {
-        startOffset = offset = (docID == 0 ? 0 : ordIndex.get(docID-1));
-        endOffset = ordIndex.get(docID);
+        startOffset = offset = ordIndex.get(docID);
+        endOffset = ordIndex.get(docID+1L);
       }
 
       @Override
