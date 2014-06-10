@@ -129,6 +129,9 @@ New Features
   from Directory. Add Lucene49Codec and Lucene49DocValuesFormat that make
   use of these.  (Robert Muir)
 
+* LUCENE-5743: Add Lucene49NormsFormat, which can compress in some cases
+  such as very short fields.  (Ryan Ernst, Adrien Grand, Robert Muir)
+
 Changes in Backwards Compatibility Policy
 
 * LUCENE-5634: Add reuse argument to IndexableField.tokenStream. This

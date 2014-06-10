@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.lucene49;
 
 import java.io.Closeable; // javadocs
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -199,6 +200,7 @@ public class Lucene49DocValuesConsumer extends DocValuesConsumer implements Clos
         break;
       case TABLE_COMPRESSED:
         final Long[] decode = uniqueValues.toArray(new Long[uniqueValues.size()]);
+        Arrays.sort(decode);
         final HashMap<Long,Integer> encode = new HashMap<>();
         meta.writeVInt(decode.length);
         for (int i = 0; i < decode.length; i++) {
