@@ -291,7 +291,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
         final IndexSchema oldSchema = core.getLatestSchema();
         List<SchemaField> newFields = new ArrayList<>();
         for (final String fieldName : doc.getFieldNames()) {
-          if (selector.shouldMutate(fieldName)) {
+          if (selector.shouldMutate(fieldName)) { // returns false if the field already exists in the latest schema
             String fieldTypeName = mapValueClassesToFieldType(doc.getField(fieldName));
             newFields.add(oldSchema.newField(fieldName, fieldTypeName, Collections.<String,Object>emptyMap()));
           }
@@ -323,6 +323,9 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
         } catch(ManagedIndexSchema.FieldExistsException e) {
           log.debug("At least one field to be added already exists in the schema - retrying.");
           // No action: at least one field to be added already exists in the schema, so retry 
+          // We should never get here, since selector.shouldMutate(field) will exclude already existing fields
+        } catch(ManagedIndexSchema.SchemaChangedInZkException e) {
+          log.debug("Schema changed while processing request - retrying.");
         }
       }
       super.processAdd(cmd);

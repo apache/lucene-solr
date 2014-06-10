@@ -30,7 +30,6 @@ import org.restlet.resource.ResourceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,6 +38,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import static org.apache.solr.common.SolrException.ErrorCode;
 
 /**
  * This class responds to requests at /solr/(corename)/schema/copyfields
@@ -110,13 +111,13 @@ public class CopyFieldCollectionResource extends BaseFieldResource implements GE
     try {
       if (!getSchema().isMutable()) {
         final String message = "This IndexSchema is not mutable.";
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
+        throw new SolrException(ErrorCode.BAD_REQUEST, message);
       } else {
         if (!entity.getMediaType().equals(MediaType.APPLICATION_JSON, true)) {
           String message = "Only media type " + MediaType.APPLICATION_JSON.toString() + " is accepted."
               + "  Request has media type " + entity.getMediaType().toString() + ".";
           log.error(message);
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
+          throw new SolrException(ErrorCode.BAD_REQUEST, message);
         } else {
           Object object = ObjectBuilder.fromJSON(entity.getText());
 
@@ -124,7 +125,7 @@ public class CopyFieldCollectionResource extends BaseFieldResource implements GE
             String message = "Invalid JSON type " + object.getClass().getName() + ", expected List of the form"
                 + " (ignore the backslashes): [{\"source\":\"foo\",\"dest\":\"comma-separated list of targets\"}, {...}, ...]";
             log.error(message);
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
+            throw new SolrException(ErrorCode.BAD_REQUEST, message);
           } else {
             List<Map<String, Object>> list = (List<Map<String, Object>>) object;
             Map<String, Collection<String>> fieldsToCopy = new HashMap<>();
@@ -135,7 +136,7 @@ public class CopyFieldCollectionResource extends BaseFieldResource implements GE
               if (null == fieldName) {
                 String message = "Missing '" + IndexSchema.SOURCE + "' mapping.";
                 log.error(message);
-                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
+                throw new SolrException(ErrorCode.BAD_REQUEST, message);
               }
               Object dest = map.get(IndexSchema.DESTINATION);
               List<String> destinations = null;
@@ -147,7 +148,7 @@ public class CopyFieldCollectionResource extends BaseFieldResource implements GE
                 } else {
                   String message = "Invalid '" + IndexSchema.DESTINATION + "' type.";
                   log.error(message);
-                  throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
+                  throw new SolrException(ErrorCode.BAD_REQUEST, message);
                 }
               }
               if (destinations == null) {
@@ -165,11 +166,22 @@ public class CopyFieldCollectionResource extends BaseFieldResource implements GE
                 message.setLength(message.length() - 2);//drop the last ,
               }
               log.error(message.toString().trim());
-              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message.toString().trim());
+              throw new SolrException(ErrorCode.BAD_REQUEST, message.toString().trim());
             }
-            IndexSchema newSchema = oldSchema.addCopyFields(fieldsToCopy);
-            if (newSchema != null) {
-              getSolrCore().setLatestSchema(newSchema);
+            boolean success = false;
+            while (!success) {
+              try {
+                IndexSchema newSchema = oldSchema.addCopyFields(fieldsToCopy);
+                if (null != newSchema) {
+                  getSolrCore().setLatestSchema(newSchema);
+                  success = true;
+                } else {
+                  throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to add fields.");
+                }
+              } catch (ManagedIndexSchema.SchemaChangedInZkException e) {
+                  log.debug("Schema changed while processing request, retrying");
+                  oldSchema = (ManagedIndexSchema)getSolrCore().getLatestSchema();
+              }
             }
           }
         }
