@@ -163,6 +163,9 @@ Bug Fixes
 * SOLR-6146: Incorrect configuration such as wrong chroot in zk server address can
   cause CloudSolrServer to leak resources. (Jessica Cheng, Varun Thacker, shalin)
 
+* SOLR-6158: Relative configSetBase directories were resolved relative to the 
+  container CWD, rather than solr.home. (Simon Endele, Alan Woodward)
+
 Other Changes
 ---------------------
 
