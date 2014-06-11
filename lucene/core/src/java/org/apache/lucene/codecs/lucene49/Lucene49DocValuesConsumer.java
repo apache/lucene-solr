@@ -150,13 +150,15 @@ public class Lucene49DocValuesConsumer extends DocValuesConsumer implements Clos
     }
     
     final long delta = maxValue - minValue;
+    final int deltaBitsRequired = delta < 0 ? 64 : DirectWriter.bitsRequired(delta);
 
     final int format;
-    if (uniqueValues != null
-        && (delta < 0L || PackedInts.bitsRequired(uniqueValues.size() - 1) < PackedInts.bitsRequired(delta))) {
+    if (uniqueValues != null && DirectWriter.bitsRequired(uniqueValues.size() - 1) < deltaBitsRequired) {
       format = TABLE_COMPRESSED;
     } else if (gcd != 0 && gcd != 1) {
-      format = GCD_COMPRESSED;
+      final long gcdDelta = (maxValue - minValue) / gcd;
+      final long gcdBitsRequired = gcdDelta < 0 ? 64 : DirectWriter.bitsRequired(gcdDelta);
+      format = gcdBitsRequired < deltaBitsRequired ? GCD_COMPRESSED : DELTA_COMPRESSED;
     } else {
       format = DELTA_COMPRESSED;
     }
@@ -189,9 +191,8 @@ public class Lucene49DocValuesConsumer extends DocValuesConsumer implements Clos
       case DELTA_COMPRESSED:
         final long minDelta = delta < 0 ? 0 : minValue;
         meta.writeLong(minDelta);
-        final int bpv = delta < 0 ? 64 : DirectWriter.bitsRequired(delta);
-        meta.writeVInt(bpv);
-        final DirectWriter writer = DirectWriter.getInstance(data, count, bpv);
+        meta.writeVInt(deltaBitsRequired);
+        final DirectWriter writer = DirectWriter.getInstance(data, count, deltaBitsRequired);
         for (Number nv : values) {
           long v = nv == null ? 0 : nv.longValue();
           writer.add(v - minDelta);
