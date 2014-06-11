@@ -483,6 +483,21 @@ final public class BasicAutomata {
     return a;
   }
 
+  public static LightAutomaton makeStringLight(int[] word, int offset, int length) {
+    LightAutomaton a = new LightAutomaton();
+    a.createState();
+    int s = 0;
+    for (int i = offset; i < offset+length; i++) {
+      int s2 = a.createState();
+      a.addTransition(s, s2, word[i]);
+      s = s2;
+    }
+    a.setAccept(s, true);
+    a.finish();
+
+    return a;
+  }
+
   /**
    * Returns a new (deterministic and minimal) automaton that accepts the union
    * of the given collection of {@link BytesRef}s representing UTF-8 encoded

@@ -35,7 +35,7 @@ import org.apache.lucene.util.Sorter;
 //   - could use packed int arrays instead
 //   - could encode dest w/ delta from to?
 
-// nocommit should we keep determinized bit?
+// nocommit should we keep determinized bit?  it could be entirely privately computed now?
 
 /** Uses only int[]s to represent the automaton, but requires that all
  *  transitions for each state are added at once.  If this is too restrictive,

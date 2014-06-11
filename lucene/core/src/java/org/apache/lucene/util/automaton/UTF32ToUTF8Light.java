@@ -274,6 +274,9 @@ public final class UTF32ToUTF8Light {
     //if (utf32.isSingleton()) {
     //utf32 = utf32.cloneExpanded();
     //}
+    if (utf32.getNumStates() == 0) {
+      return utf32;
+    }
 
     int[] map = new int[utf32.getNumStates()];
     Arrays.fill(map, -1);

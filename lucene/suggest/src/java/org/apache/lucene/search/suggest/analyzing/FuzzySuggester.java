@@ -32,8 +32,10 @@ import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.BasicOperations;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
+import org.apache.lucene.util.automaton.LightAutomaton;
 import org.apache.lucene.util.automaton.SpecialOperations;
 import org.apache.lucene.util.automaton.UTF32ToUTF8;
+import org.apache.lucene.util.automaton.UTF32ToUTF8Light;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PairOutputs.Pair;
 
@@ -177,7 +179,7 @@ public final class FuzzySuggester extends AnalyzingSuggester {
   
   @Override
   protected List<FSTUtil.Path<Pair<Long,BytesRef>>> getFullPrefixPaths(List<FSTUtil.Path<Pair<Long,BytesRef>>> prefixPaths,
-                                                                       Automaton lookupAutomaton,
+                                                                       LightAutomaton lookupAutomaton,
                                                                        FST<Pair<Long,BytesRef>> fst)
     throws IOException {
 
@@ -191,7 +193,7 @@ public final class FuzzySuggester extends AnalyzingSuggester {
     // "compete") ... in which case I think the wFST needs
     // to be log weights or something ...
 
-    Automaton levA = convertAutomaton(toLevenshteinAutomata(lookupAutomaton));
+    LightAutomaton levA = convertAutomaton(toLevenshteinAutomata(lookupAutomaton));
     /*
       Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"), StandardCharsets.UTF_8);
       w.write(levA.toDot());
@@ -202,10 +204,10 @@ public final class FuzzySuggester extends AnalyzingSuggester {
   }
 
   @Override
-  protected Automaton convertAutomaton(Automaton a) {
+  protected LightAutomaton convertAutomaton(LightAutomaton a) {
     if (unicodeAware) {
-      Automaton utf8automaton = new UTF32ToUTF8().convert(a);
-      BasicOperations.determinize(utf8automaton);
+      LightAutomaton utf8automaton = new UTF32ToUTF8Light().convert(a);
+      utf8automaton = BasicOperations.determinize(utf8automaton);
       return utf8automaton;
     } else {
       return a;
@@ -219,16 +221,16 @@ public final class FuzzySuggester extends AnalyzingSuggester {
     return tsta;
   }
 
-  Automaton toLevenshteinAutomata(Automaton automaton) {
+  LightAutomaton toLevenshteinAutomata(LightAutomaton automaton) {
     final Set<IntsRef> ref = SpecialOperations.getFiniteStrings(automaton, -1);
-    Automaton subs[] = new Automaton[ref.size()];
+    LightAutomaton subs[] = new LightAutomaton[ref.size()];
     int upto = 0;
     for (IntsRef path : ref) {
       if (path.length <= nonFuzzyPrefix || path.length < minFuzzyLength) {
-        subs[upto] = BasicAutomata.makeString(path.ints, path.offset, path.length);
+        subs[upto] = BasicAutomata.makeStringLight(path.ints, path.offset, path.length);
         upto++;
       } else {
-        Automaton prefix = BasicAutomata.makeString(path.ints, path.offset, nonFuzzyPrefix);
+        LightAutomaton prefix = BasicAutomata.makeStringLight(path.ints, path.offset, nonFuzzyPrefix);
         int ints[] = new int[path.length-nonFuzzyPrefix];
         System.arraycopy(path.ints, path.offset+nonFuzzyPrefix, ints, 0, ints.length);
         // TODO: maybe add alphaMin to LevenshteinAutomata,
@@ -237,9 +239,8 @@ public final class FuzzySuggester extends AnalyzingSuggester {
         // edited... but then 0 byte is "in general" allowed
         // on input (but not in UTF8).
         LevenshteinAutomata lev = new LevenshteinAutomata(ints, unicodeAware ? Character.MAX_CODE_POINT : 255, transpositions);
-        Automaton levAutomaton = lev.toAutomaton(maxEdits);
-        Automaton combined = BasicOperations.concatenate(Arrays.asList(prefix, levAutomaton));
-        combined.setDeterministic(true); // its like the special case in concatenate itself, except we cloneExpanded already
+        LightAutomaton levAutomaton = lev.toLightAutomaton(maxEdits);
+        LightAutomaton combined = BasicOperations.concatenateLight(prefix, levAutomaton);
         subs[upto] = combined;
         upto++;
       }
@@ -247,19 +248,17 @@ public final class FuzzySuggester extends AnalyzingSuggester {
 
     if (subs.length == 0) {
       // automaton is empty, there is no accepted paths through it
-      return BasicAutomata.makeEmpty(); // matches nothing
+      return BasicAutomata.makeEmptyLight(); // matches nothing
     } else if (subs.length == 1) {
       // no synonyms or anything: just a single path through the tokenstream
       return subs[0];
     } else {
       // multiple paths: this is really scary! is it slow?
       // maybe we should not do this and throw UOE?
-      Automaton a = BasicOperations.union(Arrays.asList(subs));
+      LightAutomaton a = BasicOperations.unionLight(Arrays.asList(subs));
       // TODO: we could call toLevenshteinAutomata() before det? 
       // this only happens if you have multiple paths anyway (e.g. synonyms)
-      BasicOperations.determinize(a);
-
-      return a;
+      return BasicOperations.determinize(a);
     }
   }
 }

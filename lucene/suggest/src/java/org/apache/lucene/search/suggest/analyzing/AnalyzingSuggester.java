@@ -17,6 +17,16 @@ package org.apache.lucene.search.suggest.analyzing;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenStreamToAutomaton;
@@ -35,28 +45,20 @@ import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicOperations;
+import org.apache.lucene.util.automaton.LightAutomaton;
 import org.apache.lucene.util.automaton.SpecialOperations;
 import org.apache.lucene.util.automaton.State;
 import org.apache.lucene.util.automaton.Transition;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
-import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FST.BytesReader;
-import org.apache.lucene.util.fst.PairOutputs;
+import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PairOutputs.Pair;
+import org.apache.lucene.util.fst.PairOutputs;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
-import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.util.fst.Util.Result;
 import org.apache.lucene.util.fst.Util.TopResults;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import org.apache.lucene.util.fst.Util;
 
 /**
  * Suggester that first analyzes the surface form, adds the
@@ -255,37 +257,65 @@ public class AnalyzingSuggester extends Lookup {
     return fst == null ? 0 : fst.ramBytesUsed();
   }
 
-  private void copyDestTransitions(State from, State to, List<Transition> transitions) {
-    if (to.isAccept()) {
-      from.setAccept(true);
+  private int[] topoSortStates(LightAutomaton a) {
+    int[] states = new int[a.getNumStates()];
+    final Set<Integer> visited = new HashSet<>();
+    final LinkedList<Integer> worklist = new LinkedList<>();
+    worklist.add(0);
+    visited.add(0);
+    int upto = 0;
+    states[upto] = 0;
+    upto++;
+    LightAutomaton.Transition t = new LightAutomaton.Transition();
+    while (worklist.size() > 0) {
+      int s = worklist.removeFirst();
+      int count = a.initTransition(s, t);
+      for (int i=0;i<count;i++) {
+        a.getNextTransition(t);
+        if (!visited.contains(t.dest)) {
+          visited.add(t.dest);
+          worklist.add(t.dest);
+          states[upto++] = t.dest;
+        }
+      }
     }
-    for(Transition t : to.getTransitions()) {
-      transitions.add(t);
-    }
+    return states;
   }
+
 
   // Replaces SEP with epsilon or remaps them if
   // we were asked to preserve them:
-  private void replaceSep(Automaton a) {
+  private LightAutomaton replaceSep(LightAutomaton a) {
 
-    State[] states = a.getNumberedStates();
+    LightAutomaton result = new LightAutomaton();
+
+    // Copy all states over
+    int numStates = a.getNumStates();
+    for(int s=0;s<numStates;s++) {
+      result.createState();
+      result.setAccept(s, a.isAccept(s));
+    }
 
     // Go in reverse topo sort so we know we only have to
     // make one pass:
-    for(int stateNumber=states.length-1;stateNumber >=0;stateNumber--) {
-      final State state = states[stateNumber];
+    LightAutomaton.Transition t = new LightAutomaton.Transition();
+    int[] topoSortStates = topoSortStates(a);
+    for(int i=0;i<topoSortStates.length;i++) {
+      int state = topoSortStates[topoSortStates.length-1-i];
       List<Transition> newTransitions = new ArrayList<>();
-      for(Transition t : state.getTransitions()) {
-        assert t.getMin() == t.getMax();
-        if (t.getMin() == TokenStreamToAutomaton.POS_SEP) {
+      int count = a.initTransition(state, t);
+      for(int j=0;j<count;j++) {
+        a.getNextTransition(t);
+        if (t.min == TokenStreamToAutomaton.POS_SEP) {
+          assert t.max == TokenStreamToAutomaton.POS_SEP;
           if (preserveSep) {
             // Remap to SEP_LABEL:
-            newTransitions.add(new Transition(SEP_LABEL, t.getDest()));
+            result.addTransition(state, t.dest, SEP_LABEL);
           } else {
-            copyDestTransitions(state, t.getDest(), newTransitions);
-            a.setDeterministic(false);
+            result.addEpsilon(state, t.dest);
           }
-        } else if (t.getMin() == TokenStreamToAutomaton.HOLE) {
+        } else if (t.min == TokenStreamToAutomaton.HOLE) {
+          assert t.max == TokenStreamToAutomaton.HOLE;
 
           // Just remove the hole: there will then be two
           // SEP tokens next to each other, which will only
@@ -294,19 +324,21 @@ public class AnalyzingSuggester extends Lookup {
           // that's somehow a problem we can always map HOLE
           // to a dedicated byte (and escape it in the
           // input).
-          copyDestTransitions(state, t.getDest(), newTransitions);
-          a.setDeterministic(false);
+          result.addEpsilon(state, t.dest);
         } else {
-          newTransitions.add(t);
+          result.addTransition(state, t.dest, t.min, t.max);
         }
       }
-      state.setTransitions(newTransitions.toArray(new Transition[newTransitions.size()]));
     }
+
+    result.finish();
+
+    return result;
   }
 
   /** Used by subclass to change the lookup automaton, if
    *  necessary. */
-  protected Automaton convertAutomaton(Automaton a) {
+  protected LightAutomaton convertAutomaton(LightAutomaton a) {
     return a;
   }
   
@@ -665,8 +697,7 @@ public class AnalyzingSuggester extends Lookup {
     }
     final BytesRef utf8Key = new BytesRef(key);
     try {
-
-      Automaton lookupAutomaton = toLookupAutomaton(key);
+      LightAutomaton lookupAutomaton = toLookupAutomaton(key);
 
       final CharsRef spare = new CharsRef();
 
@@ -818,7 +849,7 @@ public class AnalyzingSuggester extends Lookup {
 
   /** Returns all prefix paths to initialize the search. */
   protected List<FSTUtil.Path<Pair<Long,BytesRef>>> getFullPrefixPaths(List<FSTUtil.Path<Pair<Long,BytesRef>>> prefixPaths,
-                                                                       Automaton lookupAutomaton,
+                                                                       LightAutomaton lookupAutomaton,
                                                                        FST<Pair<Long,BytesRef>> fst)
     throws IOException {
     return prefixPaths;
@@ -826,7 +857,7 @@ public class AnalyzingSuggester extends Lookup {
   
   final Set<IntsRef> toFiniteStrings(final BytesRef surfaceForm, final TokenStreamToAutomaton ts2a) throws IOException {
     // Analyze surface form:
-    Automaton automaton = null;
+    LightAutomaton automaton = null;
     try (TokenStream ts = indexAnalyzer.tokenStream("", surfaceForm.utf8ToString())) {
 
       // Create corresponding automaton: labels are bytes
@@ -835,7 +866,7 @@ public class AnalyzingSuggester extends Lookup {
       automaton = ts2a.toAutomaton(ts);
     }
 
-    replaceSep(automaton);
+    automaton = replaceSep(automaton);
     automaton = convertAutomaton(automaton);
 
     // TODO: LUCENE-5660 re-enable this once we disallow massive suggestion strings
@@ -848,32 +879,25 @@ public class AnalyzingSuggester extends Lookup {
     // TODO: we could walk & add simultaneously, so we
     // don't have to alloc [possibly biggish]
     // intermediate HashSet in RAM:
+
     return SpecialOperations.getFiniteStrings(automaton, maxGraphExpansions);
   }
 
-  final Automaton toLookupAutomaton(final CharSequence key) throws IOException {
+  final LightAutomaton toLookupAutomaton(final CharSequence key) throws IOException {
     // TODO: is there a Reader from a CharSequence?
     // Turn tokenstream into automaton:
-    Automaton automaton = null;
+    LightAutomaton automaton = null;
     try (TokenStream ts = queryAnalyzer.tokenStream("", key.toString())) {
-      automaton = (getTokenStreamToAutomaton()).toAutomaton(ts);
+        automaton = getTokenStreamToAutomaton().toAutomaton(ts);
     }
 
-    // TODO: we could use the end offset to "guess"
-    // whether the final token was a partial token; this
-    // would only be a heuristic ... but maybe an OK one.
-    // This way we could eg differentiate "net" from "net ",
-    // which we can't today...
-
-    replaceSep(automaton);
+    automaton = replaceSep(automaton);
 
     // TODO: we can optimize this somewhat by determinizing
     // while we convert
-    BasicOperations.determinize(automaton);
+    automaton = BasicOperations.determinize(automaton);
     return automaton;
   }
-  
-  
 
   /**
    * Returns the weight associated with an input string,
