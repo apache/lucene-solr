@@ -178,6 +178,69 @@ public class LevenshteinAutomata {
     //a.restoreInvariant();
     return a;
   }
+
+  /**
+   * Compute a DFA that accepts all strings within an edit distance of <code>n</code>.
+   * <p>
+   * All automata have the following properties:
+   * <ul>
+   * <li>They are deterministic (DFA).
+   * <li>There are no transitions to dead states.
+   * <li>They are not minimal (some transitions could be combined).
+   * </ul>
+   * </p>
+   */
+  public LightAutomaton toLightAutomaton(int n) {
+    if (n == 0) {
+      return BasicAutomata.makeString(word, 0, word.length).toLightAutomaton();
+    }
+    
+    if (n >= descriptions.length)
+      return null;
+    
+    final int range = 2*n+1;
+    ParametricDescription description = descriptions[n];
+    // the number of states is based on the length of the word and n
+    int numStates = description.size();
+
+    LightAutomaton a = new LightAutomaton();
+
+    // create all states, and mark as accept states if appropriate
+    for (int i = 0; i < numStates; i++) {
+      a.createState();
+      a.setAccept(i, description.isAccept(i));
+    }
+    // create transitions from state to state
+    for (int k = 0; k < numStates; k++) {
+      final int xpos = description.getPosition(k);
+      if (xpos < 0)
+        continue;
+      final int end = xpos + Math.min(word.length - xpos, range);
+      
+      for (int x = 0; x < alphabet.length; x++) {
+        final int ch = alphabet[x];
+        // get the characteristic vector at this position wrt ch
+        final int cvec = getVector(ch, xpos, end);
+        int dest = description.transition(k, xpos, cvec);
+        if (dest >= 0) {
+          a.addTransition(k, dest, ch);
+        }
+      }
+      // add transitions for all other chars in unicode
+      // by definition, their characteristic vectors are always 0,
+      // because they do not exist in the input string.
+      int dest = description.transition(k, xpos, 0); // by definition
+      if (dest >= 0) {
+        for (int r = 0; r < numRanges; r++) {
+          a.addTransition(k, dest, rangeLower[r], rangeUpper[r]);
+        }
+      }
+    }
+
+    a.finish();
+
+    return a;
+  }
   
   /**
    * Get the characteristic vector <code>X(x, V)</code> 

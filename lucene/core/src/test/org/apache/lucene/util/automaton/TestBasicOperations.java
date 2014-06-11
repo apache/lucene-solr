@@ -32,18 +32,18 @@ public class TestBasicOperations extends LuceneTestCase {
     }
 
     Collections.sort(strings);
-    Automaton union = BasicAutomata.makeStringUnion(strings);
-    assertTrue(union.isDeterministic());
+    LightAutomaton union = BasicAutomata.makeStringUnionLight(strings);
+    assertTrue(BasicOperations.isDeterministic(union));
     assertTrue(BasicOperations.sameLanguage(union, naiveUnion(strings)));
   }
 
-  private static Automaton naiveUnion(List<BytesRef> strings) {
-    Automaton [] eachIndividual = new Automaton [strings.size()];
+  private static LightAutomaton naiveUnion(List<BytesRef> strings) {
+    LightAutomaton[] eachIndividual = new LightAutomaton[strings.size()];
     int i = 0;
     for (BytesRef bref : strings) {
-      eachIndividual[i++] = BasicAutomata.makeString(bref.utf8ToString());
+      eachIndividual[i++] = BasicAutomata.makeStringLight(bref.utf8ToString());
     }
-    return BasicOperations.union(Arrays.asList(eachIndividual));
+    return BasicOperations.determinize(BasicOperations.unionLight(Arrays.asList(eachIndividual)));
   }
 
   /** Test optimization to concatenate() */
@@ -90,28 +90,20 @@ public class TestBasicOperations extends LuceneTestCase {
   
   /** Test optimization to concatenate() with empty String to an NFA */
   public void testEmptySingletonNFAConcatenate() {
-    Automaton singleton = BasicAutomata.makeString("");
-    Automaton expandedSingleton = singleton.cloneExpanded();
+    LightAutomaton singleton = BasicAutomata.makeStringLight("");
+    LightAutomaton expandedSingleton = singleton;
     // an NFA (two transitions for 't' from initial state)
-    Automaton nfa = BasicOperations.union(BasicAutomata.makeString("this"),
-        BasicAutomata.makeString("three"));
-    Automaton concat1 = BasicOperations.concatenate(expandedSingleton, nfa);
-    Automaton concat2 = BasicOperations.concatenate(singleton, nfa);
-    assertFalse(concat2.isDeterministic());
-    assertTrue(BasicOperations.sameLanguage(concat1, concat2));
-    assertTrue(BasicOperations.sameLanguage(nfa, concat1));
-    assertTrue(BasicOperations.sameLanguage(nfa, concat2));
-  }
-
-  /** Test singletons work correctly */
-  public void testSingleton() {
-    Automaton singleton = BasicAutomata.makeString("foobar");
-    Automaton expandedSingleton = singleton.cloneExpanded();
-    assertTrue(BasicOperations.sameLanguage(singleton, expandedSingleton));
-    
-    singleton = BasicAutomata.makeString("\ud801\udc1c");
-    expandedSingleton = singleton.cloneExpanded();
-    assertTrue(BasicOperations.sameLanguage(singleton, expandedSingleton));
+    LightAutomaton nfa = BasicOperations.unionLight(BasicAutomata.makeStringLight("this"),
+        BasicAutomata.makeStringLight("three"));
+    LightAutomaton concat1 = BasicOperations.concatenateLight(expandedSingleton, nfa);
+    LightAutomaton concat2 = BasicOperations.concatenateLight(singleton, nfa);
+    assertFalse(BasicOperations.isDeterministic(concat2));
+    assertTrue(BasicOperations.sameLanguage(BasicOperations.determinize(concat1),
+                                            BasicOperations.determinize(concat2)));
+    assertTrue(BasicOperations.sameLanguage(BasicOperations.determinize(nfa),
+                                            BasicOperations.determinize(concat1)));
+    assertTrue(BasicOperations.sameLanguage(BasicOperations.determinize(nfa),
+                                            BasicOperations.determinize(concat2)));
   }
 
   public void testGetRandomAcceptedString() throws Throwable {
@@ -120,15 +112,18 @@ public class TestBasicOperations extends LuceneTestCase {
     for(int i=0;i<ITER1;i++) {
 
       final RegExp re = new RegExp(AutomatonTestUtil.randomRegexp(random()), RegExp.NONE);
-      final Automaton a = re.toAutomaton();
+      //System.out.println("TEST i=" + i + " re=" + re);
+      final LightAutomaton a = BasicOperations.determinize(re.toLightAutomaton());
       assertFalse(BasicOperations.isEmpty(a));
 
-      final AutomatonTestUtil.RandomAcceptedStrings rx = new AutomatonTestUtil.RandomAcceptedStrings(a);
+      final AutomatonTestUtil.RandomAcceptedStringsLight rx = new AutomatonTestUtil.RandomAcceptedStringsLight(a);
       for(int j=0;j<ITER2;j++) {
+        //System.out.println("TEST: j=" + j);
         int[] acc = null;
         try {
           acc = rx.getRandomAcceptedString(random());
           final String s = UnicodeUtil.newString(acc, 0, acc.length);
+          //a.writeDot("adot");
           assertTrue(BasicOperations.run(a, s));
         } catch (Throwable t) {
           System.out.println("regexp: " + re);

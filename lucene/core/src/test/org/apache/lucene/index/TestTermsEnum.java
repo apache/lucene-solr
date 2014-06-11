@@ -36,6 +36,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
+import org.apache.lucene.util.automaton.LightAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
 
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
@@ -745,7 +746,7 @@ public class TestTermsEnum extends LuceneTestCase {
     w.shutdown();
     AtomicReader sub = getOnlySegmentReader(r);
     Terms terms = sub.fields().terms("field");
-    Automaton automaton = new RegExp(".*", RegExp.NONE).toAutomaton();    
+    LightAutomaton automaton = new RegExp(".*", RegExp.NONE).toLightAutomaton();
     CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);    
     TermsEnum te = terms.intersect(ca, null);
     assertEquals("aaa", te.next().utf8ToString());
@@ -800,7 +801,7 @@ public class TestTermsEnum extends LuceneTestCase {
     AtomicReader sub = getOnlySegmentReader(r);
     Terms terms = sub.fields().terms("field");
 
-    Automaton automaton = new RegExp(".*d", RegExp.NONE).toAutomaton();
+    LightAutomaton automaton = new RegExp(".*d", RegExp.NONE).toLightAutomaton();
     CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);    
     TermsEnum te;
     
@@ -854,7 +855,7 @@ public class TestTermsEnum extends LuceneTestCase {
     AtomicReader sub = getOnlySegmentReader(r);
     Terms terms = sub.fields().terms("field");
 
-    Automaton automaton = new RegExp(".*", RegExp.NONE).toAutomaton();  // accept ALL
+    LightAutomaton automaton = new RegExp(".*", RegExp.NONE).toLightAutomaton();  // accept ALL
     CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);    
 
     TermsEnum te = terms.intersect(ca, null);

@@ -26,6 +26,7 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
+import org.apache.lucene.util.automaton.LightAutomaton;
 
 /**
  * A {@link Query} that will match terms against a finite-state machine.
@@ -48,6 +49,7 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
 public class AutomatonQuery extends MultiTermQuery {
   /** the automaton to match index terms against */
   protected final Automaton automaton;
+  protected final LightAutomaton lightAutomaton;
   protected final CompiledAutomaton compiled;
   /** term containing the field, and possibly some pattern structure */
   protected final Term term;
@@ -64,6 +66,15 @@ public class AutomatonQuery extends MultiTermQuery {
     super(term.field());
     this.term = term;
     this.automaton = automaton;
+    this.lightAutomaton = null;
+    this.compiled = new CompiledAutomaton(automaton);
+  }
+
+  public AutomatonQuery(final Term term, LightAutomaton automaton) {
+    super(term.field());
+    this.term = term;
+    this.automaton = null;
+    this.lightAutomaton = automaton;
     this.compiled = new CompiledAutomaton(automaton);
   }
 
@@ -110,7 +121,11 @@ public class AutomatonQuery extends MultiTermQuery {
     buffer.append(getClass().getSimpleName());
     buffer.append(" {");
     buffer.append('\n');
-    buffer.append(automaton.toString());
+    if (automaton == null) {
+      buffer.append(lightAutomaton.toString());
+    } else {
+      buffer.append(automaton.toString());
+    }
     buffer.append("}");
     buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
@@ -119,5 +134,10 @@ public class AutomatonQuery extends MultiTermQuery {
   /** Returns the automaton used to create this query */
   public Automaton getAutomaton() {
     return automaton;
+  }
+
+  /** Returns the light automaton used to create this query */
+  public LightAutomaton getLightAutomaton() {
+    return lightAutomaton;
   }
 }

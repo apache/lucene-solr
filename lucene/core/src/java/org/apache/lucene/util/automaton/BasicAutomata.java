@@ -52,6 +52,12 @@ final public class BasicAutomata {
     a.deterministic = true;
     return a;
   }
+
+  public static LightAutomaton makeEmptyLight() {
+    LightAutomaton a = new LightAutomaton();
+    a.finish();
+    return a;
+  }
   
   /**
    * Returns a new (deterministic) automaton that accepts only the empty string.
@@ -60,6 +66,16 @@ final public class BasicAutomata {
     Automaton a = new Automaton();
     a.singleton = "";
     a.deterministic = true;
+    return a;
+  }
+
+  /**
+   * Returns a new (deterministic) automaton that accepts only the empty string.
+   */
+  public static LightAutomaton makeEmptyStringLight() {
+    LightAutomaton a = new LightAutomaton();
+    a.createState();
+    a.setAccept(0, true);
     return a;
   }
   
@@ -76,12 +92,31 @@ final public class BasicAutomata {
     a.deterministic = true;
     return a;
   }
+
+  /**
+   * Returns a new (deterministic) automaton that accepts all strings.
+   */
+  public static LightAutomaton makeAnyStringLight() {
+    LightAutomaton a = new LightAutomaton();
+    int s = a.createState();
+    a.setAccept(s, true);
+    a.addTransition(s, s, Character.MIN_CODE_POINT, Character.MAX_CODE_POINT);
+    a.finish();
+    return a;
+  }
   
   /**
    * Returns a new (deterministic) automaton that accepts any single codepoint.
    */
   public static Automaton makeAnyChar() {
     return makeCharRange(Character.MIN_CODE_POINT, Character.MAX_CODE_POINT);
+  }
+
+  /**
+   * Returns a new (deterministic) automaton that accepts any single codepoint.
+   */
+  public static LightAutomaton makeAnyCharLight() {
+    return makeCharRangeLight(Character.MIN_CODE_POINT, Character.MAX_CODE_POINT);
   }
   
   /**
@@ -93,6 +128,14 @@ final public class BasicAutomata {
     a.singleton = new String(Character.toChars(c));
     a.deterministic = true;
     return a;
+  }
+
+  /**
+   * Returns a new (deterministic) automaton that accepts a single codepoint of
+   * the given value.
+   */
+  public static LightAutomaton makeCharLight(int c) {
+    return makeCharRangeLight(c, c);
   }
   
   /**
@@ -112,6 +155,22 @@ final public class BasicAutomata {
   }
   
   /**
+   * Returns a new (deterministic) automaton that accepts a single codepoint whose
+   * value is in the given interval (including both end points).
+   */
+  public static LightAutomaton makeCharRangeLight(int min, int max) {
+    LightAutomaton a = new LightAutomaton();
+    int s1 = a.createState();
+    int s2 = a.createState();
+    a.setAccept(s2, true);
+    if (min <= max) {
+      a.addTransition(s1, s2, min, max);
+    }
+    a.finish();
+    return a;
+  }
+  
+  /**
    * Constructs sub-automaton corresponding to decimal numbers of length
    * x.substring(n).length().
    */
@@ -119,6 +178,20 @@ final public class BasicAutomata {
     State s = new State();
     if (x.length() == n) s.setAccept(true);
     else s.addTransition(new Transition('0', '9', anyOfRightLength(x, n + 1)));
+    return s;
+  }
+
+  /**
+   * Constructs sub-automaton corresponding to decimal numbers of length
+   * x.substring(n).length().
+   */
+  private static int anyOfRightLengthLight(LightAutomaton.Builder builder, String x, int n) {
+    int s = builder.createState();
+    if (x.length() == n) {
+      builder.setAccept(s, true);
+    } else {
+      builder.addTransition(s, anyOfRightLengthLight(builder, x, n + 1), '0', '9');
+    }
     return s;
   }
   
@@ -140,6 +213,28 @@ final public class BasicAutomata {
     }
     return s;
   }
+
+  /**
+   * Constructs sub-automaton corresponding to decimal numbers of value at least
+   * x.substring(n) and length x.substring(n).length().
+   */
+  private static int atLeastLight(LightAutomaton.Builder builder, String x, int n, Collection<Integer> initials,
+      boolean zeros) {
+    int s = builder.createState();
+    if (x.length() == n) {
+      builder.setAccept(s, true);
+    } else {
+      if (zeros) {
+        initials.add(s);
+      }
+      char c = x.charAt(n);
+      builder.addTransition(s, atLeastLight(builder, x, n + 1, initials, zeros && c == '0'), c);
+      if (c < '9') {
+        builder.addTransition(s, anyOfRightLengthLight(builder, x, n + 1), (char) (c + 1), '9');
+      }
+    }
+    return s;
+  }
   
   /**
    * Constructs sub-automaton corresponding to decimal numbers of value at most
@@ -153,6 +248,24 @@ final public class BasicAutomata {
       s.addTransition(new Transition(c, atMost(x, (char) n + 1)));
       if (c > '0') s.addTransition(new Transition('0', (char) (c - 1),
           anyOfRightLength(x, n + 1)));
+    }
+    return s;
+  }
+
+  /**
+   * Constructs sub-automaton corresponding to decimal numbers of value at most
+   * x.substring(n) and length x.substring(n).length().
+   */
+  private static int atMostLight(LightAutomaton.Builder builder, String x, int n) {
+    int s = builder.createState();
+    if (x.length() == n) {
+      builder.setAccept(s, true);
+    } else {
+      char c = x.charAt(n);
+      builder.addTransition(s, atMostLight(builder, x, (char) n + 1), c);
+      if (c > '0') {
+        builder.addTransition(s, anyOfRightLengthLight(builder, x, n + 1), '0', (char) (c - 1));
+      }
     }
     return s;
   }
@@ -180,6 +293,37 @@ final public class BasicAutomata {
             (char) (cy - 1), anyOfRightLength(x, n + 1)));
       }
     }
+    return s;
+  }
+
+  /**
+   * Constructs sub-automaton corresponding to decimal numbers of value between
+   * x.substring(n) and y.substring(n) and of length x.substring(n).length()
+   * (which must be equal to y.substring(n).length()).
+   */
+  private static int betweenLight(LightAutomaton.Builder builder,
+      String x, String y, int n,
+      Collection<Integer> initials, boolean zeros) {
+    int s = builder.createState();
+    if (x.length() == n) {
+      builder.setAccept(s, true);
+    } else {
+      if (zeros) {
+        initials.add(s);
+      }
+      char cx = x.charAt(n);
+      char cy = y.charAt(n);
+      if (cx == cy) {
+        builder.addTransition(s, betweenLight(builder, x, y, n + 1, initials, zeros && cx == '0'), cx);
+      } else { // cx<cy
+        builder.addTransition(s, atLeastLight(builder, x, n + 1, initials, zeros && cx == '0'), cx);
+        builder.addTransition(s, atMostLight(builder, y, n + 1), cy);
+        if (cx + 1 < cy) {
+          builder.addTransition(s, anyOfRightLengthLight(builder, x, n+1), (char) (cx + 1), (char) (cy - 1));
+        }
+      }
+    }
+
     return s;
   }
   
@@ -229,6 +373,70 @@ final public class BasicAutomata {
     a.checkMinimizeAlways();
     return a;
   }
+
+  /**
+   * Returns a new automaton that accepts strings representing decimal
+   * non-negative integers in the given interval.
+   * 
+   * @param min minimal value of interval
+   * @param max maximal value of interval (both end points are included in the
+   *          interval)
+   * @param digits if >0, use fixed number of digits (strings must be prefixed
+   *          by 0's to obtain the right length) - otherwise, the number of
+   *          digits is not fixed
+   * @exception IllegalArgumentException if min>max or if numbers in the
+   *              interval cannot be expressed with the given fixed number of
+   *              digits
+   */
+  public static LightAutomaton makeIntervalLight(int min, int max, int digits)
+      throws IllegalArgumentException {
+    String x = Integer.toString(min);
+    String y = Integer.toString(max);
+    if (min > max || (digits > 0 && y.length() > digits)) {
+      throw new IllegalArgumentException();
+    }
+    int d;
+    if (digits > 0) d = digits;
+    else d = y.length();
+    StringBuilder bx = new StringBuilder();
+    for (int i = x.length(); i < d; i++) {
+      bx.append('0');
+    }
+    bx.append(x);
+    x = bx.toString();
+    StringBuilder by = new StringBuilder();
+    for (int i = y.length(); i < d; i++) {
+      by.append('0');
+    }
+    by.append(y);
+    y = by.toString();
+
+    LightAutomaton.Builder builder = new LightAutomaton.Builder();
+
+    Collection<Integer> initials = new ArrayList<>();
+
+    betweenLight(builder, x, y, 0, initials, digits <= 0);
+
+    LightAutomaton a1 = builder.finish();
+
+    if (digits <= 0) {
+      LightAutomaton a2 = new LightAutomaton();
+      a2.createState();
+      // TODO: can we somehow do this w/o a full copy here?
+      a2.copy(a1);
+
+      for (int p : initials) {
+        if (p != 0) {
+          a2.addEpsilon(0, p+1);
+        }
+      }
+      
+      a2.finish();
+      return a2;
+    } else {
+      return a1;
+    }
+  }
   
   /**
    * Returns a new (deterministic) automaton that accepts the single given
@@ -238,6 +446,26 @@ final public class BasicAutomata {
     Automaton a = new Automaton();
     a.singleton = s;
     a.deterministic = true;
+    return a;
+  }
+
+  /**
+   * Returns a new (deterministic) automaton that accepts the single given
+   * string.
+   */
+  public static LightAutomaton makeStringLight(String s) {
+    LightAutomaton a = new LightAutomaton();
+    int lastState = a.createState();
+    for (int i = 0, cp = 0; i < s.length(); i += Character.charCount(cp)) {
+      int state = a.createState();
+      cp = s.codePointAt(i);
+      a.addTransition(lastState, state, cp, cp);
+      lastState = state;
+    }
+
+    a.setAccept(lastState, true);
+    a.finish();
+
     return a;
   }
   
@@ -273,6 +501,27 @@ final public class BasicAutomata {
       return makeEmpty();
     } else {
       return DaciukMihovAutomatonBuilder.build(utf8Strings);
+    }
+  }
+
+  /**
+   * Returns a new (deterministic and minimal) automaton that accepts the union
+   * of the given collection of {@link BytesRef}s representing UTF-8 encoded
+   * strings.
+   * 
+   * @param utf8Strings
+   *          The input strings, UTF-8 encoded. The collection must be in sorted
+   *          order.
+   * 
+   * @return An {@link Automaton} accepting all input strings. The resulting
+   *         automaton is codepoint based (full unicode codepoints on
+   *         transitions).
+   */
+  public static LightAutomaton makeStringUnionLight(Collection<BytesRef> utf8Strings) {
+    if (utf8Strings.isEmpty()) {
+      return makeEmptyLight();
+    } else {
+      return DaciukMihovAutomatonBuilderLight.build(utf8Strings);
     }
   }
 }

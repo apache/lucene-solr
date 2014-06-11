@@ -27,6 +27,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.LightAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
 
 /**
@@ -98,7 +99,7 @@ public class TestAutomatonQueryUnicode extends LuceneTestCase {
     return searcher.search(query, 5).totalHits;
   }
 
-  private void assertAutomatonHits(int expected, Automaton automaton)
+  private void assertAutomatonHits(int expected, LightAutomaton automaton)
       throws IOException {
     AutomatonQuery query = new AutomatonQuery(newTerm("bogus"), automaton);
 
@@ -122,7 +123,7 @@ public class TestAutomatonQueryUnicode extends LuceneTestCase {
    * presentation forms block, or a supplementary character.
    */
   public void testSortOrder() throws IOException {
-    Automaton a = new RegExp("((\uD866\uDF05)|\uFB94).*").toAutomaton();
+    LightAutomaton a = new RegExp("((\uD866\uDF05)|\uFB94).*").toLightAutomaton();
     assertAutomatonHits(2, a);
   }
 }

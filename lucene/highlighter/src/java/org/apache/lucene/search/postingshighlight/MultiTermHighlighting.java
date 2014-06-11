@@ -95,7 +95,7 @@ class MultiTermHighlighting {
     } else if (query instanceof AutomatonQuery) {
       final AutomatonQuery aq = (AutomatonQuery) query;
       if (aq.getField().equals(field)) {
-        list.add(new CharacterRunAutomaton(aq.getAutomaton()) {
+        list.add(new CharacterRunAutomaton(aq.getLightAutomaton()) {
           @Override
           public String toString() {
             return aq.toString();

@@ -419,17 +419,17 @@ public class RegExp {
     to = e.to;
     b = null;
   }
-  
+
   /**
    * Constructs new <code>Automaton</code> from this <code>RegExp</code>. Same
    * as <code>toAutomaton(null)</code> (empty automaton map).
    */
-  public Automaton toAutomaton() {
-    return toAutomatonAllowMutate(null, null);
+  public LightAutomaton toLightAutomaton() {
+    return toLightAutomaton(null, null);
   }
   
   /**
-   * Constructs new <code>Automaton</code> from this <code>RegExp</code>. The
+   * Constructs new <code>LightAutomaton</code> from this <code>RegExp</code>. The
    * constructed automaton is minimal and deterministic and has no transitions
    * to dead states.
    * 
@@ -437,9 +437,9 @@ public class RegExp {
    * @exception IllegalArgumentException if this regular expression uses a named
    *              identifier that is not available from the automaton provider
    */
-  public Automaton toAutomaton(AutomatonProvider automaton_provider)
+  public LightAutomaton toLightAutomaton(LightAutomatonProvider automaton_provider)
       throws IllegalArgumentException {
-    return toAutomatonAllowMutate(null, automaton_provider);
+    return toLightAutomaton(null, automaton_provider);
   }
   
   /**
@@ -448,49 +448,26 @@ public class RegExp {
    * to dead states.
    * 
    * @param automata a map from automaton identifiers to automata (of type
-   *          <code>Automaton</code>).
+   *          <code>LightAutomaton</code>).
    * @exception IllegalArgumentException if this regular expression uses a named
    *              identifier that does not occur in the automaton map
    */
-  public Automaton toAutomaton(Map<String,Automaton> automata)
+  public LightAutomaton toLightAutomaton(Map<String,LightAutomaton> automata)
       throws IllegalArgumentException {
-    return toAutomatonAllowMutate(automata, null);
+    return toLightAutomaton(automata, null);
   }
-  
-  /**
-   * Sets or resets allow mutate flag. If this flag is set, then automata
-   * construction uses mutable automata, which is slightly faster but not thread
-   * safe. By default, the flag is not set.
-   * 
-   * @param flag if true, the flag is set
-   * @return previous value of the flag
-   */
-  public boolean setAllowMutate(boolean flag) {
-    boolean b = allow_mutation;
-    allow_mutation = flag;
-    return b;
-  }
-  
-  private Automaton toAutomatonAllowMutate(Map<String,Automaton> automata,
-      AutomatonProvider automaton_provider) throws IllegalArgumentException {
-    boolean b = false;
-    if (allow_mutation) b = Automaton.setAllowMutate(true); // thread unsafe
-    Automaton a = toAutomaton(automata, automaton_provider);
-    if (allow_mutation) Automaton.setAllowMutate(b);
-    return a;
-  }
-  
-  private Automaton toAutomaton(Map<String,Automaton> automata,
-      AutomatonProvider automaton_provider) throws IllegalArgumentException {
-    List<Automaton> list;
-    Automaton a = null;
+
+  private LightAutomaton toLightAutomaton(Map<String,LightAutomaton> automata,
+      LightAutomatonProvider automaton_provider) throws IllegalArgumentException {
+    List<LightAutomaton> list;
+    LightAutomaton a = null;
     switch (kind) {
       case REGEXP_UNION:
         list = new ArrayList<>();
         findLeaves(exp1, Kind.REGEXP_UNION, list, automata, automaton_provider);
         findLeaves(exp2, Kind.REGEXP_UNION, list, automata, automaton_provider);
-        a = BasicOperations.union(list);
-        MinimizationOperations.minimize(a);
+        a = BasicOperations.unionLight(list);
+        MinimizationOperationsLight.minimize(a);
         break;
       case REGEXP_CONCATENATION:
         list = new ArrayList<>();
@@ -498,77 +475,85 @@ public class RegExp {
             automaton_provider);
         findLeaves(exp2, Kind.REGEXP_CONCATENATION, list, automata,
             automaton_provider);
-        a = BasicOperations.concatenate(list);
-        MinimizationOperations.minimize(a);
+        a = BasicOperations.concatenateLight(list);
+        MinimizationOperationsLight.minimize(a);
         break;
       case REGEXP_INTERSECTION:
-        a = exp1.toAutomaton(automata, automaton_provider).intersection(
-            exp2.toAutomaton(automata, automaton_provider));
-        MinimizationOperations.minimize(a);
+        a = BasicOperations.intersectionLight(
+            exp1.toLightAutomaton(automata, automaton_provider),
+            exp2.toLightAutomaton(automata, automaton_provider));
+        a = MinimizationOperationsLight.minimize(a);
         break;
       case REGEXP_OPTIONAL:
-        a = exp1.toAutomaton(automata, automaton_provider).optional();
-        MinimizationOperations.minimize(a);
+        a = BasicOperations.optionalLight(exp1.toLightAutomaton(automata, automaton_provider));
+        a = MinimizationOperationsLight.minimize(a);
         break;
       case REGEXP_REPEAT:
-        a = exp1.toAutomaton(automata, automaton_provider).repeat();
-        MinimizationOperations.minimize(a);
+        a = BasicOperations.repeatLight(exp1.toLightAutomaton(automata, automaton_provider));
+        a = MinimizationOperationsLight.minimize(a);
         break;
       case REGEXP_REPEAT_MIN:
-        a = exp1.toAutomaton(automata, automaton_provider).repeat(min);
-        MinimizationOperations.minimize(a);
+        a = BasicOperations.repeatLight(exp1.toLightAutomaton(automata, automaton_provider), min);
+        a = MinimizationOperationsLight.minimize(a);
         break;
       case REGEXP_REPEAT_MINMAX:
-        a = exp1.toAutomaton(automata, automaton_provider).repeat(min, max);
-        MinimizationOperations.minimize(a);
+        a = BasicOperations.repeatLight(exp1.toLightAutomaton(automata, automaton_provider), min, max);
+        a = MinimizationOperationsLight.minimize(a);
         break;
       case REGEXP_COMPLEMENT:
-        a = exp1.toAutomaton(automata, automaton_provider).complement();
-        MinimizationOperations.minimize(a);
+        a = BasicOperations.complementLight(exp1.toLightAutomaton(automata, automaton_provider));
+        a = MinimizationOperationsLight.minimize(a);
         break;
       case REGEXP_CHAR:
-        a = BasicAutomata.makeChar(c);
+        a = BasicAutomata.makeCharLight(c);
         break;
       case REGEXP_CHAR_RANGE:
-        a = BasicAutomata.makeCharRange(from, to);
+        a = BasicAutomata.makeCharRangeLight(from, to);
         break;
       case REGEXP_ANYCHAR:
-        a = BasicAutomata.makeAnyChar();
+        a = BasicAutomata.makeAnyCharLight();
         break;
       case REGEXP_EMPTY:
-        a = BasicAutomata.makeEmpty();
+        a = BasicAutomata.makeEmptyLight();
         break;
       case REGEXP_STRING:
-        a = BasicAutomata.makeString(s);
+        a = BasicAutomata.makeStringLight(s);
         break;
       case REGEXP_ANYSTRING:
-        a = BasicAutomata.makeAnyString();
+        a = BasicAutomata.makeAnyStringLight();
         break;
       case REGEXP_AUTOMATON:
-        Automaton aa = null;
-        if (automata != null) aa = automata.get(s);
-        if (aa == null && automaton_provider != null) try {
-          aa = automaton_provider.getAutomaton(s);
-        } catch (IOException e) {
-          throw new IllegalArgumentException(e);
+        LightAutomaton aa = null;
+        if (automata != null) {
+          aa = automata.get(s);
         }
-        if (aa == null) throw new IllegalArgumentException("'" + s
-            + "' not found");
-        a = aa.clone(); // always clone here (ignore allow_mutate)
+        if (aa == null && automaton_provider != null) {
+          try {
+            aa = automaton_provider.getAutomaton(s);
+          } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+          }
+        }
+        if (aa == null) {
+          throw new IllegalArgumentException("'" + s + "' not found");
+        }
+        a = aa;
         break;
       case REGEXP_INTERVAL:
-        a = BasicAutomata.makeInterval(min, max, digits);
+        a = BasicAutomata.makeIntervalLight(min, max, digits);
         break;
     }
     return a;
   }
   
-  private void findLeaves(RegExp exp, Kind kind, List<Automaton> list,
-      Map<String,Automaton> automata, AutomatonProvider automaton_provider) {
+  private void findLeaves(RegExp exp, Kind kind, List<LightAutomaton> list,
+      Map<String,LightAutomaton> automata, LightAutomatonProvider automaton_provider) {
     if (exp.kind == kind) {
       findLeaves(exp.exp1, kind, list, automata, automaton_provider);
       findLeaves(exp.exp2, kind, list, automata, automaton_provider);
-    } else list.add(exp.toAutomaton(automata, automaton_provider));
+    } else {
+      list.add(exp.toLightAutomaton(automata, automaton_provider));
+    }
   }
   
   /**

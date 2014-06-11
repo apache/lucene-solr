@@ -78,7 +78,7 @@ public class TestDocTermOrdsRewriteMethod extends LuceneTestCase {
       Collections.sort(terms);
       System.out.println("UTF16 order:");
       for(String s : terms) {
-        System.out.println("  " + UnicodeUtil.toHexString(s));
+        System.out.println("  " + UnicodeUtil.toHexString(s) + " " + s);
       }
     }
     
@@ -115,7 +115,7 @@ public class TestDocTermOrdsRewriteMethod extends LuceneTestCase {
   /** check that the # of hits is the same as if the query
    * is run against the inverted index
    */
-  protected void assertSame(String regexp) throws IOException {   
+  protected void assertSame(String regexp) throws IOException {
     RegexpQuery docValues = new RegexpQuery(new Term(fieldName, regexp), RegExp.NONE);
     docValues.setRewriteMethod(new DocTermOrdsRewriteMethod());
     RegexpQuery inverted = new RegexpQuery(new Term(fieldName, regexp), RegExp.NONE);

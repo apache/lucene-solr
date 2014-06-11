@@ -17,14 +17,15 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.BasicOperations;
-
-import java.util.ArrayList;
-import java.util.List;
+import org.apache.lucene.util.automaton.LightAutomaton;
 
 /** Implements the wildcard search query. Supported wildcards are <code>*</code>, which
  * matches any character sequence (including the empty one), and <code>?</code>,
@@ -54,7 +55,7 @@ public class WildcardQuery extends AutomatonQuery {
    * Constructs a query for terms matching <code>term</code>. 
    */
   public WildcardQuery(Term term) {
-    super(term, toAutomaton(term));
+    super(term, toLightAutomaton(term));
   }
   
   /**
@@ -92,6 +93,43 @@ public class WildcardQuery extends AutomatonQuery {
     }
     
     return BasicOperations.concatenate(automata);
+  }
+
+  /**
+   * Convert Lucene wildcard syntax into an automaton.
+   * @lucene.internal
+   */
+  @SuppressWarnings("fallthrough")
+  public static LightAutomaton toLightAutomaton(Term wildcardquery) {
+    List<LightAutomaton> automata = new ArrayList<>();
+    
+    String wildcardText = wildcardquery.text();
+    
+    for (int i = 0; i < wildcardText.length();) {
+      final int c = wildcardText.codePointAt(i);
+      int length = Character.charCount(c);
+      switch(c) {
+        case WILDCARD_STRING: 
+          automata.add(BasicAutomata.makeAnyStringLight());
+          break;
+        case WILDCARD_CHAR:
+          automata.add(BasicAutomata.makeAnyCharLight());
+          break;
+        case WILDCARD_ESCAPE:
+          // add the next codepoint instead, if it exists
+          if (i + length < wildcardText.length()) {
+            final int nextChar = wildcardText.codePointAt(i + length);
+            length += Character.charCount(nextChar);
+            automata.add(BasicAutomata.makeCharLight(nextChar));
+            break;
+          } // else fallthru, lenient parsing with a trailing \
+        default:
+          automata.add(BasicAutomata.makeCharLight(c));
+      }
+      i += length;
+    }
+    
+    return BasicOperations.concatenateLight(automata);
   }
   
   /**

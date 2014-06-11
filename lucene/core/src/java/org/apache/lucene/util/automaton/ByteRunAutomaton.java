@@ -26,9 +26,18 @@ public class ByteRunAutomaton extends RunAutomaton {
     this(a, false);
   }
   
+  public ByteRunAutomaton(LightAutomaton a) {
+    this(a, false);
+  }
+  
   /** expert: if utf8 is true, the input is already byte-based */
   public ByteRunAutomaton(Automaton a, boolean utf8) {
     super(utf8 ? a : new UTF32ToUTF8().convert(a), 256, true);
+  }
+
+  /** expert: if utf8 is true, the input is already byte-based */
+  public ByteRunAutomaton(LightAutomaton a, boolean utf8) {
+    super(utf8 ? a : new UTF32ToUTF8Light().convert(a), 256, true);
   }
 
   /**

@@ -447,7 +447,7 @@ public class Dictionary {
           throw new UnsupportedOperationException("Too many patterns, please report this to dev@lucene.apache.org");          
         }
         seenPatterns.put(regex, patternIndex);
-        CharacterRunAutomaton pattern = new CharacterRunAutomaton(new RegExp(regex, RegExp.NONE).toAutomaton());
+        CharacterRunAutomaton pattern = new CharacterRunAutomaton(new RegExp(regex, RegExp.NONE).toLightAutomaton());
         patterns.add(pattern);
       }
       

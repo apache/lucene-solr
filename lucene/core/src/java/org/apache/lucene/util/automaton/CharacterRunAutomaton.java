@@ -26,6 +26,10 @@ public class CharacterRunAutomaton extends RunAutomaton {
     super(a, Character.MAX_CODE_POINT, false);
   }
 
+  public CharacterRunAutomaton(LightAutomaton a) {
+    super(a, Character.MAX_CODE_POINT, false);
+  }
+
   /**
    * Returns true if the given string is accepted by this automaton.
    */

@@ -36,9 +36,8 @@ public class TestSpecialOperations extends LuceneTestCase {
   public void testIsFinite() {
     int num = atLeast(200);
     for (int i = 0; i < num; i++) {
-      Automaton a = AutomatonTestUtil.randomAutomaton(random());
-      Automaton b = a.clone();
-      assertEquals(AutomatonTestUtil.isFiniteSlow(a), SpecialOperations.isFinite(b));
+      LightAutomaton a = AutomatonTestUtil.randomAutomaton(random());
+      assertEquals(AutomatonTestUtil.isFiniteSlow(a), SpecialOperations.isFinite(a));
     }
   }
 
@@ -158,7 +157,7 @@ public class TestSpecialOperations extends LuceneTestCase {
 
   public void testWithCycle() throws Exception {
     try {
-      SpecialOperations.getFiniteStrings(new RegExp("abc.*", RegExp.NONE).toAutomaton(), -1);
+      SpecialOperations.getFiniteStrings(new RegExp("abc.*", RegExp.NONE).toLightAutomaton(), -1);
       fail("did not hit exception");
     } catch (IllegalArgumentException iae) {
       // expected
@@ -170,7 +169,7 @@ public class TestSpecialOperations extends LuceneTestCase {
     // automaton:
     int iters = atLeast(100);
     for(int i=0;i<iters;i++) {
-      Automaton a = AutomatonTestUtil.randomAutomaton(random());
+      LightAutomaton a = AutomatonTestUtil.randomAutomaton(random());
       try {
         // Must pass a limit because the random automaton
         // can accept MANY strings:
@@ -185,7 +184,7 @@ public class TestSpecialOperations extends LuceneTestCase {
   }
 
   public void testInvalidLimit() {
-    Automaton a = AutomatonTestUtil.randomAutomaton(random());
+    LightAutomaton a = AutomatonTestUtil.randomAutomaton(random());
     try {
       SpecialOperations.getFiniteStrings(a, -7);
       fail("did not hit exception");
@@ -195,7 +194,7 @@ public class TestSpecialOperations extends LuceneTestCase {
   }
 
   public void testInvalidLimit2() {
-    Automaton a = AutomatonTestUtil.randomAutomaton(random());
+    LightAutomaton a = AutomatonTestUtil.randomAutomaton(random());
     try {
       SpecialOperations.getFiniteStrings(a, 0);
       fail("did not hit exception");

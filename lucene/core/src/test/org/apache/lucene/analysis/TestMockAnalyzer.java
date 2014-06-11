@@ -83,7 +83,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
   /** Test a configuration where each character is a term */
   public void testSingleChar() throws Exception {
     CharacterRunAutomaton single =
-        new CharacterRunAutomaton(new RegExp(".").toAutomaton());
+        new CharacterRunAutomaton(new RegExp(".").toLightAutomaton());
     Analyzer a = new MockAnalyzer(random(), single, false);
     assertAnalyzesTo(a, "foobar",
         new String[] { "f", "o", "o", "b", "a", "r" },
@@ -96,7 +96,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
   /** Test a configuration where two characters makes a term */
   public void testTwoChars() throws Exception {
     CharacterRunAutomaton single =
-        new CharacterRunAutomaton(new RegExp("..").toAutomaton());
+        new CharacterRunAutomaton(new RegExp("..").toLightAutomaton());
     Analyzer a = new MockAnalyzer(random(), single, false);
     assertAnalyzesTo(a, "foobar",
         new String[] { "fo", "ob", "ar"},
@@ -117,7 +117,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
   /** Test a configuration where three characters makes a term */
   public void testThreeChars() throws Exception {
     CharacterRunAutomaton single =
-        new CharacterRunAutomaton(new RegExp("...").toAutomaton());
+        new CharacterRunAutomaton(new RegExp("...").toLightAutomaton());
     Analyzer a = new MockAnalyzer(random(), single, false);
     assertAnalyzesTo(a, "foobar",
         new String[] { "foo", "bar"},
@@ -138,7 +138,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
   /** Test a configuration where word starts with one uppercase */
   public void testUppercase() throws Exception {
     CharacterRunAutomaton single =
-        new CharacterRunAutomaton(new RegExp("[A-Z][a-z]*").toAutomaton());
+        new CharacterRunAutomaton(new RegExp("[A-Z][a-z]*").toLightAutomaton());
     Analyzer a = new MockAnalyzer(random(), single, false);
     assertAnalyzesTo(a, "FooBarBAZ",
         new String[] { "Foo", "Bar", "B", "A", "Z"},
@@ -176,7 +176,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
   
   /** Test a configuration that behaves a lot like LengthFilter */
   public void testLength() throws Exception {
-    CharacterRunAutomaton length5 = new CharacterRunAutomaton(new RegExp(".{5,}").toAutomaton());
+    CharacterRunAutomaton length5 = new CharacterRunAutomaton(new RegExp(".{5,}").toLightAutomaton());
     Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, length5);
     assertAnalyzesTo(a, "ok toolong fine notfine",
         new String[] { "ok", "fine" },

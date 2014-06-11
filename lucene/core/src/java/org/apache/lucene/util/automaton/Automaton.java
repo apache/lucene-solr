@@ -29,6 +29,8 @@
 
 package org.apache.lucene.util.automaton;
 
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
@@ -667,7 +669,7 @@ public class Automaton implements Cloneable {
     if (allow_mutation) return this;
     else return clone();
   }
-  
+
   /**
    * See {@link BasicOperations#concatenate(Automaton, Automaton)}.
    */
@@ -773,5 +775,53 @@ public class Automaton implements Cloneable {
   public static Automaton minimize(Automaton a) {
     MinimizationOperations.minimize(a);
     return a;
+  }
+
+  public LightAutomaton toLightAutomaton() {
+    State[] states = getNumberedStates();
+
+    LightAutomaton a = new LightAutomaton();
+    //System.out.println("INITIAL: " + initial);
+
+    // State numbers are nearly the same, except we must remap initial to state 0
+    int[] oldToNew = new int[states.length];
+    for(int i=0;i<states.length;i++) {
+      oldToNew[i] = i;
+    }
+
+    oldToNew[initial.number] = 0;
+    oldToNew[0] = initial.number;
+    //System.out.println("initial.number=" + initial.number);
+
+    // First pass creates all states
+    for(int i=0;i<states.length;i++) {
+      a.createState();
+      a.setAccept(oldToNew[i], states[i].isAccept());
+    }
+
+    // Second pass carries over all transitions
+    for(State state : states) {
+      for(Transition t : state.getTransitions()) {
+        assert t.getMax() >= t.getMin();
+        a.addTransition(oldToNew[state.number], oldToNew[t.getDest().getNumber()], t.getMin(), t.getMax());
+        //System.out.println("  add transtion " + oldToNew[state.number] + " -> " + oldToNew[t.getDest().getNumber()] + " min=" + (char) t.getMin() + " max=" + (char) t.getMax());
+      }
+    }
+    // a.writeDot("/l/la/lucene/core/afterconvert.dot");
+    a.finish();
+    return a;
+  }
+
+  public void writeDot(String fileName) {
+    if (fileName.indexOf('/') == -1) {
+      fileName = "/l/la/lucene/core/" + fileName + ".dot";
+    }
+    try {
+      PrintWriter pw = new PrintWriter(fileName);
+      pw.println(toDot());
+      pw.close();
+    } catch (IOException ioe) {
+      throw new RuntimeException(ioe);
+    }
   }
 }

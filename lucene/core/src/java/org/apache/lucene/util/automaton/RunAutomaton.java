@@ -37,6 +37,8 @@ import java.util.Arrays;
  * @lucene.experimental
  */
 public abstract class RunAutomaton {
+  // nocommit
+  final LightAutomaton a;
   final int maxInterval;
   final int size;
   final boolean[] accept;
@@ -121,9 +123,13 @@ public abstract class RunAutomaton {
    */
   public RunAutomaton(Automaton a, int maxInterval, boolean tableize) {
     this.maxInterval = maxInterval;
+    this.a = null;
     a.determinize();
+    //System.out.println("AFTER DET tableize=" + tableize + ": ");
+    //System.out.println(a.toDot());
     points = a.getStartPoints();
     final State[] states = a.getNumberedStates();
+    //System.out.println("  states=" + states.length);
     initial = a.initial.number;
     size = states.length;
     accept = new boolean[size];
@@ -153,6 +159,52 @@ public abstract class RunAutomaton {
       classmap = null;
     }
   }
+
+  public RunAutomaton(LightAutomaton a, int maxInterval, boolean tableize) {
+    this.maxInterval = maxInterval;
+    //System.out.println("before det a=" + a.getNumStates());
+    a = BasicOperations.determinize(a);
+    this.a = a;
+    //System.out.println("AFTER DET tableize= " + tableize + ": ");
+    //System.out.println(a.toDot());
+    points = a.getStartPoints();
+    //System.out.println("  points=" + Arrays.toString(points));
+    initial = 0;
+    size = Math.max(1,a.getNumStates());
+    accept = new boolean[size];
+    transitions = new int[size * points.length];
+    Arrays.fill(transitions, -1);
+    //System.out.println("RA: size=" + size + " points.length=" + points.length + " total=" + (size * points.length));
+    for (int n=0;n<size;n++) {
+      accept[n] = a.isAccept(n);
+      //System.out.println("n=" + n + " acc=" + accept[n] + " size=" + size);
+      for (int c = 0; c < points.length; c++) {
+        int dest = a.step(n, points[c]);
+        //System.out.println("  step from point=" + c + " n=" + n + " label=" + (char) points[c] + " -> " + dest);
+        assert dest == -1 || dest < size;
+        transitions[n * points.length + c] = dest;
+        //System.out.println("  trans label=" + points[c] + " dest=" + transitions[n * points.length + c]);
+      }
+    }
+
+    /*
+     * Set alphabet table for optimal run performance.
+     */
+    if (tableize) {
+      classmap = new int[maxInterval + 1];
+      int i = 0;
+      for (int j = 0; j <= maxInterval; j++) {
+        if (i + 1 < points.length && j == points[i + 1]) {
+          i++;
+        }
+        classmap[j] = i;
+        //System.out.println("classmap[" + (char) j + "]=" + i);
+      }
+      //System.out.println("  after classmap i=" + i + " maxInterval=" + maxInterval);
+    } else {
+      classmap = null;
+    }
+  }
   
   /**
    * Returns the state obtained by reading the given char from the given state.
@@ -162,10 +214,13 @@ public abstract class RunAutomaton {
    * transition function.)
    */
   public final int step(int state, int c) {
-    if (classmap == null)
+    //System.out.println("  step state=" + state + " c=" + c + " points.length=" + points.length + " transitions.len=" + transitions.length);
+    if (classmap == null) {
       return transitions[state * points.length + getCharClass(c)];
-    else
+    } else {
+      //System.out.println("    classmap[c]=" + classmap[c]);
       return transitions[state * points.length + classmap[c]];
+    }
   }
 
   @Override

@@ -44,16 +44,16 @@ import com.carrotsearch.randomizedtesting.RandomizedContext;
 public class MockTokenizer extends Tokenizer {
   /** Acts Similar to WhitespaceTokenizer */
   public static final CharacterRunAutomaton WHITESPACE = 
-    new CharacterRunAutomaton(new RegExp("[^ \t\r\n]+").toAutomaton());
+    new CharacterRunAutomaton(new RegExp("[^ \t\r\n]+").toLightAutomaton());
   /** Acts Similar to KeywordTokenizer.
    * TODO: Keyword returns an "empty" token for an empty reader... 
    */
   public static final CharacterRunAutomaton KEYWORD =
-    new CharacterRunAutomaton(new RegExp(".*").toAutomaton());
+    new CharacterRunAutomaton(new RegExp(".*").toLightAutomaton());
   /** Acts like LetterTokenizer. */
   // the ugly regex below is incomplete Unicode 5.2 [:Letter:]
   public static final CharacterRunAutomaton SIMPLE =
-    new CharacterRunAutomaton(new RegExp("[A-Za-zªµºÀ-ÖØ-öø-ˁ一-鿌]+").toAutomaton());
+    new CharacterRunAutomaton(new RegExp("[A-Za-zªµºÀ-ÖØ-öø-ˁ一-鿌]+").toLightAutomaton());
 
   private final CharacterRunAutomaton runAutomaton;
   private final boolean lowerCase;

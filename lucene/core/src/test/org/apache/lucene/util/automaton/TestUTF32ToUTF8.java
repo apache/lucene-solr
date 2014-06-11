@@ -163,7 +163,7 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
 
   public void testSpecialCase() {
     RegExp re = new RegExp(".?");
-    Automaton automaton = re.toAutomaton();
+    LightAutomaton automaton = re.toLightAutomaton();
     CharacterRunAutomaton cra = new CharacterRunAutomaton(automaton);
     ByteRunAutomaton bra = new ByteRunAutomaton(automaton);
     // make sure character dfa accepts empty string
@@ -179,7 +179,7 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
   public void testSpecialCase2() throws Exception {
     RegExp re = new RegExp(".+\u0775");
     String input = "\ufadc\ufffd\ub80b\uda5a\udc68\uf234\u0056\uda5b\udcc1\ufffd\ufffd\u0775";
-    Automaton automaton = re.toAutomaton();
+    LightAutomaton automaton = re.toLightAutomaton();
     CharacterRunAutomaton cra = new CharacterRunAutomaton(automaton);
     ByteRunAutomaton bra = new ByteRunAutomaton(automaton);
 
@@ -192,7 +192,7 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
   public void testSpecialCase3() throws Exception {
     RegExp re = new RegExp("(\\鯺)*(.)*\\Ӕ");
     String input = "\u5cfd\ufffd\ub2f7\u0033\ue304\u51d7\u3692\udb50\udfb3\u0576\udae2\udc62\u0053\u0449\u04d4";
-    Automaton automaton = re.toAutomaton();
+    LightAutomaton automaton = re.toLightAutomaton();
     CharacterRunAutomaton cra = new CharacterRunAutomaton(automaton);
     ByteRunAutomaton bra = new ByteRunAutomaton(automaton);
 
@@ -205,14 +205,14 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
   public void testRandomRegexes() throws Exception {
     int num = atLeast(250);
     for (int i = 0; i < num; i++) {
-      assertAutomaton(new RegExp(AutomatonTestUtil.randomRegexp(random()), RegExp.NONE).toAutomaton());
+      assertAutomaton(new RegExp(AutomatonTestUtil.randomRegexp(random()), RegExp.NONE).toLightAutomaton());
     }
   }
   
-  private void assertAutomaton(Automaton automaton) throws Exception {
+  private void assertAutomaton(LightAutomaton automaton) throws Exception {
     CharacterRunAutomaton cra = new CharacterRunAutomaton(automaton);
     ByteRunAutomaton bra = new ByteRunAutomaton(automaton);
-    final AutomatonTestUtil.RandomAcceptedStrings ras = new AutomatonTestUtil.RandomAcceptedStrings(automaton);
+    final AutomatonTestUtil.RandomAcceptedStringsLight ras = new AutomatonTestUtil.RandomAcceptedStringsLight(automaton);
     
     int num = atLeast(1000);
     for (int i = 0; i < num; i++) {

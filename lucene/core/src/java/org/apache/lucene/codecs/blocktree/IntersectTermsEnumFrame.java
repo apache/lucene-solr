@@ -24,6 +24,7 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.automaton.LightAutomaton;
 import org.apache.lucene.util.automaton.Transition;
 import org.apache.lucene.util.fst.FST;
 
@@ -68,9 +69,10 @@ final class IntersectTermsEnumFrame {
   int numFollowFloorBlocks;
   int nextFloorLabel;
         
-  Transition[] transitions;
+  LightAutomaton.Transition transition = new LightAutomaton.Transition();
   int curTransitionMax;
   int transitionIndex;
+  int transitionCount;
 
   FST.Arc<BytesRef> arc;
 
@@ -112,7 +114,7 @@ final class IntersectTermsEnumFrame {
         nextFloorLabel = 256;
       }
       // if (DEBUG) System.out.println("    nextFloorLabel=" + (char) nextFloorLabel);
-    } while (numFollowFloorBlocks != 0 && nextFloorLabel <= transitions[transitionIndex].getMin());
+    } while (numFollowFloorBlocks != 0 && nextFloorLabel <= transition.min);
 
     load(null);
   }
@@ -120,9 +122,11 @@ final class IntersectTermsEnumFrame {
   public void setState(int state) {
     this.state = state;
     transitionIndex = 0;
-    transitions = ite.compiledAutomaton.sortedTransitions[state];
-    if (transitions.length != 0) {
-      curTransitionMax = transitions[0].getMax();
+    transitionCount = ite.compiledAutomaton.lightAutomaton.getNumTransitions(state);
+    if (transitionCount != 0) {
+      ite.compiledAutomaton.lightAutomaton.initTransition(state, transition);
+      ite.compiledAutomaton.lightAutomaton.getNextTransition(transition);
+      curTransitionMax = transition.max;
     } else {
       curTransitionMax = -1;
     }
@@ -132,7 +136,7 @@ final class IntersectTermsEnumFrame {
 
     // if (DEBUG) System.out.println("    load fp=" + fp + " fpOrig=" + fpOrig + " frameIndexData=" + frameIndexData + " trans=" + (transitions.length != 0 ? transitions[0] : "n/a" + " state=" + state));
 
-    if (frameIndexData != null && transitions.length != 0) {
+    if (frameIndexData != null && transitionCount != 0) {
       // Floor frame
       if (floorData.length < frameIndexData.length) {
         this.floorData = new byte[ArrayUtil.oversize(frameIndexData.length, 1)];
@@ -151,7 +155,8 @@ final class IntersectTermsEnumFrame {
         // first block in case it has empty suffix:
         if (!ite.runAutomaton.isAccept(state)) {
           // Maybe skip floor blocks:
-          while (numFollowFloorBlocks != 0 && nextFloorLabel <= transitions[0].getMin()) {
+          assert transitionIndex == 0: "transitionIndex=" + transitionIndex;
+          while (numFollowFloorBlocks != 0 && nextFloorLabel <= transition.min) {
             fp = fpOrig + (floorDataReader.readVLong() >>> 1);
             numFollowFloorBlocks--;
             // if (DEBUG) System.out.println("    skip floor block!  nextFloorLabel=" + (char) nextFloorLabel + " vs target=" + (char) transitions[0].getMin() + " newFP=" + fp + " numFollowFloorBlocks=" + numFollowFloorBlocks);
