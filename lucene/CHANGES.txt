@@ -263,6 +263,8 @@ Optimizations
 * LUCENE-5750: Speed up monotonic addressing for BINARY and SORTED_SET 
   docvalues. (Robert Muir)
 
+* LUCENE-5751: Speed up MemoryDocValues. (Adrien Grand, Robert Muir)
+
 Bug fixes
 
 * LUCENE-5738: Ensure NativeFSLock prevents opening the file channel for the

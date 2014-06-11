@@ -89,13 +89,14 @@ class MemoryDocValuesProducer extends DocValuesProducer {
   
   static final byte DELTA_COMPRESSED = 0;
   static final byte TABLE_COMPRESSED = 1;
-  static final byte UNCOMPRESSED = 2;
+  static final byte BLOCK_COMPRESSED = 2;
   static final byte GCD_COMPRESSED = 3;
   
   static final int VERSION_START = 0;
   static final int VERSION_GCD_COMPRESSION = 1;
   static final int VERSION_CHECKSUM = 2;
-  static final int VERSION_CURRENT = VERSION_CHECKSUM;
+  static final int VERSION_BLOCKDETECTION = 3;
+  static final int VERSION_CURRENT = VERSION_BLOCKDETECTION;
     
   MemoryDocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     maxDoc = state.segmentInfo.getDocCount();
@@ -162,15 +163,13 @@ class MemoryDocValuesProducer extends DocValuesProducer {
         switch(entry.format) {
           case DELTA_COMPRESSED:
           case TABLE_COMPRESSED:
+          case BLOCK_COMPRESSED:
           case GCD_COMPRESSED:
-          case UNCOMPRESSED:
                break;
           default:
                throw new CorruptIndexException("Unknown format: " + entry.format + ", input=" + meta);
         }
-        if (entry.format != UNCOMPRESSED) {
-          entry.packedIntsVersion = meta.readVInt();
-        }
+        entry.packedIntsVersion = meta.readVInt();
         numerics.put(fieldNumber, entry);
       } else if (fieldType == BYTES) {
         BinaryEntry entry = new BinaryEntry();
@@ -247,25 +246,28 @@ class MemoryDocValuesProducer extends DocValuesProducer {
           }
         };
       case DELTA_COMPRESSED:
+        final long minDelta = data.readLong();
+        final int formatIDDelta = data.readVInt();
+        final int bitsPerValueDelta = data.readVInt();
+        final PackedInts.Reader deltaReader = PackedInts.getReaderNoHeader(data, PackedInts.Format.byId(formatIDDelta), entry.packedIntsVersion, maxDoc, bitsPerValueDelta);
+        ramBytesUsed.addAndGet(deltaReader.ramBytesUsed());
+        return new NumericDocValues() {
+          @Override
+          public long get(int docID) {
+            return minDelta + deltaReader.get(docID);
+          }
+        };
+      case BLOCK_COMPRESSED:
         final int blockSize = data.readVInt();
         final BlockPackedReader reader = new BlockPackedReader(data, entry.packedIntsVersion, blockSize, maxDoc, false);
         ramBytesUsed.addAndGet(reader.ramBytesUsed());
         return reader;
-      case UNCOMPRESSED:
-        final byte bytes[] = new byte[maxDoc];
-        data.readBytes(bytes, 0, bytes.length);
-        ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(bytes));
-        return new NumericDocValues() {
-          @Override
-          public long get(int docID) {
-            return bytes[docID];
-          }
-        };
       case GCD_COMPRESSED:
         final long min = data.readLong();
         final long mult = data.readLong();
-        final int quotientBlockSize = data.readVInt();
-        final BlockPackedReader quotientReader = new BlockPackedReader(data, entry.packedIntsVersion, quotientBlockSize, maxDoc, false);
+        final int formatIDGCD = data.readVInt();
+        final int bitsPerValueGCD = data.readVInt();
+        final PackedInts.Reader quotientReader = PackedInts.getReaderNoHeader(data, PackedInts.Format.byId(formatIDGCD), entry.packedIntsVersion, maxDoc, bitsPerValueGCD);
         ramBytesUsed.addAndGet(quotientReader.ramBytesUsed());
         return new NumericDocValues() {
           @Override
