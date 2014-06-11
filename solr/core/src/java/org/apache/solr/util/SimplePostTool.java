@@ -32,6 +32,7 @@ import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -817,10 +818,8 @@ public class SimplePostTool {
         String encoding = DatatypeConverter.printBase64Binary(url.getUserInfo().getBytes(StandardCharsets.US_ASCII));
         urlc.setRequestProperty("Authorization", "Basic " + encoding);
       }
-      if (HttpURLConnection.HTTP_OK != urlc.getResponseCode()) {
-        warn("Solr returned an error #" + urlc.getResponseCode() + 
-            " " + urlc.getResponseMessage() + " for url "+url);
-      }
+      urlc.connect();
+      checkResponseCode(urlc);
     } catch (IOException e) {
       warn("An error occurred posting data to "+url+". Please check that Solr is running.");
     }
@@ -855,44 +854,62 @@ public class SimplePostTool {
           urlc.setRequestProperty("Authorization", "Basic " + encoding);
         }
         if (null != length) urlc.setFixedLengthStreamingMode(length);
-
+        urlc.connect();
       } catch (IOException e) {
         fatal("Connection error (is Solr running at " + solrUrl + " ?): " + e);
         success = false;
       }
       
-      OutputStream out = null;
-      try {
-        out = urlc.getOutputStream();
+      try (final OutputStream out = urlc.getOutputStream()) {
         pipe(data, out);
       } catch (IOException e) {
         fatal("IOException while posting data: " + e);
         success = false;
-      } finally {
-        try { if(out!=null) out.close(); } catch (IOException x) { /*NOOP*/ }
       }
       
-      InputStream in = null;
       try {
-        if (HttpURLConnection.HTTP_OK != urlc.getResponseCode()) {
-          warn("Solr returned an error #" + urlc.getResponseCode() + 
-                " " + urlc.getResponseMessage());
-          success = false;
+        success &= checkResponseCode(urlc);
+        try (final InputStream in = urlc.getInputStream()) {
+          pipe(in, output);
         }
-
-        in = urlc.getInputStream();
-        pipe(in, output);
       } catch (IOException e) {
         warn("IOException while reading response: " + e);
         success = false;
-      } finally {
-        try { if(in!=null) in.close(); } catch (IOException x) { /*NOOP*/ }
       }
-      
     } finally {
-      if(urlc!=null) urlc.disconnect();
+      if (urlc!=null) urlc.disconnect();
     }
     return success;
+  }
+  
+  private static boolean checkResponseCode(HttpURLConnection urlc) throws IOException {
+    if (urlc.getResponseCode() >= 400) {
+      warn("Solr returned an error #" + urlc.getResponseCode() + 
+            " (" + urlc.getResponseMessage() + ") for url: " + urlc.getURL());
+      Charset charset = StandardCharsets.ISO_8859_1;
+      final String contentType = urlc.getContentType();
+      // code cloned from ContentStreamBase, but post.jar should be standalone!
+      if (contentType != null) {
+        int idx = contentType.toLowerCase(Locale.ROOT).indexOf("charset=");
+        if (idx > 0) {
+          charset = Charset.forName(contentType.substring(idx + "charset=".length()).trim());
+        }
+      }
+      // Print the response returned by Solr
+      try (InputStream errStream = urlc.getErrorStream()) {
+        if (errStream != null) {
+          BufferedReader br = new BufferedReader(new InputStreamReader(errStream, charset));
+          final StringBuilder response = new StringBuilder("Response: ");
+          int ch;
+          while ((ch = br.read()) != -1) {
+            response.append((char) ch);
+          }
+          warn(response.toString().trim());
+        }
+      }
+      return false;
+    }
+    return true;
   }
 
   /**

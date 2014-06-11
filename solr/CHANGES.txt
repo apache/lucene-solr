@@ -215,6 +215,9 @@ Other Changes
 * SOLR-6067: Refactor duplicate Collector code in SolrIndexSearcher 
   (Christine Poerschke via hossman)
 
+* SOLR-5940: post.jar reports back detailed error in case of error responses.
+  (Sameer Maggon, shalin, Uwe Schindler)
+
 Optimizations
 ----------------------
 
