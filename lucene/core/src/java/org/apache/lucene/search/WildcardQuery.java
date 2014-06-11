@@ -22,7 +22,6 @@ import java.util.List;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ToStringUtils;
-import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.BasicOperations;
 import org.apache.lucene.util.automaton.LightAutomaton;
@@ -55,7 +54,7 @@ public class WildcardQuery extends AutomatonQuery {
    * Constructs a query for terms matching <code>term</code>. 
    */
   public WildcardQuery(Term term) {
-    super(term, toLightAutomaton(term));
+    super(term, toAutomaton(term));
   }
   
   /**
@@ -63,44 +62,7 @@ public class WildcardQuery extends AutomatonQuery {
    * @lucene.internal
    */
   @SuppressWarnings("fallthrough")
-  public static Automaton toAutomaton(Term wildcardquery) {
-    List<Automaton> automata = new ArrayList<>();
-    
-    String wildcardText = wildcardquery.text();
-    
-    for (int i = 0; i < wildcardText.length();) {
-      final int c = wildcardText.codePointAt(i);
-      int length = Character.charCount(c);
-      switch(c) {
-        case WILDCARD_STRING: 
-          automata.add(BasicAutomata.makeAnyString());
-          break;
-        case WILDCARD_CHAR:
-          automata.add(BasicAutomata.makeAnyChar());
-          break;
-        case WILDCARD_ESCAPE:
-          // add the next codepoint instead, if it exists
-          if (i + length < wildcardText.length()) {
-            final int nextChar = wildcardText.codePointAt(i + length);
-            length += Character.charCount(nextChar);
-            automata.add(BasicAutomata.makeChar(nextChar));
-            break;
-          } // else fallthru, lenient parsing with a trailing \
-        default:
-          automata.add(BasicAutomata.makeChar(c));
-      }
-      i += length;
-    }
-    
-    return BasicOperations.concatenate(automata);
-  }
-
-  /**
-   * Convert Lucene wildcard syntax into an automaton.
-   * @lucene.internal
-   */
-  @SuppressWarnings("fallthrough")
-  public static LightAutomaton toLightAutomaton(Term wildcardquery) {
+  public static LightAutomaton toAutomaton(Term wildcardquery) {
     List<LightAutomaton> automata = new ArrayList<>();
     
     String wildcardText = wildcardquery.text();

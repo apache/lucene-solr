@@ -1060,6 +1060,9 @@ final public class BasicOperations {
     // Add epsilon transition from new initial state
     int stateOffset = 1;
     for(LightAutomaton a : l) {
+      if (a.getNumStates() == 0) {
+        continue;
+      }
       result.addEpsilon(0, stateOffset);
       stateOffset += a.getNumStates();
     }

@@ -43,10 +43,10 @@ public class TestSpecialOperations extends LuceneTestCase {
 
   /** Pass false for testRecursive if the expected strings
    *  may be too long */
-  private Set<IntsRef> getFiniteStrings(Automaton a, int limit, boolean testRecursive) {
+  private Set<IntsRef> getFiniteStrings(LightAutomaton a, int limit, boolean testRecursive) {
     Set<IntsRef> result = SpecialOperations.getFiniteStrings(a, limit);
     if (testRecursive) {
-      assertEquals(AutomatonTestUtil.getFiniteStringsRecursive(a, limit), result);
+      assertEquals(AutomatonTestUtil.getFiniteStringsRecursiveLight(a, limit), result);
     }
     return result;
   }
@@ -55,8 +55,8 @@ public class TestSpecialOperations extends LuceneTestCase {
    * Basic test for getFiniteStrings
    */
   public void testFiniteStringsBasic() {
-    Automaton a = BasicOperations.union(BasicAutomata.makeString("dog"), BasicAutomata.makeString("duck"));
-    MinimizationOperations.minimize(a);
+    LightAutomaton a = BasicOperations.unionLight(BasicAutomata.makeStringLight("dog"), BasicAutomata.makeStringLight("duck"));
+    a = MinimizationOperationsLight.minimize(a);
     Set<IntsRef> strings = getFiniteStrings(a, -1, true);
     assertEquals(2, strings.size());
     IntsRef dog = new IntsRef();
@@ -73,7 +73,7 @@ public class TestSpecialOperations extends LuceneTestCase {
     String bigString1 = new String(chars);
     TestUtil.randomFixedLengthUnicodeString(random(), chars, 0, chars.length);
     String bigString2 = new String(chars);
-    Automaton a = BasicOperations.union(BasicAutomata.makeString(bigString1), BasicAutomata.makeString(bigString2));
+    LightAutomaton a = BasicOperations.unionLight(BasicAutomata.makeStringLight(bigString1), BasicAutomata.makeStringLight(bigString2));
     Set<IntsRef> strings = getFiniteStrings(a, -1, false);
     assertEquals(2, strings.size());
     IntsRef scratch = new IntsRef();
@@ -91,10 +91,10 @@ public class TestSpecialOperations extends LuceneTestCase {
     }
 
     Set<IntsRef> strings = new HashSet<IntsRef>();
-    List<Automaton> automata = new ArrayList<Automaton>();
+    List<LightAutomaton> automata = new ArrayList<>();
     for(int i=0;i<numStrings;i++) {
       String s = TestUtil.randomSimpleString(random(), 1, 200);
-      automata.add(BasicAutomata.makeString(s));
+      automata.add(BasicAutomata.makeStringLight(s));
       IntsRef scratch = new IntsRef();
       Util.toUTF32(s.toCharArray(), 0, s.length(), scratch);
       strings.add(scratch);
@@ -107,27 +107,22 @@ public class TestSpecialOperations extends LuceneTestCase {
     // DaciukMihovAutomatonBuilder here
 
     // TODO: what other random things can we do here...
-    Automaton a = BasicOperations.union(automata);
+    LightAutomaton a = BasicOperations.unionLight(automata);
     if (random().nextBoolean()) {
-      Automaton.minimize(a);
+      a = MinimizationOperationsLight.minimize(a);
       if (VERBOSE) {
-        System.out.println("TEST: a.minimize numStates=" + a.getNumberOfStates());
+        System.out.println("TEST: a.minimize numStates=" + a.getNumStates());
       }
     } else if (random().nextBoolean()) {
       if (VERBOSE) {
         System.out.println("TEST: a.determinize");
       }
-      a.determinize();
+      a = BasicOperations.determinize(a);
     } else if (random().nextBoolean()) {
       if (VERBOSE) {
-        System.out.println("TEST: a.reduce");
+        System.out.println("TEST: a.removeDeadTransitions");
       }
-      a.reduce();
-    } else if (random().nextBoolean()) {
-      if (VERBOSE) {
-        System.out.println("TEST: a.getNumberedStates");
-      }
-      a.getNumberedStates();
+      a = BasicOperations.removeDeadTransitions(a);
     }
 
     Set<IntsRef> actual = getFiniteStrings(a, -1, true);

@@ -41,7 +41,7 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
   
   // LUCENE-3094
   public void testNoWastedStates() throws Exception {
-    AutomatonTestUtil.assertNoDetachedStates(new LevenshteinAutomata("abc", false).toAutomaton(1));
+    AutomatonTestUtil.assertNoDetachedStates(new LevenshteinAutomata("abc", false).toLightAutomaton(1));
   }
   
   /** 
@@ -66,35 +66,35 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
   private void assertLev(String s, int maxDistance) {
     LevenshteinAutomata builder = new LevenshteinAutomata(s, false);
     LevenshteinAutomata tbuilder = new LevenshteinAutomata(s, true);
-    Automaton automata[] = new Automaton[maxDistance + 1];
-    Automaton tautomata[] = new Automaton[maxDistance + 1];
+    LightAutomaton automata[] = new LightAutomaton[maxDistance + 1];
+    LightAutomaton tautomata[] = new LightAutomaton[maxDistance + 1];
     for (int n = 0; n < automata.length; n++) {
-      automata[n] = builder.toAutomaton(n);
-      tautomata[n] = tbuilder.toAutomaton(n);
+      automata[n] = builder.toLightAutomaton(n);
+      tautomata[n] = tbuilder.toLightAutomaton(n);
       assertNotNull(automata[n]);
       assertNotNull(tautomata[n]);
-      assertTrue(automata[n].isDeterministic());
-      assertTrue(tautomata[n].isDeterministic());
+      assertTrue(BasicOperations.isDeterministic(automata[n]));
+      assertTrue(BasicOperations.isDeterministic(tautomata[n]));
       assertTrue(SpecialOperations.isFinite(automata[n]));
       assertTrue(SpecialOperations.isFinite(tautomata[n]));
       AutomatonTestUtil.assertNoDetachedStates(automata[n]);
       AutomatonTestUtil.assertNoDetachedStates(tautomata[n]);
       // check that the dfa for n-1 accepts a subset of the dfa for n
       if (n > 0) {
-        assertTrue(automata[n-1].subsetOf(automata[n]));
-        assertTrue(automata[n-1].subsetOf(tautomata[n]));
-        assertTrue(tautomata[n-1].subsetOf(automata[n]));
-        assertTrue(tautomata[n-1].subsetOf(tautomata[n]));
+        assertTrue(BasicOperations.subsetOf(automata[n-1], automata[n]));
+        assertTrue(BasicOperations.subsetOf(automata[n-1], tautomata[n]));
+        assertTrue(BasicOperations.subsetOf(tautomata[n-1], automata[n]));
+        assertTrue(BasicOperations.subsetOf(tautomata[n-1], tautomata[n]));
         assertNotSame(automata[n-1], automata[n]);
       }
       // check that Lev(N) is a subset of LevT(N)
-      assertTrue(automata[n].subsetOf(tautomata[n]));
+      assertTrue(BasicOperations.subsetOf(automata[n], tautomata[n]));
       // special checks for specific n
       switch(n) {
         case 0:
           // easy, matches the string itself
-          assertTrue(BasicOperations.sameLanguage(BasicAutomata.makeString(s), automata[0]));
-          assertTrue(BasicOperations.sameLanguage(BasicAutomata.makeString(s), tautomata[0]));
+          assertTrue(BasicOperations.sameLanguage(BasicAutomata.makeStringLight(s), automata[0]));
+          assertTrue(BasicOperations.sameLanguage(BasicAutomata.makeStringLight(s), tautomata[0]));
           break;
         case 1:
           // generate a lev1 naively, and check the accepted lang is the same.
@@ -113,14 +113,14 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
    * Return an automaton that accepts all 1-character insertions, deletions, and
    * substitutions of s.
    */
-  private Automaton naiveLev1(String s) {
-    Automaton a = BasicAutomata.makeString(s);
-    a = BasicOperations.union(a, insertionsOf(s));
-    MinimizationOperations.minimize(a);
-    a = BasicOperations.union(a, deletionsOf(s));
-    MinimizationOperations.minimize(a);
-    a = BasicOperations.union(a, substitutionsOf(s));
-    MinimizationOperations.minimize(a);
+  private LightAutomaton naiveLev1(String s) {
+    LightAutomaton a = BasicAutomata.makeStringLight(s);
+    a = BasicOperations.unionLight(a, insertionsOf(s));
+    a = MinimizationOperationsLight.minimize(a);
+    a = BasicOperations.unionLight(a, deletionsOf(s));
+    a = MinimizationOperationsLight.minimize(a);
+    a = BasicOperations.unionLight(a, substitutionsOf(s));
+    a = MinimizationOperationsLight.minimize(a);
     
     return a;
   }
@@ -129,10 +129,10 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
    * Return an automaton that accepts all 1-character insertions, deletions,
    * substitutions, and transpositions of s.
    */
-  private Automaton naiveLev1T(String s) {
-    Automaton a = naiveLev1(s);
-    a = BasicOperations.union(a, transpositionsOf(s));
-    MinimizationOperations.minimize(a);
+  private LightAutomaton naiveLev1T(String s) {
+    LightAutomaton a = naiveLev1(s);
+    a = BasicOperations.unionLight(a, transpositionsOf(s));
+    a = MinimizationOperationsLight.minimize(a);
     return a;
   }
   
@@ -140,19 +140,18 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
    * Return an automaton that accepts all 1-character insertions of s (inserting
    * one character)
    */
-  private Automaton insertionsOf(String s) {
-    List<Automaton> list = new ArrayList<>();
+  private LightAutomaton insertionsOf(String s) {
+    List<LightAutomaton> list = new ArrayList<>();
     
     for (int i = 0; i <= s.length(); i++) {
-      Automaton a = BasicAutomata.makeString(s.substring(0, i));
-      a = BasicOperations.concatenate(a, BasicAutomata.makeAnyChar());
-      a = BasicOperations.concatenate(a, BasicAutomata.makeString(s
-          .substring(i)));
+      LightAutomaton a = BasicAutomata.makeStringLight(s.substring(0, i));
+      a = BasicOperations.concatenateLight(a, BasicAutomata.makeAnyCharLight());
+      a = BasicOperations.concatenateLight(a, BasicAutomata.makeStringLight(s.substring(i)));
       list.add(a);
     }
     
-    Automaton a = BasicOperations.union(list);
-    MinimizationOperations.minimize(a);
+    LightAutomaton a = BasicOperations.unionLight(list);
+    a = MinimizationOperationsLight.minimize(a);
     return a;
   }
   
@@ -160,19 +159,17 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
    * Return an automaton that accepts all 1-character deletions of s (deleting
    * one character).
    */
-  private Automaton deletionsOf(String s) {
-    List<Automaton> list = new ArrayList<>();
+  private LightAutomaton deletionsOf(String s) {
+    List<LightAutomaton> list = new ArrayList<>();
     
     for (int i = 0; i < s.length(); i++) {
-      Automaton a = BasicAutomata.makeString(s.substring(0, i));
-      a = BasicOperations.concatenate(a, BasicAutomata.makeString(s
-          .substring(i + 1)));
-      a.expandSingleton();
+      LightAutomaton a = BasicAutomata.makeStringLight(s.substring(0, i));
+      a = BasicOperations.concatenateLight(a, BasicAutomata.makeStringLight(s.substring(i + 1)));
       list.add(a);
     }
     
-    Automaton a = BasicOperations.union(list);
-    MinimizationOperations.minimize(a);
+    LightAutomaton a = BasicOperations.unionLight(list);
+    a = MinimizationOperationsLight.minimize(a);
     return a;
   }
   
@@ -180,19 +177,18 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
    * Return an automaton that accepts all 1-character substitutions of s
    * (replacing one character)
    */
-  private Automaton substitutionsOf(String s) {
-    List<Automaton> list = new ArrayList<>();
+  private LightAutomaton substitutionsOf(String s) {
+    List<LightAutomaton> list = new ArrayList<>();
     
     for (int i = 0; i < s.length(); i++) {
-      Automaton a = BasicAutomata.makeString(s.substring(0, i));
-      a = BasicOperations.concatenate(a, BasicAutomata.makeAnyChar());
-      a = BasicOperations.concatenate(a, BasicAutomata.makeString(s
-          .substring(i + 1)));
+      LightAutomaton a = BasicAutomata.makeStringLight(s.substring(0, i));
+      a = BasicOperations.concatenateLight(a, BasicAutomata.makeAnyCharLight());
+      a = BasicOperations.concatenateLight(a, BasicAutomata.makeStringLight(s.substring(i + 1)));
       list.add(a);
     }
     
-    Automaton a = BasicOperations.union(list);
-    MinimizationOperations.minimize(a);
+    LightAutomaton a = BasicOperations.unionLight(list);
+    a = MinimizationOperationsLight.minimize(a);
     return a;
   }
   
@@ -200,10 +196,11 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
    * Return an automaton that accepts all transpositions of s
    * (transposing two adjacent characters)
    */
-  private Automaton transpositionsOf(String s) {
-    if (s.length() < 2)
-      return BasicAutomata.makeEmpty();
-    List<Automaton> list = new ArrayList<>();
+  private LightAutomaton transpositionsOf(String s) {
+    if (s.length() < 2) {
+      return BasicAutomata.makeEmptyLight();
+    }
+    List<LightAutomaton> list = new ArrayList<>();
     for (int i = 0; i < s.length()-1; i++) {
       StringBuilder sb = new StringBuilder();
       sb.append(s.substring(0, i));
@@ -211,15 +208,16 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
       sb.append(s.charAt(i));
       sb.append(s.substring(i+2, s.length()));
       String st = sb.toString();
-      if (!st.equals(s))
-        list.add(BasicAutomata.makeString(st));
+      if (!st.equals(s)) {
+        list.add(BasicAutomata.makeStringLight(st));
+      }
     }
-    Automaton a = BasicOperations.union(list);
-    MinimizationOperations.minimize(a);
+    LightAutomaton a = BasicOperations.unionLight(list);
+    a = MinimizationOperationsLight.minimize(a);
     return a;
   }
   
-  private void assertBruteForce(String input, Automaton dfa, int distance) {
+  private void assertBruteForce(String input, LightAutomaton dfa, int distance) {
     CharacterRunAutomaton ra = new CharacterRunAutomaton(dfa);
     int maxLen = input.length() + distance + 1;
     int maxNum = (int) Math.pow(2, maxLen);
@@ -234,7 +232,7 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
     }
   }
   
-  private void assertBruteForceT(String input, Automaton dfa, int distance) {
+  private void assertBruteForceT(String input, LightAutomaton dfa, int distance) {
     CharacterRunAutomaton ra = new CharacterRunAutomaton(dfa);
     int maxLen = input.length() + distance + 1;
     int maxNum = (int) Math.pow(2, maxLen);

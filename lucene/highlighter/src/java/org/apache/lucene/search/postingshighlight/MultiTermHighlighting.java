@@ -46,11 +46,11 @@ import org.apache.lucene.search.spans.SpanPositionCheckQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.BasicOperations;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
+import org.apache.lucene.util.automaton.LightAutomaton;
 
 /**
  * Support for highlighting multiterm queries in PostingsHighlighter.
@@ -126,10 +126,10 @@ class MultiTermHighlighting {
         int prefixLength = Math.min(fq.getPrefixLength(), termLength);
         String suffix = UnicodeUtil.newString(termText, prefixLength, termText.length - prefixLength);
         LevenshteinAutomata builder = new LevenshteinAutomata(suffix, fq.getTranspositions());
-        Automaton automaton = builder.toAutomaton(fq.getMaxEdits());
+        LightAutomaton automaton = builder.toLightAutomaton(fq.getMaxEdits());
         if (prefixLength > 0) {
-          Automaton prefix = BasicAutomata.makeString(UnicodeUtil.newString(termText, 0, prefixLength));
-          automaton = BasicOperations.concatenate(prefix, automaton);
+          LightAutomaton prefix = BasicAutomata.makeStringLight(UnicodeUtil.newString(termText, 0, prefixLength));
+          automaton = BasicOperations.concatenateLight(prefix, automaton);
         }
         list.add(new CharacterRunAutomaton(automaton) {
           @Override
@@ -161,7 +161,7 @@ class MultiTermHighlighting {
         final Comparator<CharsRef> comparator = CharsRef.getUTF16SortedAsUTF8Comparator();
         
         // this is *not* an automaton, but its very simple
-        list.add(new CharacterRunAutomaton(BasicAutomata.makeEmpty()) {
+        list.add(new CharacterRunAutomaton(BasicAutomata.makeEmptyLight()) {
           @Override
           public boolean run(char[] s, int offset, int length) {
             scratch.chars = s;

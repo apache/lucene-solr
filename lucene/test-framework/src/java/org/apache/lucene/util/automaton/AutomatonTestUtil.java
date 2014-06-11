@@ -649,6 +649,61 @@ public class AutomatonTestUtil {
   }
 
   /**
+   * Simple, original implementation of getFiniteStrings.
+   *
+   * <p>Returns the set of accepted strings, assuming that at most
+   * <code>limit</code> strings are accepted. If more than <code>limit</code> 
+   * strings are accepted, the first limit strings found are returned. If <code>limit</code>&lt;0, then 
+   * the limit is infinite.
+   *
+   * <p>This implementation is recursive: it uses one stack
+   * frame for each digit in the returned strings (ie, max
+   * is the max length returned string).
+   */
+  public static Set<IntsRef> getFiniteStringsRecursiveLight(LightAutomaton a, int limit) {
+    HashSet<IntsRef> strings = new HashSet<>();
+    if (!getFiniteStringsLight(a, 0, new HashSet<Integer>(), strings, new IntsRef(), limit)) {
+      return strings;
+    }
+    return strings;
+  }
+
+  /**
+   * Returns the strings that can be produced from the given state, or
+   * false if more than <code>limit</code> strings are found. 
+   * <code>limit</code>&lt;0 means "infinite".
+   */
+  private static boolean getFiniteStringsLight(LightAutomaton a, int s, HashSet<Integer> pathstates, 
+      HashSet<IntsRef> strings, IntsRef path, int limit) {
+    pathstates.add(s);
+    LightAutomaton.Transition t = new LightAutomaton.Transition();
+    int count = a.initTransition(s, t);
+    for (int i=0;i<count;i++) {
+      a.getNextTransition(t);
+      if (pathstates.contains(t.dest)) {
+        return false;
+      }
+      for (int n = t.min; n <= t.max; n++) {
+        path.grow(path.length+1);
+        path.ints[path.length] = n;
+        path.length++;
+        if (a.isAccept(t.dest)) {
+          strings.add(IntsRef.deepCopyOf(path));
+          if (limit >= 0 && strings.size() > limit) {
+            return false;
+          }
+        }
+        if (!getFiniteStringsLight(a, t.dest, pathstates, strings, path, limit)) {
+          return false;
+        }
+        path.length--;
+      }
+    }
+    pathstates.remove(s);
+    return true;
+  }
+
+  /**
    * Returns true if the language of this automaton is finite.
    * <p>
    * WARNING: this method is slow, it will blow up if the automaton is large.
@@ -712,5 +767,14 @@ public class AutomatonTestUtil {
     int numStates = a.getNumberOfStates();
     a.clearNumberedStates(); // force recomputation of cached numbered states
     assert numStates == a.getNumberOfStates() : "automaton has " + (numStates - a.getNumberOfStates()) + " detached states";
+  }
+
+  /**
+   * Checks that an automaton has no detached states that are unreachable
+   * from the initial state.
+   */
+  public static void assertNoDetachedStates(LightAutomaton a) {
+    LightAutomaton a2 = BasicOperations.removeDeadTransitions(a);
+    assert a.getNumStates() == a2.getNumStates() : "automaton has " + (a.getNumStates() - a2.getNumStates()) + " detached states";
   }
 }

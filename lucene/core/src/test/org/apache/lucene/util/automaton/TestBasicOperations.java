@@ -46,46 +46,11 @@ public class TestBasicOperations extends LuceneTestCase {
     return BasicOperations.determinize(BasicOperations.unionLight(Arrays.asList(eachIndividual)));
   }
 
-  /** Test optimization to concatenate() */
-  public void testSingletonConcatenate() {
-    Automaton singleton = BasicAutomata.makeString("prefix");
-    Automaton expandedSingleton = singleton.cloneExpanded();
-    Automaton other = BasicAutomata.makeCharRange('5', '7');
-    Automaton concat = BasicOperations.concatenate(singleton, other);
-    assertTrue(concat.isDeterministic());
-    assertTrue(BasicOperations.sameLanguage(BasicOperations.concatenate(expandedSingleton, other), concat));
-  }
-  
-  /** Test optimization to concatenate() to an NFA */
-  public void testSingletonNFAConcatenate() {
-    Automaton singleton = BasicAutomata.makeString("prefix");
-    Automaton expandedSingleton = singleton.cloneExpanded();
-    // an NFA (two transitions for 't' from initial state)
-    Automaton nfa = BasicOperations.union(BasicAutomata.makeString("this"),
-        BasicAutomata.makeString("three"));
-    Automaton concat = BasicOperations.concatenate(singleton, nfa);
-    assertFalse(concat.isDeterministic());
-    assertTrue(BasicOperations.sameLanguage(BasicOperations.concatenate(expandedSingleton, nfa), concat));
-  }
-  
-  /** Test optimization to concatenate() with empty String */
-  public void testEmptySingletonConcatenate() {
-    Automaton singleton = BasicAutomata.makeString("");
-    Automaton expandedSingleton = singleton.cloneExpanded();
-    Automaton other = BasicAutomata.makeCharRange('5', '7');
-    Automaton concat1 = BasicOperations.concatenate(expandedSingleton, other);
-    Automaton concat2 = BasicOperations.concatenate(singleton, other);
-    assertTrue(concat2.isDeterministic());
-    assertTrue(BasicOperations.sameLanguage(concat1, concat2));
-    assertTrue(BasicOperations.sameLanguage(other, concat1));
-    assertTrue(BasicOperations.sameLanguage(other, concat2));
-  }
-  
   /** Test concatenation with empty language returns empty */
   public void testEmptyLanguageConcatenate() {
-    Automaton a = BasicAutomata.makeString("a");
-    Automaton concat = BasicOperations.concatenate(a, BasicAutomata.makeEmpty());
-    assertTrue(BasicOperations.isEmpty(concat));
+    LightAutomaton a = BasicAutomata.makeStringLight("a");
+    LightAutomaton concat = BasicOperations.concatenateLight(a, BasicAutomata.makeEmptyLight());
+    assertTrue(concat.isEmpty());
   }
   
   /** Test optimization to concatenate() with empty String to an NFA */
