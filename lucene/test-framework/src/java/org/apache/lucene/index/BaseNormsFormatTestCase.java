@@ -56,6 +56,19 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     }
   }
   
+  public void testShortRange() throws Exception {
+    int iterations = atLeast(1);
+    final Random r = random();
+    for (int i = 0; i < iterations; i++) {
+      doTestNormsVersusStoredFields(new LongProducer() {
+        @Override
+        long next() {
+          return TestUtil.nextLong(r, Short.MIN_VALUE, Short.MAX_VALUE);
+        }
+      });
+    }
+  }
+  
   public void testLongRange() throws Exception {
     int iterations = atLeast(1);
     final Random r = random();
@@ -69,6 +82,24 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     }
   }
   
+  public void testFullLongRange() throws Exception {
+    int iterations = atLeast(1);
+    final Random r = random();
+    for (int i = 0; i < iterations; i++) {
+      doTestNormsVersusStoredFields(new LongProducer() {
+        @Override
+        long next() {
+          int thingToDo = r.nextInt(3);
+          switch (thingToDo) {
+            case 0: return Long.MIN_VALUE;
+            case 1: return Long.MAX_VALUE;
+            default:  return TestUtil.nextLong(r, Long.MIN_VALUE, Long.MAX_VALUE);
+          }
+        }
+      });
+    }
+  }
+  
   public void testFewValues() throws Exception {
     int iterations = atLeast(1);
     final Random r = random();
@@ -77,6 +108,19 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
         @Override
         long next() {
           return r.nextBoolean() ? 20 : 3;
+        }
+      });
+    }
+  }
+  
+  public void testFewLargeValues() throws Exception {
+    int iterations = atLeast(1);
+    final Random r = random();
+    for (int i = 0; i < iterations; i++) {
+      doTestNormsVersusStoredFields(new LongProducer() {
+        @Override
+        long next() {
+          return r.nextBoolean() ? 1000000L : -5000;
         }
       });
     }
@@ -130,7 +174,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
       writer.deleteDocuments(new Term("id", Integer.toString(id)));
     }
     
-    writer.shutdown();
+    writer.commit();
     
     // compare
     DirectoryReader ir = DirectoryReader.open(dir);
@@ -142,6 +186,22 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
         assertEquals(storedValue, docValues.get(i));
       }
     }
+    ir.close();
+    
+    writer.forceMerge(1);
+    
+    // compare again
+    ir = DirectoryReader.open(dir);
+    for (AtomicReaderContext context : ir.leaves()) {
+      AtomicReader r = context.reader();
+      NumericDocValues docValues = r.getNormValues("stored");
+      for (int i = 0; i < r.maxDoc(); i++) {
+        long storedValue = Long.parseLong(r.document(i).get("stored"));
+        assertEquals(storedValue, docValues.get(i));
+      }
+    }
+    
+    writer.close();
     ir.close();
     dir.close();
   }
@@ -180,4 +240,6 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     // TODO: improve
     doc.add(new TextField("foobar", "boo", Field.Store.NO));
   }
+  
+  // TODO: test thread safety (e.g. across different fields) explicitly here
 }
