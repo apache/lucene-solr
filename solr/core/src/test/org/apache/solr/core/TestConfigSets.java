@@ -54,11 +54,15 @@ public class TestConfigSets extends SolrTestCaseJ4 {
 
   @Test
   public void testDefaultConfigSetBasePathResolution() throws IOException {
-    try (SolrResourceLoader loader = new SolrResourceLoader("/path/to/solr/home")) {
+    try (SolrResourceLoader loader = new SolrResourceLoader(new File("/path/to/solr/home").getAbsolutePath())) {
+
       ConfigSetService.Default relativeCSS = new ConfigSetService.Default(loader, "configsets");
-      assertThat(relativeCSS.getConfigSetBase().getAbsolutePath(), is("/path/to/solr/home/configsets"));
-      ConfigSetService.Default absoluteCSS = new ConfigSetService.Default(loader, "/path/to/configsets");
-      assertThat(absoluteCSS.getConfigSetBase().getAbsolutePath(), is("/path/to/configsets"));
+      assertThat(relativeCSS.getConfigSetBase().getAbsoluteFile(),
+                is(new File("/path/to/solr/home/configsets").getAbsoluteFile()));
+
+      ConfigSetService.Default absoluteCSS = new ConfigSetService.Default(loader, new File("/path/to/configsets").getAbsolutePath());
+      assertThat(absoluteCSS.getConfigSetBase().getAbsoluteFile(),
+                is(new File("/path/to/configsets").getAbsoluteFile()));
     }
   }
 
