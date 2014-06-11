@@ -243,8 +243,8 @@ public class CloudSolrServer extends SolrServer {
             zk.createClusterStateWatchersAndUpdate();
             zkStateReader = zk;
           } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
             if (zk != null) zk.close();
+            Thread.currentThread().interrupt();
             throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
                 "", e);
           } catch (KeeperException e) {
