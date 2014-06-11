@@ -240,6 +240,14 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     // TODO: improve
     doc.add(new TextField("foobar", "boo", Field.Store.NO));
   }
+
+  @Override
+  public void testMergeStability() throws Exception {
+    // TODO: can we improve this base test to just have subclasses declare the extensions to check,
+    // rather than a blacklist to exclude? we need to index stuff to get norms, but we dont care about testing
+    // the PFs actually doing that...
+    assumeTrue("The MockRandom PF randomizes content on the fly, so we can't check it", false);
+  }
   
   // TODO: test thread safety (e.g. across different fields) explicitly here
 }
