@@ -172,6 +172,9 @@ Bug Fixes
 * SOLR-6158: Relative configSetBase directories were resolved relative to the 
   container CWD, rather than solr.home. (Simon Endele, Alan Woodward)
 
+* SOLR-6056: Don't publish recovery state until recovery runs to avoid overwhelming
+  the overseer state queue. (Raintung Li, Mark Miller, shalin)
+
 Other Changes
 ---------------------
 
