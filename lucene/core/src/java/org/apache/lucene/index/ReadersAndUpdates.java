@@ -185,11 +185,13 @@ class ReadersAndUpdates {
       getReader(context).decRef();
       assert reader != null;
     }
+    // force new liveDocs in initWritableLiveDocs even if it's null
     liveDocsShared = true;
     if (liveDocs != null) {
       return new SegmentReader(reader.getSegmentInfo(), reader, liveDocs, info.info.getDocCount() - info.getDelCount() - pendingDeleteCount);
     } else {
-      assert reader.getLiveDocs() == liveDocs;
+      // liveDocs == null and reader != null. That can only be if there are no deletes
+      assert reader.getLiveDocs() == null;
       reader.incRef();
       return reader;
     }
