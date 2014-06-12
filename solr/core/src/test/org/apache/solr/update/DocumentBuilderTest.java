@@ -26,7 +26,6 @@ import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -407,16 +406,16 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     SolrDocument doc2 = new SolrDocument();
     doc2.addField("foo", randomString);
 
-    assertTrue(assertSolrDocumentEquals(doc1, doc2));
+    assertTrue(compareSolrDocument(doc1, doc2));
 
     doc1.addField("foo", "bar");
 
-    assertFalse(assertSolrDocumentEquals(doc1, doc2));
+    assertFalse(compareSolrDocument(doc1, doc2));
 
     doc1 = new SolrDocument();
     doc1.addField("bar", randomString);
 
-    assertFalse(assertSolrDocumentEquals(doc1, doc2));
+    assertFalse(compareSolrDocument(doc1, doc2));
 
     int randomInt = random().nextInt();
     doc1 = new SolrDocument();
@@ -424,12 +423,12 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     doc2 = new SolrDocument();
     doc2.addField("foo", randomInt);
 
-    assertTrue(assertSolrDocumentEquals(doc1, doc2));
+    assertTrue(compareSolrDocument(doc1, doc2));
 
     doc2 = new SolrDocument();
     doc2.addField("bar", randomInt);
 
-    assertFalse(assertSolrDocumentEquals(doc1, doc2));
+    assertFalse(compareSolrDocument(doc1, doc2));
 
   }
 
@@ -442,16 +441,16 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     SolrInputDocument doc2 = new SolrInputDocument();
     doc2.addField("foo", randomString);
 
-    assertTrue(assertSolrInputDocumentEquals(doc1, doc2));
+    assertTrue(compareSolrInputDocument(doc1, doc2));
 
     doc1.setDocumentBoost(1.1f);
-    assertFalse(assertSolrInputDocumentEquals(doc1, doc2));
+    assertFalse(compareSolrInputDocument(doc1, doc2));
 
     doc2.setDocumentBoost(1.1f);
-    assertTrue(assertSolrInputDocumentEquals(doc1, doc2));
+    assertTrue(compareSolrInputDocument(doc1, doc2));
 
     doc2.setDocumentBoost(20f);
-    assertFalse(assertSolrInputDocumentEquals(doc1, doc2));
+    assertFalse(compareSolrInputDocument(doc1, doc2));
 
 
     doc1 = new SolrInputDocument();
@@ -463,15 +462,15 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     childDoc.addField("foo", "bar");
 
     doc1.addChildDocument(childDoc);
-    assertFalse(assertSolrInputDocumentEquals(doc1, doc2));
+    assertFalse(compareSolrInputDocument(doc1, doc2));
 
     doc2.addChildDocument(childDoc);
-    assertTrue(assertSolrInputDocumentEquals(doc1, doc2));
+    assertTrue(compareSolrInputDocument(doc1, doc2));
 
     SolrInputDocument childDoc1 = new SolrInputDocument();
     childDoc.addField(TestUtil.randomSimpleString(random()), TestUtil.randomSimpleString(random()));
     doc2.addChildDocument(childDoc1);
-    assertFalse(assertSolrInputDocumentEquals(doc1, doc2));
+    assertFalse(compareSolrInputDocument(doc1, doc2));
 
   }
 
