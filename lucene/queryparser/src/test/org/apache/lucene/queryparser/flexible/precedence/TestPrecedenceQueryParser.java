@@ -557,7 +557,7 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
   }
 
   public void testBoost() throws Exception {
-    CharacterRunAutomaton stopSet = new CharacterRunAutomaton(BasicAutomata.makeString("on"));
+    CharacterRunAutomaton stopSet = new CharacterRunAutomaton(BasicAutomata.makeStringLight("on"));
     Analyzer oneStopAnalyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, stopSet);
 
     PrecedenceQueryParser qp = new PrecedenceQueryParser();

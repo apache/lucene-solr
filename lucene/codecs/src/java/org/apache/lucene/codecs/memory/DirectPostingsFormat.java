@@ -48,7 +48,6 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.LightAutomaton;
 import org.apache.lucene.util.automaton.RunAutomaton;
-import org.apache.lucene.util.automaton.Transition;
 
 // TODO: 
 //   - build depth-N prefix hash?

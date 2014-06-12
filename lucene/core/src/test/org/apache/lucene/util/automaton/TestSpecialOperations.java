@@ -199,7 +199,7 @@ public class TestSpecialOperations extends LuceneTestCase {
   }
 
   public void testSingletonNoLimit() {
-    Set<IntsRef> result = SpecialOperations.getFiniteStrings(BasicAutomata.makeString("foobar"), -1);
+    Set<IntsRef> result = SpecialOperations.getFiniteStrings(BasicAutomata.makeStringLight("foobar"), -1);
     assertEquals(1, result.size());
     IntsRef scratch = new IntsRef();
     Util.toUTF32("foobar".toCharArray(), 0, 6, scratch);
@@ -207,7 +207,7 @@ public class TestSpecialOperations extends LuceneTestCase {
   }
 
   public void testSingletonLimit1() {
-    Set<IntsRef> result = SpecialOperations.getFiniteStrings(BasicAutomata.makeString("foobar"), 1);
+    Set<IntsRef> result = SpecialOperations.getFiniteStrings(BasicAutomata.makeStringLight("foobar"), 1);
     assertEquals(1, result.size());
     IntsRef scratch = new IntsRef();
     Util.toUTF32("foobar".toCharArray(), 0, 6, scratch);

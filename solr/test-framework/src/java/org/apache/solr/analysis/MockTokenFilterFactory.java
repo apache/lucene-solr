@@ -48,7 +48,7 @@ public class MockTokenFilterFactory extends TokenFilterFactory {
       }
     } else if (null != stopregex) {
       RegExp regex = new RegExp(stopregex);
-      filter = new CharacterRunAutomaton(regex.toAutomaton());
+      filter = new CharacterRunAutomaton(regex.toLightAutomaton());
     } else {
       throw new IllegalArgumentException
           ("Configuration Error: either the 'stopset' or the 'stopregex' parameter must be specified.");

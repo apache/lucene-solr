@@ -981,8 +981,9 @@
             <!-- Restrict access to certain Java features and install security manager: -->
             <sysproperty key="junit4.tempDir" file="@{workDir}/temp" />
             <sysproperty key="clover.db.dir" file="${clover.db.dir}" />
-            <sysproperty key="java.security.manager" value="org.apache.lucene.util.TestSecurityManager" />
-            <sysproperty key="java.security.policy" file="${common.dir}/tools/junit4/tests.policy" />
+	    <!-- nocommit -->
+            <!--<sysproperty key="java.security.manager" value="org.apache.lucene.util.TestSecurityManager" />
+            <sysproperty key="java.security.policy" file="${common.dir}/tools/junit4/tests.policy" />-->
 
             <sysproperty key="lucene.version" value="${version}"/>
 

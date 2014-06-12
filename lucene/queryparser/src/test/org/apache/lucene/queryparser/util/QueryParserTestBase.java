@@ -868,7 +868,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
 
   public void testBoost()
     throws Exception {
-    CharacterRunAutomaton stopWords = new CharacterRunAutomaton(BasicAutomata.makeString("on"));
+    CharacterRunAutomaton stopWords = new CharacterRunAutomaton(BasicAutomata.makeStringLight("on"));
     Analyzer oneStopAnalyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, stopWords);
     CommonQueryParserConfiguration qp = getParserConfig(oneStopAnalyzer);
     Query q = getQuery("on^1.0",qp);

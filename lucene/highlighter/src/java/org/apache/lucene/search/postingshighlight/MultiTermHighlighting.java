@@ -106,8 +106,8 @@ class MultiTermHighlighting {
       final PrefixQuery pq = (PrefixQuery) query;
       Term prefix = pq.getPrefix();
       if (prefix.field().equals(field)) {
-        list.add(new CharacterRunAutomaton(BasicOperations.concatenate(BasicAutomata.makeString(prefix.text()), 
-                                                                       BasicAutomata.makeAnyString())) {
+        list.add(new CharacterRunAutomaton(BasicOperations.concatenateLight(BasicAutomata.makeStringLight(prefix.text()), 
+                                                                            BasicAutomata.makeAnyStringLight())) {
           @Override
           public String toString() {
             return pq.toString();

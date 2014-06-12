@@ -67,10 +67,10 @@ public abstract class RunAutomaton {
           if (j + 1 < points.length) max = (points[j + 1] - 1);
           else max = maxInterval;
           b.append(" ");
-          Transition.appendCharString(min, b);
+          LightAutomaton.appendCharString(min, b);
           if (min != max) {
             b.append("-");
-            Transition.appendCharString(max, b);
+            LightAutomaton.appendCharString(max, b);
           }
           b.append(" -> ").append(k).append("\n");
         }
@@ -121,45 +121,6 @@ public abstract class RunAutomaton {
    * 
    * @param a an automaton
    */
-  public RunAutomaton(Automaton a, int maxInterval, boolean tableize) {
-    this.maxInterval = maxInterval;
-    this.a = null;
-    a.determinize();
-    //System.out.println("AFTER DET tableize=" + tableize + ": ");
-    //System.out.println(a.toDot());
-    points = a.getStartPoints();
-    final State[] states = a.getNumberedStates();
-    //System.out.println("  states=" + states.length);
-    initial = a.initial.number;
-    size = states.length;
-    accept = new boolean[size];
-    transitions = new int[size * points.length];
-    for (int n = 0; n < size * points.length; n++)
-      transitions[n] = -1;
-    for (State s : states) {
-      int n = s.number;
-      accept[n] = s.accept;
-      for (int c = 0; c < points.length; c++) {
-        State q = s.step(points[c]);
-        if (q != null) transitions[n * points.length + c] = q.number;
-      }
-    }
-    /*
-     * Set alphabet table for optimal run performance.
-     */
-    if (tableize) {
-      classmap = new int[maxInterval + 1];
-      int i = 0;
-      for (int j = 0; j <= maxInterval; j++) {
-        if (i + 1 < points.length && j == points[i + 1])
-          i++;
-        classmap[j] = i;
-      }
-    } else {
-      classmap = null;
-    }
-  }
-
   public RunAutomaton(LightAutomaton a, int maxInterval, boolean tableize) {
     this.maxInterval = maxInterval;
     //System.out.println("before det a=" + a.getNumStates());

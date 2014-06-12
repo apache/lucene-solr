@@ -131,143 +131,6 @@ public class AutomatonTestUtil {
 
   /**
    * Lets you retrieve random strings accepted
-   * by an Automaton.
-   * <p>
-   * Once created, call {@link #getRandomAcceptedString(Random)}
-   * to get a new string (in UTF-32 codepoints).
-   */
-  public static class RandomAcceptedStrings {
-
-    private final Map<Transition,Boolean> leadsToAccept;
-    private final Automaton a;
-
-    private static class ArrivingTransition {
-      final State from;
-      final Transition t;
-      public ArrivingTransition(State from, Transition t) {
-        this.from = from;
-        this.t = t;
-      }
-    }
-
-    public RandomAcceptedStrings(Automaton a) {
-      this.a = a;
-      if (a.isSingleton()) {
-        leadsToAccept = null;
-        return;
-      }
-
-      // must use IdentityHashmap because two Transitions w/
-      // different start nodes can be considered the same
-      leadsToAccept = new IdentityHashMap<>();
-      final Map<State,List<ArrivingTransition>> allArriving = new HashMap<>();
-
-      final LinkedList<State> q = new LinkedList<>();
-      final Set<State> seen = new HashSet<>();
-
-      // reverse map the transitions, so we can quickly look
-      // up all arriving transitions to a given state
-      for(State s: a.getNumberedStates()) {
-        for(int i=0;i<s.numTransitions;i++) {
-          final Transition t = s.transitionsArray[i];
-          List<ArrivingTransition> tl = allArriving.get(t.to);
-          if (tl == null) {
-            tl = new ArrayList<>();
-            allArriving.put(t.to, tl);
-          }
-          tl.add(new ArrivingTransition(s, t));
-        }
-        if (s.accept) {
-          q.add(s);
-          seen.add(s);
-        }
-      }
-
-      // Breadth-first search, from accept states,
-      // backwards:
-      while(!q.isEmpty()) {
-        final State s = q.removeFirst();
-        List<ArrivingTransition> arriving = allArriving.get(s);
-        if (arriving != null) {
-          for(ArrivingTransition at : arriving) {
-            final State from = at.from;
-            if (!seen.contains(from)) {
-              q.add(from);
-              seen.add(from);
-              leadsToAccept.put(at.t, Boolean.TRUE);
-            }
-          }
-        }
-      }
-    }
-
-    public int[] getRandomAcceptedString(Random r) {
-
-      final List<Integer> soFar = new ArrayList<>();
-      if (a.isSingleton()) {
-        // accepts only one
-        final String s = a.singleton;
-      
-        int charUpto = 0;
-        while(charUpto < s.length()) {
-          final int cp = s.codePointAt(charUpto);
-          charUpto += Character.charCount(cp);
-          soFar.add(cp);
-        }
-      } else {
-
-        State s = a.initial;
-
-        while(true) {
-      
-          if (s.accept) {
-            if (s.numTransitions == 0) {
-              // stop now
-              break;
-            } else {
-              if (r.nextBoolean()) {
-                break;
-              }
-            }
-          }
-
-          if (s.numTransitions == 0) {
-            throw new RuntimeException("this automaton has dead states");
-          }
-
-          boolean cheat = r.nextBoolean();
-
-          final Transition t;
-          if (cheat) {
-            // pick a transition that we know is the fastest
-            // path to an accept state
-            List<Transition> toAccept = new ArrayList<>();
-            for(int i=0;i<s.numTransitions;i++) {
-              final Transition t0 = s.transitionsArray[i];
-              if (leadsToAccept.containsKey(t0)) {
-                toAccept.add(t0);
-              }
-            }
-            if (toAccept.size() == 0) {
-              // this is OK -- it means we jumped into a cycle
-              t = s.transitionsArray[r.nextInt(s.numTransitions)];
-            } else {
-              t = toAccept.get(r.nextInt(toAccept.size()));
-            }
-          } else {
-            t = s.transitionsArray[r.nextInt(s.numTransitions)];
-          }
-          soFar.add(getRandomCodePoint(r, t.min, t.max));
-          s = t.to;
-        }
-      }
-
-      return ArrayUtil.toIntArray(soFar);
-    }
-  }
-
-  /**
-   * Lets you retrieve random strings accepted
    * by a LightAutomaton.
    * <p>
    * Once created, call {@link #getRandomAcceptedString(Random)}
@@ -449,16 +312,6 @@ public class AutomatonTestUtil {
   /**
    * Simple, original brics implementation of Brzozowski minimize()
    */
-  public static void minimizeSimple(Automaton a) {
-    if (a.isSingleton())
-      return;
-    determinizeSimple(a, SpecialOperations.reverse(a));
-    determinizeSimple(a, SpecialOperations.reverse(a));
-  }
-
-  /**
-   * Simple, original brics implementation of Brzozowski minimize()
-   */
   public static LightAutomaton minimizeSimple(LightAutomaton a) {
     Set<Integer> initialSet = new HashSet<Integer>();
     a = determinizeSimpleLight(SpecialOperations.reverse(a, initialSet), initialSet);
@@ -467,65 +320,6 @@ public class AutomatonTestUtil {
     return a;
   }
   
-  /**
-   * Simple, original brics implementation of determinize()
-   */
-  public static void determinizeSimple(Automaton a) {
-    if (a.deterministic || a.isSingleton())
-      return;
-    Set<State> initialset = new HashSet<>();
-    initialset.add(a.initial);
-    determinizeSimple(a, initialset);
-  }
-  
-  /** 
-   * Simple, original brics implementation of determinize()
-   * Determinizes the given automaton using the given set of initial states. 
-   */
-  public static void determinizeSimple(Automaton a, Set<State> initialset) {
-    int[] points = a.getStartPoints();
-    // subset construction
-    Map<Set<State>, Set<State>> sets = new HashMap<>();
-    LinkedList<Set<State>> worklist = new LinkedList<>();
-    Map<Set<State>, State> newstate = new HashMap<>();
-    sets.put(initialset, initialset);
-    worklist.add(initialset);
-    a.initial = new State();
-    newstate.put(initialset, a.initial);
-    while (worklist.size() > 0) {
-      Set<State> s = worklist.removeFirst();
-      State r = newstate.get(s);
-      for (State q : s)
-        if (q.accept) {
-          r.accept = true;
-          break;
-        }
-      for (int n = 0; n < points.length; n++) {
-        Set<State> p = new HashSet<>();
-        for (State q : s)
-          for (Transition t : q.getTransitions())
-            if (t.min <= points[n] && points[n] <= t.max)
-              p.add(t.to);
-        if (!sets.containsKey(p)) {
-          sets.put(p, p);
-          worklist.add(p);
-          newstate.put(p, new State());
-        }
-        State q = newstate.get(p);
-        int min = points[n];
-        int max;
-        if (n + 1 < points.length)
-          max = points[n + 1] - 1;
-        else
-          max = Character.MAX_CODE_POINT;
-        r.addTransition(new Transition(min, max, q));
-      }
-    }
-    a.deterministic = true;
-    a.clearNumberedStates();
-    a.removeDeadTransitions();
-  }
-
   /**
    * Simple, original brics implementation of determinize()
    */
@@ -604,62 +398,6 @@ public class AutomatonTestUtil {
    * frame for each digit in the returned strings (ie, max
    * is the max length returned string).
    */
-  public static Set<IntsRef> getFiniteStringsRecursive(Automaton a, int limit) {
-    HashSet<IntsRef> strings = new HashSet<>();
-    if (a.isSingleton()) {
-      if (limit > 0) {
-        strings.add(Util.toUTF32(a.singleton, new IntsRef()));
-      }
-    } else if (!getFiniteStrings(a.initial, new HashSet<State>(), strings, new IntsRef(), limit)) {
-      return strings;
-    }
-    return strings;
-  }
-
-  /**
-   * Returns the strings that can be produced from the given state, or
-   * false if more than <code>limit</code> strings are found. 
-   * <code>limit</code>&lt;0 means "infinite".
-   */
-  private static boolean getFiniteStrings(State s, HashSet<State> pathstates, 
-      HashSet<IntsRef> strings, IntsRef path, int limit) {
-    pathstates.add(s);
-    for (Transition t : s.getTransitions()) {
-      if (pathstates.contains(t.to)) {
-        return false;
-      }
-      for (int n = t.min; n <= t.max; n++) {
-        path.grow(path.length+1);
-        path.ints[path.length] = n;
-        path.length++;
-        if (t.to.accept) {
-          strings.add(IntsRef.deepCopyOf(path));
-          if (limit >= 0 && strings.size() > limit) {
-            return false;
-          }
-        }
-        if (!getFiniteStrings(t.to, pathstates, strings, path, limit)) {
-          return false;
-        }
-        path.length--;
-      }
-    }
-    pathstates.remove(s);
-    return true;
-  }
-
-  /**
-   * Simple, original implementation of getFiniteStrings.
-   *
-   * <p>Returns the set of accepted strings, assuming that at most
-   * <code>limit</code> strings are accepted. If more than <code>limit</code> 
-   * strings are accepted, the first limit strings found are returned. If <code>limit</code>&lt;0, then 
-   * the limit is infinite.
-   *
-   * <p>This implementation is recursive: it uses one stack
-   * frame for each digit in the returned strings (ie, max
-   * is the max length returned string).
-   */
   public static Set<IntsRef> getFiniteStringsRecursiveLight(LightAutomaton a, int limit) {
     HashSet<IntsRef> strings = new HashSet<>();
     if (!getFiniteStringsLight(a, 0, new HashSet<Integer>(), strings, new IntsRef(), limit)) {
@@ -709,31 +447,6 @@ public class AutomatonTestUtil {
    * WARNING: this method is slow, it will blow up if the automaton is large.
    * this is only used to test the correctness of our faster implementation.
    */
-  public static boolean isFiniteSlow(Automaton a) {
-    if (a.isSingleton()) return true;
-    return isFiniteSlow(a.initial, new HashSet<State>());
-  }
-  
-  /**
-   * Checks whether there is a loop containing s. (This is sufficient since
-   * there are never transitions to dead states.)
-   */
-  // TODO: not great that this is recursive... in theory a
-  // large automata could exceed java's stack
-  private static boolean isFiniteSlow(State s, HashSet<State> path) {
-    path.add(s);
-    for (Transition t : s.getTransitions())
-      if (path.contains(t.to) || !isFiniteSlow(t.to, path)) return false;
-    path.remove(s);
-    return true;
-  }
-
-  /**
-   * Returns true if the language of this automaton is finite.
-   * <p>
-   * WARNING: this method is slow, it will blow up if the automaton is large.
-   * this is only used to test the correctness of our faster implementation.
-   */
   public static boolean isFiniteSlow(LightAutomaton a) {
     return isFiniteSlow(a, 0, new HashSet<Integer>());
   }
@@ -758,17 +471,6 @@ public class AutomatonTestUtil {
     return true;
   }
   
-  
-  /**
-   * Checks that an automaton has no detached states that are unreachable
-   * from the initial state.
-   */
-  public static void assertNoDetachedStates(Automaton a) {
-    int numStates = a.getNumberOfStates();
-    a.clearNumberedStates(); // force recomputation of cached numbered states
-    assert numStates == a.getNumberOfStates() : "automaton has " + (numStates - a.getNumberOfStates()) + " detached states";
-  }
-
   /**
    * Checks that an automaton has no detached states that are unreachable
    * from the initial state.

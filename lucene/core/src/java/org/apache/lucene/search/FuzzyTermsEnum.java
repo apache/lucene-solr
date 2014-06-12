@@ -24,23 +24,23 @@ import java.util.List;
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.BasicOperations;
 import org.apache.lucene.util.automaton.ByteRunAutomaton;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
+import org.apache.lucene.util.automaton.LightAutomaton;
 
 /** Subclass of TermsEnum for enumerating all terms that are similar
  * to the specified filter term.
@@ -171,13 +171,13 @@ public class FuzzyTermsEnum extends TermsEnum {
         new LevenshteinAutomata(UnicodeUtil.newString(termText, realPrefixLength, termText.length - realPrefixLength), transpositions);
 
       for (int i = runAutomata.size(); i <= maxDistance; i++) {
-        Automaton a = builder.toAutomaton(i);
+        LightAutomaton a = builder.toLightAutomaton(i);
         //System.out.println("compute automaton n=" + i);
         // constant prefix
         if (realPrefixLength > 0) {
-          Automaton prefix = BasicAutomata.makeString(
+          LightAutomaton prefix = BasicAutomata.makeStringLight(
             UnicodeUtil.newString(termText, 0, realPrefixLength));
-          a = BasicOperations.concatenate(prefix, a);
+          a = BasicOperations.concatenateLight(prefix, a);
         }
         runAutomata.add(new CompiledAutomaton(a, true, false));
       }

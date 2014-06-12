@@ -25,10 +25,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RollingBuffer;
-import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.LightAutomaton;
-import org.apache.lucene.util.automaton.State;
-import org.apache.lucene.util.automaton.Transition;
 
 // TODO: maybe also toFST?  then we can translate atts into FST outputs/weights
 

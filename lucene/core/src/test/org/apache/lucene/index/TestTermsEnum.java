@@ -33,7 +33,6 @@ import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.LightAutomaton;
@@ -240,12 +239,12 @@ public class TestTermsEnum extends LuceneTestCase {
       final Set<String> acceptTerms = new HashSet<>();
       final TreeSet<BytesRef> sortedAcceptTerms = new TreeSet<>();
       final double keepPct = random().nextDouble();
-      Automaton a;
+      LightAutomaton a;
       if (iter == 0) {
         if (VERBOSE) {
           System.out.println("\nTEST: empty automaton");
         }
-        a = BasicAutomata.makeEmpty();
+        a = BasicAutomata.makeEmptyLight();
       } else {
         if (VERBOSE) {
           System.out.println("\nTEST: keepPct=" + keepPct);
@@ -260,16 +259,9 @@ public class TestTermsEnum extends LuceneTestCase {
           acceptTerms.add(s2);
           sortedAcceptTerms.add(new BytesRef(s2));
         }
-        a = BasicAutomata.makeStringUnion(sortedAcceptTerms);
+        a = BasicAutomata.makeStringUnionLight(sortedAcceptTerms);
       }
       
-      if (random().nextBoolean()) {
-        if (VERBOSE) {
-          System.out.println("TEST: reduce the automaton");
-        }
-        a.reduce();
-      }
-
       final CompiledAutomaton c = new CompiledAutomaton(a, true, false);
 
       final BytesRef[] acceptTermsArray = new BytesRef[acceptTerms.size()];

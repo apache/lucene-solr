@@ -22,6 +22,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.AutomatonTestUtil.RandomAcceptedStringsLight;
@@ -337,4 +339,44 @@ public class TestLightAutomaton extends LuceneTestCase {
       
     }
   }
+
+  // nocommit testMinus
+  public void testMinus() throws Exception {
+    LightAutomaton a1 = BasicAutomata.makeStringLight("foobar");
+    LightAutomaton a2 = BasicAutomata.makeStringLight("boobar");
+    LightAutomaton a3 = BasicAutomata.makeStringLight("beebar");
+    LightAutomaton a = BasicOperations.unionLight(Arrays.asList(a1, a2, a3));
+    if (random().nextBoolean()) {
+      a = BasicOperations.determinize(a);
+    } else if (random().nextBoolean()) {
+      a = MinimizationOperationsLight.minimize(a);
+    }
+
+    LightAutomaton a4 = BasicOperations.determinize(BasicOperations.minusLight(a, a2));
+    
+    assertTrue(BasicOperations.run(a4, "foobar"));
+    assertFalse(BasicOperations.run(a4, "boobar"));
+    assertTrue(BasicOperations.run(a4, "beebar"));
+
+    // nocommit test getFinitStrings count == 2
+
+    a4 = BasicOperations.determinize(BasicOperations.minusLight(a4, a1));
+    assertFalse(BasicOperations.run(a4, "foobar"));
+    assertFalse(BasicOperations.run(a4, "boobar"));
+    assertTrue(BasicOperations.run(a4, "beebar"));
+
+    a4 = BasicOperations.determinize(BasicOperations.minusLight(a4, a3));
+    assertFalse(BasicOperations.run(a4, "foobar"));
+    assertFalse(BasicOperations.run(a4, "boobar"));
+    assertFalse(BasicOperations.run(a4, "beebar"));
+  }
+
+  // nocommit
+  //public void testWildcard() throws Exception {
+  //WildcardQuery.toAutomaton(new Term("foo", "bar*")).writeDot("wq");
+  //}
+
+  // nocommit more tests ... it's an algebra
+
+  // nocommit random test for testInterval if we don't have one already
 }

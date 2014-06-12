@@ -34,7 +34,6 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.BasicOperations;
@@ -165,9 +164,9 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
   public void testKeep() throws Exception {
     CharacterRunAutomaton keepWords = 
       new CharacterRunAutomaton(
-          BasicOperations.complement(
-              Automaton.union(
-                  Arrays.asList(BasicAutomata.makeString("foo"), BasicAutomata.makeString("bar")))));
+          BasicOperations.complementLight(
+              BasicOperations.unionLight(
+                  Arrays.asList(BasicAutomata.makeStringLight("foo"), BasicAutomata.makeStringLight("bar")))));
     Analyzer a = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, keepWords);
     assertAnalyzesTo(a, "quick foo brown bar bar fox foo",
         new String[] { "foo", "bar", "bar", "foo" },

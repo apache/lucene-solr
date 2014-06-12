@@ -43,12 +43,9 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicOperations;
 import org.apache.lucene.util.automaton.LightAutomaton;
 import org.apache.lucene.util.automaton.SpecialOperations;
-import org.apache.lucene.util.automaton.State;
-import org.apache.lucene.util.automaton.Transition;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.FST.BytesReader;
@@ -302,7 +299,6 @@ public class AnalyzingSuggester extends Lookup {
     int[] topoSortStates = topoSortStates(a);
     for(int i=0;i<topoSortStates.length;i++) {
       int state = topoSortStates[topoSortStates.length-1-i];
-      List<Transition> newTransitions = new ArrayList<>();
       int count = a.initTransition(state, t);
       for(int j=0;j<count;j++) {
         a.getNextTransition(t);

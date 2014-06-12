@@ -479,7 +479,7 @@ public class LightAutomaton {
     t.max = transitions[i++];
   }
 
-  private static void appendCharString(int c, StringBuilder b) {
+  static void appendCharString(int c, StringBuilder b) {
     if (c >= 0x21 && c <= 0x7e && c != '\\' && c != '"') b.appendCodePoint(c);
     else {
       b.append("\\\\U");
@@ -529,6 +529,8 @@ public class LightAutomaton {
     return result;
   }
 
+  // nocommit
+  /*
   public void writeDot(String fileName) {
     if (fileName.indexOf('/') == -1) {
       fileName = "/l/la/lucene/core/" + fileName + ".dot";
@@ -541,6 +543,7 @@ public class LightAutomaton {
       throw new RuntimeException(ioe);
     }
   }
+  */
 
   public String toDot() {
     // TODO: breadth first search so we can see get layered output...

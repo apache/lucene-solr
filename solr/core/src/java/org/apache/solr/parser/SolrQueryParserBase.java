@@ -17,6 +17,12 @@
 
 package org.apache.solr.parser;
 
+import java.io.StringReader;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.index.Term;
@@ -34,9 +40,9 @@ import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.QueryBuilder;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.Version;
-import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.BasicOperations;
+import org.apache.lucene.util.automaton.LightAutomaton;
 import org.apache.lucene.util.automaton.SpecialOperations;
 import org.apache.solr.analysis.ReversedWildcardFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
@@ -48,12 +54,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TextField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SyntaxError;
-
-import java.io.StringReader;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /** This class is overridden by QueryParser in QueryParser.jj
  * and acts to separate the majority of the Java code from the .jj grammar file. 
@@ -777,19 +777,22 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     if (factory != null) {
       Term term = new Term(field, termStr);
       // fsa representing the query
-      Automaton automaton = WildcardQuery.toAutomaton(term);
+      LightAutomaton automaton = WildcardQuery.toAutomaton(term);
       // TODO: we should likely use the automaton to calculate shouldReverse, too.
       if (factory.shouldReverse(termStr)) {
-        automaton = BasicOperations.concatenate(automaton, BasicAutomata.makeChar(factory.getMarkerChar()));
-        SpecialOperations.reverse(automaton);
+        automaton = BasicOperations.concatenateLight(automaton, BasicAutomata.makeCharLight(factory.getMarkerChar()));
+        automaton = SpecialOperations.reverse(automaton);
+        // nocommit why did i have to insert det here?  reverse didn't det before
+        automaton = BasicOperations.determinize(automaton);
       } else {
         // reverse wildcardfilter is active: remove false positives
         // fsa representing false positives (markerChar*)
-        Automaton falsePositives = BasicOperations.concatenate(
-            BasicAutomata.makeChar(factory.getMarkerChar()),
-            BasicAutomata.makeAnyString());
+        LightAutomaton falsePositives = BasicOperations.concatenateLight(
+            BasicAutomata.makeCharLight(factory.getMarkerChar()),
+            BasicAutomata.makeAnyStringLight());
         // subtract these away
-        automaton = BasicOperations.minus(automaton, falsePositives);
+        automaton = BasicOperations.minusLight(automaton, falsePositives);
+        // nocommit and do i need to det here?
       }
       return new AutomatonQuery(term, automaton) {
         // override toString so its completely transparent

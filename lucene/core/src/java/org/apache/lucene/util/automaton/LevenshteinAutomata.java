@@ -112,72 +112,6 @@ public class LevenshteinAutomata {
     }
     return word;
   }
-  
-  /**
-   * Compute a DFA that accepts all strings within an edit distance of <code>n</code>.
-   * <p>
-   * All automata have the following properties:
-   * <ul>
-   * <li>They are deterministic (DFA).
-   * <li>There are no transitions to dead states.
-   * <li>They are not minimal (some transitions could be combined).
-   * </ul>
-   * </p>
-   */
-  public Automaton toAutomaton(int n) {
-    if (n == 0) {
-      return BasicAutomata.makeString(word, 0, word.length);
-    }
-    
-    if (n >= descriptions.length)
-      return null;
-    
-    final int range = 2*n+1;
-    ParametricDescription description = descriptions[n];
-    // the number of states is based on the length of the word and n
-    State states[] = new State[description.size()];
-    // create all states, and mark as accept states if appropriate
-    for (int i = 0; i < states.length; i++) {
-      states[i] = new State();
-      states[i].number = i;
-      states[i].setAccept(description.isAccept(i));
-    }
-    // create transitions from state to state
-    for (int k = 0; k < states.length; k++) {
-      final int xpos = description.getPosition(k);
-      if (xpos < 0)
-        continue;
-      final int end = xpos + Math.min(word.length - xpos, range);
-      
-      for (int x = 0; x < alphabet.length; x++) {
-        final int ch = alphabet[x];
-        // get the characteristic vector at this position wrt ch
-        final int cvec = getVector(ch, xpos, end);
-        int dest = description.transition(k, xpos, cvec);
-        if (dest >= 0)
-          states[k].addTransition(new Transition(ch, states[dest]));
-      }
-      // add transitions for all other chars in unicode
-      // by definition, their characteristic vectors are always 0,
-      // because they do not exist in the input string.
-      int dest = description.transition(k, xpos, 0); // by definition
-      if (dest >= 0)
-        for (int r = 0; r < numRanges; r++)
-          states[k].addTransition(new Transition(rangeLower[r], rangeUpper[r], states[dest]));      
-    }
-
-    Automaton a = new Automaton(states[0]);
-    a.setDeterministic(true);
-    // we create some useless unconnected states, and its a net-win overall to remove these,
-    // as well as to combine any adjacent transitions (it makes later algorithms more efficient).
-    // so, while we could set our numberedStates here, its actually best not to, and instead to
-    // force a traversal in reduce, pruning the unconnected states while we combine adjacent transitions.
-    //a.setNumberedStates(states);
-    a.reduce();
-    // we need not trim transitions to dead states, as they are not created.
-    //a.restoreInvariant();
-    return a;
-  }
 
   /**
    * Compute a DFA that accepts all strings within an edit distance of <code>n</code>.
@@ -192,7 +126,7 @@ public class LevenshteinAutomata {
    */
   public LightAutomaton toLightAutomaton(int n) {
     if (n == 0) {
-      return BasicAutomata.makeString(word, 0, word.length).toLightAutomaton();
+      return BasicAutomata.makeStringLight(word, 0, word.length);
     }
     
     if (n >= descriptions.length)

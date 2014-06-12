@@ -19,7 +19,6 @@ package org.apache.solr.analysis;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,7 +26,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.LightAutomaton;
 import org.apache.lucene.util.automaton.SpecialOperations;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
@@ -160,11 +159,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
     Query q = qp.parse(query);
     if (!(q instanceof AutomatonQuery))
       return false;
-    // this is a hack to get the protected Automaton field in AutomatonQuery,
-    // may break in later lucene versions - we have no getter... for good reasons.
-    final Field automatonField = AutomatonQuery.class.getDeclaredField("automaton");
-    automatonField.setAccessible(true);
-    Automaton automaton = (Automaton) automatonField.get(q);
+    LightAutomaton automaton = ((AutomatonQuery) q).getLightAutomaton();
     String prefix = SpecialOperations.getCommonPrefix(automaton);
     return prefix.length() > 0 && prefix.charAt(0) == '\u0001';
   }

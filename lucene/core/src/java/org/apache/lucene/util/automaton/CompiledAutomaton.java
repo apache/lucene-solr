@@ -86,109 +86,11 @@ public class CompiledAutomaton {
    */
   public final Boolean finite;
 
-  public CompiledAutomaton(Automaton automaton) {
-    this(automaton, null, true);
-  }
-
-  public CompiledAutomaton(Automaton automaton, Boolean finite, boolean simplify) {
-    //automaton.writeDot("/l/la/lucene/core/ca.dot");
-    if (simplify) {
-      // Test whether the automaton is a "simple" form and
-      // if so, don't create a runAutomaton.  Note that on a
-      // large automaton these tests could be costly:
-      if (BasicOperations.isEmpty(automaton)) {
-        // matches nothing
-        type = AUTOMATON_TYPE.NONE;
-        term = null;
-        commonSuffixRef = null;
-        runAutomaton = null;
-        lightAutomaton = null;
-        this.finite = null;
-        return;
-      } else if (BasicOperations.isTotal(automaton)) {
-        // matches all possible strings
-        type = AUTOMATON_TYPE.ALL;
-        term = null;
-        commonSuffixRef = null;
-        runAutomaton = null;
-        lightAutomaton = null;
-        this.finite = null;
-        return;
-      } else {
-        final String commonPrefix;
-        final String singleton;
-        if (automaton.getSingleton() == null) {
-          commonPrefix = SpecialOperations.getCommonPrefix(automaton);
-          if (commonPrefix.length() > 0 && BasicOperations.sameLanguage(automaton, BasicAutomata.makeString(commonPrefix))) {
-            singleton = commonPrefix;
-          } else {
-            singleton = null;
-          }
-        } else {
-          commonPrefix = null;
-          singleton = automaton.getSingleton();
-        }
-      
-        if (singleton != null) {
-          // matches a fixed string in singleton or expanded
-          // representation
-          type = AUTOMATON_TYPE.SINGLE;
-          term = new BytesRef(singleton);
-          commonSuffixRef = null;
-          runAutomaton = null;
-          lightAutomaton = null;
-          this.finite = null;
-          return;
-        } else if (BasicOperations.sameLanguage(automaton, BasicOperations.concatenate(
-                                                                                       BasicAutomata.makeString(commonPrefix), BasicAutomata.makeAnyString()))) {
-          // matches a constant prefix
-          type = AUTOMATON_TYPE.PREFIX;
-          term = new BytesRef(commonPrefix);
-          commonSuffixRef = null;
-          runAutomaton = null;
-          lightAutomaton = null;
-          this.finite = null;
-          return;
-        }
-      }
-    }
-
-    type = AUTOMATON_TYPE.NORMAL;
-    term = null;
-    LightAutomaton la = automaton.toLightAutomaton();
-
-    if (finite == null) {
-      this.finite = SpecialOperations.isFinite(la);
-    } else {
-      this.finite = finite;
-    }
-
-    //System.out.println("finite=" + this.finite);
-
-    //System.out.println("\nPRE");
-    //automaton.writeDot("/l/la/lucene/core/ain.dot");
-    //System.out.println("\nNOW BUILD");
-    //la.writeDot("/l/la/lucene/core/la.dot");
-    LightAutomaton utf8 = new UTF32ToUTF8Light().convert(la);
-    if (this.finite) {
-      commonSuffixRef = null;
-    } else {
-      // nocommit fixme
-      // commonSuffixRef = SpecialOperations.getCommonSuffixBytesRef(utf8);
-      commonSuffixRef = null;
-    }
-    runAutomaton = new ByteRunAutomaton(utf8, true);
-
-    lightAutomaton = runAutomaton.a;
-  }
-
   public CompiledAutomaton(LightAutomaton automaton) {
     this(automaton, null, true);
   }
 
   public CompiledAutomaton(LightAutomaton automaton, Boolean finite, boolean simplify) {
-    //System.out.println("CA simplify=" + simplify);
-    //automaton.writeDot("ca");
     if (simplify) {
       // Test whether the automaton is a "simple" form and
       // if so, don't create a runAutomaton.  Note that on a
@@ -224,8 +126,6 @@ public class CompiledAutomaton {
           singleton = null;
         }
 
-        //System.out.println("CHECK PREFIX: commonPrefix=" + commonPrefix);
-       
         if (singleton != null) {
           // matches a fixed string
           type = AUTOMATON_TYPE.SINGLE;

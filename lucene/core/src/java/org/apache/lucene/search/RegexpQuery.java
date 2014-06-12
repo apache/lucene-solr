@@ -2,7 +2,6 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ToStringUtils;
-import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.LightAutomaton;
 import org.apache.lucene.util.automaton.LightAutomatonProvider;
 import org.apache.lucene.util.automaton.RegExp;

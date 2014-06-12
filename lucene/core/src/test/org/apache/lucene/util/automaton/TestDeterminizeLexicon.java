@@ -30,7 +30,7 @@ import org.apache.lucene.util.TestUtil;
  * somewhat randomly, by determinizing a huge random lexicon.
  */
 public class TestDeterminizeLexicon extends LuceneTestCase {
-  private List<Automaton> automata = new ArrayList<>();
+  private List<LightAutomaton> automata = new ArrayList<>();
   private List<String> terms = new ArrayList<>();
   
   public void testLexicon() throws Exception {
@@ -41,7 +41,7 @@ public class TestDeterminizeLexicon extends LuceneTestCase {
       for (int j = 0; j < 5000; j++) {
         String randomString = TestUtil.randomUnicodeString(random());
         terms.add(randomString);
-        automata.add(BasicAutomata.makeString(randomString));
+        automata.add(BasicAutomata.makeStringLight(randomString));
       }
       assertLexicon();
     }
@@ -49,8 +49,8 @@ public class TestDeterminizeLexicon extends LuceneTestCase {
   
   public void assertLexicon() throws Exception {
     Collections.shuffle(automata, random());
-    final Automaton lex = BasicOperations.union(automata);
-    lex.determinize();
+    LightAutomaton lex = BasicOperations.unionLight(automata);
+    lex = BasicOperations.determinize(lex);
     assertTrue(SpecialOperations.isFinite(lex));
     for (String s : terms) {
       assertTrue(BasicOperations.run(lex, s));

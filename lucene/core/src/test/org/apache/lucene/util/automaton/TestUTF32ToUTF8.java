@@ -151,12 +151,7 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
         continue;
       }
       
-      final Automaton a = new Automaton();
-      final State end = new State();
-      end.setAccept(true);
-      a.getInitialState().addTransition(new Transition(startCode, endCode, end));
-      a.setDeterministic(true);
-
+      LightAutomaton a = BasicAutomata.makeCharRangeLight(startCode, endCode);
       testOne(r, new ByteRunAutomaton(a), startCode, endCode, ITERS_PER_DFA);
     }
   }

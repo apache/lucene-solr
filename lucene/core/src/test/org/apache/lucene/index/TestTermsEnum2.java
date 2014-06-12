@@ -95,13 +95,11 @@ public class TestTermsEnum2 extends LuceneTestCase {
         }
       }
 
-      Automaton alternate = BasicAutomata.makeStringUnion(matchedTerms);
+      LightAutomaton alternate = BasicAutomata.makeStringUnionLight(matchedTerms);
       //System.out.println("match " + matchedTerms.size() + " " + alternate.getNumberOfStates() + " states, sigma=" + alternate.getStartPoints().length);
       //AutomatonTestUtil.minimizeSimple(alternate);
       //System.out.println("minmize done");
-      System.out.println("\nTEST: make AQ1");
       AutomatonQuery a1 = new AutomatonQuery(new Term("field", ""), automaton);
-      System.out.println("\nTEST: make AQ2");
       AutomatonQuery a2 = new AutomatonQuery(new Term("field", ""), alternate);
 
       ScoreDoc[] origHits = searcher.search(a1, 25).scoreDocs;

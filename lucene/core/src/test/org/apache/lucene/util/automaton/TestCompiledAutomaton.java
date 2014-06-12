@@ -36,7 +36,7 @@ public class TestCompiledAutomaton extends LuceneTestCase {
       terms.add(new BytesRef(s));
     }
     Collections.sort(terms);
-    final Automaton a = DaciukMihovAutomatonBuilder.build(terms);
+    final LightAutomaton a = DaciukMihovAutomatonBuilderLight.build(terms);
     return new CompiledAutomaton(a, true, false);
   }
 
@@ -109,8 +109,7 @@ public class TestCompiledAutomaton extends LuceneTestCase {
 
   public void testBasic() throws Exception {
     CompiledAutomaton c = build("fob", "foo", "goo");
-    // nocommit
-    //testFloor(c, "goo", "goo");
+    testFloor(c, "goo", "goo");
     testFloor(c, "ga", "foo");
     testFloor(c, "g", "foo");
     testFloor(c, "foc", "fob");
