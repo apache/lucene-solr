@@ -1873,7 +1873,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
   }
 
-  public boolean assertSolrDocumentEquals(Object expected, Object actual) {
+  public boolean compareSolrDocument(Object expected, Object actual) {
 
     if (!(expected instanceof SolrDocument)  || !(actual instanceof SolrDocument)) {
       return false;
@@ -1916,7 +1916,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       Iterator<SolrDocument> childDocsIter1 = solrDocument1.getChildDocuments().iterator();
       Iterator<SolrDocument> childDocsIter2 = solrDocument2.getChildDocuments().iterator();
       while(childDocsIter1.hasNext()) {
-        if(!assertSolrDocumentEquals(childDocsIter1.next(), childDocsIter2.next())) {
+        if(!compareSolrDocument(childDocsIter1.next(), childDocsIter2.next())) {
           return false;
         }
       }
@@ -1924,7 +1924,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
   }
 
-  public boolean assertSolrDocumentList(Object expected, Object actual) {
+  public boolean compareSolrDocumentList(Object expected, Object actual) {
     if (!(expected instanceof SolrDocumentList)  || !(actual instanceof SolrDocumentList)) {
       return false;
     }
@@ -1941,14 +1941,14 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       return false;
     }
     for(int i=0; i<list1.getNumFound(); i++) {
-      if(!assertSolrDocumentEquals(list1.get(i), list2.get(i))) {
+      if(!compareSolrDocument(list1.get(i), list2.get(i))) {
         return false;
       }
     }
     return true;
   }
 
-  public boolean assertSolrInputDocumentEquals(Object expected, Object actual) {
+  public boolean compareSolrInputDocument(Object expected, Object actual) {
 
     if (!(expected instanceof SolrInputDocument) || !(actual instanceof SolrInputDocument)) {
       return false;
@@ -1993,7 +1993,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       Iterator<SolrInputDocument> childDocsIter1 = sdoc1.getChildDocuments().iterator();
       Iterator<SolrInputDocument> childDocsIter2 = sdoc2.getChildDocuments().iterator();
       while(childDocsIter1.hasNext()) {
-        if(!assertSolrInputDocumentEquals(childDocsIter1.next(), childDocsIter2.next())) {
+        if(!compareSolrInputDocument(childDocsIter1.next(), childDocsIter2.next())) {
           return false;
         }
       }
