@@ -21,7 +21,6 @@ import java.io.Closeable; // javadocs
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesConsumer;
@@ -43,7 +42,6 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
 
   static final int BLOCK_SIZE = 16384;
   static final int ADDRESS_INTERVAL = 16;
-  static final Number MISSING_ORD = Long.valueOf(-1);
 
   /** Compressed using packed blocks of ints. */
   public static final int DELTA_COMPRESSED = 0;
@@ -349,14 +347,10 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
     addTermsDict(field, values);
     addNumericField(field, docToOrd, false);
   }
-
-  private static boolean isSingleValued(Iterable<Number> docToOrdCount) {
-    for (Number ordCount : docToOrdCount) {
-      if (ordCount.longValue() > 1) {
-        return false;
-      }
-    }
-    return true;
+  
+  @Override
+  public void addSortedNumericField(FieldInfo field, Iterable<Number> docToValueCount, Iterable<Number> values) throws IOException {
+    throw new UnsupportedOperationException("Lucene 4.5 does not support SORTED_NUMERIC");
   }
 
   @Override
@@ -367,40 +361,7 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
     if (isSingleValued(docToOrdCount)) {
       meta.writeVInt(SORTED_SET_SINGLE_VALUED_SORTED);
       // The field is single-valued, we can encode it as SORTED
-      addSortedField(field, values, new Iterable<Number>() {
-
-        @Override
-        public Iterator<Number> iterator() {
-          final Iterator<Number> docToOrdCountIt = docToOrdCount.iterator();
-          final Iterator<Number> ordsIt = ords.iterator();
-          return new Iterator<Number>() {
-
-            @Override
-            public boolean hasNext() {
-              assert ordsIt.hasNext() ? docToOrdCountIt.hasNext() : true;
-              return docToOrdCountIt.hasNext();
-            }
-
-            @Override
-            public Number next() {
-              final Number ordCount = docToOrdCountIt.next();
-              if (ordCount.longValue() == 0) {
-                return MISSING_ORD;
-              } else {
-                assert ordCount.longValue() == 1;
-                return ordsIt.next();
-              }
-            }
-
-            @Override
-            public void remove() {
-              throw new UnsupportedOperationException();
-            }
-
-          };
-        }
-
-      });
+      addSortedField(field, values, singletonView(docToOrdCount, ords, -1L));
       return;
     }
 

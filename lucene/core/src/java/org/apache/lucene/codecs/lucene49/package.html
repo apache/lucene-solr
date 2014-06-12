@@ -386,6 +386,9 @@ allow updating NumericDocValues fields.</li>
 <li>In version 4.8, checksum footers were added to the end of each index file 
 for improved data integrity. Specifically, the last 8 bytes of every index file
 contain the zlib-crc32 checksum of the file.</li>
+<li>In version 4.9, DocValues has a new multi-valued numeric type (SortedNumeric)
+that is suitable for faceting/sorting/analytics.
+</li>
 </ul>
 <a name="Limitations" id="Limitations"></a>
 <h2>Limitations</h2>

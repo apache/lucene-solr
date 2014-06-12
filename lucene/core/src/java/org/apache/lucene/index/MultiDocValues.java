@@ -228,6 +228,63 @@ public class MultiDocValues {
     }
   }
   
+  /** Returns a SortedNumericDocValues for a reader's docvalues (potentially merging on-the-fly) 
+   * <p>
+   * This is a slow way to access sorted numeric values. Instead, access them per-segment
+   * with {@link AtomicReader#getSortedNumericDocValues(String)}
+   * </p> 
+   * */
+  public static SortedNumericDocValues getSortedNumericValues(final IndexReader r, final String field) throws IOException {
+    final List<AtomicReaderContext> leaves = r.leaves();
+    final int size = leaves.size();
+    if (size == 0) {
+      return null;
+    } else if (size == 1) {
+      return leaves.get(0).reader().getSortedNumericDocValues(field);
+    }
+
+    boolean anyReal = false;
+    final SortedNumericDocValues[] values = new SortedNumericDocValues[size];
+    final int[] starts = new int[size+1];
+    for (int i = 0; i < size; i++) {
+      AtomicReaderContext context = leaves.get(i);
+      SortedNumericDocValues v = context.reader().getSortedNumericDocValues(field);
+      if (v == null) {
+        v = DocValues.emptySortedNumeric();
+      } else {
+        anyReal = true;
+      }
+      values[i] = v;
+      starts[i] = context.docBase;
+    }
+    starts[size] = r.maxDoc();
+
+    if (!anyReal) {
+      return null;
+    } else {
+      return new SortedNumericDocValues() {
+        SortedNumericDocValues current;
+
+        @Override
+        public void setDocument(int doc) {
+          int subIndex = ReaderUtil.subIndex(doc, starts);
+          current = values[subIndex];
+          current.setDocument(doc - starts[subIndex]);
+        }
+
+        @Override
+        public long valueAt(int index) {
+          return current.valueAt(index);
+        }
+
+        @Override
+        public int count() {
+          return current.count();
+        }
+      };
+    }
+  }
+  
   /** Returns a SortedDocValues for a reader's docvalues (potentially doing extremely slow things).
    * <p>
    * This is an extremely slow way to access sorted values. Instead, access them per-segment

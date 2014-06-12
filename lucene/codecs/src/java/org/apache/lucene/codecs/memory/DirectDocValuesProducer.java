@@ -33,6 +33,7 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomAccessOrds;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
@@ -52,6 +53,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
   private final Map<Integer,BinaryEntry> binaries = new HashMap<>();
   private final Map<Integer,SortedEntry> sorteds = new HashMap<>();
   private final Map<Integer,SortedSetEntry> sortedSets = new HashMap<>();
+  private final Map<Integer,SortedNumericEntry> sortedNumerics = new HashMap<>();
   private final IndexInput data;
   
   // ram instances we have already loaded
@@ -63,6 +65,8 @@ class DirectDocValuesProducer extends DocValuesProducer {
       new HashMap<>();
   private final Map<Integer,SortedSetRawValues> sortedSetInstances =
       new HashMap<>();
+  private final Map<Integer,SortedNumericRawValues> sortedNumericInstances =
+      new HashMap<>();
   private final Map<Integer,Bits> docsWithFieldInstances = new HashMap<>();
   
   private final int maxDoc;
@@ -73,10 +77,12 @@ class DirectDocValuesProducer extends DocValuesProducer {
   static final byte BYTES = 1;
   static final byte SORTED = 2;
   static final byte SORTED_SET = 3;
+  static final byte SORTED_SET_SINGLETON = 4;
+  static final byte SORTED_NUMERIC = 5;
+  static final byte SORTED_NUMERIC_SINGLETON = 6;
 
-  static final int VERSION_START = 0;
-  static final int VERSION_CHECKSUM = 1;
-  static final int VERSION_CURRENT = VERSION_CHECKSUM;
+  static final int VERSION_START = 2;
+  static final int VERSION_CURRENT = VERSION_START;
     
   DirectDocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     maxDoc = state.segmentInfo.getDocCount();
@@ -91,11 +97,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
                                       VERSION_CURRENT);
       readFields(in);
 
-      if (version >= VERSION_CHECKSUM) {
-        CodecUtil.checkFooter(in);
-      } else {
-        CodecUtil.checkEOF(in);
-      }
+      CodecUtil.checkFooter(in);
       success = true;
     } finally {
       if (success) {
@@ -161,11 +163,22 @@ class DirectDocValuesProducer extends DocValuesProducer {
     return entry;
   }
 
-  private SortedSetEntry readSortedSetEntry(IndexInput meta) throws IOException {
+  private SortedSetEntry readSortedSetEntry(IndexInput meta, boolean singleton) throws IOException {
     SortedSetEntry entry = new SortedSetEntry();
-    entry.docToOrdAddress = readNumericEntry(meta);
+    if (singleton == false) {
+      entry.docToOrdAddress = readNumericEntry(meta);
+    }
     entry.ords = readNumericEntry(meta);
     entry.values = readBinaryEntry(meta);
+    return entry;
+  }
+  
+  private SortedNumericEntry readSortedNumericEntry(IndexInput meta, boolean singleton) throws IOException {
+    SortedNumericEntry entry = new SortedNumericEntry();
+    if (singleton == false) {
+      entry.docToAddress = readNumericEntry(meta);
+    }
+    entry.values = readNumericEntry(meta);
     return entry;
   }
 
@@ -182,9 +195,19 @@ class DirectDocValuesProducer extends DocValuesProducer {
         sorteds.put(fieldNumber, entry);
         binaries.put(fieldNumber, entry.values);
       } else if (fieldType == SORTED_SET) {
-        SortedSetEntry entry = readSortedSetEntry(meta);
+        SortedSetEntry entry = readSortedSetEntry(meta, false);
         sortedSets.put(fieldNumber, entry);
         binaries.put(fieldNumber, entry.values);
+      } else if (fieldType == SORTED_SET_SINGLETON) {
+        SortedSetEntry entry = readSortedSetEntry(meta, true);
+        sortedSets.put(fieldNumber, entry);
+        binaries.put(fieldNumber, entry.values);
+      } else if (fieldType == SORTED_NUMERIC) {
+        SortedNumericEntry entry = readSortedNumericEntry(meta, false);
+        sortedNumerics.put(fieldNumber, entry);
+      } else if (fieldType == SORTED_NUMERIC_SINGLETON) {
+        SortedNumericEntry entry = readSortedNumericEntry(meta, true);
+        sortedNumerics.put(fieldNumber, entry);
       } else {
         throw new CorruptIndexException("invalid entry type: " + fieldType + ", input=" + meta);
       }
@@ -199,9 +222,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
   
   @Override
   public void checkIntegrity() throws IOException {
-    if (version >= VERSION_CHECKSUM) {
-      CodecUtil.checksumEntireFile(data);
-    }
+    CodecUtil.checksumEntireFile(data);
   }
 
   @Override
@@ -337,9 +358,10 @@ class DirectDocValuesProducer extends DocValuesProducer {
         sortedInstances.put(field.number, instance);
       }
     }
-    final NumericDocValues docToOrd = instance.docToOrd;
-    final BinaryDocValues values = getBinary(field);
-
+    return newSortedInstance(instance.docToOrd, getBinary(field), entry.values.count);
+  }
+  
+  private SortedDocValues newSortedInstance(final NumericDocValues docToOrd, final BinaryDocValues values, final int count) {
     return new SortedDocValues() {
 
       @Override
@@ -354,7 +376,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
 
       @Override
       public int getValueCount() {
-        return entry.values.count;
+        return count;
       }
 
       // Leave lookupTerm to super's binary search
@@ -372,6 +394,56 @@ class DirectDocValuesProducer extends DocValuesProducer {
   }
 
   @Override
+  public synchronized SortedNumericDocValues getSortedNumeric(FieldInfo field) throws IOException {
+    SortedNumericRawValues instance = sortedNumericInstances.get(field.number);
+    final SortedNumericEntry entry = sortedNumerics.get(field.number);
+    if (instance == null) {
+      // Lazy load
+      instance = loadSortedNumeric(entry);
+      sortedNumericInstances.put(field.number, instance);
+    }
+    
+    if (entry.docToAddress == null) {
+      final NumericDocValues single = instance.values;
+      final Bits docsWithField = getMissingBits(field.number, entry.values.missingOffset, entry.values.missingBytes);
+      return DocValues.singleton(single, docsWithField);
+    } else {
+      final NumericDocValues docToAddress = instance.docToAddress;
+      final NumericDocValues values = instance.values;
+      
+      return new SortedNumericDocValues() {
+        int valueStart;
+        int valueLimit;
+        
+        @Override
+        public void setDocument(int doc) {
+          valueStart = (int) docToAddress.get(doc);
+          valueLimit = (int) docToAddress.get(doc+1);
+        }
+        
+        @Override
+        public long valueAt(int index) {
+          return values.get(valueStart + index);
+        }
+        
+        @Override
+        public int count() {
+          return valueLimit - valueStart;
+        }
+      };
+    }
+  }
+  
+  private SortedNumericRawValues loadSortedNumeric(SortedNumericEntry entry) throws IOException {
+    SortedNumericRawValues instance = new SortedNumericRawValues();
+    if (entry.docToAddress != null) {
+      instance.docToAddress = loadNumeric(entry.docToAddress);
+    }
+    instance.values = loadNumeric(entry.values);
+    return instance;
+  }
+
+  @Override
   public synchronized SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
     SortedSetRawValues instance = sortedSetInstances.get(field.number);
     final SortedSetEntry entry = sortedSets.get(field.number);
@@ -381,60 +453,67 @@ class DirectDocValuesProducer extends DocValuesProducer {
       sortedSetInstances.put(field.number, instance);
     }
 
-    final NumericDocValues docToOrdAddress = instance.docToOrdAddress;
-    final NumericDocValues ords = instance.ords;
-    final BinaryDocValues values = getBinary(field);
-
-    // Must make a new instance since the iterator has state:
-    return new RandomAccessOrds() {
-      int ordStart;
-      int ordUpto;
-      int ordLimit;
-
-      @Override
-      public long nextOrd() {
-        if (ordUpto == ordLimit) {
-          return NO_MORE_ORDS;
-        } else {
-          return ords.get(ordUpto++);
-        }
-      }
+    if (instance.docToOrdAddress == null) {
+      SortedDocValues sorted = newSortedInstance(instance.ords, getBinary(field), entry.values.count);
+      return DocValues.singleton(sorted);
+    } else {
+      final NumericDocValues docToOrdAddress = instance.docToOrdAddress;
+      final NumericDocValues ords = instance.ords;
+      final BinaryDocValues values = getBinary(field);
       
-      @Override
-      public void setDocument(int docID) {
-        ordStart = ordUpto = (int) docToOrdAddress.get(docID);
-        ordLimit = (int) docToOrdAddress.get(docID+1);
-      }
-
-      @Override
-      public BytesRef lookupOrd(long ord) {
-        return values.get((int) ord);
-      }
-
-      @Override
-      public long getValueCount() {
-        return entry.values.count;
-      }
-
-      @Override
-      public long ordAt(int index) {
-        return ords.get(ordStart + index);
-      }
-
-      @Override
-      public int cardinality() {
-        return ordLimit - ordStart;
-      }
-
-      // Leave lookupTerm to super's binary search
-
-      // Leave termsEnum to super
-    };
+      // Must make a new instance since the iterator has state:
+      return new RandomAccessOrds() {
+        int ordStart;
+        int ordUpto;
+        int ordLimit;
+        
+        @Override
+        public long nextOrd() {
+          if (ordUpto == ordLimit) {
+            return NO_MORE_ORDS;
+          } else {
+            return ords.get(ordUpto++);
+          }
+        }
+        
+        @Override
+        public void setDocument(int docID) {
+          ordStart = ordUpto = (int) docToOrdAddress.get(docID);
+          ordLimit = (int) docToOrdAddress.get(docID+1);
+        }
+        
+        @Override
+        public BytesRef lookupOrd(long ord) {
+          return values.get((int) ord);
+        }
+        
+        @Override
+        public long getValueCount() {
+          return entry.values.count;
+        }
+        
+        @Override
+        public long ordAt(int index) {
+          return ords.get(ordStart + index);
+        }
+        
+        @Override
+        public int cardinality() {
+          return ordLimit - ordStart;
+        }
+        
+        // Leave lookupTerm to super's binary search
+        
+        // Leave termsEnum to super
+      };
+    }
   }
   
   private SortedSetRawValues loadSortedSet(SortedSetEntry entry) throws IOException {
     SortedSetRawValues instance = new SortedSetRawValues();
-    instance.docToOrdAddress = loadNumeric(entry.docToOrdAddress);
+    if (entry.docToOrdAddress != null) {
+      instance.docToOrdAddress = loadNumeric(entry.docToOrdAddress);
+    }
     instance.ords = loadNumeric(entry.ords);
     return instance;
   }
@@ -467,6 +546,8 @@ class DirectDocValuesProducer extends DocValuesProducer {
     switch(field.getDocValuesType()) {
       case SORTED_SET:
         return DocValues.docsWithValue(getSortedSet(field), maxDoc);
+      case SORTED_NUMERIC:
+        return DocValues.docsWithValue(getSortedNumeric(field), maxDoc);
       case SORTED:
         return DocValues.docsWithValue(getSorted(field), maxDoc);
       case BINARY:
@@ -492,6 +573,11 @@ class DirectDocValuesProducer extends DocValuesProducer {
 
   static class SortedRawValues {
     NumericDocValues docToOrd;
+  }
+  
+  static class SortedNumericRawValues {
+    NumericDocValues docToAddress;
+    NumericDocValues values;
   }
 
   static class SortedSetRawValues {
@@ -529,6 +615,11 @@ class DirectDocValuesProducer extends DocValuesProducer {
     NumericEntry docToOrdAddress;
     NumericEntry ords;
     BinaryEntry values;
+  }
+  
+  static class SortedNumericEntry {
+    NumericEntry docToAddress;
+    NumericEntry values;
   }
   
   static class FSTEntry {

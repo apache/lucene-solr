@@ -48,6 +48,7 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomAccessOrds;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
@@ -541,6 +542,11 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
       ordIndex = ordIndexInstance;
     }
     return ordIndex;
+  }
+  
+  @Override
+  public SortedNumericDocValues getSortedNumeric(FieldInfo field) throws IOException {
+    throw new IllegalStateException("Lucene 4.5 does not support SortedNumeric: how did you pull this off?");
   }
 
   @Override

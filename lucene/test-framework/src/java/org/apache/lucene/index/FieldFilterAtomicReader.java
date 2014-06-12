@@ -133,6 +133,11 @@ public final class FieldFilterAtomicReader extends FilterAtomicReader {
   }
   
   @Override
+  public SortedNumericDocValues getSortedNumericDocValues(String field) throws IOException {
+    return hasField(field) ? super.getSortedNumericDocValues(field) : null;
+  }
+  
+  @Override
   public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
     return hasField(field) ? super.getSortedSetDocValues(field) : null;
   }

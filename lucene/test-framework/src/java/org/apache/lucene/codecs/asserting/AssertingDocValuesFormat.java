@@ -32,6 +32,7 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -131,6 +132,30 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
     }
     
     @Override
+    public void addSortedNumericField(FieldInfo field, Iterable<Number> docToValueCount, Iterable<Number> values) throws IOException {
+      long valueCount = 0;
+      Iterator<Number> valueIterator = values.iterator();
+      for (Number count : docToValueCount) {
+        assert count != null;
+        assert count.intValue() >= 0;
+        valueCount += count.intValue();
+        long previous = Long.MIN_VALUE;
+        for (int i = 0; i < count.intValue(); i++) {
+          assert valueIterator.hasNext();
+          Number next = valueIterator.next();
+          assert next != null;
+          long nextValue = next.longValue();
+          assert nextValue >= previous;
+          previous = nextValue;
+        }
+      }
+      assert valueIterator.hasNext() == false;
+      checkIterator(docToValueCount.iterator(), maxDoc, false);
+      checkIterator(values.iterator(), valueCount, false);
+      in.addSortedNumericField(field, docToValueCount, values);
+    }
+    
+    @Override
     public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrdCount, Iterable<Number> ords) throws IOException {
       long valueCount = 0;
       BytesRef lastValue = null;
@@ -217,6 +242,11 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
     public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
       throw new IllegalStateException();
     }
+    
+    @Override
+    public void addSortedNumericField(FieldInfo field, Iterable<Number> docToValueCount, Iterable<Number> values) throws IOException {
+      throw new IllegalStateException();
+    }
 
     @Override
     public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrdCount, Iterable<Number> ords) throws IOException {
@@ -278,6 +308,14 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
       SortedDocValues values = in.getSorted(field);
       assert values != null;
       return new AssertingAtomicReader.AssertingSortedDocValues(values, maxDoc);
+    }
+    
+    @Override
+    public SortedNumericDocValues getSortedNumeric(FieldInfo field) throws IOException {
+      assert field.getDocValuesType() == FieldInfo.DocValuesType.SORTED_NUMERIC;
+      SortedNumericDocValues values = in.getSortedNumeric(field);
+      assert values != null;
+      return new AssertingAtomicReader.AssertingSortedNumericDocValues(values, maxDoc);
     }
     
     @Override

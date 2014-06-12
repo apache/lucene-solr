@@ -110,6 +110,12 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
     ensureOpen();
     return MultiDocValues.getBinaryValues(in, field);
   }
+  
+  @Override
+  public SortedNumericDocValues getSortedNumericDocValues(String field) throws IOException {
+    ensureOpen();
+    return MultiDocValues.getSortedNumericValues(in, field);
+  }
 
   @Override
   public SortedDocValues getSortedDocValues(String field) throws IOException {

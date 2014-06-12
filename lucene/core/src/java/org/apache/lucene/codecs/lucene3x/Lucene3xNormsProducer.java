@@ -33,6 +33,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -217,6 +218,11 @@ class Lucene3xNormsProducer extends DocValuesProducer {
   
   @Override
   public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
+    throw new AssertionError();
+  }
+
+  @Override
+  public SortedNumericDocValues getSortedNumeric(FieldInfo field) throws IOException {
     throw new AssertionError();
   }
 

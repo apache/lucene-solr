@@ -33,7 +33,6 @@ import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -534,6 +533,27 @@ public final class SegmentReader extends AtomicReader implements Accountable {
       DocValuesProducer dvProducer = dvProducersByField.get(field);
       assert dvProducer != null;
       SortedDocValues dv = dvProducer.getSorted(fi);
+      dvFields.put(field, dv);
+      return dv;
+    }
+  }
+  
+  @Override
+  public SortedNumericDocValues getSortedNumericDocValues(String field) throws IOException {
+    ensureOpen();
+    Map<String,Object> dvFields = docValuesLocal.get();
+
+    Object previous = dvFields.get(field);
+    if (previous != null && previous instanceof SortedNumericDocValues) {
+      return (SortedNumericDocValues) previous;
+    } else {
+      FieldInfo fi = getDVField(field, DocValuesType.SORTED_NUMERIC);
+      if (fi == null) {
+        return null;
+      }
+      DocValuesProducer dvProducer = dvProducersByField.get(field);
+      assert dvProducer != null;
+      SortedNumericDocValues dv = dvProducer.getSortedNumeric(fi);
       dvFields.put(field, dv);
       return dv;
     }

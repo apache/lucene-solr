@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene45;
+package org.apache.lucene.index;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,23 +17,30 @@ package org.apache.lucene.codecs.lucene45;
  * limitations under the License.
  */
 
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BaseCompressingDocValuesFormatTestCase;
-import org.junit.BeforeClass;
-
 /**
- * Tests Lucene45DocValuesFormat
+ * A list of per-document numeric values, sorted 
+ * according to {@link Long#compare(long, long)}.
  */
-public class TestLucene45DocValuesFormat extends BaseCompressingDocValuesFormatTestCase {
-  private final Codec codec = new Lucene45RWCodec();
+public abstract class SortedNumericDocValues {
   
-  @BeforeClass
-  public static void beforeClass() {
-    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true; // explicitly instantiates ancient codec
-  }
+  /** Sole constructor. (For invocation by subclass 
+   * constructors, typically implicit.) */
+  protected SortedNumericDocValues() {}
+
+  /** 
+   * Positions to the specified document 
+   */
+  public abstract void setDocument(int doc);
   
-  @Override
-  protected Codec getCodec() {
-    return codec;
-  }
+  /** 
+   * Retrieve the value for the current document at the specified index. 
+   * An index ranges from {@code 0} to {@code count()-1}. 
+   */
+  public abstract long valueAt(int index);
+  
+  /** 
+   * Retrieves the count of values for the current document. 
+   * This may be zero if a document has no values.
+   */
+  public abstract int count();
 }

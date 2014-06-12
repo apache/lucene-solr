@@ -331,14 +331,14 @@ public abstract class FieldComparator<T> {
 
   /** Parses field's values as double (using {@link
    *  FieldCache#getDoubles} and sorts by ascending value */
-  public static final class DoubleComparator extends NumericComparator<Double> {
+  public static class DoubleComparator extends NumericComparator<Double> {
     private final double[] values;
     private final DoubleParser parser;
     private FieldCache.Doubles currentReaderValues;
     private double bottom;
     private double topValue;
 
-    DoubleComparator(int numHits, String field, FieldCache.Parser parser, Double missingValue) {
+    public DoubleComparator(int numHits, String field, FieldCache.Parser parser, Double missingValue) {
       super(field, missingValue);
       values = new double[numHits];
       this.parser = (DoubleParser) parser;
@@ -377,8 +377,13 @@ public abstract class FieldComparator<T> {
     public FieldComparator<Double> setNextReader(AtomicReaderContext context) throws IOException {
       // NOTE: must do this before calling super otherwise
       // we compute the docsWithField Bits twice!
-      currentReaderValues = FieldCache.DEFAULT.getDoubles(context.reader(), field, parser, missingValue != null);
+      currentReaderValues = getDoubleValues(context, field);
       return super.setNextReader(context);
+    }
+    
+    /** Expert: provides source of doubles for sorting */
+    protected FieldCache.Doubles getDoubleValues(AtomicReaderContext context, String field) throws IOException {
+      return FieldCache.DEFAULT.getDoubles(context.reader(), field, parser, missingValue != null);
     }
     
     @Override
@@ -410,14 +415,14 @@ public abstract class FieldComparator<T> {
 
   /** Parses field's values as float (using {@link
    *  FieldCache#getFloats} and sorts by ascending value */
-  public static final class FloatComparator extends NumericComparator<Float> {
+  public static class FloatComparator extends NumericComparator<Float> {
     private final float[] values;
     private final FloatParser parser;
     private FieldCache.Floats currentReaderValues;
     private float bottom;
     private float topValue;
 
-    FloatComparator(int numHits, String field, FieldCache.Parser parser, Float missingValue) {
+    public FloatComparator(int numHits, String field, FieldCache.Parser parser, Float missingValue) {
       super(field, missingValue);
       values = new float[numHits];
       this.parser = (FloatParser) parser;
@@ -457,8 +462,13 @@ public abstract class FieldComparator<T> {
     public FieldComparator<Float> setNextReader(AtomicReaderContext context) throws IOException {
       // NOTE: must do this before calling super otherwise
       // we compute the docsWithField Bits twice!
-      currentReaderValues = FieldCache.DEFAULT.getFloats(context.reader(), field, parser, missingValue != null);
+      currentReaderValues = getFloatValues(context, field);
       return super.setNextReader(context);
+    }
+    
+    /** Expert: provides source of floats for sorting */
+    protected FieldCache.Floats getFloatValues(AtomicReaderContext context, String field) throws IOException {
+      return FieldCache.DEFAULT.getFloats(context.reader(), field, parser, missingValue != null);
     }
     
     @Override
@@ -570,14 +580,14 @@ public abstract class FieldComparator<T> {
 
   /** Parses field's values as int (using {@link
    *  FieldCache#getInts} and sorts by ascending value */
-  public static final class IntComparator extends NumericComparator<Integer> {
+  public static class IntComparator extends NumericComparator<Integer> {
     private final int[] values;
     private final IntParser parser;
     private FieldCache.Ints currentReaderValues;
     private int bottom;                           // Value of bottom of queue
     private int topValue;
 
-    IntComparator(int numHits, String field, FieldCache.Parser parser, Integer missingValue) {
+    public IntComparator(int numHits, String field, FieldCache.Parser parser, Integer missingValue) {
       super(field, missingValue);
       values = new int[numHits];
       this.parser = (IntParser) parser;
@@ -616,8 +626,13 @@ public abstract class FieldComparator<T> {
     public FieldComparator<Integer> setNextReader(AtomicReaderContext context) throws IOException {
       // NOTE: must do this before calling super otherwise
       // we compute the docsWithField Bits twice!
-      currentReaderValues = FieldCache.DEFAULT.getInts(context.reader(), field, parser, missingValue != null);
+      currentReaderValues = getIntValues(context, field);
       return super.setNextReader(context);
+    }
+    
+    /** Expert: provides source of ints for sorting */
+    protected FieldCache.Ints getIntValues(AtomicReaderContext context, String field) throws IOException {
+      return FieldCache.DEFAULT.getInts(context.reader(), field, parser, missingValue != null);
     }
     
     @Override
@@ -649,14 +664,14 @@ public abstract class FieldComparator<T> {
 
   /** Parses field's values as long (using {@link
    *  FieldCache#getLongs} and sorts by ascending value */
-  public static final class LongComparator extends NumericComparator<Long> {
+  public static class LongComparator extends NumericComparator<Long> {
     private final long[] values;
     private final LongParser parser;
     private FieldCache.Longs currentReaderValues;
     private long bottom;
     private long topValue;
 
-    LongComparator(int numHits, String field, FieldCache.Parser parser, Long missingValue) {
+    public LongComparator(int numHits, String field, FieldCache.Parser parser, Long missingValue) {
       super(field, missingValue);
       values = new long[numHits];
       this.parser = (LongParser) parser;
@@ -697,8 +712,13 @@ public abstract class FieldComparator<T> {
     public FieldComparator<Long> setNextReader(AtomicReaderContext context) throws IOException {
       // NOTE: must do this before calling super otherwise
       // we compute the docsWithField Bits twice!
-      currentReaderValues = FieldCache.DEFAULT.getLongs(context.reader(), field, parser, missingValue != null);
+      currentReaderValues = getLongValues(context, field);
       return super.setNextReader(context);
+    }
+    
+    /** Expert: provides source of longs for sorting */
+    protected FieldCache.Longs getLongValues(AtomicReaderContext context, String field) throws IOException {
+      return FieldCache.DEFAULT.getLongs(context.reader(), field, parser, missingValue != null);
     }
     
     @Override
