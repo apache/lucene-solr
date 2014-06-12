@@ -782,8 +782,6 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       if (factory.shouldReverse(termStr)) {
         automaton = BasicOperations.concatenateLight(automaton, BasicAutomata.makeCharLight(factory.getMarkerChar()));
         automaton = SpecialOperations.reverse(automaton);
-        // nocommit why did i have to insert det here?  reverse didn't det before
-        automaton = BasicOperations.determinize(automaton);
       } else {
         // reverse wildcardfilter is active: remove false positives
         // fsa representing false positives (markerChar*)
@@ -792,7 +790,6 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
             BasicAutomata.makeAnyStringLight());
         // subtract these away
         automaton = BasicOperations.minusLight(automaton, falsePositives);
-        // nocommit and do i need to det here?
       }
       return new AutomatonQuery(term, automaton) {
         // override toString so its completely transparent

@@ -127,6 +127,8 @@ public class TestAutomatonQuery extends LuceneTestCase {
     assertAutomatonHits(1, BasicOperations.minusLight(BasicAutomata.makeCharRangeLight('a', 'b'), 
         BasicAutomata.makeCharLight('a')));
   }
+
+  // nocommit make a testRandomAutomaton like TestRR2
   
   /**
    * Test that a nondeterministic automaton works correctly. (It should will be

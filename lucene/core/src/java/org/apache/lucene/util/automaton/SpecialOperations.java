@@ -96,13 +96,12 @@ final public class SpecialOperations {
   
   /**
    * Returns the longest string that is a prefix of all accepted strings and
-   * visits each state at most once.
+   * visits each state at most once.  The automaton must be deterministic.
    * 
    * @return common prefix
    */
-  // nocommit a must be det?  we should document if so?
   public static String getCommonPrefix(LightAutomaton a) {
-    //a.writeDot("cp");
+    assert BasicOperations.isDeterministic(a);
     StringBuilder b = new StringBuilder();
     HashSet<Integer> visited = new HashSet<>();
     int s = 0;

@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.automaton.BasicOperations;
 import org.apache.lucene.util.automaton.LightAutomaton;
 import org.apache.lucene.util.automaton.SpecialOperations;
 import org.apache.solr.SolrTestCaseJ4;
@@ -157,10 +158,11 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
   /** fragile assert: depends on our implementation, but cleanest way to check for now */ 
   private boolean wasReversed(SolrQueryParser qp, String query) throws Exception {
     Query q = qp.parse(query);
-    if (!(q instanceof AutomatonQuery))
+    if (!(q instanceof AutomatonQuery)) {
       return false;
+    }
     LightAutomaton automaton = ((AutomatonQuery) q).getLightAutomaton();
-    String prefix = SpecialOperations.getCommonPrefix(automaton);
+    String prefix = SpecialOperations.getCommonPrefix(BasicOperations.determinize(automaton));
     return prefix.length() > 0 && prefix.charAt(0) == '\u0001';
   }
 
