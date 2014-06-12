@@ -64,9 +64,6 @@ final class DefaultIndexingChain extends DocConsumer {
   private int totalFieldCount;
   private long nextFieldGen;
 
-  // Lazy init:
-  private NumericDocValuesWriter norms;
-
   // Holds fields seen in each document
   private PerField[] fields = new PerField[1];
 
@@ -425,6 +422,13 @@ final class DefaultIndexingChain extends DocConsumer {
           fp.docValuesWriter = new SortedDocValuesWriter(fp.fieldInfo, bytesUsed);
         }
         ((SortedDocValuesWriter) fp.docValuesWriter).addValue(docID, field.binaryValue());
+        break;
+        
+      case SORTED_NUMERIC:
+        if (fp.docValuesWriter == null) {
+          fp.docValuesWriter = new SortedNumericDocValuesWriter(fp.fieldInfo, bytesUsed);
+        }
+        ((SortedNumericDocValuesWriter) fp.docValuesWriter).addValue(docID, field.numericValue().longValue());
         break;
 
       case SORTED_SET:

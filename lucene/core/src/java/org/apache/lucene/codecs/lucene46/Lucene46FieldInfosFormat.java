@@ -115,7 +115,8 @@ public final class Lucene46FieldInfosFormat extends FieldInfosFormat {
   static final String CODEC_NAME = "Lucene46FieldInfos";
   static final int FORMAT_START = 0;
   static final int FORMAT_CHECKSUM = 1;
-  static final int FORMAT_CURRENT = FORMAT_CHECKSUM;
+  static final int FORMAT_SORTED_NUMERIC = 2;
+  static final int FORMAT_CURRENT = FORMAT_SORTED_NUMERIC;
   
   // Field flags
   static final byte IS_INDEXED = 0x1;

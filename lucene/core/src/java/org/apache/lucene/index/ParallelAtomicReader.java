@@ -287,6 +287,13 @@ public class ParallelAtomicReader extends AtomicReader {
     AtomicReader reader = fieldToReader.get(field);
     return reader == null ? null : reader.getSortedDocValues(field);
   }
+  
+  @Override
+  public SortedNumericDocValues getSortedNumericDocValues(String field) throws IOException {
+    ensureOpen();
+    AtomicReader reader = fieldToReader.get(field);
+    return reader == null ? null : reader.getSortedNumericDocValues(field);
+  }
 
   @Override
   public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {

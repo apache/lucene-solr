@@ -132,6 +132,9 @@ New Features
 * LUCENE-5743: Add Lucene49NormsFormat, which can compress in some cases
   such as very short fields.  (Ryan Ernst, Adrien Grand, Robert Muir)
 
+* LUCENE-5748: Add SORTED_NUMERIC docvalues type, which is efficient
+  for processing numeric fields with multiple values.  (Robert Muir)
+
 Changes in Backwards Compatibility Policy
 
 * LUCENE-5634: Add reuse argument to IndexableField.tokenStream. This

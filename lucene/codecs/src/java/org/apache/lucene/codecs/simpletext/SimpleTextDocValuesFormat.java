@@ -114,6 +114,9 @@ import org.apache.lucene.index.SegmentWriteState;
  *  this is a comma-separated list, and its padded with spaces to be fixed width. so trim() and split() it.
  *  and beware the empty string!
  *  an ord's value can be retrieved by seeking to startOffset + (9+pattern.length+maxlength)*ord
+ *  
+ *  for sorted numerics, its encoded (not very creatively) as a comma-separated list of strings the same as binary.
+ *  beware the empty string!
  *   
  *  the reader can just scan this file when it opens, skipping over the data blocks
  *  and saving the offset/etc for each field. 

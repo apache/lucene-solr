@@ -35,7 +35,7 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
 /**
  * Lucene 4.9 DocValues format.
  * <p>
- * Encodes the four per-document value types (Numeric,Binary,Sorted,SortedSet) with these strategies:
+ * Encodes the five per-document value types (Numeric,Binary,Sorted,SortedSet,SortedNumeric) with these strategies:
  * <p>
  * {@link DocValuesType#NUMERIC NUMERIC}:
  * <ul>
@@ -75,6 +75,12 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
  *        above. 
  * </ul>
  * <p>
+ * {@link DocValuesType#SORTED_NUMERIC SORTED_NUMERIC}:
+ * <ul>
+ *    <li>SortedNumeric: a value list and per-document index into this list are written using the numeric
+ *        strategies above.
+ * </ul>
+ * <p>
  * Files:
  * <ol>
  *   <li><tt>.dvd</tt>: DocValues data</li>
@@ -87,7 +93,7 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
  *      DocValues data (.dvd)</p>
  *   <p>DocValues metadata (.dvm) --&gt; Header,&lt;Entry&gt;<sup>NumFields</sup>,Footer</p>
  *   <ul>
- *     <li>Entry --&gt; NumericEntry | BinaryEntry | SortedEntry | SortedSetEntry</li>
+ *     <li>Entry --&gt; NumericEntry | BinaryEntry | SortedEntry | SortedSetEntry | SortedNumericEntry</li>
  *     <li>NumericEntry --&gt; GCDNumericEntry | TableNumericEntry | DeltaNumericEntry</li>
  *     <li>GCDNumericEntry --&gt; NumericHeader,MinValue,GCD,BitsPerValue</li>
  *     <li>TableNumericEntry --&gt; NumericHeader,TableSize,{@link DataOutput#writeLong Int64}<sup>TableSize</sup>,BitsPerValue</li>
@@ -101,6 +107,7 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
  *     <li>BinaryHeader --&gt; FieldNumber,EntryType,BinaryType,MissingOffset,MinLength,MaxLength,DataOffset</li>
  *     <li>SortedEntry --&gt; FieldNumber,EntryType,BinaryEntry,NumericEntry</li>
  *     <li>SortedSetEntry --&gt; EntryType,BinaryEntry,NumericEntry,NumericEntry</li>
+ *     <li>SortedNumericEntry --&gt; EntryType,NumericEntry,NumericEntry</li>
  *     <li>FieldNumber,PackedVersion,MinLength,MaxLength,BlockSize,ValueCount --&gt; {@link DataOutput#writeVInt VInt}</li>
  *     <li>EntryType,CompressionType --&gt; {@link DataOutput#writeByte Byte}</li>
  *     <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
@@ -112,6 +119,8 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
  *      and an ordinary NumericEntry for the document-to-ord metadata.</p>
  *   <p>SortedSet fields have three entries: a BinaryEntry with the value metadata,
  *      and two NumericEntries for the document-to-ord-index and ordinal list metadata.</p>
+ *   <p>SortedNumeric fields have two entries: A NumericEntry with the value metadata,
+ *      and a numeric entry with the document-to-value index.</p>
  *   <p>FieldNumber of -1 indicates the end of metadata.</p>
  *   <p>EntryType is a 0 (NumericEntry) or 1 (BinaryEntry)</p>
  *   <p>DataOffset is the pointer to the start of the data in the DocValues data (.dvd)</p>
@@ -182,4 +191,5 @@ public final class Lucene49DocValuesFormat extends DocValuesFormat {
   static final byte BINARY = 1;
   static final byte SORTED = 2;
   static final byte SORTED_SET = 3;
+  static final byte SORTED_NUMERIC = 4;
 }

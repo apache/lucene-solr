@@ -35,6 +35,7 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -114,6 +115,11 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
     @Override
     public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
       getInstance(field).addSortedField(field, values, docToOrd);
+    }
+
+    @Override
+    public void addSortedNumericField(FieldInfo field, Iterable<Number> docToValueCount, Iterable<Number> values) throws IOException {
+      getInstance(field).addSortedNumericField(field, docToValueCount, values);
     }
 
     @Override
@@ -277,6 +283,12 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
     public SortedDocValues getSorted(FieldInfo field) throws IOException {
       DocValuesProducer producer = fields.get(field.name);
       return producer == null ? null : producer.getSorted(field);
+    }
+
+    @Override
+    public SortedNumericDocValues getSortedNumeric(FieldInfo field) throws IOException {
+      DocValuesProducer producer = fields.get(field.name);
+      return producer == null ? null : producer.getSortedNumeric(field);
     }
 
     @Override

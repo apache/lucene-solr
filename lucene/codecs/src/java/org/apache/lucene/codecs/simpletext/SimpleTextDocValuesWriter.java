@@ -136,6 +136,10 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
   public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
     assert fieldSeen(field.name);
     assert field.getDocValuesType() == DocValuesType.BINARY;
+    doAddBinary(field, values);
+  }
+    
+  private void doAddBinary(FieldInfo field, Iterable<BytesRef> values) throws IOException {
     int maxLength = 0;
     for(BytesRef value : values) {
       final int length = value == null ? 0 : value.length;
@@ -265,6 +269,48 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
       SimpleTextUtil.write(data, ordEncoder.format(ord.longValue()+1), scratch);
       SimpleTextUtil.writeNewline(data);
     }
+  }
+
+  @Override
+  public void addSortedNumericField(FieldInfo field, final Iterable<Number> docToValueCount, final Iterable<Number> values) throws IOException {
+    assert fieldSeen(field.name);
+    assert field.getDocValuesType() == DocValuesType.SORTED_NUMERIC;
+    doAddBinary(field, new Iterable<BytesRef>() {     
+      @Override
+      public Iterator<BytesRef> iterator() {
+        final StringBuilder builder = new StringBuilder();
+        final BytesRef scratch = new BytesRef();
+        final Iterator<Number> counts = docToValueCount.iterator();
+        final Iterator<Number> numbers = values.iterator();
+        
+        return new Iterator<BytesRef>() {
+
+          @Override
+          public boolean hasNext() {
+            return counts.hasNext();
+          }
+
+          @Override
+          public BytesRef next() {
+            builder.setLength(0);
+            long count = counts.next().longValue();
+            for (int i = 0; i < count; i++) {
+              if (i > 0) {
+                builder.append(',');
+              }
+              builder.append(Long.toString(numbers.next().longValue()));
+            }
+            scratch.copyChars(builder);
+            return scratch;
+          }
+
+          @Override
+          public void remove() {
+            throw new UnsupportedOperationException();
+          }
+        };
+      }
+    });
   }
 
   @Override

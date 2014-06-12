@@ -206,6 +206,11 @@ class Lucene42NormsConsumer extends DocValuesConsumer {
   }
 
   @Override
+  public void addSortedNumericField(FieldInfo field, Iterable<Number> docToValueCount, Iterable<Number> values) throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, final Iterable<Number> docToOrdCount, final Iterable<Number> ords) throws IOException {
     throw new UnsupportedOperationException();
   }

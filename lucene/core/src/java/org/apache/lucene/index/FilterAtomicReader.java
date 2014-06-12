@@ -413,6 +413,12 @@ public class FilterAtomicReader extends AtomicReader {
     ensureOpen();
     return in.getSortedDocValues(field);
   }
+  
+  @Override
+  public SortedNumericDocValues getSortedNumericDocValues(String field) throws IOException {
+    ensureOpen();
+    return in.getSortedNumericDocValues(field);
+  }
 
   @Override
   public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {

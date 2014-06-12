@@ -30,7 +30,6 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
 import org.apache.lucene.codecs.blocktree.FieldReader;
 import org.apache.lucene.codecs.blocktree.Stats;
 import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
@@ -298,6 +297,9 @@ public class CheckIndex {
       
       /** Total number of sorted fields */
       public long totalSortedFields;
+      
+      /** Total number of sortednumeric fields */
+      public long totalSortedNumericFields;
       
       /** Total number of sortedset fields */
       public long totalSortedSetFields;
@@ -1380,6 +1382,7 @@ public class CheckIndex {
                              + status.totalBinaryFields + " BINARY; " 
                              + status.totalNumericFields + " NUMERIC; "
                              + status.totalSortedFields + " SORTED; "
+                             + status.totalSortedNumericFields + " SORTED_NUMERIC; "
                              + status.totalSortedSetFields + " SORTED_SET]");
     } catch (Throwable e) {
       msg(infoStream, "ERROR [" + String.valueOf(e.getMessage()) + "]");
@@ -1510,6 +1513,30 @@ public class CheckIndex {
       lastValue = BytesRef.deepCopyOf(term);
     }
   }
+  
+  private static void checkSortedNumericDocValues(String fieldName, AtomicReader reader, SortedNumericDocValues ndv, Bits docsWithField) {
+    for (int i = 0; i < reader.maxDoc(); i++) {
+      ndv.setDocument(i);
+      int count = ndv.count();
+      if (docsWithField.get(i)) {
+        if (count == 0) {
+          throw new RuntimeException("dv for field: " + fieldName + " is not marked missing but has zero count for doc: " + i);
+        }
+        long previous = Long.MIN_VALUE;
+        for (int j = 0; j < count; j++) {
+          long value = ndv.valueAt(j);
+          if (value < previous) {
+            throw new RuntimeException("values out of order: " + value + " < " + previous + " for doc: " + i);
+          }
+          previous = value;
+        }
+      } else {
+        if (count != 0) {
+          throw new RuntimeException("dv for field: " + fieldName + " is marked missing but has count=" + count + " for doc: " + i);
+        }
+      }
+    }
+  }
 
   private static void checkNumericDocValues(String fieldName, AtomicReader reader, NumericDocValues ndv, Bits docsWithField) {
     for (int i = 0; i < reader.maxDoc(); i++) {
@@ -1533,7 +1560,18 @@ public class CheckIndex {
         checkSortedDocValues(fi.name, reader, reader.getSortedDocValues(fi.name), docsWithField);
         if (reader.getBinaryDocValues(fi.name) != null ||
             reader.getNumericDocValues(fi.name) != null ||
+            reader.getSortedNumericDocValues(fi.name) != null ||
             reader.getSortedSetDocValues(fi.name) != null) {
+          throw new RuntimeException(fi.name + " returns multiple docvalues types!");
+        }
+        break;
+      case SORTED_NUMERIC:
+        status.totalSortedNumericFields++;
+        checkSortedNumericDocValues(fi.name, reader, reader.getSortedNumericDocValues(fi.name), docsWithField);
+        if (reader.getBinaryDocValues(fi.name) != null ||
+            reader.getNumericDocValues(fi.name) != null ||
+            reader.getSortedSetDocValues(fi.name) != null ||
+            reader.getSortedDocValues(fi.name) != null) {
           throw new RuntimeException(fi.name + " returns multiple docvalues types!");
         }
         break;
@@ -1542,6 +1580,7 @@ public class CheckIndex {
         checkSortedSetDocValues(fi.name, reader, reader.getSortedSetDocValues(fi.name), docsWithField);
         if (reader.getBinaryDocValues(fi.name) != null ||
             reader.getNumericDocValues(fi.name) != null ||
+            reader.getSortedNumericDocValues(fi.name) != null ||
             reader.getSortedDocValues(fi.name) != null) {
           throw new RuntimeException(fi.name + " returns multiple docvalues types!");
         }
@@ -1551,6 +1590,7 @@ public class CheckIndex {
         checkBinaryDocValues(fi.name, reader, reader.getBinaryDocValues(fi.name), docsWithField);
         if (reader.getNumericDocValues(fi.name) != null ||
             reader.getSortedDocValues(fi.name) != null ||
+            reader.getSortedNumericDocValues(fi.name) != null ||
             reader.getSortedSetDocValues(fi.name) != null) {
           throw new RuntimeException(fi.name + " returns multiple docvalues types!");
         }
@@ -1560,6 +1600,7 @@ public class CheckIndex {
         checkNumericDocValues(fi.name, reader, reader.getNumericDocValues(fi.name), docsWithField);
         if (reader.getBinaryDocValues(fi.name) != null ||
             reader.getSortedDocValues(fi.name) != null ||
+            reader.getSortedNumericDocValues(fi.name) != null ||
             reader.getSortedSetDocValues(fi.name) != null) {
           throw new RuntimeException(fi.name + " returns multiple docvalues types!");
         }

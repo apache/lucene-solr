@@ -235,6 +235,10 @@ public class TestUninvertingReader extends LuceneTestCase {
           break;
         case SORTED_SET:
           reader.getSortedSetDocValues(field);
+          break;
+        case SORTED_NUMERIC:
+          // not supported
+          return;
         default:
           throw new AssertionError();
       }

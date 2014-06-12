@@ -32,6 +32,7 @@ import org.apache.lucene.index.MultiDocValues.OrdinalMap;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.ArrayUtil;
@@ -93,6 +94,16 @@ public abstract class DocValuesConsumer implements Closeable {
    * @throws IOException if an I/O error occurred.
    */
   public abstract void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException;
+  
+  /**
+   * Writes pre-sorted numeric docvalues for a field
+   * @param field field information
+   * @param docToValueCount Iterable of the number of values for each document. A zero
+   *                        count indicates a missing value.
+   * @param values Iterable of numeric values in sorted order (not deduplicated).
+   * @throws IOException if an I/O error occurred.
+   */
+  public abstract void addSortedNumericField(FieldInfo field, Iterable<Number> docToValueCount, Iterable<Number> values) throws IOException;
 
   /**
    * Writes pre-sorted set docvalues for a field
@@ -265,6 +276,156 @@ public abstract class DocValuesConsumer implements Closeable {
                    });
   }
 
+  /**
+   * Merges the sorted docvalues from <code>toMerge</code>.
+   * <p>
+   * The default implementation calls {@link #addSortedNumericField}, passing
+   * iterables that filter deleted documents.
+   */
+  public void mergeSortedNumericField(FieldInfo fieldInfo, final MergeState mergeState, List<SortedNumericDocValues> toMerge) throws IOException {
+    final AtomicReader readers[] = mergeState.readers.toArray(new AtomicReader[toMerge.size()]);
+    final SortedNumericDocValues dvs[] = toMerge.toArray(new SortedNumericDocValues[toMerge.size()]);
+    
+    // step 3: add field
+    addSortedNumericField(fieldInfo,
+        // doc -> value count
+        new Iterable<Number>() {
+          @Override
+          public Iterator<Number> iterator() {
+            return new Iterator<Number>() {
+              int readerUpto = -1;
+              int docIDUpto;
+              int nextValue;
+              AtomicReader currentReader;
+              Bits currentLiveDocs;
+              boolean nextIsSet;
+
+              @Override
+              public boolean hasNext() {
+                return nextIsSet || setNext();
+              }
+
+              @Override
+              public void remove() {
+                throw new UnsupportedOperationException();
+              }
+
+              @Override
+              public Number next() {
+                if (!hasNext()) {
+                  throw new NoSuchElementException();
+                }
+                assert nextIsSet;
+                nextIsSet = false;
+                return nextValue;
+              }
+
+              private boolean setNext() {
+                while (true) {
+                  if (readerUpto == readers.length) {
+                    return false;
+                  }
+
+                  if (currentReader == null || docIDUpto == currentReader.maxDoc()) {
+                    readerUpto++;
+                    if (readerUpto < readers.length) {
+                      currentReader = readers[readerUpto];
+                      currentLiveDocs = currentReader.getLiveDocs();
+                    }
+                    docIDUpto = 0;
+                    continue;
+                  }
+
+                  if (currentLiveDocs == null || currentLiveDocs.get(docIDUpto)) {
+                    nextIsSet = true;
+                    SortedNumericDocValues dv = dvs[readerUpto];
+                    dv.setDocument(docIDUpto);
+                    nextValue = dv.count();
+                    docIDUpto++;
+                    return true;
+                  }
+
+                  docIDUpto++;
+                }
+              }
+            };
+          }
+        },
+        // values
+        new Iterable<Number>() {
+          @Override
+          public Iterator<Number> iterator() {
+            return new Iterator<Number>() {
+              int readerUpto = -1;
+              int docIDUpto;
+              long nextValue;
+              AtomicReader currentReader;
+              Bits currentLiveDocs;
+              boolean nextIsSet;
+              int valueUpto;
+              int valueLength;
+
+              @Override
+              public boolean hasNext() {
+                return nextIsSet || setNext();
+              }
+
+              @Override
+              public void remove() {
+                throw new UnsupportedOperationException();
+              }
+
+              @Override
+              public Number next() {
+                if (!hasNext()) {
+                  throw new NoSuchElementException();
+                }
+                assert nextIsSet;
+                nextIsSet = false;
+                return nextValue;
+              }
+
+              private boolean setNext() {
+                while (true) {
+                  if (readerUpto == readers.length) {
+                    return false;
+                  }
+                  
+                  if (valueUpto < valueLength) {
+                    nextValue = dvs[readerUpto].valueAt(valueUpto);
+                    valueUpto++;
+                    nextIsSet = true;
+                    return true;
+                  }
+
+                  if (currentReader == null || docIDUpto == currentReader.maxDoc()) {
+                    readerUpto++;
+                    if (readerUpto < readers.length) {
+                      currentReader = readers[readerUpto];
+                      currentLiveDocs = currentReader.getLiveDocs();
+                    }
+                    docIDUpto = 0;
+                    continue;
+                  }
+                  
+                  if (currentLiveDocs == null || currentLiveDocs.get(docIDUpto)) {
+                    assert docIDUpto < currentReader.maxDoc();
+                    SortedNumericDocValues dv = dvs[readerUpto];
+                    dv.setDocument(docIDUpto);
+                    valueUpto = 0;
+                    valueLength = dv.count();
+                    docIDUpto++;
+                    continue;
+                  }
+
+                  docIDUpto++;
+                }
+              }
+            };
+          }
+        }
+     );
+  }
 
   /**
    * Merges the sorted docvalues from <code>toMerge</code>.
@@ -639,5 +800,50 @@ public abstract class DocValuesConsumer implements Closeable {
         return AcceptStatus.NO;
       }
     }
+  }
+  
+  /** Helper: returns true if the given docToValue count contains only at most one value */
+  public static boolean isSingleValued(Iterable<Number> docToValueCount) {
+    for (Number count : docToValueCount) {
+      if (count.longValue() > 1) {
+        return false;
+      }
+    }
+    return true;
+  }
+  
+  /** Helper: returns single-valued view, using {@code missingValue} when count is zero */
+  public static Iterable<Number> singletonView(final Iterable<Number> docToValueCount, final Iterable<Number> values, final Number missingValue) {
+    assert isSingleValued(docToValueCount);
+    return new Iterable<Number>() {
+
+      @Override
+      public Iterator<Number> iterator() {
+        final Iterator<Number> countIterator = docToValueCount.iterator();
+        final Iterator<Number> valuesIterator = values.iterator();
+        return new Iterator<Number>() {
+
+          @Override
+          public boolean hasNext() {
+            return countIterator.hasNext();
+          }
+
+          @Override
+          public Number next() {
+            int count = countIterator.next().intValue();
+            if (count == 0) {
+              return missingValue;
+            } else {
+              return valuesIterator.next();
+            }
+          }
+
+          @Override
+          public void remove() {
+            throw new UnsupportedOperationException();
+          }
+        };
+      }
+    };
   }
 }

@@ -23,8 +23,8 @@ import static org.apache.lucene.codecs.lucene49.Lucene49DocValuesConsumer.BINARY
 import static org.apache.lucene.codecs.lucene49.Lucene49DocValuesConsumer.DELTA_COMPRESSED;
 import static org.apache.lucene.codecs.lucene49.Lucene49DocValuesConsumer.GCD_COMPRESSED;
 import static org.apache.lucene.codecs.lucene49.Lucene49DocValuesConsumer.MONOTONIC_COMPRESSED;
-import static org.apache.lucene.codecs.lucene49.Lucene49DocValuesConsumer.SORTED_SET_SINGLE_VALUED_SORTED;
-import static org.apache.lucene.codecs.lucene49.Lucene49DocValuesConsumer.SORTED_SET_WITH_ADDRESSES;
+import static org.apache.lucene.codecs.lucene49.Lucene49DocValuesConsumer.SORTED_SINGLE_VALUED;
+import static org.apache.lucene.codecs.lucene49.Lucene49DocValuesConsumer.SORTED_WITH_ADDRESSES;
 import static org.apache.lucene.codecs.lucene49.Lucene49DocValuesConsumer.TABLE_COMPRESSED;
 
 import java.io.Closeable; // javadocs
@@ -47,6 +47,7 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomAccessOrds;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
@@ -66,6 +67,7 @@ public class Lucene49DocValuesProducer extends DocValuesProducer implements Clos
   private final Map<Integer,NumericEntry> numerics;
   private final Map<Integer,BinaryEntry> binaries;
   private final Map<Integer,SortedSetEntry> sortedSets;
+  private final Map<Integer,SortedSetEntry> sortedNumerics;
   private final Map<Integer,NumericEntry> ords;
   private final Map<Integer,NumericEntry> ordIndexes;
   private final AtomicLong ramBytesUsed;
@@ -93,6 +95,7 @@ public class Lucene49DocValuesProducer extends DocValuesProducer implements Clos
       ordIndexes = new HashMap<>();
       binaries = new HashMap<>();
       sortedSets = new HashMap<>();
+      sortedNumerics = new HashMap<>();
       readFields(in, state.fieldInfos);
 
       CodecUtil.checkFooter(in);
@@ -196,9 +199,9 @@ public class Lucene49DocValuesProducer extends DocValuesProducer implements Clos
       } else if (type == Lucene49DocValuesFormat.SORTED_SET) {
         SortedSetEntry ss = readSortedSetEntry(meta);
         sortedSets.put(fieldNumber, ss);
-        if (ss.format == SORTED_SET_WITH_ADDRESSES) {
+        if (ss.format == SORTED_WITH_ADDRESSES) {
           readSortedSetFieldWithAddresses(fieldNumber, meta, infos);
-        } else if (ss.format == SORTED_SET_SINGLE_VALUED_SORTED) {
+        } else if (ss.format == SORTED_SINGLE_VALUED) {
           if (meta.readVInt() != fieldNumber) {
             throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
           }
@@ -207,6 +210,28 @@ public class Lucene49DocValuesProducer extends DocValuesProducer implements Clos
           }
           readSortedField(fieldNumber, meta, infos);
         } else {
+          throw new AssertionError();
+        }
+      } else if (type == Lucene49DocValuesFormat.SORTED_NUMERIC) {
+        SortedSetEntry ss = readSortedSetEntry(meta);
+        sortedNumerics.put(fieldNumber, ss);
+        if (meta.readVInt() != fieldNumber) {
+          throw new CorruptIndexException("sortednumeric entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
+        }
+        if (meta.readByte() != Lucene49DocValuesFormat.NUMERIC) {
+          throw new CorruptIndexException("sortednumeric entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
+        }
+        numerics.put(fieldNumber, readNumericEntry(meta));
+        if (ss.format == SORTED_WITH_ADDRESSES) {
+          if (meta.readVInt() != fieldNumber) {
+            throw new CorruptIndexException("sortednumeric entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
+          }
+          if (meta.readByte() != Lucene49DocValuesFormat.NUMERIC) {
+            throw new CorruptIndexException("sortednumeric entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
+          }
+          NumericEntry ordIndex = readNumericEntry(meta);
+          ordIndexes.put(fieldNumber, ordIndex);
+        } else if (ss.format != SORTED_SINGLE_VALUED) {
           throw new AssertionError();
         }
       } else {
@@ -285,7 +310,7 @@ public class Lucene49DocValuesProducer extends DocValuesProducer implements Clos
   SortedSetEntry readSortedSetEntry(IndexInput meta) throws IOException {
     SortedSetEntry entry = new SortedSetEntry();
     entry.format = meta.readVInt();
-    if (entry.format != SORTED_SET_SINGLE_VALUED_SORTED && entry.format != SORTED_SET_WITH_ADDRESSES) {
+    if (entry.format != SORTED_SINGLE_VALUED && entry.format != SORTED_WITH_ADDRESSES) {
       throw new CorruptIndexException("Unknown format: " + entry.format + ", input=" + meta);
     }
     return entry;
@@ -309,7 +334,6 @@ public class Lucene49DocValuesProducer extends DocValuesProducer implements Clos
 
   LongValues getNumeric(NumericEntry entry) throws IOException {
     RandomAccessInput slice = this.data.randomAccessSlice(entry.offset, entry.endOffset - entry.offset);
-    
     switch (entry.format) {
       case DELTA_COMPRESSED:
         final long delta = entry.minValue;
@@ -519,14 +543,51 @@ public class Lucene49DocValuesProducer extends DocValuesProducer implements Clos
     }
     return ordIndex;
   }
+  
+  @Override
+  public SortedNumericDocValues getSortedNumeric(FieldInfo field) throws IOException {
+    SortedSetEntry ss = sortedNumerics.get(field.number);
+    NumericEntry numericEntry = numerics.get(field.number);
+    final LongValues values = getNumeric(numericEntry);
+    if (ss.format == SORTED_SINGLE_VALUED) {
+      final Bits docsWithField = getMissingBits(numericEntry.missingOffset);
+      return DocValues.singleton(values, docsWithField);
+    } else if (ss.format == SORTED_WITH_ADDRESSES) {
+      final IndexInput data = this.data.clone();
+      final MonotonicBlockPackedReader ordIndex = getOrdIndexInstance(data, field, ordIndexes.get(field.number));
+      
+      return new SortedNumericDocValues() {
+        long startOffset;
+        long endOffset;
+        
+        @Override
+        public void setDocument(int doc) {
+          startOffset = ordIndex.get(doc);
+          endOffset = ordIndex.get(doc+1L);
+        }
+
+        @Override
+        public long valueAt(int index) {
+          return values.get(startOffset + index);
+        }
+
+        @Override
+        public int count() {
+          return (int) (endOffset - startOffset);
+        }
+      };
+    } else {
+      throw new AssertionError();
+    }
+  }
 
   @Override
   public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
     SortedSetEntry ss = sortedSets.get(field.number);
-    if (ss.format == SORTED_SET_SINGLE_VALUED_SORTED) {
+    if (ss.format == SORTED_SINGLE_VALUED) {
       final SortedDocValues values = getSorted(field);
       return DocValues.singleton(values);
-    } else if (ss.format != SORTED_SET_WITH_ADDRESSES) {
+    } else if (ss.format != SORTED_WITH_ADDRESSES) {
       throw new AssertionError();
     }
 
@@ -629,6 +690,8 @@ public class Lucene49DocValuesProducer extends DocValuesProducer implements Clos
     switch(field.getDocValuesType()) {
       case SORTED_SET:
         return DocValues.docsWithValue(getSortedSet(field), maxDoc);
+      case SORTED_NUMERIC:
+        return DocValues.docsWithValue(getSortedNumeric(field), maxDoc);
       case SORTED:
         return DocValues.docsWithValue(getSorted(field), maxDoc);
       case BINARY:

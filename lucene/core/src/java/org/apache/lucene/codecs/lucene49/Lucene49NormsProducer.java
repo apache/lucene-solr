@@ -32,6 +32,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
@@ -216,6 +217,11 @@ class Lucene49NormsProducer extends DocValuesProducer {
     throw new IllegalStateException();
   }
   
+  @Override
+  public SortedNumericDocValues getSortedNumeric(FieldInfo field) throws IOException {
+    throw new IllegalStateException();
+  }
+
   @Override
   public Bits getDocsWithField(FieldInfo field) throws IOException {
     throw new IllegalStateException();

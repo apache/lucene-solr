@@ -531,6 +531,11 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
   }
   
   @Override
+  public void addSortedNumericField(FieldInfo field, Iterable<Number> docToValueCount, Iterable<Number> values) throws IOException {
+    throw new UnsupportedOperationException("Lucene 4.0 does not support SortedNumeric docvalues");
+  }
+  
+  @Override
   public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrdCount, Iterable<Number> ords) throws IOException {
     throw new UnsupportedOperationException("Lucene 4.0 does not support SortedSet docvalues");
   }

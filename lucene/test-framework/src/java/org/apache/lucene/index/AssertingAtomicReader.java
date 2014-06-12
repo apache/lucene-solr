@@ -512,6 +512,41 @@ public class AssertingAtomicReader extends FilterAtomicReader {
   }
   
   /** Wraps a SortedSetDocValues but with additional asserts */
+  public static class AssertingSortedNumericDocValues extends SortedNumericDocValues {
+    private final SortedNumericDocValues in;
+    private final int maxDoc;
+    
+    public AssertingSortedNumericDocValues(SortedNumericDocValues in, int maxDoc) {
+      this.in = in;
+      this.maxDoc = maxDoc;
+    }
+
+    @Override
+    public void setDocument(int doc) {
+      assert doc >= 0 && doc < maxDoc;
+      in.setDocument(doc);
+      // check the values are actually sorted
+      long previous = Long.MIN_VALUE;
+      for (int i = 0; i < in.count(); i++) {
+        long v = in.valueAt(i);
+        assert v >= previous;
+        previous = v;
+      }
+    }
+
+    @Override
+    public long valueAt(int index) {
+      assert index < in.count();
+      return in.valueAt(index);
+    }
+
+    @Override
+    public int count() {
+      return in.count();
+    } 
+  }
+  
+  /** Wraps a SortedSetDocValues but with additional asserts */
   public static class AssertingSortedSetDocValues extends SortedSetDocValues {
     private final SortedSetDocValues in;
     private final int maxDoc;
@@ -605,6 +640,20 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       return new AssertingSortedDocValues(dv, maxDoc());
     } else {
       assert fi == null || fi.getDocValuesType() != FieldInfo.DocValuesType.SORTED;
+      return null;
+    }
+  }
+  
+  @Override
+  public SortedNumericDocValues getSortedNumericDocValues(String field) throws IOException {
+    SortedNumericDocValues dv = super.getSortedNumericDocValues(field);
+    FieldInfo fi = getFieldInfos().fieldInfo(field);
+    if (dv != null) {
+      assert fi != null;
+      assert fi.getDocValuesType() == FieldInfo.DocValuesType.SORTED_NUMERIC;
+      return new AssertingSortedNumericDocValues(dv, maxDoc());
+    } else {
+      assert fi == null || fi.getDocValuesType() != FieldInfo.DocValuesType.SORTED_NUMERIC;
       return null;
     }
   }
