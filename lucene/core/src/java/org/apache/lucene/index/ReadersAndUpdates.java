@@ -230,7 +230,7 @@ class ReadersAndUpdates {
 
   /**
    * Returns a ref to a clone. NOTE: you should decRef() the reader when you're
-   * dont (ie do not call close()).
+   * done (ie do not call close()).
    */
   public synchronized SegmentReader getReadOnlyClone(IOContext context) throws IOException {
     if (reader == null) {
