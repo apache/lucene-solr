@@ -316,7 +316,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
         while (pendingDocs.decrementAndGet() > -1) {
           Document doc = docs.nextDoc();
           writer.addDocument(doc);
-          long newRamSize = writer.ramSizeInBytes();
+          long newRamSize = writer.ramBytesUsed();
           if (newRamSize != ramSize) {
             ramSize = newRamSize;
           }

@@ -24,6 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
 import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -66,7 +67,7 @@ import org.apache.lucene.util.BytesRef;
  * will also not be added to its private deletes neither to the global deletes.
  * 
  */
-final class DocumentsWriterDeleteQueue {
+final class DocumentsWriterDeleteQueue implements Accountable {
 
   private volatile Node<?> tail;
   
@@ -448,8 +449,9 @@ final class DocumentsWriterDeleteQueue {
       globalBufferLock.unlock();
     }
   }
-  
-  public long bytesUsed() {
+
+  @Override
+  public long ramBytesUsed() {
     return globalBufferedUpdates.bytesUsed.get();
   }
 

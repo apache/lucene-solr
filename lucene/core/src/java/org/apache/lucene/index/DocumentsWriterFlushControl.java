@@ -19,14 +19,15 @@ package org.apache.lucene.index;
 
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
-import java.util.List;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.ThreadInterruptedException;
 
@@ -42,7 +43,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * {@link IndexWriterConfig#getRAMPerThreadHardLimitMB()} to prevent address
  * space exhaustion.
  */
-final class DocumentsWriterFlushControl  {
+final class DocumentsWriterFlushControl implements Accountable {
 
   private final long hardMaxBytesPerDWPT;
   private long activeBytes = 0;
@@ -428,7 +429,12 @@ final class DocumentsWriterFlushControl  {
   }
   
   public long getDeleteBytesUsed() {
-    return documentsWriter.deleteQueue.bytesUsed() + bufferedUpdatesStream.bytesUsed();
+    return documentsWriter.deleteQueue.ramBytesUsed() + bufferedUpdatesStream.ramBytesUsed();
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return getDeleteBytesUsed() + netBytes();
   }
 
   synchronized int numFlushingDWPT() {
