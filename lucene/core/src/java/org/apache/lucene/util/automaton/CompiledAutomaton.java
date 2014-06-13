@@ -173,7 +173,7 @@ public class CompiledAutomaton {
     lightAutomaton = runAutomaton.a;
   }
 
-  private LightAutomaton.Transition scratch = new LightAutomaton.Transition();
+  private Transition scratch = new Transition();
   
   //private static final boolean DEBUG = BlockTreeTermsWriter.DEBUG;
 

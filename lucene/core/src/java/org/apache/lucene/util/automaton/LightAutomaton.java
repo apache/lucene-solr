@@ -420,27 +420,6 @@ public class LightAutomaton {
       }
     };
 
-  /** Just used temporarily to return the transition from
-   *  {@link getTransition} and {@link #getNextTransition}. */
-  public static class Transition {
-    // used only for assert:
-    public int source;
-    public int dest;
-    public int min;
-    public int max;
-
-    /** Remembers where we are in the iteration; init to -1 to provoke
-     *  exception if nextTransition is called without first initTransition. */
-    private int transitionUpto = -1;
-
-    @Override
-    public String toString() {
-      return source + " --> " + dest + " " + (char) min + "-" + (char) max;
-    }
-
-    // nocommit equals?  hashCode?  don't want to encourage putting these into a Map...?
-  }
-
   // nocommit createStates(int count)?
 
   // nocommit kinda awkward iterator api...

@@ -71,7 +71,7 @@ final public class SpecialOperations {
    * Returns true if the language of this automaton is finite.
    */
   public static boolean isFinite(LightAutomaton a) {
-    return isFinite(new LightAutomaton.Transition(), a, 0, new BitSet(a.getNumStates()), new BitSet(a.getNumStates()));
+    return isFinite(new Transition(), a, 0, new BitSet(a.getNumStates()), new BitSet(a.getNumStates()));
   }
   
   /**
@@ -80,7 +80,7 @@ final public class SpecialOperations {
    */
   // TODO: not great that this is recursive... in theory a
   // large automata could exceed java's stack
-  private static boolean isFinite(LightAutomaton.Transition scratch, LightAutomaton a, int state, BitSet path, BitSet visited) {
+  private static boolean isFinite(Transition scratch, LightAutomaton a, int state, BitSet path, BitSet visited) {
     path.set(state);
     int numTransitions = a.initTransition(state, scratch);
     for(int t=0;t<numTransitions;t++) {
@@ -106,7 +106,7 @@ final public class SpecialOperations {
     HashSet<Integer> visited = new HashSet<>();
     int s = 0;
     boolean done;
-    LightAutomaton.Transition t = new LightAutomaton.Transition();
+    Transition t = new Transition();
     do {
       done = true;
       visited.add(s);
@@ -128,7 +128,7 @@ final public class SpecialOperations {
     HashSet<Integer> visited = new HashSet<>();
     int s = 0;
     boolean done;
-    LightAutomaton.Transition t = new LightAutomaton.Transition();
+    Transition t = new Transition();
     do {
       done = true;
       visited.add(s);
@@ -191,7 +191,7 @@ final public class SpecialOperations {
     // Old initial state becomes new accept state:
     builder.setAccept(1, true);
 
-    LightAutomaton.Transition t = new LightAutomaton.Transition();
+    Transition t = new Transition();
     for (int s=0;s<numStates;s++) {
       int numTransitions = a.getNumTransitions(s);
       a.initTransition(s, t);
@@ -231,7 +231,7 @@ final public class SpecialOperations {
      *  current Transition */
     public int label;
 
-    private final LightAutomaton.Transition t = new LightAutomaton.Transition();
+    private final Transition t = new Transition();
 
     public void resetState(LightAutomaton a, int state) {
       assert a.getNumTransitions(state) != 0;

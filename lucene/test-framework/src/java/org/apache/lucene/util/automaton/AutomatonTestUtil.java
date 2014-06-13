@@ -138,15 +138,15 @@ public class AutomatonTestUtil {
    */
   public static class RandomAcceptedStringsLight {
 
-    private final Map<LightAutomaton.Transition,Boolean> leadsToAccept;
+    private final Map<Transition,Boolean> leadsToAccept;
     private final LightAutomaton a;
-    private final LightAutomaton.Transition[][] transitions;
+    private final Transition[][] transitions;
 
     private static class ArrivingTransition {
       final int from;
-      final LightAutomaton.Transition t;
+      final Transition t;
 
-      public ArrivingTransition(int from, LightAutomaton.Transition t) {
+      public ArrivingTransition(int from, Transition t) {
         this.from = from;
         this.t = t;
       }
@@ -169,7 +169,7 @@ public class AutomatonTestUtil {
       // up all arriving transitions to a given state
       int numStates = a.getNumStates();
       for(int s=0;s<numStates;s++) {
-        for(LightAutomaton.Transition t : transitions[s]) {
+        for(Transition t : transitions[s]) {
           List<ArrivingTransition> tl = allArriving.get(t.dest);
           if (tl == null) {
             tl = new ArrayList<>();
@@ -226,12 +226,12 @@ public class AutomatonTestUtil {
 
         boolean cheat = r.nextBoolean();
 
-        final LightAutomaton.Transition t;
+        final Transition t;
         if (cheat) {
           // pick a transition that we know is the fastest
           // path to an accept state
-          List<LightAutomaton.Transition> toAccept = new ArrayList<>();
-          for(LightAutomaton.Transition t0 : transitions[s]) {
+          List<Transition> toAccept = new ArrayList<>();
+          for(Transition t0 : transitions[s]) {
             if (leadsToAccept.containsKey(t0)) {
               toAccept.add(t0);
             }
@@ -344,7 +344,7 @@ public class AutomatonTestUtil {
     LightAutomaton.Builder result = new LightAutomaton.Builder();
     result.createState();
     newstate.put(initialset, 0);
-    LightAutomaton.Transition t = new LightAutomaton.Transition();
+    Transition t = new Transition();
     while (worklist.size() > 0) {
       Set<Integer> s = worklist.removeFirst();
       int r = newstate.get(s);
@@ -414,7 +414,7 @@ public class AutomatonTestUtil {
   private static boolean getFiniteStringsLight(LightAutomaton a, int s, HashSet<Integer> pathstates, 
       HashSet<IntsRef> strings, IntsRef path, int limit) {
     pathstates.add(s);
-    LightAutomaton.Transition t = new LightAutomaton.Transition();
+    Transition t = new Transition();
     int count = a.initTransition(s, t);
     for (int i=0;i<count;i++) {
       a.getNextTransition(t);
@@ -459,7 +459,7 @@ public class AutomatonTestUtil {
   // large automata could exceed java's stack
   private static boolean isFiniteSlow(LightAutomaton a, int s, HashSet<Integer> path) {
     path.add(s);
-    LightAutomaton.Transition t = new LightAutomaton.Transition();
+    Transition t = new Transition();
     int count = a.initTransition(s, t);
     for (int i=0;i<count;i++) {
       a.getNextTransition(t);

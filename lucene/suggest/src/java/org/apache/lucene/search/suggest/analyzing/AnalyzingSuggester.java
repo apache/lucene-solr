@@ -46,6 +46,7 @@ import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.BasicOperations;
 import org.apache.lucene.util.automaton.LightAutomaton;
 import org.apache.lucene.util.automaton.SpecialOperations;
+import org.apache.lucene.util.automaton.Transition;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.FST.BytesReader;
@@ -263,7 +264,7 @@ public class AnalyzingSuggester extends Lookup {
     int upto = 0;
     states[upto] = 0;
     upto++;
-    LightAutomaton.Transition t = new LightAutomaton.Transition();
+    Transition t = new Transition();
     while (worklist.size() > 0) {
       int s = worklist.removeFirst();
       int count = a.initTransition(s, t);
@@ -295,7 +296,7 @@ public class AnalyzingSuggester extends Lookup {
 
     // Go in reverse topo sort so we know we only have to
     // make one pass:
-    LightAutomaton.Transition t = new LightAutomaton.Transition();
+    Transition t = new Transition();
     int[] topoSortStates = topoSortStates(a);
     for(int i=0;i<topoSortStates.length;i++) {
       int state = topoSortStates[topoSortStates.length-1-i];

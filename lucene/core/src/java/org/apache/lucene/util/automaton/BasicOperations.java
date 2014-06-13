@@ -72,7 +72,6 @@ final public class BasicOperations {
    */
   static public LightAutomaton concatenateLight(List<LightAutomaton> l) {
     LightAutomaton result = new LightAutomaton();
-    LightAutomaton.Transition scratch = new LightAutomaton.Transition();
 
     // First pass: create all states
     for(LightAutomaton a : l) {
@@ -85,6 +84,7 @@ final public class BasicOperations {
     // Second pass: add transitions, carefully linking accept
     // states of A to init state of next A:
     int stateOffset = 0;
+    Transition t = new Transition();
     for(int i=0;i<l.size();i++) {
       LightAutomaton a = l.get(i);
       int numStates = a.getNumStates();
@@ -92,10 +92,10 @@ final public class BasicOperations {
       LightAutomaton nextA = (i == l.size()-1) ? null : l.get(i+1);
 
       for(int s=0;s<numStates;s++) {
-        int numTransitions = a.initTransition(s, scratch);
-        for(int t=0;t<numTransitions;t++) {
-          a.getNextTransition(scratch);
-          result.addTransition(stateOffset + s, stateOffset + scratch.dest, scratch.min, scratch.max);
+        int numTransitions = a.initTransition(s, t);
+        for(int j=0;j<numTransitions;j++) {
+          a.getNextTransition(t);
+          result.addTransition(stateOffset + s, stateOffset + t.dest, t.min, t.max);
         }
 
         if (a.isAccept(s)) {
@@ -105,10 +105,10 @@ final public class BasicOperations {
           while (true) {
             if (followA != null) {
               // Adds a "virtual" epsilon transition:
-              numTransitions = followA.initTransition(0, scratch);
-              for(int t=0;t<numTransitions;t++) {
-                followA.getNextTransition(scratch);
-                result.addTransition(stateOffset + s, followOffset + numStates + scratch.dest, scratch.min, scratch.max);
+              numTransitions = followA.initTransition(0, t);
+              for(int j=0;j<numTransitions;j++) {
+                followA.getNextTransition(t);
+                result.addTransition(stateOffset + s, followOffset + numStates + t.dest, t.min, t.max);
               }
               if (followA.isAccept(0)) {
                 // Keep chaining if followA accepts empty string
@@ -154,7 +154,7 @@ final public class BasicOperations {
       result.setAccept(i+1, a.isAccept(i));
     }
 
-    LightAutomaton.Transition t = new LightAutomaton.Transition();
+    Transition t = new Transition();
     int count = a.initTransition(0, t);
     for(int i=0;i<count;i++) {
       a.getNextTransition(t);
@@ -186,7 +186,7 @@ final public class BasicOperations {
     builder.setAccept(0, true);
     builder.copy(a);
 
-    LightAutomaton.Transition t = new LightAutomaton.Transition();
+    Transition t = new Transition();
     int count = a.initTransition(0, t);
     for(int i=0;i<count;i++) {
       a.getNextTransition(t);
@@ -215,7 +215,7 @@ final public class BasicOperations {
     List<Integer> queue = new ArrayList<>();
     queue.add(0);
     done.set(0);
-    LightAutomaton.Transition t = new LightAutomaton.Transition();
+    Transition t = new Transition();
 
     while (queue.isEmpty() == false) {
       int state = queue.remove(queue.size()-1);
@@ -344,8 +344,8 @@ final public class BasicOperations {
     if (a1 == a2) {
       return a1;
     }
-    LightAutomaton.Transition[][] transitions1 = a1.getSortedTransitions();
-    LightAutomaton.Transition[][] transitions2 = a2.getSortedTransitions();
+    Transition[][] transitions1 = a1.getSortedTransitions();
+    Transition[][] transitions2 = a2.getSortedTransitions();
     LightAutomaton c = new LightAutomaton();
     c.createState();
     LinkedList<LightStatePair> worklist = new LinkedList<>();
@@ -356,8 +356,8 @@ final public class BasicOperations {
     while (worklist.size() > 0) {
       p = worklist.removeFirst();
       c.setAccept(p.s, a1.isAccept(p.s1) && a2.isAccept(p.s2));
-      LightAutomaton.Transition[] t1 = transitions1[p.s1];
-      LightAutomaton.Transition[] t2 = transitions2[p.s2];
+      Transition[] t1 = transitions1[p.s1];
+      Transition[] t2 = transitions2[p.s2];
       for (int n1 = 0, b2 = 0; n1 < t1.length; n1++) {
         while (b2 < t2.length && t2[b2].max < t1[n1].min)
           b2++;
@@ -477,8 +477,8 @@ final public class BasicOperations {
     assert isDeterministic(a1);
     assert isDeterministic(a2);
     // TODO: cutover to iterators instead
-    LightAutomaton.Transition[][] transitions1 = a1.getSortedTransitions();
-    LightAutomaton.Transition[][] transitions2 = a2.getSortedTransitions();
+    Transition[][] transitions1 = a1.getSortedTransitions();
+    Transition[][] transitions2 = a2.getSortedTransitions();
     LinkedList<LightStatePair> worklist = new LinkedList<>();
     HashSet<LightStatePair> visited = new HashSet<>();
     LightStatePair p = new LightStatePair(0, 0);
@@ -489,8 +489,8 @@ final public class BasicOperations {
       if (a1.isAccept(p.s1) && a2.isAccept(p.s2) == false) {
         return false;
       }
-      LightAutomaton.Transition[] t1 = transitions1[p.s1];
-      LightAutomaton.Transition[] t2 = transitions2[p.s2];
+      Transition[] t1 = transitions1[p.s1];
+      Transition[] t2 = transitions2[p.s2];
       for (int n1 = 0, b2 = 0; n1 < t1.length; n1++) {
         while (b2 < t2.length && t2[b2].max < t1[n1].min) {
           b2++;
@@ -665,7 +665,7 @@ final public class BasicOperations {
     result.createState();
 
     // Copy over all automata
-    LightAutomaton.Transition t = new LightAutomaton.Transition();
+    Transition t = new Transition();
     for(LightAutomaton a : l) {
       result.copy(a);
     }
@@ -691,7 +691,7 @@ final public class BasicOperations {
     int[] transitions = new int[3];
     int next;
 
-    public void add(LightAutomaton.Transition t) {
+    public void add(Transition t) {
       if (transitions.length < next+3) {
         transitions = ArrayUtil.grow(transitions, next+3);
       }
@@ -797,7 +797,7 @@ final public class BasicOperations {
       if (count > 1) ArrayUtil.timSort(points, 0, count);
     }
 
-    public void add(LightAutomaton.Transition t) {
+    public void add(Transition t) {
       find(t.min).starts.add(t);
       find(1+t.max).ends.add(t);
     }
@@ -855,7 +855,7 @@ final public class BasicOperations {
     // like SortedMap<Integer,Integer>
     final SortedIntSetLight statesSet = new SortedIntSetLight(5);
 
-    LightAutomaton.Transition scratch = new LightAutomaton.Transition();
+    Transition t = new Transition();
 
     while (worklist.size() > 0) {
       SortedIntSetLight.FrozenIntSetLight s = worklist.removeFirst();
@@ -865,10 +865,10 @@ final public class BasicOperations {
       for(int i=0;i<s.values.length;i++) {
         final int s0 = s.values[i];
         int numTransitions = a.getNumTransitions(s0);
-        a.initTransition(s0, scratch);
+        a.initTransition(s0, t);
         for(int j=0;j<numTransitions;j++) {
-          a.getNextTransition(scratch);
-          points.add(scratch);
+          a.getNextTransition(t);
+          points.add(t);
         }
       }
 
@@ -953,7 +953,7 @@ final public class BasicOperations {
    */
   public static boolean isTotal(LightAutomaton a) {
     if (a.isAccept(0) && a.getNumTransitions(0) == 1) {
-      LightAutomaton.Transition t = new LightAutomaton.Transition();
+      Transition t = new Transition();
       a.getTransition(0, 0, t);
       return t.dest == 0 && t.min == Character.MIN_CODE_POINT
           && t.max == Character.MAX_CODE_POINT;
@@ -1021,7 +1021,7 @@ final public class BasicOperations {
     for (int i = 0; i < numStates; i++) {
       map[i] = new HashSet<>();
     }
-    LightAutomaton.Transition t = new LightAutomaton.Transition();
+    Transition t = new Transition();
     for (int s=0;s<numStates;s++) {
       int numTransitions = a.initTransition(s, t);
       for(int i=0;i<numTransitions;i++) {
@@ -1063,7 +1063,7 @@ final public class BasicOperations {
       }
     }
 
-    LightAutomaton.Transition t = new LightAutomaton.Transition();
+    Transition t = new Transition();
 
     for (int i=0;i<numStates;i++) {
       if (liveSet.get(i)) {

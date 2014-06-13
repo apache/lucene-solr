@@ -25,6 +25,7 @@ import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.automaton.ByteRunAutomaton;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.LightAutomaton;
+import org.apache.lucene.util.automaton.Transition;
 
 /**
  * A FilteredTermsEnum that enumerates terms based upon what is accepted by a
@@ -124,7 +125,7 @@ class AutomatonTermsEnum extends FilteredTermsEnum {
     }
   }
 
-  private LightAutomaton.Transition transition = new LightAutomaton.Transition();
+  private Transition transition = new Transition();
 
   /**
    * Sets the enum to operate in linear fashion, as we have found

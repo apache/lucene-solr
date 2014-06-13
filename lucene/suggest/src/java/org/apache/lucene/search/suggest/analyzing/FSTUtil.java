@@ -24,6 +24,7 @@ import java.util.List;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.automaton.BasicOperations;
 import org.apache.lucene.util.automaton.LightAutomaton;
+import org.apache.lucene.util.automaton.Transition;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Util;
 
@@ -78,7 +79,7 @@ public class FSTUtil {
     final FST.Arc<T> scratchArc = new FST.Arc<>();
     final FST.BytesReader fstReader = fst.getBytesReader();
 
-    LightAutomaton.Transition t = new LightAutomaton.Transition();
+    Transition t = new Transition();
 
     while (queue.size() != 0) {
       final Path<T> path = queue.remove(queue.size() - 1);

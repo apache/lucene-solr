@@ -73,6 +73,13 @@ final public class BasicAutomata {
     return a;
   }
   
+  public static int appendAnyString(LightAutomaton a, int state) {
+    int newState = a.createState();
+    a.addTransition(state, newState, Character.MIN_CODE_POINT, Character.MAX_CODE_POINT);
+    a.addTransition(newState, newState, Character.MIN_CODE_POINT, Character.MAX_CODE_POINT);
+    return newState;
+  }
+  
   /**
    * Returns a new (deterministic) automaton that accepts any single codepoint.
    */
@@ -80,6 +87,12 @@ final public class BasicAutomata {
     return makeCharRangeLight(Character.MIN_CODE_POINT, Character.MAX_CODE_POINT);
   }
   
+  public static int appendAnyChar(LightAutomaton a, int state) {
+    int newState = a.createState();
+    a.addTransition(state, newState, Character.MIN_CODE_POINT, Character.MAX_CODE_POINT);
+    return newState;
+  }
+
   /**
    * Returns a new (deterministic) automaton that accepts a single codepoint of
    * the given value.
@@ -88,6 +101,12 @@ final public class BasicAutomata {
     return makeCharRangeLight(c, c);
   }
   
+  public static int appendChar(LightAutomaton a, int state, int c) {
+    int newState = a.createState();
+    a.addTransition(state, newState, c, c);
+    return newState;
+  }
+
   /**
    * Returns a new (deterministic) automaton that accepts a single codepoint whose
    * value is in the given interval (including both end points).
@@ -189,7 +208,7 @@ final public class BasicAutomata {
 
     return s;
   }
-  
+
   /**
    * Returns a new automaton that accepts strings representing decimal
    * non-negative integers in the given interval.
@@ -229,6 +248,11 @@ final public class BasicAutomata {
 
     LightAutomaton.Builder builder = new LightAutomaton.Builder();
 
+    if (digits <= 0) {
+      // Reserve the "real" initial state:
+      builder.createState();
+    }
+
     Collection<Integer> initials = new ArrayList<>();
 
     betweenLight(builder, x, y, 0, initials, digits <= 0);
@@ -236,20 +260,13 @@ final public class BasicAutomata {
     LightAutomaton a1 = builder.finish();
 
     if (digits <= 0) {
-      LightAutomaton a2 = new LightAutomaton();
-      a2.createState();
-      // TODO: can we somehow do this w/o a full copy here?
-      a2.copy(a1);
-
       for (int p : initials) {
-        a2.addEpsilon(0, p+1);
+        a1.addEpsilon(0, p);
       }
-      
-      a2.finish();
-      return a2;
-    } else {
-      return a1;
+      a1.finish();
     }
+
+    return a1;
   }
   
   /**

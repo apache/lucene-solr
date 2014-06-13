@@ -106,8 +106,7 @@ public class BlockTermsReader extends FieldsProducer {
     }
   }
 
-  // nocommit
-  private String segment;
+  // private String segment;
   
   public BlockTermsReader(TermsIndexReaderBase indexReader, Directory dir, FieldInfos fieldInfos, SegmentInfo info, PostingsReaderBase postingsReader, IOContext context,
                           String segmentSuffix)
@@ -115,7 +114,7 @@ public class BlockTermsReader extends FieldsProducer {
     
     this.postingsReader = postingsReader;
 
-    this.segment = segment;
+    // this.segment = segment;
     in = dir.openInput(IndexFileNames.segmentFileName(info.name, segmentSuffix, BlockTermsWriter.TERMS_EXTENSION),
                        context);
 

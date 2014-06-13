@@ -63,7 +63,7 @@ final public class MinimizationOperationsLight {
     a = BasicOperations.determinize(a);
     //a.writeDot("adet");
     if (a.getNumTransitions(0) == 1) {
-      LightAutomaton.Transition t = new LightAutomaton.Transition();
+      Transition t = new Transition();
       a.getTransition(0, 0, t);
       if (t.dest == 0 && t.min == Character.MIN_CODE_POINT
           && t.max == Character.MAX_CODE_POINT) {
@@ -201,7 +201,7 @@ final public class MinimizationOperationsLight {
 
     LightAutomaton result = new LightAutomaton();
 
-    LightAutomaton.Transition t = new LightAutomaton.Transition();
+    Transition t = new Transition();
 
     //System.out.println("  k=" + k);
 

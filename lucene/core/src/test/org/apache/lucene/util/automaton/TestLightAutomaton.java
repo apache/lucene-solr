@@ -20,13 +20,17 @@ package org.apache.lucene.util.automaton;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.AutomatonTestUtil.RandomAcceptedStringsLight;
+import org.apache.lucene.util.fst.Util;
 
 public class TestLightAutomaton extends LuceneTestCase {
 
@@ -60,7 +64,7 @@ public class TestLightAutomaton extends LuceneTestCase {
 
     a.finish();
     assertEquals(3, a.getNumTransitions(start));
-    LightAutomaton.Transition scratch = new LightAutomaton.Transition();
+    Transition scratch = new Transition();
     a.initTransition(start, scratch);
     a.getNextTransition(scratch);
     assertEquals('a', scratch.min);
@@ -107,6 +111,7 @@ public class TestLightAutomaton extends LuceneTestCase {
     assertTrue(BasicOperations.run(a, "mn"));
     assertTrue(BasicOperations.run(a, "mone"));
     assertFalse(BasicOperations.run(a, "m"));
+    assertFalse(SpecialOperations.isFinite(a));
   }
 
   public void testUnion1() throws Exception {
@@ -117,7 +122,7 @@ public class TestLightAutomaton extends LuceneTestCase {
     assertTrue(BasicOperations.run(a, "foobar"));
     assertTrue(BasicOperations.run(a, "barbaz"));
 
-    // nocommit test getFinitStrings count == 2
+    assertMatches(a, "foobar", "barbaz");
   }
 
   public void testUnion2() throws Exception {
@@ -130,14 +135,12 @@ public class TestLightAutomaton extends LuceneTestCase {
     assertTrue(BasicOperations.run(a, "barbaz"));
     assertTrue(BasicOperations.run(a, ""));
 
-    // nocommit test getFinitStrings count == 3
+    assertMatches(a, "", "foobar", "barbaz");
   }
 
   public void testMinimizeSimple() throws Exception {
     LightAutomaton a = BasicAutomata.makeStringLight("foobar");
-    //a.writeDot("a");
     LightAutomaton aMin = MinimizationOperationsLight.minimize(a);
-    //aMin.writeDot("aMin");
 
     assertTrue(BasicOperations.sameLanguage(a, aMin));
   }
@@ -311,12 +314,12 @@ public class TestLightAutomaton extends LuceneTestCase {
       LightAutomaton a = AutomatonTestUtil.randomAutomaton(random());
 
       // Just get all transitions, shuffle, and build a new automaton with the same transitions:
-      List<LightAutomaton.Transition> allTrans = new ArrayList<>();
+      List<Transition> allTrans = new ArrayList<>();
       int numStates = a.getNumStates();
       for(int s=0;s<numStates;s++) {
         int count = a.getNumTransitions(s);
         for(int i=0;i<count;i++) {
-          LightAutomaton.Transition t = new LightAutomaton.Transition();
+          Transition t = new Transition();
           a.getTransition(s, i, t);
           allTrans.add(t);
         }
@@ -329,7 +332,7 @@ public class TestLightAutomaton extends LuceneTestCase {
       }
 
       Collections.shuffle(allTrans, random());
-      for(LightAutomaton.Transition t : allTrans) {
+      for(Transition t : allTrans) {
         builder.addTransition(t.source, t.dest, t.min, t.max);
       }
 
@@ -351,32 +354,81 @@ public class TestLightAutomaton extends LuceneTestCase {
     } else if (random().nextBoolean()) {
       a = MinimizationOperationsLight.minimize(a);
     }
+    assertMatches(a, "foobar", "beebar", "boobar");
 
     LightAutomaton a4 = BasicOperations.determinize(BasicOperations.minusLight(a, a2));
     
     assertTrue(BasicOperations.run(a4, "foobar"));
     assertFalse(BasicOperations.run(a4, "boobar"));
     assertTrue(BasicOperations.run(a4, "beebar"));
-
-    // nocommit test getFinitStrings count == 2
+    assertMatches(a4, "foobar", "beebar");
 
     a4 = BasicOperations.determinize(BasicOperations.minusLight(a4, a1));
     assertFalse(BasicOperations.run(a4, "foobar"));
     assertFalse(BasicOperations.run(a4, "boobar"));
     assertTrue(BasicOperations.run(a4, "beebar"));
+    assertMatches(a4, "beebar");
 
     a4 = BasicOperations.determinize(BasicOperations.minusLight(a4, a3));
     assertFalse(BasicOperations.run(a4, "foobar"));
     assertFalse(BasicOperations.run(a4, "boobar"));
     assertFalse(BasicOperations.run(a4, "beebar"));
+    assertMatches(a4);
   }
 
-  // nocommit
-  //public void testWildcard() throws Exception {
-  //WildcardQuery.toAutomaton(new Term("foo", "bar*")).writeDot("wq");
-  //}
+  public void testIntervalRandom() throws Exception {
+    int ITERS = atLeast(100);
+    for(int iter=0;iter<ITERS;iter++) {
+      int min = TestUtil.nextInt(random(), 0, 100000);
+      int max = TestUtil.nextInt(random(), min, min+100000);
+      int digits;
+      if (random().nextBoolean()) {
+        digits = 0;
+      } else {
+        String s = Integer.toString(max);
+        digits = TestUtil.nextInt(random(), s.length(), 2*s.length());
+      }
+      StringBuilder b = new StringBuilder();
+      for(int i=0;i<digits;i++) {
+        b.append('0');
+      }
+      String prefix = b.toString();
+
+      LightAutomaton a = BasicOperations.determinize(BasicAutomata.makeIntervalLight(min, max, digits   ));
+      if (random().nextBoolean()) {
+        a = MinimizationOperationsLight.minimize(a);
+      }
+      String mins = Integer.toString(min);
+      String maxs = Integer.toString(max);
+      if (digits > 0) {
+        mins = prefix.substring(mins.length()) + mins;
+        maxs = prefix.substring(maxs.length()) + maxs;
+      }
+      assertTrue(BasicOperations.run(a, mins));
+      assertTrue(BasicOperations.run(a, maxs));
+
+      for(int iter2=0;iter2<100;iter2++) {
+        int x = random().nextInt(2*max);
+        boolean expected = x >= min && x <= max;
+        String sx = Integer.toString(x);
+        if (digits > 0 && sx.length() < digits) {
+          // Left-fill with 0s
+          sx = b.substring(sx.length()) + sx;
+        }
+        assertEquals(expected, BasicOperations.run(a, sx));
+      }
+    }
+  }
 
   // nocommit more tests ... it's an algebra
 
-  // nocommit random test for testInterval if we don't have one already
+  private void assertMatches(LightAutomaton a, String... strings) {
+    Set<IntsRef> expected = new HashSet<>();
+    for(String s : strings) {
+      IntsRef ints = new IntsRef();
+      expected.add(Util.toUTF32(s, ints));
+    }
+
+    assertEquals(expected, SpecialOperations.getFiniteStrings(BasicOperations.determinize(a), -1)); 
+  }
 }

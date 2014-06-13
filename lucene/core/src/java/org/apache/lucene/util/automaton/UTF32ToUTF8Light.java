@@ -295,7 +295,7 @@ public final class UTF32ToUTF8Light {
 
     map[utf32State] = utf8State;
     
-    LightAutomaton.Transition scratch = new LightAutomaton.Transition();
+    Transition scratch = new Transition();
     
     while (pending.size() != 0) {
       utf32State = pending.remove(pending.size()-1);

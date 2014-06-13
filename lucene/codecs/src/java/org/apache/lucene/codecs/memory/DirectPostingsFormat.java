@@ -29,8 +29,8 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat; // javadocs
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.SegmentReadState;
@@ -48,6 +48,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.LightAutomaton;
 import org.apache.lucene.util.automaton.RunAutomaton;
+import org.apache.lucene.util.automaton.Transition;
 
 // TODO: 
 //   - build depth-N prefix hash?
@@ -931,7 +932,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
         int transitionCount;
         int transitionMax;
         int transitionMin;
-        final LightAutomaton.Transition transition = new LightAutomaton.Transition();
+        final Transition transition = new Transition();
       }
 
       private State[] states;
