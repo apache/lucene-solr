@@ -108,6 +108,9 @@ Bug Fixes
 * SOLR-6158: Relative configSetBase directories were resolved relative to the 
   container CWD, rather than solr.home. (Simon Endele, Alan Woodward)
 
+* SOLR-5426: Fixed a bug in ReverseWildCardFilter that could cause 
+  InvalidTokenOffsetsException when highlighting. (Uwe Schindler, Arun Kumar, via hossman)
+
 Other Changes
 ---------------------
 
