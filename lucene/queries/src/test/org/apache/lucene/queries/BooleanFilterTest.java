@@ -111,17 +111,7 @@ public class BooleanFilterTest extends LuceneTestCase {
     return new Filter() {
       @Override
       public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) {
-        return new DocIdSet() {
-          @Override
-          public DocIdSetIterator iterator() {
-            return null;
-          }
-          
-          @Override
-          public boolean isCacheable() {
-            return true;
-          }
-        };
+        return DocIdSet.EMPTY;
       }
     };
   }

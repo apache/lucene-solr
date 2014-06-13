@@ -155,6 +155,11 @@ public final class LongRange extends Range {
           public DocIdSetIterator iterator() {
             throw new UnsupportedOperationException("this filter can only be accessed via bits()");
           }
+
+          @Override
+          public long ramBytesUsed() {
+            return 0L;
+          }
         };
       }
     };

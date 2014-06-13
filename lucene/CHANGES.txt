@@ -218,6 +218,8 @@ API Changes
   copy bytes on each access, you are responsible for cloning if you want to keep
   data around. (Adrien Grand)
 
+* LUCENE-5695: DocIdSet implements Accountable. (Adrien Grand)
+
 Optimizations
 
 * LUCENE-5603: hunspell stemmer more efficiently strips prefixes

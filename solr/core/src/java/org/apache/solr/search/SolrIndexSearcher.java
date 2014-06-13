@@ -2465,6 +2465,11 @@ class FilterImpl extends Filter {
     public Bits bits() throws IOException {
       return null;  // don't use random access
     }
+
+    @Override
+    public long ramBytesUsed() {
+      return docIdSet != null ? docIdSet.ramBytesUsed() : 0L;
+    }
   }
 
   private static class FilterIterator extends DocIdSetIterator {

@@ -218,6 +218,14 @@ public final class FixedBitSet extends DocIdSet implements Bits {
     return true;
   }
 
+  @Override
+  public long ramBytesUsed() {
+    return RamUsageEstimator.alignObjectSize(
+          RamUsageEstimator.NUM_BYTES_OBJECT_REF // the reference to the long[]
+        + RamUsageEstimator.NUM_BYTES_INT * 2)   // numBits and numWords
+        + RamUsageEstimator.sizeOf(bits);        // the bits
+  }
+
   /** Expert. */
   public long[] getBits() {
     return bits;

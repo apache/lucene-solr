@@ -206,6 +206,11 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
           public DocIdSetIterator iterator() {
             return null;
           }
+
+          @Override
+          public long ramBytesUsed() {
+            return 0L;
+          }
         };
       }
     };

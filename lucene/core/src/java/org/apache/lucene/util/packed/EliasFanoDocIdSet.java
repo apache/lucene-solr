@@ -21,8 +21,8 @@ import java.io.IOException;
 
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
-
 import org.apache.lucene.util.FixedBitSet; // for javadocs
+import org.apache.lucene.util.RamUsageEstimator;
 
 
 /** A DocIdSet in Elias-Fano encoding.
@@ -125,6 +125,11 @@ public class EliasFanoDocIdSet extends DocIdSet {
   @Override
   public int hashCode() {
     return efEncoder.hashCode() ^ getClass().hashCode();
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return RamUsageEstimator.alignObjectSize(RamUsageEstimator.NUM_BYTES_OBJECT_REF) + efEncoder.ramBytesUsed();
   }
 }
 

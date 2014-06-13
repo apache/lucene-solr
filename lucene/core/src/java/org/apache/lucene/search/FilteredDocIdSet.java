@@ -18,7 +18,9 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Abstract decorator class for a DocIdSet implementation
@@ -55,7 +57,12 @@ public abstract class FilteredDocIdSet extends DocIdSet {
   public boolean isCacheable() {
     return _innerSet.isCacheable();
   }
-  
+
+  @Override
+  public long ramBytesUsed() {
+    return RamUsageEstimator.NUM_BYTES_OBJECT_REF + _innerSet.ramBytesUsed();
+  }
+
   @Override
   public Bits bits() throws IOException {
     final Bits bits = _innerSet.bits();

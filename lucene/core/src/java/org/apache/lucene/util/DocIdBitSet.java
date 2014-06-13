@@ -64,7 +64,12 @@ public class DocIdBitSet extends DocIdSet implements Bits {
     // the size may not be correct...
     return bitSet.size(); 
   }
-  
+
+  @Override
+  public long ramBytesUsed() {
+    return RamUsageEstimator.NUM_BYTES_OBJECT_REF + (bitSet.size() + 7) >>> 3;
+  }
+
   private static class DocIdBitSetIterator extends DocIdSetIterator {
     private int docId;
     private BitSet bitSet;

@@ -32,7 +32,6 @@
 
   <property name="forbidden-rue-excludes" value="
     org/apache/lucene/util/RamUsageEstimator.class
-    org/apache/lucene/search/CachingWrapperFilter.class
   "/>
 
   <import file="../common-build.xml"/>
