@@ -32,6 +32,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InfoStream;
 
@@ -50,7 +51,7 @@ import org.apache.lucene.util.InfoStream;
  * track which BufferedDeletes packets to apply to any given
  * segment. */
 
-class BufferedUpdatesStream {
+class BufferedUpdatesStream implements Accountable {
 
   // TODO: maybe linked list?
   private final List<FrozenBufferedUpdates> updates = new ArrayList<>();
@@ -111,7 +112,8 @@ class BufferedUpdatesStream {
     return numTerms.get();
   }
 
-  public long bytesUsed() {
+  @Override
+  public long ramBytesUsed() {
     return bytesUsed.get();
   }
 

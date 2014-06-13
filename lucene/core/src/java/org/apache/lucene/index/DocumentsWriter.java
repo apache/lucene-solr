@@ -34,6 +34,7 @@ import org.apache.lucene.index.IndexWriter.Event;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.InfoStream;
 
 /**
@@ -94,7 +95,7 @@ import org.apache.lucene.util.InfoStream;
  * or none") added to the index.
  */
 
-final class DocumentsWriter implements Closeable {
+final class DocumentsWriter implements Closeable, Accountable {
   private final Directory directory;
 
   private volatile boolean closed;
@@ -662,7 +663,12 @@ final class DocumentsWriter implements Closeable {
   private void putEvent(Event event) {
     events.add(event);
   }
-  
+
+  @Override
+  public long ramBytesUsed() {
+    return flushControl.ramBytesUsed();
+  }
+
   static final class ApplyDeletesEvent implements Event {
     static final Event INSTANCE = new ApplyDeletesEvent();
     private int instCount = 0;

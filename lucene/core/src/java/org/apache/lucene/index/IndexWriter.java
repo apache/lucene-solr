@@ -56,6 +56,7 @@ import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
@@ -192,7 +193,7 @@ import org.apache.lucene.util.Version;
  * referenced by the "front" of the index). For this, IndexFileDeleter
  * keeps track of the last non commit checkpoint.
  */
-public class IndexWriter implements Closeable, TwoPhaseCommit{
+public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   
   private static final int UNBOUNDED_MAX_MERGE_SEGMENTS = -1;
   
@@ -423,6 +424,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
       }
     }
     return r;
+  }
+
+  @Override
+  public final long ramBytesUsed() {
+    ensureOpen();
+    return docWriter.ramBytesUsed();
   }
 
   /** Holds shared SegmentReader instances. IndexWriter uses
@@ -3090,7 +3097,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
       }
       applyAllDeletesAndUpdates();
     } else if (infoStream.isEnabled("IW")) {
-      infoStream.message("IW", "don't apply deletes now delTermCount=" + bufferedUpdatesStream.numTerms() + " bytesUsed=" + bufferedUpdatesStream.bytesUsed());
+      infoStream.message("IW", "don't apply deletes now delTermCount=" + bufferedUpdatesStream.numTerms() + " bytesUsed=" + bufferedUpdatesStream.ramBytesUsed());
     }
   }
   
@@ -3120,14 +3127,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     bufferedUpdatesStream.prune(segmentInfos);
   }
 
-  /** Expert:  Return the total size of all index files currently cached in memory.
-   * Useful for size management with flushRamDocs()
-   */
-  public final long ramSizeInBytes() {
-    ensureOpen();
-    return docWriter.flushControl.netBytes() + bufferedUpdatesStream.bytesUsed();
-  }
-  
   // for testing only
   DocumentsWriter getDocsWriter() {
     boolean test = false;

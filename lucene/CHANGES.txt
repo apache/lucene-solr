@@ -156,6 +156,9 @@ Changes in Backwards Compatibility Policy
 
 API Changes
 
+* LUCENE-5756: IndexWriter now implements Accountable and IW#ramSizeInBytes()
+  has been deprecated infavor of IW#ramBytesUsed() (Simon Willnauer)
+
 * LUCENE-5725: MoreLikeThis#like now accepts multiple values per field.
   The pre-existing method has been deprecated in favor of a variable arguments
   for the like text. (Alex Ksikes via Simon Willnauer)
