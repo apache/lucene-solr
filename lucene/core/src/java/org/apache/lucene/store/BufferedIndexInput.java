@@ -21,10 +21,13 @@ import java.io.EOFException;
 import java.io.IOException;
 
 /** Base implementation class for buffered {@link IndexInput}. */
-public abstract class BufferedIndexInput extends IndexInput {
+public abstract class BufferedIndexInput extends IndexInput implements RandomAccessInput {
 
   /** Default buffer size set to {@value #BUFFER_SIZE}. */
   public static final int BUFFER_SIZE = 1024;
+  
+  /** Minimum buffer size allowed */
+  public static final int MIN_BUFFER_SIZE = 8;
   
   // The normal read buffer size defaults to 1024, but
   // increasing this during merging seems to yield
@@ -104,8 +107,8 @@ public abstract class BufferedIndexInput extends IndexInput {
   }
 
   private void checkBufferSize(int bufferSize) {
-    if (bufferSize <= 0)
-      throw new IllegalArgumentException("bufferSize must be greater than 0 (got " + bufferSize + ")");
+    if (bufferSize <= MIN_BUFFER_SIZE)
+      throw new IllegalArgumentException("bufferSize must be greater than MIN_BUFFER_SIZE (got " + bufferSize + ")");
   }
 
   @Override
@@ -253,6 +256,74 @@ public abstract class BufferedIndexInput extends IndexInput {
     } else {
       return super.readVLong();
     }
+  }
+  
+  @Override
+  public final byte readByte(long pos) throws IOException {
+    long index = pos - bufferStart;
+    if (index < 0 || index >= bufferLength) {
+      bufferStart = pos;
+      bufferPosition = 0;
+      bufferLength = 0;  // trigger refill() on read()
+      seekInternal(pos);
+      refill();
+      index = 0;
+    }
+    return buffer[(int)index];
+  }
+
+  @Override
+  public final short readShort(long pos) throws IOException {
+    long index = pos - bufferStart;
+    if (index < 0 || index >= bufferLength-1) {
+      bufferStart = pos;
+      bufferPosition = 0;
+      bufferLength = 0;  // trigger refill() on read()
+      seekInternal(pos);
+      refill();
+      index = 0;
+    }
+    return (short) (((buffer[(int)index]   & 0xFF) << 8) | 
+                     (buffer[(int)index+1] & 0xFF));
+  }
+
+  @Override
+  public final int readInt(long pos) throws IOException {
+    long index = pos - bufferStart;
+    if (index < 0 || index >= bufferLength-3) {
+      bufferStart = pos;
+      bufferPosition = 0;
+      bufferLength = 0;  // trigger refill() on read()
+      seekInternal(pos);
+      refill();
+      index = 0;
+    }
+    return ((buffer[(int)index]   & 0xFF) << 24) | 
+           ((buffer[(int)index+1] & 0xFF) << 16) |
+           ((buffer[(int)index+2] & 0xFF) << 8)  |
+            (buffer[(int)index+3] & 0xFF);
+  }
+
+  @Override
+  public final long readLong(long pos) throws IOException {
+    long index = pos - bufferStart;
+    if (index < 0 || index >= bufferLength-7) {
+      bufferStart = pos;
+      bufferPosition = 0;
+      bufferLength = 0;  // trigger refill() on read()
+      seekInternal(pos);
+      refill();
+      index = 0;
+    }
+    final int i1 = ((buffer[(int)index]   & 0xFF) << 24) | 
+                   ((buffer[(int)index+1] & 0xFF) << 16) |
+                   ((buffer[(int)index+2] & 0xFF) << 8)  | 
+                    (buffer[(int)index+3] & 0xFF);
+    final int i2 = ((buffer[(int)index+4] & 0xFF) << 24) | 
+                   ((buffer[(int)index+5] & 0xFF) << 16) |
+                   ((buffer[(int)index+6] & 0xFF) << 8)  | 
+                    (buffer[(int)index+7] & 0xFF);
+    return (((long)i1) << 32) | (i2 & 0xFFFFFFFFL);
   }
   
   private void refill() throws IOException {

@@ -277,12 +277,6 @@ abstract class ByteBufferIndexInput extends IndexInput implements RandomAccessIn
     
     return buildSlice(sliceDescription, offset, length);
   }
-  
-  @Override
-  public RandomAccessInput randomAccessSlice(long offset, long length) throws IOException {
-    // note: technically we could even avoid the clone...
-    return slice(null, offset, length);
-  }
 
   /** Builds the actual sliced IndexInput (may apply extra offset in subclasses). **/
   protected ByteBufferIndexInput buildSlice(String sliceDescription, long offset, long length) {

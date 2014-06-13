@@ -124,7 +124,7 @@ New Features
   filtered and constant-score queries to postings highlighter.
   (Luca Cavanna via Robert Muir)
 
-* LUCENE-5731: Add RandomAccessInput, a random access API for directory.
+* LUCENE-5731, LUCENE-5760: Add RandomAccessInput, a random access API for directory.
   Add DirectReader/Writer, optimized for reading packed integers directly 
   from Directory. Add Lucene49Codec and Lucene49DocValuesFormat that make
   use of these.  (Robert Muir)
