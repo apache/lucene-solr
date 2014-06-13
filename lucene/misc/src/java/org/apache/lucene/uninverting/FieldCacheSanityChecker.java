@@ -27,7 +27,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.uninverting.FieldCache.CacheEntry;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.MapOfSets;
 
 /** 
@@ -54,19 +53,9 @@ import org.apache.lucene.util.MapOfSets;
  */
 final class FieldCacheSanityChecker {
 
-  private boolean estimateRam;
-
   public FieldCacheSanityChecker() {
     /* NOOP */
   }
-
-  /**
-   * If set, estimate size for all CacheEntry objects will be calculateed.
-   */
-  public void setRamUsageEstimator(boolean flag) {
-    estimateRam = flag;
-  }
-
 
   /** 
    * Quick and dirty convenience method
@@ -83,7 +72,6 @@ final class FieldCacheSanityChecker {
    */
   public static Insanity[] checkSanity(CacheEntry... cacheEntries) {
     FieldCacheSanityChecker sanityChecker = new FieldCacheSanityChecker();
-    sanityChecker.setRamUsageEstimator(true);
     return sanityChecker.check(cacheEntries);
   }
 
@@ -98,12 +86,6 @@ final class FieldCacheSanityChecker {
   public Insanity[] check(CacheEntry... cacheEntries) {
     if (null == cacheEntries || 0 == cacheEntries.length) 
       return new Insanity[0];
-
-    if (estimateRam) {
-      for (int i = 0; i < cacheEntries.length; i++) {
-        cacheEntries[i].estimateSize();
-      }
-    }
 
     // the indirect mapping lets MapOfSet dedup identical valIds for us
     //
@@ -125,7 +107,7 @@ final class FieldCacheSanityChecker {
       // It's OK to have dup entries, where one is eg
       // float[] and the other is the Bits (from
       // getDocWithField())
-      if (val instanceof Bits) {
+      if (val instanceof FieldCacheImpl.BitsEntry) {
         continue;
       }
 

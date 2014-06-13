@@ -59,6 +59,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.RamUsageTester;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -1566,7 +1567,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     while (bytesIndexed < bytesToIndex) {
       Document doc = docs.nextDoc();
       w.addDocument(doc);
-      bytesIndexed += RamUsageEstimator.sizeOf(doc);
+      bytesIndexed += RamUsageTester.sizeOf(doc);
     }
 
     IndexReader r = w.getReader();
