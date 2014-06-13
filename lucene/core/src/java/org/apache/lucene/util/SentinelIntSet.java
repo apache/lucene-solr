@@ -145,4 +145,12 @@ public class SentinelIntSet {
     }
     rehashCount = newSize - (newSize>>2);
   }
+
+  /** Return the memory footprint of this class in bytes. */
+  public long ramBytesUsed() {
+    return RamUsageEstimator.alignObjectSize(
+          RamUsageEstimator.NUM_BYTES_INT * 3
+        + RamUsageEstimator.NUM_BYTES_OBJECT_REF)
+        + RamUsageEstimator.sizeOf(keys);
+  }
 }

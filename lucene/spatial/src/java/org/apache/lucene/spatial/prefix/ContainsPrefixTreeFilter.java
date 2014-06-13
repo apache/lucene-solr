@@ -19,6 +19,7 @@ package org.apache.lucene.spatial.prefix;
 
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
+
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.DocIdSet;
@@ -27,6 +28,7 @@ import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.SentinelIntSet;
 
 import java.io.IOException;
@@ -292,6 +294,14 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
           return size;
         }
       };
+    }
+
+    @Override
+    public long ramBytesUsed() {
+      return RamUsageEstimator.alignObjectSize(
+            RamUsageEstimator.NUM_BYTES_OBJECT_REF
+          + RamUsageEstimator.NUM_BYTES_INT)
+          + intSet.ramBytesUsed();
     }
 
   }//class SmallDocSet

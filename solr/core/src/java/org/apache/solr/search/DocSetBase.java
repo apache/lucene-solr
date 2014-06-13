@@ -216,6 +216,11 @@ abstract class DocSetBase implements DocSet {
           }
 
           @Override
+          public long ramBytesUsed() {
+            return bs.ramBytesUsed();
+          }
+
+          @Override
           public Bits bits() {
             // sparse filters should not use random access
             return null;

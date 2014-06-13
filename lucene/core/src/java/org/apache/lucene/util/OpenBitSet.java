@@ -131,6 +131,15 @@ public class OpenBitSet extends DocIdSet implements Bits, Cloneable {
     return true;
   }
 
+  @Override
+  public long ramBytesUsed() {
+    return RamUsageEstimator.alignObjectSize(
+          RamUsageEstimator.NUM_BYTES_OBJECT_REF
+        + RamUsageEstimator.NUM_BYTES_LONG
+        + RamUsageEstimator.NUM_BYTES_INT)
+        + RamUsageEstimator.sizeOf(bits);
+  }
+
   /** Returns the current capacity in bits (1 greater than the index of the last bit) */
   public long capacity() { return bits.length << 6; }
 
