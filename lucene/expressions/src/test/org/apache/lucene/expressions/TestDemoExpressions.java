@@ -136,6 +136,25 @@ public class  TestDemoExpressions extends LuceneTestCase {
     }
   }
   
+  /** Uses variables with $ */
+  public void testDollarVariable() throws Exception {
+    Expression expr = JavascriptCompiler.compile("$0+$score");
+    
+    SimpleBindings bindings = new SimpleBindings();    
+    bindings.add(new SortField("$0", SortField.Type.SCORE));
+    bindings.add(new SortField("$score", SortField.Type.SCORE));
+    
+    Sort sort = new Sort(expr.getSortField(bindings, true));
+    Query query = new TermQuery(new Term("body", "contents"));
+    TopFieldDocs td = searcher.search(query, null, 3, sort, true, true);
+    for (int i = 0; i < 3; i++) {
+      FieldDoc d = (FieldDoc) td.scoreDocs[i];
+      float expected = 2*d.score;
+      float actual = ((Double)d.fields[0]).floatValue();
+      assertEquals(expected, actual, CheckHits.explainToleranceDelta(expected, actual));
+    }
+  }
+  
   /** tests expression referring to another expression */
   public void testExpressionRefersToExpression() throws Exception {
     Expression expr1 = JavascriptCompiler.compile("_score");

@@ -135,6 +135,9 @@ New Features
 * LUCENE-5748: Add SORTED_NUMERIC docvalues type, which is efficient
   for processing numeric fields with multiple values.  (Robert Muir)
 
+* LUCENE-5754: Allow "$" as part of variable and function names in
+  expressions module.  (Uwe Schindler)
+
 Changes in Backwards Compatibility Policy
 
 * LUCENE-5634: Add reuse argument to IndexableField.tokenStream. This
