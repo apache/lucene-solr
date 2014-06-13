@@ -679,10 +679,10 @@ class JavascriptLexer extends Lexer {
   // $ANTLR start "ID"
   public final void mID() throws RecognitionException {
     try {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:340:5: ( ( 'a' .. 'z' | 'A' .. 'Z' | '_' ) ( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' )* )
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:340:7: ( 'a' .. 'z' | 'A' .. 'Z' | '_' ) ( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' )*
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:340:5: ( ( 'a' .. 'z' | 'A' .. 'Z' | '_' | '$' ) ( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' | '$' )* )
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:340:7: ( 'a' .. 'z' | 'A' .. 'Z' | '_' | '$' ) ( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' | '$' )*
       {
-      if ( (input.LA(1) >= 'A' && input.LA(1) <= 'Z')||input.LA(1)=='_'||(input.LA(1) >= 'a' && input.LA(1) <= 'z') ) {
+      if ( input.LA(1)=='$'||(input.LA(1) >= 'A' && input.LA(1) <= 'Z')||input.LA(1)=='_'||(input.LA(1) >= 'a' && input.LA(1) <= 'z') ) {
         input.consume();
       }
       else {
@@ -690,12 +690,12 @@ class JavascriptLexer extends Lexer {
         recover(mse);
         throw mse;
       }
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:340:31: ( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' )*
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:340:35: ( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' | '$' )*
       loop2:
       while (true) {
         int alt2=2;
         int LA2_0 = input.LA(1);
-        if ( ((LA2_0 >= '0' && LA2_0 <= '9')||(LA2_0 >= 'A' && LA2_0 <= 'Z')||LA2_0=='_'||(LA2_0 >= 'a' && LA2_0 <= 'z')) ) {
+        if ( (LA2_0=='$'||(LA2_0 >= '0' && LA2_0 <= '9')||(LA2_0 >= 'A' && LA2_0 <= 'Z')||LA2_0=='_'||(LA2_0 >= 'a' && LA2_0 <= 'z')) ) {
           alt2=1;
         }
 
@@ -703,7 +703,7 @@ class JavascriptLexer extends Lexer {
         case 1 :
           // src/java/org/apache/lucene/expressions/js/Javascript.g:
           {
-          if ( (input.LA(1) >= '0' && input.LA(1) <= '9')||(input.LA(1) >= 'A' && input.LA(1) <= 'Z')||input.LA(1)=='_'||(input.LA(1) >= 'a' && input.LA(1) <= 'z') ) {
+          if ( input.LA(1)=='$'||(input.LA(1) >= '0' && input.LA(1) <= '9')||(input.LA(1) >= 'A' && input.LA(1) <= 'Z')||input.LA(1)=='_'||(input.LA(1) >= 'a' && input.LA(1) <= 'z') ) {
             input.consume();
           }
           else {
@@ -1476,6 +1476,7 @@ class JavascriptLexer extends Lexer {
       alt17=27;
       }
       break;
+    case '$':
     case 'A':
     case 'B':
     case 'C':
