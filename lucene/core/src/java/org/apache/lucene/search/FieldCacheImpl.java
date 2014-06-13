@@ -38,11 +38,13 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FieldCacheSanityChecker;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.PagedBytes;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.GrowableWriter;
 import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
 import org.apache.lucene.util.packed.PackedInts;
@@ -93,11 +95,11 @@ class FieldCacheImpl implements FieldCache {
       final Cache cache = cacheEntry.getValue();
       final Class<?> cacheType = cacheEntry.getKey();
       synchronized(cache.readerCache) {
-        for (final Map.Entry<Object,Map<CacheKey, Object>> readerCacheEntry : cache.readerCache.entrySet()) {
+        for (final Map.Entry<Object,Map<CacheKey, Accountable>> readerCacheEntry : cache.readerCache.entrySet()) {
           final Object readerKey = readerCacheEntry.getKey();
           if (readerKey == null) continue;
-          final Map<CacheKey, Object> innerCache = readerCacheEntry.getValue();
-          for (final Map.Entry<CacheKey, Object> mapEntry : innerCache.entrySet()) {
+          final Map<CacheKey, Accountable> innerCache = readerCacheEntry.getValue();
+          for (final Map.Entry<CacheKey, Accountable> mapEntry : innerCache.entrySet()) {
             CacheKey entry = mapEntry.getKey();
             result.add(new CacheEntry(readerKey, entry.field,
                                       cacheType, entry.custom,
@@ -151,9 +153,9 @@ class FieldCacheImpl implements FieldCache {
 
     final FieldCacheImpl wrapper;
 
-    final Map<Object,Map<CacheKey,Object>> readerCache = new WeakHashMap<>();
+    final Map<Object,Map<CacheKey,Accountable>> readerCache = new WeakHashMap<>();
     
-    protected abstract Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
+    protected abstract Accountable createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException;
 
     /** Remove this reader from the cache, if present. */
@@ -165,10 +167,10 @@ class FieldCacheImpl implements FieldCache {
 
     /** Sets the key to the value for the provided reader;
      *  if the key is already set then this doesn't change it. */
-    public void put(AtomicReader reader, CacheKey key, Object value) {
+    public void put(AtomicReader reader, CacheKey key, Accountable value) {
       final Object readerKey = reader.getCoreCacheKey();
       synchronized (readerCache) {
-        Map<CacheKey,Object> innerCache = readerCache.get(readerKey);
+        Map<CacheKey,Accountable> innerCache = readerCache.get(readerKey);
         if (innerCache == null) {
           // First time this reader is using FieldCache
           innerCache = new HashMap<>();
@@ -184,9 +186,9 @@ class FieldCacheImpl implements FieldCache {
       }
     }
 
-    public Object get(AtomicReader reader, CacheKey key, boolean setDocsWithField) throws IOException {
-      Map<CacheKey,Object> innerCache;
-      Object value;
+    public Accountable get(AtomicReader reader, CacheKey key, boolean setDocsWithField) throws IOException {
+      Map<CacheKey,Accountable> innerCache;
+      Accountable value;
       final Object readerKey = reader.getCoreCacheKey();
       synchronized (readerCache) {
         innerCache = readerCache.get(readerKey);
@@ -351,7 +353,25 @@ class FieldCacheImpl implements FieldCache {
     } else {
       bits = docsWithField;
     }
-    caches.get(DocsWithFieldCache.class).put(reader, new CacheKey(field, null), bits);
+    caches.get(DocsWithFieldCache.class).put(reader, new CacheKey(field, null), new BitsEntry(bits));
+  }
+  
+  static class BitsEntry implements Accountable {
+    final Bits bits;
+    
+    BitsEntry(Bits bits) {
+      this.bits = bits;
+    }
+    
+    @Override
+    public long ramBytesUsed() {
+      long base = RamUsageEstimator.NUM_BYTES_OBJECT_REF;
+      if (bits instanceof Bits.MatchAllBits || bits instanceof Bits.MatchNoBits) {
+        return base;
+      } else {
+        return base + (bits.length() >>> 3);
+      }
+    }
   }
   
   // inherit javadocs
@@ -385,7 +405,7 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  static class BytesFromArray extends Bytes {
+  static class BytesFromArray extends Bytes implements Accountable {
     private final byte[] values;
 
     public BytesFromArray(byte[] values) {
@@ -396,6 +416,11 @@ class FieldCacheImpl implements FieldCache {
     public byte get(int docID) {
       return values[docID];
     }
+
+    @Override
+    public long ramBytesUsed() {
+      return RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.sizeOf(values);
+    }
   }
 
   static final class ByteCache extends Cache {
@@ -404,7 +429,7 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
+    protected Accountable createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
       int maxDoc = reader.maxDoc();
@@ -414,7 +439,7 @@ class FieldCacheImpl implements FieldCache {
         // Confusing: must delegate to wrapper (vs simply
         // setting parser = DEFAULT_SHORT_PARSER) so cache
         // key includes DEFAULT_SHORT_PARSER:
-        return wrapper.getBytes(reader, key.field, DEFAULT_BYTE_PARSER, setDocsWithField);
+        return (Accountable) wrapper.getBytes(reader, key.field, DEFAULT_BYTE_PARSER, setDocsWithField);
       }
 
       values = new byte[maxDoc];
@@ -479,7 +504,7 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  static class ShortsFromArray extends Shorts {
+  static class ShortsFromArray extends Shorts implements Accountable {
     private final short[] values;
 
     public ShortsFromArray(short[] values) {
@@ -490,6 +515,11 @@ class FieldCacheImpl implements FieldCache {
     public short get(int docID) {
       return values[docID];
     }
+
+    @Override
+    public long ramBytesUsed() {
+      return RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.sizeOf(values);
+    }
   }
 
   static final class ShortCache extends Cache {
@@ -498,7 +528,7 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
+    protected Accountable createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
       int maxDoc = reader.maxDoc();
@@ -508,7 +538,7 @@ class FieldCacheImpl implements FieldCache {
         // Confusing: must delegate to wrapper (vs simply
         // setting parser = DEFAULT_SHORT_PARSER) so cache
         // key includes DEFAULT_SHORT_PARSER:
-        return wrapper.getShorts(reader, key.field, DEFAULT_SHORT_PARSER, setDocsWithField);
+        return (Accountable) wrapper.getShorts(reader, key.field, DEFAULT_SHORT_PARSER, setDocsWithField);
       }
 
       values = new short[maxDoc];
@@ -571,7 +601,7 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  static class IntsFromArray extends Ints {
+  static class IntsFromArray extends Ints implements Accountable {
     private final PackedInts.Reader values;
     private final int minValue;
 
@@ -584,6 +614,11 @@ class FieldCacheImpl implements FieldCache {
     public int get(int docID) {
       final long delta = values.get(docID);
       return minValue + (int) delta;
+    }
+
+    @Override
+    public long ramBytesUsed() {
+      return RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_INT + values.ramBytesUsed();
     }
   }
 
@@ -614,7 +649,7 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    protected Object createValue(final AtomicReader reader, CacheKey key, boolean setDocsWithField)
+    protected Accountable createValue(final AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
       final IntParser parser = (IntParser) key.custom;
@@ -625,9 +660,9 @@ class FieldCacheImpl implements FieldCache {
         // cache key includes
         // DEFAULT_INT_PARSER/NUMERIC_UTILS_INT_PARSER:
         try {
-          return wrapper.getInts(reader, key.field, DEFAULT_INT_PARSER, setDocsWithField);
+          return (Accountable) wrapper.getInts(reader, key.field, DEFAULT_INT_PARSER, setDocsWithField);
         } catch (NumberFormatException ne) {
-          return wrapper.getInts(reader, key.field, NUMERIC_UTILS_INT_PARSER, setDocsWithField);
+          return (Accountable) wrapper.getInts(reader, key.field, NUMERIC_UTILS_INT_PARSER, setDocsWithField);
         }
       }
 
@@ -698,7 +733,8 @@ class FieldCacheImpl implements FieldCache {
     } else if (!fieldInfo.isIndexed()) {
       return new Bits.MatchNoBits(reader.maxDoc());
     }
-    return (Bits) caches.get(DocsWithFieldCache.class).get(reader, new CacheKey(field, null), false);
+    BitsEntry entry = (BitsEntry) caches.get(DocsWithFieldCache.class).get(reader, new CacheKey(field, null), false);
+    return entry.bits;
   }
 
   static final class DocsWithFieldCache extends Cache {
@@ -707,7 +743,7 @@ class FieldCacheImpl implements FieldCache {
     }
     
     @Override
-    protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField /* ignored */)
+    protected Accountable createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField /* ignored */)
     throws IOException {
       final String field = key.field;
       final int maxDoc = reader.maxDoc();
@@ -720,7 +756,7 @@ class FieldCacheImpl implements FieldCache {
         assert termsDocCount <= maxDoc;
         if (termsDocCount == maxDoc) {
           // Fast case: all docs have this field:
-          return new Bits.MatchAllBits(maxDoc);
+          return new BitsEntry(new Bits.MatchAllBits(maxDoc));
         }
         final TermsEnum termsEnum = terms.iterator(null);
         DocsEnum docs = null;
@@ -746,15 +782,15 @@ class FieldCacheImpl implements FieldCache {
         }
       }
       if (res == null) {
-        return new Bits.MatchNoBits(maxDoc);
+        return new BitsEntry(new Bits.MatchNoBits(maxDoc));
       }
       final int numSet = res.cardinality();
       if (numSet >= maxDoc) {
         // The cardinality of the BitSet is maxDoc if all documents have a value.
         assert numSet == maxDoc;
-        return new Bits.MatchAllBits(maxDoc);
+        return new BitsEntry(new Bits.MatchAllBits(maxDoc));
       }
-      return res;
+      return new BitsEntry(res);
     }
   }
 
@@ -790,7 +826,7 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  static class FloatsFromArray extends Floats {
+  static class FloatsFromArray extends Floats implements Accountable {
     private final float[] values;
 
     public FloatsFromArray(float[] values) {
@@ -801,6 +837,11 @@ class FieldCacheImpl implements FieldCache {
     public float get(int docID) {
       return values[docID];
     }
+
+    @Override
+    public long ramBytesUsed() {
+      return RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.sizeOf(values);
+    }
   }
 
   static final class FloatCache extends Cache {
@@ -809,7 +850,7 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    protected Object createValue(final AtomicReader reader, CacheKey key, boolean setDocsWithField)
+    protected Accountable createValue(final AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
       final FloatParser parser = (FloatParser) key.custom;
@@ -820,9 +861,9 @@ class FieldCacheImpl implements FieldCache {
         // cache key includes
         // DEFAULT_FLOAT_PARSER/NUMERIC_UTILS_FLOAT_PARSER:
         try {
-          return wrapper.getFloats(reader, key.field, DEFAULT_FLOAT_PARSER, setDocsWithField);
+          return (Accountable) wrapper.getFloats(reader, key.field, DEFAULT_FLOAT_PARSER, setDocsWithField);
         } catch (NumberFormatException ne) {
-          return wrapper.getFloats(reader, key.field, NUMERIC_UTILS_FLOAT_PARSER, setDocsWithField);
+          return (Accountable) wrapper.getFloats(reader, key.field, NUMERIC_UTILS_FLOAT_PARSER, setDocsWithField);
         }
       }
 
@@ -901,7 +942,7 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  static class LongsFromArray extends Longs {
+  static class LongsFromArray extends Longs implements Accountable {
     private final PackedInts.Reader values;
     private final long minValue;
 
@@ -914,6 +955,11 @@ class FieldCacheImpl implements FieldCache {
     public long get(int docID) {
       return minValue + values.get(docID);
     }
+
+    @Override
+    public long ramBytesUsed() {
+      return RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_LONG + values.ramBytesUsed();
+    }
   }
 
   static final class LongCache extends Cache {
@@ -922,7 +968,7 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    protected Object createValue(final AtomicReader reader, CacheKey key, boolean setDocsWithField)
+    protected Accountable createValue(final AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
       final LongParser parser = (LongParser) key.custom;
@@ -933,9 +979,9 @@ class FieldCacheImpl implements FieldCache {
         // cache key includes
         // DEFAULT_LONG_PARSER/NUMERIC_UTILS_LONG_PARSER:
         try {
-          return wrapper.getLongs(reader, key.field, DEFAULT_LONG_PARSER, setDocsWithField);
+          return (Accountable) wrapper.getLongs(reader, key.field, DEFAULT_LONG_PARSER, setDocsWithField);
         } catch (NumberFormatException ne) {
-          return wrapper.getLongs(reader, key.field, NUMERIC_UTILS_LONG_PARSER, setDocsWithField);
+          return (Accountable) wrapper.getLongs(reader, key.field, NUMERIC_UTILS_LONG_PARSER, setDocsWithField);
         }
       }
 
@@ -1027,7 +1073,7 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  static class DoublesFromArray extends Doubles {
+  static class DoublesFromArray extends Doubles implements Accountable {
     private final double[] values;
 
     public DoublesFromArray(double[] values) {
@@ -1038,6 +1084,11 @@ class FieldCacheImpl implements FieldCache {
     public double get(int docID) {
       return values[docID];
     }
+
+    @Override
+    public long ramBytesUsed() {
+      return RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.sizeOf(values);
+    }
   }
 
   static final class DoubleCache extends Cache {
@@ -1046,7 +1097,7 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    protected Object createValue(final AtomicReader reader, CacheKey key, boolean setDocsWithField)
+    protected Accountable createValue(final AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
       final DoubleParser parser = (DoubleParser) key.custom;
@@ -1057,9 +1108,9 @@ class FieldCacheImpl implements FieldCache {
         // cache key includes
         // DEFAULT_DOUBLE_PARSER/NUMERIC_UTILS_DOUBLE_PARSER:
         try {
-          return wrapper.getDoubles(reader, key.field, DEFAULT_DOUBLE_PARSER, setDocsWithField);
+          return (Accountable) wrapper.getDoubles(reader, key.field, DEFAULT_DOUBLE_PARSER, setDocsWithField);
         } catch (NumberFormatException ne) {
-          return wrapper.getDoubles(reader, key.field, NUMERIC_UTILS_DOUBLE_PARSER, setDocsWithField);
+          return (Accountable) wrapper.getDoubles(reader, key.field, NUMERIC_UTILS_DOUBLE_PARSER, setDocsWithField);
         }
       }
 
@@ -1106,7 +1157,7 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  public static class SortedDocValuesImpl {
+  public static class SortedDocValuesImpl implements Accountable {
     private final PagedBytes.Reader bytes;
     private final MonotonicAppendingLongBuffer termOrdToBytesOffset;
     private final PackedInts.Reader docToTermOrd;
@@ -1146,6 +1197,15 @@ class FieldCacheImpl implements FieldCache {
         }   
       };
     }
+
+    @Override
+    public long ramBytesUsed() {
+      return 3*RamUsageEstimator.NUM_BYTES_OBJECT_REF + 
+             RamUsageEstimator.NUM_BYTES_INT + 
+             bytes.ramBytesUsed() + 
+             termOrdToBytesOffset.ramBytesUsed() + 
+             docToTermOrd.ramBytesUsed();
+    }
   }
 
   public SortedDocValues getTermsIndex(AtomicReader reader, String field) throws IOException {
@@ -1180,7 +1240,7 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField /* ignored */)
+    protected Accountable createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField /* ignored */)
         throws IOException {
 
       final int maxDoc = reader.maxDoc();
@@ -1262,7 +1322,7 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  private static class BinaryDocValuesImpl {
+  private static class BinaryDocValuesImpl implements Accountable {
     private final PagedBytes.Reader bytes;
     private final PackedInts.Reader docToOffset;
 
@@ -1285,6 +1345,11 @@ class FieldCacheImpl implements FieldCache {
           return term;
         }
       };
+    }
+
+    @Override
+    public long ramBytesUsed() {
+      return 2*RamUsageEstimator.NUM_BYTES_OBJECT_REF + bytes.ramBytesUsed() + docToOffset.ramBytesUsed();
     }
   }
 
@@ -1325,7 +1390,7 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
+    protected Accountable createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
       // TODO: would be nice to first check if DocTermsIndex
@@ -1445,7 +1510,7 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField /* ignored */)
+    protected Accountable createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField /* ignored */)
         throws IOException {
       return new DocTermOrds(reader, null, key.field);
     }

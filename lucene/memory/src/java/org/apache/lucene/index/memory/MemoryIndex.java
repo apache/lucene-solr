@@ -575,15 +575,6 @@ public class MemoryIndex {
        */
     }   
   }
-  
-  /**
-   * Returns a reasonable approximation of the main memory [bytes] consumed by
-   * this instance. Useful for smart memory sensititive caches/pools.
-   * @return the main memory consumption
-   */
-  public long getMemorySize() {
-    return RamUsageEstimator.sizeOf(this);
-  }
 
   /** sorts into ascending order (on demand), reusing memory along the way */
   private void sortFields() {
@@ -656,7 +647,6 @@ public class MemoryIndex {
       
       result.append("\tterms=" + info.terms.size());
       result.append(", positions=" + numPositions);
-      result.append(", memory=" + RamUsageEstimator.humanReadableUnits(RamUsageEstimator.sizeOf(info)));
       result.append("\n");
       sumPositions += numPositions;
       sumTerms += info.terms.size();
@@ -665,7 +655,6 @@ public class MemoryIndex {
     result.append("\nfields=" + sortedFields.length);
     result.append(", terms=" + sumTerms);
     result.append(", positions=" + sumPositions);
-    result.append(", memory=" + RamUsageEstimator.humanReadableUnits(getMemorySize()));
     return result.toString();
   }
   
