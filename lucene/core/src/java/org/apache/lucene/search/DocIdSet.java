@@ -95,6 +95,6 @@ public abstract class DocIdSet implements Accountable {
 
   @Override
   public long ramBytesUsed() {
-    return 0L;
+    throw new UnsupportedOperationException();
   }
 }
