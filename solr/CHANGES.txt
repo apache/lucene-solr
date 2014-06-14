@@ -224,6 +224,9 @@ Other Changes
 * SOLR-5940: post.jar reports back detailed error in case of error responses.
   (Sameer Maggon, shalin, Uwe Schindler)
 
+* SOLR-6161: SolrDispatchFilter should throw java.lang.Error back even if wrapped in
+  another exception. (Miklos Christine via shalin)
+
 Optimizations
 ----------------------
 
