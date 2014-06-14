@@ -207,36 +207,8 @@ final public class BasicOperations {
     return builder.finish();
   }
 
-  // nocommit make this privately computed in LA
+  // nocommit move to AutomatonTestUtil
 
-  /** Returns true if the automaton is deterministic. */
-  public static boolean isDeterministic(LightAutomaton a) {
-    BitSet done = new BitSet(a.getNumStates());
-    List<Integer> queue = new ArrayList<>();
-    queue.add(0);
-    done.set(0);
-    Transition t = new Transition();
-
-    while (queue.isEmpty() == false) {
-      int state = queue.remove(queue.size()-1);
-      int count = a.initTransition(state, t);
-      int lastMax = -1;
-      for(int i=0;i<count;i++) {
-        a.getNextTransition(t);
-        if (t.min <= lastMax) {
-          return false;
-        }
-        lastMax = t.max;
-        if (done.get(t.dest) == false) {
-          done.set(t.dest);
-          queue.add(t.dest);
-        }
-      }
-    }
-
-    return true;
-  }
-  
   /**
    * Returns an automaton that accepts <code>min</code> or more concatenated
    * repetitions of the language of the given automaton.
@@ -313,7 +285,7 @@ final public class BasicOperations {
     for (int p=0;p<numStates;p++) {
       a.setAccept(p, !a.isAccept(p));
     }
-    return removeDeadTransitions(a);
+    return removeDeadStates(a);
   }
   
   /**
@@ -343,6 +315,12 @@ final public class BasicOperations {
   static public LightAutomaton intersectionLight(LightAutomaton a1, LightAutomaton a2) {
     if (a1 == a2) {
       return a1;
+    }
+    if (a1.getNumStates() == 0) {
+      return a1;
+    }
+    if (a2.getNumStates() == 0) {
+      return a2;
     }
     Transition[][] transitions1 = a1.getSortedTransitions();
     Transition[][] transitions2 = a2.getSortedTransitions();
@@ -379,7 +357,7 @@ final public class BasicOperations {
     }
     c.finish();
 
-    return removeDeadTransitions(c);
+    return removeDeadStates(c);
   }
 
   /**
@@ -474,8 +452,12 @@ final public class BasicOperations {
    * Complexity: quadratic in number of states.
    */
   public static boolean subsetOf(LightAutomaton a1, LightAutomaton a2) {
-    assert isDeterministic(a1);
-    assert isDeterministic(a2);
+    if (a1.isDeterministic() == false) {
+      throw new IllegalArgumentException("a1 must be deterministic");
+    }
+    if (a2.isDeterministic() == false) {
+      throw new IllegalArgumentException("a2 must be deterministic");
+    }
     // TODO: cutover to iterators instead
     Transition[][] transitions1 = a1.getSortedTransitions();
     Transition[][] transitions2 = a2.getSortedTransitions();
@@ -821,6 +803,9 @@ final public class BasicOperations {
    * Worst case complexity: exponential in number of states.
    */
   public static LightAutomaton determinize(LightAutomaton a) {
+    if (a.isDeterministic()) {
+      return a;
+    }
     if (a.getNumStates() == 0) {
       return a;
     }
@@ -938,9 +923,11 @@ final public class BasicOperations {
       assert statesSet.upto == 0: "upto=" + statesSet.upto;
     }
 
-    return b.finish();
+    LightAutomaton result = b.finish();
+    assert result.isDeterministic();
+    return result;
   }
-  
+
   /**
    * Returns true if the given automaton accepts no strings.
    */
@@ -969,8 +956,7 @@ final public class BasicOperations {
    * <b>Note:</b> for full performance, use the {@link RunAutomaton} class.
    */
   public static boolean run(LightAutomaton a, String s) {
-    // nocommit too slow?
-    assert isDeterministic(a);
+    assert a.isDeterministic();
     int state = 0;
     for (int i = 0, cp = 0; i < s.length(); i += Character.charCount(cp)) {
       int nextState = a.step(state, cp = s.codePointAt(i));
@@ -990,8 +976,7 @@ final public class BasicOperations {
    * <b>Note:</b> for full performance, use the {@link RunAutomaton} class.
    */
   public static boolean run(LightAutomaton a, IntsRef s) {
-    // nocommit too slow?
-    assert isDeterministic(a);
+    assert a.isDeterministic();
     int state = 0;
     for (int i=0;i<s.length;i++) {
       int nextState = a.step(state, s.ints[s.offset+i]);
@@ -1005,50 +990,53 @@ final public class BasicOperations {
 
   /**
    * Returns the set of live states. A state is "live" if an accept state is
-   * reachable from it.
-   * 
-   * @return set of {@link State} objects
+   * reachable from it and if it is reachable from the initial state.
    */
-  // nocommit public?
   private static BitSet getLiveStates(LightAutomaton a) {
     int numStates = a.getNumStates();
-    BitSet liveSet = new BitSet(numStates);
-    for(int state : a.getAcceptStates()) {
-      liveSet.set(state);
+    BitSet reachableFromInitial = getLiveStatesFromInitial(a);
+    BitSet reachableFromAccept = getLiveStatesFromInitial(SpecialOperations.reverse(a));
+    for(int acceptState : a.getAcceptStates()) {
+      reachableFromAccept.set(1+acceptState);
     }
-    // map<state, set<state>>
-    @SuppressWarnings({"rawtypes","unchecked"}) Set<Integer> map[] = new Set[numStates];
-    for (int i = 0; i < numStates; i++) {
-      map[i] = new HashSet<>();
-    }
-    Transition t = new Transition();
-    for (int s=0;s<numStates;s++) {
-      int numTransitions = a.initTransition(s, t);
-      for(int i=0;i<numTransitions;i++) {
-        a.getNextTransition(t);
-        map[t.dest].add(s);
+
+    for(int i=0;i<numStates;i++) {
+      if (reachableFromAccept.get(i+1) == false) {      
+        reachableFromInitial.clear(i);
       }
     }
-    LinkedList<Integer> worklist = new LinkedList<>(a.getAcceptStates());
-    while (worklist.isEmpty() == false) {
-      int s = worklist.removeFirst();
-      for (int p : map[s]) {
-        if (liveSet.get(p) == false) {
-          liveSet.set(p);
-          worklist.add(p);
+    return reachableFromInitial;
+  }
+
+  /** Returns bitset marking states reachable from the initial node. */
+  private static BitSet getLiveStatesFromInitial(LightAutomaton a) {
+    int numStates = a.getNumStates();
+    BitSet live = new BitSet(numStates);
+    LinkedList<Integer> workList = new LinkedList<>();
+    live.set(0);
+    workList.add(0);
+
+    Transition t = new Transition();
+    while (workList.isEmpty() == false) {
+      int s = workList.removeFirst();
+      int count = a.initTransition(s, t);
+      for(int i=0;i<count;i++) {
+        a.getNextTransition(t);
+        if (live.get(t.dest) == false) {
+          live.set(t.dest);
+          workList.add(t.dest);
         }
       }
     }
 
-    return liveSet;
+    return live;
   }
 
   /**
-   * Removes transitions to dead states and calls {@link #reduce()}.
-   * (A state is "dead" if no accept state is
-   * reachable from it.)
+   * Removes transitions to dead states (a state is "dead" if it is not
+   * reachable from the initial state or no accept state is reachable from it.)
    */
-  public static LightAutomaton removeDeadTransitions(LightAutomaton a) {
+  public static LightAutomaton removeDeadStates(LightAutomaton a) {
     int numStates = a.getNumStates();
     BitSet liveSet = getLiveStates(a);
 

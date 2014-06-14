@@ -383,7 +383,7 @@ public class AutomatonTestUtil {
       }
     }
 
-    return BasicOperations.removeDeadTransitions(result.finish());
+    return BasicOperations.removeDeadStates(result.finish());
   }
 
   /**
@@ -476,7 +476,30 @@ public class AutomatonTestUtil {
    * from the initial state.
    */
   public static void assertNoDetachedStates(LightAutomaton a) {
-    LightAutomaton a2 = BasicOperations.removeDeadTransitions(a);
+    LightAutomaton a2 = BasicOperations.removeDeadStates(a);
     assert a.getNumStates() == a2.getNumStates() : "automaton has " + (a.getNumStates() - a2.getNumStates()) + " detached states";
   }
+
+  // nocommit where to assert this...
+  /** Returns true if the automaton is deterministic. */
+  public static boolean isDeterministicSlow(LightAutomaton a) {
+    Transition t = new Transition();
+    int numStates = a.getNumStates();
+    for(int s=0;s<numStates;s++) {
+      int count = a.initTransition(s, t);
+      int lastMax = -1;
+      for(int i=0;i<count;i++) {
+        a.getNextTransition(t);
+        if (t.min <= lastMax) {
+          assert a.isDeterministic() == false;
+          return false;
+        }
+        lastMax = t.max;
+      }
+    }
+
+    assert a.isDeterministic() == true;
+    return true;
+  }
+  
 }

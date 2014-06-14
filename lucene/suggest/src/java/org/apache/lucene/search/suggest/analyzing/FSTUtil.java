@@ -69,7 +69,7 @@ public class FSTUtil {
    */
   public static <T> List<Path<T>> intersectPrefixPaths(LightAutomaton a, FST<T> fst)
       throws IOException {
-    assert BasicOperations.isDeterministic(a);
+    assert a.isDeterministic();
     final List<Path<T>> queue = new ArrayList<>();
     final List<Path<T>> endNodes = new ArrayList<>();
     queue.add(new Path<>(0, fst

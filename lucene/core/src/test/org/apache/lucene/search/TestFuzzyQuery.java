@@ -38,6 +38,21 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 public class TestFuzzyQuery extends LuceneTestCase {
 
+  public void testBasicPrefix() throws Exception {
+    Directory directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
+    addDoc("abc", writer);
+    IndexReader reader = writer.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+    writer.shutdown();
+
+    FuzzyQuery query = new FuzzyQuery(new Term("field", "abc"), FuzzyQuery.defaultMaxEdits, 1);
+    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals(1, hits.length);
+    reader.close();
+    directory.close();
+  }
+
   public void testFuzziness() throws Exception {
     Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);

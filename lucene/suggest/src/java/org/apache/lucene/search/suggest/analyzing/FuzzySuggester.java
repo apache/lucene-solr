@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.TokenStreamToAutomaton;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute; // javadocs
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.BasicOperations;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
@@ -228,7 +229,6 @@ public final class FuzzySuggester extends AnalyzingSuggester {
         subs[upto] = BasicAutomata.makeStringLight(path.ints, path.offset, path.length);
         upto++;
       } else {
-        LightAutomaton prefix = BasicAutomata.makeStringLight(path.ints, path.offset, nonFuzzyPrefix);
         int ints[] = new int[path.length-nonFuzzyPrefix];
         System.arraycopy(path.ints, path.offset+nonFuzzyPrefix, ints, 0, ints.length);
         // TODO: maybe add alphaMin to LevenshteinAutomata,
@@ -237,9 +237,7 @@ public final class FuzzySuggester extends AnalyzingSuggester {
         // edited... but then 0 byte is "in general" allowed
         // on input (but not in UTF8).
         LevenshteinAutomata lev = new LevenshteinAutomata(ints, unicodeAware ? Character.MAX_CODE_POINT : 255, transpositions);
-        LightAutomaton levAutomaton = lev.toLightAutomaton(maxEdits);
-        LightAutomaton combined = BasicOperations.concatenateLight(prefix, levAutomaton);
-        subs[upto] = combined;
+        subs[upto] = lev.toAutomaton(maxEdits, UnicodeUtil.newString(path.ints, path.offset, nonFuzzyPrefix));
         upto++;
       }
     }

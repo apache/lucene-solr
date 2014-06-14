@@ -152,8 +152,10 @@ public class FuzzyTermsEnum extends TermsEnum {
       throws IOException {
     final List<CompiledAutomaton> runAutomata = initAutomata(editDistance);
     if (editDistance < runAutomata.size()) {
-      //if (BlockTreeTermsWriter.DEBUG) System.out.println("FuzzyTE.getAEnum: ed=" + editDistance + " lastTerm=" + (lastTerm==null ? "null" : lastTerm.utf8ToString()));
+      //System.out.println("FuzzyTE.getAEnum: ed=" + editDistance + " lastTerm=" + (lastTerm==null ? "null" : lastTerm.utf8ToString()));
       final CompiledAutomaton compiled = runAutomata.get(editDistance);
+      compiled.lightAutomaton.writeDot("compiled");
+      
       return new AutomatonFuzzyTermsEnum(terms.intersect(compiled, lastTerm == null ? null : compiled.floor(lastTerm, new BytesRef())),
                                          runAutomata.subList(0, editDistance + 1).toArray(new CompiledAutomaton[editDistance + 1]));
     } else {
@@ -165,20 +167,15 @@ public class FuzzyTermsEnum extends TermsEnum {
   private List<CompiledAutomaton> initAutomata(int maxDistance) {
     final List<CompiledAutomaton> runAutomata = dfaAtt.automata();
     //System.out.println("cached automata size: " + runAutomata.size());
-    if (runAutomata.size() <= maxDistance && 
+    if (runAutomata.size() <= maxDistance &&
         maxDistance <= LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE) {
       LevenshteinAutomata builder = 
         new LevenshteinAutomata(UnicodeUtil.newString(termText, realPrefixLength, termText.length - realPrefixLength), transpositions);
 
+      String prefix = UnicodeUtil.newString(termText, 0, realPrefixLength);
       for (int i = runAutomata.size(); i <= maxDistance; i++) {
-        LightAutomaton a = builder.toLightAutomaton(i);
+        LightAutomaton a = builder.toAutomaton(i, prefix);
         //System.out.println("compute automaton n=" + i);
-        // constant prefix
-        if (realPrefixLength > 0) {
-          LightAutomaton prefix = BasicAutomata.makeStringLight(
-            UnicodeUtil.newString(termText, 0, realPrefixLength));
-          a = BasicOperations.concatenateLight(prefix, a);
-        }
         runAutomata.add(new CompiledAutomaton(a, true, false));
       }
     }

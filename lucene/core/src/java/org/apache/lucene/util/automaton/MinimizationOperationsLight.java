@@ -254,7 +254,7 @@ final public class MinimizationOperationsLight {
     result.finish();
     //System.out.println(result.getNumStates() + " states");
 
-    return BasicOperations.removeDeadTransitions(result);
+    return BasicOperations.removeDeadStates(result);
   }
   
   static final class IntPair {

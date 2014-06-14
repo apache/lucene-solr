@@ -101,7 +101,9 @@ final public class SpecialOperations {
    * @return common prefix
    */
   public static String getCommonPrefix(LightAutomaton a) {
-    assert BasicOperations.isDeterministic(a);
+    if (a.isDeterministic() == false) {
+      throw new IllegalArgumentException("input automaton must be deterministic");
+    }
     StringBuilder b = new StringBuilder();
     HashSet<Integer> visited = new HashSet<>();
     int s = 0;

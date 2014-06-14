@@ -126,11 +126,8 @@ class MultiTermHighlighting {
         int prefixLength = Math.min(fq.getPrefixLength(), termLength);
         String suffix = UnicodeUtil.newString(termText, prefixLength, termText.length - prefixLength);
         LevenshteinAutomata builder = new LevenshteinAutomata(suffix, fq.getTranspositions());
-        LightAutomaton automaton = builder.toLightAutomaton(fq.getMaxEdits());
-        if (prefixLength > 0) {
-          LightAutomaton prefix = BasicAutomata.makeStringLight(UnicodeUtil.newString(termText, 0, prefixLength));
-          automaton = BasicOperations.concatenateLight(prefix, automaton);
-        }
+        String prefix = UnicodeUtil.newString(termText, 0, prefixLength);
+        LightAutomaton automaton = builder.toAutomaton(fq.getMaxEdits(), prefix);
         list.add(new CharacterRunAutomaton(automaton) {
           @Override
           public String toString() {

@@ -168,7 +168,6 @@ public class CompiledAutomaton {
       commonSuffixRef = SpecialOperations.getCommonSuffixBytesRef(utf8);
     }
     runAutomaton = new ByteRunAutomaton(utf8, true);
-    //utf8.writeDot("utf8");
 
     lightAutomaton = runAutomaton.a;
   }

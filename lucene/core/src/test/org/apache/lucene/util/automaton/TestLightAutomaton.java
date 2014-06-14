@@ -253,7 +253,10 @@ public class TestLightAutomaton extends LuceneTestCase {
     int ITERS = atLeast(100);
     for(int iter=0;iter<ITERS;iter++) {
       //System.out.println("TEST: iter=" + iter);
-      LightAutomaton a = BasicOperations.removeDeadTransitions(AutomatonTestUtil.randomAutomaton(random()));
+      LightAutomaton a = AutomatonTestUtil.randomAutomaton(random());
+      if (random().nextBoolean()) {
+        a = BasicOperations.removeDeadStates(a);
+      }
       LightAutomaton ra = SpecialOperations.reverse(a);
       LightAutomaton rda = BasicOperations.determinize(ra);
 
@@ -290,7 +293,7 @@ public class TestLightAutomaton extends LuceneTestCase {
 
   public void testRemoveDeadTransitionsEmpty() throws Exception {
     LightAutomaton a = BasicAutomata.makeEmptyLight();
-    LightAutomaton a2 = BasicOperations.removeDeadTransitions(a);
+    LightAutomaton a2 = BasicOperations.removeDeadStates(a);
     assertTrue(a2.isEmpty());
   }
 
@@ -418,6 +421,16 @@ public class TestLightAutomaton extends LuceneTestCase {
         assertEquals(expected, BasicOperations.run(a, sx));
       }
     }
+  }
+
+  // nocommit testRemoveDead of an A acceptint nothing should go to emptye A (0 states)
+
+  public void testRemoveDead() throws Exception {
+    LightAutomaton a = BasicOperations.concatenateLight(Arrays.asList(BasicAutomata.makeStringLight("x"),
+                                                                      BasicAutomata.makeStringLight("y")));
+    assertEquals(4, a.getNumStates());
+    a = BasicOperations.removeDeadStates(a);
+    assertEquals(3, a.getNumStates());
   }
 
   // nocommit more tests ... it's an algebra

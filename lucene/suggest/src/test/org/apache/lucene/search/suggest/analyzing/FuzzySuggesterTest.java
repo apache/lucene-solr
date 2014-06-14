@@ -753,7 +753,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
       // suggester.toLevA ...) ... but testRandom2() fixes
       // this:
       LightAutomaton automaton = suggester.convertAutomaton(suggester.toLevenshteinAutomata(suggester.toLookupAutomaton(analyzedKey)));
-      assertTrue(BasicOperations.isDeterministic(automaton));
+      assertTrue(automaton.isDeterministic());
 
       // TODO: could be faster... but its slowCompletor for a reason
       BytesRef spare = new BytesRef();

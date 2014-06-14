@@ -21,6 +21,8 @@ import java.util.Iterator;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import org.apache.lucene.util.UnicodeUtil;
+
 /**
  * Class to construct DFAs that match a word within some edit distance.
  * <p>
@@ -124,9 +126,14 @@ public class LevenshteinAutomata {
    * </ul>
    * </p>
    */
-  public LightAutomaton toLightAutomaton(int n) {
+  public LightAutomaton toAutomaton(int n) {
+    return toAutomaton(n, "");
+  }
+
+  public LightAutomaton toAutomaton(int n, String prefix) {
+    assert prefix != null;
     if (n == 0) {
-      return BasicAutomata.makeStringLight(word, 0, word.length);
+      return BasicAutomata.makeStringLight(prefix + UnicodeUtil.newString(word, 0, word.length));
     }
     
     if (n >= descriptions.length)
@@ -138,12 +145,31 @@ public class LevenshteinAutomata {
     int numStates = description.size();
 
     LightAutomaton a = new LightAutomaton();
+    int lastState;
+    if (prefix != null) {
+      // Insert prefix
+      lastState = a.createState();
+      for (int i = 0, cp = 0; i < prefix.length(); i += Character.charCount(cp)) {
+        int state = a.createState();
+        cp = prefix.codePointAt(i);
+        a.addTransition(lastState, state, cp, cp);
+        lastState = state;
+      }
+    } else {
+      lastState = a.createState();
+    }
+
+    // nocommit why are so many dead states created here?
+
+    int stateOffset = lastState;
+    a.setAccept(lastState, description.isAccept(0));
 
     // create all states, and mark as accept states if appropriate
-    for (int i = 0; i < numStates; i++) {
-      a.createState();
-      a.setAccept(i, description.isAccept(i));
+    for (int i = 1; i < numStates; i++) {
+      int state = a.createState();
+      a.setAccept(state, description.isAccept(i));
     }
+
     // create transitions from state to state
     for (int k = 0; k < numStates; k++) {
       final int xpos = description.getPosition(k);
@@ -157,7 +183,10 @@ public class LevenshteinAutomata {
         final int cvec = getVector(ch, xpos, end);
         int dest = description.transition(k, xpos, cvec);
         if (dest >= 0) {
-          a.addTransition(k, dest, ch);
+          // nocommit why do we create cycles in dead states?
+          if (k != dest) {
+            a.addTransition(stateOffset+k, stateOffset+dest, ch);
+          }
         }
       }
       // add transitions for all other chars in unicode
@@ -166,16 +195,19 @@ public class LevenshteinAutomata {
       int dest = description.transition(k, xpos, 0); // by definition
       if (dest >= 0) {
         for (int r = 0; r < numRanges; r++) {
-          a.addTransition(k, dest, rangeLower[r], rangeUpper[r]);
+          // nocommit why do we create cycles in dead states?
+          if (k != dest) {
+            a.addTransition(stateOffset+k, stateOffset+dest, rangeLower[r], rangeUpper[r]);
+          }
         }
       }
     }
 
     a.finish();
-
+    assert a.isDeterministic();
     return a;
   }
-  
+
   /**
    * Get the characteristic vector <code>X(x, V)</code> 
    * where V is <code>substring(pos, end)</code>

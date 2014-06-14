@@ -35,8 +35,6 @@ import org.apache.lucene.util.Sorter;
 //   - could use packed int arrays instead
 //   - could encode dest w/ delta from to?
 
-// nocommit should we keep determinized bit?  it could be entirely privately computed now?
-
 /** Uses only int[]s to represent the automaton, but requires that all
  *  transitions for each state are added at once.  If this is too restrictive,
  *  use {@link #Builder} instead.  State 0 is always the
@@ -70,6 +68,9 @@ public class LightAutomaton {
   private int[] transitions = new int[6];
 
   private final Set<Integer> finalStates = new HashSet<Integer>();
+
+  /** True if no state has two transitions leaving with the same label. */
+  private boolean deterministic = true;
 
   public int createState() {
     growStates();
@@ -126,10 +127,10 @@ public class LightAutomaton {
     assert nextTransition%3 == 0;
 
     if (source >= nextState/2) {
-      throw new IllegalArgumentException("source is out of bounds");
+      throw new IllegalArgumentException("source=" + source + " is out of bounds (maxState is " + (nextState/2-1) + ")");
     }
     if (dest >= nextState/2) {
-      throw new IllegalArgumentException("dest is out of bounds");
+      throw new IllegalArgumentException("dest=" + dest + " is out of bounds (max state is " + (nextState/2-1) + ")");
     }
 
     //System.out.println("  addTransition nextTransition=" + nextTransition + " source=" + source + " dest=" + dest + " min=" + min + " max=" + max);
@@ -169,9 +170,12 @@ public class LightAutomaton {
     }
   }
 
-  /** Copies over all states/transitions from other. */
+  /** Copies over all states/transitions from other.  The states numbers
+   *  are sequentially assigned (appended). */
   public void copy(LightAutomaton other) {
+
     int offset = getNumStates();
+    /*
     int otherNumStates = other.getNumStates();
     for(int s=0;s<otherNumStates;s++) {
       createState();
@@ -185,6 +189,34 @@ public class LightAutomaton {
         addTransition(offset + s, offset + t.dest, t.min, t.max);
       }
     }
+    */
+
+    // Bulk copy and then fixup the state pointers:
+    int stateOffset = getNumStates();
+    states = ArrayUtil.grow(states, nextState + other.nextState);
+    System.arraycopy(other.states, 0, states, nextState, other.nextState);
+    for(int i=0;i<other.nextState;i += 2) {
+      if (states[nextState+i] != -1) {
+        states[nextState+i] += nextTransition;
+      }
+      int state = i/2;
+      if (other.isAccept(state)) {
+        setAccept(stateOffset+state, true);
+      }
+    }
+    nextState += other.nextState;
+
+    // Bulk copy and then fixup dest for each transition:
+    transitions = ArrayUtil.grow(transitions, nextTransition + other.nextTransition);
+    System.arraycopy(other.transitions, 0, transitions, nextTransition, other.nextTransition);
+    for(int i=0;i<other.nextTransition;i += 3) {
+      transitions[nextTransition+i] += stateOffset;
+    }
+    nextTransition += other.nextTransition;
+
+    if (other.deterministic == false) {
+      deterministic = false;
+    }
   }
 
   /** Freezes the last state, reducing and sorting its transitions. */
@@ -192,7 +224,7 @@ public class LightAutomaton {
     int numTransitions = states[2*curState+1];
     assert numTransitions > 0;
 
-    // System.out.println("finish curState=" + curState + " numTransitions=" + numTransitions);
+    //System.out.println("finish curState=" + curState + " numTransitions=" + numTransitions);
     int offset = states[2*curState];
     int start = offset/3;
     destMinMaxSorter.sort(start, start+numTransitions);
@@ -256,12 +288,28 @@ public class LightAutomaton {
     // Sort transitions by min/max/dest:
     minMaxDestSorter.sort(start, start+upto);
 
+    if (deterministic && upto > 1) {
+      int lastMax = transitions[offset+2];
+      for(int i=1;i<upto;i++) {
+        min = transitions[offset + 3*i + 1];
+        if (min <= lastMax) {
+          deterministic = false;
+          break;
+        }
+        lastMax = transitions[offset + 3*i + 2];
+      }
+    }
+
     /*
     System.out.println("after finish: reduce collapsed " + (numTransitions-upto) + " transitions");
     for(int i=0;i<upto;i++) {
       System.out.println("  " + i + ": dest=" + transitions[offset+3*i] + " (accept?=" + isAccept(transitions[offset+3*i]) + ") min=" + transitions[offset+3*i+1] + " max=" + transitions[offset+3*i+2]);
     }
     */
+  }
+
+  public boolean isDeterministic() {
+    return deterministic;
   }
 
   public void finish() {
@@ -509,7 +557,6 @@ public class LightAutomaton {
   }
 
   // nocommit
-  /*
   public void writeDot(String fileName) {
     if (fileName.indexOf('/') == -1) {
       fileName = "/l/la/lucene/core/" + fileName + ".dot";
@@ -522,7 +569,6 @@ public class LightAutomaton {
       throw new RuntimeException(ioe);
     }
   }
-  */
 
   public String toDot() {
     // TODO: breadth first search so we can see get layered output...

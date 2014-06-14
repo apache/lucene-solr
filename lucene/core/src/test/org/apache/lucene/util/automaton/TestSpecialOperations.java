@@ -120,9 +120,9 @@ public class TestSpecialOperations extends LuceneTestCase {
       a = BasicOperations.determinize(a);
     } else if (random().nextBoolean()) {
       if (VERBOSE) {
-        System.out.println("TEST: a.removeDeadTransitions");
+        System.out.println("TEST: a.removeDeadStates");
       }
-      a = BasicOperations.removeDeadTransitions(a);
+      a = BasicOperations.removeDeadStates(a);
     }
 
     Set<IntsRef> actual = getFiniteStrings(a, -1, true);

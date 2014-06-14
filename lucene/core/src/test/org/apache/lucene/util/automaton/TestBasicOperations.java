@@ -33,7 +33,7 @@ public class TestBasicOperations extends LuceneTestCase {
 
     Collections.sort(strings);
     LightAutomaton union = BasicAutomata.makeStringUnionLight(strings);
-    assertTrue(BasicOperations.isDeterministic(union));
+    assertTrue(union.isDeterministic());
     assertTrue(BasicOperations.sameLanguage(union, naiveUnion(strings)));
   }
 
@@ -62,7 +62,7 @@ public class TestBasicOperations extends LuceneTestCase {
         BasicAutomata.makeStringLight("three"));
     LightAutomaton concat1 = BasicOperations.concatenateLight(expandedSingleton, nfa);
     LightAutomaton concat2 = BasicOperations.concatenateLight(singleton, nfa);
-    assertFalse(BasicOperations.isDeterministic(concat2));
+    assertFalse(concat2.isDeterministic());
     assertTrue(BasicOperations.sameLanguage(BasicOperations.determinize(concat1),
                                             BasicOperations.determinize(concat2)));
     assertTrue(BasicOperations.sameLanguage(BasicOperations.determinize(nfa),
