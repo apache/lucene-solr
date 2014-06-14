@@ -227,6 +227,9 @@ Other Changes
 * SOLR-6161: SolrDispatchFilter should throw java.lang.Error back even if wrapped in
   another exception. (Miklos Christine via shalin)
 
+* SOLR-6153: ReplicationHandler backup response format should contain backup name.
+  (Varun Thacker via shalin)
+
 Optimizations
 ----------------------
 

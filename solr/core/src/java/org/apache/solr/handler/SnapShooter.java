@@ -154,6 +154,7 @@ public class SnapShooter {
       details.add("fileCount", files.size());
       details.add("status", "success");
       details.add("snapshotCompletedAt", new Date().toString());
+      details.add("snapshotName", snapshotName);
     } catch (Exception e) {
       SnapPuller.delTree(snapShotDir);
       LOG.error("Exception while creating snapshot", e);
