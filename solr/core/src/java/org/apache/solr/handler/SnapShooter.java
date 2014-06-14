@@ -156,6 +156,7 @@ public class SnapShooter {
       String date = new Date().toString();
       details.add("snapshotCompletedAt", date);
       LOG.info("Done creating backup snapshot, completed at: " + date);
+      details.add("snapshotName", snapshotName);
     } catch (Exception e) {
       SnapPuller.delTree(snapShotDir);
       LOG.error("Exception while creating snapshot", e);
