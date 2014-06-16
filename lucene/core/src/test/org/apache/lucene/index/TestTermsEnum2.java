@@ -44,7 +44,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
   private IndexReader reader;
   private IndexSearcher searcher;
   private SortedSet<BytesRef> terms; // the terms we put in the index
-  private LightAutomaton termsAutomaton; // automata of the same
+  private Automaton termsAutomaton; // automata of the same
   int numIterations;
 
   @Override
@@ -69,7 +69,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
       writer.addDocument(doc);
     }
     
-    termsAutomaton = BasicAutomata.makeStringUnionLight(terms);
+    termsAutomaton = Automata.makeStringUnion(terms);
     
     reader = writer.getReader();
     searcher = newSearcher(reader);
@@ -88,15 +88,15 @@ public class TestTermsEnum2 extends LuceneTestCase {
 
     for (int i = 0; i < numIterations; i++) {
       String reg = AutomatonTestUtil.randomRegexp(random());
-      LightAutomaton automaton = BasicOperations.determinize(new RegExp(reg, RegExp.NONE).toLightAutomaton());
+      Automaton automaton = Operations.determinize(new RegExp(reg, RegExp.NONE).toAutomaton());
       final List<BytesRef> matchedTerms = new ArrayList<>();
       for(BytesRef t : terms) {
-        if (BasicOperations.run(automaton, t.utf8ToString())) {
+        if (Operations.run(automaton, t.utf8ToString())) {
           matchedTerms.add(t);
         }
       }
 
-      LightAutomaton alternate = BasicAutomata.makeStringUnionLight(matchedTerms);
+      Automaton alternate = Automata.makeStringUnion(matchedTerms);
       //System.out.println("match " + matchedTerms.size() + " " + alternate.getNumberOfStates() + " states, sigma=" + alternate.getStartPoints().length);
       //AutomatonTestUtil.minimizeSimple(alternate);
       //System.out.println("minmize done");
@@ -113,13 +113,13 @@ public class TestTermsEnum2 extends LuceneTestCase {
   public void testSeeking() throws Exception {
     for (int i = 0; i < numIterations; i++) {
       String reg = AutomatonTestUtil.randomRegexp(random());
-      LightAutomaton automaton = BasicOperations.determinize(new RegExp(reg, RegExp.NONE).toLightAutomaton());
+      Automaton automaton = Operations.determinize(new RegExp(reg, RegExp.NONE).toAutomaton());
       TermsEnum te = MultiFields.getTerms(reader, "field").iterator(null);
       ArrayList<BytesRef> unsortedTerms = new ArrayList<>(terms);
       Collections.shuffle(unsortedTerms, random());
 
       for (BytesRef term : unsortedTerms) {
-        if (BasicOperations.run(automaton, term.utf8ToString())) {
+        if (Operations.run(automaton, term.utf8ToString())) {
           // term is accepted
           if (random().nextBoolean()) {
             // seek exact
@@ -157,17 +157,17 @@ public class TestTermsEnum2 extends LuceneTestCase {
   public void testIntersect() throws Exception {
     for (int i = 0; i < numIterations; i++) {
       String reg = AutomatonTestUtil.randomRegexp(random());
-      LightAutomaton automaton = new RegExp(reg, RegExp.NONE).toLightAutomaton();
-      CompiledAutomaton ca = new CompiledAutomaton(automaton, SpecialOperations.isFinite(automaton), false);
+      Automaton automaton = new RegExp(reg, RegExp.NONE).toAutomaton();
+      CompiledAutomaton ca = new CompiledAutomaton(automaton, Operations.isFinite(automaton), false);
       TermsEnum te = MultiFields.getTerms(reader, "field").intersect(ca, null);
-      LightAutomaton expected = BasicOperations.determinize(BasicOperations.intersectionLight(termsAutomaton, automaton));
+      Automaton expected = Operations.determinize(Operations.intersection(termsAutomaton, automaton));
       TreeSet<BytesRef> found = new TreeSet<>();
       while (te.next() != null) {
         found.add(BytesRef.deepCopyOf(te.term()));
       }
       
-      LightAutomaton actual = BasicOperations.determinize(BasicAutomata.makeStringUnionLight(found));
-      assertTrue(BasicOperations.sameLanguage(expected, actual));
+      Automaton actual = Operations.determinize(Automata.makeStringUnion(found));
+      assertTrue(Operations.sameLanguage(expected, actual));
     }
   }
 }

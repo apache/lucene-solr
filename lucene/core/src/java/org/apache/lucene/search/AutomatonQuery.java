@@ -25,7 +25,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
-import org.apache.lucene.util.automaton.LightAutomaton;
+import org.apache.lucene.util.automaton.Automaton;
 
 /**
  * A {@link Query} that will match terms against a finite-state machine.
@@ -47,7 +47,7 @@ import org.apache.lucene.util.automaton.LightAutomaton;
  */
 public class AutomatonQuery extends MultiTermQuery {
   /** the automaton to match index terms against */
-  protected final LightAutomaton lightAutomaton;
+  protected final Automaton automaton;
   protected final CompiledAutomaton compiled;
   /** term containing the field, and possibly some pattern structure */
   protected final Term term;
@@ -60,10 +60,10 @@ public class AutomatonQuery extends MultiTermQuery {
    * @param automaton Automaton to run, terms that are accepted are considered a
    *        match.
    */
-  public AutomatonQuery(final Term term, LightAutomaton automaton) {
+  public AutomatonQuery(final Term term, Automaton automaton) {
     super(term.field());
     this.term = term;
-    this.lightAutomaton = automaton;
+    this.automaton = automaton;
     this.compiled = new CompiledAutomaton(automaton);
   }
 
@@ -110,14 +110,14 @@ public class AutomatonQuery extends MultiTermQuery {
     buffer.append(getClass().getSimpleName());
     buffer.append(" {");
     buffer.append('\n');
-    buffer.append(lightAutomaton.toString());
+    buffer.append(automaton.toString());
     buffer.append("}");
     buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
   
   /** Returns the light automaton used to create this query */
-  public LightAutomaton getLightAutomaton() {
-    return lightAutomaton;
+  public Automaton getAutomaton() {
+    return automaton;
   }
 }

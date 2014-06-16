@@ -29,61 +29,22 @@
 
 package org.apache.lucene.util.automaton;
 
+import java.io.IOException;
+
 /**
- * Pair of states.
+ * Automaton provider for <code>RegExp.</code>
+ * {@link RegExp#toAutomaton(AutomatonProvider)}
  * 
  * @lucene.experimental
  */
-public class LightStatePair {
-  int s;
-  int s1;
-  int s2;
-  
-  LightStatePair(int s, int s1, int s2) {
-    this.s = s;
-    this.s1 = s1;
-    this.s2 = s2;
-  }
+public interface AutomatonProvider {
   
   /**
-   * Constructs a new state pair.
+   * Returns automaton of the given name.
    * 
-   * @param s1 first state
-   * @param s2 second state
+   * @param name automaton name
+   * @return automaton
+   * @throws IOException if errors occur
    */
-  public LightStatePair(int s1, int s2) {
-    this.s1 = s1;
-    this.s2 = s2;
-    this.s = -1;
-  }
-  
-  /**
-   * Checks for equality.
-   * 
-   * @param obj object to compare with
-   * @return true if <tt>obj</tt> represents the same pair of states as this
-   *         pair
-   */
-  @Override
-  public boolean equals(Object obj) {
-    if (obj instanceof LightStatePair) {
-      LightStatePair p = (LightStatePair) obj;
-      return p.s1 == s1 && p.s2 == s2;
-    } else return false;
-  }
-  
-  /**
-   * Returns hash code.
-   * 
-   * @return hash code
-   */
-  @Override
-  public int hashCode() {
-    return s1 ^ s2;
-  }
-
-  @Override
-  public String toString() {
-    return "LightStatePair(s1=" + s1 + " s2=" + s2 + ")";
-  }
+  public Automaton getAutomaton(String name) throws IOException;
 }

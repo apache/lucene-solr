@@ -47,7 +47,7 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.automaton.BasicAutomata;
+import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
 import org.junit.AfterClass;
@@ -868,7 +868,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
 
   public void testBoost()
     throws Exception {
-    CharacterRunAutomaton stopWords = new CharacterRunAutomaton(BasicAutomata.makeStringLight("on"));
+    CharacterRunAutomaton stopWords = new CharacterRunAutomaton(Automata.makeString("on"));
     Analyzer oneStopAnalyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, stopWords);
     CommonQueryParserConfiguration qp = getParserConfig(oneStopAnalyzer);
     Query q = getQuery("on^1.0",qp);
@@ -1023,7 +1023,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   }
   
   public void testStopwords() throws Exception {
-    CharacterRunAutomaton stopSet = new CharacterRunAutomaton(new RegExp("the|foo").toLightAutomaton());
+    CharacterRunAutomaton stopSet = new CharacterRunAutomaton(new RegExp("the|foo").toAutomaton());
     CommonQueryParserConfiguration qp = getParserConfig(new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, stopSet));
     Query result = getQuery("field:the OR field:foo",qp);
     assertNotNull("result is null and it shouldn't be", result);
@@ -1251,7 +1251,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
 
   public void testPhraseQueryPositionIncrements() throws Exception {
     CharacterRunAutomaton stopStopList =
-    new CharacterRunAutomaton(new RegExp("[sS][tT][oO][pP]").toLightAutomaton());
+    new CharacterRunAutomaton(new RegExp("[sS][tT][oO][pP]").toAutomaton());
 
     CommonQueryParserConfiguration qp = getParserConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false, stopStopList));
 

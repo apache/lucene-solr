@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.automaton.LightAutomaton;
+import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Transition;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Util;
@@ -66,7 +66,7 @@ public class FSTUtil {
    * Enumerates all minimal prefix paths in the automaton that also intersect the FST,
    * accumulating the FST end node and output for each path.
    */
-  public static <T> List<Path<T>> intersectPrefixPaths(LightAutomaton a, FST<T> fst)
+  public static <T> List<Path<T>> intersectPrefixPaths(Automaton a, FST<T> fst)
       throws IOException {
     assert a.isDeterministic();
     final List<Path<T>> queue = new ArrayList<>();

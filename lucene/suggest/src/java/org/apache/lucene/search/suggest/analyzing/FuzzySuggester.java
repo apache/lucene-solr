@@ -29,12 +29,11 @@ import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute; // ja
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util.automaton.BasicAutomata;
-import org.apache.lucene.util.automaton.BasicOperations;
+import org.apache.lucene.util.automaton.Automata;
+import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
-import org.apache.lucene.util.automaton.LightAutomaton;
-import org.apache.lucene.util.automaton.SpecialOperations;
-import org.apache.lucene.util.automaton.UTF32ToUTF8Light;
+import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.UTF32ToUTF8;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PairOutputs.Pair;
 
@@ -178,7 +177,7 @@ public final class FuzzySuggester extends AnalyzingSuggester {
   
   @Override
   protected List<FSTUtil.Path<Pair<Long,BytesRef>>> getFullPrefixPaths(List<FSTUtil.Path<Pair<Long,BytesRef>>> prefixPaths,
-                                                                       LightAutomaton lookupAutomaton,
+                                                                       Automaton lookupAutomaton,
                                                                        FST<Pair<Long,BytesRef>> fst)
     throws IOException {
 
@@ -192,7 +191,7 @@ public final class FuzzySuggester extends AnalyzingSuggester {
     // "compete") ... in which case I think the wFST needs
     // to be log weights or something ...
 
-    LightAutomaton levA = convertAutomaton(toLevenshteinAutomata(lookupAutomaton));
+    Automaton levA = convertAutomaton(toLevenshteinAutomata(lookupAutomaton));
     /*
       Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"), StandardCharsets.UTF_8);
       w.write(levA.toDot());
@@ -203,10 +202,10 @@ public final class FuzzySuggester extends AnalyzingSuggester {
   }
 
   @Override
-  protected LightAutomaton convertAutomaton(LightAutomaton a) {
+  protected Automaton convertAutomaton(Automaton a) {
     if (unicodeAware) {
-      LightAutomaton utf8automaton = new UTF32ToUTF8Light().convert(a);
-      utf8automaton = BasicOperations.determinize(utf8automaton);
+      Automaton utf8automaton = new UTF32ToUTF8().convert(a);
+      utf8automaton = Operations.determinize(utf8automaton);
       return utf8automaton;
     } else {
       return a;
@@ -220,13 +219,13 @@ public final class FuzzySuggester extends AnalyzingSuggester {
     return tsta;
   }
 
-  LightAutomaton toLevenshteinAutomata(LightAutomaton automaton) {
-    final Set<IntsRef> ref = SpecialOperations.getFiniteStrings(automaton, -1);
-    LightAutomaton subs[] = new LightAutomaton[ref.size()];
+  Automaton toLevenshteinAutomata(Automaton automaton) {
+    final Set<IntsRef> ref = Operations.getFiniteStrings(automaton, -1);
+    Automaton subs[] = new Automaton[ref.size()];
     int upto = 0;
     for (IntsRef path : ref) {
       if (path.length <= nonFuzzyPrefix || path.length < minFuzzyLength) {
-        subs[upto] = BasicAutomata.makeStringLight(path.ints, path.offset, path.length);
+        subs[upto] = Automata.makeString(path.ints, path.offset, path.length);
         upto++;
       } else {
         int ints[] = new int[path.length-nonFuzzyPrefix];
@@ -244,17 +243,17 @@ public final class FuzzySuggester extends AnalyzingSuggester {
 
     if (subs.length == 0) {
       // automaton is empty, there is no accepted paths through it
-      return BasicAutomata.makeEmptyLight(); // matches nothing
+      return Automata.makeEmpty(); // matches nothing
     } else if (subs.length == 1) {
       // no synonyms or anything: just a single path through the tokenstream
       return subs[0];
     } else {
       // multiple paths: this is really scary! is it slow?
       // maybe we should not do this and throw UOE?
-      LightAutomaton a = BasicOperations.unionLight(Arrays.asList(subs));
+      Automaton a = Operations.union(Arrays.asList(subs));
       // TODO: we could call toLevenshteinAutomata() before det? 
       // this only happens if you have multiple paths anyway (e.g. synonyms)
-      return BasicOperations.determinize(a);
+      return Operations.determinize(a);
     }
   }
 }

@@ -34,10 +34,10 @@ import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.AutomatonTestUtil.RandomAcceptedStrings;
 import org.apache.lucene.util.fst.Util;
 
-public class TestLightAutomaton extends LuceneTestCase {
+public class TestAutomaton extends LuceneTestCase {
 
   public void testBasic() throws Exception {
-    LightAutomaton a = new LightAutomaton();
+    Automaton a = new Automaton();
     int start = a.createState();
     int x = a.createState();
     int y = a.createState();
@@ -52,7 +52,7 @@ public class TestLightAutomaton extends LuceneTestCase {
   }
 
   public void testReduceBasic() throws Exception {
-    LightAutomaton a = new LightAutomaton();
+    Automaton a = new Automaton();
     int start = a.createState();
     int end = a.createState();
     a.setAccept(end, true);
@@ -80,156 +80,156 @@ public class TestLightAutomaton extends LuceneTestCase {
   }
 
   public void testSameLanguage() throws Exception {
-    LightAutomaton a1 = BasicAutomata.makeStringLight("foobar");
-    LightAutomaton a2 = BasicOperations.removeDeadStates(BasicOperations.concatenateLight(
-                            BasicAutomata.makeStringLight("foo"),
-                            BasicAutomata.makeStringLight("bar")));
-    assertTrue(BasicOperations.sameLanguage(a1, a2));
+    Automaton a1 = Automata.makeString("foobar");
+    Automaton a2 = Operations.removeDeadStates(Operations.concatenate(
+                            Automata.makeString("foo"),
+                            Automata.makeString("bar")));
+    assertTrue(Operations.sameLanguage(a1, a2));
   }
 
   public void testCommonPrefix() throws Exception {
-    LightAutomaton a = BasicOperations.concatenateLight(
-                            BasicAutomata.makeStringLight("foobar"),
-                            BasicAutomata.makeAnyStringLight());
-    assertEquals("foobar", SpecialOperations.getCommonPrefix(a));
+    Automaton a = Operations.concatenate(
+                            Automata.makeString("foobar"),
+                            Automata.makeAnyString());
+    assertEquals("foobar", Operations.getCommonPrefix(a));
   }
 
   public void testConcatenate1() throws Exception {
-    LightAutomaton a = BasicOperations.concatenateLight(
-                            BasicAutomata.makeStringLight("m"),
-                            BasicAutomata.makeAnyStringLight());
-    assertTrue(BasicOperations.run(a, "m"));
-    assertTrue(BasicOperations.run(a, "me"));
-    assertTrue(BasicOperations.run(a, "me too"));
+    Automaton a = Operations.concatenate(
+                            Automata.makeString("m"),
+                            Automata.makeAnyString());
+    assertTrue(Operations.run(a, "m"));
+    assertTrue(Operations.run(a, "me"));
+    assertTrue(Operations.run(a, "me too"));
   }
 
   public void testConcatenate2() throws Exception {
-    LightAutomaton a = BasicOperations.concatenateLight(Arrays.asList(
-                            BasicAutomata.makeStringLight("m"),
-                            BasicAutomata.makeAnyStringLight(),
-                            BasicAutomata.makeStringLight("n"),
-                            BasicAutomata.makeAnyStringLight()));
-    a = BasicOperations.determinize(a);
-    assertTrue(BasicOperations.run(a, "mn"));
-    assertTrue(BasicOperations.run(a, "mone"));
-    assertFalse(BasicOperations.run(a, "m"));
-    assertFalse(SpecialOperations.isFinite(a));
+    Automaton a = Operations.concatenate(Arrays.asList(
+                            Automata.makeString("m"),
+                            Automata.makeAnyString(),
+                            Automata.makeString("n"),
+                            Automata.makeAnyString()));
+    a = Operations.determinize(a);
+    assertTrue(Operations.run(a, "mn"));
+    assertTrue(Operations.run(a, "mone"));
+    assertFalse(Operations.run(a, "m"));
+    assertFalse(Operations.isFinite(a));
   }
 
   public void testUnion1() throws Exception {
-    LightAutomaton a = BasicOperations.unionLight(Arrays.asList(
-                            BasicAutomata.makeStringLight("foobar"),
-                            BasicAutomata.makeStringLight("barbaz")));
-    a = BasicOperations.determinize(a);
-    assertTrue(BasicOperations.run(a, "foobar"));
-    assertTrue(BasicOperations.run(a, "barbaz"));
+    Automaton a = Operations.union(Arrays.asList(
+                            Automata.makeString("foobar"),
+                            Automata.makeString("barbaz")));
+    a = Operations.determinize(a);
+    assertTrue(Operations.run(a, "foobar"));
+    assertTrue(Operations.run(a, "barbaz"));
 
     assertMatches(a, "foobar", "barbaz");
   }
 
   public void testUnion2() throws Exception {
-    LightAutomaton a = BasicOperations.unionLight(Arrays.asList(
-                            BasicAutomata.makeStringLight("foobar"),
-                            BasicAutomata.makeStringLight(""),
-                            BasicAutomata.makeStringLight("barbaz")));
-    a = BasicOperations.determinize(a);
-    assertTrue(BasicOperations.run(a, "foobar"));
-    assertTrue(BasicOperations.run(a, "barbaz"));
-    assertTrue(BasicOperations.run(a, ""));
+    Automaton a = Operations.union(Arrays.asList(
+                            Automata.makeString("foobar"),
+                            Automata.makeString(""),
+                            Automata.makeString("barbaz")));
+    a = Operations.determinize(a);
+    assertTrue(Operations.run(a, "foobar"));
+    assertTrue(Operations.run(a, "barbaz"));
+    assertTrue(Operations.run(a, ""));
 
     assertMatches(a, "", "foobar", "barbaz");
   }
 
   public void testMinimizeSimple() throws Exception {
-    LightAutomaton a = BasicAutomata.makeStringLight("foobar");
-    LightAutomaton aMin = MinimizationOperationsLight.minimize(a);
+    Automaton a = Automata.makeString("foobar");
+    Automaton aMin = MinimizationOperations.minimize(a);
 
-    assertTrue(BasicOperations.sameLanguage(a, aMin));
+    assertTrue(Operations.sameLanguage(a, aMin));
   }
 
   public void testMinimize2() throws Exception {
-    LightAutomaton a = BasicOperations.unionLight(Arrays.asList(BasicAutomata.makeStringLight("foobar"),
-                                                                BasicAutomata.makeStringLight("boobar")));
-    LightAutomaton aMin = MinimizationOperationsLight.minimize(a);
-    assertTrue(BasicOperations.sameLanguage(BasicOperations.determinize(BasicOperations.removeDeadStates(a)), aMin));
+    Automaton a = Operations.union(Arrays.asList(Automata.makeString("foobar"),
+                                                           Automata.makeString("boobar")));
+    Automaton aMin = MinimizationOperations.minimize(a);
+    assertTrue(Operations.sameLanguage(Operations.determinize(Operations.removeDeadStates(a)), aMin));
   }
 
   public void testReverse() throws Exception {
-    LightAutomaton a = BasicAutomata.makeStringLight("foobar");
-    LightAutomaton ra = SpecialOperations.reverse(a);
-    LightAutomaton a2 = BasicOperations.determinize(SpecialOperations.reverse(ra));
+    Automaton a = Automata.makeString("foobar");
+    Automaton ra = Operations.reverse(a);
+    Automaton a2 = Operations.determinize(Operations.reverse(ra));
     
-    assertTrue(BasicOperations.sameLanguage(a, a2));
+    assertTrue(Operations.sameLanguage(a, a2));
   }
 
   public void testOptional() throws Exception {
-    LightAutomaton a = BasicAutomata.makeStringLight("foobar");
-    LightAutomaton a2 = BasicOperations.optionalLight(a);
-    a2 = BasicOperations.determinize(a2);
+    Automaton a = Automata.makeString("foobar");
+    Automaton a2 = Operations.optional(a);
+    a2 = Operations.determinize(a2);
     
-    assertTrue(BasicOperations.run(a, "foobar"));
-    assertFalse(BasicOperations.run(a, ""));
-    assertTrue(BasicOperations.run(a2, "foobar"));
-    assertTrue(BasicOperations.run(a2, ""));
+    assertTrue(Operations.run(a, "foobar"));
+    assertFalse(Operations.run(a, ""));
+    assertTrue(Operations.run(a2, "foobar"));
+    assertTrue(Operations.run(a2, ""));
   }
 
   public void testRepeatAny() throws Exception {
-    LightAutomaton a = BasicAutomata.makeStringLight("zee");
-    LightAutomaton a2 = BasicOperations.determinize(BasicOperations.repeatLight(a));
-    assertTrue(BasicOperations.run(a2, ""));
-    assertTrue(BasicOperations.run(a2, "zee"));    
-    assertTrue(BasicOperations.run(a2, "zeezee"));
-    assertTrue(BasicOperations.run(a2, "zeezeezee"));
+    Automaton a = Automata.makeString("zee");
+    Automaton a2 = Operations.determinize(Operations.repeat(a));
+    assertTrue(Operations.run(a2, ""));
+    assertTrue(Operations.run(a2, "zee"));    
+    assertTrue(Operations.run(a2, "zeezee"));
+    assertTrue(Operations.run(a2, "zeezeezee"));
   }
 
   public void testRepeatMin() throws Exception {
-    LightAutomaton a = BasicAutomata.makeStringLight("zee");
-    LightAutomaton a2 = BasicOperations.determinize(BasicOperations.repeatLight(a, 2));
-    assertFalse(BasicOperations.run(a2, ""));
-    assertFalse(BasicOperations.run(a2, "zee"));    
-    assertTrue(BasicOperations.run(a2, "zeezee"));
-    assertTrue(BasicOperations.run(a2, "zeezeezee"));
+    Automaton a = Automata.makeString("zee");
+    Automaton a2 = Operations.determinize(Operations.repeat(a, 2));
+    assertFalse(Operations.run(a2, ""));
+    assertFalse(Operations.run(a2, "zee"));    
+    assertTrue(Operations.run(a2, "zeezee"));
+    assertTrue(Operations.run(a2, "zeezeezee"));
   }
 
   public void testRepeatMinMax1() throws Exception {
-    LightAutomaton a = BasicAutomata.makeStringLight("zee");
-    LightAutomaton a2 = BasicOperations.determinize(BasicOperations.repeatLight(a, 0, 2));
-    assertTrue(BasicOperations.run(a2, ""));
-    assertTrue(BasicOperations.run(a2, "zee"));    
-    assertTrue(BasicOperations.run(a2, "zeezee"));
-    assertFalse(BasicOperations.run(a2, "zeezeezee"));
+    Automaton a = Automata.makeString("zee");
+    Automaton a2 = Operations.determinize(Operations.repeat(a, 0, 2));
+    assertTrue(Operations.run(a2, ""));
+    assertTrue(Operations.run(a2, "zee"));    
+    assertTrue(Operations.run(a2, "zeezee"));
+    assertFalse(Operations.run(a2, "zeezeezee"));
   }
 
   public void testRepeatMinMax2() throws Exception {
-    LightAutomaton a = BasicAutomata.makeStringLight("zee");
-    LightAutomaton a2 = BasicOperations.determinize(BasicOperations.repeatLight(a, 2, 4));
-    assertFalse(BasicOperations.run(a2, ""));
-    assertFalse(BasicOperations.run(a2, "zee"));    
-    assertTrue(BasicOperations.run(a2, "zeezee"));
-    assertTrue(BasicOperations.run(a2, "zeezeezee"));
-    assertTrue(BasicOperations.run(a2, "zeezeezeezee"));
-    assertFalse(BasicOperations.run(a2, "zeezeezeezeezee"));
+    Automaton a = Automata.makeString("zee");
+    Automaton a2 = Operations.determinize(Operations.repeat(a, 2, 4));
+    assertFalse(Operations.run(a2, ""));
+    assertFalse(Operations.run(a2, "zee"));    
+    assertTrue(Operations.run(a2, "zeezee"));
+    assertTrue(Operations.run(a2, "zeezeezee"));
+    assertTrue(Operations.run(a2, "zeezeezeezee"));
+    assertFalse(Operations.run(a2, "zeezeezeezeezee"));
   }
 
   public void testComplement() throws Exception {
-    LightAutomaton a = BasicAutomata.makeStringLight("zee");
-    LightAutomaton a2 = BasicOperations.determinize(BasicOperations.complementLight(a));
-    assertTrue(BasicOperations.run(a2, ""));
-    assertFalse(BasicOperations.run(a2, "zee"));    
-    assertTrue(BasicOperations.run(a2, "zeezee"));
-    assertTrue(BasicOperations.run(a2, "zeezeezee"));
+    Automaton a = Automata.makeString("zee");
+    Automaton a2 = Operations.determinize(Operations.complement(a));
+    assertTrue(Operations.run(a2, ""));
+    assertFalse(Operations.run(a2, "zee"));    
+    assertTrue(Operations.run(a2, "zeezee"));
+    assertTrue(Operations.run(a2, "zeezeezee"));
   }
 
   public void testInterval() throws Exception {
-    LightAutomaton a = BasicOperations.determinize(BasicAutomata.makeIntervalLight(17, 100, 3));
-    assertFalse(BasicOperations.run(a, ""));
-    assertTrue(BasicOperations.run(a, "017"));
-    assertTrue(BasicOperations.run(a, "100"));
-    assertTrue(BasicOperations.run(a, "073"));
+    Automaton a = Operations.determinize(Automata.makeInterval(17, 100, 3));
+    assertFalse(Operations.run(a, ""));
+    assertTrue(Operations.run(a, "017"));
+    assertTrue(Operations.run(a, "100"));
+    assertTrue(Operations.run(a, "073"));
   }
 
   public void testCommonSuffix() throws Exception {
-    LightAutomaton a = new LightAutomaton();
+    Automaton a = new Automaton();
     int init = a.createState();
     int fini = a.createState();
     a.setAccept(init, true);
@@ -237,17 +237,17 @@ public class TestLightAutomaton extends LuceneTestCase {
     a.addTransition(init, fini, 'm');
     a.addTransition(fini, fini, 'm');
     a.finishState();
-    assertEquals(0, SpecialOperations.getCommonSuffixBytesRef(a).length);
+    assertEquals(0, Operations.getCommonSuffixBytesRef(a).length);
   }
 
   public void testReverseRandom1() throws Exception {
     int ITERS = atLeast(100);
     for(int i=0;i<ITERS;i++) {
-      LightAutomaton a = AutomatonTestUtil.randomAutomaton(random());
-      LightAutomaton ra = SpecialOperations.reverse(a);
-      LightAutomaton rra = SpecialOperations.reverse(ra);
-      assertTrue(BasicOperations.sameLanguage(BasicOperations.determinize(BasicOperations.removeDeadStates(a)),
-                                              BasicOperations.determinize(BasicOperations.removeDeadStates(rra))));
+      Automaton a = AutomatonTestUtil.randomAutomaton(random());
+      Automaton ra = Operations.reverse(a);
+      Automaton rra = Operations.reverse(ra);
+      assertTrue(Operations.sameLanguage(Operations.determinize(Operations.removeDeadStates(a)),
+                                              Operations.determinize(Operations.removeDeadStates(rra))));
     }
   }
 
@@ -255,15 +255,15 @@ public class TestLightAutomaton extends LuceneTestCase {
     int ITERS = atLeast(100);
     for(int iter=0;iter<ITERS;iter++) {
       //System.out.println("TEST: iter=" + iter);
-      LightAutomaton a = AutomatonTestUtil.randomAutomaton(random());
+      Automaton a = AutomatonTestUtil.randomAutomaton(random());
       if (random().nextBoolean()) {
-        a = BasicOperations.removeDeadStates(a);
+        a = Operations.removeDeadStates(a);
       }
-      LightAutomaton ra = SpecialOperations.reverse(a);
-      LightAutomaton rda = BasicOperations.determinize(ra);
+      Automaton ra = Operations.reverse(a);
+      Automaton rda = Operations.determinize(ra);
 
-      if (BasicOperations.isEmpty(a)) {
-        assertTrue(BasicOperations.isEmpty(rda));
+      if (Operations.isEmpty(a)) {
+        assertTrue(Operations.isEmpty(rda));
         continue;
       }
 
@@ -282,30 +282,30 @@ public class TestLightAutomaton extends LuceneTestCase {
         //System.out.println("TEST:   iter2=" + iter2 + " s=" + Arrays.toString(s));
 
         // Make sure reversed automaton accepts it
-        assertTrue(BasicOperations.run(rda, new IntsRef(s, 0, s.length)));
+        assertTrue(Operations.run(rda, new IntsRef(s, 0, s.length)));
       }
     }
   }
 
   public void testAnyStringEmptyString() throws Exception {
-    LightAutomaton a = BasicOperations.determinize(BasicAutomata.makeAnyStringLight());
-    assertTrue(BasicOperations.run(a, ""));
+    Automaton a = Operations.determinize(Automata.makeAnyString());
+    assertTrue(Operations.run(a, ""));
   }
 
   public void testBasicIsEmpty() throws Exception {
-    LightAutomaton a = new LightAutomaton();
+    Automaton a = new Automaton();
     a.createState();
-    assertTrue(BasicOperations.isEmpty(a));
+    assertTrue(Operations.isEmpty(a));
   }
 
   public void testRemoveDeadTransitionsEmpty() throws Exception {
-    LightAutomaton a = BasicAutomata.makeEmptyLight();
-    LightAutomaton a2 = BasicOperations.removeDeadStates(a);
-    assertTrue(BasicOperations.isEmpty(a2));
+    Automaton a = Automata.makeEmpty();
+    Automaton a2 = Operations.removeDeadStates(a);
+    assertTrue(Operations.isEmpty(a2));
   }
 
   public void testInvalidAddTransition() throws Exception {
-    LightAutomaton a = new LightAutomaton();
+    Automaton a = new Automaton();
     int s1 = a.createState();
     int s2 = a.createState();
     a.addTransition(s1, s2, 'a');
@@ -321,7 +321,7 @@ public class TestLightAutomaton extends LuceneTestCase {
   public void testBuilderRandom() throws Exception {
     int ITERS = atLeast(100);
     for(int iter=0;iter<ITERS;iter++) {
-      LightAutomaton a = AutomatonTestUtil.randomAutomaton(random());
+      Automaton a = AutomatonTestUtil.randomAutomaton(random());
 
       // Just get all transitions, shuffle, and build a new automaton with the same transitions:
       List<Transition> allTrans = new ArrayList<>();
@@ -335,7 +335,7 @@ public class TestLightAutomaton extends LuceneTestCase {
         }
       }
 
-      LightAutomaton.Builder builder = new LightAutomaton.Builder();
+      Automaton.Builder builder = new Automaton.Builder();
       for(int i=0;i<numStates;i++) {
         int s = builder.createState();
         builder.setAccept(s, a.isAccept(s));
@@ -346,83 +346,83 @@ public class TestLightAutomaton extends LuceneTestCase {
         builder.addTransition(t.source, t.dest, t.min, t.max);
       }
 
-      assertTrue(BasicOperations.sameLanguage(
-                    BasicOperations.determinize(BasicOperations.removeDeadStates(a)),
-                    BasicOperations.determinize(BasicOperations.removeDeadStates(builder.finish()))));
+      assertTrue(Operations.sameLanguage(
+                    Operations.determinize(Operations.removeDeadStates(a)),
+                    Operations.determinize(Operations.removeDeadStates(builder.finish()))));
       
     }
   }
 
   public void testIsTotal() throws Exception {
-    assertFalse(BasicOperations.isTotal(new LightAutomaton()));
-    LightAutomaton a = new LightAutomaton();
+    assertFalse(Operations.isTotal(new Automaton()));
+    Automaton a = new Automaton();
     int init = a.createState();
     int fini = a.createState();
     a.setAccept(fini, true);
     a.addTransition(init, fini, Character.MIN_CODE_POINT, Character.MAX_CODE_POINT);
     a.finishState();
-    assertFalse(BasicOperations.isTotal(a));
+    assertFalse(Operations.isTotal(a));
     a.addTransition(fini, fini, Character.MIN_CODE_POINT, Character.MAX_CODE_POINT);
     a.finishState();
-    assertFalse(BasicOperations.isTotal(a));
+    assertFalse(Operations.isTotal(a));
     a.setAccept(init, true);
-    assertTrue(BasicOperations.isTotal(MinimizationOperationsLight.minimize(a)));
+    assertTrue(Operations.isTotal(MinimizationOperations.minimize(a)));
   }
 
   public void testMinimizeEmpty() throws Exception {
-    LightAutomaton a = new LightAutomaton();
+    Automaton a = new Automaton();
     int init = a.createState();
     int fini = a.createState();
     a.addTransition(init, fini, 'a');
     a.finishState();
-    a = MinimizationOperationsLight.minimize(a);
+    a = MinimizationOperations.minimize(a);
     assertEquals(0, a.getNumStates());
   }
 
   public void testMinus() throws Exception {
-    LightAutomaton a1 = BasicAutomata.makeStringLight("foobar");
-    LightAutomaton a2 = BasicAutomata.makeStringLight("boobar");
-    LightAutomaton a3 = BasicAutomata.makeStringLight("beebar");
-    LightAutomaton a = BasicOperations.unionLight(Arrays.asList(a1, a2, a3));
+    Automaton a1 = Automata.makeString("foobar");
+    Automaton a2 = Automata.makeString("boobar");
+    Automaton a3 = Automata.makeString("beebar");
+    Automaton a = Operations.union(Arrays.asList(a1, a2, a3));
     if (random().nextBoolean()) {
-      a = BasicOperations.determinize(a);
+      a = Operations.determinize(a);
     } else if (random().nextBoolean()) {
-      a = MinimizationOperationsLight.minimize(a);
+      a = MinimizationOperations.minimize(a);
     }
     assertMatches(a, "foobar", "beebar", "boobar");
 
-    LightAutomaton a4 = BasicOperations.determinize(BasicOperations.minusLight(a, a2));
+    Automaton a4 = Operations.determinize(Operations.minus(a, a2));
     
-    assertTrue(BasicOperations.run(a4, "foobar"));
-    assertFalse(BasicOperations.run(a4, "boobar"));
-    assertTrue(BasicOperations.run(a4, "beebar"));
+    assertTrue(Operations.run(a4, "foobar"));
+    assertFalse(Operations.run(a4, "boobar"));
+    assertTrue(Operations.run(a4, "beebar"));
     assertMatches(a4, "foobar", "beebar");
 
-    a4 = BasicOperations.determinize(BasicOperations.minusLight(a4, a1));
-    assertFalse(BasicOperations.run(a4, "foobar"));
-    assertFalse(BasicOperations.run(a4, "boobar"));
-    assertTrue(BasicOperations.run(a4, "beebar"));
+    a4 = Operations.determinize(Operations.minus(a4, a1));
+    assertFalse(Operations.run(a4, "foobar"));
+    assertFalse(Operations.run(a4, "boobar"));
+    assertTrue(Operations.run(a4, "beebar"));
     assertMatches(a4, "beebar");
 
-    a4 = BasicOperations.determinize(BasicOperations.minusLight(a4, a3));
-    assertFalse(BasicOperations.run(a4, "foobar"));
-    assertFalse(BasicOperations.run(a4, "boobar"));
-    assertFalse(BasicOperations.run(a4, "beebar"));
+    a4 = Operations.determinize(Operations.minus(a4, a3));
+    assertFalse(Operations.run(a4, "foobar"));
+    assertFalse(Operations.run(a4, "boobar"));
+    assertFalse(Operations.run(a4, "beebar"));
     assertMatches(a4);
   }
 
   public void testOneInterval() throws Exception {
-    LightAutomaton a = BasicAutomata.makeIntervalLight(999, 1032, 0);
-    a = BasicOperations.determinize(a);
-    assertTrue(BasicOperations.run(a, "0999"));
-    assertTrue(BasicOperations.run(a, "00999"));
-    assertTrue(BasicOperations.run(a, "000999"));
+    Automaton a = Automata.makeInterval(999, 1032, 0);
+    a = Operations.determinize(a);
+    assertTrue(Operations.run(a, "0999"));
+    assertTrue(Operations.run(a, "00999"));
+    assertTrue(Operations.run(a, "000999"));
   }
 
   public void testAnotherInterval() throws Exception {
-    LightAutomaton a = BasicAutomata.makeIntervalLight(1, 2, 0);
-    a = BasicOperations.determinize(a);
-    assertTrue(BasicOperations.run(a, "01"));
+    Automaton a = Automata.makeInterval(1, 2, 0);
+    a = Operations.determinize(a);
+    assertTrue(Operations.run(a, "01"));
   }
 
   public void testIntervalRandom() throws Exception {
@@ -443,9 +443,9 @@ public class TestLightAutomaton extends LuceneTestCase {
       }
       String prefix = b.toString();
 
-      LightAutomaton a = BasicOperations.determinize(BasicAutomata.makeIntervalLight(min, max, digits));
+      Automaton a = Operations.determinize(Automata.makeInterval(min, max, digits));
       if (random().nextBoolean()) {
-        a = MinimizationOperationsLight.minimize(a);
+        a = MinimizationOperations.minimize(a);
       }
       String mins = Integer.toString(min);
       String maxs = Integer.toString(max);
@@ -453,8 +453,8 @@ public class TestLightAutomaton extends LuceneTestCase {
         mins = prefix.substring(mins.length()) + mins;
         maxs = prefix.substring(maxs.length()) + maxs;
       }
-      assertTrue(BasicOperations.run(a, mins));
-      assertTrue(BasicOperations.run(a, maxs));
+      assertTrue(Operations.run(a, mins));
+      assertTrue(Operations.run(a, maxs));
 
       for(int iter2=0;iter2<100;iter2++) {
         int x = random().nextInt(2*max);
@@ -473,83 +473,83 @@ public class TestLightAutomaton extends LuceneTestCase {
           sb.append(sx);
           sx = sb.toString();
         }
-        assertEquals(expected, BasicOperations.run(a, sx));
+        assertEquals(expected, Operations.run(a, sx));
       }
     }
   }
 
-  private void assertMatches(LightAutomaton a, String... strings) {
+  private void assertMatches(Automaton a, String... strings) {
     Set<IntsRef> expected = new HashSet<>();
     for(String s : strings) {
       IntsRef ints = new IntsRef();
       expected.add(Util.toUTF32(s, ints));
     }
 
-    assertEquals(expected, SpecialOperations.getFiniteStrings(BasicOperations.determinize(a), -1)); 
+    assertEquals(expected, Operations.getFiniteStrings(Operations.determinize(a), -1)); 
   }
 
   public void testConcatenatePreservesDet() throws Exception {
-    LightAutomaton a1 = BasicAutomata.makeStringLight("foobar");
+    Automaton a1 = Automata.makeString("foobar");
     assertTrue(a1.isDeterministic());
-    LightAutomaton a2 = BasicAutomata.makeStringLight("baz");
+    Automaton a2 = Automata.makeString("baz");
     assertTrue(a2.isDeterministic());
-    assertTrue((BasicOperations.concatenateLight(Arrays.asList(a1, a2)).isDeterministic()));
+    assertTrue((Operations.concatenate(Arrays.asList(a1, a2)).isDeterministic()));
   }
 
   public void testRemoveDeadStates() throws Exception {
-    LightAutomaton a = BasicOperations.concatenateLight(Arrays.asList(BasicAutomata.makeStringLight("x"),
-                                                                      BasicAutomata.makeStringLight("y")));
+    Automaton a = Operations.concatenate(Arrays.asList(Automata.makeString("x"),
+                                                                      Automata.makeString("y")));
     assertEquals(4, a.getNumStates());
-    a = BasicOperations.removeDeadStates(a);
+    a = Operations.removeDeadStates(a);
     assertEquals(3, a.getNumStates());
   }
 
   public void testRemoveDeadStatesEmpty1() throws Exception {
-    LightAutomaton a = new LightAutomaton();
+    Automaton a = new Automaton();
     a.finishState();
-    assertTrue(BasicOperations.isEmpty(a));
-    assertTrue(BasicOperations.isEmpty(BasicOperations.removeDeadStates(a)));
+    assertTrue(Operations.isEmpty(a));
+    assertTrue(Operations.isEmpty(Operations.removeDeadStates(a)));
   }
 
   public void testRemoveDeadStatesEmpty2() throws Exception {
-    LightAutomaton a = new LightAutomaton();
+    Automaton a = new Automaton();
     a.finishState();
-    assertTrue(BasicOperations.isEmpty(a));
-    assertTrue(BasicOperations.isEmpty(BasicOperations.removeDeadStates(a)));
+    assertTrue(Operations.isEmpty(a));
+    assertTrue(Operations.isEmpty(Operations.removeDeadStates(a)));
   }
 
   public void testRemoveDeadStatesEmpty3() throws Exception {
-    LightAutomaton a = new LightAutomaton();
+    Automaton a = new Automaton();
     int init = a.createState();
     int fini = a.createState();
     a.addTransition(init, fini, 'a');
-    LightAutomaton a2 = BasicOperations.removeDeadStates(a);
+    Automaton a2 = Operations.removeDeadStates(a);
     assertEquals(0, a2.getNumStates());
   }
 
   public void testConcatEmpty() throws Exception {
     // If you concat empty automaton to anything the result should still be empty:
-    LightAutomaton a = BasicOperations.concatenateLight(BasicAutomata.makeEmptyLight(),
-                                                        BasicAutomata.makeStringLight("foo"));
-    assertEquals(new HashSet<IntsRef>(), SpecialOperations.getFiniteStrings(a, -1));
+    Automaton a = Operations.concatenate(Automata.makeEmpty(),
+                                                        Automata.makeString("foo"));
+    assertEquals(new HashSet<IntsRef>(), Operations.getFiniteStrings(a, -1));
 
-    a = BasicOperations.concatenateLight(BasicAutomata.makeStringLight("foo"),
-                                         BasicAutomata.makeEmptyLight());
-    assertEquals(new HashSet<IntsRef>(), SpecialOperations.getFiniteStrings(a, -1));
+    a = Operations.concatenate(Automata.makeString("foo"),
+                                         Automata.makeEmpty());
+    assertEquals(new HashSet<IntsRef>(), Operations.getFiniteStrings(a, -1));
   }
 
   public void testSeemsNonEmptyButIsNot1() throws Exception {
-    LightAutomaton a = new LightAutomaton();
+    Automaton a = new Automaton();
     // Init state has a transition but doesn't lead to accept
     int init = a.createState();
     int s = a.createState();
     a.addTransition(init, s, 'a');
     a.finishState();
-    assertTrue(BasicOperations.isEmpty(a));
+    assertTrue(Operations.isEmpty(a));
   }
 
   public void testSeemsNonEmptyButIsNot2() throws Exception {
-    LightAutomaton a = new LightAutomaton();
+    Automaton a = new Automaton();
     int init = a.createState();
     int s = a.createState();
     a.addTransition(init, s, 'a');
@@ -557,76 +557,76 @@ public class TestLightAutomaton extends LuceneTestCase {
     s = a.createState();
     a.setAccept(s, true);
     a.finishState();
-    assertTrue(BasicOperations.isEmpty(a));
+    assertTrue(Operations.isEmpty(a));
   }
 
   public void testSameLanguage1() throws Exception {
-    LightAutomaton a = BasicAutomata.makeEmptyStringLight();
-    LightAutomaton a2 = BasicAutomata.makeEmptyStringLight();
+    Automaton a = Automata.makeEmptyString();
+    Automaton a2 = Automata.makeEmptyString();
     int state = a2.createState();
     a2.addTransition(0, state, 'a');
     a2.finishState();
-    assertTrue(BasicOperations.sameLanguage(BasicOperations.removeDeadStates(a),
-                                            BasicOperations.removeDeadStates(a2)));
+    assertTrue(Operations.sameLanguage(Operations.removeDeadStates(a),
+                                            Operations.removeDeadStates(a2)));
   }
 
-  private LightAutomaton randomNoOp(LightAutomaton a) {
+  private Automaton randomNoOp(Automaton a) {
     switch (random().nextInt(5)) {
     case 0:
       if (VERBOSE) {
         System.out.println("  randomNoOp: determinize");
       }
-      return BasicOperations.determinize(a);
+      return Operations.determinize(a);
     case 1:
       if (VERBOSE) {
         System.out.println("  randomNoOp: minimize");
       }
-      return MinimizationOperationsLight.minimize(a);
+      return MinimizationOperations.minimize(a);
     case 2:
       if (VERBOSE) {
         System.out.println("  randomNoOp: removeDeadStates");
       }
-      return BasicOperations.removeDeadStates(a);
+      return Operations.removeDeadStates(a);
     case 3:
       if (VERBOSE) {
         System.out.println("  randomNoOp: reverse reverse");
       }
-      a = SpecialOperations.reverse(a);
+      a = Operations.reverse(a);
       a = randomNoOp(a);
-      return SpecialOperations.reverse(a);
+      return Operations.reverse(a);
     case 4:
       if (VERBOSE) {
         System.out.println("  randomNoOp: concat empty string");
       }
-      return BasicOperations.concatenateLight(a, BasicAutomata.makeEmptyStringLight());
+      return Operations.concatenate(a, Automata.makeEmptyString());
     case 5:
       if (VERBOSE) {
         System.out.println("  randomNoOp: union empty automaton");
       }
-      return BasicOperations.unionLight(a, BasicAutomata.makeEmptyLight());
+      return Operations.union(a, Automata.makeEmpty());
     }
     assert false;
     return null;
   }
 
-  private LightAutomaton unionTerms(Collection<BytesRef> terms) {
-    LightAutomaton a;
+  private Automaton unionTerms(Collection<BytesRef> terms) {
+    Automaton a;
     if (random().nextBoolean()) {
       if (VERBOSE) {
         System.out.println("TEST: unionTerms: use union");
       }
-      List<LightAutomaton> as = new ArrayList<>();
+      List<Automaton> as = new ArrayList<>();
       for(BytesRef term : terms) {
-        as.add(BasicAutomata.makeStringLight(term.utf8ToString()));
+        as.add(Automata.makeString(term.utf8ToString()));
       }
-      a = BasicOperations.unionLight(as);
+      a = Operations.union(as);
     } else {
       if (VERBOSE) {
         System.out.println("TEST: unionTerms: use makeStringUnion");
       }
       List<BytesRef> termsList = new ArrayList<>(terms);
       Collections.sort(termsList);
-      a = BasicAutomata.makeStringUnionLight(termsList);
+      a = Automata.makeStringUnion(termsList);
     }
 
     return randomNoOp(a);
@@ -657,7 +657,7 @@ public class TestLightAutomaton extends LuceneTestCase {
       terms.add(new BytesRef(getRandomString(isAscii)));
     }
 
-    LightAutomaton a = unionTerms(terms);
+    Automaton a = unionTerms(terms);
     assertSame(terms, a);
 
     for(int iter=0;iter<iters;iter++) {
@@ -685,7 +685,7 @@ public class TestLightAutomaton extends LuceneTestCase {
           }
           terms = newTerms;
           boolean wasDeterministic1 = a.isDeterministic();
-          a = BasicOperations.concatenateLight(BasicAutomata.makeStringLight(prefix.utf8ToString()), a);
+          a = Operations.concatenate(Automata.makeString(prefix.utf8ToString()), a);
           assertEquals(wasDeterministic1, a.isDeterministic());
         }
         break;
@@ -704,7 +704,7 @@ public class TestLightAutomaton extends LuceneTestCase {
             newTerms.add(newTerm);
           }
           terms = newTerms;
-          a = BasicOperations.concatenateLight(a, BasicAutomata.makeStringLight(suffix.utf8ToString()));
+          a = Operations.concatenate(a, Automata.makeString(suffix.utf8ToString()));
         }
         break;
 
@@ -715,7 +715,7 @@ public class TestLightAutomaton extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("  op=determinize");
         }
-        a = BasicOperations.determinize(a);
+        a = Operations.determinize(a);
         assertTrue(a.isDeterministic());
         break;
 
@@ -724,7 +724,7 @@ public class TestLightAutomaton extends LuceneTestCase {
           System.out.println("  op=minimize");
         }
         // minimize
-        a = MinimizationOperationsLight.minimize(a);
+        a = MinimizationOperations.minimize(a);
         break;
 
       case 4:
@@ -739,8 +739,8 @@ public class TestLightAutomaton extends LuceneTestCase {
             newTerms.add(new BytesRef(getRandomString(isAscii)));
           }
           terms.addAll(newTerms);
-          LightAutomaton newA = unionTerms(newTerms);
-          a = BasicOperations.unionLight(a, newA);
+          Automaton newA = unionTerms(newTerms);
+          a = Operations.union(a, newA);
         }
         break;
 
@@ -750,7 +750,7 @@ public class TestLightAutomaton extends LuceneTestCase {
           if (VERBOSE) {
             System.out.println("  op=optional");
           }
-          a = BasicOperations.optionalLight(a);
+          a = Operations.optional(a);
           terms.add(new BytesRef());
         }
         break;
@@ -762,7 +762,7 @@ public class TestLightAutomaton extends LuceneTestCase {
             System.out.println("  op=minus finite");
           }
           if (terms.size() > 0) {
-            RandomAcceptedStrings rasl = new RandomAcceptedStrings(BasicOperations.removeDeadStates(a));
+            RandomAcceptedStrings rasl = new RandomAcceptedStrings(Operations.removeDeadStates(a));
             Set<BytesRef> toRemove = new HashSet<>();
             int numToRemove = TestUtil.nextInt(random(), 1, (terms.size()+1)/2);
             while (toRemove.size() < numToRemove) {
@@ -776,8 +776,8 @@ public class TestLightAutomaton extends LuceneTestCase {
               boolean removed = terms.remove(term);
               assertTrue(removed);
             }
-            LightAutomaton a2 = unionTerms(toRemove);
-            a = BasicOperations.minusLight(a, a2);
+            Automaton a2 = unionTerms(toRemove);
+            a = Operations.minus(a, a2);
           }
         }
         break;
@@ -785,7 +785,7 @@ public class TestLightAutomaton extends LuceneTestCase {
       case 7:
         {
           // minus infinite
-          List<LightAutomaton> as = new ArrayList<>();
+          List<Automaton> as = new ArrayList<>();
           int count = TestUtil.nextInt(random(), 1, 5);
           Set<Integer> prefixes = new HashSet<>();
           while(prefixes.size() < count) {
@@ -800,7 +800,7 @@ public class TestLightAutomaton extends LuceneTestCase {
 
           for(int prefix : prefixes) {
             // prefix is a leading ascii byte; we remove <prefix>* from a
-            LightAutomaton a2 = new LightAutomaton();
+            Automaton a2 = new Automaton();
             int init = a2.createState();
             int state = a2.createState();
             a2.addTransition(init, state, prefix);
@@ -816,8 +816,8 @@ public class TestLightAutomaton extends LuceneTestCase {
               }
             }
           }
-          LightAutomaton a2 = randomNoOp(BasicOperations.unionLight(as));
-          a = BasicOperations.minusLight(a, a2);
+          Automaton a2 = randomNoOp(Operations.union(as));
+          a = Operations.minus(a, a2);
         }
         break;
 
@@ -828,7 +828,7 @@ public class TestLightAutomaton extends LuceneTestCase {
             System.out.println("  op=intersect infinite count=" + count);
           }
           // intersect infinite
-          List<LightAutomaton> as = new ArrayList<>();
+          List<Automaton> as = new ArrayList<>();
 
           Set<Integer> prefixes = new HashSet<>();
           while(prefixes.size() < count) {
@@ -841,7 +841,7 @@ public class TestLightAutomaton extends LuceneTestCase {
 
           for(int prefix : prefixes) {
             // prefix is a leading ascii byte; we retain <prefix>* in a
-            LightAutomaton a2 = new LightAutomaton();
+            Automaton a2 = new Automaton();
             int init = a2.createState();
             int state = a2.createState();
             a2.addTransition(init, state, prefix);
@@ -852,13 +852,13 @@ public class TestLightAutomaton extends LuceneTestCase {
             prefixes.add(prefix);
           }
 
-          LightAutomaton a2 = BasicOperations.unionLight(as);
+          Automaton a2 = Operations.union(as);
           if (random().nextBoolean()) {
-            a2 = BasicOperations.determinize(a2);
+            a2 = Operations.determinize(a2);
           } else if (random().nextBoolean()) {
-            a2 = MinimizationOperationsLight.minimize(a2);
+            a2 = MinimizationOperations.minimize(a2);
           }
-          a = BasicOperations.intersectionLight(a, a2);
+          a = Operations.intersection(a, a2);
 
           Iterator<BytesRef> it = terms.iterator();
           while (it.hasNext()) {
@@ -882,7 +882,7 @@ public class TestLightAutomaton extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("  op=reverse");
         }
-        a = SpecialOperations.reverse(a);
+        a = Operations.reverse(a);
         Set<BytesRef> newTerms = new HashSet<>();
         for(BytesRef term : terms) {
           newTerms.add(new BytesRef(new StringBuilder(term.utf8ToString()).reverse().toString()));
@@ -906,7 +906,7 @@ public class TestLightAutomaton extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("  op=union interval min=" + min + " max=" + max + " digits=" + digits);
         }
-        a = BasicOperations.unionLight(a, BasicAutomata.makeIntervalLight(min, max, digits));
+        a = Operations.union(a, Automata.makeInterval(min, max, digits));
         StringBuilder b = new StringBuilder();
         for(int i=0;i<digits;i++) {
           b.append('0');
@@ -926,7 +926,7 @@ public class TestLightAutomaton extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("  op=remove the empty string");
         }
-        a = BasicOperations.minusLight(a, BasicAutomata.makeEmptyStringLight());
+        a = Operations.minus(a, Automata.makeEmptyString());
         terms.remove(new BytesRef());
         break;
 
@@ -934,7 +934,7 @@ public class TestLightAutomaton extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("  op=add the empty string");
         }
-        a = BasicOperations.unionLight(a, BasicAutomata.makeEmptyStringLight());
+        a = Operations.union(a, Automata.makeEmptyString());
         terms.add(new BytesRef());
         break;
       }
@@ -945,19 +945,19 @@ public class TestLightAutomaton extends LuceneTestCase {
     assertSame(terms, a);
   }
 
-  private void assertSame(Collection<BytesRef> terms, LightAutomaton a) {
+  private void assertSame(Collection<BytesRef> terms, Automaton a) {
 
     try {
-      assertTrue(SpecialOperations.isFinite(a));
-      assertFalse(BasicOperations.isTotal(a));
+      assertTrue(Operations.isFinite(a));
+      assertFalse(Operations.isTotal(a));
 
-      LightAutomaton detA = BasicOperations.determinize(a);
+      Automaton detA = Operations.determinize(a);
 
       // Make sure all terms are accepted:
       IntsRef scratch = new IntsRef();
       for(BytesRef term : terms) {
         Util.toIntsRef(term, scratch);
-        assertTrue("failed to accept term=" + term.utf8ToString(), BasicOperations.run(detA, term.utf8ToString()));
+        assertTrue("failed to accept term=" + term.utf8ToString(), Operations.run(detA, term.utf8ToString()));
       }
 
       // Use getFiniteStrings:
@@ -967,7 +967,7 @@ public class TestLightAutomaton extends LuceneTestCase {
         Util.toUTF32(term.utf8ToString(), intsRef);
         expected.add(intsRef);
       }
-      Set<IntsRef> actual = SpecialOperations.getFiniteStrings(a, -1);
+      Set<IntsRef> actual = Operations.getFiniteStrings(a, -1);
 
       if (expected.equals(actual) == false) {
         System.out.println("FAILED:");
@@ -985,11 +985,11 @@ public class TestLightAutomaton extends LuceneTestCase {
       }
 
       // Use sameLanguage:
-      LightAutomaton a2 = BasicOperations.removeDeadStates(BasicOperations.determinize(unionTerms(terms)));
-      assertTrue(BasicOperations.sameLanguage(a2, BasicOperations.removeDeadStates(BasicOperations.determinize(a))));
+      Automaton a2 = Operations.removeDeadStates(Operations.determinize(unionTerms(terms)));
+      assertTrue(Operations.sameLanguage(a2, Operations.removeDeadStates(Operations.determinize(a))));
 
       // Do same check, in UTF8 space
-      LightAutomaton utf8 = randomNoOp(new UTF32ToUTF8Light().convert(a));
+      Automaton utf8 = randomNoOp(new UTF32ToUTF8().convert(a));
     
       Set<IntsRef> expected2 = new HashSet<>();
       for(BytesRef term : terms) {
@@ -997,7 +997,7 @@ public class TestLightAutomaton extends LuceneTestCase {
         Util.toIntsRef(term, intsRef);
         expected2.add(intsRef);
       }
-      assertEquals(expected2, SpecialOperations.getFiniteStrings(utf8, -1));
+      assertEquals(expected2, Operations.getFiniteStrings(utf8, -1));
     } catch (AssertionError ae) {
       System.out.println("TEST: FAILED: not same");
       System.out.println("  terms (count=" + terms.size() + "):");

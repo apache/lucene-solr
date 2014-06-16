@@ -31,7 +31,7 @@ import org.apache.lucene.util.UnicodeUtil;
  * @see #build(Collection)
  * @see BasicAutomata#makeStringUnion(Collection)
  */
-final class DaciukMihovAutomatonBuilderLight {
+final class DaciukMihovAutomatonBuilder {
   /**
    * DFSA state with <code>char</code> labels on transitions.
    */
@@ -249,7 +249,7 @@ final class DaciukMihovAutomatonBuilderLight {
   /**
    * Internal recursive traversal for conversion.
    */
-  private static int convert(LightAutomaton.Builder a, State s,
+  private static int convert(Automaton.Builder a, State s,
       IdentityHashMap<State,Integer> visited) {
 
     Integer converted = visited.get(s);
@@ -263,7 +263,7 @@ final class DaciukMihovAutomatonBuilderLight {
     visited.put(s, converted);
     int i = 0;
     int[] labels = s.labels;
-    for (DaciukMihovAutomatonBuilderLight.State target : s.states) {
+    for (DaciukMihovAutomatonBuilder.State target : s.states) {
       a.addTransition(converted, convert(a, target, visited), labels[i++]);
     }
     
@@ -274,8 +274,8 @@ final class DaciukMihovAutomatonBuilderLight {
    * Build a minimal, deterministic automaton from a sorted list of {@link BytesRef} representing
    * strings in UTF-8. These strings must be binary-sorted.
    */
-  public static LightAutomaton build(Collection<BytesRef> input) {
-    final DaciukMihovAutomatonBuilderLight builder = new DaciukMihovAutomatonBuilderLight();
+  public static Automaton build(Collection<BytesRef> input) {
+    final DaciukMihovAutomatonBuilder builder = new DaciukMihovAutomatonBuilder();
     
     CharsRef scratch = new CharsRef();
     for (BytesRef b : input) {
@@ -283,7 +283,7 @@ final class DaciukMihovAutomatonBuilderLight {
       builder.add(scratch);
     }
     
-    LightAutomaton.Builder a = new LightAutomaton.Builder();
+    Automaton.Builder a = new Automaton.Builder();
     convert(a,
         builder.complete(), 
         new IdentityHashMap<State,Integer>());

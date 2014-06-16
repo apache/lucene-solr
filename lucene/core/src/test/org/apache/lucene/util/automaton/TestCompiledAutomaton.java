@@ -36,7 +36,7 @@ public class TestCompiledAutomaton extends LuceneTestCase {
       terms.add(new BytesRef(s));
     }
     Collections.sort(terms);
-    final LightAutomaton a = DaciukMihovAutomatonBuilderLight.build(terms);
+    final Automaton a = DaciukMihovAutomatonBuilder.build(terms);
     return new CompiledAutomaton(a, true, false);
   }
 

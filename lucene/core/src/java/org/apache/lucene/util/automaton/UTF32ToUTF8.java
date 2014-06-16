@@ -28,7 +28,7 @@ import java.util.List;
  * Converts UTF-32 automata to the equivalent UTF-8 representation.
  * @lucene.internal 
  */
-public final class UTF32ToUTF8Light {
+public final class UTF32ToUTF8 {
 
   // Unicode boundaries for UTF8 bytes 1,2,3,4
   private static final int[] startCodes = new int[] {0, 128, 2048, 65536};
@@ -255,14 +255,14 @@ public final class UTF32ToUTF8Light {
     }
   }
 
-  LightAutomaton.Builder utf8;
+  Automaton.Builder utf8;
 
   /** Converts an incoming utf32 automaton to an equivalent
    *  utf8 one.  The incoming automaton need not be
    *  deterministic.  Note that the returned automaton will
    *  not in general be deterministic, so you must
    *  determinize it if that's needed. */
-  public LightAutomaton convert(LightAutomaton utf32) {
+  public Automaton convert(Automaton utf32) {
     if (utf32.getNumStates() == 0) {
       return utf32;
     }
@@ -273,7 +273,7 @@ public final class UTF32ToUTF8Light {
     List<Integer> pending = new ArrayList<>();
     int utf32State = 0;
     pending.add(utf32State);
-    utf8 = new LightAutomaton.Builder();
+    utf8 = new Automaton.Builder();
        
     int utf8State = utf8.createState();
 

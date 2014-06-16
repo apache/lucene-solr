@@ -22,9 +22,9 @@ import java.util.List;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ToStringUtils;
-import org.apache.lucene.util.automaton.BasicAutomata;
-import org.apache.lucene.util.automaton.BasicOperations;
-import org.apache.lucene.util.automaton.LightAutomaton;
+import org.apache.lucene.util.automaton.Automata;
+import org.apache.lucene.util.automaton.Operations;
+import org.apache.lucene.util.automaton.Automaton;
 
 /** Implements the wildcard search query. Supported wildcards are <code>*</code>, which
  * matches any character sequence (including the empty one), and <code>?</code>,
@@ -62,8 +62,8 @@ public class WildcardQuery extends AutomatonQuery {
    * @lucene.internal
    */
   @SuppressWarnings("fallthrough")
-  public static LightAutomaton toAutomaton(Term wildcardquery) {
-    List<LightAutomaton> automata = new ArrayList<>();
+  public static Automaton toAutomaton(Term wildcardquery) {
+    List<Automaton> automata = new ArrayList<>();
     
     String wildcardText = wildcardquery.text();
     
@@ -72,26 +72,26 @@ public class WildcardQuery extends AutomatonQuery {
       int length = Character.charCount(c);
       switch(c) {
         case WILDCARD_STRING: 
-          automata.add(BasicAutomata.makeAnyStringLight());
+          automata.add(Automata.makeAnyString());
           break;
         case WILDCARD_CHAR:
-          automata.add(BasicAutomata.makeAnyCharLight());
+          automata.add(Automata.makeAnyChar());
           break;
         case WILDCARD_ESCAPE:
           // add the next codepoint instead, if it exists
           if (i + length < wildcardText.length()) {
             final int nextChar = wildcardText.codePointAt(i + length);
             length += Character.charCount(nextChar);
-            automata.add(BasicAutomata.makeCharLight(nextChar));
+            automata.add(Automata.makeChar(nextChar));
             break;
           } // else fallthru, lenient parsing with a trailing \
         default:
-          automata.add(BasicAutomata.makeCharLight(c));
+          automata.add(Automata.makeChar(c));
       }
       i += length;
     }
     
-    return BasicOperations.concatenateLight(automata);
+    return Operations.concatenate(automata);
   }
   
   /**

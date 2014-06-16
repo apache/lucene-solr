@@ -26,9 +26,8 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.automaton.BasicOperations;
-import org.apache.lucene.util.automaton.LightAutomaton;
-import org.apache.lucene.util.automaton.SpecialOperations;
+import org.apache.lucene.util.automaton.Operations;
+import org.apache.lucene.util.automaton.Automaton;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
@@ -161,8 +160,8 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
     if (!(q instanceof AutomatonQuery)) {
       return false;
     }
-    LightAutomaton automaton = ((AutomatonQuery) q).getLightAutomaton();
-    String prefix = SpecialOperations.getCommonPrefix(BasicOperations.determinize(automaton));
+    Automaton automaton = ((AutomatonQuery) q).getAutomaton();
+    String prefix = Operations.getCommonPrefix(Operations.determinize(automaton));
     return prefix.length() > 0 && prefix.charAt(0) == '\u0001';
   }
 

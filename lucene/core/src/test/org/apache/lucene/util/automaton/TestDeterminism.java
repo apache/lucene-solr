@@ -29,7 +29,7 @@ public class TestDeterminism extends LuceneTestCase {
   public void testRegexps() throws Exception {
       int num = atLeast(500);
       for (int i = 0; i < num; i++) {
-        assertAutomaton(new RegExp(AutomatonTestUtil.randomRegexp(random()), RegExp.NONE).toLightAutomaton());
+        assertAutomaton(new RegExp(AutomatonTestUtil.randomRegexp(random()), RegExp.NONE).toAutomaton());
       }
   }
   
@@ -37,42 +37,42 @@ public class TestDeterminism extends LuceneTestCase {
   public void testAgainstSimple() throws Exception {
     int num = atLeast(200);
     for (int i = 0; i < num; i++) {
-      LightAutomaton a = AutomatonTestUtil.randomAutomaton(random());
-      a = AutomatonTestUtil.determinizeSimpleLight(a);
-      LightAutomaton b = BasicOperations.determinize(a);
+      Automaton a = AutomatonTestUtil.randomAutomaton(random());
+      a = AutomatonTestUtil.determinizeSimple(a);
+      Automaton b = Operations.determinize(a);
       // TODO: more verifications possible?
-      assertTrue(BasicOperations.sameLanguage(a, b));
+      assertTrue(Operations.sameLanguage(a, b));
     }
   }
   
-  private static void assertAutomaton(LightAutomaton a) {
-    a = BasicOperations.determinize(BasicOperations.removeDeadStates(a));
+  private static void assertAutomaton(Automaton a) {
+    a = Operations.determinize(Operations.removeDeadStates(a));
 
     // complement(complement(a)) = a
-    LightAutomaton equivalent = BasicOperations.complementLight(BasicOperations.complementLight(a));
-    assertTrue(BasicOperations.sameLanguage(a, equivalent));
+    Automaton equivalent = Operations.complement(Operations.complement(a));
+    assertTrue(Operations.sameLanguage(a, equivalent));
     
     // a union a = a
-    equivalent = BasicOperations.determinize(BasicOperations.removeDeadStates(BasicOperations.unionLight(a, a)));
-    assertTrue(BasicOperations.sameLanguage(a, equivalent));
+    equivalent = Operations.determinize(Operations.removeDeadStates(Operations.union(a, a)));
+    assertTrue(Operations.sameLanguage(a, equivalent));
     
     // a intersect a = a
-    equivalent = BasicOperations.determinize(BasicOperations.removeDeadStates(BasicOperations.intersectionLight(a, a)));
-    assertTrue(BasicOperations.sameLanguage(a, equivalent));
+    equivalent = Operations.determinize(Operations.removeDeadStates(Operations.intersection(a, a)));
+    assertTrue(Operations.sameLanguage(a, equivalent));
     
     // a minus a = empty
-    LightAutomaton empty = BasicOperations.minusLight(a, a);
-    assertTrue(BasicOperations.isEmpty(empty));
+    Automaton empty = Operations.minus(a, a);
+    assertTrue(Operations.isEmpty(empty));
     
     // as long as don't accept the empty string
     // then optional(a) - empty = a
-    if (!BasicOperations.run(a, "")) {
+    if (!Operations.run(a, "")) {
       //System.out.println("test " + a);
-      LightAutomaton optional = BasicOperations.optionalLight(a);
+      Automaton optional = Operations.optional(a);
       //System.out.println("optional " + optional);
-      equivalent = BasicOperations.minusLight(optional, BasicAutomata.makeEmptyStringLight());
+      equivalent = Operations.minus(optional, Automata.makeEmptyString());
       //System.out.println("equiv " + equivalent);
-      assertTrue(BasicOperations.sameLanguage(a, equivalent));
+      assertTrue(Operations.sameLanguage(a, equivalent));
     }
   } 
 }

@@ -25,7 +25,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 // Just holds a set of int[] states, plus a corresponding
 // int[] count per state.  Used by
 // BasicOperations.determinize
-final class SortedIntSetLight {
+final class SortedIntSet {
   int[] values;
   int[] counts;
   int upto;
@@ -41,7 +41,7 @@ final class SortedIntSetLight {
 
   int state;
 
-  public SortedIntSetLight(int capacity) {
+  public SortedIntSet(int capacity) {
     values = new int[capacity];
     counts = new int[capacity];
   }
@@ -153,10 +153,10 @@ final class SortedIntSetLight {
     }
   }
 
-  public FrozenIntSetLight freeze(int state) {
+  public FrozenIntSet freeze(int state) {
     final int[] c = new int[upto];
     System.arraycopy(values, 0, c, 0, upto);
-    return new FrozenIntSetLight(c, hashCode, state);
+    return new FrozenIntSet(c, hashCode, state);
   }
 
   @Override
@@ -169,10 +169,10 @@ final class SortedIntSetLight {
     if (_other == null) {
       return false;
     }
-    if (!(_other instanceof FrozenIntSetLight)) {
+    if (!(_other instanceof FrozenIntSet)) {
       return false;
     }
-    FrozenIntSetLight other = (FrozenIntSetLight) _other;
+    FrozenIntSet other = (FrozenIntSet) _other;
     if (hashCode != other.hashCode) {
       return false;
     }
@@ -201,18 +201,18 @@ final class SortedIntSetLight {
     return sb.toString();
   }
   
-  public final static class FrozenIntSetLight {
+  public final static class FrozenIntSet {
     final int[] values;
     final int hashCode;
     final int state;
 
-    public FrozenIntSetLight(int[] values, int hashCode, int state) {
+    public FrozenIntSet(int[] values, int hashCode, int state) {
       this.values = values;
       this.hashCode = hashCode;
       this.state = state;
     }
 
-    public FrozenIntSetLight(int num, int state) {
+    public FrozenIntSet(int num, int state) {
       this.values = new int[] {num};
       this.state = state;
       this.hashCode = 683+num;
@@ -228,8 +228,8 @@ final class SortedIntSetLight {
       if (_other == null) {
         return false;
       }
-      if (_other instanceof FrozenIntSetLight) {
-        FrozenIntSetLight other = (FrozenIntSetLight) _other;
+      if (_other instanceof FrozenIntSet) {
+        FrozenIntSet other = (FrozenIntSet) _other;
         if (hashCode != other.hashCode) {
           return false;
         }
@@ -242,8 +242,8 @@ final class SortedIntSetLight {
           }
         }
         return true;
-      } else if (_other instanceof SortedIntSetLight) {
-        SortedIntSetLight other = (SortedIntSetLight) _other;
+      } else if (_other instanceof SortedIntSet) {
+        SortedIntSet other = (SortedIntSet) _other;
         if (hashCode != other.hashCode) {
           return false;
         }

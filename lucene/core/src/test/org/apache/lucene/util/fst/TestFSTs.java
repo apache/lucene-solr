@@ -69,7 +69,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
-import org.apache.lucene.util.automaton.LightAutomaton;
+import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.RegExp;
 import org.apache.lucene.util.fst.BytesRefFSTEnum.InputOutput;
 import org.apache.lucene.util.fst.FST.Arc;
@@ -346,7 +346,7 @@ public class TestFSTs extends LuceneTestCase {
       BytesRef term;
       int ord = 0;
 
-      LightAutomaton automaton = new RegExp(".*", RegExp.NONE).toLightAutomaton();
+      Automaton automaton = new RegExp(".*", RegExp.NONE).toAutomaton();
       final TermsEnum termsEnum2 = terms.intersect(new CompiledAutomaton(automaton, false, false), null);
 
       while((term = termsEnum.next()) != null) {

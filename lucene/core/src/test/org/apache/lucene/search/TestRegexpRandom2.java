@@ -42,7 +42,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
-import org.apache.lucene.util.automaton.LightAutomaton;
+import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.RegExp;
 
 /**
@@ -103,12 +103,12 @@ public class TestRegexpRandom2 extends LuceneTestCase {
   
   /** a stupid regexp query that just blasts thru the terms */
   private class DumbRegexpQuery extends MultiTermQuery {
-    private final LightAutomaton automaton;
+    private final Automaton automaton;
     
     DumbRegexpQuery(Term term, int flags) {
       super(term.field());
       RegExp re = new RegExp(term.text(), flags);
-      automaton = re.toLightAutomaton();
+      automaton = re.toAutomaton();
     }
     
     @Override

@@ -39,9 +39,9 @@ import java.util.LinkedList;
  * 
  * @lucene.experimental
  */
-final public class MinimizationOperationsLight {
+final public class MinimizationOperations {
   
-  private MinimizationOperationsLight() {}
+  private MinimizationOperations() {}
 
   /**
    * Minimizes (and determinizes if not already deterministic) the given
@@ -49,19 +49,19 @@ final public class MinimizationOperationsLight {
    * 
    * @see Automaton#setMinimization(int)
    */
-  public static LightAutomaton minimize(LightAutomaton a) {
+  public static Automaton minimize(Automaton a) {
     return minimizeHopcroft(a);
   }
   
   /**
    * Minimizes the given automaton using Hopcroft's algorithm.
    */
-  public static LightAutomaton minimizeHopcroft(LightAutomaton a) {
+  public static Automaton minimizeHopcroft(Automaton a) {
     if (a.getNumStates() == 0 || (a.isAccept(0) == false && a.getNumTransitions(0) == 0)) {
       // Fastmatch for common case
-      return new LightAutomaton();
+      return new Automaton();
     }
-    a = BasicOperations.determinize(a);
+    a = Operations.determinize(a);
     //a.writeDot("adet");
     if (a.getNumTransitions(0) == 1) {
       Transition t = new Transition();
@@ -200,7 +200,7 @@ final public class MinimizationOperationsLight {
       refine.clear();
     }
 
-    LightAutomaton result = new LightAutomaton();
+    Automaton result = new Automaton();
 
     Transition t = new Transition();
 
@@ -254,7 +254,7 @@ final public class MinimizationOperationsLight {
     result.finishState();
     //System.out.println(result.getNumStates() + " states");
 
-    return BasicOperations.removeDeadStates(result);
+    return Operations.removeDeadStates(result);
   }
   
   static final class IntPair {

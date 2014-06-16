@@ -602,8 +602,8 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     fieldAnalyzers.put( "field", new MockAnalyzer( random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET ) );
     fieldAnalyzers.put( "field_exact", new MockAnalyzer( random() ) );
     fieldAnalyzers.put( "field_super_exact", new MockAnalyzer( random(), MockTokenizer.WHITESPACE, false ) );
-    fieldAnalyzers.put( "field_characters", new MockAnalyzer( random(), new CharacterRunAutomaton( new RegExp(".").toLightAutomaton() ), true ) );
-    fieldAnalyzers.put( "field_tripples", new MockAnalyzer( random(), new CharacterRunAutomaton( new RegExp("...").toLightAutomaton() ), true ) );
+    fieldAnalyzers.put( "field_characters", new MockAnalyzer( random(), new CharacterRunAutomaton( new RegExp(".").toAutomaton() ), true ) );
+    fieldAnalyzers.put( "field_tripples", new MockAnalyzer( random(), new CharacterRunAutomaton( new RegExp("...").toAutomaton() ), true ) );
     fieldAnalyzers.put( "field_sliced", fieldAnalyzers.get( "field" ) );
     fieldAnalyzers.put( "field_der_red", fieldAnalyzers.get( "field" ) );  // This is required even though we provide a token stream
     Analyzer analyzer = new AnalyzerWrapper() {

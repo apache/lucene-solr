@@ -103,7 +103,7 @@ public class TestQueryBuilder extends LuceneTestCase {
     expected.add(new Term("field", "1"));
     expected.add(new Term("field", "2"), 2);
     
-    CharacterRunAutomaton stopList = new CharacterRunAutomaton(new RegExp("[sS][tT][oO][pP]").toLightAutomaton());
+    CharacterRunAutomaton stopList = new CharacterRunAutomaton(new RegExp("[sS][tT][oO][pP]").toAutomaton());
 
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false, stopList);
 

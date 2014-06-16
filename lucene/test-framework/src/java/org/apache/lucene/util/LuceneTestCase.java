@@ -1788,7 +1788,7 @@ public abstract class LuceneTestCase extends Assert {
       int numIntersections = atLeast(3);
       for (int i = 0; i < numIntersections; i++) {
         String re = AutomatonTestUtil.randomRegexp(random());
-        CompiledAutomaton automaton = new CompiledAutomaton(new RegExp(re, RegExp.NONE).toLightAutomaton());
+        CompiledAutomaton automaton = new CompiledAutomaton(new RegExp(re, RegExp.NONE).toAutomaton());
         if (automaton.type == CompiledAutomaton.AUTOMATON_TYPE.NORMAL) {
           // TODO: test start term too
           TermsEnum leftIntersection = leftTerms.intersect(automaton, null);

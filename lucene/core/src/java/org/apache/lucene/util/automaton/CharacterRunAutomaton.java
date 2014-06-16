@@ -23,7 +23,7 @@ package org.apache.lucene.util.automaton;
 public class CharacterRunAutomaton extends RunAutomaton {
 
   /** Sole constructor. */
-  public CharacterRunAutomaton(LightAutomaton a) {
+  public CharacterRunAutomaton(Automaton a) {
     super(a, Character.MAX_CODE_POINT, false);
   }
 

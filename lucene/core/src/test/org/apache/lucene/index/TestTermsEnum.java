@@ -33,9 +33,9 @@ import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.automaton.BasicAutomata;
+import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
-import org.apache.lucene.util.automaton.LightAutomaton;
+import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.RegExp;
 
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
@@ -239,12 +239,12 @@ public class TestTermsEnum extends LuceneTestCase {
       final Set<String> acceptTerms = new HashSet<>();
       final TreeSet<BytesRef> sortedAcceptTerms = new TreeSet<>();
       final double keepPct = random().nextDouble();
-      LightAutomaton a;
+      Automaton a;
       if (iter == 0) {
         if (VERBOSE) {
           System.out.println("\nTEST: empty automaton");
         }
-        a = BasicAutomata.makeEmptyLight();
+        a = Automata.makeEmpty();
       } else {
         if (VERBOSE) {
           System.out.println("\nTEST: keepPct=" + keepPct);
@@ -259,7 +259,7 @@ public class TestTermsEnum extends LuceneTestCase {
           acceptTerms.add(s2);
           sortedAcceptTerms.add(new BytesRef(s2));
         }
-        a = BasicAutomata.makeStringUnionLight(sortedAcceptTerms);
+        a = Automata.makeStringUnion(sortedAcceptTerms);
       }
       
       final CompiledAutomaton c = new CompiledAutomaton(a, true, false);
@@ -738,7 +738,7 @@ public class TestTermsEnum extends LuceneTestCase {
     w.shutdown();
     AtomicReader sub = getOnlySegmentReader(r);
     Terms terms = sub.fields().terms("field");
-    LightAutomaton automaton = new RegExp(".*", RegExp.NONE).toLightAutomaton();
+    Automaton automaton = new RegExp(".*", RegExp.NONE).toAutomaton();
     CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);    
     TermsEnum te = terms.intersect(ca, null);
     assertEquals("aaa", te.next().utf8ToString());
@@ -793,7 +793,7 @@ public class TestTermsEnum extends LuceneTestCase {
     AtomicReader sub = getOnlySegmentReader(r);
     Terms terms = sub.fields().terms("field");
 
-    LightAutomaton automaton = new RegExp(".*d", RegExp.NONE).toLightAutomaton();
+    Automaton automaton = new RegExp(".*d", RegExp.NONE).toAutomaton();
     CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);    
     TermsEnum te;
     
@@ -847,7 +847,7 @@ public class TestTermsEnum extends LuceneTestCase {
     AtomicReader sub = getOnlySegmentReader(r);
     Terms terms = sub.fields().terms("field");
 
-    LightAutomaton automaton = new RegExp(".*", RegExp.NONE).toLightAutomaton();  // accept ALL
+    Automaton automaton = new RegExp(".*", RegExp.NONE).toAutomaton();  // accept ALL
     CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);    
 
     TermsEnum te = terms.intersect(ca, null);

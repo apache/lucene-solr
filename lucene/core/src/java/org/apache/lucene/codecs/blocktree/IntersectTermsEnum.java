@@ -359,7 +359,7 @@ final class IntersectTermsEnum extends TermsEnum {
             continue nextTerm;
           }
           currentFrame.transitionIndex++;
-          compiledAutomaton.lightAutomaton.getNextTransition(currentFrame.transition);
+          compiledAutomaton.automaton.getNextTransition(currentFrame.transition);
           currentFrame.curTransitionMax = currentFrame.transition.max;
           //if (DEBUG) System.out.println("      next trans=" + currentFrame.transitions[currentFrame.transitionIndex]);
         }

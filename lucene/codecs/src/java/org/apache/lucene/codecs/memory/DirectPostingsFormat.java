@@ -46,7 +46,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
-import org.apache.lucene.util.automaton.LightAutomaton;
+import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.RunAutomaton;
 import org.apache.lucene.util.automaton.Transition;
 
@@ -946,8 +946,8 @@ public final class DirectPostingsFormat extends PostingsFormat {
         states[0] = new State();
         states[0].changeOrd = terms.length;
         states[0].state = runAutomaton.getInitialState();
-        states[0].transitionCount = compiledAutomaton.lightAutomaton.getNumTransitions(states[0].state);
-        compiledAutomaton.lightAutomaton.initTransition(states[0].state, states[0].transition);
+        states[0].transitionCount = compiledAutomaton.automaton.getNumTransitions(states[0].state);
+        compiledAutomaton.automaton.initTransition(states[0].state, states[0].transition);
         states[0].transitionUpto = -1;
         states[0].transitionMax = -1;
 
@@ -969,7 +969,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
               while (label > states[i].transitionMax) {
                 states[i].transitionUpto++;
                 assert states[i].transitionUpto < states[i].transitionCount;
-                compiledAutomaton.lightAutomaton.getNextTransition(states[i].transition);
+                compiledAutomaton.automaton.getNextTransition(states[i].transition);
                 states[i].transitionMin = states[i].transition.min;
                 states[i].transitionMax = states[i].transition.max;
                 assert states[i].transitionMin >= 0;
@@ -1028,8 +1028,8 @@ public final class DirectPostingsFormat extends PostingsFormat {
                     stateUpto++;
                     states[stateUpto].changeOrd = skips[skipOffset + skipUpto++];
                     states[stateUpto].state = nextState;
-                    states[stateUpto].transitionCount = compiledAutomaton.lightAutomaton.getNumTransitions(nextState);
-                    compiledAutomaton.lightAutomaton.initTransition(states[stateUpto].state, states[stateUpto].transition);
+                    states[stateUpto].transitionCount = compiledAutomaton.automaton.getNumTransitions(nextState);
+                    compiledAutomaton.automaton.initTransition(states[stateUpto].state, states[stateUpto].transition);
                     states[stateUpto].transitionUpto = -1;
                     states[stateUpto].transitionMax = -1;
                     //System.out.println("  push " + states[stateUpto].transitions.length + " trans");
@@ -1202,7 +1202,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
               }
               continue nextTerm;
             }
-            compiledAutomaton.lightAutomaton.getNextTransition(state.transition);
+            compiledAutomaton.automaton.getNextTransition(state.transition);
             assert state.transitionUpto < state.transitionCount: " state.transitionUpto=" + state.transitionUpto + " vs " + state.transitionCount;
             state.transitionMin = state.transition.min;
             state.transitionMax = state.transition.max;
@@ -1303,8 +1303,8 @@ public final class DirectPostingsFormat extends PostingsFormat {
             stateUpto++;
             states[stateUpto].state = nextState;
             states[stateUpto].changeOrd = skips[skipOffset + skipUpto++];
-            states[stateUpto].transitionCount = compiledAutomaton.lightAutomaton.getNumTransitions(nextState);
-            compiledAutomaton.lightAutomaton.initTransition(nextState, states[stateUpto].transition);
+            states[stateUpto].transitionCount = compiledAutomaton.automaton.getNumTransitions(nextState);
+            compiledAutomaton.automaton.initTransition(nextState, states[stateUpto].transition);
             states[stateUpto].transitionUpto = -1;
             states[stateUpto].transitionMax = -1;
             

@@ -24,7 +24,7 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.automaton.LightAutomaton;
+import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Transition;
 import org.apache.lucene.util.fst.FST;
 
@@ -122,10 +122,10 @@ final class IntersectTermsEnumFrame {
   public void setState(int state) {
     this.state = state;
     transitionIndex = 0;
-    transitionCount = ite.compiledAutomaton.lightAutomaton.getNumTransitions(state);
+    transitionCount = ite.compiledAutomaton.automaton.getNumTransitions(state);
     if (transitionCount != 0) {
-      ite.compiledAutomaton.lightAutomaton.initTransition(state, transition);
-      ite.compiledAutomaton.lightAutomaton.getNextTransition(transition);
+      ite.compiledAutomaton.automaton.initTransition(state, transition);
+      ite.compiledAutomaton.automaton.getNextTransition(transition);
       curTransitionMax = transition.max;
     } else {
       curTransitionMax = -1;

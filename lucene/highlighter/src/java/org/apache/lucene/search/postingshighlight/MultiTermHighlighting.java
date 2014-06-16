@@ -46,11 +46,11 @@ import org.apache.lucene.search.spans.SpanPositionCheckQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util.automaton.BasicAutomata;
-import org.apache.lucene.util.automaton.BasicOperations;
+import org.apache.lucene.util.automaton.Automata;
+import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
-import org.apache.lucene.util.automaton.LightAutomaton;
+import org.apache.lucene.util.automaton.Automaton;
 
 /**
  * Support for highlighting multiterm queries in PostingsHighlighter.
@@ -95,7 +95,7 @@ class MultiTermHighlighting {
     } else if (query instanceof AutomatonQuery) {
       final AutomatonQuery aq = (AutomatonQuery) query;
       if (aq.getField().equals(field)) {
-        list.add(new CharacterRunAutomaton(aq.getLightAutomaton()) {
+        list.add(new CharacterRunAutomaton(aq.getAutomaton()) {
           @Override
           public String toString() {
             return aq.toString();
@@ -106,8 +106,8 @@ class MultiTermHighlighting {
       final PrefixQuery pq = (PrefixQuery) query;
       Term prefix = pq.getPrefix();
       if (prefix.field().equals(field)) {
-        list.add(new CharacterRunAutomaton(BasicOperations.concatenateLight(BasicAutomata.makeStringLight(prefix.text()), 
-                                                                            BasicAutomata.makeAnyStringLight())) {
+        list.add(new CharacterRunAutomaton(Operations.concatenate(Automata.makeString(prefix.text()), 
+                                                                       Automata.makeAnyString())) {
           @Override
           public String toString() {
             return pq.toString();
@@ -127,7 +127,7 @@ class MultiTermHighlighting {
         String suffix = UnicodeUtil.newString(termText, prefixLength, termText.length - prefixLength);
         LevenshteinAutomata builder = new LevenshteinAutomata(suffix, fq.getTranspositions());
         String prefix = UnicodeUtil.newString(termText, 0, prefixLength);
-        LightAutomaton automaton = builder.toAutomaton(fq.getMaxEdits(), prefix);
+        Automaton automaton = builder.toAutomaton(fq.getMaxEdits(), prefix);
         list.add(new CharacterRunAutomaton(automaton) {
           @Override
           public String toString() {
@@ -158,7 +158,7 @@ class MultiTermHighlighting {
         final Comparator<CharsRef> comparator = CharsRef.getUTF16SortedAsUTF8Comparator();
         
         // this is *not* an automaton, but its very simple
-        list.add(new CharacterRunAutomaton(BasicAutomata.makeEmptyLight()) {
+        list.add(new CharacterRunAutomaton(Automata.makeEmpty()) {
           @Override
           public boolean run(char[] s, int offset, int length) {
             scratch.chars = s;

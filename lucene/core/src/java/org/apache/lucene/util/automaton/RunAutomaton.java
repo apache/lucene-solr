@@ -37,7 +37,7 @@ import java.util.Arrays;
  * @lucene.experimental
  */
 public abstract class RunAutomaton {
-  final LightAutomaton automaton;
+  final Automaton automaton;
   final int maxInterval;
   final int size;
   final boolean[] accept;
@@ -66,10 +66,10 @@ public abstract class RunAutomaton {
           if (j + 1 < points.length) max = (points[j + 1] - 1);
           else max = maxInterval;
           b.append(" ");
-          LightAutomaton.appendCharString(min, b);
+          Automaton.appendCharString(min, b);
           if (min != max) {
             b.append("-");
-            LightAutomaton.appendCharString(max, b);
+            Automaton.appendCharString(max, b);
           }
           b.append(" -> ").append(k).append("\n");
         }
@@ -111,7 +111,7 @@ public abstract class RunAutomaton {
    * Gets character class of given codepoint
    */
   final int getCharClass(int c) {
-    return SpecialOperations.findIndex(c, points);
+    return Operations.findIndex(c, points);
   }
 
   /**
@@ -120,10 +120,10 @@ public abstract class RunAutomaton {
    * 
    * @param a an automaton
    */
-  public RunAutomaton(LightAutomaton a, int maxInterval, boolean tableize) {
+  public RunAutomaton(Automaton a, int maxInterval, boolean tableize) {
     this.maxInterval = maxInterval;
     //System.out.println("before det a=" + a.getNumStates());
-    a = BasicOperations.determinize(a);
+    a = Operations.determinize(a);
     this.automaton = a;
     //System.out.println("AFTER DET tableize= " + tableize + ": ");
     //System.out.println(a.toDot());

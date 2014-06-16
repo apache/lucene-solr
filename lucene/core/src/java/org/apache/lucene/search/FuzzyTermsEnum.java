@@ -38,7 +38,7 @@ import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.ByteRunAutomaton;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
-import org.apache.lucene.util.automaton.LightAutomaton;
+import org.apache.lucene.util.automaton.Automaton;
 
 /** Subclass of TermsEnum for enumerating all terms that are similar
  * to the specified filter term.
@@ -170,7 +170,7 @@ public class FuzzyTermsEnum extends TermsEnum {
 
       String prefix = UnicodeUtil.newString(termText, 0, realPrefixLength);
       for (int i = runAutomata.size(); i <= maxDistance; i++) {
-        LightAutomaton a = builder.toAutomaton(i, prefix);
+        Automaton a = builder.toAutomaton(i, prefix);
         //System.out.println("compute automaton n=" + i);
         runAutomata.add(new CompiledAutomaton(a, true, false));
       }

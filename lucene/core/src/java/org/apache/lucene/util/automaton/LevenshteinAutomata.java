@@ -126,14 +126,14 @@ public class LevenshteinAutomata {
    * </ul>
    * </p>
    */
-  public LightAutomaton toAutomaton(int n) {
+  public Automaton toAutomaton(int n) {
     return toAutomaton(n, "");
   }
 
-  public LightAutomaton toAutomaton(int n, String prefix) {
+  public Automaton toAutomaton(int n, String prefix) {
     assert prefix != null;
     if (n == 0) {
-      return BasicAutomata.makeStringLight(prefix + UnicodeUtil.newString(word, 0, word.length));
+      return Automata.makeString(prefix + UnicodeUtil.newString(word, 0, word.length));
     }
     
     if (n >= descriptions.length)
@@ -144,7 +144,7 @@ public class LevenshteinAutomata {
     // the number of states is based on the length of the word and n
     int numStates = description.size();
 
-    LightAutomaton a = new LightAutomaton();
+    Automaton a = new Automaton();
     int lastState;
     if (prefix != null) {
       // Insert prefix

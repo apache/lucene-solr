@@ -2,8 +2,8 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ToStringUtils;
-import org.apache.lucene.util.automaton.LightAutomaton;
-import org.apache.lucene.util.automaton.LightAutomatonProvider;
+import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.AutomatonProvider;
 import org.apache.lucene.util.automaton.RegExp;
 
 /*
@@ -49,9 +49,9 @@ public class RegexpQuery extends AutomatonQuery {
   /**
    * A provider that provides no named automata
    */
-  private static LightAutomatonProvider defaultProvider = new LightAutomatonProvider() {
+  private static AutomatonProvider defaultProvider = new AutomatonProvider() {
     @Override
-    public LightAutomaton getAutomaton(String name) {
+    public Automaton getAutomaton(String name) {
       return null;
     }
   };
@@ -85,8 +85,8 @@ public class RegexpQuery extends AutomatonQuery {
    * @param flags optional RegExp features from {@link RegExp}
    * @param provider custom AutomatonProvider for named automata
    */
-  public RegexpQuery(Term term, int flags, LightAutomatonProvider provider) {
-    super(term, new RegExp(term.text(), flags).toLightAutomaton(provider));
+  public RegexpQuery(Term term, int flags, AutomatonProvider provider) {
+    super(term, new RegExp(term.text(), flags).toAutomaton(provider));
   }
   
   /** Prints a user-readable version of this query. */

@@ -23,13 +23,13 @@ package org.apache.lucene.util.automaton;
 public class ByteRunAutomaton extends RunAutomaton {
 
   /** Converts incoming automaton to byte-based (UTF32ToUTF8) first */
-  public ByteRunAutomaton(LightAutomaton a) {
+  public ByteRunAutomaton(Automaton a) {
     this(a, false);
   }
   
   /** expert: if utf8 is true, the input is already byte-based */
-  public ByteRunAutomaton(LightAutomaton a, boolean utf8) {
-    super(utf8 ? a : new UTF32ToUTF8Light().convert(a), 256, true);
+  public ByteRunAutomaton(Automaton a, boolean utf8) {
+    super(utf8 ? a : new UTF32ToUTF8().convert(a), 256, true);
   }
 
   /**

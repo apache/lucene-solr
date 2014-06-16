@@ -43,9 +43,8 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util.automaton.BasicOperations;
-import org.apache.lucene.util.automaton.LightAutomaton;
-import org.apache.lucene.util.automaton.SpecialOperations;
+import org.apache.lucene.util.automaton.Operations;
+import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Transition;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
@@ -255,7 +254,7 @@ public class AnalyzingSuggester extends Lookup {
     return fst == null ? 0 : fst.ramBytesUsed();
   }
 
-  private int[] topoSortStates(LightAutomaton a) {
+  private int[] topoSortStates(Automaton a) {
     int[] states = new int[a.getNumStates()];
     final Set<Integer> visited = new HashSet<>();
     final LinkedList<Integer> worklist = new LinkedList<>();
@@ -283,9 +282,9 @@ public class AnalyzingSuggester extends Lookup {
 
   // Replaces SEP with epsilon or remaps them if
   // we were asked to preserve them:
-  private LightAutomaton replaceSep(LightAutomaton a) {
+  private Automaton replaceSep(Automaton a) {
 
-    LightAutomaton result = new LightAutomaton();
+    Automaton result = new Automaton();
 
     // Copy all states over
     int numStates = a.getNumStates();
@@ -335,7 +334,7 @@ public class AnalyzingSuggester extends Lookup {
 
   /** Used by subclass to change the lookup automaton, if
    *  necessary. */
-  protected LightAutomaton convertAutomaton(LightAutomaton a) {
+  protected Automaton convertAutomaton(Automaton a) {
     return a;
   }
   
@@ -694,7 +693,7 @@ public class AnalyzingSuggester extends Lookup {
     }
     final BytesRef utf8Key = new BytesRef(key);
     try {
-      LightAutomaton lookupAutomaton = toLookupAutomaton(key);
+      Automaton lookupAutomaton = toLookupAutomaton(key);
 
       final CharsRef spare = new CharsRef();
 
@@ -846,7 +845,7 @@ public class AnalyzingSuggester extends Lookup {
 
   /** Returns all prefix paths to initialize the search. */
   protected List<FSTUtil.Path<Pair<Long,BytesRef>>> getFullPrefixPaths(List<FSTUtil.Path<Pair<Long,BytesRef>>> prefixPaths,
-                                                                       LightAutomaton lookupAutomaton,
+                                                                       Automaton lookupAutomaton,
                                                                        FST<Pair<Long,BytesRef>> fst)
     throws IOException {
     return prefixPaths;
@@ -854,7 +853,7 @@ public class AnalyzingSuggester extends Lookup {
   
   final Set<IntsRef> toFiniteStrings(final BytesRef surfaceForm, final TokenStreamToAutomaton ts2a) throws IOException {
     // Analyze surface form:
-    LightAutomaton automaton = null;
+    Automaton automaton = null;
     try (TokenStream ts = indexAnalyzer.tokenStream("", surfaceForm.utf8ToString())) {
 
       // Create corresponding automaton: labels are bytes
@@ -877,13 +876,13 @@ public class AnalyzingSuggester extends Lookup {
     // don't have to alloc [possibly biggish]
     // intermediate HashSet in RAM:
 
-    return SpecialOperations.getFiniteStrings(automaton, maxGraphExpansions);
+    return Operations.getFiniteStrings(automaton, maxGraphExpansions);
   }
 
-  final LightAutomaton toLookupAutomaton(final CharSequence key) throws IOException {
+  final Automaton toLookupAutomaton(final CharSequence key) throws IOException {
     // TODO: is there a Reader from a CharSequence?
     // Turn tokenstream into automaton:
-    LightAutomaton automaton = null;
+    Automaton automaton = null;
     try (TokenStream ts = queryAnalyzer.tokenStream("", key.toString())) {
         automaton = getTokenStreamToAutomaton().toAutomaton(ts);
     }
@@ -892,7 +891,7 @@ public class AnalyzingSuggester extends Lookup {
 
     // TODO: we can optimize this somewhat by determinizing
     // while we convert
-    automaton = BasicOperations.determinize(automaton);
+    automaton = Operations.determinize(automaton);
     return automaton;
   }
 

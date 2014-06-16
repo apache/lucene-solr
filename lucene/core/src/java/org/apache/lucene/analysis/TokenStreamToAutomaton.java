@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RollingBuffer;
-import org.apache.lucene.util.automaton.LightAutomaton;
+import org.apache.lucene.util.automaton.Automaton;
 
 // TODO: maybe also toFST?  then we can translate atts into FST outputs/weights
 
@@ -96,8 +96,8 @@ public class TokenStreamToAutomaton {
    *  TokenStream}, and creates the corresponding
    *  automaton where arcs are bytes (or Unicode code points 
    *  if unicodeArcs = true) from each term. */
-  public LightAutomaton toAutomaton(TokenStream in) throws IOException {
-    final LightAutomaton.Builder builder = new LightAutomaton.Builder();
+  public Automaton toAutomaton(TokenStream in) throws IOException {
+    final Automaton.Builder builder = new Automaton.Builder();
     builder.createState();
 
     final TermToBytesRefAttribute termBytesAtt = in.addAttribute(TermToBytesRefAttribute.class);
@@ -228,7 +228,7 @@ public class TokenStreamToAutomaton {
   }
   */
 
-  private static void addHoles(LightAutomaton.Builder builder, RollingBuffer<Position> positions, int pos) {
+  private static void addHoles(Automaton.Builder builder, RollingBuffer<Position> positions, int pos) {
     Position posData = positions.get(pos);
     Position prevPosData = positions.get(pos-1);
 

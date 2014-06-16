@@ -24,7 +24,7 @@ import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.automaton.ByteRunAutomaton;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
-import org.apache.lucene.util.automaton.LightAutomaton;
+import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Transition;
 
 /**
@@ -52,7 +52,7 @@ class AutomatonTermsEnum extends FilteredTermsEnum {
   // true if the automaton accepts a finite language
   private final boolean finite;
   // array of sorted transitions for each state, indexed by state number
-  private final LightAutomaton lightAutomaton;
+  private final Automaton automaton;
   // for path tracking: each long records gen when we last
   // visited the state; we use gens to avoid having to clear
   private final long[] visited;
@@ -80,7 +80,7 @@ class AutomatonTermsEnum extends FilteredTermsEnum {
     this.runAutomaton = compiled.runAutomaton;
     assert this.runAutomaton != null;
     this.commonSuffixRef = compiled.commonSuffixRef;
-    this.lightAutomaton = compiled.lightAutomaton;
+    this.automaton = compiled.automaton;
 
     // used for path tracking, where each bit is a numbered state.
     visited = new long[runAutomaton.getSize()];
@@ -143,10 +143,10 @@ class AutomatonTermsEnum extends FilteredTermsEnum {
       state = runAutomaton.step(state, seekBytesRef.bytes[i] & 0xff);
       assert state >= 0: "state=" + state;
     }
-    final int numTransitions = lightAutomaton.getNumTransitions(state);
-    lightAutomaton.initTransition(state, transition);
+    final int numTransitions = automaton.getNumTransitions(state);
+    automaton.initTransition(state, transition);
     for (int i = 0; i < numTransitions; i++) {
-      lightAutomaton.getNextTransition(transition);
+      automaton.getNextTransition(transition);
       if (transition.min <= (seekBytesRef.bytes[position] & 0xff) && 
           (seekBytesRef.bytes[position] & 0xff) <= transition.max) {
         maxInterval = transition.max;
@@ -257,12 +257,12 @@ class AutomatonTermsEnum extends FilteredTermsEnum {
     seekBytesRef.length = position;
     visited[state] = curGen;
 
-    final int numTransitions = lightAutomaton.getNumTransitions(state);
-    lightAutomaton.initTransition(state, transition);
+    final int numTransitions = automaton.getNumTransitions(state);
+    automaton.initTransition(state, transition);
     // find the minimal path (lexicographic order) that is >= c
     
     for (int i = 0; i < numTransitions; i++) {
-      lightAutomaton.getNextTransition(transition);
+      automaton.getNextTransition(transition);
       if (transition.max >= c) {
         int nextChar = Math.max(c, transition.min);
         // append either the next sequential char, or the minimum transition
@@ -281,8 +281,8 @@ class AutomatonTermsEnum extends FilteredTermsEnum {
            * so the below is ok, if it is not an accept state,
            * then there MUST be at least one transition.
            */
-          lightAutomaton.initTransition(state, transition);
-          lightAutomaton.getNextTransition(transition);
+          automaton.initTransition(state, transition);
+          automaton.getNextTransition(transition);
           state = transition.dest;
           
           // append the minimum transition

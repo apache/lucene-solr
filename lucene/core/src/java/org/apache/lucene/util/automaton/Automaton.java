@@ -27,7 +27,6 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.Sorter;
 
-// nocommit make tests that do the same ops w/ old and new and assertSameLang
 
 // TODO
 //   - could use packed int arrays instead
@@ -40,9 +39,7 @@ import org.apache.lucene.util.Sorter;
  *
  * @lucene.experimental */
 
-// nocommit rename to Automaton once everything is cutover
-
-public class LightAutomaton {
+public class Automaton {
   private int nextState;
 
   /** Where we next write to in int[] transitions; this
@@ -168,7 +165,7 @@ public class LightAutomaton {
 
   /** Copies over all states/transitions from other.  The states numbers
    *  are sequentially assigned (appended). */
-  public void copy(LightAutomaton other) {
+  public void copy(Automaton other) {
 
     int offset = getNumStates();
     /*
@@ -316,9 +313,9 @@ public class LightAutomaton {
       finishCurrentState();
       curState = -1;
     }
-    // nocommit downsize the arrays?
-    //assert getNumStates() > 0;
   }
+
+  // TODO: add finish() to shrink wrap the arrays?
 
   public int getNumStates() {
     return nextState/2;
@@ -511,8 +508,9 @@ public class LightAutomaton {
     }
   }
 
-  public LightAutomaton totalize() {
-    LightAutomaton result = new LightAutomaton();
+  // nocommit move to Operations
+  public Automaton totalize() {
+    Automaton result = new Automaton();
     int numStates = getNumStates();
     for(int i=0;i<numStates;i++) {
       result.createState();
@@ -666,13 +664,13 @@ public class LightAutomaton {
   }
 
   /** Records new states and transitions and then {@link
-   *  #finish} creates the {@link LightAutomaton}.  Use this
+   *  #finish} creates the {@link Automaton}.  Use this
    *  when it's too restrictive to have to add all transitions
    *  leaving each state at once. */
   public static class Builder {
     private int[] transitions = new int[4];
     private int nextTransition;
-    private final LightAutomaton a = new LightAutomaton();
+    private final Automaton a = new Automaton();
 
     public void addTransition(int from, int to, int label) {
       addTransition(from, to, label, label);
@@ -753,7 +751,7 @@ public class LightAutomaton {
         }
       };
 
-    public LightAutomaton finish() {
+    public Automaton finish() {
       //System.out.println("LA.Builder.finish: count=" + (nextTransition/4));
       // nocommit: we could make this more efficient,
       // e.g. somehow xfer the int[] to the automaton, or
@@ -790,7 +788,7 @@ public class LightAutomaton {
     }
 
     /** Copies over all states/transitions from other. */
-    public void copy(LightAutomaton other) {
+    public void copy(Automaton other) {
       int offset = getNumStates();
       int otherNumStates = other.getNumStates();
       for(int s=0;s<otherNumStates;s++) {

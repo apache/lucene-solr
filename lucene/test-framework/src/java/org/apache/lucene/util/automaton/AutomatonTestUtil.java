@@ -137,7 +137,7 @@ public class AutomatonTestUtil {
   public static class RandomAcceptedStrings {
 
     private final Map<Transition,Boolean> leadsToAccept;
-    private final LightAutomaton a;
+    private final Automaton a;
     private final Transition[][] transitions;
 
     private static class ArrivingTransition {
@@ -150,7 +150,7 @@ public class AutomatonTestUtil {
       }
     }
 
-    public RandomAcceptedStrings(LightAutomaton a) {
+    public RandomAcceptedStrings(Automaton a) {
       this.a = a;
       if (a.getNumStates() == 0) {
         throw new IllegalArgumentException("this automaton accepts nothing");
@@ -252,24 +252,24 @@ public class AutomatonTestUtil {
   }
   
   /** return a random NFA/DFA for testing */
-  public static LightAutomaton randomAutomaton(Random random) {
+  public static Automaton randomAutomaton(Random random) {
     // get two random Automata from regexps
-    LightAutomaton a1 = new RegExp(AutomatonTestUtil.randomRegexp(random), RegExp.NONE).toLightAutomaton();
+    Automaton a1 = new RegExp(AutomatonTestUtil.randomRegexp(random), RegExp.NONE).toAutomaton();
     if (random.nextBoolean()) {
-      a1 = BasicOperations.complementLight(a1);
+      a1 = Operations.complement(a1);
     }
     
-    LightAutomaton a2 = new RegExp(AutomatonTestUtil.randomRegexp(random), RegExp.NONE).toLightAutomaton();
+    Automaton a2 = new RegExp(AutomatonTestUtil.randomRegexp(random), RegExp.NONE).toAutomaton();
     if (random.nextBoolean()) {
-      a2 = BasicOperations.complementLight(a2);
+      a2 = Operations.complement(a2);
     }
 
     // combine them in random ways
     switch (random.nextInt(4)) {
-      case 0: return BasicOperations.concatenateLight(a1, a2);
-      case 1: return BasicOperations.unionLight(a1, a2);
-      case 2: return BasicOperations.intersectionLight(a1, a2);
-      default: return BasicOperations.minusLight(a1, a2);
+      case 0: return Operations.concatenate(a1, a2);
+      case 1: return Operations.union(a1, a2);
+      case 2: return Operations.intersection(a1, a2);
+      default: return Operations.minus(a1, a2);
     }
   }
   
@@ -310,28 +310,28 @@ public class AutomatonTestUtil {
   /**
    * Simple, original brics implementation of Brzozowski minimize()
    */
-  public static LightAutomaton minimizeSimple(LightAutomaton a) {
+  public static Automaton minimizeSimple(Automaton a) {
     Set<Integer> initialSet = new HashSet<Integer>();
-    a = determinizeSimpleLight(SpecialOperations.reverse(a, initialSet), initialSet);
+    a = determinizeSimple(Operations.reverse(a, initialSet), initialSet);
     initialSet.clear();
-    a = determinizeSimpleLight(SpecialOperations.reverse(a, initialSet), initialSet);
+    a = determinizeSimple(Operations.reverse(a, initialSet), initialSet);
     return a;
   }
   
   /**
    * Simple, original brics implementation of determinize()
    */
-  public static LightAutomaton determinizeSimpleLight(LightAutomaton a) {
+  public static Automaton determinizeSimple(Automaton a) {
     Set<Integer> initialset = new HashSet<>();
     initialset.add(0);
-    return determinizeSimpleLight(a, initialset);
+    return determinizeSimple(a, initialset);
   }
 
   /** 
    * Simple, original brics implementation of determinize()
    * Determinizes the given automaton using the given set of initial states. 
    */
-  public static LightAutomaton determinizeSimpleLight(LightAutomaton a, Set<Integer> initialset) {
+  public static Automaton determinizeSimple(Automaton a, Set<Integer> initialset) {
     if (a.getNumStates() == 0) {
       return a;
     }
@@ -342,7 +342,7 @@ public class AutomatonTestUtil {
     Map<Set<Integer>, Integer> newstate = new HashMap<>();
     sets.put(initialset, initialset);
     worklist.add(initialset);
-    LightAutomaton.Builder result = new LightAutomaton.Builder();
+    Automaton.Builder result = new Automaton.Builder();
     result.createState();
     newstate.put(initialset, 0);
     Transition t = new Transition();
@@ -384,7 +384,7 @@ public class AutomatonTestUtil {
       }
     }
 
-    return BasicOperations.removeDeadStates(result.finish());
+    return Operations.removeDeadStates(result.finish());
   }
 
   /**
@@ -399,9 +399,9 @@ public class AutomatonTestUtil {
    * frame for each digit in the returned strings (ie, max
    * is the max length returned string).
    */
-  public static Set<IntsRef> getFiniteStringsRecursiveLight(LightAutomaton a, int limit) {
+  public static Set<IntsRef> getFiniteStringsRecursive(Automaton a, int limit) {
     HashSet<IntsRef> strings = new HashSet<>();
-    if (!getFiniteStringsLight(a, 0, new HashSet<Integer>(), strings, new IntsRef(), limit)) {
+    if (!getFiniteStrings(a, 0, new HashSet<Integer>(), strings, new IntsRef(), limit)) {
       return strings;
     }
     return strings;
@@ -412,7 +412,7 @@ public class AutomatonTestUtil {
    * false if more than <code>limit</code> strings are found. 
    * <code>limit</code>&lt;0 means "infinite".
    */
-  private static boolean getFiniteStringsLight(LightAutomaton a, int s, HashSet<Integer> pathstates, 
+  private static boolean getFiniteStrings(Automaton a, int s, HashSet<Integer> pathstates, 
       HashSet<IntsRef> strings, IntsRef path, int limit) {
     pathstates.add(s);
     Transition t = new Transition();
@@ -432,7 +432,7 @@ public class AutomatonTestUtil {
             return false;
           }
         }
-        if (!getFiniteStringsLight(a, t.dest, pathstates, strings, path, limit)) {
+        if (!getFiniteStrings(a, t.dest, pathstates, strings, path, limit)) {
           return false;
         }
         path.length--;
@@ -448,7 +448,7 @@ public class AutomatonTestUtil {
    * WARNING: this method is slow, it will blow up if the automaton is large.
    * this is only used to test the correctness of our faster implementation.
    */
-  public static boolean isFiniteSlow(LightAutomaton a) {
+  public static boolean isFiniteSlow(Automaton a) {
     if (a.getNumStates() == 0) {
       return true;
     }
@@ -461,7 +461,7 @@ public class AutomatonTestUtil {
    */
   // TODO: not great that this is recursive... in theory a
   // large automata could exceed java's stack
-  private static boolean isFiniteSlow(LightAutomaton a, int s, HashSet<Integer> path) {
+  private static boolean isFiniteSlow(Automaton a, int s, HashSet<Integer> path) {
     path.add(s);
     Transition t = new Transition();
     int count = a.initTransition(s, t);
@@ -479,14 +479,14 @@ public class AutomatonTestUtil {
    * Checks that an automaton has no detached states that are unreachable
    * from the initial state.
    */
-  public static void assertNoDetachedStates(LightAutomaton a) {
-    LightAutomaton a2 = BasicOperations.removeDeadStates(a);
+  public static void assertNoDetachedStates(Automaton a) {
+    Automaton a2 = Operations.removeDeadStates(a);
     assert a.getNumStates() == a2.getNumStates() : "automaton has " + (a.getNumStates() - a2.getNumStates()) + " detached states";
   }
 
   // nocommit where to assert this...
   /** Returns true if the automaton is deterministic. */
-  public static boolean isDeterministicSlow(LightAutomaton a) {
+  public static boolean isDeterministicSlow(Automaton a) {
     Transition t = new Transition();
     int numStates = a.getNumStates();
     for(int s=0;s<numStates;s++) {

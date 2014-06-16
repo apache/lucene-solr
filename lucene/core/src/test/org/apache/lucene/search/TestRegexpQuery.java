@@ -27,10 +27,10 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.automaton.BasicAutomata;
-import org.apache.lucene.util.automaton.BasicOperations;
-import org.apache.lucene.util.automaton.LightAutomaton;
-import org.apache.lucene.util.automaton.LightAutomatonProvider;
+import org.apache.lucene.util.automaton.Automata;
+import org.apache.lucene.util.automaton.Operations;
+import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.AutomatonProvider;
 import org.apache.lucene.util.automaton.RegExp;
 
 /**
@@ -95,15 +95,15 @@ public class TestRegexpQuery extends LuceneTestCase {
   }
   
   public void testCustomProvider() throws IOException {
-    LightAutomatonProvider myProvider = new LightAutomatonProvider() {
+    AutomatonProvider myProvider = new AutomatonProvider() {
       // automaton that matches quick or brown
-      private LightAutomaton quickBrownAutomaton = BasicOperations.unionLight(Arrays
-          .asList(BasicAutomata.makeStringLight("quick"),
-          BasicAutomata.makeStringLight("brown"),
-          BasicAutomata.makeStringLight("bob")));
+      private Automaton quickBrownAutomaton = Operations.union(Arrays
+          .asList(Automata.makeString("quick"),
+          Automata.makeString("brown"),
+          Automata.makeString("bob")));
       
       @Override
-      public LightAutomaton getAutomaton(String name) {
+      public Automaton getAutomaton(String name) {
         if (name.equals("quickBrown")) return quickBrownAutomaton;
         else return null;
       }

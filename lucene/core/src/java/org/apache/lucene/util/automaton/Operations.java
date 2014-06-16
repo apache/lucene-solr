@@ -41,17 +41,18 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
- * Basic automata operations.
+ * Automata operations.
  * 
  * @lucene.experimental
  */
-final public class BasicOperations {
+final public class Operations {
   
-  private BasicOperations() {}
+  private Operations() {}
 
   /**
    * Returns an automaton that accepts the concatenation of the languages of the
@@ -59,8 +60,8 @@ final public class BasicOperations {
    * <p>
    * Complexity: linear in total number of states.
    */
-  static public LightAutomaton concatenateLight(LightAutomaton a1, LightAutomaton a2) {
-    return concatenateLight(Arrays.asList(a1, a2));
+  static public Automaton concatenate(Automaton a1, Automaton a2) {
+    return concatenate(Arrays.asList(a1, a2));
   }
 
   /**
@@ -69,11 +70,11 @@ final public class BasicOperations {
    * <p>
    * Complexity: linear in total number of states.
    */
-  static public LightAutomaton concatenateLight(List<LightAutomaton> l) {
-    LightAutomaton result = new LightAutomaton();
+  static public Automaton concatenate(List<Automaton> l) {
+    Automaton result = new Automaton();
 
     // First pass: create all states
-    for(LightAutomaton a : l) {
+    for(Automaton a : l) {
       if (a.getNumStates() == 0) {
         result.finishState();
         return result;
@@ -89,10 +90,10 @@ final public class BasicOperations {
     int stateOffset = 0;
     Transition t = new Transition();
     for(int i=0;i<l.size();i++) {
-      LightAutomaton a = l.get(i);
+      Automaton a = l.get(i);
       int numStates = a.getNumStates();
 
-      LightAutomaton nextA = (i == l.size()-1) ? null : l.get(i+1);
+      Automaton nextA = (i == l.size()-1) ? null : l.get(i+1);
 
       for(int s=0;s<numStates;s++) {
         int numTransitions = a.initTransition(s, t);
@@ -102,7 +103,7 @@ final public class BasicOperations {
         }
 
         if (a.isAccept(s)) {
-          LightAutomaton followA = nextA;
+          Automaton followA = nextA;
           int followOffset = stateOffset;
           int upto = i+1;
           while (true) {
@@ -147,8 +148,8 @@ final public class BasicOperations {
    * <p>
    * Complexity: linear in number of states.
    */
-  static public LightAutomaton optionalLight(LightAutomaton a) {
-    LightAutomaton result = new LightAutomaton();
+  static public Automaton optional(Automaton a) {
+    Automaton result = new Automaton();
     result.createState();
     result.setAccept(0, true);
     if (a.getNumStates() > 0) {
@@ -166,8 +167,8 @@ final public class BasicOperations {
    * <p>
    * Complexity: linear in number of states.
    */
-  static public LightAutomaton repeatLight(LightAutomaton a) {
-    LightAutomaton.Builder builder = new LightAutomaton.Builder();
+  static public Automaton repeat(Automaton a) {
+    Automaton.Builder builder = new Automaton.Builder();
     builder.createState();
     builder.setAccept(0, true);
     builder.copy(a);
@@ -199,16 +200,16 @@ final public class BasicOperations {
    * <p>
    * Complexity: linear in number of states and in <code>min</code>.
    */
-  static public LightAutomaton repeatLight(LightAutomaton a, int min) {
+  static public Automaton repeat(Automaton a, int min) {
     if (min == 0) {
-      return repeatLight(a);
+      return repeat(a);
     }
-    List<LightAutomaton> as = new ArrayList<>();
+    List<Automaton> as = new ArrayList<>();
     while (min-- > 0) {
       as.add(a);
     }
-    as.add(repeatLight(a));
-    return concatenateLight(as);
+    as.add(repeat(a));
+    return concatenate(as);
   }
   
   /**
@@ -219,23 +220,23 @@ final public class BasicOperations {
    * Complexity: linear in number of states and in <code>min</code> and
    * <code>max</code>.
    */
-  static public LightAutomaton repeatLight(LightAutomaton a, int min, int max) {
+  static public Automaton repeat(Automaton a, int min, int max) {
     if (min > max) {
-      return BasicAutomata.makeEmptyLight();
+      return Automata.makeEmpty();
     }
 
-    LightAutomaton b;
+    Automaton b;
     if (min == 0) {
-      b = BasicAutomata.makeEmptyStringLight();
+      b = Automata.makeEmptyString();
     } else if (min == 1) {
-      b = new LightAutomaton();
+      b = new Automaton();
       b.copy(a);
     } else {
-      List<LightAutomaton> as = new ArrayList<>();
+      List<Automaton> as = new ArrayList<>();
       for(int i=0;i<min;i++) {
         as.add(a);
       }
-      b = concatenateLight(as);
+      b = concatenate(as);
     }
 
     Set<Integer> prevAcceptStates = new HashSet<>(b.getAcceptStates());
@@ -263,7 +264,7 @@ final public class BasicOperations {
    * <p>
    * Complexity: linear in number of states (if already deterministic).
    */
-  static public LightAutomaton complementLight(LightAutomaton a) {
+  static public Automaton complement(Automaton a) {
     a = determinize(a).totalize();
     int numStates = a.getNumStates();
     for (int p=0;p<numStates;p++) {
@@ -280,14 +281,14 @@ final public class BasicOperations {
    * <p>
    * Complexity: quadratic in number of states (if already deterministic).
    */
-  static public LightAutomaton minusLight(LightAutomaton a1, LightAutomaton a2) {
-    if (BasicOperations.isEmpty(a1) || a1 == a2) {
-      return BasicAutomata.makeEmptyLight();
+  static public Automaton minus(Automaton a1, Automaton a2) {
+    if (Operations.isEmpty(a1) || a1 == a2) {
+      return Automata.makeEmpty();
     }
-    if (BasicOperations.isEmpty(a2)) {
+    if (Operations.isEmpty(a2)) {
       return a1;
     }
-    return intersectionLight(a1, complementLight(a2));
+    return intersection(a1, complement(a2));
   }
   
   /**
@@ -296,7 +297,7 @@ final public class BasicOperations {
    * <p>
    * Complexity: quadratic in number of states.
    */
-  static public LightAutomaton intersectionLight(LightAutomaton a1, LightAutomaton a2) {
+  static public Automaton intersection(Automaton a1, Automaton a2) {
     if (a1 == a2) {
       return a1;
     }
@@ -308,11 +309,11 @@ final public class BasicOperations {
     }
     Transition[][] transitions1 = a1.getSortedTransitions();
     Transition[][] transitions2 = a2.getSortedTransitions();
-    LightAutomaton c = new LightAutomaton();
+    Automaton c = new Automaton();
     c.createState();
-    LinkedList<LightStatePair> worklist = new LinkedList<>();
-    HashMap<LightStatePair,LightStatePair> newstates = new HashMap<>();
-    LightStatePair p = new LightStatePair(0, 0, 0);
+    LinkedList<StatePair> worklist = new LinkedList<>();
+    HashMap<StatePair,StatePair> newstates = new HashMap<>();
+    StatePair p = new StatePair(0, 0, 0);
     worklist.add(p);
     newstates.put(p, p);
     while (worklist.size() > 0) {
@@ -325,8 +326,8 @@ final public class BasicOperations {
           b2++;
         for (int n2 = b2; n2 < t2.length && t1[n1].max >= t2[n2].min; n2++)
           if (t2[n2].max >= t1[n1].min) {
-            LightStatePair q = new LightStatePair(t1[n1].dest, t2[n2].dest);
-            LightStatePair r = newstates.get(q);
+            StatePair q = new StatePair(t1[n1].dest, t2[n2].dest);
+            StatePair r = newstates.get(q);
             if (r == null) {
               q.s = c.createState();
               worklist.add(q);
@@ -349,7 +350,7 @@ final public class BasicOperations {
    *  also that a1 and a2 will be determinized as a side
    *  effect.  Both automata must be determinized and have
    *  no dead states! */
-  public static boolean sameLanguage(LightAutomaton a1, LightAutomaton a2) {
+  public static boolean sameLanguage(Automaton a1, Automaton a2) {
     if (a1 == a2) {
       return true;
     }
@@ -360,7 +361,7 @@ final public class BasicOperations {
   /** Returns true if this automaton has any states that cannot
    *  be reached from the initial state or cannot reach an accept state.
    *  Cost is O(numTransitions+numStates). */
-  public static boolean hasDeadStates(LightAutomaton a) {
+  public static boolean hasDeadStates(Automaton a) {
     BitSet liveStates = getLiveStates(a);
     int numLive = liveStates.cardinality();
     int numStates = a.getNumStates();
@@ -370,7 +371,7 @@ final public class BasicOperations {
 
   // TODO: move to test-framework?
   /** Returns true if there are dead states reachable from an initial state. */
-  public static boolean hasDeadStatesFromInitial(LightAutomaton a) {
+  public static boolean hasDeadStatesFromInitial(Automaton a) {
     BitSet reachableFromInitial = getLiveStatesFromInitial(a);
     BitSet reachableFromAccept = getLiveStatesToAccept(a);
     reachableFromInitial.andNot(reachableFromAccept);
@@ -379,7 +380,7 @@ final public class BasicOperations {
 
   // TODO: move to test-framework?
   /** Returns true if there are dead states that reach an accept state. */
-  public static boolean hasDeadStatesToAccept(LightAutomaton a) {
+  public static boolean hasDeadStatesToAccept(Automaton a) {
     BitSet reachableFromInitial = getLiveStatesFromInitial(a);
     BitSet reachableFromAccept = getLiveStatesToAccept(a);
     reachableFromAccept.andNot(reachableFromInitial);
@@ -393,7 +394,7 @@ final public class BasicOperations {
    * <p>
    * Complexity: quadratic in number of states.
    */
-  public static boolean subsetOf(LightAutomaton a1, LightAutomaton a2) {
+  public static boolean subsetOf(Automaton a1, Automaton a2) {
     if (a1.isDeterministic() == false) {
       throw new IllegalArgumentException("a1 must be deterministic");
     }
@@ -412,9 +413,9 @@ final public class BasicOperations {
     // TODO: cutover to iterators instead
     Transition[][] transitions1 = a1.getSortedTransitions();
     Transition[][] transitions2 = a2.getSortedTransitions();
-    LinkedList<LightStatePair> worklist = new LinkedList<>();
-    HashSet<LightStatePair> visited = new HashSet<>();
-    LightStatePair p = new LightStatePair(0, 0);
+    LinkedList<StatePair> worklist = new LinkedList<>();
+    HashSet<StatePair> visited = new HashSet<>();
+    StatePair p = new StatePair(0, 0);
     worklist.add(p);
     visited.add(p);
     while (worklist.size() > 0) {
@@ -440,7 +441,7 @@ final public class BasicOperations {
             min1 = Character.MAX_CODE_POINT;
             max1 = Character.MIN_CODE_POINT;
           }
-          LightStatePair q = new LightStatePair(t1[n1].dest, t2[n2].dest);
+          StatePair q = new StatePair(t1[n1].dest, t2[n2].dest);
           if (!visited.contains(q)) {
             worklist.add(q);
             visited.add(q);
@@ -460,25 +461,25 @@ final public class BasicOperations {
    * <p>
    * Complexity: linear in number of states.
    */
-  public static LightAutomaton unionLight(LightAutomaton a1, LightAutomaton a2) {
-    return unionLight(Arrays.asList(a1, a2));
+  public static Automaton union(Automaton a1, Automaton a2) {
+    return union(Arrays.asList(a1, a2));
   }
 
-  public static LightAutomaton unionLight(Collection<LightAutomaton> l) {
-    LightAutomaton result = new LightAutomaton();
+  public static Automaton union(Collection<Automaton> l) {
+    Automaton result = new Automaton();
 
     // Create initial state:
     result.createState();
 
     // Copy over all automata
     Transition t = new Transition();
-    for(LightAutomaton a : l) {
+    for(Automaton a : l) {
       result.copy(a);
     }
     
     // Add epsilon transition from new initial state
     int stateOffset = 1;
-    for(LightAutomaton a : l) {
+    for(Automaton a : l) {
       if (a.getNumStates() == 0) {
         continue;
       }
@@ -492,7 +493,7 @@ final public class BasicOperations {
   }
 
   // Simple custom ArrayList<Transition>
-  private final static class TransitionListLight {
+  private final static class TransitionList {
     // dest, min, max
     int[] transitions = new int[3];
     int next;
@@ -510,13 +511,13 @@ final public class BasicOperations {
 
   // Holds all transitions that start on this int point, or
   // end at this point-1
-  private final static class PointTransitionsLight implements Comparable<PointTransitionsLight> {
+  private final static class PointTransitions implements Comparable<PointTransitions> {
     int point;
-    final TransitionListLight ends = new TransitionListLight();
-    final TransitionListLight starts = new TransitionListLight();
+    final TransitionList ends = new TransitionList();
+    final TransitionList starts = new TransitionList();
 
     @Override
-    public int compareTo(PointTransitionsLight other) {
+    public int compareTo(PointTransitions other) {
       return point - other.point;
     }
 
@@ -528,7 +529,7 @@ final public class BasicOperations {
 
     @Override
     public boolean equals(Object other) {
-      return ((PointTransitionsLight) other).point == point;
+      return ((PointTransitions) other).point == point;
     }
 
     @Override
@@ -537,34 +538,34 @@ final public class BasicOperations {
     }
   }
 
-  private final static class PointTransitionSetLight {
+  private final static class PointTransitionSet {
     int count;
-    PointTransitionsLight[] points = new PointTransitionsLight[5];
+    PointTransitions[] points = new PointTransitions[5];
 
     private final static int HASHMAP_CUTOVER = 30;
-    private final HashMap<Integer,PointTransitionsLight> map = new HashMap<>();
+    private final HashMap<Integer,PointTransitions> map = new HashMap<>();
     private boolean useHash = false;
 
-    private PointTransitionsLight next(int point) {
+    private PointTransitions next(int point) {
       // 1st time we are seeing this point
       if (count == points.length) {
-        final PointTransitionsLight[] newArray = new PointTransitionsLight[ArrayUtil.oversize(1+count, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+        final PointTransitions[] newArray = new PointTransitions[ArrayUtil.oversize(1+count, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
         System.arraycopy(points, 0, newArray, 0, count);
         points = newArray;
       }
-      PointTransitionsLight points0 = points[count];
+      PointTransitions points0 = points[count];
       if (points0 == null) {
-        points0 = points[count] = new PointTransitionsLight();
+        points0 = points[count] = new PointTransitions();
       }
       points0.reset(point);
       count++;
       return points0;
     }
 
-    private PointTransitionsLight find(int point) {
+    private PointTransitions find(int point) {
       if (useHash) {
         final Integer pi = point;
-        PointTransitionsLight p = map.get(pi);
+        PointTransitions p = map.get(pi);
         if (p == null) {
           p = next(point);
           map.put(pi, p);
@@ -577,7 +578,7 @@ final public class BasicOperations {
           }
         }
 
-        final PointTransitionsLight p = next(point);
+        final PointTransitions p = next(point);
         if (count == HASHMAP_CUTOVER) {
           // switch to HashMap on the fly
           assert map.size() == 0;
@@ -626,7 +627,7 @@ final public class BasicOperations {
    * <p>
    * Worst case complexity: exponential in number of states.
    */
-  public static LightAutomaton determinize(LightAutomaton a) {
+  public static Automaton determinize(Automaton a) {
     if (a.isDeterministic()) {
       // Already determinized
       return a;
@@ -637,18 +638,18 @@ final public class BasicOperations {
     }
 
     // subset construction
-    LightAutomaton.Builder b = new LightAutomaton.Builder();
+    Automaton.Builder b = new Automaton.Builder();
 
     //System.out.println("DET:");
     //a.writeDot("/l/la/lucene/core/detin.dot");
 
-    SortedIntSetLight.FrozenIntSetLight initialset = new SortedIntSetLight.FrozenIntSetLight(0, 0);
+    SortedIntSet.FrozenIntSet initialset = new SortedIntSet.FrozenIntSet(0, 0);
 
     // Create state 0:
     b.createState();
 
-    LinkedList<SortedIntSetLight.FrozenIntSetLight> worklist = new LinkedList<>();
-    Map<SortedIntSetLight.FrozenIntSetLight,Integer> newstate = new HashMap<>();
+    LinkedList<SortedIntSet.FrozenIntSet> worklist = new LinkedList<>();
+    Map<SortedIntSet.FrozenIntSet,Integer> newstate = new HashMap<>();
 
     worklist.add(initialset);
 
@@ -661,15 +662,15 @@ final public class BasicOperations {
     newStateUpto++;
 
     // like Set<Integer,PointTransitions>
-    final PointTransitionSetLight points = new PointTransitionSetLight();
+    final PointTransitionSet points = new PointTransitionSet();
 
     // like SortedMap<Integer,Integer>
-    final SortedIntSetLight statesSet = new SortedIntSetLight(5);
+    final SortedIntSet statesSet = new SortedIntSet(5);
 
     Transition t = new Transition();
 
     while (worklist.size() > 0) {
-      SortedIntSetLight.FrozenIntSetLight s = worklist.removeFirst();
+      SortedIntSet.FrozenIntSet s = worklist.removeFirst();
       //System.out.println("det: pop set=" + s);
 
       // Collate all outgoing transitions by min/1+max:
@@ -707,7 +708,7 @@ final public class BasicOperations {
           Integer q = newstate.get(statesSet);
           if (q == null) {
             q = b.createState();
-            final SortedIntSetLight.FrozenIntSetLight p = statesSet.freeze(q);
+            final SortedIntSet.FrozenIntSet p = statesSet.freeze(q);
             //System.out.println("  make new state=" + q + " -> " + p + " accCount=" + accCount);
             worklist.add(p);
             b.setAccept(q, accCount > 0);
@@ -749,7 +750,7 @@ final public class BasicOperations {
       assert statesSet.upto == 0: "upto=" + statesSet.upto;
     }
 
-    LightAutomaton result = b.finish();
+    Automaton result = b.finish();
     assert result.isDeterministic();
     return result;
   }
@@ -757,7 +758,7 @@ final public class BasicOperations {
   /**
    * Returns true if the given automaton accepts no strings.
    */
-  public static boolean isEmpty(LightAutomaton a) {
+  public static boolean isEmpty(Automaton a) {
     if (a.getNumStates() == 0) {
       // Common case: no states
       return true;
@@ -798,7 +799,7 @@ final public class BasicOperations {
   /**
    * Returns true if the given automaton accepts all strings.  The automaton must be minimized.
    */
-  public static boolean isTotal(LightAutomaton a) {
+  public static boolean isTotal(Automaton a) {
     if (a.isAccept(0) && a.getNumTransitions(0) == 1) {
       Transition t = new Transition();
       a.getTransition(0, 0, t);
@@ -815,7 +816,7 @@ final public class BasicOperations {
    * <p>
    * <b>Note:</b> for full performance, use the {@link RunAutomaton} class.
    */
-  public static boolean run(LightAutomaton a, String s) {
+  public static boolean run(Automaton a, String s) {
     assert a.isDeterministic();
     int state = 0;
     for (int i = 0, cp = 0; i < s.length(); i += Character.charCount(cp)) {
@@ -835,7 +836,7 @@ final public class BasicOperations {
    * <p>
    * <b>Note:</b> for full performance, use the {@link RunAutomaton} class.
    */
-  public static boolean run(LightAutomaton a, IntsRef s) {
+  public static boolean run(Automaton a, IntsRef s) {
     assert a.isDeterministic();
     int state = 0;
     for (int i=0;i<s.length;i++) {
@@ -852,14 +853,14 @@ final public class BasicOperations {
    * Returns the set of live states. A state is "live" if an accept state is
    * reachable from it and if it is reachable from the initial state.
    */
-  private static BitSet getLiveStates(LightAutomaton a) {
+  private static BitSet getLiveStates(Automaton a) {
     BitSet live = getLiveStatesFromInitial(a);
     live.and(getLiveStatesToAccept(a));
     return live;
   }
 
   /** Returns bitset marking states reachable from the initial state. */
-  private static BitSet getLiveStatesFromInitial(LightAutomaton a) {
+  private static BitSet getLiveStatesFromInitial(Automaton a) {
     int numStates = a.getNumStates();
     BitSet live = new BitSet(numStates);
     if (numStates == 0) {
@@ -886,8 +887,8 @@ final public class BasicOperations {
   }
 
   /** Returns bitset marking states that can reach an accept state. */
-  private static BitSet getLiveStatesToAccept(LightAutomaton a) {
-    LightAutomaton.Builder builder = new LightAutomaton.Builder();
+  private static BitSet getLiveStatesToAccept(Automaton a) {
+    Automaton.Builder builder = new Automaton.Builder();
 
     // NOTE: not quite the same thing as what SpecialOperations.reverse does:
     Transition t = new Transition();
@@ -902,7 +903,7 @@ final public class BasicOperations {
         builder.addTransition(t.dest, s, t.min, t.max);
       }
     }
-    LightAutomaton a2 = builder.finish();
+    Automaton a2 = builder.finish();
 
     LinkedList<Integer> workList = new LinkedList<>();
     BitSet live = new BitSet(numStates);
@@ -930,13 +931,13 @@ final public class BasicOperations {
    * Removes transitions to dead states (a state is "dead" if it is not
    * reachable from the initial state or no accept state is reachable from it.)
    */
-  public static LightAutomaton removeDeadStates(LightAutomaton a) {
+  public static Automaton removeDeadStates(Automaton a) {
     int numStates = a.getNumStates();
     BitSet liveSet = getLiveStates(a);
 
     int[] map = new int[numStates];
 
-    LightAutomaton result = new LightAutomaton();
+    Automaton result = new Automaton();
     //System.out.println("liveSet: " + liveSet + " numStates=" + numStates);
     for(int i=0;i<numStates;i++) {
       if (liveSet.get(i)) {
@@ -963,5 +964,322 @@ final public class BasicOperations {
     result.finishState();
     assert hasDeadStates(result) == false;
     return result;
+  }
+  /**
+   * Finds the largest entry whose value is less than or equal to c, or 0 if
+   * there is no such entry.
+   */
+  static int findIndex(int c, int[] points) {
+    int a = 0;
+    int b = points.length;
+    while (b - a > 1) {
+      int d = (a + b) >>> 1;
+      if (points[d] > c) b = d;
+      else if (points[d] < c) a = d;
+      else return d;
+    }
+    return a;
+  }
+  
+  /**
+   * Returns true if the language of this automaton is finite.
+   */
+  public static boolean isFinite(Automaton a) {
+    if (a.getNumStates() == 0) {
+      return true;
+    }
+    return isFinite(new Transition(), a, 0, new BitSet(a.getNumStates()), new BitSet(a.getNumStates()));
+  }
+  
+  /**
+   * Checks whether there is a loop containing s. (This is sufficient since
+   * there are never transitions to dead states.)
+   */
+  // TODO: not great that this is recursive... in theory a
+  // large automata could exceed java's stack
+  private static boolean isFinite(Transition scratch, Automaton a, int state, BitSet path, BitSet visited) {
+    path.set(state);
+    int numTransitions = a.initTransition(state, scratch);
+    for(int t=0;t<numTransitions;t++) {
+      a.getTransition(state, t, scratch);
+      if (path.get(scratch.dest) || (!visited.get(scratch.dest) && !isFinite(scratch, a, scratch.dest, path, visited))) {
+        return false;
+      }
+    }
+    path.clear(state);
+    visited.set(state);
+    return true;
+  }
+  
+  /**
+   * Returns the longest string that is a prefix of all accepted strings and
+   * visits each state at most once.  The automaton must be deterministic.
+   * 
+   * @return common prefix
+   */
+  public static String getCommonPrefix(Automaton a) {
+    if (a.isDeterministic() == false) {
+      throw new IllegalArgumentException("input automaton must be deterministic");
+    }
+    StringBuilder b = new StringBuilder();
+    HashSet<Integer> visited = new HashSet<>();
+    int s = 0;
+    boolean done;
+    Transition t = new Transition();
+    do {
+      done = true;
+      visited.add(s);
+      if (a.isAccept(s) == false && a.getNumTransitions(s) == 1) {
+        a.getTransition(s, 0, t);
+        if (t.min == t.max && !visited.contains(t.dest)) {
+          b.appendCodePoint(t.min);
+          s = t.dest;
+          done = false;
+        }
+      }
+    } while (!done);
+
+    return b.toString();
+  }
+  
+  public static BytesRef getCommonPrefixBytesRef(Automaton a) {
+    BytesRef ref = new BytesRef(10);
+    HashSet<Integer> visited = new HashSet<>();
+    int s = 0;
+    boolean done;
+    Transition t = new Transition();
+    do {
+      done = true;
+      visited.add(s);
+      if (a.isAccept(s) == false && a.getNumTransitions(s) == 1) {
+        a.getTransition(s, 0, t);
+        if (t.min == t.max && !visited.contains(t.dest)) {
+          ref.grow(++ref.length);
+          ref.bytes[ref.length - 1] = (byte) t.min;
+          s = t.dest;
+          done = false;
+        }
+      }
+    } while (!done);
+
+    return ref;
+  }
+
+  public static BytesRef getCommonSuffixBytesRef(Automaton a) {
+    // reverse the language of the automaton, then reverse its common prefix.
+    Automaton r = Operations.determinize(reverse(a));
+    BytesRef ref = getCommonPrefixBytesRef(r);
+    reverseBytes(ref);
+    return ref;
+  }
+  
+  private static void reverseBytes(BytesRef ref) {
+    if (ref.length <= 1) return;
+    int num = ref.length >> 1;
+    for (int i = ref.offset; i < ( ref.offset + num ); i++) {
+      byte b = ref.bytes[i];
+      ref.bytes[i] = ref.bytes[ref.offset * 2 + ref.length - i - 1];
+      ref.bytes[ref.offset * 2 + ref.length - i - 1] = b;
+    }
+  }
+  
+  public static Automaton reverse(Automaton a) {
+    return reverse(a, null);
+  }
+
+  public static Automaton reverse(Automaton a, Set<Integer> initialStates) {
+
+    if (Operations.isEmpty(a)) {
+      return new Automaton();
+    }
+
+    int numStates = a.getNumStates();
+
+    // Build a new automaton with all edges reversed
+    Automaton.Builder builder = new Automaton.Builder();
+
+    // Initial node; we'll add epsilon transitions in the end:
+    builder.createState();
+
+    for(int s=0;s<numStates;s++) {
+      builder.createState();
+    }
+
+    // Old initial state becomes new accept state:
+    builder.setAccept(1, true);
+
+    Transition t = new Transition();
+    for (int s=0;s<numStates;s++) {
+      int numTransitions = a.getNumTransitions(s);
+      a.initTransition(s, t);
+      for(int i=0;i<numTransitions;i++) {
+        a.getNextTransition(t);
+        builder.addTransition(t.dest+1, s+1, t.min, t.max);
+      }
+    }
+
+    Automaton result = builder.finish();
+
+    for(int s : a.getAcceptStates()) {
+      assert s < numStates;
+      result.addEpsilon(0, s+1);
+      if (initialStates != null) {
+        initialStates.add(s+1);
+      }
+    }
+
+    result.finishState();
+
+    return result;
+  }
+
+  private static class PathNode {
+
+    /** Which state the path node ends on, whose
+     *  transitions we are enumerating. */
+    public int state;
+
+    /** Which state the current transition leads to. */
+    public int to;
+
+    /** Which transition we are on. */
+    public int transition;
+
+    /** Which label we are on, in the min-max range of the
+     *  current Transition */
+    public int label;
+
+    private final Transition t = new Transition();
+
+    public void resetState(Automaton a, int state) {
+      assert a.getNumTransitions(state) != 0;
+      this.state = state;
+      transition = 0;
+      a.getTransition(state, 0, t);
+      label = t.min;
+      to = t.dest;
+    }
+
+    /** Returns next label of current transition, or
+     *  advances to next transition and returns its first
+     *  label, if current one is exhausted.  If there are
+     *  no more transitions, returns -1. */
+    public int nextLabel(Automaton a) {
+      if (label > t.max) {
+        // We've exhaused the current transition's labels;
+        // move to next transitions:
+        transition++;
+        if (transition >= a.getNumTransitions(state)) {
+          // We're done iterating transitions leaving this state
+          return -1;
+        }
+        a.getTransition(state, transition, t);
+        label = t.min;
+        to = t.dest;
+      }
+      return label++;
+    }
+  }
+
+  private static PathNode getNode(PathNode[] nodes, int index) {
+    assert index < nodes.length;
+    if (nodes[index] == null) {
+      nodes[index] = new PathNode();
+    }
+    return nodes[index];
+  }
+
+  // TODO: this is a dangerous method ... Automaton could be
+  // huge ... and it's better in general for caller to
+  // enumerate & process in a single walk:
+
+  /** Returns the set of accepted strings, up to at most
+   *  <code>limit</code> strings. If more than <code>limit</code> 
+   *  strings are accepted, the first limit strings found are returned. If <code>limit</code> == -1, then 
+   *  the limit is infinite.  If the {@link Automaton} has
+   *  cycles then this method might throw {@code
+   *  IllegalArgumentException} but that is not guaranteed
+   *  when the limit is set. */
+  public static Set<IntsRef> getFiniteStrings(Automaton a, int limit) {
+    Set<IntsRef> results = new HashSet<>();
+
+    if (limit == -1 || limit > 0) {
+      // OK
+    } else {
+      throw new IllegalArgumentException("limit must be -1 (which means no limit), or > 0; got: " + limit);
+    }
+
+    if (a.isAccept(0)) {
+      // Special case the empty string, as usual:
+      results.add(new IntsRef());
+    }
+
+    if (a.getNumTransitions(0) > 0 && (limit == -1 || results.size() < limit)) {
+
+      int numStates = a.getNumStates();
+
+      // Tracks which states are in the current path, for
+      // cycle detection:
+      BitSet pathStates = new BitSet(numStates);
+
+      // Stack to hold our current state in the
+      // recursion/iteration:
+      PathNode[] nodes = new PathNode[4];
+
+      pathStates.set(0);
+      PathNode root = getNode(nodes, 0);
+      root.resetState(a, 0);
+
+      IntsRef string = new IntsRef(1);
+      string.length = 1;
+
+      while (string.length > 0) {
+
+        PathNode node = nodes[string.length-1];
+
+        // Get next label leaving the current node:
+        int label = node.nextLabel(a);
+
+        if (label != -1) {
+          string.ints[string.length-1] = label;
+
+          if (a.isAccept(node.to)) {
+            // This transition leads to an accept state,
+            // so we save the current string:
+            results.add(IntsRef.deepCopyOf(string));
+            if (results.size() == limit) {
+              break;
+            }
+          }
+
+          if (a.getNumTransitions(node.to) != 0) {
+            // Now recurse: the destination of this transition has
+            // outgoing transitions:
+            if (pathStates.get(node.to)) {
+              throw new IllegalArgumentException("automaton has cycles");
+            }
+            pathStates.set(node.to);
+
+            // Push node onto stack:
+            if (nodes.length == string.length) {
+              PathNode[] newNodes = new PathNode[ArrayUtil.oversize(nodes.length+1, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+              System.arraycopy(nodes, 0, newNodes, 0, nodes.length);
+              nodes = newNodes;
+            }
+            getNode(nodes, string.length).resetState(a, node.to);
+            string.length++;
+            string.grow(string.length);
+          }
+        } else {
+          // No more transitions leaving this state,
+          // pop/return back to previous state:
+          assert pathStates.get(node.state);
+          pathStates.clear(node.state);
+          string.length--;
+        }
+      }
+    }
+
+    return results;
   }
 }

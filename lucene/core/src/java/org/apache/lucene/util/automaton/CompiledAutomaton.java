@@ -71,13 +71,15 @@ public class CompiledAutomaton {
    * {@link #runAutomaton}. 
    * Only valid for {@link AUTOMATON_TYPE#NORMAL}.
    */
-  public final LightAutomaton lightAutomaton;
+  public final Automaton automaton;
+
   /**
    * Shared common suffix accepted by the automaton. Only valid
    * for {@link AUTOMATON_TYPE#NORMAL}, and only when the
    * automaton accepts an infinite language.
    */
   public final BytesRef commonSuffixRef;
+
   /**
    * Indicates if the automaton accepts a finite set of strings.
    * Null if this was not computed.
@@ -85,11 +87,11 @@ public class CompiledAutomaton {
    */
   public final Boolean finite;
 
-  public CompiledAutomaton(LightAutomaton automaton) {
+  public CompiledAutomaton(Automaton automaton) {
     this(automaton, null, true);
   }
 
-  public CompiledAutomaton(LightAutomaton automaton, Boolean finite, boolean simplify) {
+  public CompiledAutomaton(Automaton automaton, Boolean finite, boolean simplify) {
 
     if (simplify) {
 
@@ -97,33 +99,33 @@ public class CompiledAutomaton {
       // if so, don't create a runAutomaton.  Note that on a
       // large automaton these tests could be costly:
 
-      if (BasicOperations.isEmpty(automaton)) {
+      if (Operations.isEmpty(automaton)) {
         // matches nothing
         type = AUTOMATON_TYPE.NONE;
         term = null;
         commonSuffixRef = null;
         runAutomaton = null;
-        lightAutomaton = null;
+        this.automaton = null;
         this.finite = null;
         return;
       // NOTE: only approximate, because automaton may not be minimal:
-      } else if (BasicOperations.isTotal(automaton)) {
+      } else if (Operations.isTotal(automaton)) {
         // matches all possible strings
         type = AUTOMATON_TYPE.ALL;
         term = null;
         commonSuffixRef = null;
         runAutomaton = null;
-        lightAutomaton = null;
+        this.automaton = null;
         this.finite = null;
         return;
       } else {
 
-        automaton = BasicOperations.determinize(automaton);
+        automaton = Operations.determinize(automaton);
 
-        final String commonPrefix = SpecialOperations.getCommonPrefix(automaton);
+        final String commonPrefix = Operations.getCommonPrefix(automaton);
         final String singleton;
 
-        if (commonPrefix.length() > 0 && BasicOperations.sameLanguage(automaton, BasicAutomata.makeStringLight(commonPrefix))) {
+        if (commonPrefix.length() > 0 && Operations.sameLanguage(automaton, Automata.makeString(commonPrefix))) {
           singleton = commonPrefix;
         } else {
           singleton = null;
@@ -135,20 +137,20 @@ public class CompiledAutomaton {
           term = new BytesRef(singleton);
           commonSuffixRef = null;
           runAutomaton = null;
-          lightAutomaton = null;
+          this.automaton = null;
           this.finite = null;
           return;
         } else if (commonPrefix.length() > 0) {
-          LightAutomaton other = BasicOperations.concatenateLight(BasicAutomata.makeStringLight(commonPrefix), BasicAutomata.makeAnyStringLight());
-          other = BasicOperations.determinize(other);
-          assert BasicOperations.hasDeadStates(other) == false;
-          if (BasicOperations.sameLanguage(automaton, other)) {
+          Automaton other = Operations.concatenate(Automata.makeString(commonPrefix), Automata.makeAnyString());
+          other = Operations.determinize(other);
+          assert Operations.hasDeadStates(other) == false;
+          if (Operations.sameLanguage(automaton, other)) {
             // matches a constant prefix
             type = AUTOMATON_TYPE.PREFIX;
             term = new BytesRef(commonPrefix);
             commonSuffixRef = null;
             runAutomaton = null;
-            lightAutomaton = null;
+            this.automaton = null;
             this.finite = null;
             return;
           }
@@ -160,20 +162,20 @@ public class CompiledAutomaton {
     term = null;
 
     if (finite == null) {
-      this.finite = SpecialOperations.isFinite(automaton);
+      this.finite = Operations.isFinite(automaton);
     } else {
       this.finite = finite;
     }
 
-    LightAutomaton utf8 = new UTF32ToUTF8Light().convert(automaton);
+    Automaton utf8 = new UTF32ToUTF8().convert(automaton);
     if (this.finite) {
       commonSuffixRef = null;
     } else {
-      commonSuffixRef = SpecialOperations.getCommonSuffixBytesRef(utf8);
+      commonSuffixRef = Operations.getCommonSuffixBytesRef(utf8);
     }
     runAutomaton = new ByteRunAutomaton(utf8, true);
 
-    lightAutomaton = runAutomaton.automaton;
+    this.automaton = runAutomaton.automaton;
   }
 
   private Transition transition = new Transition();
@@ -182,13 +184,13 @@ public class CompiledAutomaton {
 
   private BytesRef addTail(int state, BytesRef term, int idx, int leadLabel) {
     //System.out.println("addTail state=" + state + " term=" + term.utf8ToString() + " idx=" + idx + " leadLabel=" + (char) leadLabel);
-    //System.out.println(lightAutomaton.toDot());
+    //System.out.println(automaton.toDot());
     // Find biggest transition that's < label
     // TODO: use binary search here
     int maxIndex = -1;
-    int numTransitions = lightAutomaton.initTransition(state, transition);
+    int numTransitions = automaton.initTransition(state, transition);
     for(int i=0;i<numTransitions;i++) {
-      lightAutomaton.getNextTransition(transition);
+      automaton.getNextTransition(transition);
       if (transition.min < leadLabel) {
         maxIndex = i;
       } else {
@@ -200,7 +202,7 @@ public class CompiledAutomaton {
     //System.out.println("  maxIndex=" + maxIndex);
 
     assert maxIndex != -1;
-    lightAutomaton.getTransition(state, maxIndex, transition);
+    automaton.getTransition(state, maxIndex, transition);
 
     // Append floorLabel
     final int floorLabel;
@@ -222,7 +224,7 @@ public class CompiledAutomaton {
 
     // Push down to last accept state
     while (true) {
-      numTransitions = lightAutomaton.getNumTransitions(state);
+      numTransitions = automaton.getNumTransitions(state);
       if (numTransitions == 0) {
         //System.out.println("state=" + state + " 0 trans");
         assert runAutomaton.isAccept(state);
@@ -233,7 +235,7 @@ public class CompiledAutomaton {
         // We are pushing "top" -- so get last label of
         // last transition:
         //System.out.println("get state=" + state + " numTrans=" + numTransitions);
-        lightAutomaton.getTransition(state, numTransitions-1, transition);
+        automaton.getTransition(state, numTransitions-1, transition);
         if (idx >= term.bytes.length) {
           term.grow(1+idx);
         }
@@ -321,14 +323,14 @@ public class CompiledAutomaton {
         // Pop back to a state that has a transition
         // <= our label:
         while (true) {
-          int numTransitions = lightAutomaton.getNumTransitions(state);
+          int numTransitions = automaton.getNumTransitions(state);
           if (numTransitions == 0) {
             assert runAutomaton.isAccept(state);
             output.length = idx;
             //if (DEBUG) System.out.println("  return " + output.utf8ToString());
             return output;
           } else {
-            lightAutomaton.getTransition(state, 0, transition);
+            automaton.getTransition(state, 0, transition);
 
             if (label-1 < transition.min) {
 
@@ -374,15 +376,15 @@ public class CompiledAutomaton {
     StringBuilder b = new StringBuilder("digraph CompiledAutomaton {\n");
     b.append("  rankdir = LR;\n");
     int initial = 0;
-    for (int i = 0; i < lightAutomaton.getNumStates(); i++) {
+    for (int i = 0; i < automaton.getNumStates(); i++) {
       b.append("  ").append(i);
-      if (lightAutomaton.isAccept(i)) b.append(" [shape=doublecircle,label=\"\"];\n");
+      if (automaton.isAccept(i)) b.append(" [shape=doublecircle,label=\"\"];\n");
       else b.append(" [shape=circle,label=\"\"];\n");
       if (i == 0) {
         b.append("  initial [shape=plaintext,label=\"\"];\n");
         b.append("  initial -> ").append(i).append("\n");
       }
-      int numTransitions = lightAutomaton.initTransition(i, transition);
+      int numTransitions = automaton.initTransition(i, transition);
       for (int j = 0; j < numTransitions; j++) {
         b.append("  ").append(i);
         b.append(" -> ");
@@ -392,7 +394,7 @@ public class CompiledAutomaton {
           b.append("-");
           b.append(transition.max);
         }
-        lightAutomaton.getNextTransition(transition);
+        automaton.getNextTransition(transition);
       }
     }
     return b.append("}\n").toString();

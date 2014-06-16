@@ -40,10 +40,9 @@ import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.QueryBuilder;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.Version;
-import org.apache.lucene.util.automaton.BasicAutomata;
-import org.apache.lucene.util.automaton.BasicOperations;
-import org.apache.lucene.util.automaton.LightAutomaton;
-import org.apache.lucene.util.automaton.SpecialOperations;
+import org.apache.lucene.util.automaton.Automata;
+import org.apache.lucene.util.automaton.Operations;
+import org.apache.lucene.util.automaton.Automaton;
 import org.apache.solr.analysis.ReversedWildcardFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
@@ -777,19 +776,19 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     if (factory != null) {
       Term term = new Term(field, termStr);
       // fsa representing the query
-      LightAutomaton automaton = WildcardQuery.toAutomaton(term);
+      Automaton automaton = WildcardQuery.toAutomaton(term);
       // TODO: we should likely use the automaton to calculate shouldReverse, too.
       if (factory.shouldReverse(termStr)) {
-        automaton = BasicOperations.concatenateLight(automaton, BasicAutomata.makeCharLight(factory.getMarkerChar()));
-        automaton = SpecialOperations.reverse(automaton);
+        automaton = Operations.concatenate(automaton, Automata.makeChar(factory.getMarkerChar()));
+        automaton = Operations.reverse(automaton);
       } else {
         // reverse wildcardfilter is active: remove false positives
         // fsa representing false positives (markerChar*)
-        LightAutomaton falsePositives = BasicOperations.concatenateLight(
-            BasicAutomata.makeCharLight(factory.getMarkerChar()),
-            BasicAutomata.makeAnyStringLight());
+        Automaton falsePositives = Operations.concatenate(
+            Automata.makeChar(factory.getMarkerChar()),
+            Automata.makeAnyString());
         // subtract these away
-        automaton = BasicOperations.minusLight(automaton, falsePositives);
+        automaton = Operations.minus(automaton, falsePositives);
       }
       return new AutomatonQuery(term, automaton) {
         // override toString so its completely transparent

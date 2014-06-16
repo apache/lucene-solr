@@ -34,9 +34,9 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Rethrow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
-import org.apache.lucene.util.automaton.BasicAutomata;
-import org.apache.lucene.util.automaton.BasicOperations;
-import org.apache.lucene.util.automaton.LightAutomaton;
+import org.apache.lucene.util.automaton.Automata;
+import org.apache.lucene.util.automaton.Operations;
+import org.apache.lucene.util.automaton.Automaton;
 
 public class TestAutomatonQuery extends LuceneTestCase {
   private Directory directory;
@@ -86,7 +86,7 @@ public class TestAutomatonQuery extends LuceneTestCase {
     return searcher.search(query, 5).totalHits;
   }
   
-  private void assertAutomatonHits(int expected, LightAutomaton automaton)
+  private void assertAutomatonHits(int expected, Automaton automaton)
       throws IOException {
     AutomatonQuery query = new AutomatonQuery(newTerm("bogus"), automaton);
     
@@ -106,26 +106,24 @@ public class TestAutomatonQuery extends LuceneTestCase {
   /**
    * Test some very simple automata.
    */
-  public void testBasicAutomata() throws IOException {
-    assertAutomatonHits(0, BasicAutomata.makeEmptyLight());
-    assertAutomatonHits(0, BasicAutomata.makeEmptyStringLight());
-    assertAutomatonHits(2, BasicAutomata.makeAnyCharLight());
-    assertAutomatonHits(3, BasicAutomata.makeAnyStringLight());
-    assertAutomatonHits(2, BasicAutomata.makeStringLight("doc"));
-    assertAutomatonHits(1, BasicAutomata.makeCharLight('a'));
-    assertAutomatonHits(2, BasicAutomata.makeCharRangeLight('a', 'b'));
-    assertAutomatonHits(2, BasicAutomata.makeIntervalLight(1233, 2346, 0));
-    assertAutomatonHits(1, BasicAutomata.makeIntervalLight(0, 2000, 0));
-    assertAutomatonHits(2, BasicOperations.unionLight(BasicAutomata.makeCharLight('a'),
-        BasicAutomata.makeCharLight('b')));
-    assertAutomatonHits(0, BasicOperations.intersectionLight(BasicAutomata
-        .makeCharLight('a'), BasicAutomata.makeCharLight('b')));
-    assertAutomatonHits(1, BasicOperations.minusLight(BasicAutomata.makeCharRangeLight('a', 'b'), 
-        BasicAutomata.makeCharLight('a')));
+  public void testAutomata() throws IOException {
+    assertAutomatonHits(0, Automata.makeEmpty());
+    assertAutomatonHits(0, Automata.makeEmptyString());
+    assertAutomatonHits(2, Automata.makeAnyChar());
+    assertAutomatonHits(3, Automata.makeAnyString());
+    assertAutomatonHits(2, Automata.makeString("doc"));
+    assertAutomatonHits(1, Automata.makeChar('a'));
+    assertAutomatonHits(2, Automata.makeCharRange('a', 'b'));
+    assertAutomatonHits(2, Automata.makeInterval(1233, 2346, 0));
+    assertAutomatonHits(1, Automata.makeInterval(0, 2000, 0));
+    assertAutomatonHits(2, Operations.union(Automata.makeChar('a'),
+        Automata.makeChar('b')));
+    assertAutomatonHits(0, Operations.intersection(Automata
+        .makeChar('a'), Automata.makeChar('b')));
+    assertAutomatonHits(1, Operations.minus(Automata.makeCharRange('a', 'b'), 
+        Automata.makeChar('a')));
   }
 
-  // nocommit make a testRandomAutomaton like TestRR2
-  
   /**
    * Test that a nondeterministic automaton works correctly. (It should will be
    * determinized)
@@ -133,27 +131,27 @@ public class TestAutomatonQuery extends LuceneTestCase {
   public void testNFA() throws IOException {
     // accept this or three, the union is an NFA (two transitions for 't' from
     // initial state)
-    LightAutomaton nfa = BasicOperations.unionLight(BasicAutomata.makeStringLight("this"),
-        BasicAutomata.makeStringLight("three"));
+    Automaton nfa = Operations.union(Automata.makeString("this"),
+        Automata.makeString("three"));
     assertAutomatonHits(2, nfa);
   }
   
   public void testEquals() {
-    AutomatonQuery a1 = new AutomatonQuery(newTerm("foobar"), BasicAutomata
-        .makeStringLight("foobar"));
+    AutomatonQuery a1 = new AutomatonQuery(newTerm("foobar"), Automata
+        .makeString("foobar"));
     // reference to a1
     AutomatonQuery a2 = a1;
     // same as a1 (accepts the same language, same term)
     AutomatonQuery a3 = new AutomatonQuery(newTerm("foobar"),
-                            BasicOperations.concatenateLight(
-                                 BasicAutomata.makeStringLight("foo"),
-                                 BasicAutomata.makeStringLight("bar")));
+                            Operations.concatenate(
+                                 Automata.makeString("foo"),
+                                 Automata.makeString("bar")));
     // different than a1 (same term, but different language)
     AutomatonQuery a4 = new AutomatonQuery(newTerm("foobar"),
-                                           BasicAutomata.makeStringLight("different"));
+                                           Automata.makeString("different"));
     // different than a1 (different term, same language)
     AutomatonQuery a5 = new AutomatonQuery(newTerm("blah"),
-                                           BasicAutomata.makeStringLight("foobar"));
+                                           Automata.makeString("foobar"));
     
     assertEquals(a1.hashCode(), a2.hashCode());
     assertEquals(a1, a2);
@@ -179,7 +177,7 @@ public class TestAutomatonQuery extends LuceneTestCase {
    * MultiTermQuery semantics.
    */
   public void testRewriteSingleTerm() throws IOException {
-    AutomatonQuery aq = new AutomatonQuery(newTerm("bogus"), BasicAutomata.makeStringLight("piece"));
+    AutomatonQuery aq = new AutomatonQuery(newTerm("bogus"), Automata.makeString("piece"));
     Terms terms = MultiFields.getTerms(searcher.getIndexReader(), FN);
     assertTrue(aq.getTermsEnum(terms) instanceof SingleTermsEnum);
     assertEquals(1, automatonQueryNrHits(aq));
@@ -190,8 +188,8 @@ public class TestAutomatonQuery extends LuceneTestCase {
    * MultiTermQuery semantics.
    */
   public void testRewritePrefix() throws IOException {
-    LightAutomaton pfx = BasicAutomata.makeStringLight("do");
-    LightAutomaton prefixAutomaton = BasicOperations.concatenateLight(pfx, BasicAutomata.makeAnyStringLight());
+    Automaton pfx = Automata.makeString("do");
+    Automaton prefixAutomaton = Operations.concatenate(pfx, Automata.makeAnyString());
     AutomatonQuery aq = new AutomatonQuery(newTerm("bogus"), prefixAutomaton);
     Terms terms = MultiFields.getTerms(searcher.getIndexReader(), FN);
     assertTrue(aq.getTermsEnum(terms) instanceof PrefixTermsEnum);
@@ -202,7 +200,7 @@ public class TestAutomatonQuery extends LuceneTestCase {
    * Test handling of the empty language
    */
   public void testEmptyOptimization() throws IOException {
-    AutomatonQuery aq = new AutomatonQuery(newTerm("bogus"), BasicAutomata.makeEmptyLight());
+    AutomatonQuery aq = new AutomatonQuery(newTerm("bogus"), Automata.makeEmpty());
     // not yet available: assertTrue(aq.getEnum(searcher.getIndexReader())
     // instanceof EmptyTermEnum);
     Terms terms = MultiFields.getTerms(searcher.getIndexReader(), FN);

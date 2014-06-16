@@ -17,15 +17,15 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import static org.apache.lucene.util.automaton.BasicAutomata.makeEmptyLight;
-import static org.apache.lucene.util.automaton.BasicAutomata.makeStringLight;
+import static org.apache.lucene.util.automaton.Automata.makeEmpty;
+import static org.apache.lucene.util.automaton.Automata.makeString;
 
 import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.util.automaton.BasicOperations;
+import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
@@ -39,20 +39,20 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 public final class MockTokenFilter extends TokenFilter {
   /** Empty set of stopwords */
   public static final CharacterRunAutomaton EMPTY_STOPSET =
-    new CharacterRunAutomaton(makeEmptyLight());
+    new CharacterRunAutomaton(makeEmpty());
   
   /** Set of common english stopwords */
   public static final CharacterRunAutomaton ENGLISH_STOPSET = 
-    new CharacterRunAutomaton(BasicOperations.unionLight(Arrays.asList(
-      makeStringLight("a"), makeStringLight("an"), makeStringLight("and"), makeStringLight("are"),
-      makeStringLight("as"), makeStringLight("at"), makeStringLight("be"), makeStringLight("but"), 
-      makeStringLight("by"), makeStringLight("for"), makeStringLight("if"), makeStringLight("in"), 
-      makeStringLight("into"), makeStringLight("is"), makeStringLight("it"), makeStringLight("no"),
-      makeStringLight("not"), makeStringLight("of"), makeStringLight("on"), makeStringLight("or"), 
-      makeStringLight("such"), makeStringLight("that"), makeStringLight("the"), makeStringLight("their"), 
-      makeStringLight("then"), makeStringLight("there"), makeStringLight("these"), makeStringLight("they"), 
-      makeStringLight("this"), makeStringLight("to"), makeStringLight("was"), makeStringLight("will"), 
-      makeStringLight("with"))));
+    new CharacterRunAutomaton(Operations.union(Arrays.asList(
+      makeString("a"), makeString("an"), makeString("and"), makeString("are"),
+      makeString("as"), makeString("at"), makeString("be"), makeString("but"), 
+      makeString("by"), makeString("for"), makeString("if"), makeString("in"), 
+      makeString("into"), makeString("is"), makeString("it"), makeString("no"),
+      makeString("not"), makeString("of"), makeString("on"), makeString("or"), 
+      makeString("such"), makeString("that"), makeString("the"), makeString("their"), 
+      makeString("then"), makeString("there"), makeString("these"), makeString("they"), 
+      makeString("this"), makeString("to"), makeString("was"), makeString("will"), 
+      makeString("with"))));
   
   private final CharacterRunAutomaton filter;
 
