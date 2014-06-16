@@ -282,6 +282,9 @@ Optimizations
 
 * LUCENE-5751: Speed up MemoryDocValues. (Adrien Grand, Robert Muir)
 
+* LUCENE-5767: OrdinalMap optimizations, that mostly help on low cardinalities.
+  (Martijn van Groningen, Adrien Grand) 
+
 Bug fixes
 
 * LUCENE-5738: Ensure NativeFSLock prevents opening the file channel for the

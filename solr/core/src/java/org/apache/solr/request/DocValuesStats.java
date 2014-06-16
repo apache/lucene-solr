@@ -35,6 +35,7 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LongValues;
 import org.apache.solr.handler.component.FieldFacetStats;
 import org.apache.solr.handler.component.StatsValues;
 import org.apache.solr.handler.component.StatsValuesFactory;
@@ -161,12 +162,13 @@ public class DocValuesStats {
 
   /** accumulates per-segment single-valued stats */
   static void accumSingle(int counts[], int docBase, FieldFacetStats[] facetStats, SortedDocValues si, DocIdSetIterator disi, int subIndex, OrdinalMap map) throws IOException {
+    final LongValues ordMap = map == null ? null : map.getGlobalOrds(subIndex);
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       int term = si.getOrd(doc);
       if (term >= 0) {
         if (map != null) {
-          term = (int) map.getGlobalOrd(subIndex, term);
+          term = (int) ordMap.get(term);
         }
         counts[term]++;
         for (FieldFacetStats f : facetStats) {
@@ -178,6 +180,7 @@ public class DocValuesStats {
   
   /** accumulates per-segment multi-valued stats */
   static void accumMulti(int counts[], int docBase, FieldFacetStats[] facetStats, SortedSetDocValues si, DocIdSetIterator disi, int subIndex, OrdinalMap map) throws IOException {
+    final LongValues ordMap = map == null ? null : map.getGlobalOrds(subIndex);
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       si.setDocument(doc);
@@ -185,7 +188,7 @@ public class DocValuesStats {
       while ((ord = si.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
         int term = (int) ord;
         if (map != null) {
-          term = (int) map.getGlobalOrd(subIndex, term);
+          term = (int) ordMap.get(term);
         }
         counts[term]++;
         for (FieldFacetStats f : facetStats) {
