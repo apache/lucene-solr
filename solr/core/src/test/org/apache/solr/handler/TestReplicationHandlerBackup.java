@@ -36,9 +36,11 @@ import org.apache.solr.util.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.regex.Matcher;
@@ -152,13 +154,9 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
         File dataDir = new File(master.getDataDir());
 
-        int waitCnt = 0;
         CheckBackupStatus checkBackupStatus = new CheckBackupStatus(firstBackupTimestamp);
         while (true) {
           checkBackupStatus.fetchStatus();
-          if (checkBackupStatus.fail != null) {
-            fail(checkBackupStatus.fail);
-          }
           if (checkBackupStatus.success) {
             if (i == 0) {
               firstBackupTimestamp = checkBackupStatus.backupTimestamp;
@@ -167,10 +165,6 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
             break;
           }
           Thread.sleep(200);
-          if (waitCnt == 20) {
-            fail("Backup success not detected:" + checkBackupStatus.response);
-          }
-          waitCnt++;
         }
 
         if (backupThread.fail != null) {
@@ -223,29 +217,20 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
       if(!namedBackup) {
         TestUtil.rm(snapDir);
       }
-
     }
   }
 
-  private void testDeleteNamedBackup(String backupNames[]) throws InterruptedException {
+  private void testDeleteNamedBackup(String backupNames[]) throws InterruptedException, IOException {
     for (int i = 0; i < 2; i++) {
       BackupThread deleteBackupThread = new BackupThread(backupNames[i], ReplicationHandler.CMD_DELETE_BACKUP);
       deleteBackupThread.start();
-      int waitCnt = 0;
-      CheckDeleteBackupStatus checkDeleteBackupStatus = new CheckDeleteBackupStatus();
+      CheckDeleteBackupStatus checkDeleteBackupStatus = new CheckDeleteBackupStatus(backupNames[i]);
       while (true) {
-        checkDeleteBackupStatus.fetchStatus();
-        if (checkDeleteBackupStatus.fail != null) {
-          fail(checkDeleteBackupStatus.fail);
-        }
-        if (checkDeleteBackupStatus.success) {
+        boolean success = checkDeleteBackupStatus.fetchStatus();
+        if (success) {
           break;
         }
         Thread.sleep(200);
-        if (waitCnt == 20) {
-          fail("Delete Backup success not detected:" + checkDeleteBackupStatus.response);
-        }
-        waitCnt++;
       }
 
       if (deleteBackupThread.fail != null) {
@@ -255,18 +240,18 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   }
 
   private class CheckBackupStatus {
-    String fail = null;
     String response = null;
     boolean success = false;
     String backupTimestamp = null;
     final String lastBackupTimestamp;
     final Pattern p = Pattern.compile("<str name=\"snapshotCompletedAt\">(.*?)</str>");
+    final Pattern pException = Pattern.compile("<str name=\"snapShootException\">(.*?)</str>");
 
     CheckBackupStatus(String lastBackupTimestamp) {
       this.lastBackupTimestamp = lastBackupTimestamp;
     }
 
-    public void fetchStatus() {
+    public void fetchStatus() throws IOException {
       String masterUrl = buildUrl(masterJetty.getLocalPort(), "/solr") + "/replication?command=" + ReplicationHandler.CMD_DETAILS;
       URL url;
       InputStream stream = null;
@@ -274,6 +259,9 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
         url = new URL(masterUrl);
         stream = url.openStream();
         response = IOUtils.toString(stream, "UTF-8");
+        if(pException.matcher(response).find()) {
+          fail("Failed to create backup");
+        }
         if(response.contains("<str name=\"status\">success</str>")) {
           Matcher m = p.matcher(response);
           if(!m.find()) {
@@ -285,8 +273,6 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
           }
         }
         stream.close();
-      } catch (Exception e) {
-        fail = e.getMessage();
       } finally {
         IOUtils.closeQuietly(stream);
       }
@@ -338,10 +324,14 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
   private class CheckDeleteBackupStatus {
     String response = null;
-    boolean success = false;
-    String fail = null;
+    private String backupName;
+    final Pattern p = Pattern.compile("<str name=\"snapshotDeletedAt\">(.*?)</str>");
 
-    public void fetchStatus() {
+    private CheckDeleteBackupStatus(String backupName) {
+      this.backupName = backupName;
+    }
+
+    public boolean fetchStatus() throws IOException {
       String masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/replication?command=" + ReplicationHandler.CMD_DETAILS;
       URL url;
       InputStream stream = null;
@@ -350,14 +340,18 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
         stream = url.openStream();
         response = IOUtils.toString(stream, "UTF-8");
         if(response.contains("<str name=\"status\">success</str>")) {
-          success = true;
+          Matcher m = p.matcher(response);
+          if(m.find()) {
+            return true;
+          }
+        } else if(response.contains("<str name=\"status\">Unable to delete snapshot: " + backupName + "</str>" )) {
+          return false;
         }
         stream.close();
-      } catch (Exception e) {
-        fail = e.getMessage();
       } finally {
         IOUtils.closeQuietly(stream);
       }
+      return false;
     };
   }
 }

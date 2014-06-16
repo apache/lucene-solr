@@ -157,6 +157,7 @@ public class SnapShooter {
       details.add("snapshotCompletedAt", date);
       LOG.info("Done creating backup snapshot, completed at: " + date);
       details.add("snapshotName", snapshotName);
+      LOG.info("Done creating backup snapshot: " + (snapshotName == null ? "<not named>" : snapshotName));
     } catch (Exception e) {
       SnapPuller.delTree(snapShotDir);
       LOG.error("Exception while creating snapshot", e);
@@ -206,6 +207,7 @@ public class SnapShooter {
 
     if(isSuccess) {
       details.add("status", "success");
+      details.add("snapshotDeletedAt", new Date().toString());
     } else {
       details.add("status", "Unable to delete snapshot: " + snapshotName);
       LOG.warn("Unable to delete snapshot: " + snapshotName);
