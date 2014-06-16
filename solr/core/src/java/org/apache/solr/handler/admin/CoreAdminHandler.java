@@ -629,20 +629,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
    */
   @Deprecated
   protected void handleAliasAction(SolrQueryRequest req, SolrQueryResponse rsp) {
-    SolrParams params = req.getParams();
-
-    String name = params.get(CoreAdminParams.OTHER);
-    String cname = params.get(CoreAdminParams.CORE);
-    boolean doPersist = false;
-    if (cname.equals(name)) return;
-
-    SolrCore core = coreContainer.getCore(cname);
-    if (core != null) {
-      doPersist = coreContainer.isPersistent();
-      coreContainer.register(name, core, false);
-      // no core.close() since each entry in the cores map should increase the ref
-    }
-    return;
+    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The ALIAS action is no longer supported");
   }
 
 

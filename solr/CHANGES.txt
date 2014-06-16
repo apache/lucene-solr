@@ -160,6 +160,9 @@ Other Changes
 * SOLR-6153: ReplicationHandler backup response format should contain backup name.
   (Varun Thacker via shalin)
 
+* SOLR-6169: Remove broken handleAlias action in CoreAdminHandler (Alan
+  Woodward)
+
 Optimizations
 ----------------------
 
