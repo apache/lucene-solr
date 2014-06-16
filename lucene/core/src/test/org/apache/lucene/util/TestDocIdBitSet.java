@@ -3,6 +3,8 @@ package org.apache.lucene.util;
 import java.io.IOException;
 import java.util.BitSet;
 
+import org.junit.Ignore;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -26,5 +28,11 @@ public class TestDocIdBitSet extends BaseDocIdSetTestCase<DocIdBitSet> {
   public DocIdBitSet copyOf(BitSet bs, int length) throws IOException {
     return new DocIdBitSet((BitSet) bs.clone());
   }
-  
+
+  @Override
+  @Ignore("no access to the internals of this impl")
+  public void testRamBytesUsed() throws IOException {
+    super.testRamBytesUsed();
+  }
+
 }
