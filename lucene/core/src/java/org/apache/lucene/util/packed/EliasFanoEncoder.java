@@ -85,6 +85,9 @@ import org.apache.lucene.util.ToStringUtils;
  */
 
 public class EliasFanoEncoder implements Accountable {
+
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(EliasFanoEncoder.class);
+
   final long numValues;
   private final long upperBound;
   final int numLowBits;
@@ -354,10 +357,7 @@ public class EliasFanoEncoder implements Accountable {
 
   @Override
   public long ramBytesUsed() {
-    return RamUsageEstimator.alignObjectSize(
-          RamUsageEstimator.NUM_BYTES_OBJECT_REF * 3
-        + RamUsageEstimator.NUM_BYTES_LONG * 8
-        + RamUsageEstimator.NUM_BYTES_INT * 2)
+    return BASE_RAM_BYTES_USED
         + RamUsageEstimator.sizeOf(lowerLongs)
         + RamUsageEstimator.sizeOf(upperLongs)
         + RamUsageEstimator.sizeOf(upperZeroBitPositionIndex);

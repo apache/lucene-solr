@@ -76,6 +76,8 @@ import org.apache.lucene.util.packed.PackedInts;
  */
 public final class WAH8DocIdSet extends DocIdSet implements Accountable {
 
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(WAH8DocIdSet.class);
+
   // Minimum index interval, intervals below this value can't guarantee anymore
   // that this set implementation won't be significantly larger than a FixedBitSet
   // The reason is that a single sequence saves at least one byte and an index
@@ -738,10 +740,17 @@ public final class WAH8DocIdSet extends DocIdSet implements Accountable {
 
   @Override
   public long ramBytesUsed() {
-    return RamUsageEstimator.alignObjectSize(3 * RamUsageEstimator.NUM_BYTES_OBJECT_REF + 2 * RamUsageEstimator.NUM_BYTES_INT)
-        + RamUsageEstimator.sizeOf(data)
-        + positions.ramBytesUsed()
-        + wordNums.ramBytesUsed();
+    if (this == EMPTY) {
+      return 0L;
+    }
+    long ramBytesUsed = BASE_RAM_BYTES_USED + RamUsageEstimator.sizeOf(data);
+    if (positions != SINGLE_ZERO_BUFFER) {
+      ramBytesUsed += positions.ramBytesUsed();
+    }
+    if (wordNums != SINGLE_ZERO_BUFFER) {
+      ramBytesUsed += wordNums.ramBytesUsed();
+    }
+    return ramBytesUsed;
   }
 
 }

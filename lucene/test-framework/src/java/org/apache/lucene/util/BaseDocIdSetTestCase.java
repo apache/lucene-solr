@@ -113,6 +113,21 @@ public abstract class BaseDocIdSetTestCase<T extends DocIdSet> extends LuceneTes
     }
   }
 
+  /** Test ram usage estimation. */
+  public void testRamBytesUsed() throws IOException {
+    final int iters = 100;
+    for (int i = 0; i < iters; ++i) {
+      final int pow = random().nextInt(20);
+      final int maxDoc = TestUtil.nextInt(random(), 1, 1 << pow);
+      final int numDocs = TestUtil.nextInt(random(), 0, Math.min(maxDoc, 1 << TestUtil.nextInt(random(), 0, pow)));
+      final BitSet set = randomSet(maxDoc, numDocs);
+      final DocIdSet copy = copyOf(set, maxDoc);
+      final long actualBytes = ramBytesUsed(copy, maxDoc);
+      final long expectedBytes = copy.ramBytesUsed();
+      assertEquals(expectedBytes, actualBytes);
+    }
+  }
+
   /** Assert that the content of the {@link DocIdSet} is the same as the content of the {@link BitSet}. */
   public void assertEquals(int numBits, BitSet ds1, T ds2) throws IOException {
     // nextDoc
@@ -170,6 +185,23 @@ public abstract class BaseDocIdSetTestCase<T extends DocIdSet> extends LuceneTes
         assertEquals(true, bits.get(doc));
       }
     }
+  }
+
+  private static class Dummy {
+    @SuppressWarnings("unused")
+    Object o1, o2;
+  }
+
+  // same as RamUsageTester.sizeOf but tries to not take into account resources
+  // that might be shared across instances
+  private long ramBytesUsed(DocIdSet set, int length) throws IOException {
+    Dummy dummy = new Dummy();
+    dummy.o1 = copyOf(new BitSet(length), length);
+    dummy.o2 = set;
+    long bytes1 = RamUsageTester.sizeOf(dummy);
+    dummy.o2 = null;
+    long bytes2 = RamUsageTester.sizeOf(dummy);
+    return bytes1 - bytes2;
   }
 
 }

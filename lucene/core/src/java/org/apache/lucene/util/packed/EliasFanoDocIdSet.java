@@ -29,6 +29,9 @@ import org.apache.lucene.util.RamUsageEstimator;
  * @lucene.internal
  */
 public class EliasFanoDocIdSet extends DocIdSet {
+
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(EliasFanoDocIdSet.class);
+
   final EliasFanoEncoder efEncoder;
 
   /**
@@ -129,7 +132,7 @@ public class EliasFanoDocIdSet extends DocIdSet {
 
   @Override
   public long ramBytesUsed() {
-    return RamUsageEstimator.alignObjectSize(RamUsageEstimator.NUM_BYTES_OBJECT_REF) + efEncoder.ramBytesUsed();
+    return BASE_RAM_BYTES_USED + efEncoder.ramBytesUsed();
   }
 }
 
