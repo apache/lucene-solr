@@ -28,8 +28,8 @@ public class TestMinimize extends LuceneTestCase {
     int num = atLeast(200);
     for (int i = 0; i < num; i++) {
       LightAutomaton a = AutomatonTestUtil.randomAutomaton(random());
-      LightAutomaton la = BasicOperations.determinize(a);
-      LightAutomaton lb = BasicOperations.determinize(MinimizationOperationsLight.minimize(a));
+      LightAutomaton la = BasicOperations.determinize(BasicOperations.removeDeadStates(a));
+      LightAutomaton lb = MinimizationOperationsLight.minimize(a);
       assertTrue(BasicOperations.sameLanguage(la, lb));
     }
   }

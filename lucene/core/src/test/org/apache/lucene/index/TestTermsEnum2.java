@@ -85,6 +85,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
   
   /** tests a pre-intersected automaton against the original */
   public void testFiniteVersusInfinite() throws Exception {
+
     for (int i = 0; i < numIterations; i++) {
       String reg = AutomatonTestUtil.randomRegexp(random());
       LightAutomaton automaton = BasicOperations.determinize(new RegExp(reg, RegExp.NONE).toLightAutomaton());

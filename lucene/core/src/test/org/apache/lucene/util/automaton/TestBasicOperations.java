@@ -50,7 +50,7 @@ public class TestBasicOperations extends LuceneTestCase {
   public void testEmptyLanguageConcatenate() {
     LightAutomaton a = BasicAutomata.makeStringLight("a");
     LightAutomaton concat = BasicOperations.concatenateLight(a, BasicAutomata.makeEmptyLight());
-    assertTrue(concat.isEmpty());
+    assertTrue(BasicOperations.isEmpty(concat));
   }
   
   /** Test optimization to concatenate() with empty String to an NFA */
@@ -81,7 +81,7 @@ public class TestBasicOperations extends LuceneTestCase {
       final LightAutomaton a = BasicOperations.determinize(re.toLightAutomaton());
       assertFalse(BasicOperations.isEmpty(a));
 
-      final AutomatonTestUtil.RandomAcceptedStringsLight rx = new AutomatonTestUtil.RandomAcceptedStringsLight(a);
+      final AutomatonTestUtil.RandomAcceptedStrings rx = new AutomatonTestUtil.RandomAcceptedStrings(a);
       for(int j=0;j<ITER2;j++) {
         //System.out.println("TEST: j=" + j);
         int[] acc = null;

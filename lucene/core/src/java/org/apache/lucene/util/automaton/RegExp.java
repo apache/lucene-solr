@@ -361,8 +361,6 @@ public class RegExp {
    */
   public static final int NONE = 0x0000;
   
-  private static boolean allow_mutation = false;
-  
   Kind kind;
   RegExp exp1, exp2;
   String s;
@@ -467,7 +465,7 @@ public class RegExp {
         findLeaves(exp1, Kind.REGEXP_UNION, list, automata, automaton_provider);
         findLeaves(exp2, Kind.REGEXP_UNION, list, automata, automaton_provider);
         a = BasicOperations.unionLight(list);
-        MinimizationOperationsLight.minimize(a);
+        a = MinimizationOperationsLight.minimize(a);
         break;
       case REGEXP_CONCATENATION:
         list = new ArrayList<>();
@@ -476,7 +474,7 @@ public class RegExp {
         findLeaves(exp2, Kind.REGEXP_CONCATENATION, list, automata,
             automaton_provider);
         a = BasicOperations.concatenateLight(list);
-        MinimizationOperationsLight.minimize(a);
+        a = MinimizationOperationsLight.minimize(a);
         break;
       case REGEXP_INTERSECTION:
         a = BasicOperations.intersectionLight(

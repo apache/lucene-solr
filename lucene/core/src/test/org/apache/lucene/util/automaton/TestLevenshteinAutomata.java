@@ -41,8 +41,7 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
   
   // LUCENE-3094
   public void testNoWastedStates() throws Exception {
-    // nocommit this fails ... pre-existing issue i think!!
-    // AutomatonTestUtil.assertNoDetachedStates(new LevenshteinAutomata("abc", false).toAutomaton(1));
+    assertFalse(BasicOperations.hasDeadStatesFromInitial(new LevenshteinAutomata("abc", false).toAutomaton(1)));
   }
   
   /** 
@@ -78,30 +77,34 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
       assertTrue(tautomata[n].isDeterministic());
       assertTrue(SpecialOperations.isFinite(automata[n]));
       assertTrue(SpecialOperations.isFinite(tautomata[n]));
-      // nocommit LEV creates detached states
-      //AutomatonTestUtil.assertNoDetachedStates(automata[n]);
-      //AutomatonTestUtil.assertNoDetachedStates(tautomata[n]);
+      assertFalse(BasicOperations.hasDeadStatesFromInitial(automata[n]));
+      assertFalse(BasicOperations.hasDeadStatesFromInitial(tautomata[n]));
       // check that the dfa for n-1 accepts a subset of the dfa for n
       if (n > 0) {
-        assertTrue(BasicOperations.subsetOf(automata[n-1], automata[n]));
-        assertTrue(BasicOperations.subsetOf(automata[n-1], tautomata[n]));
-        assertTrue(BasicOperations.subsetOf(tautomata[n-1], automata[n]));
-        assertTrue(BasicOperations.subsetOf(tautomata[n-1], tautomata[n]));
+        assertTrue(BasicOperations.subsetOf(BasicOperations.removeDeadStates(automata[n-1]),
+                                            BasicOperations.removeDeadStates(automata[n])));
+        assertTrue(BasicOperations.subsetOf(BasicOperations.removeDeadStates(automata[n-1]),
+                                            BasicOperations.removeDeadStates(tautomata[n])));
+        assertTrue(BasicOperations.subsetOf(BasicOperations.removeDeadStates(tautomata[n-1]),
+                                            BasicOperations.removeDeadStates(automata[n])));
+        assertTrue(BasicOperations.subsetOf(BasicOperations.removeDeadStates(tautomata[n-1]),
+                                            BasicOperations.removeDeadStates(tautomata[n])));
         assertNotSame(automata[n-1], automata[n]);
       }
       // check that Lev(N) is a subset of LevT(N)
-      assertTrue(BasicOperations.subsetOf(automata[n], tautomata[n]));
+      assertTrue(BasicOperations.subsetOf(BasicOperations.removeDeadStates(automata[n]),
+                                          BasicOperations.removeDeadStates(tautomata[n])));
       // special checks for specific n
       switch(n) {
         case 0:
           // easy, matches the string itself
-          assertTrue(BasicOperations.sameLanguage(BasicAutomata.makeStringLight(s), automata[0]));
-          assertTrue(BasicOperations.sameLanguage(BasicAutomata.makeStringLight(s), tautomata[0]));
+          assertTrue(BasicOperations.sameLanguage(BasicAutomata.makeStringLight(s), BasicOperations.removeDeadStates(automata[0])));
+          assertTrue(BasicOperations.sameLanguage(BasicAutomata.makeStringLight(s), BasicOperations.removeDeadStates(tautomata[0])));
           break;
         case 1:
           // generate a lev1 naively, and check the accepted lang is the same.
-          assertTrue(BasicOperations.sameLanguage(naiveLev1(s), automata[1]));
-          assertTrue(BasicOperations.sameLanguage(naiveLev1T(s), tautomata[1]));
+          assertTrue(BasicOperations.sameLanguage(naiveLev1(s), BasicOperations.removeDeadStates(automata[1])));
+          assertTrue(BasicOperations.sameLanguage(naiveLev1T(s), BasicOperations.removeDeadStates(tautomata[1])));
           break;
         default:
           assertBruteForce(s, automata[n], n);

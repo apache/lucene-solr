@@ -19,7 +19,6 @@ package org.apache.lucene.util.automaton;
   
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.index.Terms;
@@ -91,10 +90,13 @@ public class CompiledAutomaton {
   }
 
   public CompiledAutomaton(LightAutomaton automaton, Boolean finite, boolean simplify) {
+
     if (simplify) {
+
       // Test whether the automaton is a "simple" form and
       // if so, don't create a runAutomaton.  Note that on a
       // large automaton these tests could be costly:
+
       if (BasicOperations.isEmpty(automaton)) {
         // matches nothing
         type = AUTOMATON_TYPE.NONE;
@@ -104,6 +106,7 @@ public class CompiledAutomaton {
         lightAutomaton = null;
         this.finite = null;
         return;
+      // NOTE: only approximate, because automaton may not be minimal:
       } else if (BasicOperations.isTotal(automaton)) {
         // matches all possible strings
         type = AUTOMATON_TYPE.ALL;
@@ -138,6 +141,7 @@ public class CompiledAutomaton {
         } else if (commonPrefix.length() > 0) {
           LightAutomaton other = BasicOperations.concatenateLight(BasicAutomata.makeStringLight(commonPrefix), BasicAutomata.makeAnyStringLight());
           other = BasicOperations.determinize(other);
+          assert BasicOperations.hasDeadStates(other) == false;
           if (BasicOperations.sameLanguage(automaton, other)) {
             // matches a constant prefix
             type = AUTOMATON_TYPE.PREFIX;
@@ -169,10 +173,10 @@ public class CompiledAutomaton {
     }
     runAutomaton = new ByteRunAutomaton(utf8, true);
 
-    lightAutomaton = runAutomaton.a;
+    lightAutomaton = runAutomaton.automaton;
   }
 
-  private Transition scratch = new Transition();
+  private Transition transition = new Transition();
   
   //private static final boolean DEBUG = BlockTreeTermsWriter.DEBUG;
 
@@ -181,31 +185,29 @@ public class CompiledAutomaton {
     //System.out.println(lightAutomaton.toDot());
     // Find biggest transition that's < label
     // TODO: use binary search here
-    lightAutomaton.initTransition(state, scratch);
-    int numTransitions = lightAutomaton.getNumTransitions(state);
     int maxIndex = -1;
-    int lastMin = 0;
+    int numTransitions = lightAutomaton.initTransition(state, transition);
     for(int i=0;i<numTransitions;i++) {
-      lightAutomaton.getNextTransition(scratch);
-      if (scratch.min < leadLabel) {
+      lightAutomaton.getNextTransition(transition);
+      if (transition.min < leadLabel) {
         maxIndex = i;
+      } else {
+        // Transitions are alway sorted
+        break;
       }
-      assert scratch.min >= lastMin;
-      lastMin = scratch.min;
-      // nocommit else break?
     }
 
     //System.out.println("  maxIndex=" + maxIndex);
 
     assert maxIndex != -1;
-    lightAutomaton.getTransition(state, maxIndex, scratch);
+    lightAutomaton.getTransition(state, maxIndex, transition);
 
     // Append floorLabel
     final int floorLabel;
-    if (scratch.max > leadLabel-1) {
+    if (transition.max > leadLabel-1) {
       floorLabel = leadLabel-1;
     } else {
-      floorLabel = scratch.max;
+      floorLabel = transition.max;
     }
     //System.out.println("  floorLabel=" + (char) floorLabel);
     if (idx >= term.bytes.length) {
@@ -214,7 +216,7 @@ public class CompiledAutomaton {
     //if (DEBUG) System.out.println("  add floorLabel=" + (char) floorLabel + " idx=" + idx);
     term.bytes[idx] = (byte) floorLabel;
 
-    state = scratch.dest;
+    state = transition.dest;
     //System.out.println("  dest: " + state);
     idx++;
 
@@ -231,14 +233,14 @@ public class CompiledAutomaton {
         // We are pushing "top" -- so get last label of
         // last transition:
         //System.out.println("get state=" + state + " numTrans=" + numTransitions);
-        lightAutomaton.getTransition(state, numTransitions-1, scratch);
+        lightAutomaton.getTransition(state, numTransitions-1, transition);
         if (idx >= term.bytes.length) {
           term.grow(1+idx);
         }
         //if (DEBUG) System.out.println("  push maxLabel=" + (char) lastTransition.max + " idx=" + idx);
         //System.out.println("  add trans dest=" + scratch.dest + " label=" + (char) scratch.max);
-        term.bytes[idx] = (byte) scratch.max;
-        state = scratch.dest;
+        term.bytes[idx] = (byte) transition.max;
+        state = transition.dest;
         idx++;
       }
     }
@@ -326,9 +328,9 @@ public class CompiledAutomaton {
             //if (DEBUG) System.out.println("  return " + output.utf8ToString());
             return output;
           } else {
-            lightAutomaton.getTransition(state, 0, scratch);
+            lightAutomaton.getTransition(state, 0, transition);
 
-            if (label-1 < scratch.min) {
+            if (label-1 < transition.min) {
 
               if (runAutomaton.isAccept(state)) {
                 output.length = idx;
@@ -380,18 +382,17 @@ public class CompiledAutomaton {
         b.append("  initial [shape=plaintext,label=\"\"];\n");
         b.append("  initial -> ").append(i).append("\n");
       }
-      lightAutomaton.initTransition(i, scratch);
-      int numTransitions = lightAutomaton.getNumTransitions(i);
+      int numTransitions = lightAutomaton.initTransition(i, transition);
       for (int j = 0; j < numTransitions; j++) {
         b.append("  ").append(i);
         b.append(" -> ");
-        b.append(scratch.dest);
-        b.append(scratch.min);
-        if (scratch.min != scratch.max) {
+        b.append(transition.dest);
+        b.append(transition.min);
+        if (transition.min != transition.max) {
           b.append("-");
-          b.append(scratch.max);
+          b.append(transition.max);
         }
-        lightAutomaton.getNextTransition(scratch);
+        lightAutomaton.getNextTransition(transition);
       }
     }
     return b.append("}\n").toString();

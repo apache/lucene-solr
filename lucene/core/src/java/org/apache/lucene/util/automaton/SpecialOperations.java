@@ -30,17 +30,13 @@
 package org.apache.lucene.util.automaton;
 
 import java.util.BitSet;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.IdentityHashMap;
 import java.util.Set;
 
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.fst.Util;
 
 /**
  * Special automata operations.
@@ -71,6 +67,9 @@ final public class SpecialOperations {
    * Returns true if the language of this automaton is finite.
    */
   public static boolean isFinite(LightAutomaton a) {
+    if (a.getNumStates() == 0) {
+      return true;
+    }
     return isFinite(new Transition(), a, 0, new BitSet(a.getNumStates()), new BitSet(a.getNumStates()));
   }
   
@@ -174,8 +173,8 @@ final public class SpecialOperations {
 
   public static LightAutomaton reverse(LightAutomaton a, Set<Integer> initialStates) {
 
-    if (a.isEmpty()) {
-      return a;
+    if (BasicOperations.isEmpty(a)) {
+      return new LightAutomaton();
     }
 
     int numStates = a.getNumStates();
@@ -204,15 +203,16 @@ final public class SpecialOperations {
     }
 
     LightAutomaton result = builder.finish();
-    
+
     for(int s : a.getAcceptStates()) {
+      assert s < numStates;
       result.addEpsilon(0, s+1);
       if (initialStates != null) {
         initialStates.add(s+1);
       }
     }
 
-    result.finish();
+    result.finishState();
 
     return result;
   }

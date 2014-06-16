@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.automaton.BasicOperations;
 import org.apache.lucene.util.automaton.LightAutomaton;
 import org.apache.lucene.util.automaton.Transition;
 import org.apache.lucene.util.fst.FST;
@@ -72,6 +71,10 @@ public class FSTUtil {
     assert a.isDeterministic();
     final List<Path<T>> queue = new ArrayList<>();
     final List<Path<T>> endNodes = new ArrayList<>();
+    if (a.getNumStates() == 0) {
+      return endNodes;
+    }
+
     queue.add(new Path<>(0, fst
         .getFirstArc(new FST.Arc<T>()), fst.outputs.getNoOutput(),
         new IntsRef()));

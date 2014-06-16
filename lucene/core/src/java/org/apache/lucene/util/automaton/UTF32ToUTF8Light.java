@@ -17,11 +17,6 @@ package org.apache.lucene.util.automaton;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.InPlaceMergeSorter;
-import org.apache.lucene.util.Sorter;
-
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
@@ -268,12 +263,6 @@ public final class UTF32ToUTF8Light {
    *  not in general be deterministic, so you must
    *  determinize it if that's needed. */
   public LightAutomaton convert(LightAutomaton utf32) {
-    //System.out.println("\nCONVERT");
-
-    // nocommit make sure singleton cases work:
-    //if (utf32.isSingleton()) {
-    //utf32 = utf32.cloneExpanded();
-    //}
     if (utf32.getNumStates() == 0) {
       return utf32;
     }
@@ -286,9 +275,6 @@ public final class UTF32ToUTF8Light {
     pending.add(utf32State);
     utf8 = new LightAutomaton.Builder();
        
-    // nocommit we don't track this
-    // utf8.setDeterministic(false);
-
     int utf8State = utf8.createState();
 
     utf8.setAccept(utf8State, utf32.isAccept(utf32State));
@@ -325,19 +311,4 @@ public final class UTF32ToUTF8Light {
 
     return utf8.finish();
   }
-
-  /*
-  private State newUTF8State() {
-    State s = new State();
-    if (utf8StateCount == utf8States.length) {
-      final State[] newArray = new State[ArrayUtil.oversize(1+utf8StateCount, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
-      System.arraycopy(utf8States, 0, newArray, 0, utf8StateCount);
-      utf8States = newArray;
-    }
-    utf8States[utf8StateCount] = s;
-    s.number = utf8StateCount;
-    utf8StateCount++;
-    return s;
-  }
-  */
 }

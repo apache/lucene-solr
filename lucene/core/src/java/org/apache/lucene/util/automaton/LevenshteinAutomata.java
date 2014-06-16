@@ -159,8 +159,6 @@ public class LevenshteinAutomata {
       lastState = a.createState();
     }
 
-    // nocommit why are so many dead states created here?
-
     int stateOffset = lastState;
     a.setAccept(lastState, description.isAccept(0));
 
@@ -169,6 +167,8 @@ public class LevenshteinAutomata {
       int state = a.createState();
       a.setAccept(state, description.isAccept(i));
     }
+
+    // TODO: this creates bogus states/transitions (states are final, have self loops, and can't be reached from an init state)
 
     // create transitions from state to state
     for (int k = 0; k < numStates; k++) {
@@ -183,10 +183,7 @@ public class LevenshteinAutomata {
         final int cvec = getVector(ch, xpos, end);
         int dest = description.transition(k, xpos, cvec);
         if (dest >= 0) {
-          // nocommit why do we create cycles in dead states?
-          if (k != dest) {
-            a.addTransition(stateOffset+k, stateOffset+dest, ch);
-          }
+          a.addTransition(stateOffset+k, stateOffset+dest, ch);
         }
       }
       // add transitions for all other chars in unicode
@@ -195,15 +192,12 @@ public class LevenshteinAutomata {
       int dest = description.transition(k, xpos, 0); // by definition
       if (dest >= 0) {
         for (int r = 0; r < numRanges; r++) {
-          // nocommit why do we create cycles in dead states?
-          if (k != dest) {
-            a.addTransition(stateOffset+k, stateOffset+dest, rangeLower[r], rangeUpper[r]);
-          }
+          a.addTransition(stateOffset+k, stateOffset+dest, rangeLower[r], rangeUpper[r]);
         }
       }
     }
 
-    a.finish();
+    a.finishState();
     assert a.isDeterministic();
     return a;
   }

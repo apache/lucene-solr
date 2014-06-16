@@ -107,10 +107,6 @@ public class TestAutomatonQuery extends LuceneTestCase {
    * Test some very simple automata.
    */
   public void testBasicAutomata() throws IOException {
-
-    // nocommit
-    assertAutomatonHits(2, BasicAutomata.makeIntervalLight(1233, 2346, 0));
-
     assertAutomatonHits(0, BasicAutomata.makeEmptyLight());
     assertAutomatonHits(0, BasicAutomata.makeEmptyStringLight());
     assertAutomatonHits(2, BasicAutomata.makeAnyCharLight());

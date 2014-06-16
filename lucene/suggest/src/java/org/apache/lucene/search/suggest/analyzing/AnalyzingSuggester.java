@@ -328,7 +328,7 @@ public class AnalyzingSuggester extends Lookup {
       }
     }
 
-    result.finish();
+    result.finishState();
 
     return result;
   }

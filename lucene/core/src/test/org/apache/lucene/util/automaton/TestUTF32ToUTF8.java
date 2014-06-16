@@ -17,13 +17,17 @@ package org.apache.lucene.util.automaton;
  * limitations under the License.
  */
 
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
+
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
-
-import java.nio.charset.StandardCharsets;
-import java.util.Random;
+import org.apache.lucene.util.fst.Util;
 
 public class TestUTF32ToUTF8 extends LuceneTestCase {
   
@@ -203,11 +207,25 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
       assertAutomaton(new RegExp(AutomatonTestUtil.randomRegexp(random()), RegExp.NONE).toLightAutomaton());
     }
   }
+
+  public void testSingleton() throws Exception {
+    int iters = atLeast(100);
+    for(int iter=0;iter<iters;iter++) {
+      String s = TestUtil.randomRealisticUnicodeString(random());
+      LightAutomaton a = BasicAutomata.makeStringLight(s);
+      LightAutomaton utf8 = new UTF32ToUTF8Light().convert(a);
+      IntsRef ints = new IntsRef();
+      Util.toIntsRef(new BytesRef(s), ints);
+      Set<IntsRef> set = new HashSet<>();
+      set.add(ints);
+      assertEquals(set, SpecialOperations.getFiniteStrings(utf8, -1));
+    }
+  }
   
   private void assertAutomaton(LightAutomaton automaton) throws Exception {
     CharacterRunAutomaton cra = new CharacterRunAutomaton(automaton);
     ByteRunAutomaton bra = new ByteRunAutomaton(automaton);
-    final AutomatonTestUtil.RandomAcceptedStringsLight ras = new AutomatonTestUtil.RandomAcceptedStringsLight(automaton);
+    final AutomatonTestUtil.RandomAcceptedStrings ras = new AutomatonTestUtil.RandomAcceptedStrings(automaton);
     
     int num = atLeast(1000);
     for (int i = 0; i < num; i++) {

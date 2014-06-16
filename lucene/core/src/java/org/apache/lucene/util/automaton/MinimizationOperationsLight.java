@@ -57,7 +57,8 @@ final public class MinimizationOperationsLight {
    * Minimizes the given automaton using Hopcroft's algorithm.
    */
   public static LightAutomaton minimizeHopcroft(LightAutomaton a) {
-    if (a.isEmpty()) {
+    if (a.getNumStates() == 0 || (a.isAccept(0) == false && a.getNumTransitions(0) == 0)) {
+      // Fastmatch for common case
       return new LightAutomaton();
     }
     a = BasicOperations.determinize(a);
@@ -209,7 +210,6 @@ final public class MinimizationOperationsLight {
     int[] stateMap = new int[statesLen];
     int[] stateRep = new int[k];
 
-    // nocommit maybe LA should be born already with the initial state?
     result.createState();
 
     //System.out.println("min: k=" + k);
@@ -251,7 +251,7 @@ final public class MinimizationOperationsLight {
         result.addTransition(n, stateMap[t.dest], t.min, t.max);
       }
     }
-    result.finish();
+    result.finishState();
     //System.out.println(result.getNumStates() + " states");
 
     return BasicOperations.removeDeadStates(result);

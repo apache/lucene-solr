@@ -46,18 +46,18 @@ public class TestDeterminism extends LuceneTestCase {
   }
   
   private static void assertAutomaton(LightAutomaton a) {
-    a = BasicOperations.determinize(a);
+    a = BasicOperations.determinize(BasicOperations.removeDeadStates(a));
 
     // complement(complement(a)) = a
     LightAutomaton equivalent = BasicOperations.complementLight(BasicOperations.complementLight(a));
     assertTrue(BasicOperations.sameLanguage(a, equivalent));
     
     // a union a = a
-    equivalent = BasicOperations.determinize(BasicOperations.unionLight(a, a));
+    equivalent = BasicOperations.determinize(BasicOperations.removeDeadStates(BasicOperations.unionLight(a, a)));
     assertTrue(BasicOperations.sameLanguage(a, equivalent));
     
     // a intersect a = a
-    equivalent = BasicOperations.determinize(BasicOperations.intersectionLight(a, a));
+    equivalent = BasicOperations.determinize(BasicOperations.removeDeadStates(BasicOperations.intersectionLight(a, a)));
     assertTrue(BasicOperations.sameLanguage(a, equivalent));
     
     // a minus a = empty

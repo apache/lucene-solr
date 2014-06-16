@@ -17,12 +17,10 @@ package org.apache.lucene.util.automaton;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.io.PrintWriter;
+//import java.io.IOException;
+//import java.io.PrintWriter;
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Set;
 
 import org.apache.lucene.util.ArrayUtil;
@@ -64,7 +62,6 @@ public class LightAutomaton {
   private int[] states = new int[4];
 
   /** Holds toState, min, max for each transition: */
-  // nocommit inefficient when labels are really bytes (max 256)
   private int[] transitions = new int[6];
 
   private final Set<Integer> finalStates = new HashSet<Integer>();
@@ -82,15 +79,14 @@ public class LightAutomaton {
 
   /** Mark this state as an accept state. */
   public void setAccept(int state, boolean isAccept) {
+    if (state >= getNumStates()) {
+      throw new IllegalArgumentException("state=" + state + " is out of bounds (numStates=" + getNumStates() + ")");
+    }
     if (isAccept) {
       finalStates.add(state);
     } else {
       finalStates.remove(state);
     }
-  }
-
-  public boolean isEmpty() {
-    return finalStates.isEmpty();
   }
 
   /** Sugar, but object-heavy; it's better to iterate instead. */
@@ -200,11 +196,12 @@ public class LightAutomaton {
         states[nextState+i] += nextTransition;
       }
       int state = i/2;
-      if (other.isAccept(state)) {
-        setAccept(stateOffset+state, true);
-      }
     }
     nextState += other.nextState;
+
+    for(int s : other.getAcceptStates()) {
+      setAccept(stateOffset+s, true);
+    }
 
     // Bulk copy and then fixup dest for each transition:
     transitions = ArrayUtil.grow(transitions, nextTransition + other.nextTransition);
@@ -312,7 +309,8 @@ public class LightAutomaton {
     return deterministic;
   }
 
-  public void finish() {
+  /** Finishes the current state; call this once you are done adding transitions for a state. */
+  public void finishState() {
     if (curState != -1) {
       //System.out.println("finish: finish current state " + curState);
       finishCurrentState();
@@ -327,7 +325,6 @@ public class LightAutomaton {
   }
 
   public int getNumTransitions(int state) {
-    //assert curState == -1: "not finished";
     int count = states[2*state+1];
     if (count == -1) {
       return 0;
@@ -468,27 +465,20 @@ public class LightAutomaton {
       }
     };
 
-  // nocommit createStates(int count)?
-
-  // nocommit kinda awkward iterator api...
-  /** Initialize the provided Transition for iteration; you
-   *  must call {@link #getNextTransition} to get the first
-   *  transition for the state.  Returns the number of transitions
+  /** Initialize the provided Transition to iterate through all transitions
+   *  leaving the specified state.  You must call {@link #getNextTransition} to
+   *  get each transition.  Returns the number of transitions
    *  leaving this state. */
   public int initTransition(int state, Transition t) {
-    // assert curState == -1: "not finished";
+    assert state < nextState/2: "state=" + state + " nextState=" + nextState;
     t.source = state;
-    //System.out.println("initTrans source=" + state  + " numTrans=" + getNumTransitions(state));
     t.transitionUpto = states[2*state];
     return getNumTransitions(state);
   }
 
   /** Iterate to the next transition after the provided one */
   public void getNextTransition(Transition t) {
-    //assert curState == -1: "not finished";
     // Make sure there is still a transition left:
-    //System.out.println("getNextTrans transUpto=" + t.transitionUpto);
-    //System.out.println("  states[2*t.source]=" + states[2*t.source] + " numTrans=" + states[2*t.source+1] + " transitionUpto+3=" + (t.transitionUpto+3) + " t=" + t);
     assert (t.transitionUpto+3 - states[2*t.source]) <= 3*states[2*t.source+1];
     t.dest = transitions[t.transitionUpto++];
     t.min = transitions[t.transitionUpto++];
@@ -498,7 +488,6 @@ public class LightAutomaton {
   /** Fill the provided {@link Transition} with the index'th
    *  transition leaving the specified state. */
   public void getTransition(int state, int index, Transition t) {
-    assert curState == -1: "not finished";
     int i = states[2*state] + 3*index;
     t.source = state;
     t.dest = transitions[i++];
@@ -552,11 +541,12 @@ public class LightAutomaton {
         result.addTransition(i, deadState, maxi, Character.MAX_CODE_POINT);
       }
     }
-    result.finish();
+    result.finishState();
     return result;
   }
 
   // nocommit
+  /*
   public void writeDot(String fileName) {
     if (fileName.indexOf('/') == -1) {
       fileName = "/l/la/lucene/core/" + fileName + ".dot";
@@ -569,6 +559,7 @@ public class LightAutomaton {
       throw new RuntimeException(ioe);
     }
   }
+  */
 
   public String toDot() {
     // TODO: breadth first search so we can see get layered output...
@@ -660,14 +651,12 @@ public class LightAutomaton {
     assert label >= 0;
     int trans = states[2*state];
     int limit = trans + 3*states[2*state+1];
-    // nocommit we could do bin search; transitions are sorted
-    // System.out.println("la.step state=" + state + " label=" + label + "  trans=" + trans + " limit=" + limit);
+    // TODO: we could do bin search; transitions are sorted
     while (trans < limit) {
       int dest = transitions[trans];
       int min = transitions[trans+1];
       int max = transitions[trans+2];
       if (min <= label && label <= max) {
-        //System.out.println("  ret dest=" + dest);
         return dest;
       }
       trans += 3;
@@ -780,7 +769,7 @@ public class LightAutomaton {
         upto += 4;
       }
 
-      a.finish();
+      a.finishState();
       return a;
     }
 

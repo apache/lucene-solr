@@ -20,7 +20,6 @@ package org.apache.lucene.util.automaton;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.IdentityHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +30,6 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util.fst.Util;
 
 /**
  * Utilities for testing automata.
@@ -136,7 +134,7 @@ public class AutomatonTestUtil {
    * Once created, call {@link #getRandomAcceptedString(Random)}
    * to get a new string (in UTF-32 codepoints).
    */
-  public static class RandomAcceptedStringsLight {
+  public static class RandomAcceptedStrings {
 
     private final Map<Transition,Boolean> leadsToAccept;
     private final LightAutomaton a;
@@ -152,7 +150,7 @@ public class AutomatonTestUtil {
       }
     }
 
-    public RandomAcceptedStringsLight(LightAutomaton a) {
+    public RandomAcceptedStrings(LightAutomaton a) {
       this.a = a;
       if (a.getNumStates() == 0) {
         throw new IllegalArgumentException("this automaton accepts nothing");
@@ -334,6 +332,9 @@ public class AutomatonTestUtil {
    * Determinizes the given automaton using the given set of initial states. 
    */
   public static LightAutomaton determinizeSimpleLight(LightAutomaton a, Set<Integer> initialset) {
+    if (a.getNumStates() == 0) {
+      return a;
+    }
     int[] points = a.getStartPoints();
     // subset construction
     Map<Set<Integer>, Set<Integer>> sets = new HashMap<>();
@@ -448,6 +449,9 @@ public class AutomatonTestUtil {
    * this is only used to test the correctness of our faster implementation.
    */
   public static boolean isFiniteSlow(LightAutomaton a) {
+    if (a.getNumStates() == 0) {
+      return true;
+    }
     return isFiniteSlow(a, 0, new HashSet<Integer>());
   }
   

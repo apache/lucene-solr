@@ -37,8 +37,7 @@ import java.util.Arrays;
  * @lucene.experimental
  */
 public abstract class RunAutomaton {
-  // nocommit
-  final LightAutomaton a;
+  final LightAutomaton automaton;
   final int maxInterval;
   final int size;
   final boolean[] accept;
@@ -125,7 +124,7 @@ public abstract class RunAutomaton {
     this.maxInterval = maxInterval;
     //System.out.println("before det a=" + a.getNumStates());
     a = BasicOperations.determinize(a);
-    this.a = a;
+    this.automaton = a;
     //System.out.println("AFTER DET tableize= " + tableize + ": ");
     //System.out.println(a.toDot());
     points = a.getStartPoints();

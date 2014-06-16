@@ -47,7 +47,7 @@ final public class BasicAutomata {
    */
   public static LightAutomaton makeEmptyLight() {
     LightAutomaton a = new LightAutomaton();
-    a.finish();
+    a.finishState();
     return a;
   }
   
@@ -69,15 +69,8 @@ final public class BasicAutomata {
     int s = a.createState();
     a.setAccept(s, true);
     a.addTransition(s, s, Character.MIN_CODE_POINT, Character.MAX_CODE_POINT);
-    a.finish();
+    a.finishState();
     return a;
-  }
-  
-  public static int appendAnyString(LightAutomaton a, int state) {
-    int newState = a.createState();
-    a.addTransition(state, newState, Character.MIN_CODE_POINT, Character.MAX_CODE_POINT);
-    a.addTransition(newState, newState, Character.MIN_CODE_POINT, Character.MAX_CODE_POINT);
-    return newState;
   }
   
   /**
@@ -120,7 +113,7 @@ final public class BasicAutomata {
     int s2 = a.createState();
     a.setAccept(s2, true);
     a.addTransition(s1, s2, min, max);
-    a.finish();
+    a.finishState();
     return a;
   }
   
@@ -260,10 +253,11 @@ final public class BasicAutomata {
     LightAutomaton a1 = builder.finish();
 
     if (digits <= 0) {
+      a1.addTransition(0, 0, '0');
       for (int p : initials) {
         a1.addEpsilon(0, p);
       }
-      a1.finish();
+      a1.finishState();
     }
 
     return a1;
@@ -284,7 +278,10 @@ final public class BasicAutomata {
     }
 
     a.setAccept(lastState, true);
-    a.finish();
+    a.finishState();
+
+    assert a.isDeterministic();
+    assert BasicOperations.hasDeadStates(a) == false;
 
     return a;
   }
@@ -303,7 +300,7 @@ final public class BasicAutomata {
       s = s2;
     }
     a.setAccept(s, true);
-    a.finish();
+    a.finishState();
 
     return a;
   }
