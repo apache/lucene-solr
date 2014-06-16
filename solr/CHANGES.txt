@@ -79,6 +79,9 @@ Bug Fixes
   rollback as well as how SolrIndexWriter manages it's ref counted directory
   instance. (Mark Miller, Gregory Chanan)
 
+* SOLR-6015: Better way to handle managed synonyms when ignoreCase=true
+  (Timothy Potter)
+
 * SOLR-6104: The 'addreplica' Collection API does not support 'async' parameter.
   (shalin)
 
