@@ -64,7 +64,7 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedReader;
 import org.apache.lucene.util.packed.PackedInts;
 
 /** reader for {@link Lucene45DocValuesFormat} */
-public class Lucene45DocValuesProducer extends DocValuesProducer implements Closeable {
+class Lucene45DocValuesProducer extends DocValuesProducer implements Closeable {
   private final Map<Integer,NumericEntry> numerics;
   private final Map<Integer,BinaryEntry> binaries;
   private final Map<Integer,SortedSetEntry> sortedSets;

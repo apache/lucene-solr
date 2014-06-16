@@ -23,12 +23,12 @@ import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
-import org.apache.lucene.codecs.diskdv.DiskDocValuesFormat;
-import org.apache.lucene.codecs.diskdv.DiskNormsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40TermVectorsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
 import org.apache.lucene.codecs.lucene49.Lucene49Codec;
+import org.apache.lucene.codecs.lucene49.Lucene49DocValuesFormat;
+import org.apache.lucene.codecs.lucene49.Lucene49NormsFormat;
 
 /** Codec that tries to use as little ram as possible because he spent all his money on beer */
 // TODO: better name :) 
@@ -40,9 +40,8 @@ public class CheapBastardCodec extends FilterCodec {
   // uncompressing versions, waste lots of disk but no ram
   private final StoredFieldsFormat storedFields = new Lucene40StoredFieldsFormat();
   private final TermVectorsFormat termVectors = new Lucene40TermVectorsFormat();
-  // these go to disk for all docvalues/norms datastructures
-  private final DocValuesFormat docValues = new DiskDocValuesFormat();
-  private final NormsFormat norms = new DiskNormsFormat();
+  private final DocValuesFormat docValues = new Lucene49DocValuesFormat();
+  private final NormsFormat norms = new Lucene49NormsFormat();
 
   public CheapBastardCodec() {
     super("CheapBastard", new Lucene49Codec());

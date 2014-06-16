@@ -226,6 +226,9 @@ API Changes
 * LUCENE-5757: Moved RamUsageEstimator's reflection-based processing to RamUsageTester
   in the test-framework module. (Robert Muir)
 
+* LUCENE-5761: Removed DiskDocValuesFormat, it was very inefficient and saved very little
+  RAM over the default codec. (Robert Muir)
+
 Optimizations
 
 * LUCENE-5603: hunspell stemmer more efficiently strips prefixes
