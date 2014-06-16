@@ -307,6 +307,12 @@ public final class RamUsageEstimator {
     return alignObjectSize((long) NUM_BYTES_ARRAY_HEADER + (long) NUM_BYTES_DOUBLE * arr.length);
   }
 
+  /** Returns the shallow size in bytes of the Object[] object. */
+  // Use this method instead of #shallowSizeOf(Object) to avoid costly reflection
+  public static long shallowSizeOf(Object[] arr) {
+    return alignObjectSize((long) NUM_BYTES_ARRAY_HEADER + (long) NUM_BYTES_OBJECT_REF * arr.length);
+  }
+
   /** 
    * Estimates a "shallow" memory usage of the given object. For arrays, this will be the
    * memory taken by array storage (no subreferences will be followed). For objects, this

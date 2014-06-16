@@ -29,19 +29,44 @@ import java.util.NoSuchElementException;
 /** Crawls object graph to collect RAM usage for testing */
 public final class RamUsageTester {
   
-  /** 
+  /**
+   * A {@link Filter} that accepts all fields.
+   */
+  private static final Filter DEFAULT_FILTER = new Filter() {
+
+    @Override
+    public boolean accept(Field field) {
+      return true;
+    }
+
+  };
+
+  /** A filter that allows to decide on what to take into account when measuring RAM usage. */
+  public static interface Filter {
+
+    /** Whether the provided field should be taken into account when measuring RAM usage. */
+    boolean accept(Field field);
+
+  }
+
+  /**
    * Estimates the RAM usage by the given object. It will
    * walk the object tree and sum up all referenced objects.
-   * 
+   *
    * <p><b>Resource Usage:</b> This method internally uses a set of
    * every object seen during traversals so it does allocate memory
    * (it isn't side-effect free). After the method exits, this memory
    * should be GCed.</p>
    */
-  public static long sizeOf(Object obj) {
-    return measureObjectSize(obj);
+  public static long sizeOf(Object obj, Filter filter) {
+    return measureObjectSize(obj, filter);
   }
-  
+
+  /** Same as calling <code>sizeOf(obj, DEFAULT_FILTER)</code>. */
+  public static long sizeOf(Object obj) {
+    return sizeOf(obj, DEFAULT_FILTER);
+  }
+
   /**
    * Return a human-readable size of a given object.
    * @see #sizeOf(Object)
@@ -50,14 +75,14 @@ public final class RamUsageTester {
   public static String humanSizeOf(Object object) {
     return RamUsageEstimator.humanReadableUnits(sizeOf(object));
   }
-  
+
   /*
-   * Non-recursive version of object descend. This consumes more memory than recursive in-depth 
+   * Non-recursive version of object descend. This consumes more memory than recursive in-depth
    * traversal but prevents stack overflows on long chains of objects
    * or complex graphs (a max. recursion depth on my machine was ~5000 objects linked in a chain
-   * so not too much).  
+   * so not too much).
    */
-  private static long measureObjectSize(Object root) {
+  private static long measureObjectSize(Object root, Filter filter) {
     // Objects seen so far.
     final IdentityHashSet<Object> seen = new IdentityHashSet<>();
     // Class cache with reference Field and precalculated shallow size. 
@@ -113,10 +138,12 @@ public final class RamUsageTester {
           }
 
           for (Field f : cachedInfo.referenceFields) {
-            // Fast path to eliminate redundancies.
-            final Object o = f.get(ob);
-            if (o != null && !seen.contains(o)) {
-              stack.add(o);
+            if (filter.accept(f)) {
+              // Fast path to eliminate redundancies.
+              final Object o = f.get(ob);
+              if (o != null && !seen.contains(o)) {
+                stack.add(o);
+              }
             }
           }
 

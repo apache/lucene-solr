@@ -107,7 +107,7 @@ abstract class AbstractPagedMutable<T extends AbstractPagedMutable<T>> extends L
   /** Return the number of bytes used by this object. */
   public long ramBytesUsed() {
     long bytesUsed = RamUsageEstimator.alignObjectSize(baseRamBytesUsed());
-    bytesUsed += RamUsageEstimator.alignObjectSize(RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + (long) RamUsageEstimator.NUM_BYTES_OBJECT_REF * subMutables.length);
+    bytesUsed += RamUsageEstimator.alignObjectSize(RamUsageEstimator.shallowSizeOf(subMutables));
     for (PackedInts.Mutable gw : subMutables) {
       bytesUsed += gw.ramBytesUsed();
     }
