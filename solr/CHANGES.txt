@@ -87,6 +87,8 @@ Other Changes
 * SOLR-6015: Better way to handle managed synonyms when ignoreCase=true
   (Timothy Potter)
 
+* SOLR-6169: Properly remove CoreAdminHandler handleAlias action (Alan Woodward)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
