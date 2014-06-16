@@ -32,7 +32,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class Lucene42RWCodec extends Lucene42Codec {
 
   private static final DocValuesFormat dv = new Lucene42RWDocValuesFormat();
-  private static final NormsFormat norms = new Lucene42NormsFormat();
+  private static final NormsFormat norms = new Lucene42RWNormsFormat();
 
   private final FieldInfosFormat fieldInfosFormat = new Lucene42FieldInfosFormat() {
     @Override

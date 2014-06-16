@@ -25,7 +25,7 @@ import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.lucene42.Lucene42FieldInfosFormat;
 import org.apache.lucene.codecs.lucene42.Lucene42FieldInfosWriter;
-import org.apache.lucene.codecs.lucene42.Lucene42NormsFormat;
+import org.apache.lucene.codecs.lucene42.Lucene42RWNormsFormat;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -50,7 +50,14 @@ public class Lucene45RWCodec extends Lucene45Codec {
     return fieldInfosFormat;
   }
   
-  private static final NormsFormat norms = new Lucene42NormsFormat();
+  private static final DocValuesFormat docValues = new Lucene45RWDocValuesFormat();
+  
+  @Override
+  public DocValuesFormat getDocValuesFormatForField(String field) {
+    return docValues;
+  }
+
+  private static final NormsFormat norms = new Lucene42RWNormsFormat();
 
   @Override
   public NormsFormat normsFormat() {

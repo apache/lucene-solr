@@ -21,7 +21,7 @@ import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.lucene45.Lucene45DocValuesFormat;
+import org.apache.lucene.codecs.lucene49.Lucene49DocValuesFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -90,7 +90,7 @@ public abstract class SpatialTestCase extends LuceneTestCase {
     final IndexWriterConfig indexWriterConfig = LuceneTestCase.newIndexWriterConfig(random, LuceneTestCase.TEST_VERSION_CURRENT, new MockAnalyzer(random));
     //TODO can we randomly choose a doc-values supported format?
     if (needsDocValues())
-      indexWriterConfig.setCodec( TestUtil.alwaysDocValuesFormat(new Lucene45DocValuesFormat()));;
+      indexWriterConfig.setCodec( TestUtil.alwaysDocValuesFormat(new Lucene49DocValuesFormat()));;
     return indexWriterConfig;
   }
 
