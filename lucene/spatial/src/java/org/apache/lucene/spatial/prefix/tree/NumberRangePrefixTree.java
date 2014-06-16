@@ -96,16 +96,28 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
   protected class NRShape implements Shape {
 
     private final LevelledValue minLV, maxLV;
+    private final int lastLevelInCommon;//computed; not part of identity
 
     /** Don't call directly; see {@link #toRangeShape(com.spatial4j.core.shape.Shape, com.spatial4j.core.shape.Shape)}. */
     private NRShape(LevelledValue minLV, LevelledValue maxLV) {
       this.minLV = minLV;
       this.maxLV = maxLV;
+
+      //calc lastLevelInCommon
+      int level = 1;
+      for (; level <= minLV.getLevel() && level <= maxLV.getLevel(); level++) {
+        if (minLV.getValAtLevel(level) != maxLV.getValAtLevel(level))
+          break;
+      }
+      lastLevelInCommon = level - 1;
     }
 
     public LevelledValue getMinLV() { return minLV; }
 
     public LevelledValue getMaxLV() { return maxLV; }
+
+    /** How many levels are in common between minLV and maxLV. */
+    private int getLastLevelInCommon() { return lastLevelInCommon; }
 
     @Override
     public SpatialRelation relate(Shape shape) {
@@ -561,11 +573,11 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
 
     private void initIter(Shape filter) {
       cellNumber = -1;
-      if (filter instanceof LevelledValue && ((LevelledValue)filter).getLevel() == 0)
+      if (filter instanceof LevelledValue && ((LevelledValue) filter).getLevel() == 0)
         filter = null;//world means everything -- no filter
       iterFilter = filter;
 
-      NRCell parent = getLVAtLevel(getLevel()-1);
+      NRCell parent = getLVAtLevel(getLevel() - 1);
 
       // Initialize iter* members.
 
@@ -580,17 +592,22 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
 
       final LevelledValue minLV;
       final LevelledValue maxLV;
+      final int lastLevelInCommon;//between minLV & maxLV
       if (filter instanceof NRShape) {
         NRShape nrShape = (NRShape) iterFilter;
         minLV = nrShape.getMinLV();
         maxLV = nrShape.getMaxLV();
+        lastLevelInCommon = nrShape.getLastLevelInCommon();
       } else {
-        minLV = (LevelledValue)iterFilter;
+        minLV = (LevelledValue) iterFilter;
         maxLV = minLV;
+        lastLevelInCommon = minLV.getLevel();
       }
 
-      //fast path check when using same filter
-      if (iterFilter == parent.iterFilter) {
+      //fast path optimization that is usually true, but never first level
+      if (iterFilter == parent.iterFilter &&
+          (getLevel() <= lastLevelInCommon || parent.iterFirstCellNumber != parent.iterLastCellNumber)) {
+        //TODO benchmark if this optimization pays off. We avoid two comparePrefixLV calls.
         if (parent.iterFirstIsIntersects && parent.cellNumber == parent.iterFirstCellNumber
             && minLV.getLevel() >= getLevel()) {
           iterFirstCellNumber = minLV.getValAtLevel(getLevel());
@@ -616,7 +633,7 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
         return;
       }
 
-      //uncommon to get here, except for level 1 which always happens
+      //not common to get here, except for level 1 which always happens
 
       int startCmp = comparePrefixLV(minLV, parent);
       if (startCmp > 0) {//start comes after this cell
@@ -649,6 +666,12 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
       } else {
         iterLastCellNumber = maxLV.getValAtLevel(getLevel());
         iterLastIsIntersects = (maxLV.getLevel() > getLevel());
+      }
+      if (iterFirstCellNumber == iterLastCellNumber) {
+        if (iterLastIsIntersects)
+          iterFirstIsIntersects = true;
+        else if (iterFirstIsIntersects)
+          iterLastIsIntersects = true;
       }
     }
 
