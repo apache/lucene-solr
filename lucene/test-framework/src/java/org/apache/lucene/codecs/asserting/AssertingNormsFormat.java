@@ -24,15 +24,15 @@ import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.asserting.AssertingDocValuesFormat.AssertingNormsConsumer;
 import org.apache.lucene.codecs.asserting.AssertingDocValuesFormat.AssertingDocValuesProducer;
-import org.apache.lucene.codecs.lucene42.Lucene42NormsFormat;
+import org.apache.lucene.codecs.lucene49.Lucene49NormsFormat;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
 /**
- * Just like {@link Lucene42NormsFormat} but with additional asserts.
+ * Just like {@link Lucene49NormsFormat} but with additional asserts.
  */
 public class AssertingNormsFormat extends NormsFormat {
-  private final NormsFormat in = new Lucene42NormsFormat();
+  private final NormsFormat in = new Lucene49NormsFormat();
   
   @Override
   public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {

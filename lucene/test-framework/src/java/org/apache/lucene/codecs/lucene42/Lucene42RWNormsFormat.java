@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene46;
+package org.apache.lucene.codecs.lucene42;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,28 +17,23 @@ package org.apache.lucene.codecs.lucene46;
  * limitations under the License.
  */
 
-import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.codecs.NormsFormat;
-import org.apache.lucene.codecs.lucene42.Lucene42RWNormsFormat;
-import org.apache.lucene.codecs.lucene45.Lucene45RWDocValuesFormat;
+import java.io.IOException;
+
+import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
- * Read-write version of {@link Lucene46Codec} for testing.
+ * Read-write version of {@link Lucene42NormsFormat}
  */
-@SuppressWarnings("deprecation")
-public class Lucene46RWCodec extends Lucene46Codec {
-  
-  private static final DocValuesFormat docValues = new Lucene45RWDocValuesFormat();
-  
-  @Override
-  public DocValuesFormat getDocValuesFormatForField(String field) {
-    return docValues;
-  }
-  
-  private static final NormsFormat norms = new Lucene42RWNormsFormat();
+public class Lucene42RWNormsFormat extends Lucene42NormsFormat {
 
   @Override
-  public NormsFormat normsFormat() {
-    return norms;
+  public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
+    if (LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
+      return new Lucene42NormsConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION, acceptableOverheadRatio);
+    } else {
+      return super.normsConsumer(state);
+    }
   }
 }

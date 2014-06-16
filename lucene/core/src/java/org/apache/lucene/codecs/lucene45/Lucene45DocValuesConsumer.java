@@ -27,6 +27,7 @@ import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
@@ -88,6 +89,7 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
   
   @Override
   public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
+    checkCanWrite(field);
     addNumericField(field, values, true);
   }
 
@@ -228,6 +230,7 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
 
   @Override
   public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
+    checkCanWrite(field);
     // write the byte[] data
     meta.writeVInt(field.number);
     meta.writeByte(Lucene45DocValuesFormat.BINARY);
@@ -342,6 +345,7 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
 
   @Override
   public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
+    checkCanWrite(field);
     meta.writeVInt(field.number);
     meta.writeByte(Lucene45DocValuesFormat.SORTED);
     addTermsDict(field, values);
@@ -355,6 +359,7 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
 
   @Override
   public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, final Iterable<Number> docToOrdCount, final Iterable<Number> ords) throws IOException {
+    checkCanWrite(field);
     meta.writeVInt(field.number);
     meta.writeByte(Lucene45DocValuesFormat.SORTED_SET);
 
@@ -412,6 +417,16 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
         IOUtils.closeWhileHandlingException(data, meta);
       }
       meta = data = null;
+    }
+  }
+  
+  void checkCanWrite(FieldInfo field) {
+    if ((field.getDocValuesType() == DocValuesType.NUMERIC || 
+        field.getDocValuesType() == DocValuesType.BINARY) && 
+        field.getDocValuesGen() != -1) {
+      // ok
+    } else {
+      throw new UnsupportedOperationException("this codec can only be used for reading");
     }
   }
 }

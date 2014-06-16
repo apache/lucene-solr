@@ -19,7 +19,7 @@ package org.apache.lucene.sandbox.queries;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.diskdv.DiskDocValuesFormat;
-import org.apache.lucene.codecs.lucene45.Lucene45DocValuesFormat;
+import org.apache.lucene.codecs.lucene49.Lucene49DocValuesFormat;
 import org.apache.lucene.codecs.memory.DirectDocValuesFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -52,7 +52,7 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     switch(victim) {
       case 0:  Codec.setDefault(TestUtil.alwaysDocValuesFormat(new DirectDocValuesFormat()));
       case 1:  Codec.setDefault(TestUtil.alwaysDocValuesFormat(new DiskDocValuesFormat()));
-      default: Codec.setDefault(TestUtil.alwaysDocValuesFormat(new Lucene45DocValuesFormat()));
+      default: Codec.setDefault(TestUtil.alwaysDocValuesFormat(new Lucene49DocValuesFormat()));
     }
   }
   
