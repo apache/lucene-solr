@@ -148,14 +148,17 @@ class Lucene49DocValuesConsumer extends DocValuesConsumer implements Closeable {
     }
     
     final long delta = maxValue - minValue;
-    final int deltaBitsRequired = delta < 0 ? 64 : DirectWriter.bitsRequired(delta);
+    final int deltaBitsRequired = DirectWriter.unsignedBitsRequired(delta);
+    final int tableBitsRequired = uniqueValues == null
+        ? Integer.MAX_VALUE
+        : DirectWriter.bitsRequired(uniqueValues.size() - 1);
 
     final int format;
-    if (uniqueValues != null && DirectWriter.bitsRequired(uniqueValues.size() - 1) < deltaBitsRequired) {
+    if (uniqueValues != null && tableBitsRequired < deltaBitsRequired) {
       format = TABLE_COMPRESSED;
     } else if (gcd != 0 && gcd != 1) {
       final long gcdDelta = (maxValue - minValue) / gcd;
-      final long gcdBitsRequired = gcdDelta < 0 ? 64 : DirectWriter.bitsRequired(gcdDelta);
+      final long gcdBitsRequired = DirectWriter.unsignedBitsRequired(gcdDelta);
       format = gcdBitsRequired < deltaBitsRequired ? GCD_COMPRESSED : DELTA_COMPRESSED;
     } else {
       format = DELTA_COMPRESSED;
@@ -177,7 +180,7 @@ class Lucene49DocValuesConsumer extends DocValuesConsumer implements Closeable {
         meta.writeLong(minValue);
         meta.writeLong(gcd);
         final long maxDelta = (maxValue - minValue) / gcd;
-        final int bits = maxDelta < 0 ? 64 : DirectWriter.bitsRequired(maxDelta);
+        final int bits = DirectWriter.unsignedBitsRequired(maxDelta);
         meta.writeVInt(bits);
         final DirectWriter quotientWriter = DirectWriter.getInstance(data, count, bits);
         for (Number nv : values) {
@@ -206,9 +209,8 @@ class Lucene49DocValuesConsumer extends DocValuesConsumer implements Closeable {
           meta.writeLong(decode[i]);
           encode.put(decode[i], i);
         }
-        final int bitsRequired = DirectWriter.bitsRequired(uniqueValues.size() - 1);
-        meta.writeVInt(bitsRequired);
-        final DirectWriter ordsWriter = DirectWriter.getInstance(data, count, bitsRequired);
+        meta.writeVInt(tableBitsRequired);
+        final DirectWriter ordsWriter = DirectWriter.getInstance(data, count, tableBitsRequired);
         for (Number nv : values) {
           ordsWriter.add(encode.get(nv == null ? 0 : nv.longValue()));
         }

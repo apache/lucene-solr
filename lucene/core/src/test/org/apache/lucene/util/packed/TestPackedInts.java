@@ -70,6 +70,9 @@ public class TestPackedInts extends LuceneTestCase {
     assertEquals(61, PackedInts.bitsRequired(0x1FFFFFFFFFFFFFFFL));
     assertEquals(62, PackedInts.bitsRequired(0x3FFFFFFFFFFFFFFFL));
     assertEquals(63, PackedInts.bitsRequired(0x7FFFFFFFFFFFFFFFL));
+    assertEquals(64, PackedInts.unsignedBitsRequired(-1));
+    assertEquals(64, PackedInts.unsignedBitsRequired(Long.MIN_VALUE));
+    assertEquals(1, PackedInts.bitsRequired(0));
   }
 
   public void testMaxValues() {

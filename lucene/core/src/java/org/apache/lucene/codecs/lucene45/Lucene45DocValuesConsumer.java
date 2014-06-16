@@ -147,7 +147,7 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
 
     final int format;
     if (uniqueValues != null
-        && (delta < 0L || PackedInts.bitsRequired(uniqueValues.size() - 1) < PackedInts.bitsRequired(delta))
+        && (PackedInts.bitsRequired(uniqueValues.size() - 1) < PackedInts.unsignedBitsRequired(delta))
         && count <= Integer.MAX_VALUE) {
       format = TABLE_COMPRESSED;
     } else if (gcd != 0 && gcd != 1) {

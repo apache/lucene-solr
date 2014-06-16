@@ -74,7 +74,7 @@ public class GrowableWriter extends PackedInts.Mutable {
     if ((value & currentMask) == value) {
       return;
     }
-    final int bitsRequired = value < 0 ? 64 : PackedInts.bitsRequired(value);
+    final int bitsRequired = PackedInts.unsignedBitsRequired(value);
     assert bitsRequired > current.getBitsPerValue();
     final int valueCount = size();
     PackedInts.Mutable next = PackedInts.getMutable(valueCount, bitsRequired, acceptableOverheadRatio);

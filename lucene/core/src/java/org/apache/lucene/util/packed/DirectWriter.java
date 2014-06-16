@@ -111,17 +111,14 @@ public final class DirectWriter {
   }
   
   /** 
-   * Returns how many bits are required to hold values up
-   * to and including maxValue
+   * Round a number of bits per value to the next amount of bits per value that
+   * is supported by this writer.
    * 
-   * @param maxValue the maximum value that should be representable.
-   * @return the amount of bits needed to represent values from 0 to maxValue.
+   * @param bitsRequired the amount of bits required
+   * @return the next number of bits per value that is gte the provided value
+   *         and supported by this writer
    */
-  public static int bitsRequired(long maxValue) {
-    if (maxValue < 0) {
-      throw new IllegalArgumentException("maxValue must be non-negative (got: " + maxValue + ")");
-    }
-    int bitsRequired = Math.max(1, 64 - Long.numberOfLeadingZeros(maxValue));
+  private static int roundBits(int bitsRequired) {
     int index = Arrays.binarySearch(SUPPORTED_BITS_PER_VALUE, bitsRequired);
     if (index < 0) {
       return SUPPORTED_BITS_PER_VALUE[-index-1];
@@ -129,7 +126,31 @@ public final class DirectWriter {
       return bitsRequired;
     }
   }
-  
+
+  /**
+   * Returns how many bits are required to hold values up
+   * to and including maxValue
+   *
+   * @param maxValue the maximum value that should be representable.
+   * @return the amount of bits needed to represent values from 0 to maxValue.
+   * @see PackedInts#bitsRequired(long)
+   */
+  public static int bitsRequired(long maxValue) {
+    return roundBits(PackedInts.bitsRequired(maxValue));
+  }
+
+  /**
+   * Returns how many bits are required to hold values up
+   * to and including maxValue, interpreted as an unsigned value.
+   *
+   * @param maxValue the maximum value that should be representable.
+   * @return the amount of bits needed to represent values from 0 to maxValue.
+   * @see PackedInts#unsignedBitsRequired(long)
+   */
+  public static int unsignedBitsRequired(long maxValue) {
+    return roundBits(PackedInts.unsignedBitsRequired(maxValue));
+  }
+
   final static int SUPPORTED_BITS_PER_VALUE[] = new int[] {
     1, 2, 4, 8, 12, 16, 20, 24, 28, 32, 40, 48, 56, 64
   };
