@@ -221,7 +221,7 @@ class BulkOperationPacked extends BulkOperation {
     int bitsLeft = 8;
     for (int i = 0; i < byteValueCount * iterations; ++i) {
       final long v = values[valuesOffset++];
-      assert bitsPerValue == 64 || PackedInts.bitsRequired(v) <= bitsPerValue;
+      assert PackedInts.unsignedBitsRequired(v) <= bitsPerValue;
       if (bitsPerValue < bitsLeft) {
         // just buffer
         nextBlock |= v << (bitsLeft - bitsPerValue);

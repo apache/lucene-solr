@@ -146,7 +146,7 @@ class MemoryDocValuesConsumer extends DocValuesConsumer {
         ++count;
         if (count % BLOCK_SIZE == 0) {
           final long blockDelta = currentBlockMax - currentBlockMin;
-          final int blockDeltaRequired = blockDelta < 0 ? 64 : PackedInts.bitsRequired(blockDelta);
+          final int blockDeltaRequired = PackedInts.unsignedBitsRequired(blockDelta);
           final int blockBPV = PackedInts.fastestFormatAndBits(BLOCK_SIZE, blockDeltaRequired, acceptableOverheadRatio).bitsPerValue;
           blockSum += blockBPV;
           currentBlockMax = Long.MIN_VALUE;

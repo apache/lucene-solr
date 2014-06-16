@@ -1131,6 +1131,7 @@ public class PackedInts {
 
   /** Returns how many bits are required to hold values up
    *  to and including maxValue
+   *  NOTE: This method returns at least 1.
    * @param maxValue the maximum value that should be representable.
    * @return the amount of bits needed to represent values from 0 to maxValue.
    * @lucene.internal
@@ -1139,7 +1140,16 @@ public class PackedInts {
     if (maxValue < 0) {
       throw new IllegalArgumentException("maxValue must be non-negative (got: " + maxValue + ")");
     }
-    return Math.max(1, 64 - Long.numberOfLeadingZeros(maxValue));
+    return unsignedBitsRequired(maxValue);
+  }
+
+  /** Returns how many bits are required to store <code>bits</code>,
+   * interpreted as an unsigned value.
+   * NOTE: This method returns at least 1.
+   * @lucene.internal
+   */
+  public static int unsignedBitsRequired(long bits) {
+    return Math.max(1, 64 - Long.numberOfLeadingZeros(bits));
   }
 
   /**

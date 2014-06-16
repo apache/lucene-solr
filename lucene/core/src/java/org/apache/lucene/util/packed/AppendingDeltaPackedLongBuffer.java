@@ -104,7 +104,7 @@ public final class AppendingDeltaPackedLongBuffer extends AbstractAppendingLongB
       values[valuesOff] = new PackedInts.NullReader(pendingOff);
     } else {
       // build a new packed reader
-      final int bitsRequired = delta < 0 ? 64 : PackedInts.bitsRequired(delta);
+      final int bitsRequired = PackedInts.unsignedBitsRequired(delta);
       for (int i = 0; i < pendingOff; ++i) {
         pending[i] -= minValue;
       }
