@@ -138,6 +138,10 @@ New Features
 Bug Fixes
 ----------------------
 
+* SOLR-5956: Use coreDescriptor.getInstanceDir() instead of getRawInstanceDir()
+  in the SnapShooter to avoid problems when solr.solr.home is a symbolic link.
+  (Timothy Potter) 
+
 * SOLR-6002: Fix a couple of ugly issues around SolrIndexWriter close and 
   rollback as well as how SolrIndexWriter manages it's ref counted directory
   instance. (Mark Miller, Gregory Chanan)

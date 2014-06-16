@@ -62,7 +62,7 @@ public class SnapShooter {
     solrCore = core;
     if (location == null) snapDir = core.getDataDir();
     else  {
-      File base = new File(core.getCoreDescriptor().getRawInstanceDir());
+      File base = new File(core.getCoreDescriptor().getInstanceDir());
       snapDir = org.apache.solr.util.FileUtils.resolvePath(base, location).getAbsolutePath();
       File dir = new File(snapDir);
       if (!dir.exists())  dir.mkdirs();
