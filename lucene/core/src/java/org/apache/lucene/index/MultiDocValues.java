@@ -495,8 +495,7 @@ public class MultiDocValues {
       this.ramBytesUsed = ramBytesUsed;
     }
 
-    /** Create an {@link OrdinalMap} with the default overhead ratio.
-     *  @see #OrdinalMap(Object, TermsEnum[], float)  */
+    /** Create an {@link OrdinalMap} with the default overhead ratio. */
     public OrdinalMap(Object owner, TermsEnum subs[]) throws IOException {
       this(owner, subs, PackedInts.DEFAULT);
     }
