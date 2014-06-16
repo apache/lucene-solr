@@ -84,9 +84,6 @@ Other Changes
 * SOLR-5868: HttpClient should be configured to use ALLOW_ALL_HOSTNAME hostname
   verifier to simplify SSL setup. (Steve Davids via Mark Miller)
 
-* SOLR-6015: Better way to handle managed synonyms when ignoreCase=true
-  (Timothy Potter)
-
 * SOLR-6169: Properly remove CoreAdminHandler handleAlias action (Alan Woodward)
 
 ==================  4.9.0 ==================
@@ -144,6 +141,9 @@ Bug Fixes
 * SOLR-6002: Fix a couple of ugly issues around SolrIndexWriter close and 
   rollback as well as how SolrIndexWriter manages it's ref counted directory
   instance. (Mark Miller, Gregory Chanan)
+
+* SOLR-6015: Better way to handle managed synonyms when ignoreCase=true
+  (Timothy Potter)
 
 * SOLR-6104: The 'addreplica' Collection API does not support 'async' parameter.
   (shalin)
