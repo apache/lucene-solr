@@ -39,6 +39,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LongBitSet;
+import org.apache.lucene.util.LongValues;
 
 /** 
  * Abstract API that consumes numeric, binary and
@@ -505,6 +506,7 @@ public abstract class DocValuesConsumer implements Closeable {
               int nextValue;
               AtomicReader currentReader;
               Bits currentLiveDocs;
+              LongValues currentMap;
               boolean nextIsSet;
 
               @Override
@@ -539,6 +541,7 @@ public abstract class DocValuesConsumer implements Closeable {
                     if (readerUpto < readers.length) {
                       currentReader = readers[readerUpto];
                       currentLiveDocs = currentReader.getLiveDocs();
+                      currentMap = map.getGlobalOrds(readerUpto);
                     }
                     docIDUpto = 0;
                     continue;
@@ -547,7 +550,7 @@ public abstract class DocValuesConsumer implements Closeable {
                   if (currentLiveDocs == null || currentLiveDocs.get(docIDUpto)) {
                     nextIsSet = true;
                     int segOrd = dvs[readerUpto].getOrd(docIDUpto);
-                    nextValue = segOrd == -1 ? -1 : (int) map.getGlobalOrd(readerUpto, segOrd);
+                    nextValue = segOrd == -1 ? -1 : (int) currentMap.get(segOrd);
                     docIDUpto++;
                     return true;
                   }
@@ -707,6 +710,7 @@ public abstract class DocValuesConsumer implements Closeable {
               long nextValue;
               AtomicReader currentReader;
               Bits currentLiveDocs;
+              LongValues currentMap;
               boolean nextIsSet;
               long ords[] = new long[8];
               int ordUpto;
@@ -751,6 +755,7 @@ public abstract class DocValuesConsumer implements Closeable {
                     if (readerUpto < readers.length) {
                       currentReader = readers[readerUpto];
                       currentLiveDocs = currentReader.getLiveDocs();
+                      currentMap = map.getGlobalOrds(readerUpto);
                     }
                     docIDUpto = 0;
                     continue;
@@ -766,7 +771,7 @@ public abstract class DocValuesConsumer implements Closeable {
                       if (ordLength == ords.length) {
                         ords = ArrayUtil.grow(ords, ordLength+1);
                       }
-                      ords[ordLength] = map.getGlobalOrd(readerUpto, ord);
+                      ords[ordLength] = currentMap.get(ord);
                       ordLength++;
                     }
                     docIDUpto++;

@@ -27,6 +27,16 @@ import org.apache.lucene.util.packed.PackedInts;
  *  @lucene.internal */
 public abstract class LongValues extends NumericDocValues {
 
+  /** An instance that returns the provided value. */
+  public static final LongValues IDENTITY = new LongValues() {
+
+    @Override
+    public long get(long index) {
+      return index;
+    }
+
+  };
+
   /** Get value at <code>index</code>. */
   public abstract long get(long index);
 
