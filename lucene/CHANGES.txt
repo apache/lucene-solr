@@ -330,6 +330,9 @@ Bug fixes
 * LUCENE-5747: Project-specific settings for the eclipse development
   environment will prevent automatic code reformatting. (Shawn Heisey)
 
+* LUCENE-5768: Hunspell condition checks containing character classes
+  were buggy. (Clinton Gormley, Robert Muir)
+
 Test Framework
 
 * LUCENE-5622: Fail tests if they print over the given limit of bytes to 
