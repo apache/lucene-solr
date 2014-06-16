@@ -2215,7 +2215,6 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <property name="forbidden-base-excludes" value=""/>
   <property name="forbidden-tests-excludes" value=""/>
   <property name="forbidden-sysout-excludes" value=""/>
-  <property name="forbidden-rue-excludes" value=""/>
   
   <target name="-install-forbidden-apis" unless="forbidden-apis.loaded" depends="ivy-availability-check,ivy-configure">
     <ivy:cachepath organisation="de.thetaphi" module="forbiddenapis" revision="1.5.1"
@@ -2256,13 +2255,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   </target>
  
   <!-- applies to only source code -->
-  <target name="-check-forbidden-core" depends="-init-forbidden-apis,compile-core,-check-forbidden-sysout,-check-forbidden-rue" />
-
-  <target name="-check-forbidden-rue" depends="-init-forbidden-apis,compile-core">
-    <forbidden-apis signaturesFile="${common.dir}/tools/forbiddenApis/rue.txt" classpathref="forbidden-apis.allclasses.classpath">
-      <fileset dir="${build.dir}/classes/java" excludes="${forbidden-rue-excludes}"/>
-    </forbidden-apis>
-  </target>
+  <target name="-check-forbidden-core" depends="-init-forbidden-apis,compile-core,-check-forbidden-sysout" />
 
   <target name="-check-forbidden-sysout" depends="-init-forbidden-apis,compile-core">
     <forbidden-apis bundledSignatures="jdk-system-out" classpathref="forbidden-apis.allclasses.classpath">

@@ -36,6 +36,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
@@ -108,6 +109,10 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
         if (defaultCodecSupportsSortedSet()) {
           doc.add(new SortedSetDocValuesField("dv4", new BytesRef(Integer.toString(i))));
           doc.add(new SortedSetDocValuesField("dv4", new BytesRef(Integer.toString(i-1))));
+        }
+        if (defaultCodecSupportsSortedNumeric()) {
+          doc.add(new SortedNumericDocValuesField("dv5", i));
+          doc.add(new SortedNumericDocValuesField("dv5", i-1));
         }
         doc.add(newTextField("text1", TestUtil.randomAnalysisString(random(), 20, true), Field.Store.NO));
         // ensure we store something

@@ -25,6 +25,7 @@ import org.apache.lucene.index.MultiTermsEnum.TermsEnumWithSlice;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.AppendingPackedLongBuffer;
 import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
 import org.apache.lucene.util.packed.PackedInts;
@@ -228,6 +229,63 @@ public class MultiDocValues {
     }
   }
   
+  /** Returns a SortedNumericDocValues for a reader's docvalues (potentially merging on-the-fly) 
+   * <p>
+   * This is a slow way to access sorted numeric values. Instead, access them per-segment
+   * with {@link AtomicReader#getSortedNumericDocValues(String)}
+   * </p> 
+   * */
+  public static SortedNumericDocValues getSortedNumericValues(final IndexReader r, final String field) throws IOException {
+    final List<AtomicReaderContext> leaves = r.leaves();
+    final int size = leaves.size();
+    if (size == 0) {
+      return null;
+    } else if (size == 1) {
+      return leaves.get(0).reader().getSortedNumericDocValues(field);
+    }
+
+    boolean anyReal = false;
+    final SortedNumericDocValues[] values = new SortedNumericDocValues[size];
+    final int[] starts = new int[size+1];
+    for (int i = 0; i < size; i++) {
+      AtomicReaderContext context = leaves.get(i);
+      SortedNumericDocValues v = context.reader().getSortedNumericDocValues(field);
+      if (v == null) {
+        v = DocValues.emptySortedNumeric();
+      } else {
+        anyReal = true;
+      }
+      values[i] = v;
+      starts[i] = context.docBase;
+    }
+    starts[size] = r.maxDoc();
+
+    if (!anyReal) {
+      return null;
+    } else {
+      return new SortedNumericDocValues() {
+        SortedNumericDocValues current;
+
+        @Override
+        public void setDocument(int doc) {
+          int subIndex = ReaderUtil.subIndex(doc, starts);
+          current = values[subIndex];
+          current.setDocument(doc - starts[subIndex]);
+        }
+
+        @Override
+        public long valueAt(int index) {
+          return current.valueAt(index);
+        }
+
+        @Override
+        public int count() {
+          return current.count();
+        }
+      };
+    }
+  }
+  
   /** Returns a SortedDocValues for a reader's docvalues (potentially doing extremely slow things).
    * <p>
    * This is an extremely slow way to access sorted values. Instead, access them per-segment
@@ -320,6 +378,9 @@ public class MultiDocValues {
   // TODO: use more efficient packed ints structures?
   // TODO: pull this out? its pretty generic (maps between N ord()-enabled TermsEnums) 
   public static class OrdinalMap implements Accountable {
+
+    private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(OrdinalMap.class);
+
     // cache key of whoever asked for this awful thing
     final Object owner;
     // globalOrd -> (globalOrd - segmentOrd) where segmentOrd is the the ordinal in the first segment that contains this term
@@ -416,7 +477,7 @@ public class MultiDocValues {
 
     @Override
     public long ramBytesUsed() {
-      long size = globalOrdDeltas.ramBytesUsed() + firstSegments.ramBytesUsed();
+      long size = BASE_RAM_BYTES_USED + globalOrdDeltas.ramBytesUsed() + firstSegments.ramBytesUsed() + RamUsageEstimator.shallowSizeOf(ordDeltas);
       for (int i = 0; i < ordDeltas.length; i++) {
         size += ordDeltas[i].ramBytesUsed();
       }

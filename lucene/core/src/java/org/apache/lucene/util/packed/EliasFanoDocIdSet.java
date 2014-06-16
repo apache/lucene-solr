@@ -21,14 +21,17 @@ import java.io.IOException;
 
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
-
 import org.apache.lucene.util.FixedBitSet; // for javadocs
+import org.apache.lucene.util.RamUsageEstimator;
 
 
 /** A DocIdSet in Elias-Fano encoding.
  * @lucene.internal
  */
 public class EliasFanoDocIdSet extends DocIdSet {
+
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(EliasFanoDocIdSet.class);
+
   final EliasFanoEncoder efEncoder;
 
   /**
@@ -125,6 +128,11 @@ public class EliasFanoDocIdSet extends DocIdSet {
   @Override
   public int hashCode() {
     return efEncoder.hashCode() ^ getClass().hashCode();
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return BASE_RAM_BYTES_USED + efEncoder.ramBytesUsed();
   }
 }
 

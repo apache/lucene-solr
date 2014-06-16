@@ -33,6 +33,7 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PagedBytes;
@@ -110,7 +111,7 @@ import org.apache.lucene.util.StringHelper;
  *
  */
 
-public class DocTermOrds {
+public class DocTermOrds implements Accountable {
 
   // Term ords are shifted by this, internally, to reserve
   // values 0 (end term) and 1 (index is a pointer into byte array)
@@ -167,7 +168,7 @@ public class DocTermOrds {
   protected DocsEnum docsEnum;
 
   /** Returns total bytes used. */
-  public long ramUsedInBytes() {
+  public long ramBytesUsed() {
     // can cache the mem size since it shouldn't change
     if (memsz!=0) return memsz;
     long sz = 8*8 + 32; // local fields

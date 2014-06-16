@@ -34,6 +34,7 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
@@ -54,8 +55,14 @@ interface FieldCache {
   /**
    * Placeholder indicating creation of this cache is currently in-progress.
    */
-  public static final class CreationPlaceholder {
-    Object value;
+  public static final class CreationPlaceholder implements Accountable {
+    Accountable value;
+
+    @Override
+    public long ramBytesUsed() {
+      // don't call on the in-progress value, might make things angry.
+      return RamUsageEstimator.NUM_BYTES_OBJECT_REF;
+    }
   }
 
   /**
@@ -270,13 +277,12 @@ interface FieldCache {
     private final String fieldName;
     private final Class<?> cacheType;
     private final Object custom;
-    private final Object value;
-    private String size;
+    private final Accountable value;
 
     public CacheEntry(Object readerKey, String fieldName,
                       Class<?> cacheType,
                       Object custom,
-                      Object value) {
+                      Accountable value) {
       this.readerKey = readerKey;
       this.fieldName = fieldName;
       this.cacheType = cacheType;
@@ -304,21 +310,13 @@ interface FieldCache {
       return value;
     }
 
-    /** 
-     * Computes (and stores) the estimated size of the cache Value 
-     * @see #getEstimatedSize
-     */
-    public void estimateSize() {
-      long bytesUsed = RamUsageEstimator.sizeOf(getValue());
-      size = RamUsageEstimator.humanReadableUnits(bytesUsed);
-    }
-
     /**
      * The most recently estimated size of the value, null unless 
      * estimateSize has been called.
      */
     public String getEstimatedSize() {
-      return size;
+      long bytesUsed = value == null ? 0L : value.ramBytesUsed();
+      return RamUsageEstimator.humanReadableUnits(bytesUsed);
     }
     
     @Override
@@ -331,9 +329,7 @@ interface FieldCache {
       b.append(System.identityHashCode(getValue()));
       
       String s = getEstimatedSize();
-      if(null != s) {
-        b.append(" (size =~ ").append(s).append(')');
-      }
+      b.append(" (size =~ ").append(s).append(')');
 
       return b.toString();
     }

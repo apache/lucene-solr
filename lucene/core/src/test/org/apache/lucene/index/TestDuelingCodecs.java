@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -141,6 +142,14 @@ public class TestDuelingCodecs extends LuceneTestCase {
       document.removeFields("sparsenumeric");
       if (random.nextInt(4) == 2) {
         document.add(new NumericDocValuesField("sparsenumeric", random.nextInt()));
+      }
+      // add sortednumeric sometimes
+      document.removeFields("sparsesortednum");
+      if (random.nextInt(5) == 1) {
+        document.add(new SortedNumericDocValuesField("sparsesortednum", random.nextLong()));
+        if (random.nextBoolean()) {
+          document.add(new SortedNumericDocValuesField("sparsesortednum", random.nextLong()));
+        }
       }
       writer.addDocument(document);
     }

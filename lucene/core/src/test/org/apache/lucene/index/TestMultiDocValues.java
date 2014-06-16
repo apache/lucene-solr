@@ -24,6 +24,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -309,6 +310,58 @@ public class TestMultiDocValues extends LuceneTestCase {
           upto++;
         }
         assertEquals(expectedList.size(), upto);
+      }
+    }
+    
+    ir.close();
+    ir2.close();
+    dir.close();
+  }
+  
+  public void testSortedNumeric() throws Exception {
+    assumeTrue("codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
+    Directory dir = newDirectory();
+    
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), TEST_VERSION_CURRENT, null);
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+
+    int numDocs = atLeast(500);
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      int numValues = random().nextInt(5);
+      for (int j = 0; j < numValues; j++) {
+        doc.add(new SortedNumericDocValuesField("nums", TestUtil.nextLong(random(), Long.MIN_VALUE, Long.MAX_VALUE)));
+      }
+      iw.addDocument(doc);
+      if (random().nextInt(17) == 0) {
+        iw.commit();
+      }
+    }
+    DirectoryReader ir = iw.getReader();
+    iw.forceMerge(1);
+    DirectoryReader ir2 = iw.getReader();
+    AtomicReader merged = getOnlySegmentReader(ir2);
+    iw.shutdown();
+    
+    SortedNumericDocValues multi = MultiDocValues.getSortedNumericValues(ir, "nums");
+    SortedNumericDocValues single = merged.getSortedNumericDocValues("nums");
+    if (multi == null) {
+      assertNull(single);
+    } else {
+      // check values
+      for (int i = 0; i < numDocs; i++) {
+        single.setDocument(i);
+        ArrayList<Long> expectedList = new ArrayList<>();
+        for (int j = 0; j < single.count(); j++) {
+          expectedList.add(single.valueAt(j));
+        }
+        
+        multi.setDocument(i);
+        assertEquals(expectedList.size(), multi.count());
+        for (int j = 0; j < single.count(); j++) {
+          assertEquals(expectedList.get(j).longValue(), multi.valueAt(j));
+        }
       }
     }
     

@@ -161,14 +161,6 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     memory.addField("foo", fooField.toString(), analyzer);
     memory.addField("term", termField.toString(), analyzer);
     
-    if (VERBOSE) {
-      System.out.println("Random MemoryIndex:\n" + memory.toString());
-      System.out.println("Same index as RAMDirectory: " +
-        RamUsageEstimator.humanReadableUnits(RamUsageEstimator.sizeOf(ramdir)));
-      System.out.println();
-    } else {
-      assertTrue(memory.getMemorySize() > 0L);
-    }
     AtomicReader reader = (AtomicReader) memory.createSearcher().getIndexReader();
     DirectoryReader competitor = DirectoryReader.open(ramdir);
     duellReaders(competitor, reader);

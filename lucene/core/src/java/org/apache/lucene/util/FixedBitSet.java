@@ -33,6 +33,8 @@ import org.apache.lucene.search.DocIdSetIterator;
  */
 public final class FixedBitSet extends DocIdSet implements Bits {
 
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(FixedBitSet.class);
+
   /**
    * A {@link DocIdSetIterator} which iterates over set bits in a
    * {@link FixedBitSet}.
@@ -216,6 +218,11 @@ public final class FixedBitSet extends DocIdSet implements Bits {
   @Override
   public boolean isCacheable() {
     return true;
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return BASE_RAM_BYTES_USED + RamUsageEstimator.sizeOf(bits);
   }
 
   /** Expert. */

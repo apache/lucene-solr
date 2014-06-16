@@ -25,6 +25,12 @@ import org.apache.lucene.search.DocIdSetIterator;
 
 /** Simple DocIdSet and DocIdSetIterator backed by a BitSet */
 public class DocIdBitSet extends DocIdSet implements Bits {
+
+  private static final long BASE_RAM_BYTES_USED =
+        RamUsageEstimator.shallowSizeOfInstance(DocIdBitSet.class)
+      + RamUsageEstimator.shallowSizeOfInstance(BitSet.class)
+      + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER; // the array that stores the bits
+
   private final BitSet bitSet;
     
   public DocIdBitSet(BitSet bitSet) {
@@ -64,7 +70,14 @@ public class DocIdBitSet extends DocIdSet implements Bits {
     // the size may not be correct...
     return bitSet.size(); 
   }
-  
+
+  @Override
+  public long ramBytesUsed() {
+    // unfortunately this is likely underestimated if the Bitset implementation
+    // over-sizes the array that stores the bits
+    return BASE_RAM_BYTES_USED + (bitSet.size() + 7) >>> 3;
+  }
+
   private static class DocIdBitSetIterator extends DocIdSetIterator {
     private int docId;
     private BitSet bitSet;

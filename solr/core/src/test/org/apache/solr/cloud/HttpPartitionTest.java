@@ -266,7 +266,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   protected void testRf3WithLeaderFailover() throws Exception {
     // now let's create a partition in one of the replicas and outright
     // kill the leader ... see what happens
-    // create a collection that has 1 shard but 2 replicas
+    // create a collection that has 1 shard but 3 replicas
     String testCollectionName = "c8n_1x3_lf"; // _lf is leader fails
     createCollection(testCollectionName, 1, 3, 1);
     cloudClient.setDefaultCollection(testCollectionName);

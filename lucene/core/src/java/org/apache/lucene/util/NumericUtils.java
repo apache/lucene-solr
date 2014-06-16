@@ -274,9 +274,7 @@ public final class NumericUtils {
    * @see #sortableLongToDouble
    */
   public static long doubleToSortableLong(double val) {
-    long f = Double.doubleToLongBits(val);
-    if (f<0) f ^= 0x7fffffffffffffffL;
-    return f;
+    return sortableDoubleBits(Double.doubleToLongBits(val));
   }
 
   /**
@@ -284,8 +282,7 @@ public final class NumericUtils {
    * @see #doubleToSortableLong
    */
   public static double sortableLongToDouble(long val) {
-    if (val<0) val ^= 0x7fffffffffffffffL;
-    return Double.longBitsToDouble(val);
+    return Double.longBitsToDouble(sortableDoubleBits(val));
   }
 
   /**
@@ -298,9 +295,7 @@ public final class NumericUtils {
    * @see #sortableIntToFloat
    */
   public static int floatToSortableInt(float val) {
-    int f = Float.floatToIntBits(val);
-    if (f<0) f ^= 0x7fffffff;
-    return f;
+    return sortableFloatBits(Float.floatToIntBits(val));
   }
 
   /**
@@ -308,8 +303,17 @@ public final class NumericUtils {
    * @see #floatToSortableInt
    */
   public static float sortableIntToFloat(int val) {
-    if (val<0) val ^= 0x7fffffff;
-    return Float.intBitsToFloat(val);
+    return Float.intBitsToFloat(sortableFloatBits(val));
+  }
+  
+  /** Converts IEEE 754 representation of a double to sortable order (or back to the original) */
+  public static long sortableDoubleBits(long bits) {
+    return bits ^ (bits >> 63) & 0x7fffffffffffffffL;
+  }
+  
+  /** Converts IEEE 754 representation of a float to sortable order (or back to the original) */
+  public static int sortableFloatBits(int bits) {
+    return bits ^ (bits >> 31) & 0x7fffffff;
   }
 
   /**

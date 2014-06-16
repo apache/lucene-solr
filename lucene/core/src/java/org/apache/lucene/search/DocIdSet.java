@@ -18,13 +18,40 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 
 /**
  * A DocIdSet contains a set of doc ids. Implementing classes must
  * only implement {@link #iterator} to provide access to the set. 
  */
-public abstract class DocIdSet {
+public abstract class DocIdSet implements Accountable {
+
+  /** An empty {@code DocIdSet} instance */
+  public static final DocIdSet EMPTY = new DocIdSet() {
+    
+    @Override
+    public DocIdSetIterator iterator() {
+      return DocIdSetIterator.empty();
+    }
+    
+    @Override
+    public boolean isCacheable() {
+      return true;
+    }
+    
+    // we explicitly provide no random access, as this filter is 100% sparse and iterator exits faster
+    @Override
+    public Bits bits() {
+      return null;
+    }
+
+    @Override
+    public long ramBytesUsed() {
+      return 0L;
+    }
+  };
 
   /** Provides a {@link DocIdSetIterator} to access the set.
    * This implementation can return <code>null</code> if there
@@ -65,4 +92,5 @@ public abstract class DocIdSet {
   public boolean isCacheable() {
     return false;
   }
+
 }

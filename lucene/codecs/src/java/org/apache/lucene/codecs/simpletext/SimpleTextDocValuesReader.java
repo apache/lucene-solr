@@ -48,6 +48,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.store.BufferedChecksumIndexInput;
 import org.apache.lucene.store.ChecksumIndexInput;
@@ -347,6 +348,38 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
       }
     };
   }
+  
+  @Override
+  public SortedNumericDocValues getSortedNumeric(FieldInfo field) throws IOException {
+    final BinaryDocValues binary = getBinary(field);
+    return new SortedNumericDocValues() {
+      long values[];
+
+      @Override
+      public void setDocument(int doc) {
+        String csv = binary.get(doc).utf8ToString();
+        if (csv.length() == 0) {
+          values = new long[0];
+        } else {
+          String s[] = csv.split(",");
+          values = new long[s.length];
+          for (int i = 0; i < values.length; i++) {
+            values[i] = Long.parseLong(s[i]);
+          }
+        }
+      }
+
+      @Override
+      public long valueAt(int index) {
+        return values[index];
+      }
+
+      @Override
+      public int count() {
+        return values.length;
+      }
+    };
+  }
 
   @Override
   public SortedSetDocValues getSortedSet(FieldInfo fieldInfo) throws IOException {
@@ -431,6 +464,8 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
     switch (field.getDocValuesType()) {
       case SORTED_SET:
         return DocValues.docsWithValue(getSortedSet(field), maxDoc);
+      case SORTED_NUMERIC:
+        return DocValues.docsWithValue(getSortedNumeric(field), maxDoc);
       case SORTED:
         return DocValues.docsWithValue(getSorted(field), maxDoc);
       case BINARY:

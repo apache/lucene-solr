@@ -37,11 +37,11 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
  */
 public final class ReversedWildcardFilter extends TokenFilter {
   
-  private boolean withOriginal;
-  private char markerChar;
-  private State save;
-  private CharTermAttribute termAtt;
-  private PositionIncrementAttribute posAtt;
+  private final boolean withOriginal;
+  private final char markerChar;
+  private final CharTermAttribute termAtt;
+  private final PositionIncrementAttribute posAtt;
+  private State save = null;
 
   protected ReversedWildcardFilter(TokenStream input, boolean withOriginal, char markerChar) {
     super(input);
@@ -145,6 +145,12 @@ public final class ReversedWildcardFilter extends TokenFilter {
       // only if odd length
       buffer[end] = allowFrontSur ? endLow : frontHigh;
     }
+  }
+  
+  @Override
+  public void reset() throws IOException {
+    super.reset();
+    save = null;
   }
 
 }

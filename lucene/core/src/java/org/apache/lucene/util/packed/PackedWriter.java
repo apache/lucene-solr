@@ -56,7 +56,7 @@ final class PackedWriter extends PackedInts.Writer {
 
   @Override
   public void add(long v) throws IOException {
-    assert bitsPerValue == 64 || (v >= 0 && v <= PackedInts.maxValue(bitsPerValue)) : bitsPerValue;
+    assert PackedInts.unsignedBitsRequired(v) <= bitsPerValue;
     assert !finished;
     if (valueCount != -1 && written >= valueCount) {
       throw new EOFException("Writing past end of stream");

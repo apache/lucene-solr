@@ -254,7 +254,7 @@ class Packed64 extends PackedInts.MutableImpl {
 
   @Override
   public void fill(int fromIndex, int toIndex, long val) {
-    assert PackedInts.bitsRequired(val) <= getBitsPerValue();
+    assert PackedInts.unsignedBitsRequired(val) <= getBitsPerValue();
     assert fromIndex <= toIndex;
 
     // minimum number of values that use an exact number of full blocks

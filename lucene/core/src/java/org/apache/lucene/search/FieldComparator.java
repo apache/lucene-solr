@@ -226,6 +226,7 @@ public abstract class FieldComparator<T> {
     protected final T missingValue;
     protected final String field;
     protected Bits docsWithField;
+    protected NumericDocValues currentReaderValues;
     
     public NumericComparator(String field, T missingValue) {
       this.field = field;
@@ -234,6 +235,7 @@ public abstract class FieldComparator<T> {
 
     @Override
     public FieldComparator<T> setNextReader(AtomicReaderContext context) throws IOException {
+      currentReaderValues = getNumericDocValues(context, field);
       if (missingValue != null) {
         docsWithField = DocValues.getDocsWithField(context.reader(), field);
         // optimization to remove unneeded checks on the bit interface:
@@ -245,13 +247,17 @@ public abstract class FieldComparator<T> {
       }
       return this;
     }
+    
+    /** Retrieves the NumericDocValues for the field in this segment */
+    protected NumericDocValues getNumericDocValues(AtomicReaderContext context, String field) throws IOException {
+      return DocValues.getNumeric(context.reader(), field);
+    }
   }
 
   /** Parses field's values as double (using {@link
    *  AtomicReader#getNumericDocValues} and sorts by ascending value */
-  public static final class DoubleComparator extends NumericComparator<Double> {
+  public static class DoubleComparator extends NumericComparator<Double> {
     private final double[] values;
-    private NumericDocValues currentReaderValues;
     private double bottom;
     private double topValue;
 
@@ -288,12 +294,6 @@ public abstract class FieldComparator<T> {
 
       values[slot] = v2;
     }
-
-    @Override
-    public FieldComparator<Double> setNextReader(AtomicReaderContext context) throws IOException {
-      currentReaderValues = DocValues.getNumeric(context.reader(), field);
-      return super.setNextReader(context);
-    }
     
     @Override
     public void setBottom(final int bottom) {
@@ -324,9 +324,8 @@ public abstract class FieldComparator<T> {
 
   /** Parses field's values as float (using {@link
    *  AtomicReader#getNumericDocValues(String)} and sorts by ascending value */
-  public static final class FloatComparator extends NumericComparator<Float> {
+  public static class FloatComparator extends NumericComparator<Float> {
     private final float[] values;
-    private NumericDocValues currentReaderValues;
     private float bottom;
     private float topValue;
 
@@ -364,12 +363,6 @@ public abstract class FieldComparator<T> {
 
       values[slot] = v2;
     }
-
-    @Override
-    public FieldComparator<Float> setNextReader(AtomicReaderContext context) throws IOException {
-      currentReaderValues = DocValues.getNumeric(context.reader(), field);
-      return super.setNextReader(context);
-    }
     
     @Override
     public void setBottom(final int bottom) {
@@ -400,9 +393,8 @@ public abstract class FieldComparator<T> {
 
   /** Parses field's values as int (using {@link
    *  AtomicReader#getNumericDocValues(String)} and sorts by ascending value */
-  public static final class IntComparator extends NumericComparator<Integer> {
+  public static class IntComparator extends NumericComparator<Integer> {
     private final int[] values;
-    private NumericDocValues currentReaderValues;
     private int bottom;                           // Value of bottom of queue
     private int topValue;
 
@@ -439,12 +431,6 @@ public abstract class FieldComparator<T> {
 
       values[slot] = v2;
     }
-
-    @Override
-    public FieldComparator<Integer> setNextReader(AtomicReaderContext context) throws IOException {
-      currentReaderValues = DocValues.getNumeric(context.reader(), field);
-      return super.setNextReader(context);
-    }
     
     @Override
     public void setBottom(final int bottom) {
@@ -475,9 +461,8 @@ public abstract class FieldComparator<T> {
 
   /** Parses field's values as long (using {@link
    *  AtomicReader#getNumericDocValues(String)} and sorts by ascending value */
-  public static final class LongComparator extends NumericComparator<Long> {
+  public static class LongComparator extends NumericComparator<Long> {
     private final long[] values;
-    private NumericDocValues currentReaderValues;
     private long bottom;
     private long topValue;
 
@@ -515,12 +500,6 @@ public abstract class FieldComparator<T> {
       }
 
       values[slot] = v2;
-    }
-
-    @Override
-    public FieldComparator<Long> setNextReader(AtomicReaderContext context) throws IOException {
-      currentReaderValues = DocValues.getNumeric(context.reader(), field);
-      return super.setNextReader(context);
     }
     
     @Override

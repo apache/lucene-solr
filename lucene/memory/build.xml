@@ -19,10 +19,6 @@
 
 <project name="memory" default="default">
 
-  <property name="forbidden-rue-excludes" value="
-    org/apache/lucene/index/memory/MemoryIndex.class
-  "/>
-
   <description>
     Single-document in-memory index implementation
   </description>

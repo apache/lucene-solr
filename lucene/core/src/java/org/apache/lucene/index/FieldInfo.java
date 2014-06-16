@@ -106,6 +106,11 @@ public final class FieldInfo {
      */
     SORTED,
     /** 
+     * A pre-sorted Number[]. Fields with this type store numeric values in sorted
+     * order according to {@link Long#compare(long, long)}.
+     */
+    SORTED_NUMERIC,
+    /** 
      * A pre-sorted Set&lt;byte[]&gt;. Fields with this type only store distinct byte values 
      * and store additional offset pointers per document to dereference the shared 
      * byte[]s. The stored byte[] is presorted and allows access via document id, 

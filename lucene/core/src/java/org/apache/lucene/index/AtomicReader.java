@@ -275,6 +275,12 @@ public abstract class AtomicReader extends IndexReader {
    *  this field.  The returned instance should only be
    *  used by a single thread. */
   public abstract SortedDocValues getSortedDocValues(String field) throws IOException;
+  
+  /** Returns {@link SortedNumericDocValues} for this field, or
+   *  null if no {@link SortedNumericDocValues} were indexed for
+   *  this field.  The returned instance should only be
+   *  used by a single thread. */
+  public abstract SortedNumericDocValues getSortedNumericDocValues(String field) throws IOException;
 
   /** Returns {@link SortedSetDocValues} for this field, or
    *  null if no {@link SortedSetDocValues} were indexed for

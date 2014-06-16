@@ -1571,7 +1571,7 @@ class JavascriptParser extends Parser {
 
           stream_arguments.add(arguments48.getTree());
           // AST REWRITE
-          // elements: NAMESPACE_ID, arguments
+          // elements: arguments, NAMESPACE_ID
           // token labels: 
           // rule labels: retval
           // token list labels: 

@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.OpenBitSet;
@@ -52,6 +53,11 @@ public abstract class DocValuesDocIdSet extends DocIdSet {
   @Override
   public final boolean isCacheable() {
     return true;
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return 0L;
   }
 
   @Override

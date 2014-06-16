@@ -103,6 +103,8 @@ final class Lucene46FieldInfosWriter extends FieldInfosWriter {
       return 3;
     } else if (type == DocValuesType.SORTED_SET) {
       return 4;
+    } else if (type == DocValuesType.SORTED_NUMERIC) {
+      return 5;
     } else {
       throw new AssertionError();
     }

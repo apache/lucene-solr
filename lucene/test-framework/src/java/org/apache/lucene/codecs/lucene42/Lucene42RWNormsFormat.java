@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.diskdv;
+package org.apache.lucene.codecs.lucene42;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,27 +20,20 @@ package org.apache.lucene.codecs.diskdv;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
-import org.apache.lucene.codecs.DocValuesProducer;
-import org.apache.lucene.codecs.NormsFormat;
-import org.apache.lucene.codecs.lucene49.Lucene49DocValuesConsumer;
-import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.util.LuceneTestCase;
 
-/** Norms format that keeps all norms on disk */
-public final class DiskNormsFormat extends NormsFormat {
+/**
+ * Read-write version of {@link Lucene42NormsFormat}
+ */
+public class Lucene42RWNormsFormat extends Lucene42NormsFormat {
 
   @Override
   public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
-    return new Lucene49DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
+    if (LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
+      return new Lucene42NormsConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION, acceptableOverheadRatio);
+    } else {
+      return super.normsConsumer(state);
+    }
   }
-
-  @Override
-  public DocValuesProducer normsProducer(SegmentReadState state) throws IOException {
-    return new DiskDocValuesProducer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
-  }
-  
-  static final String DATA_CODEC = "DiskNormsData";
-  static final String DATA_EXTENSION = "dnvd";
-  static final String META_CODEC = "DiskNormsMetadata";
-  static final String META_EXTENSION = "dnvm";
 }

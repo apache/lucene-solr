@@ -50,6 +50,10 @@ import static org.apache.lucene.codecs.memory.MemoryDocValuesProducer.BLOCK_SIZE
 import static org.apache.lucene.codecs.memory.MemoryDocValuesProducer.BYTES;
 import static org.apache.lucene.codecs.memory.MemoryDocValuesProducer.NUMBER;
 import static org.apache.lucene.codecs.memory.MemoryDocValuesProducer.FST;
+import static org.apache.lucene.codecs.memory.MemoryDocValuesProducer.SORTED_SET;
+import static org.apache.lucene.codecs.memory.MemoryDocValuesProducer.SORTED_SET_SINGLETON;
+import static org.apache.lucene.codecs.memory.MemoryDocValuesProducer.SORTED_NUMERIC;
+import static org.apache.lucene.codecs.memory.MemoryDocValuesProducer.SORTED_NUMERIC_SINGLETON;
 import static org.apache.lucene.codecs.memory.MemoryDocValuesProducer.DELTA_COMPRESSED;
 import static org.apache.lucene.codecs.memory.MemoryDocValuesProducer.BLOCK_COMPRESSED;
 import static org.apache.lucene.codecs.memory.MemoryDocValuesProducer.GCD_COMPRESSED;
@@ -98,10 +102,11 @@ class MemoryDocValuesConsumer extends DocValuesConsumer {
     boolean missing = false;
     // TODO: more efficient?
     HashSet<Long> uniqueValues = null;
+    long count = 0;
+
     if (optimizeStorage) {
       uniqueValues = new HashSet<>();
 
-      long count = 0;
       long currentBlockMin = Long.MAX_VALUE;
       long currentBlockMax = Long.MIN_VALUE;
       for (Number nv : values) {
@@ -141,19 +146,19 @@ class MemoryDocValuesConsumer extends DocValuesConsumer {
         ++count;
         if (count % BLOCK_SIZE == 0) {
           final long blockDelta = currentBlockMax - currentBlockMin;
-          final int blockDeltaRequired = blockDelta < 0 ? 64 : PackedInts.bitsRequired(blockDelta);
+          final int blockDeltaRequired = PackedInts.unsignedBitsRequired(blockDelta);
           final int blockBPV = PackedInts.fastestFormatAndBits(BLOCK_SIZE, blockDeltaRequired, acceptableOverheadRatio).bitsPerValue;
           blockSum += blockBPV;
           currentBlockMax = Long.MIN_VALUE;
           currentBlockMin = Long.MAX_VALUE;
         }
       }
-      assert count == maxDoc;
     } else {
       for (Number nv : values) {
         long v = nv.longValue();
         maxValue = Math.max(v, maxValue);
         minValue = Math.min(v, minValue);
+        count++;
       }
     }
     
@@ -171,14 +176,14 @@ class MemoryDocValuesConsumer extends DocValuesConsumer {
     final FormatAndBits deltaBPV = PackedInts.fastestFormatAndBits(maxDoc, deltaRequired, acceptableOverheadRatio);
         
     final FormatAndBits tableBPV;
-    if (uniqueValues != null) {
+    if (count < Integer.MAX_VALUE && uniqueValues != null) {
       tableBPV = PackedInts.fastestFormatAndBits(maxDoc, PackedInts.bitsRequired(uniqueValues.size()-1), acceptableOverheadRatio);
     } else {
       tableBPV = null;
     }
     
     final FormatAndBits gcdBPV;
-    if (gcd != 0 && gcd != 1) {
+    if (count < Integer.MAX_VALUE && gcd != 0 && gcd != 1) {
       final long gcdDelta = (maxValue - minValue) / gcd;
       final int gcdRequired = gcdDelta < 0 ? 64 : PackedInts.bitsRequired(gcdDelta);
       gcdBPV = PackedInts.fastestFormatAndBits(maxDoc, gcdRequired, acceptableOverheadRatio);
@@ -195,6 +200,10 @@ class MemoryDocValuesConsumer extends DocValuesConsumer {
       if (numBlocks >= 4 && (avgBPV+avgBPV*acceptableOverheadRatio) < deltaBPV.bitsPerValue) {
         doBlock = true;
       }
+    }
+    // blockpackedreader allows us to read in huge streams of ints
+    if (count >= Integer.MAX_VALUE) {
+      doBlock = true;
     }
     
     if (tableBPV != null && (tableBPV.bitsPerValue+tableBPV.bitsPerValue*acceptableOverheadRatio) < deltaBPV.bitsPerValue) {
@@ -213,10 +222,11 @@ class MemoryDocValuesConsumer extends DocValuesConsumer {
       }
       
       meta.writeVInt(PackedInts.VERSION_CURRENT);
+      meta.writeLong(count);
       data.writeVInt(tableBPV.format.getId());
       data.writeVInt(tableBPV.bitsPerValue);
       
-      final PackedInts.Writer writer = PackedInts.getWriterNoHeader(data, tableBPV.format, maxDoc, tableBPV.bitsPerValue, PackedInts.DEFAULT_BUFFER_SIZE);
+      final PackedInts.Writer writer = PackedInts.getWriterNoHeader(data, tableBPV.format, (int)count, tableBPV.bitsPerValue, PackedInts.DEFAULT_BUFFER_SIZE);
       for(Number nv : values) {
         writer.add(encode.get(nv == null ? 0 : nv.longValue()));
       }
@@ -224,12 +234,13 @@ class MemoryDocValuesConsumer extends DocValuesConsumer {
     } else if (gcdBPV != null && (gcdBPV.bitsPerValue+gcdBPV.bitsPerValue*acceptableOverheadRatio) < deltaBPV.bitsPerValue) {
       meta.writeByte(GCD_COMPRESSED);
       meta.writeVInt(PackedInts.VERSION_CURRENT);
+      meta.writeLong(count);
       data.writeLong(minValue);
       data.writeLong(gcd);
       data.writeVInt(gcdBPV.format.getId());
       data.writeVInt(gcdBPV.bitsPerValue);
 
-      final PackedInts.Writer writer = PackedInts.getWriterNoHeader(data, gcdBPV.format, maxDoc, gcdBPV.bitsPerValue, PackedInts.DEFAULT_BUFFER_SIZE);
+      final PackedInts.Writer writer = PackedInts.getWriterNoHeader(data, gcdBPV.format, (int)count, gcdBPV.bitsPerValue, PackedInts.DEFAULT_BUFFER_SIZE);
       for (Number nv : values) {
         long value = nv == null ? 0 : nv.longValue();
         writer.add((value - minValue) / gcd);
@@ -238,6 +249,7 @@ class MemoryDocValuesConsumer extends DocValuesConsumer {
     } else if (doBlock) {
       meta.writeByte(BLOCK_COMPRESSED); // block delta-compressed
       meta.writeVInt(PackedInts.VERSION_CURRENT);
+      meta.writeLong(count);
       data.writeVInt(BLOCK_SIZE);
       final BlockPackedWriter writer = new BlockPackedWriter(data, BLOCK_SIZE);
       for (Number nv : values) {
@@ -247,12 +259,13 @@ class MemoryDocValuesConsumer extends DocValuesConsumer {
     } else {
       meta.writeByte(DELTA_COMPRESSED); // delta-compressed
       meta.writeVInt(PackedInts.VERSION_CURRENT);
+      meta.writeLong(count);
       final long minDelta = deltaBPV.bitsPerValue == 64 ? 0 : minValue;
       data.writeLong(minDelta);
       data.writeVInt(deltaBPV.format.getId());
       data.writeVInt(deltaBPV.bitsPerValue);
 
-      final PackedInts.Writer writer = PackedInts.getWriterNoHeader(data, deltaBPV.format, maxDoc, deltaBPV.bitsPerValue, PackedInts.DEFAULT_BUFFER_SIZE);
+      final PackedInts.Writer writer = PackedInts.getWriterNoHeader(data, deltaBPV.format, (int)count, deltaBPV.bitsPerValue, PackedInts.DEFAULT_BUFFER_SIZE);
       for (Number nv : values) {
         long v = nv == null ? 0 : nv.longValue();
         writer.add(v - minDelta);
@@ -388,20 +401,58 @@ class MemoryDocValuesConsumer extends DocValuesConsumer {
     // write the values as FST
     writeFST(field, values);
   }
+  
+  @Override
+  public void addSortedNumericField(FieldInfo field, Iterable<Number> docToValueCount, Iterable<Number> values) throws IOException {
+    meta.writeVInt(field.number);
+    
+    if (isSingleValued(docToValueCount)) {
+      meta.writeByte(SORTED_NUMERIC_SINGLETON);
+      addNumericField(field, singletonView(docToValueCount, values, null), true);
+    } else {
+      meta.writeByte(SORTED_NUMERIC);
+      
+      // write the addresses:
+      meta.writeVInt(PackedInts.VERSION_CURRENT);
+      meta.writeVInt(BLOCK_SIZE);
+      meta.writeLong(data.getFilePointer());
+      final MonotonicBlockPackedWriter writer = new MonotonicBlockPackedWriter(data, BLOCK_SIZE);
+      long addr = 0;
+      writer.add(addr);
+      for (Number v : docToValueCount) {
+        addr += v.longValue();
+        writer.add(addr);
+      }
+      writer.finish();
+      long valueCount = writer.ord();
+      meta.writeLong(valueCount);
+      
+      // write the values
+      addNumericField(field, values, true);
+    }
+  }
 
   // note: this might not be the most efficient... but its fairly simple
   @Override
   public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, final Iterable<Number> docToOrdCount, final Iterable<Number> ords) throws IOException {
-    // write the ordinals as a binary field
-    addBinaryField(field, new Iterable<BytesRef>() {
-      @Override
-      public Iterator<BytesRef> iterator() {
-        return new SortedSetIterator(docToOrdCount.iterator(), ords.iterator());
-      }
-    });
+    meta.writeVInt(field.number);
+    
+    if (isSingleValued(docToOrdCount)) {
+      meta.writeByte(SORTED_SET_SINGLETON);
+      addSortedField(field, values, singletonView(docToOrdCount, ords, -1L));
+    } else {
+      meta.writeByte(SORTED_SET);
+      // write the ordinals as a binary field
+      addBinaryField(field, new Iterable<BytesRef>() {
+        @Override
+        public Iterator<BytesRef> iterator() {
+          return new SortedSetIterator(docToOrdCount.iterator(), ords.iterator());
+        }
+      });
       
-    // write the values as FST
-    writeFST(field, values);
+      // write the values as FST
+      writeFST(field, values);
+    }
   }
   
   // per-document vint-encoded byte[]

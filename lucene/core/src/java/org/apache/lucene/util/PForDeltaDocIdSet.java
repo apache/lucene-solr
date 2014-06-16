@@ -35,6 +35,8 @@ import org.apache.lucene.util.packed.PackedInts;
  */
 public final class PForDeltaDocIdSet extends DocIdSet implements Accountable {
 
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(PForDeltaDocIdSet.class);
+
   static final int BLOCK_SIZE = 128;
   static final int MAX_EXCEPTIONS = 24; // no more than 24 exceptions per block
   static final PackedInts.Decoder[] DECODERS = new PackedInts.Decoder[32];
@@ -513,7 +515,17 @@ public final class PForDeltaDocIdSet extends DocIdSet implements Accountable {
 
   @Override
   public long ramBytesUsed() {
-    return RamUsageEstimator.alignObjectSize(3 * RamUsageEstimator.NUM_BYTES_OBJECT_REF) + docIDs.ramBytesUsed() + offsets.ramBytesUsed();
+    if (this == EMPTY) {
+      return 0L;
+    }
+    long ramBytesUsed = BASE_RAM_BYTES_USED + RamUsageEstimator.sizeOf(data);
+    if (docIDs != SINGLE_ZERO_BUFFER) {
+      ramBytesUsed += docIDs.ramBytesUsed();
+    }
+    if (offsets != SINGLE_ZERO_BUFFER) {
+      ramBytesUsed += offsets.ramBytesUsed();
+    }
+    return ramBytesUsed;
   }
 
 }

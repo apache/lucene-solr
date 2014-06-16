@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.EnumFieldValue;
@@ -183,13 +182,13 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
           byte[] b2 = (byte[]) matchObj.get(i);
           assertTrue(Arrays.equals(b1, b2));
         } else if(unmarshaledObj.get(i) instanceof SolrDocument && matchObj.get(i) instanceof SolrDocument ) {
-          assertSolrDocumentEquals(unmarshaledObj.get(i), matchObj.get(i));
+          assertTrue(compareSolrDocument(unmarshaledObj.get(i), matchObj.get(i)));
         } else if(unmarshaledObj.get(i) instanceof SolrDocumentList && matchObj.get(i) instanceof SolrDocumentList ) {
-          assertSolrDocumentEquals(unmarshaledObj.get(i), matchObj.get(i));
+          assertTrue(compareSolrDocumentList(unmarshaledObj.get(i), matchObj.get(i)));
         } else if(unmarshaledObj.get(i) instanceof SolrInputDocument && matchObj.get(i) instanceof SolrInputDocument) {
-          assertSolrInputDocumentEquals(unmarshaledObj.get(i), matchObj.get(i));
+          assertTrue(compareSolrInputDocument(unmarshaledObj.get(i), matchObj.get(i)));
         } else if(unmarshaledObj.get(i) instanceof SolrInputField && matchObj.get(i) instanceof SolrInputField) {
-          assertSolrInputFieldEquals(unmarshaledObj.get(i), matchObj.get(i));
+          assertTrue(assertSolrInputFieldEquals(unmarshaledObj.get(i), matchObj.get(i)));
         } else {
           assertEquals(unmarshaledObj.get(i), matchObj.get(i));
         }
@@ -213,7 +212,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
       InputStream is = getClass().getResourceAsStream(SOLRJ_JAVABIN_BACKCOMPAT_BIN_CHILD_DOCS);
       SolrDocument sdoc = (SolrDocument) javabin.unmarshal(is);
       SolrDocument matchSolrDoc = generateSolrDocumentWithChildDocs();
-      assertTrue(assertSolrDocumentEquals(sdoc, matchSolrDoc));
+      assertTrue(compareSolrDocument(sdoc, matchSolrDoc));
     } catch (IOException e) {
       throw e;
     }

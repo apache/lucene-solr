@@ -77,6 +77,26 @@ public final class DocValues {
       }
     };
   }
+  
+  /** 
+   * An empty SortedNumericDocValues which returns zero values for every document 
+   */
+  public static final SortedNumericDocValues emptySortedNumeric() {
+    return new SortedNumericDocValues() {
+      @Override
+      public void setDocument(int doc) {}
+
+      @Override
+      public long valueAt(int index) {
+        throw new IndexOutOfBoundsException();
+      }
+
+      @Override
+      public int count() {
+        return 0;
+      }
+    };
+  }
 
   /** 
    * An empty SortedDocValues which returns {@link SortedSetDocValues#NO_MORE_ORDS} for every document 
@@ -122,7 +142,7 @@ public final class DocValues {
   
   /** 
    * Returns a single-valued view of the SortedSetDocValues, if it was previously
-   * wrapped with {@link #singleton}, or null. 
+   * wrapped with {@link #singleton(SortedDocValues)}, or null. 
    */
   public static SortedDocValues unwrapSingleton(SortedSetDocValues dv) {
     if (dv instanceof SingletonSortedSetDocValues) {
@@ -130,6 +150,38 @@ public final class DocValues {
     } else {
       return null;
     }
+  }
+  
+  /** 
+   * Returns a single-valued view of the SortedNumericDocValues, if it was previously
+   * wrapped with {@link #singleton(NumericDocValues, Bits)}, or null. 
+   * @see #unwrapSingletonBits(SortedNumericDocValues)
+   */
+  public static NumericDocValues unwrapSingleton(SortedNumericDocValues dv) {
+    if (dv instanceof SingletonSortedNumericDocValues) {
+      return ((SingletonSortedNumericDocValues)dv).getNumericDocValues();
+    } else {
+      return null;
+    }
+  }
+  
+  /** 
+   * Returns the documents with a value for the SortedNumericDocValues, if it was previously
+   * wrapped with {@link #singleton(NumericDocValues, Bits)}, or null. 
+   */
+  public static Bits unwrapSingletonBits(SortedNumericDocValues dv) {
+    if (dv instanceof SingletonSortedNumericDocValues) {
+      return ((SingletonSortedNumericDocValues)dv).getDocsWithField();
+    } else {
+      return null;
+    }
+  }
+  
+  /**
+   * Returns a multi-valued view over the provided NumericDocValues
+   */
+  public static SortedNumericDocValues singleton(NumericDocValues dv, Bits docsWithField) {
+    return new SingletonSortedNumericDocValues(dv, docsWithField);
   }
   
   /**
@@ -158,6 +210,24 @@ public final class DocValues {
       public boolean get(int index) {
         dv.setDocument(index);
         return dv.nextOrd() != SortedSetDocValues.NO_MORE_ORDS;
+      }
+
+      @Override
+      public int length() {
+        return maxDoc;
+      }
+    };
+  }
+  
+  /**
+   * Returns a Bits representing all documents from <code>dv</code> that have a value.
+   */
+  public static Bits docsWithValue(final SortedNumericDocValues dv, final int maxDoc) {
+    return new Bits() {
+      @Override
+      public boolean get(int index) {
+        dv.setDocument(index);
+        return dv.count() != 0;
       }
 
       @Override
@@ -206,6 +276,22 @@ public final class DocValues {
     } else {
       return dv;
     }
+  }
+  
+  /**
+   * Returns SortedNumericDocValues for the reader, or {@link #emptySortedNumeric} if it has none. 
+   */
+  public static SortedNumericDocValues getSortedNumeric(AtomicReader in, String field) throws IOException {
+    SortedNumericDocValues dv = in.getSortedNumericDocValues(field);
+    if (dv == null) {
+      NumericDocValues single = in.getNumericDocValues(field);
+      if (single == null) {
+        return emptySortedNumeric();
+      }
+      Bits bits = in.getDocsWithField(field);
+      return singleton(single, bits);
+    }
+    return dv;
   }
   
   /**

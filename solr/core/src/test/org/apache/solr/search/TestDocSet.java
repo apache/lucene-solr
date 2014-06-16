@@ -33,6 +33,7 @@ import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.search.DocIdSet;
@@ -403,6 +404,11 @@ public class TestDocSet extends LuceneTestCase {
 
       @Override
       public SortedDocValues getSortedDocValues(String field) {
+        return null;
+      }
+      
+      @Override
+      public SortedNumericDocValues getSortedNumericDocValues(String field) {
         return null;
       }
       

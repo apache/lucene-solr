@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.diskdv;
+package org.apache.lucene.index;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,16 +17,30 @@ package org.apache.lucene.codecs.diskdv;
  * limitations under the License.
  */
 
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.cheapbastard.CheapBastardCodec;
-import org.apache.lucene.index.BaseNormsFormatTestCase;
+/**
+ * A list of per-document numeric values, sorted 
+ * according to {@link Long#compare(long, long)}.
+ */
+public abstract class SortedNumericDocValues {
+  
+  /** Sole constructor. (For invocation by subclass 
+   * constructors, typically implicit.) */
+  protected SortedNumericDocValues() {}
 
-/** Tests DiskNormsFormat */
-public class TestDiskNormsFormat extends BaseNormsFormatTestCase {
-  private final Codec codec = new CheapBastardCodec();
-
-  @Override
-  protected Codec getCodec() {
-    return codec;
-  }
+  /** 
+   * Positions to the specified document 
+   */
+  public abstract void setDocument(int doc);
+  
+  /** 
+   * Retrieve the value for the current document at the specified index. 
+   * An index ranges from {@code 0} to {@code count()-1}. 
+   */
+  public abstract long valueAt(int index);
+  
+  /** 
+   * Retrieves the count of values for the current document. 
+   * This may be zero if a document has no values.
+   */
+  public abstract int count();
 }

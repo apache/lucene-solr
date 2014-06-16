@@ -84,8 +84,7 @@ Other Changes
 * SOLR-5868: HttpClient should be configured to use ALLOW_ALL_HOSTNAME hostname
   verifier to simplify SSL setup. (Steve Davids via Mark Miller)
 
-* SOLR-6015: Better way to handle managed synonyms when ignoreCase=true
-  (Timothy Potter)
+* SOLR-6169: Properly remove CoreAdminHandler handleAlias action (Alan Woodward)
 
 ==================  4.9.0 ==================
 
@@ -139,9 +138,16 @@ New Features
 Bug Fixes
 ----------------------
 
+* SOLR-5956: Use coreDescriptor.getInstanceDir() instead of getRawInstanceDir()
+  in the SnapShooter to avoid problems when solr.solr.home is a symbolic link.
+  (Timothy Potter) 
+
 * SOLR-6002: Fix a couple of ugly issues around SolrIndexWriter close and 
   rollback as well as how SolrIndexWriter manages it's ref counted directory
   instance. (Mark Miller, Gregory Chanan)
+
+* SOLR-6015: Better way to handle managed synonyms when ignoreCase=true
+  (Timothy Potter)
 
 * SOLR-6104: The 'addreplica' Collection API does not support 'async' parameter.
   (shalin)
@@ -171,6 +177,12 @@ Bug Fixes
 
 * SOLR-6158: Relative configSetBase directories were resolved relative to the 
   container CWD, rather than solr.home. (Simon Endele, Alan Woodward)
+
+* SOLR-6056: Don't publish recovery state until recovery runs to avoid overwhelming
+  the overseer state queue. (Raintung Li, Mark Miller, shalin)
+
+* SOLR-5426: Fixed a bug in ReverseWildCardFilter that could cause 
+  InvalidTokenOffsetsException when highlighting. (Uwe Schindler, Arun Kumar, via hossman)
 
 Other Changes
 ---------------------
@@ -214,6 +226,15 @@ Other Changes
 
 * SOLR-6067: Refactor duplicate Collector code in SolrIndexSearcher 
   (Christine Poerschke via hossman)
+
+* SOLR-5940: post.jar reports back detailed error in case of error responses.
+  (Sameer Maggon, shalin, Uwe Schindler)
+
+* SOLR-6161: SolrDispatchFilter should throw java.lang.Error back even if wrapped in
+  another exception. (Miklos Christine via shalin)
+
+* SOLR-6153: ReplicationHandler backup response format should contain backup name.
+  (Varun Thacker via shalin)
 
 Optimizations
 ----------------------

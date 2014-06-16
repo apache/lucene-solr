@@ -91,6 +91,15 @@ public class DateNRStrategyTest extends BaseNonFuzzySpatialOpStrategyTest {
         tree.toShape(randomCalendar()), true);
   }
 
+  @Test
+  public void testBugInitIterOptimization() throws Exception {
+    //bug due to fast path initIter() optimization
+    testOperation(
+        tree.parseShape("[2014-03-27T23 TO 2014-04-01T01]"),
+        SpatialOperation.Intersects,
+        tree.parseShape("[2014-04 TO 2014-04-01T02]"), true);
+  }
+
   @Override
   protected Shape randomIndexedShape() {
     Calendar cal1 = randomCalendar();

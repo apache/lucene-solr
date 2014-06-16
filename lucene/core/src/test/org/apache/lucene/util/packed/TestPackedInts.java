@@ -38,6 +38,7 @@ import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.RamUsageTester;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.packed.PackedInts.Reader;
 import org.junit.Ignore;
@@ -69,6 +70,9 @@ public class TestPackedInts extends LuceneTestCase {
     assertEquals(61, PackedInts.bitsRequired(0x1FFFFFFFFFFFFFFFL));
     assertEquals(62, PackedInts.bitsRequired(0x3FFFFFFFFFFFFFFFL));
     assertEquals(63, PackedInts.bitsRequired(0x7FFFFFFFFFFFFFFFL));
+    assertEquals(64, PackedInts.unsignedBitsRequired(-1));
+    assertEquals(64, PackedInts.unsignedBitsRequired(Long.MIN_VALUE));
+    assertEquals(1, PackedInts.bitsRequired(0));
   }
 
   public void testMaxValues() {
@@ -146,7 +150,7 @@ public class TestPackedInts extends LuceneTestCase {
           }
           in.close();
 
-          final long expectedBytesUsed = RamUsageEstimator.sizeOf(r);
+          final long expectedBytesUsed = RamUsageTester.sizeOf(r);
           final long computedBytesUsed = r.ramBytesUsed();
           assertEquals(r.getClass() + "expected " + expectedBytesUsed + ", got: " + computedBytesUsed,
               expectedBytesUsed, computedBytesUsed);
@@ -687,7 +691,7 @@ public class TestPackedInts extends LuceneTestCase {
     assertEquals(10, wrt.get(7));
     assertEquals(99, wrt.get(valueCount - 10));
     assertEquals(1 << 10, wrt.get(valueCount - 1));
-    assertEquals(RamUsageEstimator.sizeOf(wrt), wrt.ramBytesUsed());
+    assertEquals(RamUsageTester.sizeOf(wrt), wrt.ramBytesUsed());
   }
 
   public void testPagedGrowableWriter() {
@@ -716,7 +720,7 @@ public class TestPackedInts extends LuceneTestCase {
     }
 
     // test ramBytesUsed
-    assertEquals(RamUsageEstimator.sizeOf(writer), writer.ramBytesUsed(), 8);
+    assertEquals(RamUsageTester.sizeOf(writer), writer.ramBytesUsed(), 8);
 
     // test copy
     PagedGrowableWriter copy = writer.resize(TestUtil.nextLong(random(), writer.size() / 2, writer.size() * 3 / 2));
@@ -764,7 +768,7 @@ public class TestPackedInts extends LuceneTestCase {
     }
 
     // test ramBytesUsed
-    assertEquals(RamUsageEstimator.sizeOf(writer) - RamUsageEstimator.sizeOf(writer.format), writer.ramBytesUsed());
+    assertEquals(RamUsageTester.sizeOf(writer) - RamUsageTester.sizeOf(writer.format), writer.ramBytesUsed());
 
     // test copy
     PagedMutable copy = writer.resize(TestUtil.nextLong(random(), writer.size() / 2, writer.size() * 3 / 2));
@@ -1048,7 +1052,7 @@ public class TestPackedInts extends LuceneTestCase {
           }
         }
 
-        final long expectedBytesUsed = RamUsageEstimator.sizeOf(buf);
+        final long expectedBytesUsed = RamUsageTester.sizeOf(buf);
         final long computedBytesUsed = buf.ramBytesUsed();
         assertEquals(expectedBytesUsed, computedBytesUsed);
       }

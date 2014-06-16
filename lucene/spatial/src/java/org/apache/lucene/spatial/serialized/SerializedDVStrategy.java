@@ -21,6 +21,7 @@ import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.io.BinaryCodec;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
+
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.AtomicReaderContext;
@@ -169,6 +170,11 @@ public class SerializedDVStrategy extends SpatialStrategy {
               return context.reader().maxDoc();
             }
           };
+        }
+
+        @Override
+        public long ramBytesUsed() {
+          return 0L;
         }
       };
     }

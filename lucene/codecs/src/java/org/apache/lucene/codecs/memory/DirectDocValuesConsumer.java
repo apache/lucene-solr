@@ -32,7 +32,10 @@ import org.apache.lucene.util.IOUtils;
 import static org.apache.lucene.codecs.memory.DirectDocValuesProducer.VERSION_CURRENT;
 import static org.apache.lucene.codecs.memory.DirectDocValuesProducer.BYTES;
 import static org.apache.lucene.codecs.memory.DirectDocValuesProducer.SORTED;
+import static org.apache.lucene.codecs.memory.DirectDocValuesProducer.SORTED_NUMERIC;
+import static org.apache.lucene.codecs.memory.DirectDocValuesProducer.SORTED_NUMERIC_SINGLETON;
 import static org.apache.lucene.codecs.memory.DirectDocValuesProducer.SORTED_SET;
+import static org.apache.lucene.codecs.memory.DirectDocValuesProducer.SORTED_SET_SINGLETON;
 import static org.apache.lucene.codecs.memory.DirectDocValuesProducer.NUMBER;
 
 /**
@@ -238,67 +241,102 @@ class DirectDocValuesConsumer extends DocValuesConsumer {
     // write the values as binary
     addBinaryFieldValues(field, values);
   }
+  
+  @Override
+  public void addSortedNumericField(FieldInfo field, Iterable<Number> docToValueCount, Iterable<Number> values) throws IOException {
+    meta.writeVInt(field.number);
+    if (isSingleValued(docToValueCount)) {
+      meta.writeByte(SORTED_NUMERIC_SINGLETON);
+      addNumericFieldValues(field, singletonView(docToValueCount, values, null));
+    } else {
+      meta.writeByte(SORTED_NUMERIC);
+
+      // First write docToValueCounts, except we "aggregate" the
+      // counts so they turn into addresses, and add a final
+      // value = the total aggregate:
+      addNumericFieldValues(field, countToAddressIterator(docToValueCount));
+
+      // Write values for all docs, appended into one big
+      // numerics:
+      addNumericFieldValues(field, values);
+    }
+  }
 
   // note: this might not be the most efficient... but its fairly simple
   @Override
   public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, final Iterable<Number> docToOrdCount, final Iterable<Number> ords) throws IOException {
     meta.writeVInt(field.number);
-    meta.writeByte(SORTED_SET);
-
-    // First write docToOrdCounts, except we "aggregate" the
-    // counts so they turn into addresses, and add a final
-    // value = the total aggregate:
-    addNumericFieldValues(field, new Iterable<Number>() {
-
-        // Just aggregates the count values so they become
-        // "addresses", and adds one more value in the end
-        // (the final sum):
-
-        @Override
-        public Iterator<Number> iterator() {
-          final Iterator<Number> iter = docToOrdCount.iterator();
-
-          return new Iterator<Number>() {
-
-            long sum;
-            boolean ended;
-
-            @Override
-            public boolean hasNext() {
-              return iter.hasNext() || !ended;
-            }
-
-            @Override
-            public Number next() {
-              long toReturn = sum;
-
-              if (iter.hasNext()) {
-                Number n = iter.next();
-                if (n != null) {
-                  sum += n.longValue();
-                }
-              } else if (!ended) {
-                ended = true;
-              } else {
-                assert false;
-              }
-
-              return toReturn;
-            }
-
-            @Override
-            public void remove() {
-              throw new UnsupportedOperationException();
-            }
-          };
-        }
-      });
-
-    // Write ordinals for all docs, appended into one big
-    // numerics:
-    addNumericFieldValues(field, ords);
+    
+    if (isSingleValued(docToOrdCount)) {
+      meta.writeByte(SORTED_SET_SINGLETON);
+      // Write ordinals for all docs, appended into one big
+      // numerics:
+      addNumericFieldValues(field, singletonView(docToOrdCount, ords, -1L));
       
-    // write the values as binary
-    addBinaryFieldValues(field, values);
+      // write the values as binary
+      addBinaryFieldValues(field, values);
+    } else {
+      meta.writeByte(SORTED_SET);
+
+      // First write docToOrdCounts, except we "aggregate" the
+      // counts so they turn into addresses, and add a final
+      // value = the total aggregate:
+      addNumericFieldValues(field, countToAddressIterator(docToOrdCount));
+
+      // Write ordinals for all docs, appended into one big
+      // numerics:
+      addNumericFieldValues(field, ords);
+      
+      // write the values as binary
+      addBinaryFieldValues(field, values);
+    }
+  }
+  
+  /** 
+   * Just aggregates the count values so they become
+   * "addresses", and adds one more value in the end
+   * (the final sum)
+   */ 
+  private Iterable<Number> countToAddressIterator(final Iterable<Number> counts) {
+    return new Iterable<Number>() {
+      @Override
+      public Iterator<Number> iterator() {
+        final Iterator<Number> iter = counts.iterator();
+        
+        return new Iterator<Number>() {
+          
+          long sum;
+          boolean ended;
+          
+          @Override
+          public boolean hasNext() {
+            return iter.hasNext() || !ended;
+          }
+          
+          @Override
+          public Number next() {
+            long toReturn = sum;
+            
+            if (iter.hasNext()) {
+              Number n = iter.next();
+              if (n != null) {
+                sum += n.longValue();
+              }
+            } else if (!ended) {
+              ended = true;
+            } else {
+              assert false;
+            }
+            
+            return toReturn;
+          }
+          
+          @Override
+          public void remove() {
+            throw new UnsupportedOperationException();
+          }
+        };
+      }
+    };
   }
 }

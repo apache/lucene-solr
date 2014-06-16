@@ -124,13 +124,19 @@ New Features
   filtered and constant-score queries to postings highlighter.
   (Luca Cavanna via Robert Muir)
 
-* LUCENE-5731: Add RandomAccessInput, a random access API for directory.
+* LUCENE-5731, LUCENE-5760: Add RandomAccessInput, a random access API for directory.
   Add DirectReader/Writer, optimized for reading packed integers directly 
   from Directory. Add Lucene49Codec and Lucene49DocValuesFormat that make
   use of these.  (Robert Muir)
 
 * LUCENE-5743: Add Lucene49NormsFormat, which can compress in some cases
   such as very short fields.  (Ryan Ernst, Adrien Grand, Robert Muir)
+
+* LUCENE-5748: Add SORTED_NUMERIC docvalues type, which is efficient
+  for processing numeric fields with multiple values.  (Robert Muir)
+
+* LUCENE-5754: Allow "$" as part of variable and function names in
+  expressions module.  (Uwe Schindler)
 
 Changes in Backwards Compatibility Policy
 
@@ -149,6 +155,9 @@ Changes in Backwards Compatibility Policy
   (Robert Muir, Uwe Schindler)
 
 API Changes
+
+* LUCENE-5756: IndexWriter now implements Accountable and IW#ramSizeInBytes()
+  has been deprecated infavor of IW#ramBytesUsed() (Simon Willnauer)
 
 * LUCENE-5725: MoreLikeThis#like now accepts multiple values per field.
   The pre-existing method has been deprecated in favor of a variable arguments
@@ -211,6 +220,14 @@ API Changes
 * LUCENE-5703: BinaryDocValues API changed to work like TermsEnum and not allocate/
   copy bytes on each access, you are responsible for cloning if you want to keep
   data around. (Adrien Grand)
+
+* LUCENE-5695: DocIdSet implements Accountable. (Adrien Grand)
+
+* LUCENE-5757: Moved RamUsageEstimator's reflection-based processing to RamUsageTester
+  in the test-framework module. (Robert Muir)
+
+* LUCENE-5761: Removed DiskDocValuesFormat, it was very inefficient and saved very little
+  RAM over the default codec. (Robert Muir)
 
 Optimizations
 

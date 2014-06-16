@@ -17,8 +17,10 @@ package org.apache.lucene.codecs.lucene46;
  * limitations under the License.
  */
 
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.NormsFormat;
-import org.apache.lucene.codecs.lucene42.Lucene42NormsFormat;
+import org.apache.lucene.codecs.lucene42.Lucene42RWNormsFormat;
+import org.apache.lucene.codecs.lucene45.Lucene45RWDocValuesFormat;
 
 /**
  * Read-write version of {@link Lucene46Codec} for testing.
@@ -26,7 +28,14 @@ import org.apache.lucene.codecs.lucene42.Lucene42NormsFormat;
 @SuppressWarnings("deprecation")
 public class Lucene46RWCodec extends Lucene46Codec {
   
-  private static final NormsFormat norms = new Lucene42NormsFormat();
+  private static final DocValuesFormat docValues = new Lucene45RWDocValuesFormat();
+  
+  @Override
+  public DocValuesFormat getDocValuesFormatForField(String field) {
+    return docValues;
+  }
+  
+  private static final NormsFormat norms = new Lucene42RWNormsFormat();
 
   @Override
   public NormsFormat normsFormat() {

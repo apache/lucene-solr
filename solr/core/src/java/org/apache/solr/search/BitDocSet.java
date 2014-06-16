@@ -336,6 +336,11 @@ public class BitDocSet extends DocSetBase {
           }
 
           @Override
+          public long ramBytesUsed() {
+            return bs.ramBytesUsed();
+          }
+
+          @Override
           public Bits bits() {
             return new Bits() {
               @Override

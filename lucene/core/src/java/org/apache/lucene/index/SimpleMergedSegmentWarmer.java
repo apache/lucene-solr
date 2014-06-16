@@ -65,6 +65,9 @@ public class SimpleMergedSegmentWarmer extends IndexReaderWarmer {
           case SORTED:
             reader.getSortedDocValues(info.name);
             break;
+          case SORTED_NUMERIC:
+            reader.getSortedNumericDocValues(info.name);
+            break;
           case SORTED_SET:
             reader.getSortedSetDocValues(info.name);
             break;

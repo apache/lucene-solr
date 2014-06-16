@@ -21,13 +21,13 @@ import java.io.Closeable; // javadocs
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
@@ -43,7 +43,6 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
 
   static final int BLOCK_SIZE = 16384;
   static final int ADDRESS_INTERVAL = 16;
-  static final Number MISSING_ORD = Long.valueOf(-1);
 
   /** Compressed using packed blocks of ints. */
   public static final int DELTA_COMPRESSED = 0;
@@ -90,6 +89,7 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
   
   @Override
   public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
+    checkCanWrite(field);
     addNumericField(field, values, true);
   }
 
@@ -147,7 +147,7 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
 
     final int format;
     if (uniqueValues != null
-        && (delta < 0L || PackedInts.bitsRequired(uniqueValues.size() - 1) < PackedInts.bitsRequired(delta))
+        && (PackedInts.bitsRequired(uniqueValues.size() - 1) < PackedInts.unsignedBitsRequired(delta))
         && count <= Integer.MAX_VALUE) {
       format = TABLE_COMPRESSED;
     } else if (gcd != 0 && gcd != 1) {
@@ -230,6 +230,7 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
 
   @Override
   public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
+    checkCanWrite(field);
     // write the byte[] data
     meta.writeVInt(field.number);
     meta.writeByte(Lucene45DocValuesFormat.BINARY);
@@ -344,63 +345,28 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
 
   @Override
   public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
+    checkCanWrite(field);
     meta.writeVInt(field.number);
     meta.writeByte(Lucene45DocValuesFormat.SORTED);
     addTermsDict(field, values);
     addNumericField(field, docToOrd, false);
   }
-
-  private static boolean isSingleValued(Iterable<Number> docToOrdCount) {
-    for (Number ordCount : docToOrdCount) {
-      if (ordCount.longValue() > 1) {
-        return false;
-      }
-    }
-    return true;
+  
+  @Override
+  public void addSortedNumericField(FieldInfo field, Iterable<Number> docToValueCount, Iterable<Number> values) throws IOException {
+    throw new UnsupportedOperationException("Lucene 4.5 does not support SORTED_NUMERIC");
   }
 
   @Override
   public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, final Iterable<Number> docToOrdCount, final Iterable<Number> ords) throws IOException {
+    checkCanWrite(field);
     meta.writeVInt(field.number);
     meta.writeByte(Lucene45DocValuesFormat.SORTED_SET);
 
     if (isSingleValued(docToOrdCount)) {
       meta.writeVInt(SORTED_SET_SINGLE_VALUED_SORTED);
       // The field is single-valued, we can encode it as SORTED
-      addSortedField(field, values, new Iterable<Number>() {
-
-        @Override
-        public Iterator<Number> iterator() {
-          final Iterator<Number> docToOrdCountIt = docToOrdCount.iterator();
-          final Iterator<Number> ordsIt = ords.iterator();
-          return new Iterator<Number>() {
-
-            @Override
-            public boolean hasNext() {
-              assert ordsIt.hasNext() ? docToOrdCountIt.hasNext() : true;
-              return docToOrdCountIt.hasNext();
-            }
-
-            @Override
-            public Number next() {
-              final Number ordCount = docToOrdCountIt.next();
-              if (ordCount.longValue() == 0) {
-                return MISSING_ORD;
-              } else {
-                assert ordCount.longValue() == 1;
-                return ordsIt.next();
-              }
-            }
-
-            @Override
-            public void remove() {
-              throw new UnsupportedOperationException();
-            }
-
-          };
-        }
-
-      });
+      addSortedField(field, values, singletonView(docToOrdCount, ords, -1L));
       return;
     }
 
@@ -451,6 +417,16 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
         IOUtils.closeWhileHandlingException(data, meta);
       }
       meta = data = null;
+    }
+  }
+  
+  void checkCanWrite(FieldInfo field) {
+    if ((field.getDocValuesType() == DocValuesType.NUMERIC || 
+        field.getDocValuesType() == DocValuesType.BINARY) && 
+        field.getDocValuesGen() != -1) {
+      // ok
+    } else {
+      throw new UnsupportedOperationException("this codec can only be used for reading");
     }
   }
 }

@@ -378,4 +378,9 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
       throw new UnsupportedOperationException();
     }
   }
+
+  @Override
+  public void addSortedNumericField(FieldInfo field, Iterable<Number> docToValueCount, Iterable<Number> values) throws IOException {
+    throw new UnsupportedOperationException("Lucene 4.2 does not support SORTED_NUMERIC");
+  }
 }

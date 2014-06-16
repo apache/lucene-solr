@@ -95,6 +95,7 @@ import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.SimpleMergedSegmentWarmer;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
@@ -1680,6 +1681,15 @@ public abstract class LuceneTestCase extends Assert {
     return true;
   }
   
+  /** Returns true if the default codec supports SORTED_NUMERIC docvalues */ 
+  public static boolean defaultCodecSupportsSortedNumeric() {
+    String name = Codec.getDefault().getName();
+    if (name.equals("Lucene40") || name.equals("Lucene41") || name.equals("Lucene42") || name.equals("Lucene45") || name.equals("Lucene46")) {
+      return false;
+    }
+    return true;
+  }
+  
   /** Returns true if the codec "supports" docsWithField 
    * (other codecs return MatchAllBits, because you couldnt write missing values before) */
   public static boolean defaultCodecSupportsDocsWithField() {
@@ -2281,6 +2291,28 @@ public abstract class LuceneTestCase extends Assert {
               assertEquals(info, ord, rightValues.nextOrd());
             }
             assertEquals(info, SortedSetDocValues.NO_MORE_ORDS, rightValues.nextOrd());
+          }
+        } else {
+          assertNull(info, leftValues);
+          assertNull(info, rightValues);
+        }
+      }
+      
+      {
+        SortedNumericDocValues leftValues = MultiDocValues.getSortedNumericValues(leftReader, field);
+        SortedNumericDocValues rightValues = MultiDocValues.getSortedNumericValues(rightReader, field);
+        if (leftValues != null && rightValues != null) {
+          for (int i = 0; i < leftReader.maxDoc(); i++) {
+            leftValues.setDocument(i);
+            long expected[] = new long[leftValues.count()];
+            for (int j = 0; j < expected.length; j++) {
+              expected[j] = leftValues.valueAt(j);
+            }
+            rightValues.setDocument(i);
+            for (int j = 0; j < expected.length; j++) {
+              assertEquals(info, expected[j], rightValues.valueAt(j));
+            }
+            assertEquals(info, expected.length, rightValues.count());
           }
         } else {
           assertNull(info, leftValues);

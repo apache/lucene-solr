@@ -625,28 +625,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
   }
 
   /**
-   * Handle "ALIAS" action
-   */
-  @Deprecated
-  protected void handleAliasAction(SolrQueryRequest req, SolrQueryResponse rsp) {
-    SolrParams params = req.getParams();
-
-    String name = params.get(CoreAdminParams.OTHER);
-    String cname = params.get(CoreAdminParams.CORE);
-    boolean doPersist = false;
-    if (cname.equals(name)) return;
-
-    SolrCore core = coreContainer.getCore(cname);
-    if (core != null) {
-      doPersist = coreContainer.isPersistent();
-      coreContainer.register(name, core, false);
-      // no core.close() since each entry in the cores map should increase the ref
-    }
-    return;
-  }
-
-
-  /**
    * Handle "UNLOAD" Action
    */
   protected void handleUnloadAction(SolrQueryRequest req,
@@ -852,21 +830,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
           cname = "";
         }
         try (SolrCore core = coreContainer.getCore(cname)) {
-
           if (core != null) {
-            // try to publish as recovering right away
-            try {
-              coreContainer.getZkController().publish(core.getCoreDescriptor(), ZkStateReader.RECOVERING);
-            }  catch (InterruptedException e) {
-              Thread.currentThread().interrupt();
-              SolrException.log(log, "", e);
-            } catch (Throwable e) {
-              SolrException.log(log, "", e);
-              if (e instanceof Error) {
-                throw (Error) e;
-              }
-            }
-            
             core.getUpdateHandler().getSolrCoreState().doRecovery(coreContainer, core.getCoreDescriptor());
           } else {
             SolrException.log(log, "Could not find core to call recovery:" + cname);

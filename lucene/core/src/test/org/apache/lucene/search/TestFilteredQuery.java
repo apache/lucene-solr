@@ -435,7 +435,12 @@ public class TestFilteredQuery extends LuceneTestCase {
               bitSet.set(d, true);
             }
             return new DocIdSet() {
-              
+
+              @Override
+              public long ramBytesUsed() {
+                return 0L;
+              }
+
               @Override
               public Bits bits() throws IOException {
                 if (nullBitset) {
@@ -502,7 +507,12 @@ public class TestFilteredQuery extends LuceneTestCase {
       public DocIdSet getDocIdSet(final AtomicReaderContext context, Bits acceptDocs)
           throws IOException {
         return new DocIdSet() {
-          
+
+          @Override
+          public long ramBytesUsed() {
+            return 0L;
+          }
+
           @Override
           public Bits bits() throws IOException {
              return null;

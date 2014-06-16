@@ -19,8 +19,10 @@ package org.apache.lucene.util.packed;
 
 import java.util.Arrays;
 
-import org.apache.lucene.util.ToStringUtils;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.FixedBitSet; // for javadocs
+import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.ToStringUtils;
 
 
 /** Encode a non decreasing sequence of non negative whole numbers in the Elias-Fano encoding
@@ -82,7 +84,10 @@ import org.apache.lucene.util.FixedBitSet; // for javadocs
  * @lucene.internal
  */
 
-public class EliasFanoEncoder {
+public class EliasFanoEncoder implements Accountable {
+
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(EliasFanoEncoder.class);
+
   final long numValues;
   private final long upperBound;
   final int numLowBits;
@@ -350,5 +355,12 @@ public class EliasFanoEncoder {
     return h;
   }
 
+  @Override
+  public long ramBytesUsed() {
+    return BASE_RAM_BYTES_USED
+        + RamUsageEstimator.sizeOf(lowerLongs)
+        + RamUsageEstimator.sizeOf(upperLongs)
+        + RamUsageEstimator.sizeOf(upperZeroBitPositionIndex);
+  }
 }
 

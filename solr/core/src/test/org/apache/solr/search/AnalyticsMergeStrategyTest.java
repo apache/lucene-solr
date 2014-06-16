@@ -83,5 +83,10 @@ public class AnalyticsMergeStrategyTest extends BaseDistributedSearchTestCase {
     if(c.intValue() != count) {
       throw new Exception("Count is not correct:"+count+":"+c.intValue());
     }
+
+    long numFound = rsp.getResults().getNumFound();
+    if(c.intValue() != numFound) {
+      throw new Exception("Count does not equal numFound:"+c.intValue()+":"+numFound);
+    }
   }
 }

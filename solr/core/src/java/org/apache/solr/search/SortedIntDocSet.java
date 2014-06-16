@@ -25,6 +25,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * <code>SortedIntDocSet</code> represents a sorted set of Lucene Document Ids.
@@ -765,6 +766,11 @@ public class SortedIntDocSet extends DocSetBase {
             return true;
           }
 
+          @Override
+          public long ramBytesUsed() {
+            return RamUsageEstimator.sizeOf(docs);
+          }
+          
           @Override
           public Bits bits() {
             // random access is expensive for this set

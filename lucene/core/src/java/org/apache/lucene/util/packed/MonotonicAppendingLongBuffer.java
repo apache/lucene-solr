@@ -125,7 +125,7 @@ public final class MonotonicAppendingLongBuffer extends AbstractAppendingLongBuf
     if (maxDelta == 0) {
       values[valuesOff] = new PackedInts.NullReader(pendingOff);
     } else {
-      final int bitsRequired = maxDelta < 0 ? 64 : PackedInts.bitsRequired(maxDelta);
+      final int bitsRequired = PackedInts.unsignedBitsRequired(maxDelta);
       final PackedInts.Mutable mutable = PackedInts.getMutable(pendingOff, bitsRequired, acceptableOverheadRatio);
       for (int i = 0; i < pendingOff; ) {
         i += mutable.set(i, pending, i, pendingOff - i);

@@ -75,6 +75,9 @@ Test system: AMD Opteron, 64 bit linux, Sun Java 1.5_06 -server -Xbatch -Xmx64M
  */
 
 public class OpenBitSet extends DocIdSet implements Bits, Cloneable {
+
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(OpenBitSet.class);
+
   protected long[] bits;
   protected int wlen;   // number of words (elements) used in the array
 
@@ -129,6 +132,11 @@ public class OpenBitSet extends DocIdSet implements Bits, Cloneable {
   @Override
   public boolean isCacheable() {
     return true;
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return BASE_RAM_BYTES_USED + RamUsageEstimator.sizeOf(bits);
   }
 
   /** Returns the current capacity in bits (1 greater than the index of the last bit) */

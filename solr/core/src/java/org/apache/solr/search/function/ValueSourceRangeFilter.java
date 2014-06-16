@@ -84,6 +84,11 @@ public class ValueSourceRangeFilter extends SolrFilter {
        public Bits bits() {
          return null;  // don't use random access
        }
+
+       @Override
+       public long ramBytesUsed() {
+         return 0L;
+       }
      }, acceptDocs);
   }
 

@@ -97,7 +97,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * </ol>
  * @lucene.experimental
  */
-public class Lucene49NormsFormat extends NormsFormat {
+public final class Lucene49NormsFormat extends NormsFormat {
 
   /** Sole Constructor */
   public Lucene49NormsFormat() {}

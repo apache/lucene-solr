@@ -17,6 +17,8 @@ package org.apache.lucene.search.join;
  * limitations under the License.
  */
 
+import static org.apache.lucene.search.DocIdSet.EMPTY;
+
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReader;
@@ -39,7 +41,7 @@ public final class FixedBitSetCachingWrapperFilter extends CachingWrapperFilter 
   protected DocIdSet docIdSetToCache(DocIdSet docIdSet, AtomicReader reader)
       throws IOException {
     if (docIdSet == null) {
-      return EMPTY_DOCIDSET;
+      return EMPTY;
     } else if (docIdSet instanceof FixedBitSet) {
       // this is different from CachingWrapperFilter: even when the DocIdSet is
       // cacheable, we convert it to a FixedBitSet since we require all the
@@ -48,7 +50,7 @@ public final class FixedBitSetCachingWrapperFilter extends CachingWrapperFilter 
     } else {
       final DocIdSetIterator it = docIdSet.iterator();
       if (it == null) {
-        return EMPTY_DOCIDSET;
+        return EMPTY;
       } else {
         final FixedBitSet copy = new FixedBitSet(reader.maxDoc());
         copy.or(it);

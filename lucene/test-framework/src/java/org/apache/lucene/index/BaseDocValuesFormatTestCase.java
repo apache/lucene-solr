@@ -21,6 +21,7 @@ import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,6 +39,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
@@ -77,6 +79,12 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       final int numValues = random().nextInt(5);
       for (int i = 0; i < numValues; ++i) {
         doc.add(new SortedSetDocValuesField("ssdv", new BytesRef(TestUtil.randomSimpleString(random(), 2))));
+      }
+    }
+    if (defaultCodecSupportsSortedNumeric()) {
+      final int numValues = random().nextInt(5);
+      for (int i = 0; i < numValues; ++i) {
+        doc.add(new SortedNumericDocValuesField("sndv", TestUtil.nextLong(random(), Long.MIN_VALUE, Long.MAX_VALUE)));
       }
     }
   }
@@ -1193,6 +1201,69 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     dir.close();
   }
   
+  private void doTestSortedNumericsVsStoredFields(LongProducer counts, LongProducer values) throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
+    
+    // index some docs
+    int numDocs = atLeast(300);
+    // numDocs should be always > 256 so that in case of a codec that optimizes
+    // for numbers of values <= 256, all storage layouts are tested
+    assert numDocs > 256;
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      doc.add(new StringField("id", Integer.toString(i), Field.Store.NO));
+      
+      int valueCount = (int) counts.next();
+      long valueArray[] = new long[valueCount];
+      for (int j = 0; j < valueCount; j++) {
+        long value = values.next();
+        valueArray[j] = value;
+        doc.add(new SortedNumericDocValuesField("dv", value));
+      }
+      Arrays.sort(valueArray);
+      for (int j = 0; j < valueCount; j++) {
+        doc.add(new StoredField("stored", Long.toString(valueArray[j])));
+      }
+      writer.addDocument(doc);
+      if (random().nextInt(31) == 0) {
+        writer.commit();
+      }
+    }
+    
+    // delete some docs
+    int numDeletions = random().nextInt(numDocs/10);
+    for (int i = 0; i < numDeletions; i++) {
+      int id = random().nextInt(numDocs);
+      writer.deleteDocuments(new Term("id", Integer.toString(id)));
+    }
+
+    // merge some segments and ensure that at least one of them has more than
+    // 256 values
+    writer.forceMerge(numDocs / 256);
+
+    writer.shutdown();
+    
+    // compare
+    DirectoryReader ir = DirectoryReader.open(dir);
+    for (AtomicReaderContext context : ir.leaves()) {
+      AtomicReader r = context.reader();
+      SortedNumericDocValues docValues = DocValues.getSortedNumeric(r, "dv");
+      for (int i = 0; i < r.maxDoc(); i++) {
+        String expected[] = r.document(i).getValues("stored");
+        docValues.setDocument(i);
+        String actual[] = new String[docValues.count()];
+        for (int j = 0; j < actual.length; j++) {
+          actual[j] = Long.toString(docValues.valueAt(j));
+        }
+        assertArrayEquals(expected, actual);
+      }
+    }
+    ir.close();
+    dir.close();
+  }
+  
   public void testBooleanNumericsVsStoredFields() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
@@ -1889,6 +1960,69 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     }
   }
   
+  public void testSortedNumericsSingleValuedVsStoredFields() throws Exception {
+    assumeTrue("Codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      doTestSortedNumericsVsStoredFields(
+          new LongProducer() {
+            @Override
+            long next() {
+              return 1;
+            }
+          },
+          new LongProducer() {
+            @Override
+            long next() {
+              return TestUtil.nextLong(random(), Long.MIN_VALUE, Long.MAX_VALUE);
+            }
+          }
+      );
+    }
+  }
+  
+  public void testSortedNumericsSingleValuedMissingVsStoredFields() throws Exception {
+    assumeTrue("Codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      doTestSortedNumericsVsStoredFields(
+          new LongProducer() {
+            @Override
+            long next() {
+              return random().nextBoolean() ? 0 : 1;
+            }
+          },
+          new LongProducer() {
+            @Override
+            long next() {
+              return TestUtil.nextLong(random(), Long.MIN_VALUE, Long.MAX_VALUE);
+            }
+          }
+      );
+    }
+  }
+  
+  public void testSortedNumericsMultipleValuesVsStoredFields() throws Exception {
+    assumeTrue("Codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      doTestSortedNumericsVsStoredFields(
+          new LongProducer() {
+            @Override
+            long next() {
+              return TestUtil.nextLong(random(), 0, 50);
+            }
+          },
+          new LongProducer() {
+            @Override
+            long next() {
+              return TestUtil.nextLong(random(), Long.MIN_VALUE, Long.MAX_VALUE);
+            }
+          }
+      );
+    }
+  }
+  
   public void testSortedSetVariableLengthVsStoredFields() throws Exception {
     assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
     int numIterations = atLeast(1);
@@ -2238,6 +2372,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   public void testThreads2() throws Exception {
     assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField());
     assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
+    assumeTrue("Codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
@@ -2281,6 +2416,15 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
         doc.add(new SortedSetDocValuesField("dvSortedSet", new BytesRef(v)));
         doc.add(new StoredField("storedSortedSet", v));
       }
+      int numSortedNumericFields = random().nextInt(3);
+      Set<Long> numValues = new TreeSet<>();
+      for (int j = 0; j < numSortedNumericFields; j++) {
+        numValues.add(TestUtil.nextLong(random(), Long.MIN_VALUE, Long.MAX_VALUE));
+      }
+      for (Long l : numValues) {
+        doc.add(new SortedNumericDocValuesField("dvSortedNumeric", l));
+        doc.add(new StoredField("storedSortedNumeric", Long.toString(l)));
+      }
       writer.addDocument(doc);
       if (random().nextInt(31) == 0) {
         writer.commit();
@@ -2317,6 +2461,8 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
               Bits numericBits = r.getDocsWithField("dvNum");
               SortedSetDocValues sortedSet = r.getSortedSetDocValues("dvSortedSet");
               Bits sortedSetBits = r.getDocsWithField("dvSortedSet");
+              SortedNumericDocValues sortedNumeric = r.getSortedNumericDocValues("dvSortedNumeric");
+              Bits sortedNumericBits = r.getDocsWithField("dvSortedNumeric");
               for (int j = 0; j < r.maxDoc(); j++) {
                 BytesRef binaryValue = r.document(j).getBinaryValue("storedBin");
                 if (binaryValue != null) {
@@ -2360,6 +2506,22 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
                   sortedSet.setDocument(j);
                   assertEquals(SortedSetDocValues.NO_MORE_ORDS, sortedSet.nextOrd());
                   assertFalse(sortedSetBits.get(j));
+                }
+                
+                String numValues[] = r.document(j).getValues("storedSortedNumeric");
+                if (numValues.length > 0) {
+                  assertNotNull(sortedNumeric);
+                  sortedNumeric.setDocument(j);
+                  assertEquals(numValues.length, sortedNumeric.count());
+                  for (int k = 0; k < numValues.length; k++) {
+                    long v = sortedNumeric.valueAt(k);
+                    assertEquals(numValues[k], Long.toString(v));
+                  }
+                  assertTrue(sortedNumericBits.get(j));
+                } else if (sortedNumeric != null) {
+                  sortedNumeric.setDocument(j);
+                  assertEquals(0, sortedNumeric.count());
+                  assertFalse(sortedNumericBits.get(j));
                 }
               }
             }
@@ -2413,6 +2575,171 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       ar.close();
       dir.close();
     }
+  }
+  
+  public void testOneSortedNumber() throws IOException {
+    assumeTrue("Codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
+    Directory directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
+    Document doc = new Document();
+    doc.add(new SortedNumericDocValuesField("dv", 5));
+    writer.addDocument(doc);
+    writer.shutdown();
+    
+    // Now search the index:
+    IndexReader reader = DirectoryReader.open(directory);
+    assert reader.leaves().size() == 1;
+    SortedNumericDocValues dv = reader.leaves().get(0).reader().getSortedNumericDocValues("dv");
+    dv.setDocument(0);
+    assertEquals(1, dv.count());
+    assertEquals(5, dv.valueAt(0));
+
+    reader.close();
+    directory.close();
+  }
+  
+  public void testOneSortedNumberOneMissing() throws IOException {
+    assumeTrue("Codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
+    Directory directory = newDirectory();
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+    Document doc = new Document();
+    doc.add(new SortedNumericDocValuesField("dv", 5));
+    writer.addDocument(doc);
+    writer.addDocument(new Document());
+    writer.shutdown();
+    
+    // Now search the index:
+    IndexReader reader = DirectoryReader.open(directory);
+    assert reader.leaves().size() == 1;
+    SortedNumericDocValues dv = reader.leaves().get(0).reader().getSortedNumericDocValues("dv");
+    dv.setDocument(0);
+    assertEquals(1, dv.count());
+    assertEquals(5, dv.valueAt(0));
+    dv.setDocument(1);
+    assertEquals(0, dv.count());
+    
+    Bits docsWithField = reader.leaves().get(0).reader().getDocsWithField("dv");
+    assertEquals(2, docsWithField.length());
+    assertTrue(docsWithField.get(0));
+    assertFalse(docsWithField.get(1));
+
+    reader.close();
+    directory.close();
+  }
+  
+  public void testTwoSortedNumber() throws IOException {
+    assumeTrue("Codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
+    Directory directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
+    Document doc = new Document();
+    doc.add(new SortedNumericDocValuesField("dv", 11));
+    doc.add(new SortedNumericDocValuesField("dv", -5));
+    writer.addDocument(doc);
+    writer.shutdown();
+    
+    // Now search the index:
+    IndexReader reader = DirectoryReader.open(directory);
+    assert reader.leaves().size() == 1;
+    SortedNumericDocValues dv = reader.leaves().get(0).reader().getSortedNumericDocValues("dv");
+    dv.setDocument(0);
+    assertEquals(2, dv.count());
+    assertEquals(-5, dv.valueAt(0));
+    assertEquals(11, dv.valueAt(1));
+
+    reader.close();
+    directory.close();
+  }
+  
+  public void testTwoSortedNumberOneMissing() throws IOException {
+    assumeTrue("Codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
+    Directory directory = newDirectory();
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+    Document doc = new Document();
+    doc.add(new SortedNumericDocValuesField("dv", 11));
+    doc.add(new SortedNumericDocValuesField("dv", -5));
+    writer.addDocument(doc);
+    writer.addDocument(new Document());
+    writer.shutdown();
+    
+    // Now search the index:
+    IndexReader reader = DirectoryReader.open(directory);
+    assert reader.leaves().size() == 1;
+    SortedNumericDocValues dv = reader.leaves().get(0).reader().getSortedNumericDocValues("dv");
+    dv.setDocument(0);
+    assertEquals(2, dv.count());
+    assertEquals(-5, dv.valueAt(0));
+    assertEquals(11, dv.valueAt(1));
+    dv.setDocument(1);
+    assertEquals(0, dv.count());
+    
+    Bits docsWithField = reader.leaves().get(0).reader().getDocsWithField("dv");
+    assertEquals(2, docsWithField.length());
+    assertTrue(docsWithField.get(0));
+    assertFalse(docsWithField.get(1));
+
+    reader.close();
+    directory.close();
+  }
+  
+  public void testSortedNumberMerge() throws IOException {
+    assumeTrue("Codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
+    Directory directory = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
+    iwc.setMergePolicy(newLogMergePolicy());
+    IndexWriter writer = new IndexWriter(directory, iwc);
+    Document doc = new Document();
+    doc.add(new SortedNumericDocValuesField("dv", 11));
+    writer.addDocument(doc);
+    writer.commit();
+    doc = new Document();
+    doc.add(new SortedNumericDocValuesField("dv", -5));
+    writer.addDocument(doc);
+    writer.forceMerge(1);
+    writer.shutdown();
+    
+    // Now search the index:
+    IndexReader reader = DirectoryReader.open(directory);
+    assert reader.leaves().size() == 1;
+    SortedNumericDocValues dv = reader.leaves().get(0).reader().getSortedNumericDocValues("dv");
+    dv.setDocument(0);
+    assertEquals(1, dv.count());
+    assertEquals(11, dv.valueAt(0));
+    dv.setDocument(1);
+    assertEquals(1, dv.count());
+    assertEquals(-5, dv.valueAt(0));
+
+    reader.close();
+    directory.close();
+  }
+  
+  public void testSortedNumberMergeAwayAllValues() throws IOException {
+    assumeTrue("Codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
+    Directory directory = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriterConfig iwconfig = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    iwconfig.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, iwconfig);
+    
+    Document doc = new Document();
+    doc.add(new StringField("id", "0", Field.Store.NO));
+    iwriter.addDocument(doc);    
+    doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.NO));
+    doc.add(new SortedNumericDocValuesField("field", 5));
+    iwriter.addDocument(doc);
+    iwriter.commit();
+    iwriter.deleteDocuments(new Term("id", "1"));
+    iwriter.forceMerge(1);
+    
+    DirectoryReader ireader = iwriter.getReader();
+    iwriter.shutdown();
+    
+    SortedNumericDocValues dv = getOnlySegmentReader(ireader).getSortedNumericDocValues("field");
+    dv.setDocument(0);
+    assertEquals(0, dv.count());
+    
+    ireader.close();
+    directory.close();
   }
 
   protected boolean codecAcceptsHugeBinaryValues(String field) {
