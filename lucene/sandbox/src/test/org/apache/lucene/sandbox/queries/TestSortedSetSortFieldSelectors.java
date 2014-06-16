@@ -18,7 +18,6 @@ package org.apache.lucene.sandbox.queries;
  */
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.diskdv.DiskDocValuesFormat;
 import org.apache.lucene.codecs.lucene49.Lucene49DocValuesFormat;
 import org.apache.lucene.codecs.memory.DirectDocValuesFormat;
 import org.apache.lucene.document.Document;
@@ -48,10 +47,9 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
   public static void beforeClass() throws Exception {
     savedCodec = Codec.getDefault();
     // currently only these codecs that support random access ordinals
-    int victim = random().nextInt(3);
+    int victim = random().nextInt(2);
     switch(victim) {
       case 0:  Codec.setDefault(TestUtil.alwaysDocValuesFormat(new DirectDocValuesFormat()));
-      case 1:  Codec.setDefault(TestUtil.alwaysDocValuesFormat(new DiskDocValuesFormat()));
       default: Codec.setDefault(TestUtil.alwaysDocValuesFormat(new Lucene49DocValuesFormat()));
     }
   }

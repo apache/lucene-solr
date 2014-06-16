@@ -64,7 +64,7 @@ import org.apache.lucene.util.packed.DirectReader;
 import org.apache.lucene.util.packed.MonotonicBlockPackedReader;
 
 /** reader for {@link Lucene49DocValuesFormat} */
-public class Lucene49DocValuesProducer extends DocValuesProducer implements Closeable {
+class Lucene49DocValuesProducer extends DocValuesProducer implements Closeable {
   private final Map<Integer,NumericEntry> numerics;
   private final Map<Integer,BinaryEntry> binaries;
   private final Map<Integer,SortedSetEntry> sortedSets;
@@ -81,7 +81,7 @@ public class Lucene49DocValuesProducer extends DocValuesProducer implements Clos
   private final Map<Integer,MonotonicBlockPackedReader> ordIndexInstances = new HashMap<>();
   
   /** expert: instantiates a new reader */
-  protected Lucene49DocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
+  Lucene49DocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     // read in the entries from the metadata file.
     ChecksumIndexInput in = state.directory.openChecksumInput(metaName, state.context);
@@ -409,9 +409,8 @@ public class Lucene49DocValuesProducer extends DocValuesProducer implements Clos
     };
   }
   
-  /** returns an address instance for variable-length binary values.
-   *  @lucene.internal */
-  protected MonotonicBlockPackedReader getAddressInstance(IndexInput data, FieldInfo field, BinaryEntry bytes) throws IOException {
+  /** returns an address instance for variable-length binary values. */
+  private MonotonicBlockPackedReader getAddressInstance(IndexInput data, FieldInfo field, BinaryEntry bytes) throws IOException {
     final MonotonicBlockPackedReader addresses;
     synchronized (addressInstances) {
       MonotonicBlockPackedReader addrInstance = addressInstances.get(field.number);
@@ -451,9 +450,8 @@ public class Lucene49DocValuesProducer extends DocValuesProducer implements Clos
     };
   }
   
-  /** returns an address instance for prefix-compressed binary values. 
-   * @lucene.internal */
-  protected MonotonicBlockPackedReader getIntervalInstance(IndexInput data, FieldInfo field, BinaryEntry bytes) throws IOException {
+  /** returns an address instance for prefix-compressed binary values. */
+  private MonotonicBlockPackedReader getIntervalInstance(IndexInput data, FieldInfo field, BinaryEntry bytes) throws IOException {
     final MonotonicBlockPackedReader addresses;
     final long interval = bytes.addressInterval;
     synchronized (addressInstances) {
@@ -528,9 +526,8 @@ public class Lucene49DocValuesProducer extends DocValuesProducer implements Clos
     };
   }
   
-  /** returns an address instance for sortedset ordinal lists
-   * @lucene.internal */
-  protected MonotonicBlockPackedReader getOrdIndexInstance(IndexInput data, FieldInfo field, NumericEntry entry) throws IOException {
+  /** returns an address instance for sortedset ordinal lists */
+  private MonotonicBlockPackedReader getOrdIndexInstance(IndexInput data, FieldInfo field, NumericEntry entry) throws IOException {
     final MonotonicBlockPackedReader ordIndex;
     synchronized (ordIndexInstances) {
       MonotonicBlockPackedReader ordIndexInstance = ordIndexInstances.get(field.number);
@@ -712,7 +709,7 @@ public class Lucene49DocValuesProducer extends DocValuesProducer implements Clos
   }
   
   /** metadata entry for a numeric docvalues field */
-  protected static class NumericEntry {
+  static class NumericEntry {
     private NumericEntry() {}
     /** offset to the bitset representing docsWithField, or -1 if no documents have missing values */
     long missingOffset;
@@ -737,7 +734,7 @@ public class Lucene49DocValuesProducer extends DocValuesProducer implements Clos
   }
   
   /** metadata entry for a binary docvalues field */
-  protected static class BinaryEntry {
+  static class BinaryEntry {
     private BinaryEntry() {}
     /** offset to the bitset representing docsWithField, or -1 if no documents have missing values */
     long missingOffset;
@@ -760,7 +757,7 @@ public class Lucene49DocValuesProducer extends DocValuesProducer implements Clos
   }
 
   /** metadata entry for a sorted-set docvalues field */
-  protected static class SortedSetEntry {
+  static class SortedSetEntry {
     private SortedSetEntry() {}
     int format;
   }

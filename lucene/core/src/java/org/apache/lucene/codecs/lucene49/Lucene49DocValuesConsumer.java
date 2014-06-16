@@ -39,7 +39,7 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
 /** writer for {@link Lucene49DocValuesFormat} */
-public class Lucene49DocValuesConsumer extends DocValuesConsumer implements Closeable {
+class Lucene49DocValuesConsumer extends DocValuesConsumer implements Closeable {
 
   static final int BLOCK_SIZE = 16384;
   static final int ADDRESS_INTERVAL = 16;
@@ -299,7 +299,7 @@ public class Lucene49DocValuesConsumer extends DocValuesConsumer implements Clos
   }
   
   /** expert: writes a value dictionary for a sorted/sortedset field */
-  protected void addTermsDict(FieldInfo field, final Iterable<BytesRef> values) throws IOException {
+  private void addTermsDict(FieldInfo field, final Iterable<BytesRef> values) throws IOException {
     // first check if its a "fixed-length" terms dict
     int minLength = Integer.MAX_VALUE;
     int maxLength = Integer.MIN_VALUE;
