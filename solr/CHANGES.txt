@@ -23,6 +23,10 @@ $Id$
 * SOLR-5868: HttpClient should be configured to use ALLOW_ALL_HOSTNAME hostname
   verifier to simplify SSL setup. (Steve Davids via Mark Miller)
 
+==================  4.10.0 =================
+
+(No Changes)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
