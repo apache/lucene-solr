@@ -38,7 +38,7 @@ public class TestDateFormatTransformer extends AbstractDataImportHandlerTestCase
     fields.add(createMap(DataImporter.COLUMN, "lastModified"));
     fields.add(createMap(DataImporter.COLUMN,
             "dateAdded", RegexTransformer.SRC_COL_NAME, "lastModified",
-            DateFormatTransformer.DATE_TIME_FMT, "MM/dd/yyyy"));
+            DateFormatTransformer.DATE_TIME_FMT, "${xyz.myDateFormat}"));
 
     SimpleDateFormat format = new SimpleDateFormat("MM/dd/yyyy", Locale.ROOT);
     Date now = format.parse(format.format(new Date()));
@@ -47,6 +47,7 @@ public class TestDateFormatTransformer extends AbstractDataImportHandlerTestCase
 
     VariableResolver resolver = new VariableResolver();
     resolver.addNamespace("e", row);
+    resolver.addNamespace("xyz", createMap("myDateFormat", "MM/dd/yyyy"));
 
     Context context = getContext(null, resolver,
             null, Context.FULL_DUMP, fields, null);

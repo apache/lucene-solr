@@ -187,6 +187,8 @@ Bug Fixes
 * SOLR-6175: DebugComponent throws NPE on shard exceptions when using shards.tolerant.
   (Tomás Fernández Löbbe via shalin)
 
+* SOLR-6129: DateFormatTransformer doesn't resolve dateTimeFormat. (Aaron LaBella via shalin)
+
 Other Changes
 ---------------------
 

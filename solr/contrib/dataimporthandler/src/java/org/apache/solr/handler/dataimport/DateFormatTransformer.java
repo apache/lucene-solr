@@ -58,6 +58,8 @@ public class DateFormatTransformer extends Transformer {
       String fmt = map.get(DATE_TIME_FMT);
       if (fmt == null)
         continue;
+      VariableResolver resolver = context.getVariableResolver();
+      fmt = resolver.replaceTokens(fmt);
       String column = map.get(DataImporter.COLUMN);
       String srcCol = map.get(RegexTransformer.SRC_COL_NAME);
       if (srcCol == null)
