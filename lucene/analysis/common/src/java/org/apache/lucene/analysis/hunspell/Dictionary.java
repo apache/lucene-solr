@@ -420,7 +420,7 @@ public class Dictionary {
 
       String condition = ruleArgs.length > 4 ? ruleArgs[4] : ".";
       // at least the gascon affix file has this issue
-      if (condition.startsWith("[") && !condition.endsWith("]")) {
+      if (condition.startsWith("[") && condition.indexOf(']') == -1) {
         condition = condition + "]";
       }
       // "dash hasn't got special meaning" (we must escape it)

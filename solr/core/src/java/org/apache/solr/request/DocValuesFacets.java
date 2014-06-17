@@ -32,6 +32,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
@@ -247,11 +248,12 @@ public class DocValuesFacets {
   
   /** accumulates per-segment single-valued facet counts, mapping to global ordinal space on-the-fly */
   static void accumSingleGeneric(int counts[], int startTermIndex, SortedDocValues si, DocIdSetIterator disi, int subIndex, OrdinalMap map) throws IOException {
+    final LongValues ordmap = map == null ? null : map.getGlobalOrds(subIndex);
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       int term = si.getOrd(doc);
       if (map != null && term >= 0) {
-        term = (int) map.getGlobalOrd(subIndex, term);
+        term = (int) ordmap.get(term);
       }
       int arrIdx = term-startTermIndex;
       if (arrIdx>=0 && arrIdx<counts.length) counts[arrIdx]++;
@@ -293,6 +295,7 @@ public class DocValuesFacets {
     
   /** accumulates per-segment multi-valued facet counts, mapping to global ordinal space on-the-fly */
   static void accumMultiGeneric(int counts[], int startTermIndex, SortedSetDocValues si, DocIdSetIterator disi, int subIndex, OrdinalMap map) throws IOException {
+    final LongValues ordMap = map == null ? null : map.getGlobalOrds(subIndex);
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       si.setDocument(doc);
@@ -307,7 +310,7 @@ public class DocValuesFacets {
       
       do {
         if (map != null) {
-          term = (int) map.getGlobalOrd(subIndex, term);
+          term = (int) ordMap.get(term);
         }
         int arrIdx = term-startTermIndex;
         if (arrIdx>=0 && arrIdx<counts.length) counts[arrIdx]++;
@@ -346,6 +349,7 @@ public class DocValuesFacets {
   
   /** folds counts in segment ordinal space (segCounts) into global ordinal space (counts) */
   static void migrateGlobal(int counts[], int segCounts[], int subIndex, OrdinalMap map) {
+    final LongValues ordMap = map.getGlobalOrds(subIndex);
     // missing count
     counts[0] += segCounts[0];
     
@@ -353,7 +357,7 @@ public class DocValuesFacets {
     for (int ord = 1; ord < segCounts.length; ord++) {
       int count = segCounts[ord];
       if (count != 0) {
-        counts[1+(int) map.getGlobalOrd(subIndex, ord-1)] += count;
+        counts[1+(int) ordMap.get(ord-1)] += count;
       }
     }
   }

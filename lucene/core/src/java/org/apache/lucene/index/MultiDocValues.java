@@ -25,6 +25,7 @@ import org.apache.lucene.index.MultiTermsEnum.TermsEnumWithSlice;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.AppendingPackedLongBuffer;
 import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
@@ -373,7 +374,7 @@ public class MultiDocValues {
       return new MultiSortedSetDocValues(values, starts, mapping);
     }
   }
-  
+
   /** maps per-segment ordinals to/from global ordinal space */
   // TODO: use more efficient packed ints structures?
   // TODO: pull this out? its pretty generic (maps between N ord()-enabled TermsEnums) 
@@ -387,8 +388,10 @@ public class MultiDocValues {
     final MonotonicAppendingLongBuffer globalOrdDeltas;
     // globalOrd -> first segment container
     final AppendingPackedLongBuffer firstSegments;
-    // for every segment, segmentOrd -> (globalOrd - segmentOrd)
-    final MonotonicAppendingLongBuffer ordDeltas[];
+    // for every segment, segmentOrd -> globalOrd
+    final LongValues segmentToGlobalOrds[];
+    // ram usage
+    final long ramBytesUsed;
     
     /** 
      * Creates an ordinal map that allows mapping ords to/from a merged
@@ -398,16 +401,20 @@ public class MultiDocValues {
      *             not be dense (e.g. can be FilteredTermsEnums}.
      * @throws IOException if an I/O error occurred.
      */
-    public OrdinalMap(Object owner, TermsEnum subs[]) throws IOException {
+    public OrdinalMap(Object owner, TermsEnum subs[], float acceptableOverheadRatio) throws IOException {
       // create the ordinal mappings by pulling a termsenum over each sub's 
       // unique terms, and walking a multitermsenum over those
       this.owner = owner;
+      // even though we accept an overhead ratio, we keep these ones with COMPACT
+      // since they are only used to resolve values given a global ord, which is
+      // slow anyway
       globalOrdDeltas = new MonotonicAppendingLongBuffer(PackedInts.COMPACT);
       firstSegments = new AppendingPackedLongBuffer(PackedInts.COMPACT);
-      ordDeltas = new MonotonicAppendingLongBuffer[subs.length];
+      final MonotonicAppendingLongBuffer[] ordDeltas = new MonotonicAppendingLongBuffer[subs.length];
       for (int i = 0; i < ordDeltas.length; i++) {
-        ordDeltas[i] = new MonotonicAppendingLongBuffer();
+        ordDeltas[i] = new MonotonicAppendingLongBuffer(acceptableOverheadRatio);
       }
+      long[] ordDeltaBits = new long[subs.length];
       long segmentOrds[] = new long[subs.length];
       ReaderSlice slices[] = new ReaderSlice[subs.length];
       TermsEnumIndex indexes[] = new TermsEnumIndex[slices.length];
@@ -431,6 +438,7 @@ public class MultiDocValues {
           }
           // for each per-segment ord, map it back to the global term.
           while (segmentOrds[segmentIndex] <= segmentOrd) {
+            ordDeltaBits[segmentIndex] |= delta;
             ordDeltas[segmentIndex].add(delta);
             segmentOrds[segmentIndex]++;
           }
@@ -442,14 +450,62 @@ public class MultiDocValues {
       for (int i = 0; i < ordDeltas.length; ++i) {
         ordDeltas[i].freeze();
       }
+      // ordDeltas is typically the bottleneck, so let's see what we can do to make it faster
+      segmentToGlobalOrds = new LongValues[subs.length];
+      long ramBytesUsed = BASE_RAM_BYTES_USED + globalOrdDeltas.ramBytesUsed() + firstSegments.ramBytesUsed() + RamUsageEstimator.shallowSizeOf(segmentToGlobalOrds);
+      for (int i = 0; i < ordDeltas.length; ++i) {
+        final MonotonicAppendingLongBuffer deltas = ordDeltas[i];
+        if (ordDeltaBits[i] == 0L) {
+          // segment ords perfectly match global ordinals
+          // likely in case of low cardinalities and large segments
+          segmentToGlobalOrds[i] = LongValues.IDENTITY;
+        } else {
+          final int bitsRequired = ordDeltaBits[i] < 0 ? 64 : PackedInts.bitsRequired(ordDeltaBits[i]);
+          final long monotonicBits = deltas.ramBytesUsed() * 8;
+          final long packedBits = bitsRequired * deltas.size();
+          if (deltas.size() <= Integer.MAX_VALUE
+              && packedBits <= monotonicBits * (1 + acceptableOverheadRatio)) {
+            // monotonic compression mostly adds overhead, let's keep the mapping in plain packed ints
+            final int size = (int) deltas.size();
+            final PackedInts.Mutable newDeltas = PackedInts.getMutable(size, bitsRequired, acceptableOverheadRatio);
+            final MonotonicAppendingLongBuffer.Iterator it = deltas.iterator();
+            for (int ord = 0; ord < size; ++ord) {
+              newDeltas.set(ord, it.next());
+            }
+            assert !it.hasNext();
+            segmentToGlobalOrds[i] = new LongValues() {
+              @Override
+              public long get(long ord) {
+                return ord + newDeltas.get((int) ord);
+              }
+            };
+            ramBytesUsed += newDeltas.ramBytesUsed();
+          } else {
+            segmentToGlobalOrds[i] = new LongValues() {
+              @Override
+              public long get(long ord) {
+                return ord + deltas.get((int) ord);
+              }
+            };
+            ramBytesUsed += deltas.ramBytesUsed();
+          }
+          ramBytesUsed += RamUsageEstimator.shallowSizeOf(segmentToGlobalOrds[i]);
+        }
+      }
+      this.ramBytesUsed = ramBytesUsed;
     }
-    
+
+    /** Create an {@link OrdinalMap} with the default overhead ratio. */
+    public OrdinalMap(Object owner, TermsEnum subs[]) throws IOException {
+      this(owner, subs, PackedInts.DEFAULT);
+    }
+
     /** 
-     * Given a segment number and segment ordinal, returns
-     * the corresponding global ordinal.
+     * Given a segment number, return a {@link LongValues} instance that maps
+     * segment ordinals to global ordinals.
      */
-    public long getGlobalOrd(int segmentIndex, long segmentOrd) {
-      return segmentOrd + ordDeltas[segmentIndex].get(segmentOrd);
+    public LongValues getGlobalOrds(int segmentIndex) {
+      return segmentToGlobalOrds[segmentIndex];
     }
 
     /**
@@ -477,11 +533,7 @@ public class MultiDocValues {
 
     @Override
     public long ramBytesUsed() {
-      long size = BASE_RAM_BYTES_USED + globalOrdDeltas.ramBytesUsed() + firstSegments.ramBytesUsed() + RamUsageEstimator.shallowSizeOf(ordDeltas);
-      for (int i = 0; i < ordDeltas.length; i++) {
-        size += ordDeltas[i].ramBytesUsed();
-      }
-      return size;
+      return ramBytesUsed;
     }
   }
   
@@ -499,7 +551,7 @@ public class MultiDocValues {
   
     /** Creates a new MultiSortedDocValues over <code>values</code> */
     MultiSortedDocValues(SortedDocValues values[], int docStarts[], OrdinalMap mapping) throws IOException {
-      assert values.length == mapping.ordDeltas.length;
+      assert values.length == mapping.segmentToGlobalOrds.length;
       assert docStarts.length == values.length + 1;
       this.values = values;
       this.docStarts = docStarts;
@@ -510,7 +562,7 @@ public class MultiDocValues {
     public int getOrd(int docID) {
       int subIndex = ReaderUtil.subIndex(docID, docStarts);
       int segmentOrd = values[subIndex].getOrd(docID - docStarts[subIndex]);
-      return segmentOrd == -1 ? segmentOrd : (int) mapping.getGlobalOrd(subIndex, segmentOrd);
+      return segmentOrd == -1 ? segmentOrd : (int) mapping.segmentToGlobalOrds[subIndex].get(segmentOrd);
     }
  
     @Override
@@ -541,7 +593,7 @@ public class MultiDocValues {
     
     /** Creates a new MultiSortedSetDocValues over <code>values</code> */
     MultiSortedSetDocValues(SortedSetDocValues values[], int docStarts[], OrdinalMap mapping) throws IOException {
-      assert values.length == mapping.ordDeltas.length;
+      assert values.length == mapping.segmentToGlobalOrds.length;
       assert docStarts.length == values.length + 1;
       this.values = values;
       this.docStarts = docStarts;
@@ -554,7 +606,7 @@ public class MultiDocValues {
       if (segmentOrd == NO_MORE_ORDS) {
         return segmentOrd;
       } else {
-        return mapping.getGlobalOrd(currentSubIndex, segmentOrd);
+        return mapping.segmentToGlobalOrds[currentSubIndex].get(segmentOrd);
       }
     }
 

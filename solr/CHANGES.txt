@@ -184,6 +184,9 @@ Bug Fixes
 * SOLR-5426: Fixed a bug in ReverseWildCardFilter that could cause 
   InvalidTokenOffsetsException when highlighting. (Uwe Schindler, Arun Kumar, via hossman)
 
+* SOLR-6175: DebugComponent throws NPE on shard exceptions when using shards.tolerant.
+  (Tomás Fernández Löbbe via shalin)
+
 Other Changes
 ---------------------
 

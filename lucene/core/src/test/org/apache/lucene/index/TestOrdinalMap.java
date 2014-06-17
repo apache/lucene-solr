@@ -30,6 +30,7 @@ import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.MultiDocValues.OrdinalMap;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageTester;
 import org.apache.lucene.util.TestUtil;
@@ -43,6 +44,10 @@ public class TestOrdinalMap extends LuceneTestCase {
         return false;
       }
       return true;
+    }
+
+    public boolean accept(Object o) {
+      return o != LongValues.IDENTITY;
     }
   };
 

@@ -39,6 +39,10 @@ public final class RamUsageTester {
       return true;
     }
 
+    public boolean accept(Object o) {
+      return true;
+    }
+
   };
 
   /** A filter that allows to decide on what to take into account when measuring RAM usage. */
@@ -46,6 +50,9 @@ public final class RamUsageTester {
 
     /** Whether the provided field should be taken into account when measuring RAM usage. */
     boolean accept(Field field);
+
+    /** Whether the provided field value should be taken into account when measuring RAM usage. */
+    boolean accept(Object o);
 
   }
 
@@ -119,7 +126,7 @@ public final class RamUsageTester {
             // Push refs for traversal later.
             for (int i = len; --i >= 0 ;) {
               final Object o = Array.get(ob, i);
-              if (o != null && !seen.contains(o)) {
+              if (o != null && !seen.contains(o) && filter.accept(o)) {
                 stack.add(o);
               }
             }            
@@ -141,7 +148,7 @@ public final class RamUsageTester {
             if (filter.accept(f)) {
               // Fast path to eliminate redundancies.
               final Object o = f.get(ob);
-              if (o != null && !seen.contains(o)) {
+              if (o != null && !seen.contains(o) && filter.accept(o)) {
                 stack.add(o);
               }
             }
