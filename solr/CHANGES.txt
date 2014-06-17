@@ -197,6 +197,9 @@ Bug Fixes
 
 * SOLR-6129: DateFormatTransformer doesn't resolve dateTimeFormat. (Aaron LaBella via shalin)
 
+* SOLR-6164: Copy Fields Schema additions are not distributed to other nodes.
+  (Gregory Chanan via Steve Rowe)
+
 Other Changes
 ---------------------
 
