@@ -17,33 +17,11 @@
 
 package org.apache.solr.request;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.EnumSet;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.RunnableFuture;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.MultiDocsEnum;
-import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -61,7 +39,6 @@ import org.apache.lucene.search.grouping.term.TermGroupFacetCollector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -82,7 +59,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.BitDocSet;
-import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.Grouping;
 import org.apache.solr.search.HashDocSet;
@@ -96,7 +72,26 @@ import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.util.BoundedTreeSet;
 import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.apache.solr.util.LongPriorityQueue;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.EnumSet;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.RunnableFuture;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A class that generates simple Facet information for a request.
@@ -315,8 +310,7 @@ public class SimpleFacets {
    * @see FacetParams#FACET_QUERY
    */
   public int getGroupedFacetQueryCount(Query facetQuery) throws IOException {
-    GroupingSpecification groupingSpecification = rb.getGroupingSpec();
-    String groupField  = groupingSpecification != null ? groupingSpecification.getFields()[0] : null;
+    String groupField = params.get(GroupParams.GROUP_FIELD);
     if (groupField == null) {
       throw new SolrException (
           SolrException.ErrorCode.BAD_REQUEST,

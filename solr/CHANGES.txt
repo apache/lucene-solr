@@ -200,6 +200,10 @@ Bug Fixes
 * SOLR-6164: Copy Fields Schema additions are not distributed to other nodes.
   (Gregory Chanan via Steve Rowe)
 
+* SOLR-6160: An error was sometimes possible if a distributed search included grouping
+  with group.facet, faceting on facet.field and either facet.range or facet.query.
+  (David Smiley)
+
 Other Changes
 ---------------------
 
