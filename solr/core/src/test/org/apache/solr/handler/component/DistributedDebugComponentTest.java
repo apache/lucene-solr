@@ -396,6 +396,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     assertEquals("Unexpected response size for shard", 1, badShardTrack.size());
     Entry<String, String> exception = badShardTrack.iterator().next();
     assertEquals("Expected key 'Exception' not found", "Exception", exception.getKey());
+    assertNotNull("Exception message should not be null", exception.getValue());
     unIgnoreException("Server refused connection");
   }
   
