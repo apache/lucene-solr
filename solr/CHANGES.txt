@@ -86,6 +86,10 @@ Other Changes
 
 * SOLR-6169: Properly remove CoreAdminHandler handleAlias action (Alan Woodward)
 
+==================  4.10.0 =================
+
+(No Changes)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
