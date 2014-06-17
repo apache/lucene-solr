@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
@@ -18,7 +19,9 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -96,6 +99,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     collection2 = null;
     jetty.stop();
     jetty=null;
+    resetExceptionIgnores();
   }
   
   @Test
@@ -365,6 +369,35 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     
     // timing should have the same sections:
     assertSameKeys((NamedList<?>)nonDistribResponse.getDebugMap().get("timing"), (NamedList<?>)distribResponse.getDebugMap().get("timing"));
+  }
+  
+  public void testTolerantSearch() throws SolrServerException {
+    String badShard = "[ff01::0083]:3334";
+    SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.set("debug",  "true");
+    query.set("distrib", "true");
+    query.setFields("id", "text");
+    query.set("shards", shard1 + "," + shard2 + "," + badShard);
+    try {
+      ignoreException("Server refused connection");
+      // verify that the request would fail if shards.tolerant=false
+      collection1.query(query);
+      fail("Expecting exception");
+    } catch (SolrException e) {
+      //expected
+    }
+    query.set(ShardParams.SHARDS_TOLERANT, "true");
+    QueryResponse response = collection1.query(query);
+    assertTrue((Boolean)response.getResponseHeader().get("partialResults"));
+    @SuppressWarnings("unchecked")
+    NamedList<String> badShardTrack = (NamedList<String>) ((NamedList<NamedList<String>>)
+        ((NamedList<NamedList<NamedList<String>>>)response.getDebugMap().get("track")).get("EXECUTE_QUERY")).get(badShard);
+    assertEquals("Unexpected response size for shard", 1, badShardTrack.size());
+    Entry<String, String> exception = badShardTrack.iterator().next();
+    assertEquals("Expected key 'Exception' not found", "Exception", exception.getKey());
+    assertTrue("Unexpected exception message", exception.getValue().contains("Server refused connection"));
+    unIgnoreException("Server refused connection");
   }
   
   /**
