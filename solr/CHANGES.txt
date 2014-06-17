@@ -103,7 +103,11 @@ Apache ZooKeeper 3.4.6
 Upgrading from Solr 4.8
 ----------------------
 
-* placeholder
+* Support for DiskDocValuesFormat (ie: fieldTypes configured with docValuesFormat="Disk") 
+  has been removed due to poor performance.  If you have an existing fieldTypes using 
+  DiskDocValuesFormat please modify your schema.xml to remove the 'docValuesFormat' 
+  attribute, and optimize your index to rewrite it into the default codec, prior to 
+  upgrading to 4.9.  See LUCENE-5761 for more details.
 
 Detailed Change List
 ----------------------
