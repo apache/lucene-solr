@@ -32,14 +32,24 @@ import org.apache.lucene.util.Sorter;
 //   - could use packed int arrays instead
 //   - could encode dest w/ delta from to?
 
-/** Uses only int[]s to represent the automaton, but requires that all
- *  transitions for each state are added at once.  If this is too restrictive,
- *  use {@link #Builder} instead.  State 0 is always the
- *  initial state.
+/** Represents an automaton and all its states and transitions.  States
+ *  are integers and must be created using {@link #createState}.  Mark a
+ *  state as an accept state using {@link #setAccept}.  Add transitions
+ *  using {@link #addTransition}.  Each state must have all of its
+ *  transitions added at once; if this is too restrictive then use
+ *  {@link Automaton.Builder} instead.  State 0 is always the
+ *  initial state.  Once a state is finished, either
+ *  because you've starting adding transitions to another state or you
+ *  call {@link #finishState}, then that states transitions are sorted
+ *  (first by min, then max, then dest) and reduced (transitions with
+ *  adjacent labels going to the same dest are combined).
  *
  * @lucene.experimental */
 
 public class Automaton {
+  /** Where we next write to the int[] states; this increments by 2 for
+   *  each added state because we pack a pointer to the transitions
+   *  array and a count of how many transitions leave the state.  */
   private int nextState;
 
   /** Where we next write to in int[] transitions; this
@@ -58,14 +68,19 @@ public class Automaton {
    *  of transitions. */
   private int[] states = new int[4];
 
-  /** Holds toState, min, max for each transition: */
+  /** Holds toState, min, max for each transition. */
   private int[] transitions = new int[6];
 
-  private final Set<Integer> finalStates = new HashSet<Integer>();
+  private final Set<Integer> acceptStates = new HashSet<Integer>();
 
   /** True if no state has two transitions leaving with the same label. */
   private boolean deterministic = true;
 
+  /** Sole constructor; creates an automaton with no states. */
+  public Automaton() {
+  }
+
+  /** Create a new state. */
   public int createState() {
     growStates();
     int state = nextState/2;
@@ -74,19 +89,20 @@ public class Automaton {
     return state;
   }
 
-  /** Mark this state as an accept state. */
+  /** Set or clear this state as an accept state. */
   public void setAccept(int state, boolean isAccept) {
     if (state >= getNumStates()) {
       throw new IllegalArgumentException("state=" + state + " is out of bounds (numStates=" + getNumStates() + ")");
     }
     if (isAccept) {
-      finalStates.add(state);
+      acceptStates.add(state);
     } else {
-      finalStates.remove(state);
+      acceptStates.remove(state);
     }
   }
 
-  /** Sugar, but object-heavy; it's better to iterate instead. */
+  /** Sugar to get all transitions for all states.  This is
+   *  object-heavy; it's better to iterate state by state instead. */
   public Transition[][] getSortedTransitions() {
     int numStates = getNumStates();
     Transition[][] transitions = new Transition[numStates][];
@@ -103,19 +119,22 @@ public class Automaton {
     return transitions;
   }
 
+  /** Returns accept states. */
   public Set<Integer> getAcceptStates() {
-    return finalStates;
+    return acceptStates;
   }
 
   /** Returns true if this state is an accept state. */
   public boolean isAccept(int state) {
-    return finalStates.contains(state);
+    return acceptStates.contains(state);
   }
 
+  /** Add a new transition with min = max = label. */
   public void addTransition(int source, int dest, int label) {
     addTransition(source, dest, label, label);
   }
 
+  /** Add a new transition with the specified source, dest, min, max. */
   public void addTransition(int source, int dest, int min, int max) {
     assert nextTransition%3 == 0;
 
@@ -126,10 +145,8 @@ public class Automaton {
       throw new IllegalArgumentException("dest=" + dest + " is out of bounds (max state is " + (nextState/2-1) + ")");
     }
 
-    //System.out.println("  addTransition nextTransition=" + nextTransition + " source=" + source + " dest=" + dest + " min=" + min + " max=" + max);
     growTransitions();
     if (curState != source) {
-      //System.out.println("    newstate");
       if (curState != -1) {
         finishCurrentState();
       }
@@ -151,6 +168,9 @@ public class Automaton {
     states[2*curState+1]++;
   }
 
+  /** Add a [virtual] epsilon transition between source and dest.
+   *  Dest state must already have all transitions added because this
+   *  method simply copies those same transitions over to source. */
   public void addEpsilon(int source, int dest) {
     Transition t = new Transition();
     int count = initTransition(dest, t);
@@ -166,23 +186,6 @@ public class Automaton {
   /** Copies over all states/transitions from other.  The states numbers
    *  are sequentially assigned (appended). */
   public void copy(Automaton other) {
-
-    int offset = getNumStates();
-    /*
-    int otherNumStates = other.getNumStates();
-    for(int s=0;s<otherNumStates;s++) {
-      createState();
-      setAccept(offset+s, other.isAccept(s));
-    }
-    Transition t = new Transition();
-    for(int s=0;s<otherNumStates;s++) {
-      int count = other.initTransition(s, t);
-      for(int i=0;i<count;i++) {
-        other.getNextTransition(t);
-        addTransition(offset + s, offset + t.dest, t.min, t.max);
-      }
-    }
-    */
 
     // Bulk copy and then fixup the state pointers:
     int stateOffset = getNumStates();
@@ -213,21 +216,14 @@ public class Automaton {
     }
   }
 
-  /** Freezes the last state, reducing and sorting its transitions. */
+  /** Freezes the last state, sorting and reducing the transitions. */
   private void finishCurrentState() {
     int numTransitions = states[2*curState+1];
     assert numTransitions > 0;
 
-    //System.out.println("finish curState=" + curState + " numTransitions=" + numTransitions);
     int offset = states[2*curState];
     int start = offset/3;
     destMinMaxSorter.sort(start, start+numTransitions);
-
-    /*
-    for(int i=0;i<numTransitions;i++) {
-      System.out.println("  " + i + ": dest=" + transitions[offset+3*i] + " (accept?=" + isAccept(transitions[offset+3*i]) + ") min=" + transitions[offset+3*i+1] + " max=" + transitions[offset+3*i+2]);
-    }
-    */
 
     // Reduce any "adjacent" transitions:
     int upto = 0;
@@ -293,23 +289,20 @@ public class Automaton {
         lastMax = transitions[offset + 3*i + 2];
       }
     }
-
-    /*
-    System.out.println("after finish: reduce collapsed " + (numTransitions-upto) + " transitions");
-    for(int i=0;i<upto;i++) {
-      System.out.println("  " + i + ": dest=" + transitions[offset+3*i] + " (accept?=" + isAccept(transitions[offset+3*i]) + ") min=" + transitions[offset+3*i+1] + " max=" + transitions[offset+3*i+2]);
-    }
-    */
   }
 
+  /** Returns true if this automaton is deterministic (for ever state
+   *  there is only one transition for each label). */
   public boolean isDeterministic() {
     return deterministic;
   }
 
-  /** Finishes the current state; call this once you are done adding transitions for a state. */
+  /** Finishes the current state; call this once you are done adding
+   *  transitions for a state.  This is automatically called if you
+   *  start adding transitions to a new source state, but for the last
+   *  state you add you need to this method yourself. */
   public void finishState() {
     if (curState != -1) {
-      //System.out.println("finish: finish current state " + curState);
       finishCurrentState();
       curState = -1;
     }
@@ -317,10 +310,12 @@ public class Automaton {
 
   // TODO: add finish() to shrink wrap the arrays?
 
+  /** How many states this automaton has. */
   public int getNumStates() {
     return nextState/2;
   }
 
+  /** How many transitions this state has. */
   public int getNumTransitions(int state) {
     int count = states[2*state+1];
     if (count == -1) {
@@ -328,18 +323,6 @@ public class Automaton {
     } else {
       return count;
     }
-  }
-
-  public int getDest(int state, int transitionIndex) {
-    return transitions[states[2*state]];
-  }
-
-  public int getMin(int state, int transitionIndex) {
-    return transitions[states[2*state]+1];
-  }
-
-  public int getMax(int state, int transitionIndex) {
-    return transitions[states[2*state]+2];
   }
 
   private void growStates() {
@@ -508,42 +491,6 @@ public class Automaton {
     }
   }
 
-  // nocommit move to Operations
-  public Automaton totalize() {
-    Automaton result = new Automaton();
-    int numStates = getNumStates();
-    for(int i=0;i<numStates;i++) {
-      result.createState();
-      result.setAccept(i, isAccept(i));
-    }
-
-    int deadState = result.createState();
-    result.addTransition(deadState, deadState, Character.MIN_CODE_POINT, Character.MAX_CODE_POINT);
-
-    Transition t = new Transition();
-    for(int i=0;i<numStates;i++) {
-      int maxi = Character.MIN_CODE_POINT;
-      int count = initTransition(i, t);
-      for(int j=0;j<count;j++) {
-        getNextTransition(t);
-        result.addTransition(i, t.dest, t.min, t.max);
-        if (t.min > maxi) {
-          result.addTransition(i, deadState, maxi, t.min-1);
-        }
-        if (t.max + 1 > maxi) {
-          maxi = t.max + 1;
-        }
-      }
-
-      if (maxi <= Character.MAX_CODE_POINT) {
-        result.addTransition(i, deadState, maxi, Character.MAX_CODE_POINT);
-      }
-    }
-    result.finishState();
-    return result;
-  }
-
-  // nocommit
   /*
   public void writeDot(String fileName) {
     if (fileName.indexOf('/') == -1) {
@@ -559,6 +506,8 @@ public class Automaton {
   }
   */
 
+  /** Returns the dot (graphviz) representation of this automaton.
+   *  This is extremely useful for visualizing the automaton. */
   public String toDot() {
     // TODO: breadth first search so we can see get layered output...
 
@@ -640,9 +589,9 @@ public class Automaton {
   /**
    * Performs lookup in transitions, assuming determinism.
    * 
-   * @param c codepoint to look up
+   * @param state starting state
+   * @param label codepoint to look up
    * @return destination state, -1 if no matching outgoing transition
-   * @see #step(int, Collection)
    */
   public int step(int state, int label) {
     assert state >= 0;
@@ -665,23 +614,30 @@ public class Automaton {
 
   /** Records new states and transitions and then {@link
    *  #finish} creates the {@link Automaton}.  Use this
-   *  when it's too restrictive to have to add all transitions
+   *  when you cannot create the Automaton directly because
+   *  it's too restrictive to have to add all transitions
    *  leaving each state at once. */
   public static class Builder {
     private int[] transitions = new int[4];
     private int nextTransition;
     private final Automaton a = new Automaton();
 
-    public void addTransition(int from, int to, int label) {
-      addTransition(from, to, label, label);
+    /** Sole constructor. */
+    public Builder() {
     }
 
-    public void addTransition(int from, int to, int min, int max) {
+    /** Add a new transition with min = max = label. */
+    public void addTransition(int source, int dest, int label) {
+      addTransition(source, dest, label, label);
+    }
+
+    /** Add a new transition with the specified source, dest, min, max. */
+    public void addTransition(int source, int dest, int min, int max) {
       if (transitions.length < nextTransition+4) {
         transitions = ArrayUtil.grow(transitions, nextTransition+4);
       }
-      transitions[nextTransition++] = from;
-      transitions[nextTransition++] = to;
+      transitions[nextTransition++] = source;
+      transitions[nextTransition++] = dest;
       transitions[nextTransition++] = min;
       transitions[nextTransition++] = max;
     }
@@ -751,9 +707,11 @@ public class Automaton {
         }
       };
 
+    /** Compiles all added states and transitions into a new {@code Automaton}
+     *  and returns it. */
     public Automaton finish() {
       //System.out.println("LA.Builder.finish: count=" + (nextTransition/4));
-      // nocommit: we could make this more efficient,
+      // TODO: we could make this more efficient,
       // e.g. somehow xfer the int[] to the automaton, or
       // alloc exactly the right size from the automaton
       //System.out.println("finish pending");
@@ -771,18 +729,22 @@ public class Automaton {
       return a;
     }
 
+    /** Create a new state. */
     public int createState() {
       return a.createState();
     }
 
+    /** Set or clear this state as an accept state. */
     public void setAccept(int state, boolean accept) {
       a.setAccept(state, accept);
     }
 
+    /** Returns true if this state is an accept state. */
     public boolean isAccept(int state) {
       return a.isAccept(state);
     }
 
+    /** How many states this automaton has. */
     public int getNumStates() {
       return a.getNumStates();
     }

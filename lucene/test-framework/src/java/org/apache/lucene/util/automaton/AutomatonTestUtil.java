@@ -484,7 +484,6 @@ public class AutomatonTestUtil {
     assert a.getNumStates() == a2.getNumStates() : "automaton has " + (a.getNumStates() - a2.getNumStates()) + " detached states";
   }
 
-  // nocommit where to assert this...
   /** Returns true if the automaton is deterministic. */
   public static boolean isDeterministicSlow(Automaton a) {
     Transition t = new Transition();

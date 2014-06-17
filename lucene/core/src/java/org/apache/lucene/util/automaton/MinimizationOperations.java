@@ -46,8 +46,6 @@ final public class MinimizationOperations {
   /**
    * Minimizes (and determinizes if not already deterministic) the given
    * automaton.
-   * 
-   * @see Automaton#setMinimization(int)
    */
   public static Automaton minimize(Automaton a) {
     return minimizeHopcroft(a);
@@ -72,7 +70,7 @@ final public class MinimizationOperations {
         return a;
       }
     }
-    a = a.totalize();
+    a = Operations.totalize(a);
     //a.writeDot("atot");
 
     // initialize data structures

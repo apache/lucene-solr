@@ -571,7 +571,7 @@ public class TestAutomaton extends LuceneTestCase {
   }
 
   private Automaton randomNoOp(Automaton a) {
-    switch (random().nextInt(5)) {
+    switch (random().nextInt(7)) {
     case 0:
       if (VERBOSE) {
         System.out.println("  randomNoOp: determinize");
@@ -604,6 +604,11 @@ public class TestAutomaton extends LuceneTestCase {
         System.out.println("  randomNoOp: union empty automaton");
       }
       return Operations.union(a, Automata.makeEmpty());
+    case 6:
+      if (VERBOSE) {
+        System.out.println("  randomNoOp: do nothing!");
+      }
+      return a;
     }
     assert false;
     return null;
@@ -632,12 +637,9 @@ public class TestAutomaton extends LuceneTestCase {
     return randomNoOp(a);
   }
 
-  private String getRandomString(boolean isAscii) {
-    if (isAscii) {
-      return TestUtil.randomSimpleString(random());
-    } else {
-      return TestUtil.randomRealisticUnicodeString(random());
-    }
+  private String getRandomString() {
+    //return TestUtil.randomSimpleString(random());
+    return TestUtil.randomRealisticUnicodeString(random());
   }
 
   public void testRandomFinite() throws Exception {
@@ -645,16 +647,13 @@ public class TestAutomaton extends LuceneTestCase {
     int numTerms = atLeast(10);
     int iters = atLeast(100);
 
-    // Some of the ops we do (stripping random byte, reverse) turn valid UTF8 into invalid if we allow non-ascii:
-    boolean isAscii = random().nextBoolean();
-
     if (VERBOSE) {
-      System.out.println("TEST: isAscii=" + isAscii + " numTerms" + numTerms + " iters=" + iters);
+      System.out.println("TEST: numTerms" + numTerms + " iters=" + iters);
     }
 
     Set<BytesRef> terms = new HashSet<>();
     while (terms.size() < numTerms) {
-      terms.add(new BytesRef(getRandomString(isAscii)));
+      terms.add(new BytesRef(getRandomString()));
     }
 
     Automaton a = unionTerms(terms);
@@ -668,7 +667,7 @@ public class TestAutomaton extends LuceneTestCase {
           System.out.println("    " + term);
         }
       }
-      switch(random().nextInt(14)) {
+      switch(random().nextInt(15)) {
 
       case 0:
         // concatenate prefix
@@ -677,7 +676,7 @@ public class TestAutomaton extends LuceneTestCase {
             System.out.println("  op=concat prefix");
           }
           Set<BytesRef> newTerms = new HashSet<>();
-          BytesRef prefix = new BytesRef(getRandomString(isAscii));
+          BytesRef prefix = new BytesRef(getRandomString());
           for(BytesRef term : terms) {
             BytesRef newTerm = BytesRef.deepCopyOf(prefix);
             newTerm.append(term);
@@ -693,7 +692,7 @@ public class TestAutomaton extends LuceneTestCase {
       case 1:
         // concatenate suffix
         {
-          BytesRef suffix = new BytesRef(getRandomString(isAscii));
+          BytesRef suffix = new BytesRef(getRandomString());
           if (VERBOSE) {
             System.out.println("  op=concat suffix " + suffix);
           }
@@ -707,8 +706,6 @@ public class TestAutomaton extends LuceneTestCase {
           a = Operations.concatenate(a, Automata.makeString(suffix.utf8ToString()));
         }
         break;
-
-        // nocommit sometimes concat a suffix accepting more than 1 term, and sometimes non-det
 
       case 2:
         // determinize
@@ -736,7 +733,7 @@ public class TestAutomaton extends LuceneTestCase {
           Set<BytesRef> newTerms = new HashSet<>();
           int numNewTerms = random().nextInt(5);
           while (newTerms.size() < numNewTerms) {
-            newTerms.add(new BytesRef(getRandomString(isAscii)));
+            newTerms.add(new BytesRef(getRandomString()));
           }
           terms.addAll(newTerms);
           Automaton newA = unionTerms(newTerms);
@@ -879,15 +876,17 @@ public class TestAutomaton extends LuceneTestCase {
 
       case 9:
         // reverse
-        if (VERBOSE) {
-          System.out.println("  op=reverse");
+        {
+          if (VERBOSE) {
+            System.out.println("  op=reverse");
+          }
+          a = Operations.reverse(a);
+          Set<BytesRef> newTerms = new HashSet<>();
+          for(BytesRef term : terms) {
+            newTerms.add(new BytesRef(new StringBuilder(term.utf8ToString()).reverse().toString()));
+          }
+          terms = newTerms;
         }
-        a = Operations.reverse(a);
-        Set<BytesRef> newTerms = new HashSet<>();
-        for(BytesRef term : terms) {
-          newTerms.add(new BytesRef(new StringBuilder(term.utf8ToString()).reverse().toString()));
-        }
-        terms = newTerms;
         break;
 
       case 10:
@@ -899,26 +898,28 @@ public class TestAutomaton extends LuceneTestCase {
 
       case 11:
         // interval
-        int min = random().nextInt(1000);
-        int max = min + random().nextInt(50);
-        // digits must be non-zero else we make cycle
-        int digits = Integer.toString(max).length();
-        if (VERBOSE) {
-          System.out.println("  op=union interval min=" + min + " max=" + max + " digits=" + digits);
-        }
-        a = Operations.union(a, Automata.makeInterval(min, max, digits));
-        StringBuilder b = new StringBuilder();
-        for(int i=0;i<digits;i++) {
-          b.append('0');
-        }
-        String prefix = b.toString();
-        for(int i=min;i<=max;i++) {
-          String s = Integer.toString(i);
-          if (s.length() < digits) {
-            // Left-fill with 0s
-            s = prefix.substring(s.length()) + s;
+        {
+          int min = random().nextInt(1000);
+          int max = min + random().nextInt(50);
+          // digits must be non-zero else we make cycle
+          int digits = Integer.toString(max).length();
+          if (VERBOSE) {
+            System.out.println("  op=union interval min=" + min + " max=" + max + " digits=" + digits);
           }
-          terms.add(new BytesRef(s));
+          a = Operations.union(a, Automata.makeInterval(min, max, digits));
+          StringBuilder b = new StringBuilder();
+          for(int i=0;i<digits;i++) {
+            b.append('0');
+          }
+          String prefix = b.toString();
+          for(int i=min;i<=max;i++) {
+            String s = Integer.toString(i);
+            if (s.length() < digits) {
+              // Left-fill with 0s
+              s = prefix.substring(s.length()) + s;
+            }
+            terms.add(new BytesRef(s));
+          }
         }
         break;
 
@@ -937,9 +938,60 @@ public class TestAutomaton extends LuceneTestCase {
         a = Operations.union(a, Automata.makeEmptyString());
         terms.add(new BytesRef());
         break;
+
+      case 14:
+        // Safety in case we are really unlucky w/ the dice:
+        if (terms.size() <= numTerms * 10) {
+          if (VERBOSE) {
+            System.out.println("  op=concat finite automaton");
+          }
+          int count = random().nextBoolean() ? 2 : 3;
+          Set<BytesRef> addTerms = new HashSet<>();
+          while (addTerms.size() < count) {
+            addTerms.add(new BytesRef(getRandomString()));
+          }
+          if (VERBOSE) {
+            for(BytesRef term : addTerms) {
+              System.out.println("    term=" + term);
+            }
+          }
+          Automaton a2 = unionTerms(addTerms);
+          Set<BytesRef> newTerms = new HashSet<>();
+          if (random().nextBoolean()) {
+            // suffix
+            if (VERBOSE) {
+              System.out.println("  do suffix");
+            }
+            a = Operations.concatenate(a, randomNoOp(a2));
+            for(BytesRef term : terms) {
+              for(BytesRef suffix : addTerms) {
+                BytesRef newTerm = BytesRef.deepCopyOf(term);
+                newTerm.append(suffix);
+                newTerms.add(newTerm);
+              }
+            }
+          } else {
+            // prefix
+            if (VERBOSE) {
+              System.out.println("  do prefix");
+            }
+            a = Operations.concatenate(randomNoOp(a2), a);
+            for(BytesRef term : terms) {
+              for(BytesRef prefix : addTerms) {
+                BytesRef newTerm = BytesRef.deepCopyOf(prefix);
+                newTerm.append(term);
+                newTerms.add(newTerm);
+              }
+            }
+          }
+
+          terms = newTerms;
+        }
+        break;
       }
 
-      assertSame(terms, a);
+      // assertSame(terms, a);
+      assertEquals(AutomatonTestUtil.isDeterministicSlow(a), a.isDeterministic());
     }
 
     assertSame(terms, a);

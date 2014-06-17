@@ -17,13 +17,24 @@ package org.apache.lucene.util.automaton;
  * limitations under the License.
  */
 
-/** Used temporarily when iterating through transitions from a {@link LightAutomaton}
- *  {@link getTransition} and {@link #getNextTransition}. */
+/** Used temporarily when iterating through transitions from a {@link Automaton}
+ *  {@link Automaton#initTransition} and {@link Automaton#getNextTransition}. */
 public class Transition {
 
+  /** Sole constructor. */
+  public Transition() {
+  }
+
+  /** Source state. */
   public int source;
+
+  /** Destination state. */
   public int dest;
+
+  /** Minimum accepted label (inclusive). */
   public int min;
+
+  /** Maximum accepted label (inclusive). */
   public int max;
 
   /** Remembers where we are in the iteration; init to -1 to provoke

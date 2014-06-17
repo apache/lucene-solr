@@ -32,7 +32,8 @@ import org.apache.lucene.util.UnicodeUtil;
  * @lucene.experimental
  */
 public class LevenshteinAutomata {
-  /** @lucene.internal */
+  /** Maximum edit distance this class can generate an automaton for.
+   *  @lucene.internal */
   public static final int MAXIMUM_SUPPORTED_DISTANCE = 2;
   /* input word */
   final int word[];
@@ -130,6 +131,18 @@ public class LevenshteinAutomata {
     return toAutomaton(n, "");
   }
 
+  /**
+   * Compute a DFA that accepts all strings within an edit distance of <code>n</code>,
+   * matching the specified exact prefix.
+   * <p>
+   * All automata have the following properties:
+   * <ul>
+   * <li>They are deterministic (DFA).
+   * <li>There are no transitions to dead states.
+   * <li>They are not minimal (some transitions could be combined).
+   * </ul>
+   * </p>
+   */
   public Automaton toAutomaton(int n, String prefix) {
     assert prefix != null;
     if (n == 0) {

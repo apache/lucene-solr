@@ -79,7 +79,8 @@ final public class Automata {
   public static Automaton makeAnyChar() {
     return makeCharRange(Character.MIN_CODE_POINT, Character.MAX_CODE_POINT);
   }
-  
+
+  /** Accept any single character starting from the specified state, returning the new state */
   public static int appendAnyChar(Automaton a, int state) {
     int newState = a.createState();
     a.addTransition(state, newState, Character.MIN_CODE_POINT, Character.MAX_CODE_POINT);
@@ -93,7 +94,8 @@ final public class Automata {
   public static Automaton makeChar(int c) {
     return makeCharRange(c, c);
   }
-  
+
+  /** Appends the specified character to the specified state, returning a new state. */
   public static int appendChar(Automaton a, int state, int c) {
     int newState = a.createState();
     a.addTransition(state, newState, c, c);
@@ -211,7 +213,7 @@ final public class Automata {
    *          interval)
    * @param digits if >0, use fixed number of digits (strings must be prefixed
    *          by 0's to obtain the right length) - otherwise, the number of
-   *          digits is not fixed
+   *          digits is not fixed (any number of leading 0s is accepted)
    * @exception IllegalArgumentException if min>max or if numbers in the
    *              interval cannot be expressed with the given fixed number of
    *              digits

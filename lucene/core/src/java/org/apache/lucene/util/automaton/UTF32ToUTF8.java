@@ -120,6 +120,10 @@ public final class UTF32ToUTF8 {
     }
   }
 
+  /** Sole constructor. */
+  public UTF32ToUTF8() {
+  }
+
   private final UTF8Sequence startUTF8 = new UTF8Sequence();
   private final UTF8Sequence endUTF8 = new UTF8Sequence();
 

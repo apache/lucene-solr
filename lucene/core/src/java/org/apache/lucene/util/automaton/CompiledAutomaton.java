@@ -51,6 +51,8 @@ public class CompiledAutomaton {
     /** Catch-all for any other automata. */
     NORMAL
   };
+
+  /** If simplify is true this will be the "simplified" type; else, this is NORMAL */
   public final AUTOMATON_TYPE type;
 
   /** 
@@ -87,10 +89,16 @@ public class CompiledAutomaton {
    */
   public final Boolean finite;
 
+  /** Create this, passing simplify=true and finite=null, so that we try
+   *  to simplify the automaton and determine if it is finite. */
   public CompiledAutomaton(Automaton automaton) {
     this(automaton, null, true);
   }
 
+  /** Create this.  If finite is null, we use {@link Operations#isFinite}
+   *  to determine whether it is finite.  If simplify is true, we run
+   *  possibly expensive operations to determine if the automaton is one
+   *  the cases in {@link CompiledAutomaton.AUTOMATON_TYPE}. */
   public CompiledAutomaton(Automaton automaton, Boolean finite, boolean simplify) {
 
     if (simplify) {
@@ -251,6 +259,8 @@ public class CompiledAutomaton {
   // TODO: should this take startTerm too?  This way
   // Terms.intersect could forward to this method if type !=
   // NORMAL:
+  /** Return a {@link TermsEnum} intersecting the provided {@link Terms}
+   *  with the terms accepted by this automaton. */
   public TermsEnum getTermsEnum(Terms terms) throws IOException {
     switch(type) {
     case NONE:
@@ -370,34 +380,6 @@ public class CompiledAutomaton {
         idx++;
       }
     }
-  }
-  
-  public String toDot() {
-    StringBuilder b = new StringBuilder("digraph CompiledAutomaton {\n");
-    b.append("  rankdir = LR;\n");
-    int initial = 0;
-    for (int i = 0; i < automaton.getNumStates(); i++) {
-      b.append("  ").append(i);
-      if (automaton.isAccept(i)) b.append(" [shape=doublecircle,label=\"\"];\n");
-      else b.append(" [shape=circle,label=\"\"];\n");
-      if (i == 0) {
-        b.append("  initial [shape=plaintext,label=\"\"];\n");
-        b.append("  initial -> ").append(i).append("\n");
-      }
-      int numTransitions = automaton.initTransition(i, transition);
-      for (int j = 0; j < numTransitions; j++) {
-        b.append("  ").append(i);
-        b.append(" -> ");
-        b.append(transition.dest);
-        b.append(transition.min);
-        if (transition.min != transition.max) {
-          b.append("-");
-          b.append(transition.max);
-        }
-        automaton.getNextTransition(transition);
-      }
-    }
-    return b.append("}\n").toString();
   }
 
   @Override

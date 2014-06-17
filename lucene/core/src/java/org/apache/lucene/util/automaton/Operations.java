@@ -265,7 +265,7 @@ final public class Operations {
    * Complexity: linear in number of states (if already deterministic).
    */
   static public Automaton complement(Automaton a) {
-    a = determinize(a).totalize();
+    a = totalize(determinize(a));
     int numStates = a.getNumStates();
     for (int p=0;p<numStates;p++) {
       a.setAccept(p, !a.isAccept(p));
@@ -465,6 +465,12 @@ final public class Operations {
     return union(Arrays.asList(a1, a2));
   }
 
+  /**
+   * Returns an automaton that accepts the union of the languages of the given
+   * automata.
+   * <p>
+   * Complexity: linear in number of states.
+   */
   public static Automaton union(Collection<Automaton> l) {
     Automaton result = new Automaton();
 
@@ -1042,6 +1048,15 @@ final public class Operations {
     return b.toString();
   }
   
+  // TODO: this currently requites a determinized machine,
+  // but it need not -- we can speed it up by walking the
+  // NFA instead.  it'd still be fail fast.
+  /**
+   * Returns the longest BytesRef that is a prefix of all accepted strings and
+   * visits each state at most once.  The automaton must be deterministic.
+   * 
+   * @return common prefix
+   */
   public static BytesRef getCommonPrefixBytesRef(Automaton a) {
     BytesRef ref = new BytesRef(10);
     HashSet<Integer> visited = new HashSet<>();
@@ -1065,6 +1080,13 @@ final public class Operations {
     return ref;
   }
 
+  /**
+   * Returns the longest BytesRef that is a suffix of all accepted strings.
+   * Worst case complexity: exponential in number of states (this calls
+   * determinize).
+   *
+   * @return common suffix
+   */
   public static BytesRef getCommonSuffixBytesRef(Automaton a) {
     // reverse the language of the automaton, then reverse its common prefix.
     Automaton r = Operations.determinize(reverse(a));
@@ -1082,12 +1104,14 @@ final public class Operations {
       ref.bytes[ref.offset * 2 + ref.length - i - 1] = b;
     }
   }
-  
+
+  /** Returns an automaton accepting the reverse language. */
   public static Automaton reverse(Automaton a) {
     return reverse(a, null);
   }
 
-  public static Automaton reverse(Automaton a, Set<Integer> initialStates) {
+  /** Reverses the automaton, returning the new initial states. */
+  static Automaton reverse(Automaton a, Set<Integer> initialStates) {
 
     if (Operations.isEmpty(a)) {
       return new Automaton();
@@ -1281,5 +1305,43 @@ final public class Operations {
     }
 
     return results;
+  }
+
+  /** Returns a new automaton accepting the same language with added
+   *  transitions to a dead state so that from every state and every label
+   *  there is a transition. */
+  static Automaton totalize(Automaton a) {
+    Automaton result = new Automaton();
+    int numStates = a.getNumStates();
+    for(int i=0;i<numStates;i++) {
+      result.createState();
+      result.setAccept(i, a.isAccept(i));
+    }
+
+    int deadState = result.createState();
+    result.addTransition(deadState, deadState, Character.MIN_CODE_POINT, Character.MAX_CODE_POINT);
+
+    Transition t = new Transition();
+    for(int i=0;i<numStates;i++) {
+      int maxi = Character.MIN_CODE_POINT;
+      int count = a.initTransition(i, t);
+      for(int j=0;j<count;j++) {
+        a.getNextTransition(t);
+        result.addTransition(i, t.dest, t.min, t.max);
+        if (t.min > maxi) {
+          result.addTransition(i, deadState, maxi, t.min-1);
+        }
+        if (t.max + 1 > maxi) {
+          maxi = t.max + 1;
+        }
+      }
+
+      if (maxi <= Character.MAX_CODE_POINT) {
+        result.addTransition(i, deadState, maxi, Character.MAX_CODE_POINT);
+      }
+    }
+
+    result.finishState();
+    return result;
   }
 }

@@ -29,7 +29,7 @@ import org.apache.lucene.util.UnicodeUtil;
  * (nearly linear with the input size).
  * 
  * @see #build(Collection)
- * @see BasicAutomata#makeStringUnion(Collection)
+ * @see Automata#makeStringUnion(Collection)
  */
 final class DaciukMihovAutomatonBuilder {
   /**
