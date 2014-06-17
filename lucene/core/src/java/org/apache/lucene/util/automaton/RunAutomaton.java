@@ -122,28 +122,20 @@ public abstract class RunAutomaton {
    */
   public RunAutomaton(Automaton a, int maxInterval, boolean tableize) {
     this.maxInterval = maxInterval;
-    //System.out.println("before det a=" + a.getNumStates());
     a = Operations.determinize(a);
     this.automaton = a;
-    //System.out.println("AFTER DET tableize= " + tableize + ": ");
-    //System.out.println(a.toDot());
     points = a.getStartPoints();
-    //System.out.println("  points=" + Arrays.toString(points));
     initial = 0;
     size = Math.max(1,a.getNumStates());
     accept = new boolean[size];
     transitions = new int[size * points.length];
     Arrays.fill(transitions, -1);
-    //System.out.println("RA: size=" + size + " points.length=" + points.length + " total=" + (size * points.length));
     for (int n=0;n<size;n++) {
       accept[n] = a.isAccept(n);
-      //System.out.println("n=" + n + " acc=" + accept[n] + " size=" + size);
       for (int c = 0; c < points.length; c++) {
         int dest = a.step(n, points[c]);
-        //System.out.println("  step from point=" + c + " n=" + n + " label=" + (char) points[c] + " -> " + dest);
         assert dest == -1 || dest < size;
         transitions[n * points.length + c] = dest;
-        //System.out.println("  trans label=" + points[c] + " dest=" + transitions[n * points.length + c]);
       }
     }
 
@@ -158,9 +150,7 @@ public abstract class RunAutomaton {
           i++;
         }
         classmap[j] = i;
-        //System.out.println("classmap[" + (char) j + "]=" + i);
       }
-      //System.out.println("  after classmap i=" + i + " maxInterval=" + maxInterval);
     } else {
       classmap = null;
     }
@@ -174,11 +164,9 @@ public abstract class RunAutomaton {
    * transition function.)
    */
   public final int step(int state, int c) {
-    //System.out.println("  step state=" + state + " c=" + c + " points.length=" + points.length + " transitions.len=" + transitions.length);
     if (classmap == null) {
       return transitions[state * points.length + getCharClass(c)];
     } else {
-      //System.out.println("    classmap[c]=" + classmap[c]);
       return transitions[state * points.length + classmap[c]];
     }
   }

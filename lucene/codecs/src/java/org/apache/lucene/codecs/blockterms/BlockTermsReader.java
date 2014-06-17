@@ -105,7 +105,7 @@ public class BlockTermsReader extends FieldsProducer {
       return field.hashCode() * 31 + term.hashCode();
     }
   }
-
+  
   // private String segment;
   
   public BlockTermsReader(TermsIndexReaderBase indexReader, Directory dir, FieldInfos fieldInfos, SegmentInfo info, PostingsReaderBase postingsReader, IOContext context,
@@ -364,7 +364,7 @@ public class BlockTermsReader extends FieldsProducer {
           throw new IllegalStateException("terms index was not loaded");
         }
    
-        //System.out.println("BTR.seek seg=" + segment + " target=" + fieldInfo.name + ":" + target.utf8ToString() + " " + target + " current=" + term().utf8ToString() + " " + term() + " indexIsCurrent=" + indexIsCurrent + " didIndexNext=" + didIndexNext + " seekPending=" + seekPending + " this="  + this);
+        //System.out.println("BTR.seek seg=" + segment + " target=" + fieldInfo.name + ":" + target.utf8ToString() + " " + target + " current=" + term().utf8ToString() + " " + term() + " indexIsCurrent=" + indexIsCurrent + " didIndexNext=" + didIndexNext + " seekPending=" + seekPending + " divisor=" + indexReader.getDivisor() + " this="  + this);
         if (didIndexNext) {
           if (nextIndexTerm == null) {
             //System.out.println("  nextIndexTerm=null");
@@ -450,7 +450,6 @@ public class BlockTermsReader extends FieldsProducer {
         // do we then copy the bytes into the term.
 
         while(true) {
-          //System.out.println("cycle common=" + common + " termBlockPrefix=" + termBlockPrefix + " term=" + term + " target=" + target);
 
           // First, see if target term matches common prefix
           // in this block:

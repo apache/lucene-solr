@@ -17,8 +17,10 @@ package org.apache.lucene.util.automaton;
  * limitations under the License.
  */
 
-/** Used temporarily when iterating through transitions from a {@link Automaton}
+/** Holds one transition from an {@link Automaton}.  This is typically
+ *  used temporarily when iterating through transitions by invoking
  *  {@link Automaton#initTransition} and {@link Automaton#getNextTransition}. */
+
 public class Transition {
 
   /** Sole constructor. */

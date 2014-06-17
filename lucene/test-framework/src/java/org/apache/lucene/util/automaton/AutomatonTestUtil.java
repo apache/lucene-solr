@@ -129,7 +129,7 @@ public class AutomatonTestUtil {
 
   /**
    * Lets you retrieve random strings accepted
-   * by a LightAutomaton.
+   * by an Automaton.
    * <p>
    * Once created, call {@link #getRandomAcceptedString(Random)}
    * to get a new string (in UTF-32 codepoints).

@@ -134,8 +134,6 @@ public final class UTF32ToUTF8 {
   void convertOneEdge(int start, int end, int startCodePoint, int endCodePoint) {
     startUTF8.set(startCodePoint);
     endUTF8.set(endCodePoint);
-    //System.out.println("start = " + startUTF8);
-    //System.out.println("  end = " + endUTF8);
     build(start, end, startUTF8, endUTF8, 0);
   }
 
@@ -294,15 +292,12 @@ public final class UTF32ToUTF8 {
 
       int numTransitions = utf32.getNumTransitions(utf32State);
       utf32.initTransition(utf32State, scratch);
-      //System.out.println("  convert state=" + utf32State + " numTransitions=" + numTransitions);
       for(int i=0;i<numTransitions;i++) {
         utf32.getNextTransition(scratch);
         int destUTF32 = scratch.dest;
         int destUTF8 = map[destUTF32];
-        //System.out.println("    transition min=" + scratch.min + " max=" + scratch.max);
         if (destUTF8 == -1) {
           destUTF8 = utf8.createState();
-          //System.out.println("      create dest=" + destUTF8 +" accept=" + utf32.isAccept(destUTF32));
           utf8.setAccept(destUTF8, utf32.isAccept(destUTF32));
           map[destUTF32] = destUTF8;
           pending.add(destUTF32);

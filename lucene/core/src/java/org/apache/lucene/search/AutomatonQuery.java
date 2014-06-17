@@ -24,8 +24,8 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.ToStringUtils;
-import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
  * A {@link Query} that will match terms against a finite-state machine.
@@ -116,7 +116,7 @@ public class AutomatonQuery extends MultiTermQuery {
     return buffer.toString();
   }
   
-  /** Returns the light automaton used to create this query */
+  /** Returns the automaton used to create this query */
   public Automaton getAutomaton() {
     return automaton;
   }
