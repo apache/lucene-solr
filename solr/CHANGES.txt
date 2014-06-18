@@ -88,9 +88,15 @@ Other Changes
 
 ==================  4.10.0 =================
 
-Bug fixes
+Bug Fixes
+----------------------
 
 * SOLR-6095 : SolrCloud cluster can end up without an overseer with overseer roles (Noble Paul, Shalin Mangar)
+
+Other Changes
+---------------------
+
+* SOLR-6173: Fixed wrong failure message in TestDistributedSearch. (shalin)
 
 ==================  4.9.0 ==================
 
