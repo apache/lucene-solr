@@ -59,8 +59,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   private final static int PAGED_BYTES_BITS = 15;
 
   // all fields share this single logical byte[]
-  private final PagedBytes termBytes = new PagedBytes(PAGED_BYTES_BITS);
-  private PagedBytes.Reader termBytesReader;
+  private final PagedBytes.Reader termBytesReader;
 
   final HashMap<FieldInfo,FieldIndexData> fields = new HashMap<>();
   
@@ -71,6 +70,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   
   public FixedGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, Comparator<BytesRef> termComp, String segmentSuffix, IOContext context)
     throws IOException {
+    final PagedBytes termBytes = new PagedBytes(PAGED_BYTES_BITS);
 
     this.termComp = termComp;
     
@@ -115,7 +115,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
           throw new CorruptIndexException("invalid packedIndexStart: " + packedIndexStart + " indexStart: " + indexStart + "numIndexTerms: " + numIndexTerms + " (resource=" + in + ")");
         }
         final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
-        FieldIndexData previous = fields.put(fieldInfo, new FieldIndexData(in, indexStart, termsStart, packedIndexStart, packedOffsetsStart, numIndexTerms));
+        FieldIndexData previous = fields.put(fieldInfo, new FieldIndexData(in, termBytes, indexStart, termsStart, packedIndexStart, packedOffsetsStart, numIndexTerms));
         if (previous != null) {
           throw new CorruptIndexException("duplicate field: " + fieldInfo.name + " (resource=" + in + ")");
         }
@@ -238,7 +238,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
     final long numIndexTerms;
     final long termsStart;
     
-    public FieldIndexData(IndexInput in, long indexStart, long termsStart, long packedIndexStart, long packedOffsetsStart, long numIndexTerms) throws IOException {
+    public FieldIndexData(IndexInput in, PagedBytes termBytes, long indexStart, long termsStart, long packedIndexStart, long packedOffsetsStart, long numIndexTerms) throws IOException {
       
       this.termsStart = termsStart;
       termBytesStart = termBytes.getPointer();
@@ -292,9 +292,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
 
   @Override
   public long ramBytesUsed() {
-    long sizeInBytes = ((termBytes!=null) ? termBytes.ramBytesUsed() : 0) + 
-        ((termBytesReader!=null)? termBytesReader.ramBytesUsed() : 0);
-    
+    long sizeInBytes = ((termBytesReader!=null)? termBytesReader.ramBytesUsed() : 0);
     for(FieldIndexData entry : fields.values()) {
       sizeInBytes += entry.ramBytesUsed();
     }

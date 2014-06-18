@@ -328,7 +328,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       final PagedBytes.Reader bytesReader = bytes.freeze(true);
       CodecUtil.checkEOF(input);
       success = true;
-      ramBytesUsed.addAndGet(bytes.ramBytesUsed());
+      ramBytesUsed.addAndGet(bytesReader.ramBytesUsed());
       return new BinaryDocValues() {
 
         @Override
@@ -370,7 +370,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       CodecUtil.checkEOF(data);
       CodecUtil.checkEOF(index);
       success = true;
-      ramBytesUsed.addAndGet(bytes.ramBytesUsed() + reader.ramBytesUsed());
+      ramBytesUsed.addAndGet(bytesReader.ramBytesUsed() + reader.ramBytesUsed());
       return new BinaryDocValues() {
         @Override
         public BytesRef get(int docID) {
@@ -414,7 +414,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       final PackedInts.Reader reader = PackedInts.getReader(index);
       CodecUtil.checkEOF(data);
       CodecUtil.checkEOF(index);
-      ramBytesUsed.addAndGet(bytes.ramBytesUsed() + reader.ramBytesUsed());
+      ramBytesUsed.addAndGet(bytesReader.ramBytesUsed() + reader.ramBytesUsed());
       success = true;
       return new BinaryDocValues() {
         @Override
@@ -457,7 +457,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       final PackedInts.Reader reader = PackedInts.getReader(index);
       CodecUtil.checkEOF(data);
       CodecUtil.checkEOF(index);
-      ramBytesUsed.addAndGet(bytes.ramBytesUsed() + reader.ramBytesUsed());
+      ramBytesUsed.addAndGet(bytesReader.ramBytesUsed() + reader.ramBytesUsed());
       success = true;
       return new BinaryDocValues() {
         
@@ -540,7 +540,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
     bytes.copy(data, fixedLength * (long) valueCount);
     final PagedBytes.Reader bytesReader = bytes.freeze(true);
     final PackedInts.Reader reader = PackedInts.getReader(index);
-    ramBytesUsed.addAndGet(bytes.ramBytesUsed() + reader.ramBytesUsed());
+    ramBytesUsed.addAndGet(bytesReader.ramBytesUsed() + reader.ramBytesUsed());
 
     return correctBuggyOrds(new SortedDocValues() {
       @Override
@@ -578,7 +578,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
     final PackedInts.Reader ordsReader = PackedInts.getReader(index);
 
     final int valueCount = addressReader.size() - 1;
-    ramBytesUsed.addAndGet(bytes.ramBytesUsed() + addressReader.ramBytesUsed() + ordsReader.ramBytesUsed());
+    ramBytesUsed.addAndGet(bytesReader.ramBytesUsed() + addressReader.ramBytesUsed() + ordsReader.ramBytesUsed());
 
     return correctBuggyOrds(new SortedDocValues() {
       @Override

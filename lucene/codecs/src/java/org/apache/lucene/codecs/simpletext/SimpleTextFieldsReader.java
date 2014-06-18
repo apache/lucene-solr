@@ -55,6 +55,7 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.fst.Builder;
@@ -65,6 +66,11 @@ import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
 
 class SimpleTextFieldsReader extends FieldsProducer {
+
+  private static final long BASE_RAM_BYTES_USED =
+        RamUsageEstimator.shallowSizeOfInstance(SimpleTextFieldsReader.class)
+      + RamUsageEstimator.shallowSizeOfInstance(TreeMap.class);
+
   private final TreeMap<String,Long> fields;
   private final IndexInput in;
   private final FieldInfos fieldInfos;
@@ -497,6 +503,10 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
   }
 
+  private static final long TERMS_BASE_RAM_BYTES_USED =
+        RamUsageEstimator.shallowSizeOfInstance(SimpleTextTerms.class)
+      + RamUsageEstimator.shallowSizeOfInstance(BytesRef.class)
+      + RamUsageEstimator.shallowSizeOfInstance(CharsRef.class);
   private class SimpleTextTerms extends Terms implements Accountable {
     private final long termsStart;
     private final FieldInfo fieldInfo;
@@ -581,7 +591,8 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     @Override
     public long ramBytesUsed() {
-      return (fst!=null) ? fst.ramBytesUsed() : 0;
+      return TERMS_BASE_RAM_BYTES_USED + (fst!=null ? fst.ramBytesUsed() : 0)
+          + RamUsageEstimator.sizeOf(scratch.bytes) + RamUsageEstimator.sizeOf(scratchUTF16.chars);
     }
 
     @Override
@@ -643,14 +654,14 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
   @Override
   synchronized public Terms terms(String field) throws IOException {
-    Terms terms = termsCache.get(field);
+    SimpleTextTerms terms = termsCache.get(field);
     if (terms == null) {
       Long fp = fields.get(field);
       if (fp == null) {
         return null;
       } else {
         terms = new SimpleTextTerms(field, fp, maxDoc);
-        termsCache.put(field, (SimpleTextTerms) terms);
+        termsCache.put(field, terms);
       }
     }
     return terms;
@@ -667,8 +678,8 @@ class SimpleTextFieldsReader extends FieldsProducer {
   }
 
   @Override
-  public long ramBytesUsed() {
-    long sizeInBytes = 0;
+  public synchronized long ramBytesUsed() {
+    long sizeInBytes = BASE_RAM_BYTES_USED + fields.size() * 2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
     for(SimpleTextTerms simpleTextTerms : termsCache.values()) {
       sizeInBytes += (simpleTextTerms!=null) ? simpleTextTerms.ramBytesUsed() : 0;
     }

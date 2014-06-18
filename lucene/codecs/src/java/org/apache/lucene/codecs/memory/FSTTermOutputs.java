@@ -24,6 +24,8 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.Outputs;
 
 /**
@@ -46,7 +48,8 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
    * On an FST, only long[] part is 'shared' and pushed towards root.
    * byte[] and term stats will be kept on deeper arcs.
    */
-  static class TermData {
+  static class TermData implements Accountable {
+    private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(TermData.class);
     long[] longs;
     byte[] bytes;
     int docFreq;
@@ -62,6 +65,18 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
       this.bytes = bytes;
       this.docFreq = docFreq;
       this.totalTermFreq = totalTermFreq;
+    }
+
+    @Override
+    public long ramBytesUsed() {
+      long ramBytesUsed = BASE_RAM_BYTES_USED;
+      if (longs != null) {
+        ramBytesUsed += RamUsageEstimator.sizeOf(longs);
+      }
+      if (bytes != null) {
+        ramBytesUsed += RamUsageEstimator.sizeOf(bytes);
+      }
+      return ramBytesUsed;
     }
 
     // NOTE: actually, FST nodes are seldom 
@@ -110,6 +125,11 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
   protected FSTTermOutputs(FieldInfo fieldInfo, int longsSize) {
     this.hasPos = (fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY);
     this.longsSize = longsSize;
+  }
+
+  @Override
+  public long ramBytesUsed(TermData output) {
+    return output.ramBytesUsed();
   }
 
   @Override

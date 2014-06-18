@@ -36,6 +36,8 @@ import org.apache.lucene.util.packed.PackedInts;
  */
 public final class CompressingStoredFieldsIndexReader implements Cloneable, Accountable {
 
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(CompressingStoredFieldsIndexReader.class);
+
   final int maxDoc;
   final int[] docBases;
   final long[] startPointers;
@@ -163,12 +165,14 @@ public final class CompressingStoredFieldsIndexReader implements Cloneable, Acco
 
   @Override
   public long ramBytesUsed() {
-    long res = 0;
-    
-    for(PackedInts.Reader r : docBasesDeltas) {
+    long res = BASE_RAM_BYTES_USED;
+
+    res += RamUsageEstimator.shallowSizeOf(docBasesDeltas);
+    for (PackedInts.Reader r : docBasesDeltas) {
       res += r.ramBytesUsed();
     }
-    for(PackedInts.Reader r : startPointersDeltas) {
+    res += RamUsageEstimator.shallowSizeOf(startPointersDeltas);
+    for (PackedInts.Reader r : startPointersDeltas) {
       res += r.ramBytesUsed();
     }
 

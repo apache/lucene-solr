@@ -43,6 +43,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Concrete class that reads docId(maybe frq,pos,offset,payloads) list
@@ -52,6 +53,8 @@ import org.apache.lucene.util.IOUtils;
  * @lucene.experimental
  */
 public final class Lucene41PostingsReader extends PostingsReaderBase {
+
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(Lucene41PostingsReader.class);
 
   private final IndexInput docIn;
   private final IndexInput posIn;
@@ -1543,7 +1546,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
 
   @Override
   public long ramBytesUsed() {
-    return 0;
+    return BASE_RAM_BYTES_USED;
   }
 
   @Override
