@@ -150,6 +150,9 @@ New Features
 * SOLR-6150: Add new AnalyticsQuery to support pluggable analytics
   (Joel Bernstein)
 
+* SOLR-6125: Allow SolrIndexWriter to close without waiting for merges
+  (Christine Poerschke via Alan Woodward)
+
 
 Bug Fixes
 ----------------------
