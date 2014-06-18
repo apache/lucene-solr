@@ -88,7 +88,9 @@ Other Changes
 
 ==================  4.10.0 =================
 
-(No Changes)
+Bug fixes
+
+* SOLR-6095 : SolrCloud cluster can end up without an overseer with overseer roles (Noble Paul, Shalin Mangar)
 
 ==================  4.9.0 ==================
 

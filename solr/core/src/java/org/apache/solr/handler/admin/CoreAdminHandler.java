@@ -272,7 +272,12 @@ public class CoreAdminHandler extends RequestHandlerBase {
           ZkController zkController = coreContainer.getZkController();
           if(zkController != null){
            String op = req.getParams().get("op");
-           if ("rejoin".equals(op)) zkController.rejoinOverseerElection();
+           String electionNode = req.getParams().get("electionNode");
+           if(electionNode != null) {
+             zkController.rejoinOverseerElection(electionNode, "rejoinAtHead".equals(op));
+           } else {
+             log.info("electionNode is required param");
+           }
           }
           break;
         }
