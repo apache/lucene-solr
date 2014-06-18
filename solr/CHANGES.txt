@@ -267,6 +267,9 @@ Other Changes
 * SOLR-6153: ReplicationHandler backup response format should contain backup name.
   (Varun Thacker via shalin)
 
+* SOLR-6128: Removed deprecated analysis factories and fieldTypes from the example
+  schema.xml (hossman)
+
 Optimizations
 ----------------------
 
