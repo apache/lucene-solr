@@ -1099,6 +1099,9 @@ class Lucene3xFields extends FieldsProducer {
     if (tis != null) {
       ramBytesUsed += tis.ramBytesUsed();
     }
+    if (tisNoIndex != null) {
+      ramBytesUsed += tisNoIndex.ramBytesUsed();
+    }
     return ramBytesUsed;
   }
 
