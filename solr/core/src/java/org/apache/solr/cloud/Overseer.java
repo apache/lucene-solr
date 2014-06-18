@@ -326,8 +326,12 @@ public class Overseer {
         }
       } finally {
         //if I am not shutting down, Then I need to rejoin election
-        if (zkController != null && !zkController.getCoreContainer().isShutDown()) {
-          zkController.rejoinOverseerElection(null, false);
+        try {
+          if (zkController != null && !zkController.getCoreContainer().isShutDown()) {
+            zkController.rejoinOverseerElection(null, false);
+          }
+        } catch (Exception e) {
+          log.warn("Unable to rejoinElection ",e);
         }
       }
     }
