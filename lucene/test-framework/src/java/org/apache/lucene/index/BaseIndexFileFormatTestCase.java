@@ -113,7 +113,9 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
         queue.addAll(map.values());
         return 2L * map.size() * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
       }
-      return super.accumulateObject(o, shallowSize, fieldValues, queue);
+      long v = super.accumulateObject(o, shallowSize, fieldValues, queue);
+      // System.out.println(o.getClass() + "=" + v);
+      return v;
     }
 
   };
