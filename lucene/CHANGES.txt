@@ -233,6 +233,8 @@ API Changes
 * LUCENE-5761: Removed DiskDocValuesFormat, it was very inefficient and saved very little
   RAM over the default codec. (Robert Muir)
 
+* LUCENE-5775: Deprecate JaspellLookup. (Mike McCandless)
+
 Optimizations
 
 * LUCENE-5603: hunspell stemmer more efficiently strips prefixes

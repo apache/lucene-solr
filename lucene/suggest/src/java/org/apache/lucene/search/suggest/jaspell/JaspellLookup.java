@@ -37,7 +37,9 @@ import org.apache.lucene.util.UnicodeUtil;
  * <a href="http://jaspell.sourceforge.net/">JaSpell</a>.
  * 
  * @see JaspellTernarySearchTrie
+ * @deprecated Migrate to one of the newer suggesters which are much more RAM efficient.
  */
+@Deprecated
 public class JaspellLookup extends Lookup implements Accountable {
   JaspellTernarySearchTrie trie = new JaspellTernarySearchTrie();
   private boolean usePrefix = true;
