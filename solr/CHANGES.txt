@@ -84,7 +84,8 @@ Other Changes
 * SOLR-5868: HttpClient should be configured to use ALLOW_ALL_HOSTNAME hostname
   verifier to simplify SSL setup. (Steve Davids via Mark Miller)
 
-* SOLR-6169: Properly remove CoreAdminHandler handleAlias action (Alan Woodward)
+* SOLR-6169: Finish removal of CoreAdminHandler handleAlias action begun in 4.9 
+  (Alan Woodward)
 
 ==================  4.10.0 =================
 
@@ -266,6 +267,9 @@ Other Changes
 
 * SOLR-6153: ReplicationHandler backup response format should contain backup name.
   (Varun Thacker via shalin)
+
+* SOLR-6169: Remove broken handleAlias action in CoreAdminHandler (Alan
+  Woodward)
 
 * SOLR-6128: Removed deprecated analysis factories and fieldTypes from the example
   schema.xml (hossman)
