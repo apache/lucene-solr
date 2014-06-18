@@ -1,5 +1,7 @@
 package org.apache.lucene.codecs.lucene3x;
 
+import java.io.IOException;
+
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
 import org.apache.lucene.util.LuceneTestCase;
@@ -37,5 +39,11 @@ public class TestLucene3xPostingsFormat extends BasePostingsFormatTestCase {
   @Override
   protected Codec getCodec() {
     return codec;
+  }
+
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-5773")
+  @Override
+  public void testRamBytesUsed() throws IOException {
+    super.testRamBytesUsed();
   }
 }
