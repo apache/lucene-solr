@@ -36,6 +36,7 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
@@ -52,6 +53,7 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -145,6 +147,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
   protected static final String DOC_POSITIONS_FIELD = "positions";
   protected static final String DOC_POSITIONS_TERM = "$all$";
   protected static final String NUMERIC_DV_FIELD = "numeric";
+  protected static final String SORTED_NUMERIC_DV_FIELD = "sorted_numeric";
   protected static final String NORMS_FIELD = "norm";
   protected static final String BINARY_DV_FIELD = "binary";
   protected static final String SORTED_DV_FIELD = "sorted";
@@ -182,6 +185,10 @@ public abstract class SorterTestBase extends LuceneTestCase {
     if (defaultCodecSupportsSortedSet()) {
       doc.add(new SortedSetDocValuesField(SORTED_SET_DV_FIELD, new BytesRef(Integer.toString(id))));
       doc.add(new SortedSetDocValuesField(SORTED_SET_DV_FIELD, new BytesRef(Integer.toString(id + 1))));
+    }
+    if (defaultCodecSupportsSortedNumeric()) {
+      doc.add(new SortedNumericDocValuesField(SORTED_NUMERIC_DV_FIELD, id));
+      doc.add(new SortedNumericDocValuesField(SORTED_NUMERIC_DV_FIELD, id + 1));
     }
     doc.add(new Field(TERM_VECTORS_FIELD, Integer.toString(id), TERM_VECTORS_TYPE));
     return doc;
@@ -385,6 +392,20 @@ public abstract class SorterTestBase extends LuceneTestCase {
       bytes = dv.lookupOrd(dv.nextOrd());
       assertEquals("incorrect sorted-set DocValues for doc " + i, Integer.valueOf(value + 1).toString(), bytes.utf8ToString());
       assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
+    }
+  }
+  
+  @Test
+  public void testSortedNumericDocValuesField() throws Exception {
+    assumeTrue("default codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
+    SortedNumericDocValues dv = reader.getSortedNumericDocValues(SORTED_NUMERIC_DV_FIELD);
+    int maxDoc = reader.maxDoc();
+    for (int i = 0; i < maxDoc; i++) {
+      dv.setDocument(i);
+      assertEquals(2, dv.count());
+      int value = sortedValues[i].intValue();
+      assertEquals("incorrect sorted-numeric DocValues for doc " + i, value, dv.valueAt(0));
+      assertEquals("incorrect sorted-numeric DocValues for doc " + i, value + 1, dv.valueAt(1));
     }
   }
   

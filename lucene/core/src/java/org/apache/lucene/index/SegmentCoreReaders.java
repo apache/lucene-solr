@@ -39,11 +39,14 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /** Holds core readers that are shared (unchanged) when
  * SegmentReader is cloned or reopened */
 final class SegmentCoreReaders implements Accountable {
-  
+
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(SegmentCoreReaders.class);
+
   // Counts how many other readers share the core objects
   // (freqStream, proxStream, tis, etc.) of this reader;
   // when coreRef drops to 0, these core objects may be
@@ -213,7 +216,8 @@ final class SegmentCoreReaders implements Accountable {
 
   @Override
   public long ramBytesUsed() {
-    return ((normsProducer!=null) ? normsProducer.ramBytesUsed() : 0) +
+    return BASE_RAM_BYTES_USED +
+        ((normsProducer!=null) ? normsProducer.ramBytesUsed() : 0) +
         ((fields!=null) ? fields.ramBytesUsed() : 0) + 
         ((fieldsReaderOrig!=null)? fieldsReaderOrig.ramBytesUsed() : 0) + 
         ((termVectorsReaderOrig!=null) ? termVectorsReaderOrig.ramBytesUsed() : 0);

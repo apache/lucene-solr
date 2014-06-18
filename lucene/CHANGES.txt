@@ -94,6 +94,10 @@ Other
 * LUCENE-5563: Removed sep layout: which has fallen behind on features and doesn't
   perform as well as other options.  (Robert Muir)
 
+======================= Lucene 4.10.0 ======================
+
+(No Changes)
+
 ======================= Lucene 4.9.0 =======================
 
 Changes in Runtime Behavior

@@ -102,6 +102,13 @@ public enum Version {
    */
   @Deprecated
   LUCENE_4_9,
+  
+  /**
+   * Match settings and bugs in Lucene's 4.10 release.
+   * @deprecated (5.0) Use latest
+   */
+  @Deprecated
+  LUCENE_4_10,
 
   /** Match settings and bugs in Lucene's 5.0 release.
    *  <p>

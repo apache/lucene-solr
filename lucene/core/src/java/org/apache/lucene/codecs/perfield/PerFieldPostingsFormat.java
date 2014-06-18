@@ -199,7 +199,9 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     }
   }
 
-  private class FieldsReader extends FieldsProducer {
+  private static class FieldsReader extends FieldsProducer {
+
+    private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(FieldsReader.class);
 
     private final Map<String,FieldsProducer> fields = new TreeMap<>();
     private final Map<String,FieldsProducer> formats = new HashMap<>();
@@ -258,12 +260,13 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
     @Override
     public long ramBytesUsed() {
-      long sizeInBytes = 0;
+      long ramBytesUsed = BASE_RAM_BYTES_USED;
+      ramBytesUsed += fields.size() * 2L * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
+      ramBytesUsed += formats.size() * 2L * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
       for(Map.Entry<String,FieldsProducer> entry: formats.entrySet()) {
-        sizeInBytes += entry.getKey().length() * RamUsageEstimator.NUM_BYTES_CHAR;
-        sizeInBytes += entry.getValue().ramBytesUsed();
+        ramBytesUsed += entry.getValue().ramBytesUsed();
       }
-      return sizeInBytes;
+      return ramBytesUsed;
     }
 
     @Override

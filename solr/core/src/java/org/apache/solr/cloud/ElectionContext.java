@@ -53,7 +53,7 @@ public abstract class ElectionContext {
   final String leaderPath;
   String leaderSeqPath;
   private SolrZkClient zkClient;
-  
+
   public ElectionContext(final String coreNodeName,
       final String electionPath, final String leaderPath, final ZkNodeProps leaderProps, final SolrZkClient zkClient) {
     this.id = coreNodeName;
@@ -71,7 +71,7 @@ public abstract class ElectionContext {
       zkClient.delete(leaderSeqPath, -1, true);
     } catch (NoNodeException e) {
       // fine
-      log.warn("cancelElection did not find election node to remove",e);
+      log.warn("cancelElection did not find election node to remove {}" ,leaderSeqPath);
     }
   }
 
@@ -80,6 +80,10 @@ public abstract class ElectionContext {
   public void checkIfIamLeaderFired() {}
 
   public void joinedElectionFired() {}
+
+  public  ElectionContext copy(){
+    throw new UnsupportedOperationException("copy");
+  }
 }
 
 class ShardLeaderElectionContextBase extends ElectionContext {
@@ -528,6 +532,11 @@ final class OverseerElectionContext extends ElectionContext {
   public void cancelElection() throws InterruptedException, KeeperException {
     super.cancelElection();
     overseer.close();
+  }
+
+  @Override
+  public ElectionContext copy() {
+    return new OverseerElectionContext(zkClient, overseer ,id);
   }
   
   @Override

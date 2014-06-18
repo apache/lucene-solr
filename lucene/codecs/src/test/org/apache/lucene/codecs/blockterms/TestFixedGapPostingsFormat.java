@@ -21,7 +21,6 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene41ords.Lucene41WithOrds;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 
 /**
  * Basic tests of a PF using FixedGap terms dictionary

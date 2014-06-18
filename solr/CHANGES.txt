@@ -86,6 +86,12 @@ Other Changes
 
 * SOLR-6169: Properly remove CoreAdminHandler handleAlias action (Alan Woodward)
 
+==================  4.10.0 =================
+
+Bug fixes
+
+* SOLR-6095 : SolrCloud cluster can end up without an overseer with overseer roles (Noble Paul, Shalin Mangar)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
@@ -99,7 +105,11 @@ Apache ZooKeeper 3.4.6
 Upgrading from Solr 4.8
 ----------------------
 
-* placeholder
+* Support for DiskDocValuesFormat (ie: fieldTypes configured with docValuesFormat="Disk") 
+  has been removed due to poor performance.  If you have an existing fieldTypes using 
+  DiskDocValuesFormat please modify your schema.xml to remove the 'docValuesFormat' 
+  attribute, and optimize your index to rewrite it into the default codec, prior to 
+  upgrading to 4.9.  See LUCENE-5761 for more details.
 
 Detailed Change List
 ----------------------
@@ -186,6 +196,15 @@ Bug Fixes
 
 * SOLR-6175: DebugComponent throws NPE on shard exceptions when using shards.tolerant.
   (Tomás Fernández Löbbe via shalin)
+
+* SOLR-6129: DateFormatTransformer doesn't resolve dateTimeFormat. (Aaron LaBella via shalin)
+
+* SOLR-6164: Copy Fields Schema additions are not distributed to other nodes.
+  (Gregory Chanan via Steve Rowe)
+
+* SOLR-6160: An error was sometimes possible if a distributed search included grouping
+  with group.facet, faceting on facet.field and either facet.range or facet.query.
+  (David Smiley)
 
 Other Changes
 ---------------------

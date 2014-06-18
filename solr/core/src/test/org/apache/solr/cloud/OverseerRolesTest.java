@@ -17,6 +17,7 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+
 import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
@@ -54,7 +55,7 @@ import org.junit.BeforeClass;
 @SuppressSSL     // Currently unknown why SSL does not work
 public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
   private CloudSolrServer client;
-  
+
   @BeforeClass
   public static void beforeThisClass2() throws Exception {
 
@@ -173,80 +174,45 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
     log.info("Adding another overseer designate {}", anotherOverseer);
     setOverseerRole(CollectionAction.ADDROLE, anotherOverseer);
 
-    timeout = System.currentTimeMillis()+10000;
+    String currentOverseer = getLeaderNode(client.getZkStateReader().getZkClient());
+
+    log.info("Current Overseer {}", currentOverseer);
+
+    String hostPort = currentOverseer.substring(0,currentOverseer.indexOf('_'));
+
+    StringBuilder sb = new StringBuilder();
+//
+//
+    log.info("hostPort : {}", hostPort);
+
+    JettySolrRunner leaderJetty = null;
+
+    for (JettySolrRunner jetty : jettys) {
+      String s = jetty.getBaseUrl().toString();
+      log.info("jetTy {}",s);
+      sb.append(s).append(" , ");
+      if (s.contains(hostPort)) {
+        leaderJetty = jetty;
+        break;
+      }
+    }
+
+    assertNotNull("Could not find a jetty2 kill",  leaderJetty);
+
+    log.info("leader node {}", leaderJetty.getBaseUrl());
+    log.info ("current election Queue", OverseerCollectionProcessor.getSortedElectionNodes(client.getZkStateReader().getZkClient()));
+    ChaosMonkey.stop(leaderJetty);
+    timeout = System.currentTimeMillis() + 10000;
     leaderchanged = false;
-    for(;System.currentTimeMillis() < timeout;){
-      List<String> sortedNodeNames = getSortedOverseerNodeNames(client.getZkStateReader().getZkClient());
-      if(sortedNodeNames.get(1) .equals(anotherOverseer) || sortedNodeNames.get(0).equals(anotherOverseer)){
-        leaderchanged =true;
+    for (; System.currentTimeMillis() < timeout; ) {
+      currentOverseer = getLeaderNode(client.getZkStateReader().getZkClient());
+      if (anotherOverseer.equals(currentOverseer)) {
+        leaderchanged = true;
         break;
       }
       Thread.sleep(100);
     }
-
-    assertTrue("New overseer not the frontrunner : "+ getSortedOverseerNodeNames(client.getZkStateReader().getZkClient()) + " expected : "+ anotherOverseer, leaderchanged);
-
-
-    String currentOverseer = getLeaderNode(client.getZkStateReader().getZkClient());
-
-    String killedOverseer = currentOverseer;
-
-    log.info("Current Overseer {}", currentOverseer);
-    Pattern pattern = Pattern.compile("(.*):(\\d*)(.*)");
-    Matcher m = pattern.matcher(currentOverseer);
-    JettySolrRunner stoppedJetty =null;
-
-    String hostPort = null;
-    StringBuilder sb = new StringBuilder();
-    if(m.matches()){
-      hostPort =  m.group(1)+":"+m.group(2);
-
-      log.info("hostPort : {}", hostPort);
-
-      for (JettySolrRunner jetty : jettys) {
-        String s = jetty.getBaseUrl().toString();
-        sb.append(s).append(" , ");
-        if(s.contains(hostPort)){
-          log.info("leader node {}",s);
-          ChaosMonkey.stop(jetty);
-          stoppedJetty = jetty;
-          timeout = System.currentTimeMillis()+10000;
-          leaderchanged = false;
-          for(;System.currentTimeMillis() < timeout;){
-            currentOverseer =  getLeaderNode(client.getZkStateReader().getZkClient());
-            if(anotherOverseer.equals(currentOverseer)){
-              leaderchanged =true;
-              break;
-            }
-            Thread.sleep(100);
-          }
-          assertTrue("New overseer designate has not become the overseer, expected : "+ anotherOverseer + "actual : "+ currentOverseer, leaderchanged);
-        }
-
-      }
-
-    } else{
-      fail("pattern didn't match for"+currentOverseer );
-    }
-
-    if(stoppedJetty !=null) {
-      ChaosMonkey.start(stoppedJetty);
-
-      timeout = System.currentTimeMillis() + 10000;
-      leaderchanged = false;
-      for (; System.currentTimeMillis() < timeout; ) {
-        List<String> sortedNodeNames = getSortedOverseerNodeNames(client.getZkStateReader().getZkClient());
-        if (sortedNodeNames.get(1).equals(killedOverseer) || sortedNodeNames.get(0).equals(killedOverseer)) {
-          leaderchanged = true;
-          break;
-        }
-        Thread.sleep(100);
-      }
-
-      assertTrue("New overseer not the frontrunner : " + getSortedOverseerNodeNames(client.getZkStateReader().getZkClient()) + " expected : " + killedOverseer, leaderchanged);
-    } else {
-      log.warn("The jetty where the overseer {} is running could not be located in {}",hostPort,sb);
-    }
+    assertTrue("New overseer designate has not become the overseer, expected : " + anotherOverseer + "actual : " + getLeaderNode(client.getZkStateReader().getZkClient()), leaderchanged);
   }
 
   private void setOverseerRole(CollectionAction action, String overseerDesignate) throws Exception, IOException {
@@ -260,6 +226,7 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
     request.setPath("/admin/collections");
     client.request(request);
   }
+
 
   protected void createCollection(String COLL_NAME, CloudSolrServer client) throws Exception {
     int replicationFactor = 2;

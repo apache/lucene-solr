@@ -41,6 +41,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.automaton.ByteRunAutomaton;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -165,7 +166,9 @@ public class FSTTermsReader extends FieldsProducer {
     }
   }
 
-  final class TermsReader extends Terms {
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(TermsReader.class);
+  final class TermsReader extends Terms implements Accountable {
+
     final FieldInfo fieldInfo;
     final long numTerms;
     final long sumTotalTermFreq;
@@ -182,6 +185,11 @@ public class FSTTermsReader extends FieldsProducer {
       this.docCount = docCount;
       this.longsSize = longsSize;
       this.dict = new FST<>(in, new FSTTermOutputs(fieldInfo, longsSize));
+    }
+
+    @Override
+    public long ramBytesUsed() {
+      return BASE_RAM_BYTES_USED + dict.ramBytesUsed();
     }
 
     @Override
@@ -732,9 +740,9 @@ public class FSTTermsReader extends FieldsProducer {
 
   @Override
   public long ramBytesUsed() {
-    long ramBytesUsed = 0;
+    long ramBytesUsed = postingsReader.ramBytesUsed();
     for (TermsReader r : fields.values()) {
-      ramBytesUsed += r.dict == null ? 0 : r.dict.ramBytesUsed();
+      ramBytesUsed += r.ramBytesUsed();
     }
     return ramBytesUsed;
   }

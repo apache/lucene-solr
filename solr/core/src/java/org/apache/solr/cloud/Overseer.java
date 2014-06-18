@@ -308,29 +308,31 @@ public class Overseer {
         log.error("could not read the data" ,e);
         return;
       }
-      Map m = (Map) ZkStateReader.fromJSON(data);
-      String id = (String) m.get("id");
-      if(overseerCollectionProcessor.getId().equals(id)){
-        try {
-          log.info("I'm exiting , but I'm still the leader");
-          zkClient.delete(path,stat.getVersion(),true);
-        } catch (KeeperException.BadVersionException e) {
-          //no problem ignore it some other Overseer has already taken over
-        } catch (Exception e) {
-          log.error("Could not delete my leader node ", e);
-        } finally {
+      try {
+        Map m = (Map) ZkStateReader.fromJSON(data);
+        String id = (String) m.get("id");
+        if(overseerCollectionProcessor.getId().equals(id)){
           try {
-            if(zkController !=null && !zkController.getCoreContainer().isShutDown()){
-              zkController.rejoinOverseerElection();
-            }
-
+            log.info("I'm exiting , but I'm still the leader");
+            zkClient.delete(path,stat.getVersion(),true);
+          } catch (KeeperException.BadVersionException e) {
+            //no problem ignore it some other Overseer has already taken over
           } catch (Exception e) {
-            log.error("error canceling overseer election election  ",e);
+            log.error("Could not delete my leader node ", e);
           }
-        }
 
-      } else{
-        log.info("somebody else has already taken up the overseer position");
+        } else{
+          log.info("somebody else has already taken up the overseer position");
+        }
+      } finally {
+        //if I am not shutting down, Then I need to rejoin election
+        try {
+          if (zkController != null && !zkController.getCoreContainer().isShutDown()) {
+            zkController.rejoinOverseerElection(null, false);
+          }
+        } catch (Exception e) {
+          log.warn("Unable to rejoinElection ",e);
+        }
       }
     }
 
@@ -377,9 +379,13 @@ public class Overseer {
       } else if(CLUSTERPROP.isEqual(operation)){
            handleProp(message);
       } else if( QUIT.equals(operation)){
-        log.info("Quit command received {}", LeaderElector.getNodeName(myId));
-        overseerCollectionProcessor.close();
-        close();
+        if(myId.equals( message.get("id"))){
+          log.info("Quit command received {}", LeaderElector.getNodeName(myId));
+          overseerCollectionProcessor.close();
+          close();
+        } else {
+          log.warn("Overseer received wrong QUIT message {}", message);
+        }
       } else{
         throw new RuntimeException("unknown operation:" + operation
             + " contents:" + message.getProperties());
