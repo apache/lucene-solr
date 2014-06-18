@@ -30,10 +30,12 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FilterAtomicReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.sorter.Sorter.DocMap;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.IndexInput;
@@ -219,6 +221,32 @@ public class SortingAtomicReader extends FilterAtomicReader {
     @Override
     public long get(int docID) {
       return in.get(docMap.newToOld(docID));
+    }
+  }
+  
+  private static class SortingSortedNumericDocValues extends SortedNumericDocValues {
+    
+    private final SortedNumericDocValues in;
+    private final Sorter.DocMap docMap;
+    
+    SortingSortedNumericDocValues(SortedNumericDocValues in, DocMap docMap) {
+      this.in = in;
+      this.docMap = docMap;
+    }
+    
+    @Override
+    public int count() {
+      return in.count();
+    }
+    
+    @Override
+    public void setDocument(int doc) {
+      in.setDocument(docMap.newToOld(doc));
+    }
+    
+    @Override
+    public long valueAt(int index) {
+      return in.valueAt(index);
     }
   }
   
@@ -785,6 +813,17 @@ public class SortingAtomicReader extends FilterAtomicReader {
     final NumericDocValues oldDocValues = in.getNumericDocValues(field);
     if (oldDocValues == null) return null;
     return new SortingNumericDocValues(oldDocValues, docMap);
+  }
+  
+  @Override
+  public SortedNumericDocValues getSortedNumericDocValues(String field)
+      throws IOException {
+    final SortedNumericDocValues oldDocValues = in.getSortedNumericDocValues(field);
+    if (oldDocValues == null) {
+      return null;
+    } else {
+      return new SortingSortedNumericDocValues(oldDocValues, docMap);
+    }
   }
 
   @Override
