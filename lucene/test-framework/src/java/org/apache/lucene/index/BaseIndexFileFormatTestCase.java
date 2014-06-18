@@ -25,11 +25,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
@@ -38,7 +40,6 @@ import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.RamUsageTester;
-import org.apache.lucene.util.packed.PackedInts;
 
 /**
  * Common tests to all index formats.
@@ -48,9 +49,6 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
   // metadata or Directory-level objects
   private static final Set<Class<?>> EXCLUDED_CLASSES = Collections.newSetFromMap(new IdentityHashMap<Class<?>,Boolean>());
 
-  // Notorious singletons
-  private static final Set<Object> EXCLUDED_OBJECTS = Collections.newSetFromMap(new IdentityHashMap<Object,Boolean>());
-
   static {
     // Directory objects, don't take into account eg. the NIO buffers
     EXCLUDED_CLASSES.add(Directory.class);
@@ -58,6 +56,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
 
     // used for thread management, not by the index
     EXCLUDED_CLASSES.add(CloseableThreadLocal.class);
+    EXCLUDED_CLASSES.add(ThreadLocal.class);
 
     // don't follow references to the top-level reader
     EXCLUDED_CLASSES.add(IndexReader.class);
@@ -70,16 +69,9 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     EXCLUDED_CLASSES.add(SegmentCommitInfo.class);
     EXCLUDED_CLASSES.add(FieldInfo.class);
 
-    // singletons
-    EXCLUDED_CLASSES.add(Codec.class);
-    EXCLUDED_CLASSES.add(Enum.class);
-    for (PackedInts.Format format : PackedInts.Format.values()) {
-      for (int i = 1; i <= 64; ++i) {
-        if (format.isSupported(i)) {
-          EXCLUDED_OBJECTS.add(PackedInts.getDecoder(format, PackedInts.VERSION_CURRENT, i));
-        }
-      }
-    }
+    // constant overhead is typically due to strings
+    // TODO: can we remove this and still pass the test consistently
+    EXCLUDED_CLASSES.add(String.class);
   }
 
   static class Accumulator extends RamUsageTester.Accumulator {
@@ -91,9 +83,6 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     }
 
     public long accumulateObject(Object o, long shallowSize, java.util.Map<Field, Object> fieldValues, java.util.Collection<Object> queue) {
-      if (EXCLUDED_OBJECTS.contains(o)) {
-        return 0L;
-      }
       for (Class<?> clazz = o.getClass(); clazz != null; clazz = clazz.getSuperclass()) {
         if (EXCLUDED_CLASSES.contains(clazz) && o != root) {
           return 0;
@@ -115,6 +104,14 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
       }
       long v = super.accumulateObject(o, shallowSize, fieldValues, queue);
       // System.out.println(o.getClass() + "=" + v);
+      return v;
+    }
+
+    @Override
+    public long accumulateArray(Object array, long shallowSize,
+        List<Object> values, Collection<Object> queue) {
+      long v = super.accumulateArray(array, shallowSize, values, queue);
+      // System.out.println(array.getClass() + "=" + v);
       return v;
     }
 
@@ -204,35 +201,48 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
 
   /** Test the accuracy of the ramBytesUsed estimations. */
   public void testRamBytesUsed() throws IOException {
+    if (Codec.getDefault() instanceof RandomCodec) {
+      // this test relies on the fact that two segments will be written with
+      // the same codec so we need to disable MockRandomPF
+      final Set<String> avoidCodecs = new HashSet<>(((RandomCodec) Codec.getDefault()).avoidCodecs);
+      avoidCodecs.add(new MockRandomPostingsFormat().getName());
+      Codec.setDefault(new RandomCodec(random(), avoidCodecs));
+    }
     Directory dir = newDirectory();
     IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, cfg);
     // we need to index enough documents so that constant overhead doesn't dominate
     final int numDocs = atLeast(10000);
+    AtomicReader reader1 = null;
     for (int i = 0; i < numDocs; ++i) {
       Document d = new Document();
       addRandomFields(d);
       w.addDocument(d);
+      if (i == 100) {
+        w.forceMerge(1);
+        w.commit();
+        reader1 = getOnlySegmentReader(DirectoryReader.open(dir));
+      }
     }
     w.forceMerge(1);
     w.commit();
     w.close();
 
-    IndexReader reader = DirectoryReader.open(dir);
+    AtomicReader reader2 = getOnlySegmentReader(DirectoryReader.open(dir));
 
-    for (AtomicReaderContext context : reader.leaves()) {
-      final AtomicReader r = context.reader();
-      // beware of lazy-loaded stuff
-      new SimpleMergedSegmentWarmer(InfoStream.NO_OUTPUT).warm(r);
-      final long actualBytes = RamUsageTester.sizeOf(r, new Accumulator(r));
-      final long expectedBytes = ((SegmentReader) r).ramBytesUsed();
-      final long absoluteError = actualBytes - expectedBytes;
-      final double relativeError = (double) absoluteError / actualBytes;
-      final String message = "Actual RAM usage " + actualBytes + ", but got " + expectedBytes + ", " + 100*relativeError + "% error";
-      assertTrue(message, Math.abs(relativeError) < 0.20d || Math.abs(absoluteError) < 1000);
+    for (AtomicReader reader : Arrays.asList(reader1, reader2)) {
+      new SimpleMergedSegmentWarmer(InfoStream.NO_OUTPUT).warm(reader);
     }
 
-    reader.close();
+    final long actualBytes = RamUsageTester.sizeOf(reader2, new Accumulator(reader2)) - RamUsageTester.sizeOf(reader1, new Accumulator(reader1));
+    final long expectedBytes = ((SegmentReader) reader2).ramBytesUsed() - ((SegmentReader) reader1).ramBytesUsed();
+    final long absoluteError = actualBytes - expectedBytes;
+    final double relativeError = (double) absoluteError / actualBytes;
+    final String message = "Actual RAM usage " + actualBytes + ", but got " + expectedBytes + ", " + 100*relativeError + "% error";
+    assertTrue(message, Math.abs(relativeError) < 0.20d || Math.abs(absoluteError) < 1000);
+
+    reader1.close();
+    reader2.close();
     dir.close();
   }
 
