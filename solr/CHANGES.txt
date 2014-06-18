@@ -200,6 +200,9 @@ Other Changes
 * SOLR-6169: Remove broken handleAlias action in CoreAdminHandler (Alan
   Woodward)
 
+* SOLR-6128: Removed deprecated analysis factories and fieldTypes from the example
+  schema.xml (hossman)
+
 Optimizations
 ----------------------
 
