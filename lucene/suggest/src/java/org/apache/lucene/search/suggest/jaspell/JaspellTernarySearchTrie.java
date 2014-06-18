@@ -62,7 +62,10 @@ import org.apache.lucene.util.RamUsageEstimator;
  * Algorithms, January 1997). Algorithms in C, Third Edition, by Robert
  * Sedgewick (Addison-Wesley, 1998) provides yet another view of ternary search
  * trees.
+ *
+ * @deprecated Migrate to one of the newer suggesters which are much more RAM efficient.
  */
+@Deprecated
 public class JaspellTernarySearchTrie implements Accountable {
 
   /**
@@ -98,7 +101,9 @@ public class JaspellTernarySearchTrie implements Accountable {
     @Override
     public long ramBytesUsed() {
       long mem = RamUsageEstimator.shallowSizeOf(this) + RamUsageEstimator.shallowSizeOf(relatives);
-      for (TSTNode node : relatives) {
+      // We don't need to add parent since our parent added itself:
+      for (int i=1;i<4;i++) {
+        TSTNode node = relatives[i];
         if (node != null) {
           mem += node.ramBytesUsed();
         }
