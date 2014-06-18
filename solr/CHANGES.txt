@@ -194,10 +194,7 @@ Bug Fixes
 * SOLR-6158: Relative configSetBase directories were resolved relative to the 
   container CWD, rather than solr.home. (Simon Endele, Alan Woodward)
 
-* SOLR-6056: Don't publish recovery state until recovery runs to avoid overwhelming
-  the overseer state queue. (Raintung Li, Mark Miller, shalin)
-
-* SOLR-5426: Fixed a bug in ReverseWildCardFilter that could cause 
+* SOLR-5426: Fixed a bug in ReverseWildCardFilter that could cause
   InvalidTokenOffsetsException when highlighting. (Uwe Schindler, Arun Kumar, via hossman)
 
 * SOLR-6175: DebugComponent throws NPE on shard exceptions when using shards.tolerant.
