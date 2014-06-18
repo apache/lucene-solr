@@ -42,6 +42,7 @@ import java.util.Set;
 
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -239,7 +240,7 @@ final public class Operations {
       b = concatenate(as);
     }
 
-    Set<Integer> prevAcceptStates = new HashSet<>(b.getAcceptStates());
+    Set<Integer> prevAcceptStates = toSet(b, 0);
 
     for(int i=min;i<max;i++) {
       int numStates = b.getNumStates();
@@ -247,15 +248,25 @@ final public class Operations {
       for(int s : prevAcceptStates) {
         b.addEpsilon(s, numStates);
       }
-      prevAcceptStates.clear();
-      for(int s : a.getAcceptStates()) {
-        prevAcceptStates.add(numStates+s);
-      }
+      prevAcceptStates = toSet(a, numStates);
     }
 
     b.finishState();
 
     return b;
+  }
+
+  private static Set<Integer> toSet(Automaton a, int offset) {
+    int numStates = a.getNumStates();
+    FixedBitSet isAccept = a.getAcceptStates();
+    Set<Integer> result = new HashSet<Integer>();
+    int upto = 0;
+    while (upto < numStates && (upto = isAccept.nextSetBit(upto)) != -1) {
+      result.add(offset+upto);
+      upto++;
+    }
+
+    return result;
   }
   
   /**
@@ -913,13 +924,16 @@ final public class Operations {
 
     LinkedList<Integer> workList = new LinkedList<>();
     BitSet live = new BitSet(numStates);
-    for (int s : a.getAcceptStates()) {
+    FixedBitSet acceptBits = a.getAcceptStates();
+    int s = 0;
+    while (s < numStates && (s = acceptBits.nextSetBit(s)) != -1) {
       live.set(s);
       workList.add(s);
+      s++;
     }
 
     while (workList.isEmpty() == false) {
-      int s = workList.removeFirst();
+      s = workList.removeFirst();
       int count = a2.initTransition(s, t);
       for(int i=0;i<count;i++) {
         a2.getNextTransition(t);
@@ -971,6 +985,7 @@ final public class Operations {
     assert hasDeadStates(result) == false;
     return result;
   }
+
   /**
    * Finds the largest entry whose value is less than or equal to c, or 0 if
    * there is no such entry.
@@ -988,7 +1003,8 @@ final public class Operations {
   }
   
   /**
-   * Returns true if the language of this automaton is finite.
+   * Returns true if the language of this automaton is finite.  The
+   * automaton must not have any dead states.
    */
   public static boolean isFinite(Automaton a) {
     if (a.getNumStates() == 0) {
@@ -998,7 +1014,7 @@ final public class Operations {
   }
   
   /**
-   * Checks whether there is a loop containing s. (This is sufficient since
+   * Checks whether there is a loop containing state. (This is sufficient since
    * there are never transitions to dead states.)
    */
   // TODO: not great that this is recursive... in theory a
@@ -1144,12 +1160,14 @@ final public class Operations {
 
     Automaton result = builder.finish();
 
-    for(int s : a.getAcceptStates()) {
-      assert s < numStates;
+    int s = 0;
+    FixedBitSet acceptStates = a.getAcceptStates();
+    while (s < numStates && (s = acceptStates.nextSetBit(s)) != -1) {
       result.addEpsilon(0, s+1);
       if (initialStates != null) {
         initialStates.add(s+1);
       }
+      s++;
     }
 
     result.finishState();

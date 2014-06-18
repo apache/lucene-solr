@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.Sorter;
 
@@ -71,7 +72,7 @@ public class Automaton {
   /** Holds toState, min, max for each transition. */
   private int[] transitions = new int[6];
 
-  private final Set<Integer> acceptStates = new HashSet<Integer>();
+  private FixedBitSet isAccept = new FixedBitSet(4);
 
   /** True if no state has two transitions leaving with the same label. */
   private boolean deterministic = true;
@@ -86,18 +87,23 @@ public class Automaton {
     int state = nextState/2;
     states[nextState] = -1;
     nextState += 2;
+    if (state >= isAccept.length()) {
+      FixedBitSet newBits = new FixedBitSet(ArrayUtil.oversize(state+1, 1));
+      newBits.or(isAccept);
+      isAccept = newBits;
+    }
     return state;
   }
 
   /** Set or clear this state as an accept state. */
-  public void setAccept(int state, boolean isAccept) {
+  public void setAccept(int state, boolean accept) {
     if (state >= getNumStates()) {
       throw new IllegalArgumentException("state=" + state + " is out of bounds (numStates=" + getNumStates() + ")");
     }
-    if (isAccept) {
-      acceptStates.add(state);
+    if (accept) {
+      isAccept.set(state);
     } else {
-      acceptStates.remove(state);
+      isAccept.clear(state);
     }
   }
 
@@ -119,14 +125,14 @@ public class Automaton {
     return transitions;
   }
 
-  /** Returns accept states. */
-  public Set<Integer> getAcceptStates() {
-    return acceptStates;
+  /** Returns accept states.  If the bit is set then that state is an accept state. */
+  FixedBitSet getAcceptStates() {
+    return isAccept;
   }
 
   /** Returns true if this state is an accept state. */
   public boolean isAccept(int state) {
-    return acceptStates.contains(state);
+    return isAccept.get(state);
   }
 
   /** Add a new transition with min = max = label. */
@@ -195,12 +201,19 @@ public class Automaton {
       if (states[nextState+i] != -1) {
         states[nextState+i] += nextTransition;
       }
-      int state = i/2;
     }
     nextState += other.nextState;
-
-    for(int s : other.getAcceptStates()) {
-      setAccept(stateOffset+s, true);
+    if (isAccept.length() < nextState/2) {
+      FixedBitSet newBits = new FixedBitSet(ArrayUtil.oversize(nextState/2, 1));
+      newBits.or(isAccept);
+      isAccept = newBits;
+    }
+    int otherNumStates = other.getNumStates();
+    FixedBitSet otherAcceptStates = other.getAcceptStates();
+    int state = 0;
+    while (state < otherNumStates && (state = otherAcceptStates.nextSetBit(state)) != -1) {
+      setAccept(stateOffset + state, true);
+      state++;
     }
 
     // Bulk copy and then fixup dest for each transition:
