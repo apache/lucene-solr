@@ -42,7 +42,6 @@ import java.util.Set;
 
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -258,7 +257,7 @@ final public class Operations {
 
   private static Set<Integer> toSet(Automaton a, int offset) {
     int numStates = a.getNumStates();
-    FixedBitSet isAccept = a.getAcceptStates();
+    BitSet isAccept = a.getAcceptStates();
     Set<Integer> result = new HashSet<Integer>();
     int upto = 0;
     while (upto < numStates && (upto = isAccept.nextSetBit(upto)) != -1) {
@@ -924,7 +923,7 @@ final public class Operations {
 
     LinkedList<Integer> workList = new LinkedList<>();
     BitSet live = new BitSet(numStates);
-    FixedBitSet acceptBits = a.getAcceptStates();
+    BitSet acceptBits = a.getAcceptStates();
     int s = 0;
     while (s < numStates && (s = acceptBits.nextSetBit(s)) != -1) {
       live.set(s);
@@ -1161,7 +1160,7 @@ final public class Operations {
     Automaton result = builder.finish();
 
     int s = 0;
-    FixedBitSet acceptStates = a.getAcceptStates();
+    BitSet acceptStates = a.getAcceptStates();
     while (s < numStates && (s = acceptStates.nextSetBit(s)) != -1) {
       result.addEpsilon(0, s+1);
       if (initialStates != null) {

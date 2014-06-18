@@ -20,11 +20,11 @@ package org.apache.lucene.util.automaton;
 //import java.io.IOException;
 //import java.io.PrintWriter;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.Sorter;
 
@@ -72,7 +72,7 @@ public class Automaton {
   /** Holds toState, min, max for each transition. */
   private int[] transitions = new int[6];
 
-  private FixedBitSet isAccept = new FixedBitSet(4);
+  private final BitSet isAccept = new BitSet(4);
 
   /** True if no state has two transitions leaving with the same label. */
   private boolean deterministic = true;
@@ -87,11 +87,6 @@ public class Automaton {
     int state = nextState/2;
     states[nextState] = -1;
     nextState += 2;
-    if (state >= isAccept.length()) {
-      FixedBitSet newBits = new FixedBitSet(ArrayUtil.oversize(state+1, 1));
-      newBits.or(isAccept);
-      isAccept = newBits;
-    }
     return state;
   }
 
@@ -126,7 +121,7 @@ public class Automaton {
   }
 
   /** Returns accept states.  If the bit is set then that state is an accept state. */
-  FixedBitSet getAcceptStates() {
+  BitSet getAcceptStates() {
     return isAccept;
   }
 
@@ -203,13 +198,8 @@ public class Automaton {
       }
     }
     nextState += other.nextState;
-    if (isAccept.length() < nextState/2) {
-      FixedBitSet newBits = new FixedBitSet(ArrayUtil.oversize(nextState/2, 1));
-      newBits.or(isAccept);
-      isAccept = newBits;
-    }
     int otherNumStates = other.getNumStates();
-    FixedBitSet otherAcceptStates = other.getAcceptStates();
+    BitSet otherAcceptStates = other.getAcceptStates();
     int state = 0;
     while (state < otherNumStates && (state = otherAcceptStates.nextSetBit(state)) != -1) {
       setAccept(stateOffset + state, true);
