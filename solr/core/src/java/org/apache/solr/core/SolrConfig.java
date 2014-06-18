@@ -315,6 +315,7 @@ public class SolrConfig extends Config {
     return new UpdateHandlerInfo(get("updateHandler/@class",null),
             getInt("updateHandler/autoCommit/maxDocs",-1),
             getInt("updateHandler/autoCommit/maxTime",-1),
+            getBool("updateHandler/indexWriter/closeWaitsForMerges",true),
             getBool("updateHandler/autoCommit/openSearcher",true),
             getInt("updateHandler/commitIntervalLowerBound",-1),
             getInt("updateHandler/autoSoftCommit/maxDocs",-1),
@@ -497,6 +498,7 @@ public class SolrConfig extends Config {
     public final String className;
     public final int autoCommmitMaxDocs,autoCommmitMaxTime,commitIntervalLowerBound,
         autoSoftCommmitMaxDocs,autoSoftCommmitMaxTime;
+    public final boolean indexWriterCloseWaitsForMerges;
     public final boolean openSearcher;  // is opening a new searcher part of hard autocommit?
     public final boolean commitWithinSoftCommit;
 
@@ -505,11 +507,12 @@ public class SolrConfig extends Config {
      * @param autoCommmitMaxTime set -1 as default
      * @param commitIntervalLowerBound set -1 as default
      */
-    public UpdateHandlerInfo(String className, int autoCommmitMaxDocs, int autoCommmitMaxTime, boolean openSearcher, int commitIntervalLowerBound,
+    public UpdateHandlerInfo(String className, int autoCommmitMaxDocs, int autoCommmitMaxTime, boolean indexWriterCloseWaitsForMerges, boolean openSearcher, int commitIntervalLowerBound,
         int autoSoftCommmitMaxDocs, int autoSoftCommmitMaxTime, boolean commitWithinSoftCommit) {
       this.className = className;
       this.autoCommmitMaxDocs = autoCommmitMaxDocs;
       this.autoCommmitMaxTime = autoCommmitMaxTime;
+      this.indexWriterCloseWaitsForMerges = indexWriterCloseWaitsForMerges;
       this.openSearcher = openSearcher;
       this.commitIntervalLowerBound = commitIntervalLowerBound;
       
