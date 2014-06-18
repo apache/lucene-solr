@@ -226,7 +226,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
       final long expectedBytes = ((SegmentReader) r).ramBytesUsed();
       final long absoluteError = actualBytes - expectedBytes;
       final double relativeError = (double) absoluteError / actualBytes;
-      final String message = "Actual RAM usage " + actualBytes + ", but got " + expectedBytes + ", " + relativeError + "% error";
+      final String message = "Actual RAM usage " + actualBytes + ", but got " + expectedBytes + ", " + 100*relativeError + "% error";
       assertTrue(message, Math.abs(relativeError) < 0.20d || Math.abs(absoluteError) < 1000);
     }
 
