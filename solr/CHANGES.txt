@@ -153,6 +153,9 @@ New Features
 * SOLR-6125: Allow SolrIndexWriter to close without waiting for merges
   (Christine Poerschke via Alan Woodward)
 
+* SOLR-6064: DebugComponent track output should be returned as a JSON
+  object rather than a list (Christine Poerschke, Alan Woodward)
+
 
 Bug Fixes
 ----------------------
