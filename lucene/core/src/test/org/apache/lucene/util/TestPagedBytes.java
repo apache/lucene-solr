@@ -27,7 +27,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.util.PagedBytes.Reader;
 import org.junit.Ignore;
 
 public class TestPagedBytes extends LuceneTestCase {
@@ -196,6 +195,7 @@ public class TestPagedBytes extends LuceneTestCase {
     }
     assertEquals(RamUsageTester.sizeOf(b), b.ramBytesUsed());
     final PagedBytes.Reader reader = b.freeze(random().nextBoolean());
+    assertEquals(RamUsageTester.sizeOf(b), b.ramBytesUsed());
     assertEquals(RamUsageTester.sizeOf(reader), reader.ramBytesUsed());
   }
 

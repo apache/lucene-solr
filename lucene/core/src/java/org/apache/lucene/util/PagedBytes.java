@@ -236,8 +236,11 @@ public final class PagedBytes implements Accountable {
 
   @Override
   public long ramBytesUsed() {
-    long size = BASE_RAM_BYTES_USED + RamUsageEstimator.shallowSizeOf(blocks)
-        + bytesUsedPerBlock * numBlocks;
+    long size = BASE_RAM_BYTES_USED + RamUsageEstimator.shallowSizeOf(blocks);;
+    if (numBlocks > 0) {
+      size += (numBlocks - 1) * bytesUsedPerBlock;
+      size += RamUsageEstimator.sizeOf(blocks[numBlocks - 1]);
+    }
     if (currentBlock != null) {
       size += RamUsageEstimator.sizeOf(currentBlock);
     }

@@ -25,10 +25,10 @@ import java.util.List;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.MathUtil;
-import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.PagedBytes.PagedBytesDataInput;
 import org.apache.lucene.util.PagedBytes.PagedBytesDataOutput;
-import org.apache.lucene.util.PagedBytes;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.GrowableWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
@@ -114,8 +114,12 @@ class TermInfosReaderIndex {
     dataInput = dataPagedBytes.getDataInput();
     indexToDataOffset = indexToTerms.getMutable();
 
-    ramBytesUsed = fields.length * (RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.shallowSizeOfInstance(Term.class))
-        + dataPagedBytes.ramBytesUsed() + indexToDataOffset.ramBytesUsed();
+    long ramBytesUsed = RamUsageEstimator.shallowSizeOf(fields);
+    ramBytesUsed += RamUsageEstimator.shallowSizeOf(dataInput);
+    ramBytesUsed += fields.length * RamUsageEstimator.shallowSizeOfInstance(Term.class);
+    ramBytesUsed += dataPagedBytes.ramBytesUsed();
+    ramBytesUsed += indexToDataOffset.ramBytesUsed();
+    this.ramBytesUsed = ramBytesUsed;
   }
 
   private static int estimatePageBits(long estSize) {
