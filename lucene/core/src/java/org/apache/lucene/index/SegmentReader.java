@@ -40,6 +40,7 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.Version;
 
 /**
@@ -51,6 +52,11 @@ import org.apache.lucene.util.Version;
  */
 public final class SegmentReader extends AtomicReader implements Accountable {
 
+  private static final long BASE_RAM_BYTES_USED =
+        RamUsageEstimator.shallowSizeOfInstance(SegmentReader.class)
+      + RamUsageEstimator.shallowSizeOfInstance(SegmentDocValues.class);
+  private static final long LONG_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(Long.class);
+        
   private final SegmentCommitInfo si;
   private final Bits liveDocs;
 
@@ -601,7 +607,10 @@ public final class SegmentReader extends AtomicReader implements Accountable {
   @Override
   public long ramBytesUsed() {
     ensureOpen();
-    long ramBytesUsed = 0;
+    long ramBytesUsed = BASE_RAM_BYTES_USED;
+    ramBytesUsed += dvGens.size() * LONG_RAM_BYTES_USED;
+    ramBytesUsed += dvProducers.size() * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
+    ramBytesUsed += dvProducersByField.size() * 2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
     if (dvProducers != null) {
       for (DocValuesProducer producer : dvProducers) {
         ramBytesUsed += producer.ramBytesUsed();

@@ -20,39 +20,39 @@ package org.apache.lucene.util;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 /** Crawls object graph to collect RAM usage for testing */
 public final class RamUsageTester {
-  
-  /**
-   * A {@link Filter} that accepts all fields.
-   */
-  private static final Filter DEFAULT_FILTER = new Filter() {
 
-    @Override
-    public boolean accept(Field field) {
-      return true;
+  /** An accumulator of object references. This class allows for customizing RAM usage estimation. */
+  public static class Accumulator {
+
+    /** Accumulate transitive references for the provided fields of the given
+     *  object into <code>queue</code> and return the shallow size of this object. */
+    public long accumulateObject(Object o, long shallowSize, Map<Field, Object> fieldValues, Collection<Object> queue) {
+      for (Object value : fieldValues.values()) {
+        queue.add(value);
+      }
+      return shallowSize;
     }
 
-    public boolean accept(Object o) {
-      return true;
+    /** Accumulate transitive references for the provided values of the given
+     *  array into <code>queue</code> and return the shallow size of this array. */
+    public long accumulateArray(Object array, long shallowSize, List<Object> values, Collection<Object> queue) {
+      queue.addAll(values);
+      return shallowSize;
     }
-
-  };
-
-  /** A filter that allows to decide on what to take into account when measuring RAM usage. */
-  public static interface Filter {
-
-    /** Whether the provided field should be taken into account when measuring RAM usage. */
-    boolean accept(Field field);
-
-    /** Whether the provided field value should be taken into account when measuring RAM usage. */
-    boolean accept(Object o);
 
   }
 
@@ -65,13 +65,13 @@ public final class RamUsageTester {
    * (it isn't side-effect free). After the method exits, this memory
    * should be GCed.</p>
    */
-  public static long sizeOf(Object obj, Filter filter) {
-    return measureObjectSize(obj, filter);
+  public static long sizeOf(Object obj, Accumulator accumulator) {
+    return measureObjectSize(obj, accumulator);
   }
 
   /** Same as calling <code>sizeOf(obj, DEFAULT_FILTER)</code>. */
   public static long sizeOf(Object obj) {
-    return sizeOf(obj, DEFAULT_FILTER);
+    return sizeOf(obj, new Accumulator());
   }
 
   /**
@@ -89,7 +89,7 @@ public final class RamUsageTester {
    * or complex graphs (a max. recursion depth on my machine was ~5000 objects linked in a chain
    * so not too much).
    */
-  private static long measureObjectSize(Object root, Filter filter) {
+  private static long measureObjectSize(Object root, Accumulator accumulator) {
     // Objects seen so far.
     final IdentityHashSet<Object> seen = new IdentityHashSet<>();
     // Class cache with reference Field and precalculated shallow size. 
@@ -114,25 +114,28 @@ public final class RamUsageTester {
          * Consider an array, possibly of primitive types. Push any of its references to
          * the processing stack and accumulate this array's shallow size. 
          */
-        long size = RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
+        final long shallowSize = RamUsageEstimator.shallowSizeOf(ob);
         final int len = Array.getLength(ob);
-        if (len > 0) {
-          Class<?> componentClazz = obClazz.getComponentType();
-          if (componentClazz.isPrimitive()) {
-            size += (long) len * RamUsageEstimator.shallowSizeOfInstance(componentClazz);
-          } else {
-            size += (long) RamUsageEstimator.NUM_BYTES_OBJECT_REF * len;
+        final List<Object> values;
+        Class<?> componentClazz = obClazz.getComponentType();
+        if (componentClazz.isPrimitive()) {
+          values = Collections.emptyList();
+        } else {
+          values = new AbstractList<Object>() {
 
-            // Push refs for traversal later.
-            for (int i = len; --i >= 0 ;) {
-              final Object o = Array.get(ob, i);
-              if (o != null && !seen.contains(o) && filter.accept(o)) {
-                stack.add(o);
+            @Override
+            public Object get(int index) {
+              return Array.get(ob, index);
+            }
+
+            @Override
+            public int size() {
+              return len;
               }
-            }            
+              
+            };         
           }
-        }
-        totalSize += RamUsageEstimator.alignObjectSize(size);
+        totalSize += accumulator.accumulateArray(ob, shallowSize, values, stack);
       } else {
         /*
          * Consider an object. Push any references it has to the processing stack
@@ -144,17 +147,12 @@ public final class RamUsageTester {
             classCache.put(obClazz, cachedInfo = createCacheEntry(obClazz));
           }
 
+          Map<Field, Object> fieldValues = new HashMap<>();
           for (Field f : cachedInfo.referenceFields) {
-            if (filter.accept(f)) {
-              // Fast path to eliminate redundancies.
-              final Object o = f.get(ob);
-              if (o != null && !seen.contains(o) && filter.accept(o)) {
-                stack.add(o);
-              }
-            }
+            fieldValues.put(f, f.get(ob));
           }
 
-          totalSize += cachedInfo.alignedShallowInstanceSize;
+          totalSize += accumulator.accumulateObject(ob, cachedInfo.alignedShallowInstanceSize, fieldValues, stack);
         } catch (IllegalAccessException e) {
           // this should never happen as we enabled setAccessible().
           throw new RuntimeException("Reflective field access failed?", e);

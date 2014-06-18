@@ -23,11 +23,17 @@ import java.util.List;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.RamUsageEstimator;
 
 // TODO: merge with PagedBytes, except PagedBytes doesn't
 // let you read while writing which FST needs
 
-class BytesStore extends DataOutput {
+class BytesStore extends DataOutput implements Accountable {
+
+  private static final long BASE_RAM_BYTES_USED =
+        RamUsageEstimator.shallowSizeOfInstance(BytesStore.class)
+      + RamUsageEstimator.shallowSizeOfInstance(ArrayList.class);
 
   private final List<byte[]> blocks = new ArrayList<>();
 
@@ -465,4 +471,14 @@ class BytesStore extends DataOutput {
       }
     };
   }
+
+  @Override
+  public long ramBytesUsed() {
+    long size = BASE_RAM_BYTES_USED;
+    for (byte[] block : blocks) {
+      size += RamUsageEstimator.sizeOf(block);
+    }
+    return size;
+  }
+
 }

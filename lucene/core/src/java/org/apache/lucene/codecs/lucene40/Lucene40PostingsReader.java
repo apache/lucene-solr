@@ -40,6 +40,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /** 
  * Concrete class that reads the 4.0 frq/prox
@@ -49,6 +50,8 @@ import org.apache.lucene.util.IOUtils;
  *  @deprecated Only for reading old 4.0 segments */
 @Deprecated
 public class Lucene40PostingsReader extends PostingsReaderBase {
+
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(Lucene40PostingsReader.class);
 
   final static String TERMS_CODEC = "Lucene40PostingsWriterTerms";
   final static String FRQ_CODEC = "Lucene40PostingsWriterFrq";
@@ -1165,7 +1168,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
 
   @Override
   public long ramBytesUsed() {
-    return 0;
+    return BASE_RAM_BYTES_USED;
   }
 
   @Override

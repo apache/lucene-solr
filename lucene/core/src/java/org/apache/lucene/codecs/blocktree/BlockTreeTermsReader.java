@@ -88,6 +88,8 @@ import org.apache.lucene.util.fst.Util;
 
 public class BlockTreeTermsReader extends FieldsProducer {
 
+  private static long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(BlockTreeTermsReader.class);
+
   // Open input to the main terms dict file (_X.tib)
   final IndexInput in;
 
@@ -299,7 +301,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
   @Override
   public long ramBytesUsed() {
-    long sizeInByes = ((postingsReader!=null) ? postingsReader.ramBytesUsed() : 0);
+    long sizeInByes = BASE_RAM_BYTES_USED
+        + ((postingsReader!=null) ? postingsReader.ramBytesUsed() : 0)
+        + fields.size() * 2L * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
     for(FieldReader reader : fields.values()) {
       sizeInByes += reader.ramBytesUsed();
     }

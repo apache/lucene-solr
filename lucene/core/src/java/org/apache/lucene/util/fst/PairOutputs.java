@@ -175,4 +175,16 @@ public class PairOutputs<A,B> extends Outputs<PairOutputs.Pair<A,B>> {
   public String toString() {
     return "PairOutputs<" + outputs1 + "," + outputs2 + ">";
   }
+
+  @Override
+  public long ramBytesUsed(Pair<A,B> output) {
+    long ramBytesUsed = super.ramBytesUsed(output);
+    if (output.output1 != null) {
+      ramBytesUsed += outputs1.ramBytesUsed(output.output1);
+    }
+    if (output.output2 != null) {
+      ramBytesUsed += outputs2.ramBytesUsed(output.output2);
+    }
+    return ramBytesUsed;
+  }
 }
