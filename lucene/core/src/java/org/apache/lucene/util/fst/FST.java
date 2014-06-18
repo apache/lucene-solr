@@ -402,10 +402,10 @@ public final class FST<T> implements Accountable {
       for (Arc<T> arc : arcs) {
         if (arc != null) {
           size += ARC_SHALLOW_RAM_BYTES_USED;
-          if (arc.output != null) {
+          if (arc.output != null && arc.output != outputs.getNoOutput()) {
             size += outputs.ramBytesUsed(arc.output);
           }
-          if (arc.nextFinalOutput != null) {
+          if (arc.nextFinalOutput != null && arc.nextFinalOutput != outputs.getNoOutput()) {
             size += outputs.ramBytesUsed(arc.nextFinalOutput);
           }
         }
