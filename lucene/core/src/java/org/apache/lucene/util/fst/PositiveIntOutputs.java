@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * An FST {@link Outputs} implementation where each output
@@ -118,5 +119,10 @@ public final class PositiveIntOutputs extends Outputs<Long> {
   @Override
   public String toString() {
     return "PositiveIntOutputs";
+  }
+
+  @Override
+  public long ramBytesUsed(Long output) {
+    return RamUsageEstimator.sizeOf(output);
   }
 }
