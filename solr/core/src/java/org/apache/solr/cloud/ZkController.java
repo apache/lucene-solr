@@ -1109,6 +1109,16 @@ public final class ZkController {
     }
 
     CloudDescriptor cloudDescriptor = cd.getCloudDescriptor();
+    boolean removeWatch = true;
+    for (SolrCore solrCore : cc.getCores()) {//if there is no SolrCoe which is a member of this collection, remove the watch
+      CloudDescriptor cloudDesc = solrCore.getCoreDescriptor().getCloudDescriptor();
+      if (cloudDesc != null && cloudDescriptor.getCollectionName().equals(cloudDesc.getCollectionName())) {
+        //means
+        removeWatch = false;
+        break;
+      }
+    }
+    if(removeWatch) zkStateReader.removeZKWatch(collection);
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
         Overseer.DELETECORE, ZkStateReader.CORE_NAME_PROP, coreName,
         ZkStateReader.NODE_NAME_PROP, getNodeName(),

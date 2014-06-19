@@ -35,11 +35,11 @@ package org.apache.lucene.util.automaton;
  * @lucene.experimental
  */
 public class StatePair {
-  State s;
-  State s1;
-  State s2;
+  int s;
+  int s1;
+  int s2;
   
-  StatePair(State s, State s1, State s2) {
+  StatePair(int s, int s1, int s2) {
     this.s = s;
     this.s1 = s1;
     this.s2 = s2;
@@ -51,27 +51,10 @@ public class StatePair {
    * @param s1 first state
    * @param s2 second state
    */
-  public StatePair(State s1, State s2) {
+  public StatePair(int s1, int s2) {
     this.s1 = s1;
     this.s2 = s2;
-  }
-  
-  /**
-   * Returns first component of this pair.
-   * 
-   * @return first state
-   */
-  public State getFirstState() {
-    return s1;
-  }
-  
-  /**
-   * Returns second component of this pair.
-   * 
-   * @return second state
-   */
-  public State getSecondState() {
-    return s2;
+    this.s = -1;
   }
   
   /**
@@ -96,6 +79,11 @@ public class StatePair {
    */
   @Override
   public int hashCode() {
-    return s1.hashCode() + s2.hashCode();
+    return s1 ^ s2;
+  }
+
+  @Override
+  public String toString() {
+    return "StatePair(s1=" + s1 + " s2=" + s2 + ")";
   }
 }

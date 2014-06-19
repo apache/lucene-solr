@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.memory;
+package org.apache.lucene.analysis.hunspell;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,19 +17,15 @@ package org.apache.lucene.codecs.memory;
  * limitations under the License.
  */
 
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BasePostingsFormatTestCase;
-import org.apache.lucene.util.TestUtil;
+import org.junit.BeforeClass;
 
-/**
- * Tests DirectPostingsFormat
- */
-public class TestDirectPostingsFormat extends BasePostingsFormatTestCase {
-  // TODO: randomize parameters
-  private final Codec codec = TestUtil.alwaysPostingsFormat(new DirectPostingsFormat());
-
-  @Override
-  protected Codec getCodec() {
-    return codec;
+public class TestDoubleEscape extends StemmerTestBase {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    init("double-escaped.aff", "double-escaped.dic");
+  }
+  
+  public void testStemming() {
+    assertStemsTo("adubo", "adubar");
   }
 }

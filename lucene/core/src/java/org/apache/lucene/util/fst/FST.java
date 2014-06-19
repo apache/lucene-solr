@@ -41,6 +41,7 @@ import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.Builder.UnCompiledNode;
 import org.apache.lucene.util.packed.GrowableWriter;
 import org.apache.lucene.util.packed.PackedInts;
@@ -69,6 +70,10 @@ import org.apache.lucene.util.packed.PackedInts;
  * @lucene.experimental
  */
 public final class FST<T> implements Accountable {
+
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(FST.class);
+  private static final long ARC_SHALLOW_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(Arc.class);
+
   /** Specifies allowed range of each int input label for
    *  this FST. */
   public static enum INPUT_TYPE {BYTE1, BYTE2, BYTE4};
@@ -390,15 +395,38 @@ public final class FST<T> implements Accountable {
     return inputType;
   }
 
+  private long ramBytesUsed(Arc<T>[] arcs) {
+    long size = 0;
+    if (arcs != null) {
+      size += RamUsageEstimator.shallowSizeOf(arcs);
+      for (Arc<T> arc : arcs) {
+        if (arc != null) {
+          size += ARC_SHALLOW_RAM_BYTES_USED;
+          if (arc.output != null && arc.output != outputs.getNoOutput()) {
+            size += outputs.ramBytesUsed(arc.output);
+          }
+          if (arc.nextFinalOutput != null && arc.nextFinalOutput != outputs.getNoOutput()) {
+            size += outputs.ramBytesUsed(arc.nextFinalOutput);
+          }
+        }
+      }
+    }
+    return size;
+  }
+
   @Override
   public long ramBytesUsed() {
-    long size = bytes.getPosition();
+    long size = BASE_RAM_BYTES_USED;
+    size += bytes.ramBytesUsed();
     if (packed) {
       size += nodeRefToAddress.ramBytesUsed();
     } else if (nodeAddress != null) {
       size += nodeAddress.ramBytesUsed();
       size += inCounts.ramBytesUsed();
     }
+    size += ramBytesUsed(cachedRootArcs);
+    size += ramBytesUsed(assertingCachedRootArcs);
+    size += RamUsageEstimator.sizeOf(bytesPerArc);
     return size;
   }
 

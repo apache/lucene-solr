@@ -17,6 +17,12 @@
 
 package org.apache.solr.parser;
 
+import java.io.StringReader;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.index.Term;
@@ -34,10 +40,9 @@ import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.QueryBuilder;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.Version;
+import org.apache.lucene.util.automaton.Automata;
+import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.BasicAutomata;
-import org.apache.lucene.util.automaton.BasicOperations;
-import org.apache.lucene.util.automaton.SpecialOperations;
 import org.apache.solr.analysis.ReversedWildcardFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
@@ -48,12 +53,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TextField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SyntaxError;
-
-import java.io.StringReader;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /** This class is overridden by QueryParser in QueryParser.jj
  * and acts to separate the majority of the Java code from the .jj grammar file. 
@@ -780,16 +779,16 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       Automaton automaton = WildcardQuery.toAutomaton(term);
       // TODO: we should likely use the automaton to calculate shouldReverse, too.
       if (factory.shouldReverse(termStr)) {
-        automaton = BasicOperations.concatenate(automaton, BasicAutomata.makeChar(factory.getMarkerChar()));
-        SpecialOperations.reverse(automaton);
+        automaton = Operations.concatenate(automaton, Automata.makeChar(factory.getMarkerChar()));
+        automaton = Operations.reverse(automaton);
       } else {
         // reverse wildcardfilter is active: remove false positives
         // fsa representing false positives (markerChar*)
-        Automaton falsePositives = BasicOperations.concatenate(
-            BasicAutomata.makeChar(factory.getMarkerChar()),
-            BasicAutomata.makeAnyString());
+        Automaton falsePositives = Operations.concatenate(
+            Automata.makeChar(factory.getMarkerChar()),
+            Automata.makeAnyString());
         // subtract these away
-        automaton = BasicOperations.minus(automaton, falsePositives);
+        automaton = Operations.minus(automaton, falsePositives);
       }
       return new AutomatonQuery(term, automaton) {
         // override toString so its completely transparent

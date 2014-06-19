@@ -151,7 +151,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
     return new BloomFilteredFieldsProducer(state);
   }
   
-  public class BloomFilteredFieldsProducer extends FieldsProducer {
+  static class BloomFilteredFieldsProducer extends FieldsProducer {
     private FieldsProducer delegateFieldsProducer;
     HashMap<String,FuzzySet> bloomsByFieldName = new HashMap<>();
     

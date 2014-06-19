@@ -30,6 +30,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -39,7 +40,6 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Slow
@@ -181,8 +181,22 @@ public class SliceStateUpdateTest extends SolrTestCaseJ4 {
     assertEquals("shard1", slices.get("shard1").getName());
     assertEquals("inactive", slices.get("shard1").getState());
 
-    container1.getZkController().getOverseerElector().getContext().cancelElection();
-    container2.getZkController().getOverseerElector().getContext().cancelElection();
+
+    cancelElection(container1);
+    cancelElection(container2);
+  }
+
+  private void cancelElection(CoreContainer cc) throws InterruptedException, KeeperException {
+    for(int i=0;i<10;) {
+      if(cc.getZkController().getOverseerElector().getContext().leaderSeqPath ==null){
+        Thread.sleep(20);
+        continue;
+      }else{
+        break;
+      }
+    }
+    cc.getZkController().getOverseerElector().getContext().cancelElection();
+
   }
 
   private void closeThread(OverseerThread updaterThread) {

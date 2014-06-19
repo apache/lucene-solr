@@ -98,6 +98,10 @@ Other
 
 (No Changes)
 
+API Changes
+
+* LUCENE-5752: Simplified Automaton API to be immutable. (Mike McCandless)
+
 ======================= Lucene 4.9.0 =======================
 
 Changes in Runtime Behavior
@@ -233,6 +237,8 @@ API Changes
 * LUCENE-5761: Removed DiskDocValuesFormat, it was very inefficient and saved very little
   RAM over the default codec. (Robert Muir)
 
+* LUCENE-5775: Deprecate JaspellLookup. (Mike McCandless)
+
 Optimizations
 
 * LUCENE-5603: hunspell stemmer more efficiently strips prefixes
@@ -337,7 +343,7 @@ Bug fixes
 * LUCENE-5747: Project-specific settings for the eclipse development
   environment will prevent automatic code reformatting. (Shawn Heisey)
 
-* LUCENE-5768: Hunspell condition checks containing character classes
+* LUCENE-5768, LUCENE-5777: Hunspell condition checks containing character classes
   were buggy. (Clinton Gormley, Robert Muir)
 
 Test Framework

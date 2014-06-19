@@ -27,6 +27,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.ChaosMonkey;
 import org.apache.solr.common.SolrException;
@@ -269,10 +270,10 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     query("q","*:*", "sort",i1+" desc", "stats", "true", "stats.field", tdate_b);
 
     handle.put("stats_fields", UNORDERED);
-    query("q","*:*", "sort",i1+" desc", "stats", "true", 
-          "stats.field", "stats_dt", 
-          "stats.field", i1, 
-          "stats.field", tdate_a, 
+    query("q","*:*", "sort",i1+" desc", "stats", "true",
+          "stats.field", "stats_dt",
+          "stats.field", i1,
+          "stats.field", tdate_a,
           "stats.field", tdate_b);
 
     /*** TODO: the failure may come back in "exception"
@@ -430,9 +431,12 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
             "stats.field", tdate_a, 
             "stats.field", tdate_b,
             "stats.calcdistinct", "true");
-    } catch (Exception e) {
-      log.error("Exception on distrib stats request on empty index", e);
-      fail("NullPointerException with stats request on empty index");
+    } catch (HttpSolrServer.RemoteSolrException e) {
+      if (e.getMessage().startsWith("java.lang.NullPointerException"))  {
+        fail("NullPointerException with stats request on empty index");
+      } else  {
+        throw e;
+      }
     }
   }
   

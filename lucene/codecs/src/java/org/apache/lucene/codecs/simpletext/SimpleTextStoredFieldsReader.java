@@ -36,6 +36,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
 
@@ -48,6 +49,12 @@ import static org.apache.lucene.codecs.simpletext.SimpleTextStoredFieldsWriter.*
  * @lucene.experimental
  */
 public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
+
+  private static final long BASE_RAM_BYTES_USED =
+        RamUsageEstimator.shallowSizeOfInstance(SimpleTextStoredFieldsReader.class)
+      + RamUsageEstimator.shallowSizeOfInstance(BytesRef.class)
+      + RamUsageEstimator.shallowSizeOfInstance(CharsRef.class);
+
   private long offsets[]; /* docid -> offset in .fld file */
   private IndexInput in;
   private BytesRef scratch = new BytesRef();
@@ -199,7 +206,8 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
 
   @Override
   public long ramBytesUsed() {
-    return 0;
+    return BASE_RAM_BYTES_USED + RamUsageEstimator.sizeOf(offsets)
+        + RamUsageEstimator.sizeOf(scratch.bytes) + RamUsageEstimator.sizeOf(scratchUTF16.chars);
   }
 
   @Override

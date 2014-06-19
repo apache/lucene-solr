@@ -49,6 +49,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.data.Stat;
 import org.noggit.CharArr;
+import org.noggit.ObjectBuilder;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,6 +111,7 @@ public final class ZookeeperInfoServlet extends HttpServlet {
     ZKPrinter printer = new ZKPrinter(response, out, cores.getZkController(), addr);
     printer.detail = detail;
     printer.dump = dump;
+    printer.isTreeView = (params.get("wt") == null); // this is hacky but tree view requests don't come in with the wt set
 
     try {
       printer.print(path);
@@ -139,6 +141,8 @@ public final class ZookeeperInfoServlet extends HttpServlet {
     boolean fullpath = FULLPATH_DEFAULT;
     boolean detail = false;
     boolean dump = false;
+
+    boolean isTreeView = false;
 
     String addr; // the address passed to us
     String keeperAddr; // the address we're connected to
@@ -383,6 +387,48 @@ public final class ZookeeperInfoServlet extends HttpServlet {
             dataStr = (new BytesRef(data)).utf8ToString();
           } catch (Exception e) {
             dataStrErr = "data is not parsable as a utf8 String: " + e.toString();
+          }
+        }
+
+        // pull in external collections too
+        if ("/clusterstate.json".equals(path) && !isTreeView) {
+          SortedMap<String,Object> collectionStates = null;
+          List<String> children = zkClient.getChildren("/collections", null, true);
+          java.util.Collections.sort(children);
+          for (String collection : children) {
+            String collStatePath = String.format(Locale.ROOT, "/collections/%s/state", collection);
+            String childDataStr = null;
+            try {
+              byte[] childData = zkClient.getData(collStatePath, null, null, true);
+              if (childData != null) {
+                childDataStr = (new BytesRef(childData)).utf8ToString();
+              }
+            } catch (KeeperException.NoNodeException nne) {
+              // safe to ignore
+            } catch (Exception childErr) {
+              log.error("Failed to get "+collStatePath+" due to: "+childErr);
+            }
+
+            if (childDataStr != null) {
+              if (collectionStates == null) {
+                // initialize lazily as there may not be any external collections
+                collectionStates = new TreeMap<String,Object>();
+
+                // add the internal collections
+                if (dataStr != null)
+                  collectionStates.putAll((Map<String,Object>)ObjectBuilder.fromJSON(dataStr));
+              }
+
+              // now add in the external collections
+              Map<String,Object> extColl = (Map<String,Object>)ObjectBuilder.fromJSON(childDataStr);
+              collectionStates.put(collection, extColl.get(collection));
+            }
+          }
+
+          if (collectionStates != null) {
+            CharArr out = new CharArr();
+            new JSONWriter(out, 2).write(collectionStates);
+            dataStr = out.toString();
           }
         }
 

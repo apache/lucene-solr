@@ -41,10 +41,12 @@ import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.DoubleBarrelLRUCache;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /** Handles a terms dict, but decouples all details of
  *  doc/freqs/positions reading to an instance of {@link
@@ -59,6 +61,7 @@ import org.apache.lucene.util.DoubleBarrelLRUCache;
  * @lucene.experimental */
 
 public class BlockTermsReader extends FieldsProducer {
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(BlockTermsReader.class);
   // Open input to the main terms dict file (_X.tis)
   private final IndexInput in;
 
@@ -226,7 +229,8 @@ public class BlockTermsReader extends FieldsProducer {
     return fields.size();
   }
 
-  private class FieldReader extends Terms {
+  private static final long FIELD_READER_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(FieldReader.class);
+  private class FieldReader extends Terms implements Accountable {
     final long numTerms;
     final FieldInfo fieldInfo;
     final long termsStartPointer;
@@ -244,6 +248,11 @@ public class BlockTermsReader extends FieldsProducer {
       this.sumDocFreq = sumDocFreq;
       this.docCount = docCount;
       this.longsSize = longsSize;
+    }
+
+    @Override
+    public long ramBytesUsed() {
+      return FIELD_READER_RAM_BYTES_USED;
     }
 
     @Override
@@ -862,9 +871,14 @@ public class BlockTermsReader extends FieldsProducer {
 
   @Override
   public long ramBytesUsed() {
-    long sizeInBytes = (postingsReader!=null) ? postingsReader.ramBytesUsed() : 0;
-    sizeInBytes += (indexReader!=null) ? indexReader.ramBytesUsed() : 0;
-    return sizeInBytes;
+    long ramBytesUsed = BASE_RAM_BYTES_USED;
+    ramBytesUsed += (postingsReader!=null) ? postingsReader.ramBytesUsed() : 0;
+    ramBytesUsed += (indexReader!=null) ? indexReader.ramBytesUsed() : 0;
+    ramBytesUsed += fields.size() * 2L * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
+    for (FieldReader reader : fields.values()) {
+      ramBytesUsed += reader.ramBytesUsed();
+    }
+    return ramBytesUsed;
   }
 
   @Override

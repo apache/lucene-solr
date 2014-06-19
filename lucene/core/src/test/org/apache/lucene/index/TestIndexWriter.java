@@ -84,9 +84,9 @@ import org.apache.lucene.util.SetOnce;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.Version;
-import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.BasicAutomata;
+import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
+import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.packed.PackedInts;
 import org.junit.Test;
 
@@ -2006,7 +2006,7 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testStopwordsPosIncHole2() throws Exception {
     // use two stopfilters for testing here
     Directory dir = newDirectory();
-    final Automaton secondSet = BasicAutomata.makeString("foobar");
+    final Automaton secondSet = Automata.makeString("foobar");
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {

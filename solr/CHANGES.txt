@@ -84,13 +84,20 @@ Other Changes
 * SOLR-5868: HttpClient should be configured to use ALLOW_ALL_HOSTNAME hostname
   verifier to simplify SSL setup. (Steve Davids via Mark Miller)
 
-* SOLR-6169: Properly remove CoreAdminHandler handleAlias action (Alan Woodward)
+* SOLR-6169: Finish removal of CoreAdminHandler handleAlias action begun in 4.9 
+  (Alan Woodward)
 
 ==================  4.10.0 =================
 
-Bug fixes
+Bug Fixes
+----------------------
 
 * SOLR-6095 : SolrCloud cluster can end up without an overseer with overseer roles (Noble Paul, Shalin Mangar)
+
+Other Changes
+---------------------
+
+* SOLR-6173: Fixed wrong failure message in TestDistributedSearch. (shalin)
 
 ==================  4.9.0 ==================
 
@@ -144,6 +151,12 @@ New Features
 * SOLR-6150: Add new AnalyticsQuery to support pluggable analytics
   (Joel Bernstein)
 
+* SOLR-6125: Allow SolrIndexWriter to close without waiting for merges
+  (Christine Poerschke via Alan Woodward)
+
+* SOLR-6064: DebugComponent track output should be returned as a JSON
+  object rather than a list (Christine Poerschke, Alan Woodward)
+
 
 Bug Fixes
 ----------------------
@@ -188,10 +201,7 @@ Bug Fixes
 * SOLR-6158: Relative configSetBase directories were resolved relative to the 
   container CWD, rather than solr.home. (Simon Endele, Alan Woodward)
 
-* SOLR-6056: Don't publish recovery state until recovery runs to avoid overwhelming
-  the overseer state queue. (Raintung Li, Mark Miller, shalin)
-
-* SOLR-5426: Fixed a bug in ReverseWildCardFilter that could cause 
+* SOLR-5426: Fixed a bug in ReverseWildCardFilter that could cause
   InvalidTokenOffsetsException when highlighting. (Uwe Schindler, Arun Kumar, via hossman)
 
 * SOLR-6175: DebugComponent throws NPE on shard exceptions when using shards.tolerant.
@@ -257,6 +267,12 @@ Other Changes
 
 * SOLR-6153: ReplicationHandler backup response format should contain backup name.
   (Varun Thacker via shalin)
+
+* SOLR-6169: Remove broken handleAlias action in CoreAdminHandler (Alan
+  Woodward)
+
+* SOLR-6128: Removed deprecated analysis factories and fieldTypes from the example
+  schema.xml (hossman)
 
 Optimizations
 ----------------------

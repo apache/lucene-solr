@@ -68,6 +68,10 @@ public class SolrZkClient {
 
   private ConnectionManager connManager;
 
+  static int instcount = 0;
+
+  public int inst = instcount++;
+
   private volatile SolrZooKeeper keeper;
   
   private ZkCmdExecutor zkCmdExecutor;
@@ -75,6 +79,10 @@ public class SolrZkClient {
   private volatile boolean isClosed = false;
   private ZkClientConnectionStrategy zkClientConnectionStrategy;
   private int zkClientTimeout;
+
+//  {
+//    log.warn("created inst : "+inst, new Exception("debugcreate"));
+//  }
   
   public int getZkClientTimeout() {
     return zkClientTimeout;
@@ -564,6 +572,7 @@ public class SolrZkClient {
   }
 
   public void close() {
+//    log.warn("closed inst :"+inst, new Exception("leakdebug"));
     if (isClosed) return; // it's okay if we over close - same as solrcore
     isClosed = true;
     try {
