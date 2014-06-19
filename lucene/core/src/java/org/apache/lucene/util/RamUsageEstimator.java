@@ -131,6 +131,12 @@ public final class RamUsageEstimator {
   private final static EnumSet<JvmFeature> supportedFeatures;
 
   /**
+   * JVMs typically cache small longs. This tries to find out what the range is.
+   */
+  private static final long LONG_CACHE_MIN_VALUE, LONG_CACHE_MAX_VALUE;
+  private static final int LONG_SIZE;
+
+  /**
    * Initialize constants and try to collect information about the JVM internals. 
    */
   static {
@@ -232,6 +238,20 @@ public final class RamUsageEstimator {
     JVM_INFO_STRING = "[JVM: " +
         Constants.JVM_NAME + ", " + Constants.JVM_VERSION + ", " + Constants.JVM_VENDOR + ", " + 
         Constants.JAVA_VENDOR + ", " + Constants.JAVA_VERSION + "]";
+
+    long longCacheMinValue = 0;
+    while (longCacheMinValue > Long.MIN_VALUE
+        && Long.valueOf(longCacheMinValue - 1) == Long.valueOf(longCacheMinValue - 1)) {
+      longCacheMinValue -= 1;
+    }
+    long longCacheMaxValue = -1;
+    while (longCacheMaxValue < Long.MAX_VALUE
+        && Long.valueOf(longCacheMaxValue + 1) == Long.valueOf(longCacheMaxValue + 1)) {
+      longCacheMaxValue += 1;
+    }
+    LONG_CACHE_MIN_VALUE = longCacheMinValue;
+    LONG_CACHE_MAX_VALUE = longCacheMaxValue;
+    LONG_SIZE = (int) shallowSizeOfInstance(Long.class);
   }
 
 
@@ -266,7 +286,18 @@ public final class RamUsageEstimator {
     size += (long) NUM_BYTES_OBJECT_ALIGNMENT - 1L;
     return size - (size % NUM_BYTES_OBJECT_ALIGNMENT);
   }
-  
+
+  /**
+   * Return the size of the provided {@link Long} object, returning 0 if it is
+   * cached by the JVM and its shallow size otherwise.
+   */
+  public static long sizeOf(Long value) {
+    if (value >= LONG_CACHE_MIN_VALUE && value <= LONG_CACHE_MAX_VALUE) {
+      return 0;
+    }
+    return LONG_SIZE;
+  }
+
   /** Returns the size in bytes of the byte[] object. */
   public static long sizeOf(byte[] arr) {
     return alignObjectSize((long) NUM_BYTES_ARRAY_HEADER + arr.length);
