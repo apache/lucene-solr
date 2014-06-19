@@ -107,8 +107,8 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
   }
 
   private void checkBufferSize(int bufferSize) {
-    if (bufferSize <= MIN_BUFFER_SIZE)
-      throw new IllegalArgumentException("bufferSize must be greater than MIN_BUFFER_SIZE (got " + bufferSize + ")");
+    if (bufferSize < MIN_BUFFER_SIZE)
+      throw new IllegalArgumentException("bufferSize must be at least MIN_BUFFER_SIZE (got " + bufferSize + ")");
   }
 
   @Override
