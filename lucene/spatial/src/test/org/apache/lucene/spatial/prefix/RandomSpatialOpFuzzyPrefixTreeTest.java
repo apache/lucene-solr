@@ -39,6 +39,7 @@ import org.apache.lucene.spatial.prefix.tree.QuadPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
+import org.apache.lucene.uninverting.UninvertingReader;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -62,12 +63,22 @@ import static com.spatial4j.core.shape.SpatialRelation.DISJOINT;
 import static com.spatial4j.core.shape.SpatialRelation.INTERSECTS;
 import static com.spatial4j.core.shape.SpatialRelation.WITHIN;
 
-public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
+/** Randomized PrefixTree test that considers the fuzziness of the
+ * results introduced by grid approximation. */
+public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
 
   static final int ITERATIONS = 10;
 
   private SpatialPrefixTree grid;
   private SpatialContext ctx2D;
+
+  @Before
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    //Only for Disjoint.  Ugh; need to find a better way.  LUCENE-5692
+    uninvertMap.put(getClass().getSimpleName(), UninvertingReader.Type.SORTED);
+  }
 
   public void setupGrid(int maxLevels) throws IOException {
     if (randomBoolean())

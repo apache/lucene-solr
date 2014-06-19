@@ -22,7 +22,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.StrategyTestCase;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
-import org.junit.Ignore;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -36,10 +35,9 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween
 /** Base test harness, ideally for SpatialStrategy impls that have exact results
  * (not grid approximated), hence "not fuzzy".
  */
-@Ignore("not actually a test: can this be renamed to *TestCase????")
-public abstract class BaseNonFuzzySpatialOpStrategyTest extends StrategyTestCase {
+public abstract class RandomSpatialOpStrategyTestCase extends StrategyTestCase {
 
-  //TODO this is partially redundant with StrategyTestCase.runTestQuery & testOperation
+  //Note: this is partially redundant with StrategyTestCase.runTestQuery & testOperation
 
   protected void testOperationRandomShapes(final SpatialOperation operation) throws IOException {
     //first show that when there's no data, a query will result in no results
@@ -114,18 +112,19 @@ public abstract class BaseNonFuzzySpatialOpStrategyTest extends StrategyTestCase
       for (SearchResult result : got.results) {
         String id = result.getId();
         if (!remainingExpectedIds.remove(id)) {
-          fail("Shouldn't match", id, indexedShapes, queryShape);
+          fail("Shouldn't match", id, indexedShapes, queryShape, operation);
         }
       }
       if (!remainingExpectedIds.isEmpty()) {
         String id = remainingExpectedIds.iterator().next();
-        fail("Should have matched", id, indexedShapes, queryShape);
+        fail("Should have matched", id, indexedShapes, queryShape, operation);
       }
     }
   }
 
-  private void fail(String label, String id, List<Shape> indexedShapes, Shape queryShape) {
-    fail(label + " I#" + id + ":" + indexedShapes.get(Integer.parseInt(id)) + " Q:" + queryShape);
+  private void fail(String label, String id, List<Shape> indexedShapes, Shape queryShape, SpatialOperation operation) {
+    fail("[" + operation + "] " + label
+        + " I#" + id + ":" + indexedShapes.get(Integer.parseInt(id)) + " Q:" + queryShape);
   }
 
   protected void preQueryHavoc() {

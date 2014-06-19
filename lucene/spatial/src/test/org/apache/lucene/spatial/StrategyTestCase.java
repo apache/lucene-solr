@@ -45,7 +45,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -224,6 +223,7 @@ public abstract class StrategyTestCase extends SpatialTestCase {
 //    }
 //    CheckHits.checkHits(random(), q, "", indexSearcher, expectedDocs);
 
+    //TopDocs is sorted but we actually don't care about the order
     TopDocs docs = indexSearcher.search(q, 1000);//calculates the score
     for (int i = 0; i < docs.scoreDocs.length; i++) {
       ScoreDoc gotSD = docs.scoreDocs[i];

@@ -29,7 +29,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Calendar;
 
-public class DateNRStrategyTest extends BaseNonFuzzySpatialOpStrategyTest {
+public class DateNRStrategyTest extends RandomSpatialOpStrategyTestCase {
 
   static final int ITERATIONS = 10;
 

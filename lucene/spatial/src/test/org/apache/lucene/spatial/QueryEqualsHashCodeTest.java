@@ -91,8 +91,10 @@ public class QueryEqualsHashCodeTest extends LuceneTestCase {
     Object second = generator.gen(args1);//should be the same
     assertEquals(first, second);
     assertEquals(first.hashCode(), second.hashCode());
-    second = generator.gen(args2);//now should be different
     assertNotSame(args1, args2);
+    second = generator.gen(args2);//now should be different
+    assertNotSame(first, second);
+    assertNotSame(first.hashCode(), second.hashCode());
   }
 
   private SpatialArgs makeArgs1() {
