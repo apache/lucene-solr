@@ -356,6 +356,25 @@ public class Dictionary {
     }
     return builder.finish();
   }
+  
+  static String escapeDash(String re) {
+    // we have to be careful, even though dash doesn't have a special meaning,
+    // some dictionaries already escape it (e.g. pt_PT), so we don't want to nullify it
+    StringBuilder escaped = new StringBuilder();
+    for (int i = 0; i < re.length(); i++) {
+      char c = re.charAt(i);
+      if (c == '-') {
+        escaped.append("\\-");
+      } else {
+        escaped.append(c);
+        if (c == '\\' && i + 1 < re.length()) {
+          escaped.append(re.charAt(i+1));
+          i++;
+        }
+      }
+    }
+    return escaped.toString();
+  }
 
   /**
    * Parses a specific affix rule putting the result into the provided affix map
@@ -425,7 +444,7 @@ public class Dictionary {
       }
       // "dash hasn't got special meaning" (we must escape it)
       if (condition.indexOf('-') >= 0) {
-        condition = condition.replace("-", "\\-");
+        condition = escapeDash(condition);
       }
 
       final String regex;
