@@ -39,6 +39,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -52,6 +53,7 @@ import org.apache.lucene.util.UnicodeUtil;
 @Deprecated
 class Lucene3xFields extends FieldsProducer {
   
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(Lucene3xFields.class);
   private static final boolean DEBUG_SURROGATES = false;
 
   public TermInfosReader tis;
@@ -62,7 +64,7 @@ class Lucene3xFields extends FieldsProducer {
   final private FieldInfos fieldInfos;
   private final SegmentInfo si;
   final TreeMap<String,FieldInfo> fields = new TreeMap<>();
-  final Map<String,Terms> preTerms = new HashMap<>();
+  final Map<String,PreTerms> preTerms = new HashMap<>();
   private final Directory dir;
   private final IOContext context;
   private Directory cfsReader;
@@ -172,11 +174,17 @@ class Lucene3xFields extends FieldsProducer {
   public void close() throws IOException {
     IOUtils.close(tis, tisNoIndex, cfsReader, freqStream, proxStream);
   }
-  
-  private class PreTerms extends Terms {
+
+  private static final long PRE_TERMS_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(PreTerms.class);
+  private class PreTerms extends Terms implements Accountable {
     final FieldInfo fieldInfo;
     PreTerms(FieldInfo fieldInfo) {
       this.fieldInfo = fieldInfo;
+    }
+
+    @Override
+    public long ramBytesUsed() {
+      return PRE_TERMS_RAM_BYTES_USED;
     }
 
     @Override
@@ -1082,12 +1090,19 @@ class Lucene3xFields extends FieldsProducer {
   
   @Override
   public long ramBytesUsed() {
-    if (tis != null) {
-      return tis.ramBytesUsed();
-    } else {
-      // when there is no index, there is almost nothing loaded into RAM
-      return 0L;
+    long ramBytesUsed = BASE_RAM_BYTES_USED
+        + fields.size() * 2L * RamUsageEstimator.NUM_BYTES_OBJECT_REF
+        + preTerms.size() * 2L * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
+    for (PreTerms terms : preTerms.values()) {
+      ramBytesUsed += terms.ramBytesUsed();
     }
+    if (tis != null) {
+      ramBytesUsed += tis.ramBytesUsed();
+    }
+    if (tisNoIndex != null) {
+      ramBytesUsed += tisNoIndex.ramBytesUsed();
+    }
+    return ramBytesUsed;
   }
 
   @Override

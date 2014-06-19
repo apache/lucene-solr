@@ -18,8 +18,7 @@ package org.apache.lucene.util;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
@@ -35,9 +34,10 @@ import org.apache.lucene.store.IndexInput;
 // TODO: refactor this, byteblockpool, fst.bytestore, and any
 // other "shift/mask big arrays". there are too many of these classes!
 public final class PagedBytes implements Accountable {
-  private final List<byte[]> blocks = new ArrayList<>();
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(PagedBytes.class);
+  private byte[][] blocks = new byte[16][];
+  private int numBlocks;
   // TODO: these are unused?
-  private final List<Integer> blockEnd = new ArrayList<>();
   private final int blockSize;
   private final int blockBits;
   private final int blockMask;
@@ -54,24 +54,19 @@ public final class PagedBytes implements Accountable {
    *
    * @see #freeze */
   public final static class Reader implements Accountable {
+    private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(Reader.class);
     private final byte[][] blocks;
-    private final int[] blockEnds;
     private final int blockBits;
     private final int blockMask;
     private final int blockSize;
+    private final long bytesUsedPerBlock;
 
     private Reader(PagedBytes pagedBytes) {
-      blocks = new byte[pagedBytes.blocks.size()][];
-      for(int i=0;i<blocks.length;i++) {
-        blocks[i] = pagedBytes.blocks.get(i);
-      }
-      blockEnds = new int[blocks.length];
-      for(int i=0;i< blockEnds.length;i++) {
-        blockEnds[i] = pagedBytes.blockEnd.get(i);
-      }
+      blocks = Arrays.copyOf(pagedBytes.blocks, pagedBytes.numBlocks);
       blockBits = pagedBytes.blockBits;
       blockMask = pagedBytes.blockMask;
       blockSize = pagedBytes.blockSize;
+      bytesUsedPerBlock = pagedBytes.bytesUsedPerBlock;
     }
 
     /**
@@ -132,7 +127,12 @@ public final class PagedBytes implements Accountable {
 
     @Override
     public long ramBytesUsed() {
-      return ((blocks!=null) ? (blockSize * blocks.length) : 0);
+      long size = BASE_RAM_BYTES_USED + RamUsageEstimator.shallowSizeOf(blocks);
+      if (blocks.length > 0) {
+        size += (blocks.length - 1) * bytesUsedPerBlock;
+        size += RamUsageEstimator.sizeOf(blocks[blocks.length - 1]);
+      }
+      return size;
     }
   }
 
@@ -144,7 +144,15 @@ public final class PagedBytes implements Accountable {
     this.blockBits = blockBits;
     blockMask = blockSize-1;
     upto = blockSize;
-    bytesUsedPerBlock = blockSize + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + RamUsageEstimator.NUM_BYTES_OBJECT_REF;
+    bytesUsedPerBlock = RamUsageEstimator.alignObjectSize(blockSize + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER);
+    numBlocks = 0;
+  }
+
+  private void addBlock(byte[] block) {
+    if (blocks.length == numBlocks) {
+      blocks = Arrays.copyOf(blocks, ArrayUtil.oversize(numBlocks, RamUsageEstimator.NUM_BYTES_OBJECT_REF));
+    }
+    blocks[numBlocks++] = block;
   }
 
   /** Read this many bytes from in */
@@ -153,8 +161,7 @@ public final class PagedBytes implements Accountable {
       int left = blockSize - upto;
       if (left == 0) {
         if (currentBlock != null) {
-          blocks.add(currentBlock);
-          blockEnd.add(upto);
+          addBlock(currentBlock);
         }
         currentBlock = new byte[blockSize];
         upto = 0;
@@ -179,8 +186,7 @@ public final class PagedBytes implements Accountable {
     int left = blockSize - upto;
     if (bytes.length > left || currentBlock==null) {
       if (currentBlock != null) {
-        blocks.add(currentBlock);
-        blockEnd.add(upto);
+        addBlock(currentBlock);
         didSkipBytes = true;
       }
       currentBlock = new byte[blockSize];
@@ -214,8 +220,7 @@ public final class PagedBytes implements Accountable {
     if (currentBlock == null) {
       currentBlock = EMPTY_BYTES;
     }
-    blocks.add(currentBlock);
-    blockEnd.add(upto); 
+    addBlock(currentBlock);
     frozen = true;
     currentBlock = null;
     return new PagedBytes.Reader(this);
@@ -225,13 +230,21 @@ public final class PagedBytes implements Accountable {
     if (currentBlock == null) {
       return 0;
     } else {
-      return (blocks.size() * ((long) blockSize)) + upto;
+      return (numBlocks * ((long) blockSize)) + upto;
     }
   }
 
   @Override
   public long ramBytesUsed() {
-    return (blocks.size() + (currentBlock != null ? 1 : 0)) * bytesUsedPerBlock;
+    long size = BASE_RAM_BYTES_USED + RamUsageEstimator.shallowSizeOf(blocks);;
+    if (numBlocks > 0) {
+      size += (numBlocks - 1) * bytesUsedPerBlock;
+      size += RamUsageEstimator.sizeOf(blocks[numBlocks - 1]);
+    }
+    if (currentBlock != null) {
+      size += RamUsageEstimator.sizeOf(currentBlock);
+    }
+    return size;
   }
 
   /** Copy bytes in, writing the length as a 1 or 2 byte
@@ -247,8 +260,7 @@ public final class PagedBytes implements Accountable {
         throw new IllegalArgumentException("block size " + blockSize + " is too small to store length " + bytes.length + " bytes");
       }
       if (currentBlock != null) {
-        blocks.add(currentBlock);
-        blockEnd.add(upto);        
+        addBlock(currentBlock);     
       }
       currentBlock = new byte[blockSize];
       upto = 0;
@@ -274,7 +286,7 @@ public final class PagedBytes implements Accountable {
     private byte[] currentBlock;
 
     PagedBytesDataInput() {
-      currentBlock = blocks.get(0);
+      currentBlock = blocks[0];
     }
 
     @Override
@@ -293,7 +305,7 @@ public final class PagedBytes implements Accountable {
      *  {@link #getPosition}. */
     public void setPosition(long pos) {
       currentBlockIndex = (int) (pos >> blockBits);
-      currentBlock = blocks.get(currentBlockIndex);
+      currentBlock = blocks[currentBlockIndex];
       currentBlockUpto = (int) (pos & blockMask);
     }
 
@@ -332,7 +344,7 @@ public final class PagedBytes implements Accountable {
     private void nextBlock() {
       currentBlockIndex++;
       currentBlockUpto = 0;
-      currentBlock = blocks.get(currentBlockIndex);
+      currentBlock = blocks[currentBlockIndex];
     }
   }
 
@@ -341,8 +353,7 @@ public final class PagedBytes implements Accountable {
     public void writeByte(byte b) {
       if (upto == blockSize) {
         if (currentBlock != null) {
-          blocks.add(currentBlock);
-          blockEnd.add(upto);
+          addBlock(currentBlock);
         }
         currentBlock = new byte[blockSize];
         upto = 0;
@@ -359,8 +370,7 @@ public final class PagedBytes implements Accountable {
 
       if (upto == blockSize) {
         if (currentBlock != null) {
-          blocks.add(currentBlock);
-          blockEnd.add(upto);
+          addBlock(currentBlock);
         }
         currentBlock = new byte[blockSize];
         upto = 0;
@@ -372,8 +382,7 @@ public final class PagedBytes implements Accountable {
         final int blockLeft = blockSize - upto;
         if (blockLeft < left) {
           System.arraycopy(b, offset, currentBlock, upto, blockLeft);
-          blocks.add(currentBlock);
-          blockEnd.add(blockSize);
+          addBlock(currentBlock);
           currentBlock = new byte[blockSize];
           upto = 0;
           offset += blockLeft;

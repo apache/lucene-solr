@@ -238,7 +238,8 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
   @Override
   protected void addRandomFields(Document doc) {
     // TODO: improve
-    doc.add(new TextField("foobar", "boo", Field.Store.NO));
+    doc.add(new TextField("foobar", TestUtil.randomSimpleString(random()), Field.Store.NO));
+    
   }
 
   @Override

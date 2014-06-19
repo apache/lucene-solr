@@ -23,6 +23,8 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts.Decoder;
 import org.apache.lucene.util.packed.PackedInts.FormatAndBits;
 import org.apache.lucene.util.packed.PackedInts;
@@ -33,7 +35,9 @@ import static org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat.BLOCK_SIZ
  * Encode all values in normal area with fixed bit width, 
  * which is determined by the max value in this block.
  */
-final class ForUtil {
+final class ForUtil implements Accountable {
+
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(ForUtil.class);
 
   /**
    * Special number of bits per value used whenever all values to encode are equal.
@@ -144,6 +148,12 @@ final class ForUtil {
           format, packedIntsVersion, bitsPerValue);
       iterations[bpv] = computeIterations(decoders[bpv]);
     }
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return BASE_RAM_BYTES_USED + RamUsageEstimator.sizeOf(encodedSizes) + RamUsageEstimator.sizeOf(iterations)
+        + RamUsageEstimator.shallowSizeOf(decoders) + RamUsageEstimator.shallowSizeOf(encoders);
   }
 
   /**

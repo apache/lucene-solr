@@ -76,6 +76,8 @@ public class RandomCodec extends Lucene49Codec {
   /** unique set of docvalues format names this codec knows about */
   public Set<String> dvFormatNames = new HashSet<>();
 
+  public final Set<String> avoidCodecs;
+
   /** memorized field->postingsformat mappings */
   // note: we have to sync this map even though its just for debugging/toString, 
   // otherwise DWPT's .toString() calls that iterate over the map can 
@@ -118,6 +120,7 @@ public class RandomCodec extends Lucene49Codec {
 
   public RandomCodec(Random random, Set<String> avoidCodecs) {
     this.perFieldSeed = random.nextInt();
+    this.avoidCodecs = avoidCodecs;
     // TODO: make it possible to specify min/max iterms per
     // block via CL:
     int minItemsPerBlock = TestUtil.nextInt(random, 2, 100);

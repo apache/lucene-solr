@@ -1,10 +1,5 @@
 package org.apache.lucene.codecs.lucene3x;
 
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BasePostingsFormatTestCase;
-import org.apache.lucene.util.LuceneTestCase;
-import org.junit.BeforeClass;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -21,6 +16,11 @@ import org.junit.BeforeClass;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.index.BasePostingsFormatTestCase;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.BeforeClass;
 
 /**
  * Tests Lucene3x postings format

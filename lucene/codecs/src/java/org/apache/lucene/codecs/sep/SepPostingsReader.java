@@ -30,15 +30,14 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /** Concrete class that reads the current doc/freq/skip
  *  postings format.    
@@ -51,6 +50,8 @@ import org.apache.lucene.util.IOUtils;
 // prox and one that doesn't?
 
 public class SepPostingsReader extends PostingsReaderBase {
+
+  private static final long RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(SepPostingsReader.class);
 
   final IntIndexInput freqIn;
   final IntIndexInput docIn;
@@ -704,7 +705,7 @@ public class SepPostingsReader extends PostingsReaderBase {
 
   @Override
   public long ramBytesUsed() {
-    return 0;
+    return RAM_BYTES_USED;
   }
 
   @Override

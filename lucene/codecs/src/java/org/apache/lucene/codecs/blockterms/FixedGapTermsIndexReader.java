@@ -28,6 +28,7 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PagedBytes;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
 
 import java.util.HashMap;
@@ -43,6 +44,8 @@ import org.apache.lucene.index.IndexFileNames;
  * @lucene.experimental 
  */
 public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
+
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(FixedGapTermsIndexReader.class);
 
   // NOTE: long is overkill here, since this number is 128
   // by default and only indexDivisor * 128 if you change
@@ -65,8 +68,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   private final static int PAGED_BYTES_BITS = 15;
 
   // all fields share this single logical byte[]
-  private final PagedBytes termBytes = new PagedBytes(PAGED_BYTES_BITS);
-  private PagedBytes.Reader termBytesReader;
+  private final PagedBytes.Reader termBytesReader;
 
   final HashMap<FieldInfo,FieldIndexData> fields = new HashMap<>();
   
@@ -83,9 +85,9 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
     assert indexDivisor == -1 || indexDivisor > 0;
 
     in = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION), context);
-    
-    boolean success = false;
+    final PagedBytes termBytes = new PagedBytes(PAGED_BYTES_BITS);
 
+    boolean success = false;
     try {
       
       version = readHeader(in);
@@ -130,7 +132,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
           throw new CorruptIndexException("invalid packedIndexStart: " + packedIndexStart + " indexStart: " + indexStart + "numIndexTerms: " + numIndexTerms + " (resource=" + in + ")");
         }
         final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
-        FieldIndexData previous = fields.put(fieldInfo, new FieldIndexData(fieldInfo, numIndexTerms, indexStart, termsStart, packedIndexStart, packedOffsetsStart));
+        FieldIndexData previous = fields.put(fieldInfo, new FieldIndexData(fieldInfo, termBytes, numIndexTerms, indexStart, termsStart, packedIndexStart, packedOffsetsStart));
         if (previous != null) {
           throw new CorruptIndexException("duplicate field: " + fieldInfo.name + " (resource=" + in + ")");
         }
@@ -147,6 +149,8 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
           indexLoaded = true;
         }
         termBytesReader = termBytes.freeze(true);
+      } else {
+        termBytesReader = null;
       }
     }
   }
@@ -254,7 +258,8 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
     return true;
   }
 
-  private final class FieldIndexData {
+  private static final long FIELD_INDEX_DATA_BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(FieldIndexData.class);
+  private final class FieldIndexData implements Accountable {
 
     volatile CoreFieldIndex coreIndex;
 
@@ -265,7 +270,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
 
     private final int numIndexTerms;
 
-    public FieldIndexData(FieldInfo fieldInfo, int numIndexTerms, long indexStart, long termsStart, long packedIndexStart,
+    public FieldIndexData(FieldInfo fieldInfo, PagedBytes termBytes, int numIndexTerms, long indexStart, long termsStart, long packedIndexStart,
                           long packedOffsetsStart) throws IOException {
 
       this.termsStart = termsStart;
@@ -275,13 +280,18 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       this.numIndexTerms = numIndexTerms;
 
       if (indexDivisor > 0) {
-        loadTermsIndex();
+        loadTermsIndex(termBytes);
       }
     }
 
-    private void loadTermsIndex() throws IOException {
+    @Override
+    public long ramBytesUsed() {
+      return FIELD_INDEX_DATA_BASE_RAM_BYTES_USED + coreIndex.ramBytesUsed();
+    }
+
+    private void loadTermsIndex(PagedBytes termBytes) throws IOException {
       if (coreIndex == null) {
-        coreIndex = new CoreFieldIndex(indexStart, termsStart, packedIndexStart, packedOffsetsStart, numIndexTerms);
+        coreIndex = new CoreFieldIndex(termBytes, indexStart, termsStart, packedIndexStart, packedOffsetsStart, numIndexTerms);
       }
     }
 
@@ -300,7 +310,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       final int numIndexTerms;
       final long termsStart;
 
-      public CoreFieldIndex(long indexStart, long termsStart, long packedIndexStart, long packedOffsetsStart, int numIndexTerms) throws IOException {
+      public CoreFieldIndex(PagedBytes termBytes, long indexStart, long termsStart, long packedIndexStart, long packedOffsetsStart, int numIndexTerms) throws IOException {
 
         this.termsStart = termsStart;
         termBytesStart = termBytes.getPointer();
@@ -439,10 +449,11 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   
   @Override
   public long ramBytesUsed() {
-    long sizeInBytes = ((termBytes!=null) ? termBytes.ramBytesUsed() : 0) +
-        ((termBytesReader!=null)? termBytesReader.ramBytesUsed() : 0);
+    long sizeInBytes = BASE_RAM_BYTES_USED
+        + fields.size() * 2L * RamUsageEstimator.NUM_BYTES_OBJECT_REF
+        + ((termBytesReader!=null)? termBytesReader.ramBytesUsed() : 0);
     for(FieldIndexData entry : fields.values()) {
-      sizeInBytes += entry.coreIndex.ramBytesUsed();
+      sizeInBytes += entry.ramBytesUsed();
     }
     return sizeInBytes;
   }

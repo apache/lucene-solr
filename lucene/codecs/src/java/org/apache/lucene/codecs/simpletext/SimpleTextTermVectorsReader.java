@@ -44,8 +44,10 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
+
 import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.*;
 
 /**
@@ -55,6 +57,12 @@ import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.*;
  * @lucene.experimental
  */
 public class SimpleTextTermVectorsReader extends TermVectorsReader {
+
+  private static final long BASE_RAM_BYTES_USED =
+        RamUsageEstimator.shallowSizeOfInstance(SimpleTextTermVectorsReader.class)
+      + RamUsageEstimator.shallowSizeOfInstance(BytesRef.class)
+      + RamUsageEstimator.shallowSizeOfInstance(CharsRef.class);
+
   private long offsets[]; /* docid -> offset in .vec file */
   private IndexInput in;
   private BytesRef scratch = new BytesRef();
@@ -550,7 +558,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
 
   @Override
   public long ramBytesUsed() {
-    return 0;
+    return BASE_RAM_BYTES_USED + RamUsageEstimator.sizeOf(offsets);
   }
 
   @Override
