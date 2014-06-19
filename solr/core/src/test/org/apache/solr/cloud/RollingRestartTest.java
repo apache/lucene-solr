@@ -99,7 +99,8 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
           if(leader == null) log.error("NOOVERSEER election queue is :"+ OverseerCollectionProcessor.getSortedElectionNodes(cloudClient.getZkStateReader().getZkClient()));
           fail("No overseer designate as leader found after restart #" + (i + 1) + ": " + leader);
         }
-        cloudJetty.jetty.start();
+        assertTrue("Unable to restart (#"+i+"): " + cloudJetty, 
+                   chaosMonkey.start(cloudJetty.jetty));
         success = waitUntilOverseerDesignateIsLeader(cloudClient.getZkStateReader().getZkClient(), designates, 60);
         if (!success) {
           leader = OverseerCollectionProcessor.getLeaderNode(cloudClient.getZkStateReader().getZkClient());
