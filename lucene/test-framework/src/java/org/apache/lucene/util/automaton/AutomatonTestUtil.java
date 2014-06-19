@@ -20,7 +20,6 @@ package org.apache.lucene.util.automaton;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.IdentityHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +30,6 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util.fst.Util;
 
 /**
  * Utilities for testing automata.
@@ -92,40 +90,40 @@ public class AutomatonTestUtil {
   /** picks a random int code point, avoiding surrogates;
    * throws IllegalArgumentException if this transition only
    * accepts surrogates */
-  private static int getRandomCodePoint(final Random r, final Transition t) {
+  private static int getRandomCodePoint(final Random r, int min, int max) {
     final int code;
-    if (t.max < UnicodeUtil.UNI_SUR_HIGH_START ||
-        t.min > UnicodeUtil.UNI_SUR_HIGH_END) {
+    if (max < UnicodeUtil.UNI_SUR_HIGH_START ||
+        min > UnicodeUtil.UNI_SUR_HIGH_END) {
       // easy: entire range is before or after surrogates
-      code = t.min+r.nextInt(t.max-t.min+1);
-    } else if (t.min >= UnicodeUtil.UNI_SUR_HIGH_START) {
-      if (t.max > UnicodeUtil.UNI_SUR_LOW_END) {
+      code = min+r.nextInt(max-min+1);
+    } else if (min >= UnicodeUtil.UNI_SUR_HIGH_START) {
+      if (max > UnicodeUtil.UNI_SUR_LOW_END) {
         // after surrogates
-        code = 1+UnicodeUtil.UNI_SUR_LOW_END+r.nextInt(t.max-UnicodeUtil.UNI_SUR_LOW_END);
+        code = 1+UnicodeUtil.UNI_SUR_LOW_END+r.nextInt(max-UnicodeUtil.UNI_SUR_LOW_END);
       } else {
-        throw new IllegalArgumentException("transition accepts only surrogates: " + t);
+        throw new IllegalArgumentException("transition accepts only surrogates: min=" + min + " max=" + max);
       }
-    } else if (t.max <= UnicodeUtil.UNI_SUR_LOW_END) {
-      if (t.min < UnicodeUtil.UNI_SUR_HIGH_START) {
+    } else if (max <= UnicodeUtil.UNI_SUR_LOW_END) {
+      if (min < UnicodeUtil.UNI_SUR_HIGH_START) {
         // before surrogates
-        code = t.min + r.nextInt(UnicodeUtil.UNI_SUR_HIGH_START - t.min);
+        code = min + r.nextInt(UnicodeUtil.UNI_SUR_HIGH_START - min);
       } else {
-        throw new IllegalArgumentException("transition accepts only surrogates: " + t);
+        throw new IllegalArgumentException("transition accepts only surrogates: min=" + min + " max=" + max);
       }
     } else {
       // range includes all surrogates
-      int gap1 = UnicodeUtil.UNI_SUR_HIGH_START - t.min;
-      int gap2 = t.max - UnicodeUtil.UNI_SUR_LOW_END;
+      int gap1 = UnicodeUtil.UNI_SUR_HIGH_START - min;
+      int gap2 = max - UnicodeUtil.UNI_SUR_LOW_END;
       int c = r.nextInt(gap1+gap2);
       if (c < gap1) {
-        code = t.min + c;
+        code = min + c;
       } else {
         code = UnicodeUtil.UNI_SUR_LOW_END + c - gap1 + 1;
       }
     }
 
-    assert code >= t.min && code <= t.max && (code < UnicodeUtil.UNI_SUR_HIGH_START || code > UnicodeUtil.UNI_SUR_LOW_END):
-      "code=" + code + " min=" + t.min + " max=" + t.max;
+    assert code >= min && code <= max && (code < UnicodeUtil.UNI_SUR_HIGH_START || code > UnicodeUtil.UNI_SUR_LOW_END):
+      "code=" + code + " min=" + min + " max=" + max;
     return code;
   }
 
@@ -140,11 +138,13 @@ public class AutomatonTestUtil {
 
     private final Map<Transition,Boolean> leadsToAccept;
     private final Automaton a;
+    private final Transition[][] transitions;
 
     private static class ArrivingTransition {
-      final State from;
+      final int from;
       final Transition t;
-      public ArrivingTransition(State from, Transition t) {
+
+      public ArrivingTransition(int from, Transition t) {
         this.from = from;
         this.t = t;
       }
@@ -152,32 +152,30 @@ public class AutomatonTestUtil {
 
     public RandomAcceptedStrings(Automaton a) {
       this.a = a;
-      if (a.isSingleton()) {
-        leadsToAccept = null;
-        return;
+      if (a.getNumStates() == 0) {
+        throw new IllegalArgumentException("this automaton accepts nothing");
       }
+      this.transitions = a.getSortedTransitions();
 
-      // must use IdentityHashmap because two Transitions w/
-      // different start nodes can be considered the same
-      leadsToAccept = new IdentityHashMap<>();
-      final Map<State,List<ArrivingTransition>> allArriving = new HashMap<>();
+      leadsToAccept = new HashMap<>();
+      final Map<Integer,List<ArrivingTransition>> allArriving = new HashMap<>();
 
-      final LinkedList<State> q = new LinkedList<>();
-      final Set<State> seen = new HashSet<>();
+      final LinkedList<Integer> q = new LinkedList<>();
+      final Set<Integer> seen = new HashSet<>();
 
       // reverse map the transitions, so we can quickly look
       // up all arriving transitions to a given state
-      for(State s: a.getNumberedStates()) {
-        for(int i=0;i<s.numTransitions;i++) {
-          final Transition t = s.transitionsArray[i];
-          List<ArrivingTransition> tl = allArriving.get(t.to);
+      int numStates = a.getNumStates();
+      for(int s=0;s<numStates;s++) {
+        for(Transition t : transitions[s]) {
+          List<ArrivingTransition> tl = allArriving.get(t.dest);
           if (tl == null) {
             tl = new ArrayList<>();
-            allArriving.put(t.to, tl);
+            allArriving.put(t.dest, tl);
           }
           tl.add(new ArrivingTransition(s, t));
         }
-        if (s.accept) {
+        if (a.isAccept(s)) {
           q.add(s);
           seen.add(s);
         }
@@ -185,12 +183,12 @@ public class AutomatonTestUtil {
 
       // Breadth-first search, from accept states,
       // backwards:
-      while(!q.isEmpty()) {
-        final State s = q.removeFirst();
+      while (q.isEmpty() == false) {
+        final int s = q.removeFirst();
         List<ArrivingTransition> arriving = allArriving.get(s);
         if (arriving != null) {
           for(ArrivingTransition at : arriving) {
-            final State from = at.from;
+            final int from = at.from;
             if (!seen.contains(from)) {
               q.add(from);
               seen.add(from);
@@ -204,62 +202,49 @@ public class AutomatonTestUtil {
     public int[] getRandomAcceptedString(Random r) {
 
       final List<Integer> soFar = new ArrayList<>();
-      if (a.isSingleton()) {
-        // accepts only one
-        final String s = a.singleton;
+
+      int s = 0;
+
+      while(true) {
       
-        int charUpto = 0;
-        while(charUpto < s.length()) {
-          final int cp = s.codePointAt(charUpto);
-          charUpto += Character.charCount(cp);
-          soFar.add(cp);
-        }
-      } else {
-
-        State s = a.initial;
-
-        while(true) {
-      
-          if (s.accept) {
-            if (s.numTransitions == 0) {
-              // stop now
-              break;
-            } else {
-              if (r.nextBoolean()) {
-                break;
-              }
-            }
-          }
-
-          if (s.numTransitions == 0) {
-            throw new RuntimeException("this automaton has dead states");
-          }
-
-          boolean cheat = r.nextBoolean();
-
-          final Transition t;
-          if (cheat) {
-            // pick a transition that we know is the fastest
-            // path to an accept state
-            List<Transition> toAccept = new ArrayList<>();
-            for(int i=0;i<s.numTransitions;i++) {
-              final Transition t0 = s.transitionsArray[i];
-              if (leadsToAccept.containsKey(t0)) {
-                toAccept.add(t0);
-              }
-            }
-            if (toAccept.size() == 0) {
-              // this is OK -- it means we jumped into a cycle
-              t = s.transitionsArray[r.nextInt(s.numTransitions)];
-            } else {
-              t = toAccept.get(r.nextInt(toAccept.size()));
-            }
+        if (a.isAccept(s)) {
+          if (a.getNumTransitions(s) == 0) {
+            // stop now
+            break;
           } else {
-            t = s.transitionsArray[r.nextInt(s.numTransitions)];
+            if (r.nextBoolean()) {
+              break;
+            }
           }
-          soFar.add(getRandomCodePoint(r, t));
-          s = t.to;
         }
+
+        if (a.getNumTransitions(s) == 0) {
+          throw new RuntimeException("this automaton has dead states");
+        }
+
+        boolean cheat = r.nextBoolean();
+
+        final Transition t;
+        if (cheat) {
+          // pick a transition that we know is the fastest
+          // path to an accept state
+          List<Transition> toAccept = new ArrayList<>();
+          for(Transition t0 : transitions[s]) {
+            if (leadsToAccept.containsKey(t0)) {
+              toAccept.add(t0);
+            }
+          }
+          if (toAccept.size() == 0) {
+            // this is OK -- it means we jumped into a cycle
+            t = transitions[s][r.nextInt(transitions[s].length)];
+          } else {
+            t = toAccept.get(r.nextInt(toAccept.size()));
+          }
+        } else {
+          t = transitions[s][r.nextInt(transitions[s].length)];
+        }
+        soFar.add(getRandomCodePoint(r, t.min, t.max));
+        s = t.dest;
       }
 
       return ArrayUtil.toIntArray(soFar);
@@ -270,19 +255,21 @@ public class AutomatonTestUtil {
   public static Automaton randomAutomaton(Random random) {
     // get two random Automata from regexps
     Automaton a1 = new RegExp(AutomatonTestUtil.randomRegexp(random), RegExp.NONE).toAutomaton();
-    if (random.nextBoolean())
-      a1 = BasicOperations.complement(a1);
+    if (random.nextBoolean()) {
+      a1 = Operations.complement(a1);
+    }
     
     Automaton a2 = new RegExp(AutomatonTestUtil.randomRegexp(random), RegExp.NONE).toAutomaton();
-    if (random.nextBoolean()) 
-      a2 = BasicOperations.complement(a2);
-    
+    if (random.nextBoolean()) {
+      a2 = Operations.complement(a2);
+    }
+
     // combine them in random ways
-    switch(random.nextInt(4)) {
-      case 0: return BasicOperations.concatenate(a1, a2);
-      case 1: return BasicOperations.union(a1, a2);
-      case 2: return BasicOperations.intersection(a1, a2);
-      default: return BasicOperations.minus(a1, a2);
+    switch (random.nextInt(4)) {
+      case 0: return Operations.concatenate(a1, a2);
+      case 1: return Operations.union(a1, a2);
+      case 2: return Operations.intersection(a1, a2);
+      default: return Operations.minus(a1, a2);
     }
   }
   
@@ -323,70 +310,81 @@ public class AutomatonTestUtil {
   /**
    * Simple, original brics implementation of Brzozowski minimize()
    */
-  public static void minimizeSimple(Automaton a) {
-    if (a.isSingleton())
-      return;
-    determinizeSimple(a, SpecialOperations.reverse(a));
-    determinizeSimple(a, SpecialOperations.reverse(a));
+  public static Automaton minimizeSimple(Automaton a) {
+    Set<Integer> initialSet = new HashSet<Integer>();
+    a = determinizeSimple(Operations.reverse(a, initialSet), initialSet);
+    initialSet.clear();
+    a = determinizeSimple(Operations.reverse(a, initialSet), initialSet);
+    return a;
   }
   
   /**
    * Simple, original brics implementation of determinize()
    */
-  public static void determinizeSimple(Automaton a) {
-    if (a.deterministic || a.isSingleton())
-      return;
-    Set<State> initialset = new HashSet<>();
-    initialset.add(a.initial);
-    determinizeSimple(a, initialset);
+  public static Automaton determinizeSimple(Automaton a) {
+    Set<Integer> initialset = new HashSet<>();
+    initialset.add(0);
+    return determinizeSimple(a, initialset);
   }
-  
+
   /** 
    * Simple, original brics implementation of determinize()
    * Determinizes the given automaton using the given set of initial states. 
    */
-  public static void determinizeSimple(Automaton a, Set<State> initialset) {
+  public static Automaton determinizeSimple(Automaton a, Set<Integer> initialset) {
+    if (a.getNumStates() == 0) {
+      return a;
+    }
     int[] points = a.getStartPoints();
     // subset construction
-    Map<Set<State>, Set<State>> sets = new HashMap<>();
-    LinkedList<Set<State>> worklist = new LinkedList<>();
-    Map<Set<State>, State> newstate = new HashMap<>();
+    Map<Set<Integer>, Set<Integer>> sets = new HashMap<>();
+    LinkedList<Set<Integer>> worklist = new LinkedList<>();
+    Map<Set<Integer>, Integer> newstate = new HashMap<>();
     sets.put(initialset, initialset);
     worklist.add(initialset);
-    a.initial = new State();
-    newstate.put(initialset, a.initial);
+    Automaton.Builder result = new Automaton.Builder();
+    result.createState();
+    newstate.put(initialset, 0);
+    Transition t = new Transition();
     while (worklist.size() > 0) {
-      Set<State> s = worklist.removeFirst();
-      State r = newstate.get(s);
-      for (State q : s)
-        if (q.accept) {
-          r.accept = true;
+      Set<Integer> s = worklist.removeFirst();
+      int r = newstate.get(s);
+      for (int q : s) {
+        if (a.isAccept(q)) {
+          result.setAccept(r, true);
           break;
         }
+      }
       for (int n = 0; n < points.length; n++) {
-        Set<State> p = new HashSet<>();
-        for (State q : s)
-          for (Transition t : q.getTransitions())
-            if (t.min <= points[n] && points[n] <= t.max)
-              p.add(t.to);
+        Set<Integer> p = new HashSet<>();
+        for (int q : s) {
+          int count = a.initTransition(q, t);
+          for(int i=0;i<count;i++) {
+            a.getNextTransition(t);
+            if (t.min <= points[n] && points[n] <= t.max) {
+              p.add(t.dest);
+            }
+          }
+        }
+
         if (!sets.containsKey(p)) {
           sets.put(p, p);
           worklist.add(p);
-          newstate.put(p, new State());
+          newstate.put(p, result.createState());
         }
-        State q = newstate.get(p);
+        int q = newstate.get(p);
         int min = points[n];
         int max;
-        if (n + 1 < points.length)
+        if (n + 1 < points.length) {
           max = points[n + 1] - 1;
-        else
+        } else {
           max = Character.MAX_CODE_POINT;
-        r.addTransition(new Transition(min, max, q));
+        }
+        result.addTransition(r, q, min, max);
       }
     }
-    a.deterministic = true;
-    a.clearNumberedStates();
-    a.removeDeadTransitions();
+
+    return Operations.removeDeadStates(result.finish());
   }
 
   /**
@@ -403,11 +401,7 @@ public class AutomatonTestUtil {
    */
   public static Set<IntsRef> getFiniteStringsRecursive(Automaton a, int limit) {
     HashSet<IntsRef> strings = new HashSet<>();
-    if (a.isSingleton()) {
-      if (limit > 0) {
-        strings.add(Util.toUTF32(a.singleton, new IntsRef()));
-      }
-    } else if (!getFiniteStrings(a.initial, new HashSet<State>(), strings, new IntsRef(), limit)) {
+    if (!getFiniteStrings(a, 0, new HashSet<Integer>(), strings, new IntsRef(), limit)) {
       return strings;
     }
     return strings;
@@ -418,24 +412,27 @@ public class AutomatonTestUtil {
    * false if more than <code>limit</code> strings are found. 
    * <code>limit</code>&lt;0 means "infinite".
    */
-  private static boolean getFiniteStrings(State s, HashSet<State> pathstates, 
+  private static boolean getFiniteStrings(Automaton a, int s, HashSet<Integer> pathstates, 
       HashSet<IntsRef> strings, IntsRef path, int limit) {
     pathstates.add(s);
-    for (Transition t : s.getTransitions()) {
-      if (pathstates.contains(t.to)) {
+    Transition t = new Transition();
+    int count = a.initTransition(s, t);
+    for (int i=0;i<count;i++) {
+      a.getNextTransition(t);
+      if (pathstates.contains(t.dest)) {
         return false;
       }
       for (int n = t.min; n <= t.max; n++) {
         path.grow(path.length+1);
         path.ints[path.length] = n;
         path.length++;
-        if (t.to.accept) {
+        if (a.isAccept(t.dest)) {
           strings.add(IntsRef.deepCopyOf(path));
           if (limit >= 0 && strings.size() > limit) {
             return false;
           }
         }
-        if (!getFiniteStrings(t.to, pathstates, strings, path, limit)) {
+        if (!getFiniteStrings(a, t.dest, pathstates, strings, path, limit)) {
           return false;
         }
         path.length--;
@@ -452,8 +449,10 @@ public class AutomatonTestUtil {
    * this is only used to test the correctness of our faster implementation.
    */
   public static boolean isFiniteSlow(Automaton a) {
-    if (a.isSingleton()) return true;
-    return isFiniteSlow(a.initial, new HashSet<State>());
+    if (a.getNumStates() == 0) {
+      return true;
+    }
+    return isFiniteSlow(a, 0, new HashSet<Integer>());
   }
   
   /**
@@ -462,22 +461,48 @@ public class AutomatonTestUtil {
    */
   // TODO: not great that this is recursive... in theory a
   // large automata could exceed java's stack
-  private static boolean isFiniteSlow(State s, HashSet<State> path) {
+  private static boolean isFiniteSlow(Automaton a, int s, HashSet<Integer> path) {
     path.add(s);
-    for (Transition t : s.getTransitions())
-      if (path.contains(t.to) || !isFiniteSlow(t.to, path)) return false;
+    Transition t = new Transition();
+    int count = a.initTransition(s, t);
+    for (int i=0;i<count;i++) {
+      a.getNextTransition(t);
+      if (path.contains(t.dest) || !isFiniteSlow(a, t.dest, path)) {
+        return false;
+      }
+    }
     path.remove(s);
     return true;
   }
-  
   
   /**
    * Checks that an automaton has no detached states that are unreachable
    * from the initial state.
    */
   public static void assertNoDetachedStates(Automaton a) {
-    int numStates = a.getNumberOfStates();
-    a.clearNumberedStates(); // force recomputation of cached numbered states
-    assert numStates == a.getNumberOfStates() : "automaton has " + (numStates - a.getNumberOfStates()) + " detached states";
+    Automaton a2 = Operations.removeDeadStates(a);
+    assert a.getNumStates() == a2.getNumStates() : "automaton has " + (a.getNumStates() - a2.getNumStates()) + " detached states";
   }
+
+  /** Returns true if the automaton is deterministic. */
+  public static boolean isDeterministicSlow(Automaton a) {
+    Transition t = new Transition();
+    int numStates = a.getNumStates();
+    for(int s=0;s<numStates;s++) {
+      int count = a.initTransition(s, t);
+      int lastMax = -1;
+      for(int i=0;i<count;i++) {
+        a.getNextTransition(t);
+        if (t.min <= lastMax) {
+          assert a.isDeterministic() == false;
+          return false;
+        }
+        lastMax = t.max;
+      }
+    }
+
+    assert a.isDeterministic() == true;
+    return true;
+  }
+  
 }

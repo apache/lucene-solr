@@ -1,777 +1,773 @@
-/*
- * dk.brics.automaton
- * 
- * Copyright (c) 2001-2009 Anders Moeller
- * All rights reserved.
- * 
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. The name of the author may not be used to endorse or promote products
- *    derived from this software without specific prior written permission.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
 package org.apache.lucene.util.automaton;
 
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+//import java.io.IOException;
+//import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.InPlaceMergeSorter;
+import org.apache.lucene.util.Sorter;
 
-/**
- * Finite-state automaton with regular expression operations.
- * <p>
- * Class invariants:
- * <ul>
- * <li>An automaton is either represented explicitly (with {@link State} and
- * {@link Transition} objects) or with a singleton string (see
- * {@link #getSingleton()} and {@link #expandSingleton()}) in case the automaton
- * is known to accept exactly one string. (Implicitly, all states and
- * transitions of an automaton are reachable from its initial state.)
- * <li>Automata are always reduced (see {@link #reduce()}) and have no
- * transitions to dead states (see {@link #removeDeadTransitions()}).
- * <li>If an automaton is nondeterministic, then {@link #isDeterministic()}
- * returns false (but the converse is not required).
- * <li>Automata provided as input to operations are generally assumed to be
- * disjoint.
- * </ul>
- * <p>
- * If the states or transitions are manipulated manually, the
- * {@link #restoreInvariant()} and {@link #setDeterministic(boolean)} methods
- * should be used afterwards to restore representation invariants that are
- * assumed by the built-in automata operations.
- * 
- * <p>
- * <p>
- * Note: This class has internal mutable state and is not thread safe. It is 
- * the caller's responsibility to ensure any necessary synchronization if you
- * wish to use the same Automaton from multiple threads. In general it is instead
- * recommended to use a {@link RunAutomaton} for multithreaded matching: it is immutable, 
- * thread safe, and much faster.  
- * </p>
- * @lucene.experimental
- */
-public class Automaton implements Cloneable {
-  
-  /**
-   * Minimize using Hopcroft's O(n log n) algorithm. This is regarded as one of
-   * the most generally efficient algorithms that exist.
-   * 
-   * @see #setMinimization(int)
-   */
-  public static final int MINIMIZE_HOPCROFT = 2;
-  
-  /** Selects minimization algorithm (default: <code>MINIMIZE_HOPCROFT</code>). */
-  static int minimization = MINIMIZE_HOPCROFT;
-  
-  /** Initial state of this automaton. */
-  State initial;
-  
-  /**
-   * If true, then this automaton is definitely deterministic (i.e., there are
-   * no choices for any run, but a run may crash).
-   */
-  boolean deterministic;
-  
-  /** Extra data associated with this automaton. */
-  transient Object info;
-  
-  /**
-   * Hash code. Recomputed by {@link MinimizationOperations#minimize(Automaton)}
-   */
-  //int hash_code;
-  
-  /** Singleton string. Null if not applicable. */
-  String singleton;
-  
-  /** Minimize always flag. */
-  static boolean minimize_always = false;
-  
-  /**
-   * Selects whether operations may modify the input automata (default:
-   * <code>false</code>).
-   */
-  static boolean allow_mutation = false;
-  
-  /**
-   * Constructs a new automaton that accepts the empty language. Using this
-   * constructor, automata can be constructed manually from {@link State} and
-   * {@link Transition} objects.
-   * 
-   * @see State
-   * @see Transition
-   */
-  public Automaton(State initial) {
-    this.initial = initial;
-    deterministic = true;
-    singleton = null;
-  }
 
+// TODO
+//   - could use packed int arrays instead
+//   - could encode dest w/ delta from to?
+
+/** Represents an automaton and all its states and transitions.  States
+ *  are integers and must be created using {@link #createState}.  Mark a
+ *  state as an accept state using {@link #setAccept}.  Add transitions
+ *  using {@link #addTransition}.  Each state must have all of its
+ *  transitions added at once; if this is too restrictive then use
+ *  {@link Automaton.Builder} instead.  State 0 is always the
+ *  initial state.  Once a state is finished, either
+ *  because you've starting adding transitions to another state or you
+ *  call {@link #finishState}, then that states transitions are sorted
+ *  (first by min, then max, then dest) and reduced (transitions with
+ *  adjacent labels going to the same dest are combined).
+ *
+ * @lucene.experimental */
+
+public class Automaton {
+  /** Where we next write to the int[] states; this increments by 2 for
+   *  each added state because we pack a pointer to the transitions
+   *  array and a count of how many transitions leave the state.  */
+  private int nextState;
+
+  /** Where we next write to in int[] transitions; this
+   *  increments by 3 for each added transition because we
+   *  pack min, max, dest in sequence. */
+  private int nextTransition;
+
+  /** Current state we are adding transitions to; the caller
+   *  must add all transitions for this state before moving
+   *  onto another state. */
+  private int curState = -1;
+
+  /** Index in the transitions array, where this states
+   *  leaving transitions are stored, or -1 if this state
+   *  has not added any transitions yet, followed by number
+   *  of transitions. */
+  private int[] states = new int[4];
+
+  /** Holds toState, min, max for each transition. */
+  private int[] transitions = new int[6];
+
+  private final BitSet isAccept = new BitSet(4);
+
+  /** True if no state has two transitions leaving with the same label. */
+  private boolean deterministic = true;
+
+  /** Sole constructor; creates an automaton with no states. */
   public Automaton() {
-    this(new State());
   }
-  
-  /**
-   * Selects minimization algorithm (default: <code>MINIMIZE_HOPCROFT</code>).
-   * 
-   * @param algorithm minimization algorithm
-   */
-  static public void setMinimization(int algorithm) {
-    minimization = algorithm;
+
+  /** Create a new state. */
+  public int createState() {
+    growStates();
+    int state = nextState/2;
+    states[nextState] = -1;
+    nextState += 2;
+    return state;
   }
-  
-  /**
-   * Sets or resets minimize always flag. If this flag is set, then
-   * {@link MinimizationOperations#minimize(Automaton)} will automatically be
-   * invoked after all operations that otherwise may produce non-minimal
-   * automata. By default, the flag is not set.
-   * 
-   * @param flag if true, the flag is set
-   */
-  static public void setMinimizeAlways(boolean flag) {
-    minimize_always = flag;
+
+  /** Set or clear this state as an accept state. */
+  public void setAccept(int state, boolean accept) {
+    if (state >= getNumStates()) {
+      throw new IllegalArgumentException("state=" + state + " is out of bounds (numStates=" + getNumStates() + ")");
+    }
+    if (accept) {
+      isAccept.set(state);
+    } else {
+      isAccept.clear(state);
+    }
   }
-  
-  /**
-   * Sets or resets allow mutate flag. If this flag is set, then all automata
-   * operations may modify automata given as input; otherwise, operations will
-   * always leave input automata languages unmodified. By default, the flag is
-   * not set.
-   * 
-   * @param flag if true, the flag is set
-   * @return previous value of the flag
-   */
-  static public boolean setAllowMutate(boolean flag) {
-    boolean b = allow_mutation;
-    allow_mutation = flag;
-    return b;
+
+  /** Sugar to get all transitions for all states.  This is
+   *  object-heavy; it's better to iterate state by state instead. */
+  public Transition[][] getSortedTransitions() {
+    int numStates = getNumStates();
+    Transition[][] transitions = new Transition[numStates][];
+    for(int s=0;s<numStates;s++) {
+      int numTransitions = getNumTransitions(s);
+      transitions[s] = new Transition[numTransitions];
+      for(int t=0;t<numTransitions;t++) {
+        Transition transition = new Transition();
+        getTransition(s, t, transition);
+        transitions[s][t] = transition;
+      }
+    }
+
+    return transitions;
   }
-  
-  /**
-   * Returns the state of the allow mutate flag. If this flag is set, then all
-   * automata operations may modify automata given as input; otherwise,
-   * operations will always leave input automata languages unmodified. By
-   * default, the flag is not set.
-   * 
-   * @return current value of the flag
-   */
-  static boolean getAllowMutate() {
-    return allow_mutation;
+
+  /** Returns accept states.  If the bit is set then that state is an accept state. */
+  BitSet getAcceptStates() {
+    return isAccept;
   }
-  
-  void checkMinimizeAlways() {
-    if (minimize_always) MinimizationOperations.minimize(this);
+
+  /** Returns true if this state is an accept state. */
+  public boolean isAccept(int state) {
+    return isAccept.get(state);
   }
-  
-  boolean isSingleton() {
-    return singleton != null;
+
+  /** Add a new transition with min = max = label. */
+  public void addTransition(int source, int dest, int label) {
+    addTransition(source, dest, label, label);
   }
-  
-  /**
-   * Returns the singleton string for this automaton. An automaton that accepts
-   * exactly one string <i>may</i> be represented in singleton mode. In that
-   * case, this method may be used to obtain the string.
-   * 
-   * @return string, null if this automaton is not in singleton mode.
-   */
-  public String getSingleton() {
-    return singleton;
+
+  /** Add a new transition with the specified source, dest, min, max. */
+  public void addTransition(int source, int dest, int min, int max) {
+    assert nextTransition%3 == 0;
+
+    if (source >= nextState/2) {
+      throw new IllegalArgumentException("source=" + source + " is out of bounds (maxState is " + (nextState/2-1) + ")");
+    }
+    if (dest >= nextState/2) {
+      throw new IllegalArgumentException("dest=" + dest + " is out of bounds (max state is " + (nextState/2-1) + ")");
+    }
+
+    growTransitions();
+    if (curState != source) {
+      if (curState != -1) {
+        finishCurrentState();
+      }
+
+      // Move to next source:
+      curState = source;
+      if (states[2*curState] != -1) {
+        throw new IllegalStateException("from state (" + source + ") already had transitions added");
+      }
+      assert states[2*curState+1] == 0;
+      states[2*curState] = nextTransition;
+    }
+
+    transitions[nextTransition++] = dest;
+    transitions[nextTransition++] = min;
+    transitions[nextTransition++] = max;
+
+    // Increment transition count for this state
+    states[2*curState+1]++;
   }
-  
-  /**
-   * Sets initial state.
-   * 
-   * @param s state
-   */
-  /*
-  public void setInitialState(State s) {
-    initial = s;
-    singleton = null;
+
+  /** Add a [virtual] epsilon transition between source and dest.
+   *  Dest state must already have all transitions added because this
+   *  method simply copies those same transitions over to source. */
+  public void addEpsilon(int source, int dest) {
+    Transition t = new Transition();
+    int count = initTransition(dest, t);
+    for(int i=0;i<count;i++) {
+      getNextTransition(t);
+      addTransition(source, t.dest, t.min, t.max);
+    }
+    if (isAccept(dest)) {
+      setAccept(source, true);
+    }
   }
-  */
-  
-  /**
-   * Gets initial state.
-   * 
-   * @return state
-   */
-  public State getInitialState() {
-    expandSingleton();
-    return initial;
+
+  /** Copies over all states/transitions from other.  The states numbers
+   *  are sequentially assigned (appended). */
+  public void copy(Automaton other) {
+
+    // Bulk copy and then fixup the state pointers:
+    int stateOffset = getNumStates();
+    states = ArrayUtil.grow(states, nextState + other.nextState);
+    System.arraycopy(other.states, 0, states, nextState, other.nextState);
+    for(int i=0;i<other.nextState;i += 2) {
+      if (states[nextState+i] != -1) {
+        states[nextState+i] += nextTransition;
+      }
+    }
+    nextState += other.nextState;
+    int otherNumStates = other.getNumStates();
+    BitSet otherAcceptStates = other.getAcceptStates();
+    int state = 0;
+    while (state < otherNumStates && (state = otherAcceptStates.nextSetBit(state)) != -1) {
+      setAccept(stateOffset + state, true);
+      state++;
+    }
+
+    // Bulk copy and then fixup dest for each transition:
+    transitions = ArrayUtil.grow(transitions, nextTransition + other.nextTransition);
+    System.arraycopy(other.transitions, 0, transitions, nextTransition, other.nextTransition);
+    for(int i=0;i<other.nextTransition;i += 3) {
+      transitions[nextTransition+i] += stateOffset;
+    }
+    nextTransition += other.nextTransition;
+
+    if (other.deterministic == false) {
+      deterministic = false;
+    }
   }
-  
-  /**
-   * Returns deterministic flag for this automaton.
-   * 
-   * @return true if the automaton is definitely deterministic, false if the
-   *         automaton may be nondeterministic
-   */
+
+  /** Freezes the last state, sorting and reducing the transitions. */
+  private void finishCurrentState() {
+    int numTransitions = states[2*curState+1];
+    assert numTransitions > 0;
+
+    int offset = states[2*curState];
+    int start = offset/3;
+    destMinMaxSorter.sort(start, start+numTransitions);
+
+    // Reduce any "adjacent" transitions:
+    int upto = 0;
+    int min = -1;
+    int max = -1;
+    int dest = -1;
+
+    for(int i=0;i<numTransitions;i++) {
+      int tDest = transitions[offset+3*i];
+      int tMin = transitions[offset+3*i+1];
+      int tMax = transitions[offset+3*i+2];
+
+      if (dest == tDest) {
+        if (tMin <= max+1) {
+          if (tMax > max) {
+            max = tMax;
+          }
+        } else {
+          if (dest != -1) {
+            transitions[offset+3*upto] = dest;
+            transitions[offset+3*upto+1] = min;
+            transitions[offset+3*upto+2] = max;
+            upto++;
+          }
+          min = tMin;
+          max = tMax;
+        }
+      } else {
+        if (dest != -1) {
+          transitions[offset+3*upto] = dest;
+          transitions[offset+3*upto+1] = min;
+          transitions[offset+3*upto+2] = max;
+          upto++;
+        }
+        dest = tDest;
+        min = tMin;
+        max = tMax;
+      }
+    }
+
+    if (dest != -1) {
+      // Last transition
+      transitions[offset+3*upto] = dest;
+      transitions[offset+3*upto+1] = min;
+      transitions[offset+3*upto+2] = max;
+      upto++;
+    }
+
+    nextTransition -= (numTransitions-upto)*3;
+    states[2*curState+1] = upto;
+
+    // Sort transitions by min/max/dest:
+    minMaxDestSorter.sort(start, start+upto);
+
+    if (deterministic && upto > 1) {
+      int lastMax = transitions[offset+2];
+      for(int i=1;i<upto;i++) {
+        min = transitions[offset + 3*i + 1];
+        if (min <= lastMax) {
+          deterministic = false;
+          break;
+        }
+        lastMax = transitions[offset + 3*i + 2];
+      }
+    }
+  }
+
+  /** Returns true if this automaton is deterministic (for ever state
+   *  there is only one transition for each label). */
   public boolean isDeterministic() {
     return deterministic;
   }
-  
-  /**
-   * Sets deterministic flag for this automaton. This method should (only) be
-   * used if automata are constructed manually.
-   * 
-   * @param deterministic true if the automaton is definitely deterministic,
-   *          false if the automaton may be nondeterministic
-   */
-  public void setDeterministic(boolean deterministic) {
-    this.deterministic = deterministic;
-  }
-  
-  /**
-   * Associates extra information with this automaton.
-   * 
-   * @param info extra information
-   */
-  public void setInfo(Object info) {
-    this.info = info;
-  }
-  
-  /**
-   * Returns extra information associated with this automaton.
-   * 
-   * @return extra information
-   * @see #setInfo(Object)
-   */
-  public Object getInfo() {
-    return info;
-  }
 
-  // cached
-  private State[] numberedStates;
-
-  public State[] getNumberedStates() {
-    if (numberedStates == null) {
-      expandSingleton();
-      final Set<State> visited = new HashSet<>();
-      final LinkedList<State> worklist = new LinkedList<>();
-      State states[] = new State[4];
-      int upto = 0;
-      worklist.add(initial);
-      visited.add(initial);
-      initial.number = upto;
-      states[upto] = initial;
-      upto++;
-      while (worklist.size() > 0) {
-        State s = worklist.removeFirst();
-        for (int i=0;i<s.numTransitions;i++) {
-          final Transition t = s.transitionsArray[i];
-          if (!visited.contains(t.to)) {
-            visited.add(t.to);
-            worklist.add(t.to);
-            t.to.number = upto;
-            if (upto == states.length) {
-              final State[] newArray = new State[ArrayUtil.oversize(1+upto, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
-              System.arraycopy(states, 0, newArray, 0, upto);
-              states = newArray;
-            }
-            states[upto] = t.to;
-            upto++;
-          }
-        }
-      }
-      if (states.length != upto) {
-        final State[] newArray = new State[upto];
-        System.arraycopy(states, 0, newArray, 0, upto);
-        states = newArray;
-      }
-      numberedStates = states;
+  /** Finishes the current state; call this once you are done adding
+   *  transitions for a state.  This is automatically called if you
+   *  start adding transitions to a new source state, but for the last
+   *  state you add you need to this method yourself. */
+  public void finishState() {
+    if (curState != -1) {
+      finishCurrentState();
+      curState = -1;
     }
-
-    return numberedStates;
   }
 
-  public void setNumberedStates(State[] states) {
-    setNumberedStates(states, states.length);
+  // TODO: add finish() to shrink wrap the arrays?
+
+  /** How many states this automaton has. */
+  public int getNumStates() {
+    return nextState/2;
   }
 
-  public void setNumberedStates(State[] states, int count) {
-    assert count <= states.length;
-    // TODO: maybe we can eventually allow for oversizing here...
-    if (count < states.length) {
-      final State[] newArray = new State[count];
-      System.arraycopy(states, 0, newArray, 0, count);
-      numberedStates = newArray;
+  /** How many transitions this state has. */
+  public int getNumTransitions(int state) {
+    int count = states[2*state+1];
+    if (count == -1) {
+      return 0;
     } else {
-      numberedStates = states;
+      return count;
     }
   }
 
-  public void clearNumberedStates() {
-    numberedStates = null;
+  private void growStates() {
+    if (nextState+2 >= states.length) {
+      states = ArrayUtil.grow(states, nextState+2);
+    }
   }
 
-  /**
-   * Returns the set of reachable accept states.
-   * 
-   * @return set of {@link State} objects
-   */
-  public Set<State> getAcceptStates() {
-    expandSingleton();
-    HashSet<State> accepts = new HashSet<>();
-    HashSet<State> visited = new HashSet<>();
-    LinkedList<State> worklist = new LinkedList<>();
-    worklist.add(initial);
-    visited.add(initial);
-    while (worklist.size() > 0) {
-      State s = worklist.removeFirst();
-      if (s.accept) accepts.add(s);
-      for (Transition t : s.getTransitions())
-        if (!visited.contains(t.to)) {
-          visited.add(t.to);
-          worklist.add(t.to);
-        }
+  private void growTransitions() {
+    if (nextTransition+3 >= transitions.length) {
+      transitions = ArrayUtil.grow(transitions, nextTransition+3);
     }
-    return accepts;
   }
-  
-  /**
-   * Adds transitions to explicit crash state to ensure that transition function
-   * is total.
-   */
-  void totalize() {
-    State s = new State();
-    s.addTransition(new Transition(Character.MIN_CODE_POINT, Character.MAX_CODE_POINT,
-        s));
-    for (State p : getNumberedStates()) {
-      int maxi = Character.MIN_CODE_POINT;
-      p.sortTransitions(Transition.CompareByMinMaxThenDest);
-      for (Transition t : p.getTransitions()) {
-        if (t.min > maxi) p.addTransition(new Transition(maxi,
-            (t.min - 1), s));
-        if (t.max + 1 > maxi) maxi = t.max + 1;
+
+  /** Sorts transitions by dest, ascending, then min label ascending, then max label ascending */
+  private final Sorter destMinMaxSorter = new InPlaceMergeSorter() {
+
+      private void swapOne(int i, int j) {
+        int x = transitions[i];
+        transitions[i] = transitions[j];
+        transitions[j] = x;
       }
-      if (maxi <= Character.MAX_CODE_POINT) p.addTransition(new Transition(
-          maxi, Character.MAX_CODE_POINT, s));
+
+      @Override
+      protected void swap(int i, int j) {
+        int iStart = 3*i;
+        int jStart = 3*j;
+        swapOne(iStart, jStart);
+        swapOne(iStart+1, jStart+1);
+        swapOne(iStart+2, jStart+2);
+      };
+
+      @Override
+      protected int compare(int i, int j) {
+        int iStart = 3*i;
+        int jStart = 3*j;
+
+        // First dest:
+        int iDest = transitions[iStart];
+        int jDest = transitions[jStart];
+        if (iDest < jDest) {
+          return -1;
+        } else if (iDest > jDest) {
+          return 1;
+        }
+
+        // Then min:
+        int iMin = transitions[iStart+1];
+        int jMin = transitions[jStart+1];
+        if (iMin < jMin) {
+          return -1;
+        } else if (iMin > jMin) {
+          return 1;
+        }
+
+        // Then max:
+        int iMax = transitions[iStart+2];
+        int jMax = transitions[jStart+2];
+        if (iMax < jMax) {
+          return -1;
+        } else if (iMax > jMax) {
+          return 1;
+        }
+
+        return 0;
+      }
+    };
+
+  /** Sorts transitions by min label, ascending, then max label ascending, then dest ascending */
+  private final Sorter minMaxDestSorter = new InPlaceMergeSorter() {
+
+      private void swapOne(int i, int j) {
+        int x = transitions[i];
+        transitions[i] = transitions[j];
+        transitions[j] = x;
+      }
+
+      @Override
+      protected void swap(int i, int j) {
+        int iStart = 3*i;
+        int jStart = 3*j;
+        swapOne(iStart, jStart);
+        swapOne(iStart+1, jStart+1);
+        swapOne(iStart+2, jStart+2);
+      };
+
+      @Override
+      protected int compare(int i, int j) {
+        int iStart = 3*i;
+        int jStart = 3*j;
+
+        // First min:
+        int iMin = transitions[iStart+1];
+        int jMin = transitions[jStart+1];
+        if (iMin < jMin) {
+          return -1;
+        } else if (iMin > jMin) {
+          return 1;
+        }
+
+        // Then max:
+        int iMax = transitions[iStart+2];
+        int jMax = transitions[jStart+2];
+        if (iMax < jMax) {
+          return -1;
+        } else if (iMax > jMax) {
+          return 1;
+        }
+
+        // Then dest:
+        int iDest = transitions[iStart];
+        int jDest = transitions[jStart];
+        if (iDest < jDest) {
+          return -1;
+        } else if (iDest > jDest) {
+          return 1;
+        }
+
+        return 0;
+      }
+    };
+
+  /** Initialize the provided Transition to iterate through all transitions
+   *  leaving the specified state.  You must call {@link #getNextTransition} to
+   *  get each transition.  Returns the number of transitions
+   *  leaving this state. */
+  public int initTransition(int state, Transition t) {
+    assert state < nextState/2: "state=" + state + " nextState=" + nextState;
+    t.source = state;
+    t.transitionUpto = states[2*state];
+    return getNumTransitions(state);
+  }
+
+  /** Iterate to the next transition after the provided one */
+  public void getNextTransition(Transition t) {
+    // Make sure there is still a transition left:
+    assert (t.transitionUpto+3 - states[2*t.source]) <= 3*states[2*t.source+1];
+    t.dest = transitions[t.transitionUpto++];
+    t.min = transitions[t.transitionUpto++];
+    t.max = transitions[t.transitionUpto++];
+  }
+
+  /** Fill the provided {@link Transition} with the index'th
+   *  transition leaving the specified state. */
+  public void getTransition(int state, int index, Transition t) {
+    int i = states[2*state] + 3*index;
+    t.source = state;
+    t.dest = transitions[i++];
+    t.min = transitions[i++];
+    t.max = transitions[i++];
+  }
+
+  static void appendCharString(int c, StringBuilder b) {
+    if (c >= 0x21 && c <= 0x7e && c != '\\' && c != '"') b.appendCodePoint(c);
+    else {
+      b.append("\\\\U");
+      String s = Integer.toHexString(c);
+      if (c < 0x10) b.append("0000000").append(s);
+      else if (c < 0x100) b.append("000000").append(s);
+      else if (c < 0x1000) b.append("00000").append(s);
+      else if (c < 0x10000) b.append("0000").append(s);
+      else if (c < 0x100000) b.append("000").append(s);
+      else if (c < 0x1000000) b.append("00").append(s);
+      else if (c < 0x10000000) b.append("0").append(s);
+      else b.append(s);
     }
-    clearNumberedStates();
   }
-  
-  /**
-   * Restores representation invariant. This method must be invoked before any
-   * built-in automata operation is performed if automaton states or transitions
-   * are manipulated manually.
-   * 
-   * @see #setDeterministic(boolean)
-   */
-  public void restoreInvariant() {
-    removeDeadTransitions();
+
+  /*
+  public void writeDot(String fileName) {
+    if (fileName.indexOf('/') == -1) {
+      fileName = "/l/la/lucene/core/" + fileName + ".dot";
+    }
+    try {
+      PrintWriter pw = new PrintWriter(fileName);
+      pw.println(toDot());
+      pw.close();
+    } catch (IOException ioe) {
+      throw new RuntimeException(ioe);
+    }
   }
-  
-  /**
-   * Reduces this automaton. An automaton is "reduced" by combining overlapping
-   * and adjacent edge intervals with same destination.
-   */
-  public void reduce() {
-    final State[] states = getNumberedStates();
-    if (isSingleton()) return;
-    for (State s : states)
-      s.reduce();
+  */
+
+  /** Returns the dot (graphviz) representation of this automaton.
+   *  This is extremely useful for visualizing the automaton. */
+  public String toDot() {
+    // TODO: breadth first search so we can see get layered output...
+
+    StringBuilder b = new StringBuilder();
+    b.append("digraph Automaton {\n");
+    b.append("  rankdir = LR\n");
+    final int numStates = getNumStates();
+    if (numStates > 0) {
+      b.append("  initial [shape=plaintext,label=\"0\"]\n");
+      b.append("  initial -> 0\n");
+    }
+
+    Transition t = new Transition();
+
+    for(int state=0;state<numStates;state++) {
+      b.append("  ");
+      b.append(state);
+      if (isAccept(state)) {
+        b.append(" [shape=doublecircle,label=\"" + state + "\"]\n");
+      } else {
+        b.append(" [shape=circle,label=\"" + state + "\"]\n");
+      }
+      int numTransitions = getNumTransitions(state);
+      initTransition(state, t);
+      //System.out.println("toDot: state " + state + " has " + numTransitions + " transitions; t.nextTrans=" + t.transitionUpto);
+      for(int i=0;i<numTransitions;i++) {
+        getNextTransition(t);
+        //System.out.println("  t.nextTrans=" + t.transitionUpto);
+        assert t.max >= t.min;
+        b.append("  ");
+        b.append(state);
+        b.append(" -> ");
+        b.append(t.dest);
+        b.append(" [label=\"");
+        appendCharString(t.min, b);
+        if (t.max != t.min) {
+          b.append('-');
+          appendCharString(t.max, b);
+        }
+        b.append("\"]\n");
+        //System.out.println("  t=" + t);
+      }
+    }
+    b.append('}');
+    return b.toString();
   }
-  
+
   /**
    * Returns sorted array of all interval start points.
    */
   int[] getStartPoints() {
-    final State[] states = getNumberedStates();
     Set<Integer> pointset = new HashSet<>();
     pointset.add(Character.MIN_CODE_POINT);
-    for (State s : states) {
-      for (Transition t : s.getTransitions()) {
-        pointset.add(t.min);
-        if (t.max < Character.MAX_CODE_POINT) pointset.add((t.max + 1));
+    //System.out.println("getStartPoints");
+    for (int s=0;s<nextState;s+=2) {
+      int trans = states[s];
+      int limit = trans+3*states[s+1];
+      //System.out.println("  state=" + (s/2) + " trans=" + trans + " limit=" + limit);
+      while (trans < limit) {
+        int min = transitions[trans+1];
+        int max = transitions[trans+2];
+        //System.out.println("    min=" + min);
+        pointset.add(min);
+        if (max < Character.MAX_CODE_POINT) {
+          pointset.add(max + 1);
+        }
+        trans += 3;
       }
     }
     int[] points = new int[pointset.size()];
     int n = 0;
-    for (Integer m : pointset)
+    for (Integer m : pointset) {
       points[n++] = m;
+    }
     Arrays.sort(points);
     return points;
   }
-  
+
   /**
-   * Returns the set of live states. A state is "live" if an accept state is
-   * reachable from it.
+   * Performs lookup in transitions, assuming determinism.
    * 
-   * @return set of {@link State} objects
+   * @param state starting state
+   * @param label codepoint to look up
+   * @return destination state, -1 if no matching outgoing transition
    */
-  private State[] getLiveStates() {
-    final State[] states = getNumberedStates();
-    Set<State> live = new HashSet<>();
-    for (State q : states) {
-      if (q.isAccept()) {
-        live.add(q);
+  public int step(int state, int label) {
+    assert state >= 0;
+    assert label >= 0;
+    int trans = states[2*state];
+    int limit = trans + 3*states[2*state+1];
+    // TODO: we could do bin search; transitions are sorted
+    while (trans < limit) {
+      int dest = transitions[trans];
+      int min = transitions[trans+1];
+      int max = transitions[trans+2];
+      if (min <= label && label <= max) {
+        return dest;
       }
-    }
-    // map<state, set<state>>
-    @SuppressWarnings({"rawtypes","unchecked"}) Set<State> map[] = new Set[states.length];
-    for (int i = 0; i < map.length; i++)
-      map[i] = new HashSet<>();
-    for (State s : states) {
-      for(int i=0;i<s.numTransitions;i++) {
-        map[s.transitionsArray[i].to.number].add(s);
-      }
-    }
-    LinkedList<State> worklist = new LinkedList<>(live);
-    while (worklist.size() > 0) {
-      State s = worklist.removeFirst();
-      for (State p : map[s.number])
-        if (!live.contains(p)) {
-          live.add(p);
-          worklist.add(p);
-        }
+      trans += 3;
     }
 
-    return live.toArray(new State[live.size()]);
+    return -1;
   }
 
-  /**
-   * Removes transitions to dead states and calls {@link #reduce()}.
-   * (A state is "dead" if no accept state is
-   * reachable from it.)
-   */
-  public void removeDeadTransitions() {
-    final State[] states = getNumberedStates();
-    //clearHashCode();
-    if (isSingleton()) return;
-    State[] live = getLiveStates();
+  /** Records new states and transitions and then {@link
+   *  #finish} creates the {@link Automaton}.  Use this
+   *  when you cannot create the Automaton directly because
+   *  it's too restrictive to have to add all transitions
+   *  leaving each state at once. */
+  public static class Builder {
+    private int[] transitions = new int[4];
+    private int nextTransition;
+    private final Automaton a = new Automaton();
 
-    BitSet liveSet = new BitSet(states.length);
-    for (State s : live)
-      liveSet.set(s.number);
+    /** Sole constructor. */
+    public Builder() {
+    }
 
-    for (State s : states) {
-      // filter out transitions to dead states:
+    /** Add a new transition with min = max = label. */
+    public void addTransition(int source, int dest, int label) {
+      addTransition(source, dest, label, label);
+    }
+
+    /** Add a new transition with the specified source, dest, min, max. */
+    public void addTransition(int source, int dest, int min, int max) {
+      if (transitions.length < nextTransition+4) {
+        transitions = ArrayUtil.grow(transitions, nextTransition+4);
+      }
+      transitions[nextTransition++] = source;
+      transitions[nextTransition++] = dest;
+      transitions[nextTransition++] = min;
+      transitions[nextTransition++] = max;
+    }
+
+    /** Sorts transitions first then min label ascending, then
+     *  max label ascending, then dest ascending */
+    private final Sorter sorter = new InPlaceMergeSorter() {
+
+        private void swapOne(int i, int j) {
+          int x = transitions[i];
+          transitions[i] = transitions[j];
+          transitions[j] = x;
+        }
+
+        @Override
+        protected void swap(int i, int j) {
+          int iStart = 4*i;
+          int jStart = 4*j;
+          swapOne(iStart, jStart);
+          swapOne(iStart+1, jStart+1);
+          swapOne(iStart+2, jStart+2);
+          swapOne(iStart+3, jStart+3);
+        };
+
+        @Override
+        protected int compare(int i, int j) {
+          int iStart = 4*i;
+          int jStart = 4*j;
+
+          // First src:
+          int iSrc = transitions[iStart];
+          int jSrc = transitions[jStart];
+          if (iSrc < jSrc) {
+            return -1;
+          } else if (iSrc > jSrc) {
+            return 1;
+          }
+
+          // Then min:
+          int iMin = transitions[iStart+2];
+          int jMin = transitions[jStart+2];
+          if (iMin < jMin) {
+            return -1;
+          } else if (iMin > jMin) {
+            return 1;
+          }
+
+          // Then max:
+          int iMax = transitions[iStart+3];
+          int jMax = transitions[jStart+3];
+          if (iMax < jMax) {
+            return -1;
+          } else if (iMax > jMax) {
+            return 1;
+          }
+
+          // First dest:
+          int iDest = transitions[iStart+1];
+          int jDest = transitions[jStart+1];
+          if (iDest < jDest) {
+            return -1;
+          } else if (iDest > jDest) {
+            return 1;
+          }
+
+          return 0;
+        }
+      };
+
+    /** Compiles all added states and transitions into a new {@code Automaton}
+     *  and returns it. */
+    public Automaton finish() {
+      //System.out.println("LA.Builder.finish: count=" + (nextTransition/4));
+      // TODO: we could make this more efficient,
+      // e.g. somehow xfer the int[] to the automaton, or
+      // alloc exactly the right size from the automaton
+      //System.out.println("finish pending");
+      sorter.sort(0, nextTransition/4);
       int upto = 0;
-      for(int i=0;i<s.numTransitions;i++) {
-        final Transition t = s.transitionsArray[i];
-        if (liveSet.get(t.to.number)) {
-          s.transitionsArray[upto++] = s.transitionsArray[i];
-        }
+      while (upto < nextTransition) {
+        a.addTransition(transitions[upto],
+                        transitions[upto+1],
+                        transitions[upto+2],
+                        transitions[upto+3]);
+        upto += 4;
       }
-      s.numTransitions = upto;
-    }
-    for(int i=0;i<live.length;i++) {
-      live[i].number = i;
-    }
-    if (live.length > 0) {
-      setNumberedStates(live);
-    } else {
-      // sneaky corner case -- if machine accepts no strings
-      clearNumberedStates();
-    }
-    reduce();
-  }
-  
-  /**
-   * Returns a sorted array of transitions for each state (and sets state
-   * numbers).
-   */
-  public Transition[][] getSortedTransitions() {
-    final State[] states = getNumberedStates();
-    Transition[][] transitions = new Transition[states.length][];
-    for (State s : states) {
-      s.sortTransitions(Transition.CompareByMinMaxThenDest);
-      s.trimTransitionsArray();
-      transitions[s.number] = s.transitionsArray;
-      assert s.transitionsArray != null;
-    }
-    return transitions;
-  }
-  
-  /**
-   * Expands singleton representation to normal representation. Does nothing if
-   * not in singleton representation.
-   */
-  public void expandSingleton() {
-    if (isSingleton()) {
-      State p = new State();
-      initial = p;
-      for (int i = 0, cp = 0; i < singleton.length(); i += Character.charCount(cp)) {
-        State q = new State();
-        p.addTransition(new Transition(cp = singleton.codePointAt(i), q));
-        p = q;
-      }
-      p.accept = true;
-      deterministic = true;
-      singleton = null;
-    }
-  }
-  
-  /**
-   * Returns the number of states in this automaton.
-   */
-  public int getNumberOfStates() {
-    if (isSingleton()) return singleton.codePointCount(0, singleton.length()) + 1;
-    return getNumberedStates().length;
-  }
-  
-  /**
-   * Returns the number of transitions in this automaton. This number is counted
-   * as the total number of edges, where one edge may be a character interval.
-   */
-  public int getNumberOfTransitions() {
-    if (isSingleton()) return singleton.codePointCount(0, singleton.length());
-    int c = 0;
-    for (State s : getNumberedStates())
-      c += s.numTransitions();
-    return c;
-  }
-  
-  @Override
-  public boolean equals(Object obj) {
-    throw new UnsupportedOperationException("use BasicOperations.sameLanguage instead");
-  }
 
-  @Override
-  public int hashCode() {
-    throw new UnsupportedOperationException();
-  }
-  
-  /**
-   * Must be invoked when the stored hash code may no longer be valid.
-   */
-  /*
-  void clearHashCode() {
-    hash_code = 0;
-  }
-  */
-  
-  /**
-   * Returns a string representation of this automaton.
-   */
-  @Override
-  public String toString() {
-    StringBuilder b = new StringBuilder();
-    if (isSingleton()) {
-      b.append("singleton: ");
-      int length = singleton.codePointCount(0, singleton.length());
-      int codepoints[] = new int[length];
-      for (int i = 0, j = 0, cp = 0; i < singleton.length(); i += Character.charCount(cp))
-        codepoints[j++] = cp = singleton.codePointAt(i);
-      for (int c : codepoints)
-        Transition.appendCharString(c, b);
-      b.append("\n");
-    } else {
-      State[] states = getNumberedStates();
-      b.append("initial state: ").append(initial.number).append("\n");
-      for (State s : states)
-        b.append(s.toString());
+      a.finishState();
+      return a;
     }
-    return b.toString();
-  }
-  
-  /**
-   * Returns <a href="http://www.research.att.com/sw/tools/graphviz/"
-   * target="_top">Graphviz Dot</a> representation of this automaton.
-   */
-  public String toDot() {
-    StringBuilder b = new StringBuilder("digraph Automaton {\n");
-    b.append("  rankdir = LR;\n");
-    State[] states = getNumberedStates();
-    for (State s : states) {
-      b.append("  ").append(s.number);
-      if (s.accept) b.append(" [shape=doublecircle,label=\"" + s.number + "\"];\n");
-      else b.append(" [shape=circle,label=\" " + s.number + "\"];\n");
-      if (s == initial) {
-        b.append("  initial [shape=plaintext,label=\"\"];\n");
-        b.append("  initial -> ").append(s.number).append("\n");
-      }
-      for (Transition t : s.getTransitions()) {
-        b.append("  ").append(s.number);
-        t.appendDot(b);
-      }
+
+    /** Create a new state. */
+    public int createState() {
+      return a.createState();
     }
-    return b.append("}\n").toString();
-  }
-  
-  /**
-   * Returns a clone of this automaton, expands if singleton.
-   */
-  Automaton cloneExpanded() {
-    Automaton a = clone();
-    a.expandSingleton();
-    return a;
-  }
-  
-  /**
-   * Returns a clone of this automaton unless <code>allow_mutation</code> is
-   * set, expands if singleton.
-   */
-  Automaton cloneExpandedIfRequired() {
-    if (allow_mutation) {
-      expandSingleton();
-      return this;
-    } else return cloneExpanded();
-  }
-  
-  /**
-   * Returns a clone of this automaton.
-   */
-  @Override
-  public Automaton clone() {
-    try {
-      Automaton a = (Automaton) super.clone();
-      if (!isSingleton()) {
-        HashMap<State,State> m = new HashMap<>();
-        State[] states = getNumberedStates();
-        for (State s : states)
-          m.put(s, new State());
-        for (State s : states) {
-          State p = m.get(s);
-          p.accept = s.accept;
-          if (s == initial) a.initial = p;
-          for (Transition t : s.getTransitions())
-            p.addTransition(new Transition(t.min, t.max, m.get(t.to)));
+
+    /** Set or clear this state as an accept state. */
+    public void setAccept(int state, boolean accept) {
+      a.setAccept(state, accept);
+    }
+
+    /** Returns true if this state is an accept state. */
+    public boolean isAccept(int state) {
+      return a.isAccept(state);
+    }
+
+    /** How many states this automaton has. */
+    public int getNumStates() {
+      return a.getNumStates();
+    }
+
+    /** Copies over all states/transitions from other. */
+    public void copy(Automaton other) {
+      int offset = getNumStates();
+      int otherNumStates = other.getNumStates();
+      for(int s=0;s<otherNumStates;s++) {
+        int newState = createState();
+        setAccept(newState, other.isAccept(s));
+      }
+      Transition t = new Transition();
+      for(int s=0;s<otherNumStates;s++) {
+        int count = other.initTransition(s, t);
+        for(int i=0;i<count;i++) {
+          other.getNextTransition(t);
+          addTransition(offset + s, offset + t.dest, t.min, t.max);
         }
       }
-      a.clearNumberedStates();
-      return a;
-    } catch (CloneNotSupportedException e) {
-      throw new RuntimeException(e);
     }
-  }
-  
-  /**
-   * Returns a clone of this automaton, or this automaton itself if
-   * <code>allow_mutation</code> flag is set.
-   */
-  Automaton cloneIfRequired() {
-    if (allow_mutation) return this;
-    else return clone();
-  }
-  
-  /**
-   * See {@link BasicOperations#concatenate(Automaton, Automaton)}.
-   */
-  public Automaton concatenate(Automaton a) {
-    return BasicOperations.concatenate(this, a);
-  }
-  
-  /**
-   * See {@link BasicOperations#concatenate(List)}.
-   */
-  static public Automaton concatenate(List<Automaton> l) {
-    return BasicOperations.concatenate(l);
-  }
-  
-  /**
-   * See {@link BasicOperations#optional(Automaton)}.
-   */
-  public Automaton optional() {
-    return BasicOperations.optional(this);
-  }
-  
-  /**
-   * See {@link BasicOperations#repeat(Automaton)}.
-   */
-  public Automaton repeat() {
-    return BasicOperations.repeat(this);
-  }
-  
-  /**
-   * See {@link BasicOperations#repeat(Automaton, int)}.
-   */
-  public Automaton repeat(int min) {
-    return BasicOperations.repeat(this, min);
-  }
-  
-  /**
-   * See {@link BasicOperations#repeat(Automaton, int, int)}.
-   */
-  public Automaton repeat(int min, int max) {
-    return BasicOperations.repeat(this, min, max);
-  }
-  
-  /**
-   * See {@link BasicOperations#complement(Automaton)}.
-   */
-  public Automaton complement() {
-    return BasicOperations.complement(this);
-  }
-  
-  /**
-   * See {@link BasicOperations#minus(Automaton, Automaton)}.
-   */
-  public Automaton minus(Automaton a) {
-    return BasicOperations.minus(this, a);
-  }
-  
-  /**
-   * See {@link BasicOperations#intersection(Automaton, Automaton)}.
-   */
-  public Automaton intersection(Automaton a) {
-    return BasicOperations.intersection(this, a);
-  }
-  
-  /**
-   * See {@link BasicOperations#subsetOf(Automaton, Automaton)}.
-   */
-  public boolean subsetOf(Automaton a) {
-    return BasicOperations.subsetOf(this, a);
-  }
-  
-  /**
-   * See {@link BasicOperations#union(Automaton, Automaton)}.
-   */
-  public Automaton union(Automaton a) {
-    return BasicOperations.union(this, a);
-  }
-  
-  /**
-   * See {@link BasicOperations#union(Collection)}.
-   */
-  static public Automaton union(Collection<Automaton> l) {
-    return BasicOperations.union(l);
-  }
-  
-  /**
-   * See {@link BasicOperations#determinize(Automaton)}.
-   */
-  public void determinize() {
-    BasicOperations.determinize(this);
-  }
-  
-  /**
-   * See {@link BasicOperations#isEmptyString(Automaton)}.
-   */
-  public boolean isEmptyString() {
-    return BasicOperations.isEmptyString(this);
-  }
-  
-  /**
-   * See {@link MinimizationOperations#minimize(Automaton)}. Returns the
-   * automaton being given as argument.
-   */
-  public static Automaton minimize(Automaton a) {
-    MinimizationOperations.minimize(a);
-    return a;
   }
 }

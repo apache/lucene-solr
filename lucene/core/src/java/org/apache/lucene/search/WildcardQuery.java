@@ -17,14 +17,14 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.Term;
-import org.apache.lucene.util.ToStringUtils;
-import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.BasicAutomata;
-import org.apache.lucene.util.automaton.BasicOperations;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.lucene.index.Term;
+import org.apache.lucene.util.ToStringUtils;
+import org.apache.lucene.util.automaton.Automata;
+import org.apache.lucene.util.automaton.Operations;
+import org.apache.lucene.util.automaton.Automaton;
 
 /** Implements the wildcard search query. Supported wildcards are <code>*</code>, which
  * matches any character sequence (including the empty one), and <code>?</code>,
@@ -72,26 +72,26 @@ public class WildcardQuery extends AutomatonQuery {
       int length = Character.charCount(c);
       switch(c) {
         case WILDCARD_STRING: 
-          automata.add(BasicAutomata.makeAnyString());
+          automata.add(Automata.makeAnyString());
           break;
         case WILDCARD_CHAR:
-          automata.add(BasicAutomata.makeAnyChar());
+          automata.add(Automata.makeAnyChar());
           break;
         case WILDCARD_ESCAPE:
           // add the next codepoint instead, if it exists
           if (i + length < wildcardText.length()) {
             final int nextChar = wildcardText.codePointAt(i + length);
             length += Character.charCount(nextChar);
-            automata.add(BasicAutomata.makeChar(nextChar));
+            automata.add(Automata.makeChar(nextChar));
             break;
           } // else fallthru, lenient parsing with a trailing \
         default:
-          automata.add(BasicAutomata.makeChar(c));
+          automata.add(Automata.makeChar(c));
       }
       i += length;
     }
     
-    return BasicOperations.concatenate(automata);
+    return Operations.concatenate(automata);
   }
   
   /**

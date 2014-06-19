@@ -31,6 +31,7 @@ import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -68,7 +69,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
       writer.addDocument(doc);
     }
     
-    termsAutomaton = BasicAutomata.makeStringUnion(terms);
+    termsAutomaton = Automata.makeStringUnion(terms);
     
     reader = writer.getReader();
     searcher = newSearcher(reader);
@@ -84,23 +85,27 @@ public class TestTermsEnum2 extends LuceneTestCase {
   
   /** tests a pre-intersected automaton against the original */
   public void testFiniteVersusInfinite() throws Exception {
+
     for (int i = 0; i < numIterations; i++) {
       String reg = AutomatonTestUtil.randomRegexp(random());
-      Automaton automaton = new RegExp(reg, RegExp.NONE).toAutomaton();
+      Automaton automaton = Operations.determinize(new RegExp(reg, RegExp.NONE).toAutomaton());
       final List<BytesRef> matchedTerms = new ArrayList<>();
       for(BytesRef t : terms) {
-        if (BasicOperations.run(automaton, t.utf8ToString())) {
+        if (Operations.run(automaton, t.utf8ToString())) {
           matchedTerms.add(t);
         }
       }
 
-      Automaton alternate = BasicAutomata.makeStringUnion(matchedTerms);
+      Automaton alternate = Automata.makeStringUnion(matchedTerms);
       //System.out.println("match " + matchedTerms.size() + " " + alternate.getNumberOfStates() + " states, sigma=" + alternate.getStartPoints().length);
       //AutomatonTestUtil.minimizeSimple(alternate);
       //System.out.println("minmize done");
       AutomatonQuery a1 = new AutomatonQuery(new Term("field", ""), automaton);
       AutomatonQuery a2 = new AutomatonQuery(new Term("field", ""), alternate);
-      CheckHits.checkEqual(a1, searcher.search(a1, 25).scoreDocs, searcher.search(a2, 25).scoreDocs);
+
+      ScoreDoc[] origHits = searcher.search(a1, 25).scoreDocs;
+      ScoreDoc[] newHits = searcher.search(a2, 25).scoreDocs;
+      CheckHits.checkEqual(a1, origHits, newHits);
     }
   }
   
@@ -108,13 +113,13 @@ public class TestTermsEnum2 extends LuceneTestCase {
   public void testSeeking() throws Exception {
     for (int i = 0; i < numIterations; i++) {
       String reg = AutomatonTestUtil.randomRegexp(random());
-      Automaton automaton = new RegExp(reg, RegExp.NONE).toAutomaton();
+      Automaton automaton = Operations.determinize(new RegExp(reg, RegExp.NONE).toAutomaton());
       TermsEnum te = MultiFields.getTerms(reader, "field").iterator(null);
       ArrayList<BytesRef> unsortedTerms = new ArrayList<>(terms);
       Collections.shuffle(unsortedTerms, random());
 
       for (BytesRef term : unsortedTerms) {
-        if (BasicOperations.run(automaton, term.utf8ToString())) {
+        if (Operations.run(automaton, term.utf8ToString())) {
           // term is accepted
           if (random().nextBoolean()) {
             // seek exact
@@ -153,16 +158,16 @@ public class TestTermsEnum2 extends LuceneTestCase {
     for (int i = 0; i < numIterations; i++) {
       String reg = AutomatonTestUtil.randomRegexp(random());
       Automaton automaton = new RegExp(reg, RegExp.NONE).toAutomaton();
-      CompiledAutomaton ca = new CompiledAutomaton(automaton, SpecialOperations.isFinite(automaton), false);
+      CompiledAutomaton ca = new CompiledAutomaton(automaton, Operations.isFinite(automaton), false);
       TermsEnum te = MultiFields.getTerms(reader, "field").intersect(ca, null);
-      Automaton expected = BasicOperations.intersection(termsAutomaton, automaton);
+      Automaton expected = Operations.determinize(Operations.intersection(termsAutomaton, automaton));
       TreeSet<BytesRef> found = new TreeSet<>();
       while (te.next() != null) {
         found.add(BytesRef.deepCopyOf(te.term()));
       }
       
-      Automaton actual = BasicAutomata.makeStringUnion(found);     
-      assertTrue(BasicOperations.sameLanguage(expected, actual));
+      Automaton actual = Operations.determinize(Automata.makeStringUnion(found));
+      assertTrue(Operations.sameLanguage(expected, actual));
     }
   }
 }

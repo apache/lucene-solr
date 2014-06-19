@@ -347,7 +347,7 @@ final class IntersectTermsEnum extends TermsEnum {
       if (currentFrame.suffix != 0) {
         final int label = currentFrame.suffixBytes[currentFrame.startBytePos] & 0xff;
         while (label > currentFrame.curTransitionMax) {
-          if (currentFrame.transitionIndex >= currentFrame.transitions.length-1) {
+          if (currentFrame.transitionIndex >= currentFrame.transitionCount-1) {
             // Stop processing this frame -- no further
             // matches are possible because we've moved
             // beyond what the max transition will allow
@@ -359,7 +359,8 @@ final class IntersectTermsEnum extends TermsEnum {
             continue nextTerm;
           }
           currentFrame.transitionIndex++;
-          currentFrame.curTransitionMax = currentFrame.transitions[currentFrame.transitionIndex].getMax();
+          compiledAutomaton.automaton.getNextTransition(currentFrame.transition);
+          currentFrame.curTransitionMax = currentFrame.transition.max;
           //if (DEBUG) System.out.println("      next trans=" + currentFrame.transitions[currentFrame.transitionIndex]);
         }
       }

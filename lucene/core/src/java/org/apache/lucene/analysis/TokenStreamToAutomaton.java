@@ -26,8 +26,6 @@ import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RollingBuffer;
 import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.State;
-import org.apache.lucene.util.automaton.Transition;
 
 // TODO: maybe also toFST?  then we can translate atts into FST outputs/weights
 
@@ -61,15 +59,15 @@ public class TokenStreamToAutomaton {
 
   private static class Position implements RollingBuffer.Resettable {
     // Any tokens that ended at our position arrive to this state:
-    State arriving;
+    int arriving = -1;
 
     // Any tokens that start at our position leave from this state:
-    State leaving;
+    int leaving = -1;
 
     @Override
     public void reset() {
-      arriving = null;
-      leaving = null;
+      arriving = -1;
+      leaving = -1;
     }
   }
 
@@ -99,8 +97,8 @@ public class TokenStreamToAutomaton {
    *  automaton where arcs are bytes (or Unicode code points 
    *  if unicodeArcs = true) from each term. */
   public Automaton toAutomaton(TokenStream in) throws IOException {
-    final Automaton a = new Automaton();
-    boolean deterministic = true;
+    final Automaton.Builder builder = new Automaton.Builder();
+    builder.createState();
 
     final TermToBytesRefAttribute termBytesAtt = in.addAttribute(TermToBytesRefAttribute.class);
     final PositionIncrementAttribute posIncAtt = in.addAttribute(PositionIncrementAttribute.class);
@@ -132,34 +130,29 @@ public class TokenStreamToAutomaton {
         pos += posInc;
 
         posData = positions.get(pos);
-        assert posData.leaving == null;
+        assert posData.leaving == -1;
 
-        if (posData.arriving == null) {
+        if (posData.arriving == -1) {
           // No token ever arrived to this position
           if (pos == 0) {
             // OK: this is the first token
-            posData.leaving = a.getInitialState();
+            posData.leaving = 0;
           } else {
             // This means there's a hole (eg, StopFilter
             // does this):
-            posData.leaving = new State();
-            addHoles(a.getInitialState(), positions, pos);
+            posData.leaving = builder.createState();
+            addHoles(builder, positions, pos);
           }
         } else {
-          posData.leaving = new State();
-          posData.arriving.addTransition(new Transition(POS_SEP, posData.leaving));
+          posData.leaving = builder.createState();
+          builder.addTransition(posData.arriving, posData.leaving, POS_SEP);
           if (posInc > 1) {
             // A token spanned over a hole; add holes
             // "under" it:
-            addHoles(a.getInitialState(), positions, pos);
+            addHoles(builder, positions, pos);
           }
         }
         positions.freeBefore(pos);
-      } else {
-        // note: this isn't necessarily true. its just that we aren't surely det.
-        // we could optimize this further (e.g. buffer and sort synonyms at a position)
-        // but thats probably overkill. this is cheap and dirty
-        deterministic = false;
       }
 
       final int endPos = pos + posLengthAtt.getPositionLength();
@@ -168,31 +161,33 @@ public class TokenStreamToAutomaton {
       final BytesRef termUTF8 = changeToken(term);
       int[] termUnicode = null;
       final Position endPosData = positions.get(endPos);
-      if (endPosData.arriving == null) {
-        endPosData.arriving = new State();
+      if (endPosData.arriving == -1) {
+        endPosData.arriving = builder.createState();
       }
 
-      State state = posData.leaving;
       int termLen;
       if (unicodeArcs) {
         final String utf16 = termUTF8.utf8ToString();
         termUnicode = new int[utf16.codePointCount(0, utf16.length())];
         termLen = termUnicode.length;
-        for (int cp, i = 0, j = 0; i < utf16.length(); i += Character.charCount(cp))
+        for (int cp, i = 0, j = 0; i < utf16.length(); i += Character.charCount(cp)) {
           termUnicode[j++] = cp = utf16.codePointAt(i);
+        }
       } else {
         termLen = termUTF8.length;
       }
 
+      int state = posData.leaving;
+
       for(int byteIDX=0;byteIDX<termLen;byteIDX++) {
-        final State nextState = byteIDX == termLen-1 ? endPosData.arriving : new State();
+        final int nextState = byteIDX == termLen-1 ? endPosData.arriving : builder.createState();
         int c;
         if (unicodeArcs) {
           c = termUnicode[byteIDX];
         } else {
           c = termUTF8.bytes[termUTF8.offset + byteIDX] & 0xff;
         }
-        state.addTransition(new Transition(c, nextState));
+        builder.addTransition(state, nextState, c);
         state = nextState;
       }
 
@@ -200,28 +195,26 @@ public class TokenStreamToAutomaton {
     }
 
     in.end();
-    State endState = null;
+    int endState = -1;
     if (offsetAtt.endOffset() > maxOffset) {
-      endState = new State();
-      endState.setAccept(true);
+      endState = builder.createState();
+      builder.setAccept(endState, true);
     }
 
     pos++;
     while (pos <= positions.getMaxPos()) {
       posData = positions.get(pos);
-      if (posData.arriving != null) {
-        if (endState != null) {
-          posData.arriving.addTransition(new Transition(POS_SEP, endState));
+      if (posData.arriving != -1) {
+        if (endState != -1) {
+          builder.addTransition(posData.arriving, endState, POS_SEP);
         } else {
-          posData.arriving.setAccept(true);
+          builder.setAccept(posData.arriving, true);
         }
       }
       pos++;
     }
 
-    //toDot(a);
-    a.setDeterministic(deterministic);
-    return a;
+    return builder.finish();
   }
 
   // for debugging!
@@ -235,26 +228,26 @@ public class TokenStreamToAutomaton {
   }
   */
 
-  private static void addHoles(State startState, RollingBuffer<Position> positions, int pos) {
+  private static void addHoles(Automaton.Builder builder, RollingBuffer<Position> positions, int pos) {
     Position posData = positions.get(pos);
     Position prevPosData = positions.get(pos-1);
 
-    while(posData.arriving == null || prevPosData.leaving == null) {
-      if (posData.arriving == null) {
-        posData.arriving = new State();
-        posData.arriving.addTransition(new Transition(POS_SEP, posData.leaving));
+    while(posData.arriving == -1 || prevPosData.leaving == -1) {
+      if (posData.arriving == -1) {
+        posData.arriving = builder.createState();
+        builder.addTransition(posData.arriving, posData.leaving, POS_SEP);
       }
-      if (prevPosData.leaving == null) {
+      if (prevPosData.leaving == -1) {
         if (pos == 1) {
-          prevPosData.leaving = startState;
+          prevPosData.leaving = 0;
         } else {
-          prevPosData.leaving = new State();
+          prevPosData.leaving = builder.createState();
         }
-        if (prevPosData.arriving != null) {
-          prevPosData.arriving.addTransition(new Transition(POS_SEP, prevPosData.leaving));
+        if (prevPosData.arriving != -1) {
+          builder.addTransition(prevPosData.arriving, prevPosData.leaving, POS_SEP);
         }
       }
-      prevPosData.leaving.addTransition(new Transition(HOLE, posData.arriving));
+      builder.addTransition(prevPosData.leaving, posData.arriving, HOLE);
       pos--;
       if (pos <= 0) {
         break;

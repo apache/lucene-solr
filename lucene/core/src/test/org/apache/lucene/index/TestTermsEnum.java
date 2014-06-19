@@ -33,9 +33,9 @@ import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.BasicAutomata;
+import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
+import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.RegExp;
 
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
@@ -244,7 +244,7 @@ public class TestTermsEnum extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("\nTEST: empty automaton");
         }
-        a = BasicAutomata.makeEmpty();
+        a = Automata.makeEmpty();
       } else {
         if (VERBOSE) {
           System.out.println("\nTEST: keepPct=" + keepPct);
@@ -259,16 +259,9 @@ public class TestTermsEnum extends LuceneTestCase {
           acceptTerms.add(s2);
           sortedAcceptTerms.add(new BytesRef(s2));
         }
-        a = BasicAutomata.makeStringUnion(sortedAcceptTerms);
+        a = Automata.makeStringUnion(sortedAcceptTerms);
       }
       
-      if (random().nextBoolean()) {
-        if (VERBOSE) {
-          System.out.println("TEST: reduce the automaton");
-        }
-        a.reduce();
-      }
-
       final CompiledAutomaton c = new CompiledAutomaton(a, true, false);
 
       final BytesRef[] acceptTermsArray = new BytesRef[acceptTerms.size()];
@@ -745,7 +738,7 @@ public class TestTermsEnum extends LuceneTestCase {
     w.shutdown();
     AtomicReader sub = getOnlySegmentReader(r);
     Terms terms = sub.fields().terms("field");
-    Automaton automaton = new RegExp(".*", RegExp.NONE).toAutomaton();    
+    Automaton automaton = new RegExp(".*", RegExp.NONE).toAutomaton();
     CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);    
     TermsEnum te = terms.intersect(ca, null);
     assertEquals("aaa", te.next().utf8ToString());

@@ -98,6 +98,10 @@ Other
 
 (No Changes)
 
+API Changes
+
+* LUCENE-5752: Simplified Automaton API to be immutable. (Mike McCandless)
+
 ======================= Lucene 4.9.0 =======================
 
 Changes in Runtime Behavior

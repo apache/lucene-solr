@@ -41,7 +41,7 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
   
   // LUCENE-3094
   public void testNoWastedStates() throws Exception {
-    AutomatonTestUtil.assertNoDetachedStates(new LevenshteinAutomata("abc", false).toAutomaton(1));
+    assertFalse(Operations.hasDeadStatesFromInitial(new LevenshteinAutomata("abc", false).toAutomaton(1)));
   }
   
   /** 
@@ -75,31 +75,36 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
       assertNotNull(tautomata[n]);
       assertTrue(automata[n].isDeterministic());
       assertTrue(tautomata[n].isDeterministic());
-      assertTrue(SpecialOperations.isFinite(automata[n]));
-      assertTrue(SpecialOperations.isFinite(tautomata[n]));
-      AutomatonTestUtil.assertNoDetachedStates(automata[n]);
-      AutomatonTestUtil.assertNoDetachedStates(tautomata[n]);
+      assertTrue(Operations.isFinite(automata[n]));
+      assertTrue(Operations.isFinite(tautomata[n]));
+      assertFalse(Operations.hasDeadStatesFromInitial(automata[n]));
+      assertFalse(Operations.hasDeadStatesFromInitial(tautomata[n]));
       // check that the dfa for n-1 accepts a subset of the dfa for n
       if (n > 0) {
-        assertTrue(automata[n-1].subsetOf(automata[n]));
-        assertTrue(automata[n-1].subsetOf(tautomata[n]));
-        assertTrue(tautomata[n-1].subsetOf(automata[n]));
-        assertTrue(tautomata[n-1].subsetOf(tautomata[n]));
+        assertTrue(Operations.subsetOf(Operations.removeDeadStates(automata[n-1]),
+                                       Operations.removeDeadStates(automata[n])));
+        assertTrue(Operations.subsetOf(Operations.removeDeadStates(automata[n-1]),
+                                       Operations.removeDeadStates(tautomata[n])));
+        assertTrue(Operations.subsetOf(Operations.removeDeadStates(tautomata[n-1]),
+                                       Operations.removeDeadStates(automata[n])));
+        assertTrue(Operations.subsetOf(Operations.removeDeadStates(tautomata[n-1]),
+                                       Operations.removeDeadStates(tautomata[n])));
         assertNotSame(automata[n-1], automata[n]);
       }
       // check that Lev(N) is a subset of LevT(N)
-      assertTrue(automata[n].subsetOf(tautomata[n]));
+      assertTrue(Operations.subsetOf(Operations.removeDeadStates(automata[n]),
+                                     Operations.removeDeadStates(tautomata[n])));
       // special checks for specific n
       switch(n) {
         case 0:
           // easy, matches the string itself
-          assertTrue(BasicOperations.sameLanguage(BasicAutomata.makeString(s), automata[0]));
-          assertTrue(BasicOperations.sameLanguage(BasicAutomata.makeString(s), tautomata[0]));
+          assertTrue(Operations.sameLanguage(Automata.makeString(s), Operations.removeDeadStates(automata[0])));
+          assertTrue(Operations.sameLanguage(Automata.makeString(s), Operations.removeDeadStates(tautomata[0])));
           break;
         case 1:
           // generate a lev1 naively, and check the accepted lang is the same.
-          assertTrue(BasicOperations.sameLanguage(naiveLev1(s), automata[1]));
-          assertTrue(BasicOperations.sameLanguage(naiveLev1T(s), tautomata[1]));
+          assertTrue(Operations.sameLanguage(naiveLev1(s), Operations.removeDeadStates(automata[1])));
+          assertTrue(Operations.sameLanguage(naiveLev1T(s), Operations.removeDeadStates(tautomata[1])));
           break;
         default:
           assertBruteForce(s, automata[n], n);
@@ -114,13 +119,13 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
    * substitutions of s.
    */
   private Automaton naiveLev1(String s) {
-    Automaton a = BasicAutomata.makeString(s);
-    a = BasicOperations.union(a, insertionsOf(s));
-    MinimizationOperations.minimize(a);
-    a = BasicOperations.union(a, deletionsOf(s));
-    MinimizationOperations.minimize(a);
-    a = BasicOperations.union(a, substitutionsOf(s));
-    MinimizationOperations.minimize(a);
+    Automaton a = Automata.makeString(s);
+    a = Operations.union(a, insertionsOf(s));
+    a = MinimizationOperations.minimize(a);
+    a = Operations.union(a, deletionsOf(s));
+    a = MinimizationOperations.minimize(a);
+    a = Operations.union(a, substitutionsOf(s));
+    a = MinimizationOperations.minimize(a);
     
     return a;
   }
@@ -131,8 +136,8 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
    */
   private Automaton naiveLev1T(String s) {
     Automaton a = naiveLev1(s);
-    a = BasicOperations.union(a, transpositionsOf(s));
-    MinimizationOperations.minimize(a);
+    a = Operations.union(a, transpositionsOf(s));
+    a = MinimizationOperations.minimize(a);
     return a;
   }
   
@@ -144,15 +149,14 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
     List<Automaton> list = new ArrayList<>();
     
     for (int i = 0; i <= s.length(); i++) {
-      Automaton a = BasicAutomata.makeString(s.substring(0, i));
-      a = BasicOperations.concatenate(a, BasicAutomata.makeAnyChar());
-      a = BasicOperations.concatenate(a, BasicAutomata.makeString(s
-          .substring(i)));
+      Automaton a = Automata.makeString(s.substring(0, i));
+      a = Operations.concatenate(a, Automata.makeAnyChar());
+      a = Operations.concatenate(a, Automata.makeString(s.substring(i)));
       list.add(a);
     }
     
-    Automaton a = BasicOperations.union(list);
-    MinimizationOperations.minimize(a);
+    Automaton a = Operations.union(list);
+    a = MinimizationOperations.minimize(a);
     return a;
   }
   
@@ -164,15 +168,13 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
     List<Automaton> list = new ArrayList<>();
     
     for (int i = 0; i < s.length(); i++) {
-      Automaton a = BasicAutomata.makeString(s.substring(0, i));
-      a = BasicOperations.concatenate(a, BasicAutomata.makeString(s
-          .substring(i + 1)));
-      a.expandSingleton();
+      Automaton a = Automata.makeString(s.substring(0, i));
+      a = Operations.concatenate(a, Automata.makeString(s.substring(i + 1)));
       list.add(a);
     }
     
-    Automaton a = BasicOperations.union(list);
-    MinimizationOperations.minimize(a);
+    Automaton a = Operations.union(list);
+    a = MinimizationOperations.minimize(a);
     return a;
   }
   
@@ -184,15 +186,14 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
     List<Automaton> list = new ArrayList<>();
     
     for (int i = 0; i < s.length(); i++) {
-      Automaton a = BasicAutomata.makeString(s.substring(0, i));
-      a = BasicOperations.concatenate(a, BasicAutomata.makeAnyChar());
-      a = BasicOperations.concatenate(a, BasicAutomata.makeString(s
-          .substring(i + 1)));
+      Automaton a = Automata.makeString(s.substring(0, i));
+      a = Operations.concatenate(a, Automata.makeAnyChar());
+      a = Operations.concatenate(a, Automata.makeString(s.substring(i + 1)));
       list.add(a);
     }
     
-    Automaton a = BasicOperations.union(list);
-    MinimizationOperations.minimize(a);
+    Automaton a = Operations.union(list);
+    a = MinimizationOperations.minimize(a);
     return a;
   }
   
@@ -201,8 +202,9 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
    * (transposing two adjacent characters)
    */
   private Automaton transpositionsOf(String s) {
-    if (s.length() < 2)
-      return BasicAutomata.makeEmpty();
+    if (s.length() < 2) {
+      return Automata.makeEmpty();
+    }
     List<Automaton> list = new ArrayList<>();
     for (int i = 0; i < s.length()-1; i++) {
       StringBuilder sb = new StringBuilder();
@@ -211,11 +213,12 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
       sb.append(s.charAt(i));
       sb.append(s.substring(i+2, s.length()));
       String st = sb.toString();
-      if (!st.equals(s))
-        list.add(BasicAutomata.makeString(st));
+      if (!st.equals(s)) {
+        list.add(Automata.makeString(st));
+      }
     }
-    Automaton a = BasicOperations.union(list);
-    MinimizationOperations.minimize(a);
+    Automaton a = Operations.union(list);
+    a = MinimizationOperations.minimize(a);
     return a;
   }
   

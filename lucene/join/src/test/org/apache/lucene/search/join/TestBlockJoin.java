@@ -629,7 +629,7 @@ public class TestBlockJoin extends LuceneTestCase {
       }
       DocsEnum parents = MultiFields.getTermDocsEnum(joinR, null, "isParent", new BytesRef("x"));
       System.out.println("parent docIDs:");
-      while (parents.nextDoc() != parents.NO_MORE_DOCS) {
+      while (parents.nextDoc() != DocsEnum.NO_MORE_DOCS) {
         System.out.println("  " + parents.docID());
       }
     }

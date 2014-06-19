@@ -361,8 +361,6 @@ public class RegExp {
    */
   public static final int NONE = 0x0000;
   
-  private static boolean allow_mutation = false;
-  
   Kind kind;
   RegExp exp1, exp2;
   String s;
@@ -419,13 +417,13 @@ public class RegExp {
     to = e.to;
     b = null;
   }
-  
+
   /**
    * Constructs new <code>Automaton</code> from this <code>RegExp</code>. Same
    * as <code>toAutomaton(null)</code> (empty automaton map).
    */
   public Automaton toAutomaton() {
-    return toAutomatonAllowMutate(null, null);
+    return toAutomaton(null, null);
   }
   
   /**
@@ -439,7 +437,7 @@ public class RegExp {
    */
   public Automaton toAutomaton(AutomatonProvider automaton_provider)
       throws IllegalArgumentException {
-    return toAutomatonAllowMutate(null, automaton_provider);
+    return toAutomaton(null, automaton_provider);
   }
   
   /**
@@ -454,32 +452,9 @@ public class RegExp {
    */
   public Automaton toAutomaton(Map<String,Automaton> automata)
       throws IllegalArgumentException {
-    return toAutomatonAllowMutate(automata, null);
+    return toAutomaton(automata, null);
   }
-  
-  /**
-   * Sets or resets allow mutate flag. If this flag is set, then automata
-   * construction uses mutable automata, which is slightly faster but not thread
-   * safe. By default, the flag is not set.
-   * 
-   * @param flag if true, the flag is set
-   * @return previous value of the flag
-   */
-  public boolean setAllowMutate(boolean flag) {
-    boolean b = allow_mutation;
-    allow_mutation = flag;
-    return b;
-  }
-  
-  private Automaton toAutomatonAllowMutate(Map<String,Automaton> automata,
-      AutomatonProvider automaton_provider) throws IllegalArgumentException {
-    boolean b = false;
-    if (allow_mutation) b = Automaton.setAllowMutate(true); // thread unsafe
-    Automaton a = toAutomaton(automata, automaton_provider);
-    if (allow_mutation) Automaton.setAllowMutate(b);
-    return a;
-  }
-  
+
   private Automaton toAutomaton(Map<String,Automaton> automata,
       AutomatonProvider automaton_provider) throws IllegalArgumentException {
     List<Automaton> list;
@@ -489,8 +464,8 @@ public class RegExp {
         list = new ArrayList<>();
         findLeaves(exp1, Kind.REGEXP_UNION, list, automata, automaton_provider);
         findLeaves(exp2, Kind.REGEXP_UNION, list, automata, automaton_provider);
-        a = BasicOperations.union(list);
-        MinimizationOperations.minimize(a);
+        a = Operations.union(list);
+        a = MinimizationOperations.minimize(a);
         break;
       case REGEXP_CONCATENATION:
         list = new ArrayList<>();
@@ -498,66 +473,72 @@ public class RegExp {
             automaton_provider);
         findLeaves(exp2, Kind.REGEXP_CONCATENATION, list, automata,
             automaton_provider);
-        a = BasicOperations.concatenate(list);
-        MinimizationOperations.minimize(a);
+        a = Operations.concatenate(list);
+        a = MinimizationOperations.minimize(a);
         break;
       case REGEXP_INTERSECTION:
-        a = exp1.toAutomaton(automata, automaton_provider).intersection(
+        a = Operations.intersection(
+            exp1.toAutomaton(automata, automaton_provider),
             exp2.toAutomaton(automata, automaton_provider));
-        MinimizationOperations.minimize(a);
+        a = MinimizationOperations.minimize(a);
         break;
       case REGEXP_OPTIONAL:
-        a = exp1.toAutomaton(automata, automaton_provider).optional();
-        MinimizationOperations.minimize(a);
+        a = Operations.optional(exp1.toAutomaton(automata, automaton_provider));
+        a = MinimizationOperations.minimize(a);
         break;
       case REGEXP_REPEAT:
-        a = exp1.toAutomaton(automata, automaton_provider).repeat();
-        MinimizationOperations.minimize(a);
+        a = Operations.repeat(exp1.toAutomaton(automata, automaton_provider));
+        a = MinimizationOperations.minimize(a);
         break;
       case REGEXP_REPEAT_MIN:
-        a = exp1.toAutomaton(automata, automaton_provider).repeat(min);
-        MinimizationOperations.minimize(a);
+        a = Operations.repeat(exp1.toAutomaton(automata, automaton_provider), min);
+        a = MinimizationOperations.minimize(a);
         break;
       case REGEXP_REPEAT_MINMAX:
-        a = exp1.toAutomaton(automata, automaton_provider).repeat(min, max);
-        MinimizationOperations.minimize(a);
+        a = Operations.repeat(exp1.toAutomaton(automata, automaton_provider), min, max);
+        a = MinimizationOperations.minimize(a);
         break;
       case REGEXP_COMPLEMENT:
-        a = exp1.toAutomaton(automata, automaton_provider).complement();
-        MinimizationOperations.minimize(a);
+        a = Operations.complement(exp1.toAutomaton(automata, automaton_provider));
+        a = MinimizationOperations.minimize(a);
         break;
       case REGEXP_CHAR:
-        a = BasicAutomata.makeChar(c);
+        a = Automata.makeChar(c);
         break;
       case REGEXP_CHAR_RANGE:
-        a = BasicAutomata.makeCharRange(from, to);
+        a = Automata.makeCharRange(from, to);
         break;
       case REGEXP_ANYCHAR:
-        a = BasicAutomata.makeAnyChar();
+        a = Automata.makeAnyChar();
         break;
       case REGEXP_EMPTY:
-        a = BasicAutomata.makeEmpty();
+        a = Automata.makeEmpty();
         break;
       case REGEXP_STRING:
-        a = BasicAutomata.makeString(s);
+        a = Automata.makeString(s);
         break;
       case REGEXP_ANYSTRING:
-        a = BasicAutomata.makeAnyString();
+        a = Automata.makeAnyString();
         break;
       case REGEXP_AUTOMATON:
         Automaton aa = null;
-        if (automata != null) aa = automata.get(s);
-        if (aa == null && automaton_provider != null) try {
-          aa = automaton_provider.getAutomaton(s);
-        } catch (IOException e) {
-          throw new IllegalArgumentException(e);
+        if (automata != null) {
+          aa = automata.get(s);
         }
-        if (aa == null) throw new IllegalArgumentException("'" + s
-            + "' not found");
-        a = aa.clone(); // always clone here (ignore allow_mutate)
+        if (aa == null && automaton_provider != null) {
+          try {
+            aa = automaton_provider.getAutomaton(s);
+          } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+          }
+        }
+        if (aa == null) {
+          throw new IllegalArgumentException("'" + s + "' not found");
+        }
+        a = aa;
         break;
       case REGEXP_INTERVAL:
-        a = BasicAutomata.makeInterval(min, max, digits);
+        a = Automata.makeInterval(min, max, digits);
         break;
     }
     return a;
@@ -568,7 +549,9 @@ public class RegExp {
     if (exp.kind == kind) {
       findLeaves(exp.exp1, kind, list, automata, automaton_provider);
       findLeaves(exp.exp2, kind, list, automata, automaton_provider);
-    } else list.add(exp.toAutomaton(automata, automaton_provider));
+    } else {
+      list.add(exp.toAutomaton(automata, automaton_provider));
+    }
   }
   
   /**
