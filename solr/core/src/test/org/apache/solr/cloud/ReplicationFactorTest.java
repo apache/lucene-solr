@@ -49,10 +49,10 @@ import org.slf4j.LoggerFactory;
 /**
  * Tests a client application's ability to get replication factor
  * information back from the cluster after an add or update.
+ * @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6157")
  */
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6157")
 public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   
   private static final transient Logger log = 
@@ -132,20 +132,25 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
    
   @Override
   public void doTest() throws Exception {
+    log.info("replication factor test running");
     waitForThingsToLevelOut(30000);
     
     // test a 1x3 collection
+    log.info("Testing replication factor handling for repfacttest_c8n_1x3");
     testRf3();
 
     // test handling when not using direct updates
+    log.info("Now testing replication factor handling for repfacttest_c8n_2x2");
     testRf2NotUsingDirectUpdates();
+    
+    log.info("replication factor testing complete");
   }
   
   protected void testRf2NotUsingDirectUpdates() throws Exception {
     int numShards = 2;
     int replicationFactor = 2;
     int maxShardsPerNode = 1;
-    String testCollectionName = "c8n_2x2";
+    String testCollectionName = "repfacttest_c8n_2x2";
     String shardId = "shard1";
     int minRf = 2;
     
@@ -184,7 +189,12 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     
     // shard1 will have rf=2 but shard2 will only have rf=1
     sendNonDirectUpdateRequestReplica(leader, up, 1, testCollectionName);    
-    sendNonDirectUpdateRequestReplica(replicas.get(0), up, 1, testCollectionName);    
+    sendNonDirectUpdateRequestReplica(replicas.get(0), up, 1, testCollectionName);
+    
+    // heal the partition
+    getProxyForReplica(shard2Replicas.get(0)).reopen();
+    
+    Thread.sleep(2000);
   }
   
   @SuppressWarnings("rawtypes")
@@ -210,7 +220,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     int numShards = 1;
     int replicationFactor = 3;
     int maxShardsPerNode = 1;
-    String testCollectionName = "c8n_1x3";
+    String testCollectionName = "repfacttest_c8n_1x3";
     String shardId = "shard1";
     int minRf = 2;
     
