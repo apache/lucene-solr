@@ -484,7 +484,7 @@ public class MultiDocValues {
             segmentToGlobalOrds[i] = new LongValues() {
               @Override
               public long get(long ord) {
-                return ord + deltas.get((int) ord);
+                return ord + deltas.get(ord);
               }
             };
             ramBytesUsed += deltas.ramBytesUsed();
