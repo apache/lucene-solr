@@ -216,6 +216,10 @@ Bug Fixes
   with group.facet, faceting on facet.field and either facet.range or facet.query.
   (David Smiley)
 
+* SOLR-6182: Data stored by the RestManager could not be reloaded after core restart, causing
+  the core to fail to load; cast the data loaded from storage to the correct data type.
+  (Timothy Potter)
+
 Other Changes
 ---------------------
 
