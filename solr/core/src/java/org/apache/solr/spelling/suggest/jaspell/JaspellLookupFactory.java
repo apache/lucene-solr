@@ -27,7 +27,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Factory for {@link JaspellLookup}
+ * @deprecated Migrate to one of the newer suggesters which are much more RAM efficient.
  */
+@Deprecated
 public class JaspellLookupFactory extends LookupFactory {
   private static final Logger LOG = LoggerFactory.getLogger(JaspellLookup.class);
   private static final String FILENAME = "jaspell.dat";
