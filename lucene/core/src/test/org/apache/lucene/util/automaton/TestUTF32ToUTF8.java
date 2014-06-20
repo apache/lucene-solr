@@ -17,13 +17,17 @@ package org.apache.lucene.util.automaton;
  * limitations under the License.
  */
 
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
+
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
-
-import java.nio.charset.StandardCharsets;
-import java.util.Random;
+import org.apache.lucene.util.fst.Util;
 
 public class TestUTF32ToUTF8 extends LuceneTestCase {
   
@@ -151,12 +155,7 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
         continue;
       }
       
-      final Automaton a = new Automaton();
-      final State end = new State();
-      end.setAccept(true);
-      a.getInitialState().addTransition(new Transition(startCode, endCode, end));
-      a.setDeterministic(true);
-
+      Automaton a = Automata.makeCharRange(startCode, endCode);
       testOne(r, new ByteRunAutomaton(a), startCode, endCode, ITERS_PER_DFA);
     }
   }
@@ -206,6 +205,20 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
     int num = atLeast(250);
     for (int i = 0; i < num; i++) {
       assertAutomaton(new RegExp(AutomatonTestUtil.randomRegexp(random()), RegExp.NONE).toAutomaton());
+    }
+  }
+
+  public void testSingleton() throws Exception {
+    int iters = atLeast(100);
+    for(int iter=0;iter<iters;iter++) {
+      String s = TestUtil.randomRealisticUnicodeString(random());
+      Automaton a = Automata.makeString(s);
+      Automaton utf8 = new UTF32ToUTF8().convert(a);
+      IntsRef ints = new IntsRef();
+      Util.toIntsRef(new BytesRef(s), ints);
+      Set<IntsRef> set = new HashSet<>();
+      set.add(ints);
+      assertEquals(set, Operations.getFiniteStrings(utf8, -1));
     }
   }
   

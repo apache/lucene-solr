@@ -21,6 +21,8 @@ import java.util.Iterator;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import org.apache.lucene.util.UnicodeUtil;
+
 /**
  * Class to construct DFAs that match a word within some edit distance.
  * <p>
@@ -30,7 +32,8 @@ import java.util.TreeSet;
  * @lucene.experimental
  */
 public class LevenshteinAutomata {
-  /** @lucene.internal */
+  /** Maximum edit distance this class can generate an automaton for.
+   *  @lucene.internal */
   public static final int MAXIMUM_SUPPORTED_DISTANCE = 2;
   /* input word */
   final int word[];
@@ -112,7 +115,7 @@ public class LevenshteinAutomata {
     }
     return word;
   }
-  
+
   /**
    * Compute a DFA that accepts all strings within an edit distance of <code>n</code>.
    * <p>
@@ -125,8 +128,25 @@ public class LevenshteinAutomata {
    * </p>
    */
   public Automaton toAutomaton(int n) {
+    return toAutomaton(n, "");
+  }
+
+  /**
+   * Compute a DFA that accepts all strings within an edit distance of <code>n</code>,
+   * matching the specified exact prefix.
+   * <p>
+   * All automata have the following properties:
+   * <ul>
+   * <li>They are deterministic (DFA).
+   * <li>There are no transitions to dead states.
+   * <li>They are not minimal (some transitions could be combined).
+   * </ul>
+   * </p>
+   */
+  public Automaton toAutomaton(int n, String prefix) {
+    assert prefix != null;
     if (n == 0) {
-      return BasicAutomata.makeString(word, 0, word.length);
+      return Automata.makeString(prefix + UnicodeUtil.newString(word, 0, word.length));
     }
     
     if (n >= descriptions.length)
@@ -135,15 +155,36 @@ public class LevenshteinAutomata {
     final int range = 2*n+1;
     ParametricDescription description = descriptions[n];
     // the number of states is based on the length of the word and n
-    State states[] = new State[description.size()];
-    // create all states, and mark as accept states if appropriate
-    for (int i = 0; i < states.length; i++) {
-      states[i] = new State();
-      states[i].number = i;
-      states[i].setAccept(description.isAccept(i));
+    int numStates = description.size();
+
+    Automaton a = new Automaton();
+    int lastState;
+    if (prefix != null) {
+      // Insert prefix
+      lastState = a.createState();
+      for (int i = 0, cp = 0; i < prefix.length(); i += Character.charCount(cp)) {
+        int state = a.createState();
+        cp = prefix.codePointAt(i);
+        a.addTransition(lastState, state, cp, cp);
+        lastState = state;
+      }
+    } else {
+      lastState = a.createState();
     }
+
+    int stateOffset = lastState;
+    a.setAccept(lastState, description.isAccept(0));
+
+    // create all states, and mark as accept states if appropriate
+    for (int i = 1; i < numStates; i++) {
+      int state = a.createState();
+      a.setAccept(state, description.isAccept(i));
+    }
+
+    // TODO: this creates bogus states/transitions (states are final, have self loops, and can't be reached from an init state)
+
     // create transitions from state to state
-    for (int k = 0; k < states.length; k++) {
+    for (int k = 0; k < numStates; k++) {
       final int xpos = description.getPosition(k);
       if (xpos < 0)
         continue;
@@ -154,31 +195,26 @@ public class LevenshteinAutomata {
         // get the characteristic vector at this position wrt ch
         final int cvec = getVector(ch, xpos, end);
         int dest = description.transition(k, xpos, cvec);
-        if (dest >= 0)
-          states[k].addTransition(new Transition(ch, states[dest]));
+        if (dest >= 0) {
+          a.addTransition(stateOffset+k, stateOffset+dest, ch);
+        }
       }
       // add transitions for all other chars in unicode
       // by definition, their characteristic vectors are always 0,
       // because they do not exist in the input string.
       int dest = description.transition(k, xpos, 0); // by definition
-      if (dest >= 0)
-        for (int r = 0; r < numRanges; r++)
-          states[k].addTransition(new Transition(rangeLower[r], rangeUpper[r], states[dest]));      
+      if (dest >= 0) {
+        for (int r = 0; r < numRanges; r++) {
+          a.addTransition(stateOffset+k, stateOffset+dest, rangeLower[r], rangeUpper[r]);
+        }
+      }
     }
 
-    Automaton a = new Automaton(states[0]);
-    a.setDeterministic(true);
-    // we create some useless unconnected states, and its a net-win overall to remove these,
-    // as well as to combine any adjacent transitions (it makes later algorithms more efficient).
-    // so, while we could set our numberedStates here, its actually best not to, and instead to
-    // force a traversal in reduce, pruning the unconnected states while we combine adjacent transitions.
-    //a.setNumberedStates(states);
-    a.reduce();
-    // we need not trim transitions to dead states, as they are not created.
-    //a.restoreInvariant();
+    a.finishState();
+    assert a.isDeterministic();
     return a;
   }
-  
+
   /**
    * Get the characteristic vector <code>X(x, V)</code> 
    * where V is <code>substring(pos, end)</code>

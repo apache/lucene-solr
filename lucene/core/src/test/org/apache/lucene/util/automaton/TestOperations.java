@@ -17,19 +17,92 @@ package org.apache.lucene.util.automaton;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.*;
 import org.apache.lucene.util.fst.Util;
+import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
-public class TestSpecialOperations extends LuceneTestCase {
+public class TestOperations extends LuceneTestCase {
+  /** Test string union. */
+  public void testStringUnion() {
+    List<BytesRef> strings = new ArrayList<>();
+    for (int i = RandomInts.randomIntBetween(random(), 0, 1000); --i >= 0;) {
+      strings.add(new BytesRef(TestUtil.randomUnicodeString(random())));
+    }
+
+    Collections.sort(strings);
+    Automaton union = Automata.makeStringUnion(strings);
+    assertTrue(union.isDeterministic());
+    assertTrue(Operations.sameLanguage(union, naiveUnion(strings)));
+  }
+
+  private static Automaton naiveUnion(List<BytesRef> strings) {
+    Automaton[] eachIndividual = new Automaton[strings.size()];
+    int i = 0;
+    for (BytesRef bref : strings) {
+      eachIndividual[i++] = Automata.makeString(bref.utf8ToString());
+    }
+    return Operations.determinize(Operations.union(Arrays.asList(eachIndividual)));
+  }
+
+  /** Test concatenation with empty language returns empty */
+  public void testEmptyLanguageConcatenate() {
+    Automaton a = Automata.makeString("a");
+    Automaton concat = Operations.concatenate(a, Automata.makeEmpty());
+    assertTrue(Operations.isEmpty(concat));
+  }
+  
+  /** Test optimization to concatenate() with empty String to an NFA */
+  public void testEmptySingletonNFAConcatenate() {
+    Automaton singleton = Automata.makeString("");
+    Automaton expandedSingleton = singleton;
+    // an NFA (two transitions for 't' from initial state)
+    Automaton nfa = Operations.union(Automata.makeString("this"),
+        Automata.makeString("three"));
+    Automaton concat1 = Operations.concatenate(expandedSingleton, nfa);
+    Automaton concat2 = Operations.concatenate(singleton, nfa);
+    assertFalse(concat2.isDeterministic());
+    assertTrue(Operations.sameLanguage(Operations.determinize(concat1),
+                                       Operations.determinize(concat2)));
+    assertTrue(Operations.sameLanguage(Operations.determinize(nfa),
+                                       Operations.determinize(concat1)));
+    assertTrue(Operations.sameLanguage(Operations.determinize(nfa),
+                                       Operations.determinize(concat2)));
+  }
+
+  public void testGetRandomAcceptedString() throws Throwable {
+    final int ITER1 = atLeast(100);
+    final int ITER2 = atLeast(100);
+    for(int i=0;i<ITER1;i++) {
+
+      final RegExp re = new RegExp(AutomatonTestUtil.randomRegexp(random()), RegExp.NONE);
+      //System.out.println("TEST i=" + i + " re=" + re);
+      final Automaton a = Operations.determinize(re.toAutomaton());
+      assertFalse(Operations.isEmpty(a));
+
+      final AutomatonTestUtil.RandomAcceptedStrings rx = new AutomatonTestUtil.RandomAcceptedStrings(a);
+      for(int j=0;j<ITER2;j++) {
+        //System.out.println("TEST: j=" + j);
+        int[] acc = null;
+        try {
+          acc = rx.getRandomAcceptedString(random());
+          final String s = UnicodeUtil.newString(acc, 0, acc.length);
+          //a.writeDot("adot");
+          assertTrue(Operations.run(a, s));
+        } catch (Throwable t) {
+          System.out.println("regexp: " + re);
+          if (acc != null) {
+            System.out.println("fail acc re=" + re + " count=" + acc.length);
+            for(int k=0;k<acc.length;k++) {
+              System.out.println("  " + Integer.toHexString(acc[k]));
+            }
+          }
+          throw t;
+        }
+      }
+    }
+  }
   /**
    * tests against the original brics implementation.
    */
@@ -37,15 +110,14 @@ public class TestSpecialOperations extends LuceneTestCase {
     int num = atLeast(200);
     for (int i = 0; i < num; i++) {
       Automaton a = AutomatonTestUtil.randomAutomaton(random());
-      Automaton b = a.clone();
-      assertEquals(AutomatonTestUtil.isFiniteSlow(a), SpecialOperations.isFinite(b));
+      assertEquals(AutomatonTestUtil.isFiniteSlow(a), Operations.isFinite(a));
     }
   }
 
   /** Pass false for testRecursive if the expected strings
    *  may be too long */
   private Set<IntsRef> getFiniteStrings(Automaton a, int limit, boolean testRecursive) {
-    Set<IntsRef> result = SpecialOperations.getFiniteStrings(a, limit);
+    Set<IntsRef> result = Operations.getFiniteStrings(a, limit);
     if (testRecursive) {
       assertEquals(AutomatonTestUtil.getFiniteStringsRecursive(a, limit), result);
     }
@@ -56,8 +128,8 @@ public class TestSpecialOperations extends LuceneTestCase {
    * Basic test for getFiniteStrings
    */
   public void testFiniteStringsBasic() {
-    Automaton a = BasicOperations.union(BasicAutomata.makeString("dog"), BasicAutomata.makeString("duck"));
-    MinimizationOperations.minimize(a);
+    Automaton a = Operations.union(Automata.makeString("dog"), Automata.makeString("duck"));
+    a = MinimizationOperations.minimize(a);
     Set<IntsRef> strings = getFiniteStrings(a, -1, true);
     assertEquals(2, strings.size());
     IntsRef dog = new IntsRef();
@@ -74,7 +146,7 @@ public class TestSpecialOperations extends LuceneTestCase {
     String bigString1 = new String(chars);
     TestUtil.randomFixedLengthUnicodeString(random(), chars, 0, chars.length);
     String bigString2 = new String(chars);
-    Automaton a = BasicOperations.union(BasicAutomata.makeString(bigString1), BasicAutomata.makeString(bigString2));
+    Automaton a = Operations.union(Automata.makeString(bigString1), Automata.makeString(bigString2));
     Set<IntsRef> strings = getFiniteStrings(a, -1, false);
     assertEquals(2, strings.size());
     IntsRef scratch = new IntsRef();
@@ -92,10 +164,10 @@ public class TestSpecialOperations extends LuceneTestCase {
     }
 
     Set<IntsRef> strings = new HashSet<IntsRef>();
-    List<Automaton> automata = new ArrayList<Automaton>();
+    List<Automaton> automata = new ArrayList<>();
     for(int i=0;i<numStrings;i++) {
       String s = TestUtil.randomSimpleString(random(), 1, 200);
-      automata.add(BasicAutomata.makeString(s));
+      automata.add(Automata.makeString(s));
       IntsRef scratch = new IntsRef();
       Util.toUTF32(s.toCharArray(), 0, s.length(), scratch);
       strings.add(scratch);
@@ -108,27 +180,22 @@ public class TestSpecialOperations extends LuceneTestCase {
     // DaciukMihovAutomatonBuilder here
 
     // TODO: what other random things can we do here...
-    Automaton a = BasicOperations.union(automata);
+    Automaton a = Operations.union(automata);
     if (random().nextBoolean()) {
-      Automaton.minimize(a);
+      a = MinimizationOperations.minimize(a);
       if (VERBOSE) {
-        System.out.println("TEST: a.minimize numStates=" + a.getNumberOfStates());
+        System.out.println("TEST: a.minimize numStates=" + a.getNumStates());
       }
     } else if (random().nextBoolean()) {
       if (VERBOSE) {
         System.out.println("TEST: a.determinize");
       }
-      a.determinize();
+      a = Operations.determinize(a);
     } else if (random().nextBoolean()) {
       if (VERBOSE) {
-        System.out.println("TEST: a.reduce");
+        System.out.println("TEST: a.removeDeadStates");
       }
-      a.reduce();
-    } else if (random().nextBoolean()) {
-      if (VERBOSE) {
-        System.out.println("TEST: a.getNumberedStates");
-      }
-      a.getNumberedStates();
+      a = Operations.removeDeadStates(a);
     }
 
     Set<IntsRef> actual = getFiniteStrings(a, -1, true);
@@ -158,7 +225,7 @@ public class TestSpecialOperations extends LuceneTestCase {
 
   public void testWithCycle() throws Exception {
     try {
-      SpecialOperations.getFiniteStrings(new RegExp("abc.*", RegExp.NONE).toAutomaton(), -1);
+      Operations.getFiniteStrings(new RegExp("abc.*", RegExp.NONE).toAutomaton(), -1);
       fail("did not hit exception");
     } catch (IllegalArgumentException iae) {
       // expected
@@ -174,12 +241,12 @@ public class TestSpecialOperations extends LuceneTestCase {
       try {
         // Must pass a limit because the random automaton
         // can accept MANY strings:
-        SpecialOperations.getFiniteStrings(a, TestUtil.nextInt(random(), 1, 1000));
+        Operations.getFiniteStrings(a, TestUtil.nextInt(random(), 1, 1000));
         // NOTE: cannot do this, because the method is not
         // guaranteed to detect cycles when you have a limit
-        //assertTrue(SpecialOperations.isFinite(a));
+        //assertTrue(Operations.isFinite(a));
       } catch (IllegalArgumentException iae) {
-        assertFalse(SpecialOperations.isFinite(a));
+        assertFalse(Operations.isFinite(a));
       }
     }
   }
@@ -187,7 +254,7 @@ public class TestSpecialOperations extends LuceneTestCase {
   public void testInvalidLimit() {
     Automaton a = AutomatonTestUtil.randomAutomaton(random());
     try {
-      SpecialOperations.getFiniteStrings(a, -7);
+      Operations.getFiniteStrings(a, -7);
       fail("did not hit exception");
     } catch (IllegalArgumentException iae) {
       // expected
@@ -197,7 +264,7 @@ public class TestSpecialOperations extends LuceneTestCase {
   public void testInvalidLimit2() {
     Automaton a = AutomatonTestUtil.randomAutomaton(random());
     try {
-      SpecialOperations.getFiniteStrings(a, 0);
+      Operations.getFiniteStrings(a, 0);
       fail("did not hit exception");
     } catch (IllegalArgumentException iae) {
       // expected
@@ -205,7 +272,7 @@ public class TestSpecialOperations extends LuceneTestCase {
   }
 
   public void testSingletonNoLimit() {
-    Set<IntsRef> result = SpecialOperations.getFiniteStrings(BasicAutomata.makeString("foobar"), -1);
+    Set<IntsRef> result = Operations.getFiniteStrings(Automata.makeString("foobar"), -1);
     assertEquals(1, result.size());
     IntsRef scratch = new IntsRef();
     Util.toUTF32("foobar".toCharArray(), 0, 6, scratch);
@@ -213,7 +280,7 @@ public class TestSpecialOperations extends LuceneTestCase {
   }
 
   public void testSingletonLimit1() {
-    Set<IntsRef> result = SpecialOperations.getFiniteStrings(BasicAutomata.makeString("foobar"), 1);
+    Set<IntsRef> result = Operations.getFiniteStrings(Automata.makeString("foobar"), 1);
     assertEquals(1, result.size());
     IntsRef scratch = new IntsRef();
     Util.toUTF32("foobar".toCharArray(), 0, 6, scratch);

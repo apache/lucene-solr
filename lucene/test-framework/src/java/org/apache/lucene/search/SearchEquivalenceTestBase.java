@@ -33,7 +33,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.automaton.BasicAutomata;
+import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -57,7 +57,7 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
     Random random = random();
     directory = newDirectory();
     stopword = "" + randomChar();
-    CharacterRunAutomaton stopset = new CharacterRunAutomaton(BasicAutomata.makeString(stopword));
+    CharacterRunAutomaton stopset = new CharacterRunAutomaton(Automata.makeString(stopword));
     analyzer = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false, stopset);
     RandomIndexWriter iw = new RandomIndexWriter(random, directory, analyzer);
     Document doc = new Document();

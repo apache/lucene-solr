@@ -19,7 +19,6 @@ package org.apache.lucene.util.automaton;
   
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.index.Terms;
@@ -52,6 +51,8 @@ public class CompiledAutomaton {
     /** Catch-all for any other automata. */
     NORMAL
   };
+
+  /** If simplify is true this will be the "simplified" type; else, this is NORMAL */
   public final AUTOMATON_TYPE type;
 
   /** 
@@ -65,21 +66,22 @@ public class CompiledAutomaton {
    * only valid for {@link AUTOMATON_TYPE#NORMAL}.
    */
   public final ByteRunAutomaton runAutomaton;
-  // TODO: would be nice if these sortedTransitions had "int
-  // to;" instead of "State to;" somehow:
+
   /**
    * Two dimensional array of transitions, indexed by state
    * number for traversal. The state numbering is consistent with
    * {@link #runAutomaton}. 
    * Only valid for {@link AUTOMATON_TYPE#NORMAL}.
    */
-  public final Transition[][] sortedTransitions;
+  public final Automaton automaton;
+
   /**
    * Shared common suffix accepted by the automaton. Only valid
    * for {@link AUTOMATON_TYPE#NORMAL}, and only when the
    * automaton accepts an infinite language.
    */
   public final BytesRef commonSuffixRef;
+
   /**
    * Indicates if the automaton accepts a finite set of strings.
    * Null if this was not computed.
@@ -87,125 +89,157 @@ public class CompiledAutomaton {
    */
   public final Boolean finite;
 
+  /** Create this, passing simplify=true and finite=null, so that we try
+   *  to simplify the automaton and determine if it is finite. */
   public CompiledAutomaton(Automaton automaton) {
     this(automaton, null, true);
   }
 
+  /** Create this.  If finite is null, we use {@link Operations#isFinite}
+   *  to determine whether it is finite.  If simplify is true, we run
+   *  possibly expensive operations to determine if the automaton is one
+   *  the cases in {@link CompiledAutomaton.AUTOMATON_TYPE}. */
   public CompiledAutomaton(Automaton automaton, Boolean finite, boolean simplify) {
 
+    if (automaton.getNumStates() == 0) {
+      automaton = new Automaton();
+      automaton.createState();
+    }
+
     if (simplify) {
+
       // Test whether the automaton is a "simple" form and
       // if so, don't create a runAutomaton.  Note that on a
       // large automaton these tests could be costly:
-      if (BasicOperations.isEmpty(automaton)) {
+
+      if (Operations.isEmpty(automaton)) {
         // matches nothing
         type = AUTOMATON_TYPE.NONE;
         term = null;
         commonSuffixRef = null;
         runAutomaton = null;
-        sortedTransitions = null;
+        this.automaton = null;
         this.finite = null;
         return;
-      } else if (BasicOperations.isTotal(automaton)) {
+      // NOTE: only approximate, because automaton may not be minimal:
+      } else if (Operations.isTotal(automaton)) {
         // matches all possible strings
         type = AUTOMATON_TYPE.ALL;
         term = null;
         commonSuffixRef = null;
         runAutomaton = null;
-        sortedTransitions = null;
+        this.automaton = null;
         this.finite = null;
         return;
       } else {
-        final String commonPrefix;
+
+        automaton = Operations.determinize(automaton);
+
+        final String commonPrefix = Operations.getCommonPrefix(automaton);
         final String singleton;
-        if (automaton.getSingleton() == null) {
-          commonPrefix = SpecialOperations.getCommonPrefix(automaton);
-          if (commonPrefix.length() > 0 && BasicOperations.sameLanguage(automaton, BasicAutomata.makeString(commonPrefix))) {
-            singleton = commonPrefix;
-          } else {
-            singleton = null;
-          }
+
+        if (commonPrefix.length() > 0 && Operations.sameLanguage(automaton, Automata.makeString(commonPrefix))) {
+          singleton = commonPrefix;
         } else {
-          commonPrefix = null;
-          singleton = automaton.getSingleton();
+          singleton = null;
         }
-      
+
         if (singleton != null) {
-          // matches a fixed string in singleton or expanded
-          // representation
+          // matches a fixed string
           type = AUTOMATON_TYPE.SINGLE;
           term = new BytesRef(singleton);
           commonSuffixRef = null;
           runAutomaton = null;
-          sortedTransitions = null;
+          this.automaton = null;
           this.finite = null;
           return;
-        } else if (BasicOperations.sameLanguage(automaton, BasicOperations.concatenate(
-                                                                                       BasicAutomata.makeString(commonPrefix), BasicAutomata.makeAnyString()))) {
-          // matches a constant prefix
-          type = AUTOMATON_TYPE.PREFIX;
-          term = new BytesRef(commonPrefix);
-          commonSuffixRef = null;
-          runAutomaton = null;
-          sortedTransitions = null;
-          this.finite = null;
-          return;
+        } else if (commonPrefix.length() > 0) {
+          Automaton other = Operations.concatenate(Automata.makeString(commonPrefix), Automata.makeAnyString());
+          other = Operations.determinize(other);
+          assert Operations.hasDeadStates(other) == false;
+          if (Operations.sameLanguage(automaton, other)) {
+            // matches a constant prefix
+            type = AUTOMATON_TYPE.PREFIX;
+            term = new BytesRef(commonPrefix);
+            commonSuffixRef = null;
+            runAutomaton = null;
+            this.automaton = null;
+            this.finite = null;
+            return;
+          }
         }
       }
     }
 
     type = AUTOMATON_TYPE.NORMAL;
     term = null;
+
     if (finite == null) {
-      this.finite = SpecialOperations.isFinite(automaton);
+      this.finite = Operations.isFinite(automaton);
     } else {
       this.finite = finite;
     }
+
     Automaton utf8 = new UTF32ToUTF8().convert(automaton);
     if (this.finite) {
       commonSuffixRef = null;
     } else {
-      commonSuffixRef = SpecialOperations.getCommonSuffixBytesRef(utf8);
+      commonSuffixRef = Operations.getCommonSuffixBytesRef(utf8);
     }
     runAutomaton = new ByteRunAutomaton(utf8, true);
-    sortedTransitions = utf8.getSortedTransitions();
+
+    this.automaton = runAutomaton.automaton;
   }
+
+  private Transition transition = new Transition();
   
   //private static final boolean DEBUG = BlockTreeTermsWriter.DEBUG;
 
   private BytesRef addTail(int state, BytesRef term, int idx, int leadLabel) {
-
+    //System.out.println("addTail state=" + state + " term=" + term.utf8ToString() + " idx=" + idx + " leadLabel=" + (char) leadLabel);
+    //System.out.println(automaton.toDot());
     // Find biggest transition that's < label
     // TODO: use binary search here
-    Transition maxTransition = null;
-    for (Transition transition : sortedTransitions[state]) {
+    int maxIndex = -1;
+    int numTransitions = automaton.initTransition(state, transition);
+    for(int i=0;i<numTransitions;i++) {
+      automaton.getNextTransition(transition);
       if (transition.min < leadLabel) {
-        maxTransition = transition;
+        maxIndex = i;
+      } else {
+        // Transitions are alway sorted
+        break;
       }
     }
 
-    assert maxTransition != null;
+    //System.out.println("  maxIndex=" + maxIndex);
+
+    assert maxIndex != -1;
+    automaton.getTransition(state, maxIndex, transition);
 
     // Append floorLabel
     final int floorLabel;
-    if (maxTransition.max > leadLabel-1) {
+    if (transition.max > leadLabel-1) {
       floorLabel = leadLabel-1;
     } else {
-      floorLabel = maxTransition.max;
+      floorLabel = transition.max;
     }
+    //System.out.println("  floorLabel=" + (char) floorLabel);
     if (idx >= term.bytes.length) {
       term.grow(1+idx);
     }
     //if (DEBUG) System.out.println("  add floorLabel=" + (char) floorLabel + " idx=" + idx);
     term.bytes[idx] = (byte) floorLabel;
 
-    state = maxTransition.to.getNumber();
+    state = transition.dest;
+    //System.out.println("  dest: " + state);
     idx++;
 
     // Push down to last accept state
     while (true) {
-      Transition[] transitions = sortedTransitions[state];
-      if (transitions.length == 0) {
+      numTransitions = automaton.getNumTransitions(state);
+      if (numTransitions == 0) {
+        //System.out.println("state=" + state + " 0 trans");
         assert runAutomaton.isAccept(state);
         term.length = idx;
         //if (DEBUG) System.out.println("  return " + term.utf8ToString());
@@ -213,14 +247,15 @@ public class CompiledAutomaton {
       } else {
         // We are pushing "top" -- so get last label of
         // last transition:
-        assert transitions.length != 0;
-        Transition lastTransition = transitions[transitions.length-1];
+        //System.out.println("get state=" + state + " numTrans=" + numTransitions);
+        automaton.getTransition(state, numTransitions-1, transition);
         if (idx >= term.bytes.length) {
           term.grow(1+idx);
         }
         //if (DEBUG) System.out.println("  push maxLabel=" + (char) lastTransition.max + " idx=" + idx);
-        term.bytes[idx] = (byte) lastTransition.max;
-        state = lastTransition.to.getNumber();
+        //System.out.println("  add trans dest=" + scratch.dest + " label=" + (char) scratch.max);
+        term.bytes[idx] = (byte) transition.max;
+        state = transition.dest;
         idx++;
       }
     }
@@ -229,6 +264,8 @@ public class CompiledAutomaton {
   // TODO: should this take startTerm too?  This way
   // Terms.intersect could forward to this method if type !=
   // NORMAL:
+  /** Return a {@link TermsEnum} intersecting the provided {@link Terms}
+   *  with the terms accepted by this automaton. */
   public TermsEnum getTermsEnum(Terms terms) throws IOException {
     switch(type) {
     case NONE:
@@ -301,33 +338,36 @@ public class CompiledAutomaton {
         // Pop back to a state that has a transition
         // <= our label:
         while (true) {
-          Transition[] transitions = sortedTransitions[state];
-          if (transitions.length == 0) {
+          int numTransitions = automaton.getNumTransitions(state);
+          if (numTransitions == 0) {
             assert runAutomaton.isAccept(state);
             output.length = idx;
             //if (DEBUG) System.out.println("  return " + output.utf8ToString());
             return output;
-          } else if (label-1 < transitions[0].min) {
-
-            if (runAutomaton.isAccept(state)) {
-              output.length = idx;
-              //if (DEBUG) System.out.println("  return " + output.utf8ToString());
-              return output;
-            }
-            // pop
-            if (stack.size() == 0) {
-              //if (DEBUG) System.out.println("  pop ord=" + idx + " return null");
-              return null;
-            } else {
-              state = stack.remove(stack.size()-1);
-              idx--;
-              //if (DEBUG) System.out.println("  pop ord=" + (idx+1) + " label=" + (char) label + " first trans.min=" + (char) transitions[0].min);
-              label = input.bytes[input.offset + idx] & 0xff;
-            }
-
           } else {
-            //if (DEBUG) System.out.println("  stop pop ord=" + idx + " first trans.min=" + (char) transitions[0].min);
-            break;
+            automaton.getTransition(state, 0, transition);
+
+            if (label-1 < transition.min) {
+
+              if (runAutomaton.isAccept(state)) {
+                output.length = idx;
+                //if (DEBUG) System.out.println("  return " + output.utf8ToString());
+                return output;
+              }
+              // pop
+              if (stack.size() == 0) {
+                //if (DEBUG) System.out.println("  pop ord=" + idx + " return null");
+                return null;
+              } else {
+                state = stack.remove(stack.size()-1);
+                idx--;
+                //if (DEBUG) System.out.println("  pop ord=" + (idx+1) + " label=" + (char) label + " first trans.min=" + (char) transitions[0].min);
+                label = input.bytes[input.offset + idx] & 0xff;
+              }
+            } else {
+              //if (DEBUG) System.out.println("  stop pop ord=" + idx + " first trans.min=" + (char) transitions[0].min);
+              break;
+            }
           }
         }
 
@@ -345,26 +385,6 @@ public class CompiledAutomaton {
         idx++;
       }
     }
-  }
-  
-  public String toDot() {
-    StringBuilder b = new StringBuilder("digraph CompiledAutomaton {\n");
-    b.append("  rankdir = LR;\n");
-    int initial = runAutomaton.getInitialState();
-    for (int i = 0; i < sortedTransitions.length; i++) {
-      b.append("  ").append(i);
-      if (runAutomaton.isAccept(i)) b.append(" [shape=doublecircle,label=\"\"];\n");
-      else b.append(" [shape=circle,label=\"\"];\n");
-      if (i == initial) {
-        b.append("  initial [shape=plaintext,label=\"\"];\n");
-        b.append("  initial -> ").append(i).append("\n");
-      }
-      for (int j = 0; j < sortedTransitions[i].length; j++) {
-        b.append("  ").append(i);
-        sortedTransitions[i][j].appendDot(b);
-      }
-    }
-    return b.append("}\n").toString();
   }
 
   @Override

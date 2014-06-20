@@ -37,6 +37,7 @@ import java.util.Arrays;
  * @lucene.experimental
  */
 public abstract class RunAutomaton {
+  final Automaton automaton;
   final int maxInterval;
   final int size;
   final boolean[] accept;
@@ -65,10 +66,10 @@ public abstract class RunAutomaton {
           if (j + 1 < points.length) max = (points[j + 1] - 1);
           else max = maxInterval;
           b.append(" ");
-          Transition.appendCharString(min, b);
+          Automaton.appendCharString(min, b);
           if (min != max) {
             b.append("-");
-            Transition.appendCharString(max, b);
+            Automaton.appendCharString(max, b);
           }
           b.append(" -> ").append(k).append("\n");
         }
@@ -110,7 +111,7 @@ public abstract class RunAutomaton {
    * Gets character class of given codepoint
    */
   final int getCharClass(int c) {
-    return SpecialOperations.findIndex(c, points);
+    return Operations.findIndex(c, points);
   }
 
   /**
@@ -121,23 +122,23 @@ public abstract class RunAutomaton {
    */
   public RunAutomaton(Automaton a, int maxInterval, boolean tableize) {
     this.maxInterval = maxInterval;
-    a.determinize();
+    a = Operations.determinize(a);
+    this.automaton = a;
     points = a.getStartPoints();
-    final State[] states = a.getNumberedStates();
-    initial = a.initial.number;
-    size = states.length;
+    initial = 0;
+    size = Math.max(1,a.getNumStates());
     accept = new boolean[size];
     transitions = new int[size * points.length];
-    for (int n = 0; n < size * points.length; n++)
-      transitions[n] = -1;
-    for (State s : states) {
-      int n = s.number;
-      accept[n] = s.accept;
+    Arrays.fill(transitions, -1);
+    for (int n=0;n<size;n++) {
+      accept[n] = a.isAccept(n);
       for (int c = 0; c < points.length; c++) {
-        State q = s.step(points[c]);
-        if (q != null) transitions[n * points.length + c] = q.number;
+        int dest = a.step(n, points[c]);
+        assert dest == -1 || dest < size;
+        transitions[n * points.length + c] = dest;
       }
     }
+
     /*
      * Set alphabet table for optimal run performance.
      */
@@ -145,8 +146,9 @@ public abstract class RunAutomaton {
       classmap = new int[maxInterval + 1];
       int i = 0;
       for (int j = 0; j <= maxInterval; j++) {
-        if (i + 1 < points.length && j == points[i + 1])
+        if (i + 1 < points.length && j == points[i + 1]) {
           i++;
+        }
         classmap[j] = i;
       }
     } else {
@@ -162,10 +164,11 @@ public abstract class RunAutomaton {
    * transition function.)
    */
   public final int step(int state, int c) {
-    if (classmap == null)
+    if (classmap == null) {
       return transitions[state * points.length + getCharClass(c)];
-    else
+    } else {
       return transitions[state * points.length + classmap[c]];
+    }
   }
 
   @Override

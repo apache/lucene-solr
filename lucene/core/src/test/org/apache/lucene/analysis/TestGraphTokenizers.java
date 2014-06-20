@@ -20,9 +20,9 @@ package org.apache.lucene.analysis;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringWriter;
-import java.io.PrintWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,9 +33,9 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
+import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.BasicAutomata;
-import org.apache.lucene.util.automaton.BasicOperations;
+import org.apache.lucene.util.automaton.Operations;
 
 public class TestGraphTokenizers extends BaseTokenStreamTestCase {
 
@@ -418,8 +418,9 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
         token("abc", 1, 1),
       });
     final Automaton actual = (new TokenStreamToAutomaton()).toAutomaton(ts);
-    final Automaton expected = BasicAutomata.makeString("abc");
-    assertTrue(BasicOperations.sameLanguage(expected, actual));
+    final Automaton expected = s2a("abc");
+    assertTrue(Operations.sameLanguage(Operations.determinize(Operations.removeDeadStates(expected)),
+                                       Operations.determinize(Operations.removeDeadStates(actual))));
   }
 
   public void testMultipleHoles() throws Exception {
@@ -430,7 +431,8 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
       });
     final Automaton actual = (new TokenStreamToAutomaton()).toAutomaton(ts);
     final Automaton expected = join(s2a("a"), SEP_A, HOLE_A, SEP_A, HOLE_A, SEP_A, s2a("b")); 
-    assertTrue(BasicOperations.sameLanguage(expected, actual));
+    assertTrue(Operations.sameLanguage(Operations.determinize(Operations.removeDeadStates(expected)),
+                                       Operations.determinize(Operations.removeDeadStates(actual))));
   }
 
   public void testSynOverMultipleHoles() throws Exception {
@@ -443,8 +445,9 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
     final Automaton actual = (new TokenStreamToAutomaton()).toAutomaton(ts);
     final Automaton a1 = join(s2a("a"), SEP_A, HOLE_A, SEP_A, HOLE_A, SEP_A, s2a("b")); 
     final Automaton a2 = join(s2a("x"), SEP_A, s2a("b")); 
-    final Automaton expected = BasicOperations.union(a1, a2);
-    assertTrue(BasicOperations.sameLanguage(expected, actual));
+    final Automaton expected = Operations.union(a1, a2);
+    assertTrue(Operations.sameLanguage(Operations.determinize(Operations.removeDeadStates(expected)),
+                                       Operations.determinize(Operations.removeDeadStates(actual))));
   }
 
   // for debugging!
@@ -458,25 +461,25 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
   }
   */
 
-  private static final Automaton SEP_A = BasicAutomata.makeChar(TokenStreamToAutomaton.POS_SEP);
-  private static final Automaton HOLE_A = BasicAutomata.makeChar(TokenStreamToAutomaton.HOLE);
+  private static final Automaton SEP_A = Automata.makeChar(TokenStreamToAutomaton.POS_SEP);
+  private static final Automaton HOLE_A = Automata.makeChar(TokenStreamToAutomaton.HOLE);
 
   private Automaton join(String ... strings) {
     List<Automaton> as = new ArrayList<>();
     for(String s : strings) {
-      as.add(BasicAutomata.makeString(s));
+      as.add(s2a(s));
       as.add(SEP_A);
     }
     as.remove(as.size()-1);
-    return BasicOperations.concatenate(as);
+    return Operations.concatenate(as);
   }
 
   private Automaton join(Automaton ... as) {
-    return BasicOperations.concatenate(Arrays.asList(as));
+    return Operations.concatenate(Arrays.asList(as));
   }
 
   private Automaton s2a(String s) {
-    return BasicAutomata.makeString(s);
+    return Automata.makeString(s);
   }
 
   public void testTwoTokens() throws Exception {
@@ -490,7 +493,8 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
     final Automaton expected =  join("abc", "def");
 
     //toDot(actual);
-    assertTrue(BasicOperations.sameLanguage(expected, actual));
+    assertTrue(Operations.sameLanguage(Operations.determinize(Operations.removeDeadStates(expected)),
+                                       Operations.determinize(Operations.removeDeadStates(actual))));
   }
 
   public void testHole() throws Exception {
@@ -505,7 +509,8 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
     final Automaton expected = join(s2a("abc"), SEP_A, HOLE_A, SEP_A, s2a("def"));
 
     //toDot(actual);
-    assertTrue(BasicOperations.sameLanguage(expected, actual));
+    assertTrue(Operations.sameLanguage(Operations.determinize(Operations.removeDeadStates(expected)),
+                                       Operations.determinize(Operations.removeDeadStates(actual))));
   }
 
   public void testOverlappedTokensSausage() throws Exception {
@@ -517,10 +522,11 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
         token("xyz", 0, 1)
       });
     final Automaton actual = (new TokenStreamToAutomaton()).toAutomaton(ts);
-    final Automaton a1 = BasicAutomata.makeString("abc");
-    final Automaton a2 = BasicAutomata.makeString("xyz");
-    final Automaton expected = BasicOperations.union(a1, a2);
-    assertTrue(BasicOperations.sameLanguage(expected, actual));
+    final Automaton a1 = s2a("abc");
+    final Automaton a2 = s2a("xyz");
+    final Automaton expected = Operations.union(a1, a2);
+    assertTrue(Operations.sameLanguage(Operations.determinize(Operations.removeDeadStates(expected)),
+                                       Operations.determinize(Operations.removeDeadStates(actual))));
   }
 
   public void testOverlappedTokensLattice() throws Exception {
@@ -532,12 +538,13 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
         token("def", 1, 1),
       });
     final Automaton actual = (new TokenStreamToAutomaton()).toAutomaton(ts);
-    final Automaton a1 = BasicAutomata.makeString("xyz");
+    final Automaton a1 = s2a("xyz");
     final Automaton a2 = join("abc", "def");
                                                                    
-    final Automaton expected = BasicOperations.union(a1, a2);
+    final Automaton expected = Operations.union(a1, a2);
     //toDot(actual);
-    assertTrue(BasicOperations.sameLanguage(expected, actual));
+    assertTrue(Operations.sameLanguage(Operations.determinize(Operations.removeDeadStates(expected)),
+                                       Operations.determinize(Operations.removeDeadStates(actual))));
   }
 
   public void testSynOverHole() throws Exception {
@@ -549,13 +556,14 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
         token("b", 2, 1),
       });
     final Automaton actual = (new TokenStreamToAutomaton()).toAutomaton(ts);
-    final Automaton a1 = BasicOperations.union(
+    final Automaton a1 = Operations.union(
                                                join(s2a("a"), SEP_A, HOLE_A),
-                                               BasicAutomata.makeString("X"));
-    final Automaton expected = BasicOperations.concatenate(a1,
+                                               s2a("X"));
+    final Automaton expected = Operations.concatenate(a1,
                                                            join(SEP_A, s2a("b")));
     //toDot(actual);
-    assertTrue(BasicOperations.sameLanguage(expected, actual));
+    assertTrue(Operations.sameLanguage(Operations.determinize(Operations.removeDeadStates(expected)),
+                                       Operations.determinize(Operations.removeDeadStates(actual))));
   }
 
   public void testSynOverHole2() throws Exception {
@@ -567,10 +575,11 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
         token("def", 2, 1),
       });
     final Automaton actual = (new TokenStreamToAutomaton()).toAutomaton(ts);
-    final Automaton expected = BasicOperations.union(
+    final Automaton expected = Operations.union(
                                                      join(s2a("xyz"), SEP_A, HOLE_A, SEP_A, s2a("def")),
-                                                     BasicAutomata.makeString("abc"));
-    assertTrue(BasicOperations.sameLanguage(expected, actual));
+                                                     s2a("abc"));
+    assertTrue(Operations.sameLanguage(Operations.determinize(Operations.removeDeadStates(expected)),
+                                       Operations.determinize(Operations.removeDeadStates(actual))));
   }
 
   public void testOverlappedTokensLattice2() throws Exception {
@@ -583,11 +592,12 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
         token("ghi", 1, 1),
       });
     final Automaton actual = (new TokenStreamToAutomaton()).toAutomaton(ts);
-    final Automaton a1 = BasicAutomata.makeString("xyz");
+    final Automaton a1 = s2a("xyz");
     final Automaton a2 = join("abc", "def", "ghi");
-    final Automaton expected = BasicOperations.union(a1, a2);
+    final Automaton expected = Operations.union(a1, a2);
     //toDot(actual);
-    assertTrue(BasicOperations.sameLanguage(expected, actual));
+    assertTrue(Operations.sameLanguage(Operations.determinize(Operations.removeDeadStates(expected)),
+                                       Operations.determinize(Operations.removeDeadStates(actual))));
   }
 
   public void testToDot() throws Exception {
@@ -605,7 +615,8 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
     final Automaton actual = (new TokenStreamToAutomaton()).toAutomaton(ts);
     final Automaton expected = join(HOLE_A, SEP_A, s2a("abc"));
     //toDot(actual);
-    assertTrue(BasicOperations.sameLanguage(expected, actual));
+    assertTrue(Operations.sameLanguage(Operations.determinize(Operations.removeDeadStates(expected)),
+                                       Operations.determinize(Operations.removeDeadStates(actual))));
   }
 
   // TODO: testEndsWithHole... but we need posInc to set in TS.end()
@@ -617,8 +628,9 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
         token("X", 0, 10),
       });
     final Automaton actual = (new TokenStreamToAutomaton()).toAutomaton(ts);
-    final Automaton expected = BasicOperations.union(BasicAutomata.makeString("a"),
-                                                     BasicAutomata.makeString("X"));
-    assertTrue(BasicOperations.sameLanguage(expected, actual));
+    final Automaton expected = Operations.union(s2a("a"),
+                                                               s2a("X"));
+    assertTrue(Operations.sameLanguage(Operations.determinize(Operations.removeDeadStates(expected)),
+                                       Operations.determinize(Operations.removeDeadStates(actual))));
   }
 }

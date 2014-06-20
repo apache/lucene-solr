@@ -40,15 +40,14 @@ import org.apache.lucene.analysis.TokenStreamToAutomaton;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.search.suggest.Input;
 import org.apache.lucene.search.suggest.InputArrayIterator;
+import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.State;
 import org.apache.lucene.util.fst.Util;
 
 public class FuzzySuggesterTest extends LuceneTestCase {
@@ -754,27 +753,28 @@ public class FuzzySuggesterTest extends LuceneTestCase {
       // this:
       Automaton automaton = suggester.convertAutomaton(suggester.toLevenshteinAutomata(suggester.toLookupAutomaton(analyzedKey)));
       assertTrue(automaton.isDeterministic());
+
       // TODO: could be faster... but its slowCompletor for a reason
       BytesRef spare = new BytesRef();
       for (TermFreqPayload2 e : slowCompletor) {
         spare.copyChars(e.analyzedForm);
         Set<IntsRef> finiteStrings = suggester.toFiniteStrings(spare, tokenStreamToAutomaton);
         for (IntsRef intsRef : finiteStrings) {
-          State p = automaton.getInitialState();
+          int p = 0;
           BytesRef ref = Util.toBytesRef(intsRef, spare);
           boolean added = false;
           for (int i = ref.offset; i < ref.length; i++) {
-            State q = p.step(ref.bytes[i] & 0xff);
-            if (q == null) {
+            int q = automaton.step(p, ref.bytes[i] & 0xff);
+            if (q == -1) {
               break;
-            } else if (q.isAccept()) {
+            } else if (automaton.isAccept(q)) {
               matches.add(new LookupResult(e.surfaceForm, e.weight));
               added = true;
               break;
             }
             p = q;
           }
-          if (!added && p.isAccept()) {
+          if (!added && automaton.isAccept(p)) {
             matches.add(new LookupResult(e.surfaceForm, e.weight));
           } 
         }

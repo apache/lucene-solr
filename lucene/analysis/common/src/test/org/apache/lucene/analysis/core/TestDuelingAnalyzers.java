@@ -31,11 +31,9 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.BasicOperations;
+import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
-import org.apache.lucene.util.automaton.State;
-import org.apache.lucene.util.automaton.Transition;
+import org.apache.lucene.util.automaton.Automaton;
 
 /**
  * Compares MockTokenizer (which is simple with no optimizations) with equivalent 
@@ -50,18 +48,18 @@ public class TestDuelingAnalyzers extends BaseTokenStreamTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
+    Automaton single = new Automaton();
+    int initial = single.createState();
+    int accept = single.createState();
+    single.setAccept(accept, true);
+
     // build an automaton matching this jvm's letter definition
-    State initial = new State();
-    State accept = new State();
-    accept.setAccept(true);
     for (int i = 0; i <= 0x10FFFF; i++) {
       if (Character.isLetter(i)) {
-        initial.addTransition(new Transition(i, i, accept));
+        single.addTransition(initial, accept, i);
       }
     }
-    Automaton single = new Automaton(initial);
-    single.reduce();
-    Automaton repeat = BasicOperations.repeat(single);
+    Automaton repeat = Operations.repeat(single);
     jvmLetter = new CharacterRunAutomaton(repeat);
   }
   

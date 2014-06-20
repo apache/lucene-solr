@@ -258,6 +258,7 @@
     <!-- test-framework: problems -->
 
     <!-- too much to fix core/ for now, but enforce full javadocs for key packages -->
+    <check-missing-javadocs dir="build/docs/core/org/apache/lucene/util/automaton" level="method"/>
     <check-missing-javadocs dir="build/docs/core/org/apache/lucene/analysis" level="method"/>
     <check-missing-javadocs dir="build/docs/core/org/apache/lucene/document" level="method"/>
     <check-missing-javadocs dir="build/docs/core/org/apache/lucene/search/similarities" level="method"/>

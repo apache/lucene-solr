@@ -29,7 +29,7 @@ import org.apache.lucene.util.UnicodeUtil;
  * (nearly linear with the input size).
  * 
  * @see #build(Collection)
- * @see BasicAutomata#makeStringUnion(Collection)
+ * @see Automata#makeStringUnion(Collection)
  */
 final class DaciukMihovAutomatonBuilder {
   /**
@@ -249,20 +249,22 @@ final class DaciukMihovAutomatonBuilder {
   /**
    * Internal recursive traversal for conversion.
    */
-  private static org.apache.lucene.util.automaton.State convert(State s,
-      IdentityHashMap<State,org.apache.lucene.util.automaton.State> visited) {
-    org.apache.lucene.util.automaton.State converted = visited.get(s);
-    if (converted != null) return converted;
+  private static int convert(Automaton.Builder a, State s,
+      IdentityHashMap<State,Integer> visited) {
+
+    Integer converted = visited.get(s);
+    if (converted != null) {
+      return converted;
+    }
     
-    converted = new org.apache.lucene.util.automaton.State();
-    converted.setAccept(s.is_final);
+    converted = a.createState();
+    a.setAccept(converted, s.is_final);
     
     visited.put(s, converted);
     int i = 0;
     int[] labels = s.labels;
     for (DaciukMihovAutomatonBuilder.State target : s.states) {
-      converted.addTransition(
-          new Transition(labels[i++], convert(target, visited)));
+      a.addTransition(converted, convert(a, target, visited), labels[i++]);
     }
     
     return converted;
@@ -281,12 +283,12 @@ final class DaciukMihovAutomatonBuilder {
       builder.add(scratch);
     }
     
-    Automaton a = new Automaton();
-    a.initial = convert(
+    Automaton.Builder a = new Automaton.Builder();
+    convert(a,
         builder.complete(), 
-        new IdentityHashMap<State,org.apache.lucene.util.automaton.State>());
-    a.deterministic = true;
-    return a;
+        new IdentityHashMap<State,Integer>());
+
+    return a.finish();
   }
 
   /**

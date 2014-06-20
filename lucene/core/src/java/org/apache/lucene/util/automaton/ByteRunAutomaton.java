@@ -21,7 +21,8 @@ package org.apache.lucene.util.automaton;
  * Automaton representation for matching UTF-8 byte[].
  */
 public class ByteRunAutomaton extends RunAutomaton {
-  
+
+  /** Converts incoming automaton to byte-based (UTF32ToUTF8) first */
   public ByteRunAutomaton(Automaton a) {
     this(a, false);
   }
