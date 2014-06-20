@@ -96,11 +96,14 @@ Other
 
 ======================= Lucene 4.10.0 ======================
 
-(No Changes)
-
 API Changes
 
 * LUCENE-5752: Simplified Automaton API to be immutable. (Mike McCandless)
+
+Optimizations
+
+* LUCENE-5780: Make OrdinalMap more memory-efficient, especially in case the
+  first segment has all values. (Adrien Grand, Robert Muir)
 
 ======================= Lucene 4.9.0 =======================
 
