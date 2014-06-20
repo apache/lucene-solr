@@ -427,14 +427,18 @@ public class MultiDocValues {
       long globalOrd = 0;
       while (mte.next() != null) {        
         TermsEnumWithSlice matches[] = mte.getMatchArray();
+        int firstSegmentIndex = Integer.MAX_VALUE;
+        long globalOrdDelta = Long.MAX_VALUE;
         for (int i = 0; i < mte.getMatchCount(); i++) {
           int segmentIndex = matches[i].index;
           long segmentOrd = matches[i].terms.ord();
           long delta = globalOrd - segmentOrd;
-          // for each unique term, just mark the first segment index/delta where it occurs
-          if (i == 0) {
-            firstSegments.add(segmentIndex);
-            globalOrdDeltas.add(delta);
+          // We compute the least segment where the term occurs. In case the
+          // first segment contains most (or better all) values, this will
+          // help save significant memory
+          if (segmentIndex < firstSegmentIndex) {
+            firstSegmentIndex = segmentIndex;
+            globalOrdDelta = delta;
           }
           // for each per-segment ord, map it back to the global term.
           while (segmentOrds[segmentIndex] <= segmentOrd) {
@@ -443,6 +447,10 @@ public class MultiDocValues {
             segmentOrds[segmentIndex]++;
           }
         }
+        // for each unique term, just mark the first segment index/delta where it occurs
+        assert firstSegmentIndex < segmentOrds.length;
+        firstSegments.add(firstSegmentIndex);
+        globalOrdDeltas.add(globalOrdDelta);
         globalOrd++;
       }
       firstSegments.freeze();
