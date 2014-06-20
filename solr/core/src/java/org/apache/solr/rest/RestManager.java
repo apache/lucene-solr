@@ -454,8 +454,8 @@ public class RestManager {
       if (managedData == null) {
         return; // this is OK, just means there are no stored registrations
       }
-      Map<String,Object> storedMap = (Map<String,Object>)managedData;
-      List<Object> managedList = (List<Object>)storedMap.get(MANAGED_JSON_LIST_FIELD);
+      
+      List<Object> managedList = (List<Object>)managedData;
       for (Object next : managedList) {
         Map<String,String> info = (Map<String,String>)next;        
         String implClass = info.get("class");
