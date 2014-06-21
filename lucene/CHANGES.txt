@@ -5,6 +5,11 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 4.10.0 ======================
 
+New Features
+
+* LUCENE-5778: Support hunspell morphological description fields/aliases.
+  (Robert Muir)
+
 Optimizations
 
 * LUCENE-5780: Make OrdinalMap more memory-efficient, especially in case the
