@@ -110,6 +110,9 @@ Optimizations
 * LUCENE-5780: Make OrdinalMap more memory-efficient, especially in case the
   first segment has all values. (Adrien Grand, Robert Muir)
 
+* LUCENE-5782: OrdinalMap now sorts enums before being built in order to
+  improve compression. (Adrien Grand)
+
 ======================= Lucene 4.9.0 =======================
 
 Changes in Runtime Behavior

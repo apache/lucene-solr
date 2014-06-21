@@ -40,6 +40,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LongBitSet;
 import org.apache.lucene.util.LongValues;
+import org.apache.lucene.util.packed.PackedInts;
 
 /** 
  * Abstract API that consumes numeric, binary and
@@ -440,12 +441,14 @@ public abstract class DocValuesConsumer implements Closeable {
     
     // step 1: iterate thru each sub and mark terms still in use
     TermsEnum liveTerms[] = new TermsEnum[dvs.length];
+    long[] weights = new long[liveTerms.length];
     for (int sub = 0; sub < liveTerms.length; sub++) {
       AtomicReader reader = readers[sub];
       SortedDocValues dv = dvs[sub];
       Bits liveDocs = reader.getLiveDocs();
       if (liveDocs == null) {
         liveTerms[sub] = dv.termsEnum();
+        weights[sub] = dv.getValueCount();
       } else {
         LongBitSet bitset = new LongBitSet(dv.getValueCount());
         for (int i = 0; i < reader.maxDoc(); i++) {
@@ -457,11 +460,12 @@ public abstract class DocValuesConsumer implements Closeable {
           }
         }
         liveTerms[sub] = new BitsFilteredTermsEnum(dv.termsEnum(), bitset);
+        weights[sub] = bitset.cardinality();
       }
     }
     
     // step 2: create ordinal map (this conceptually does the "merging")
-    final OrdinalMap map = new OrdinalMap(this, liveTerms);
+    final OrdinalMap map = OrdinalMap.build(this, liveTerms, weights, PackedInts.COMPACT);
     
     // step 3: add field
     addSortedField(fieldInfo,
@@ -576,12 +580,14 @@ public abstract class DocValuesConsumer implements Closeable {
     
     // step 1: iterate thru each sub and mark terms still in use
     TermsEnum liveTerms[] = new TermsEnum[dvs.length];
+    long[] weights = new long[liveTerms.length];
     for (int sub = 0; sub < liveTerms.length; sub++) {
       AtomicReader reader = readers[sub];
       SortedSetDocValues dv = dvs[sub];
       Bits liveDocs = reader.getLiveDocs();
       if (liveDocs == null) {
         liveTerms[sub] = dv.termsEnum();
+        weights[sub] = dv.getValueCount();
       } else {
         LongBitSet bitset = new LongBitSet(dv.getValueCount());
         for (int i = 0; i < reader.maxDoc(); i++) {
@@ -594,11 +600,12 @@ public abstract class DocValuesConsumer implements Closeable {
           }
         }
         liveTerms[sub] = new BitsFilteredTermsEnum(dv.termsEnum(), bitset);
+        weights[sub] = bitset.cardinality();
       }
     }
     
     // step 2: create ordinal map (this conceptually does the "merging")
-    final OrdinalMap map = new OrdinalMap(this, liveTerms);
+    final OrdinalMap map = OrdinalMap.build(this, liveTerms, weights, PackedInts.COMPACT);
     
     // step 3: add field
     addSortedSetField(fieldInfo,
