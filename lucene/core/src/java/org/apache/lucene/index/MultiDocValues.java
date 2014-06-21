@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.index.MultiTermsEnum.TermsEnumIndex;
@@ -25,6 +26,7 @@ import org.apache.lucene.index.MultiTermsEnum.TermsEnumWithSlice;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.AppendingPackedLongBuffer;
@@ -322,11 +324,7 @@ public class MultiDocValues {
     if (!anyReal) {
       return null;
     } else {
-      TermsEnum enums[] = new TermsEnum[values.length];
-      for (int i = 0; i < values.length; i++) {
-        enums[i] = values[i].termsEnum();
-      }
-      OrdinalMap mapping = new OrdinalMap(r.getCoreCacheKey(), enums);
+      OrdinalMap mapping = OrdinalMap.build(r.getCoreCacheKey(), values, PackedInts.DEFAULT);
       return new MultiSortedDocValues(values, starts, mapping);
     }
   }
@@ -366,19 +364,124 @@ public class MultiDocValues {
     if (!anyReal) {
       return null;
     } else {
-      TermsEnum enums[] = new TermsEnum[values.length];
-      for (int i = 0; i < values.length; i++) {
-        enums[i] = values[i].termsEnum();
-      }
-      OrdinalMap mapping = new OrdinalMap(r.getCoreCacheKey(), enums);
+      OrdinalMap mapping = OrdinalMap.build(r.getCoreCacheKey(), values, PackedInts.DEFAULT);
       return new MultiSortedSetDocValues(values, starts, mapping);
     }
   }
 
   /** maps per-segment ordinals to/from global ordinal space */
+  // TODO: we could also have a utility method to merge Terms[] and use size() as a weight when we need it
   // TODO: use more efficient packed ints structures?
   // TODO: pull this out? its pretty generic (maps between N ord()-enabled TermsEnums) 
   public static class OrdinalMap implements Accountable {
+
+    private static class SegmentMap implements Accountable {
+      private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(SegmentMap.class);
+
+      /** Build a map from an index into a sorted view of `weights` to an index into `weights`. */
+      private static int[] map(final long[] weights) {
+        final int[] newToOld = new int[weights.length];
+        for (int i = 0; i < weights.length; ++i) {
+          newToOld[i] = i;
+        }
+        new InPlaceMergeSorter() {
+          @Override
+          protected void swap(int i, int j) {
+            final int tmp = newToOld[i];
+            newToOld[i] = newToOld[j];
+            newToOld[j] = tmp;
+          }
+          @Override
+          protected int compare(int i, int j) {
+            // j first since we actually want higher weights first
+            return Long.compare(weights[newToOld[j]], weights[newToOld[i]]);
+          }
+        }.sort(0, weights.length);
+        return newToOld;
+      }
+
+      /** Inverse the map. */
+      private static int[] inverse(int[] map) {
+        final int[] inverse = new int[map.length];
+        for (int i = 0; i < map.length; ++i) {
+          inverse[map[i]] = i;
+        }
+        return inverse;
+      }
+
+      private final int[] newToOld, oldToNew;
+
+      SegmentMap(long[] weights) {
+        newToOld = map(weights);
+        oldToNew = inverse(newToOld);
+        assert Arrays.equals(newToOld, inverse(oldToNew));
+      }
+
+      int newToOld(int segment) {
+        return newToOld[segment];
+      }
+
+      int oldToNew(int segment) {
+        return oldToNew[segment];
+      }
+
+      @Override
+      public long ramBytesUsed() {
+        return BASE_RAM_BYTES_USED + RamUsageEstimator.sizeOf(newToOld) + RamUsageEstimator.sizeOf(oldToNew);
+      }
+
+    }
+
+    /**
+     * Create an ordinal map that uses the number of unique values of each
+     * {@link SortedDocValues} instance as a weight.
+     * @see #build(Object, TermsEnum[], long[], float)
+     */
+    public static OrdinalMap build(Object owner, SortedDocValues[] values, float acceptableOverheadRatio) throws IOException {
+      final TermsEnum[] subs = new TermsEnum[values.length];
+      final long[] weights = new long[values.length];
+      for (int i = 0; i < values.length; ++i) {
+        subs[i] = values[i].termsEnum();
+        weights[i] = values[i].getValueCount();
+      }
+      return build(owner, subs, weights, acceptableOverheadRatio);
+    }
+
+    /**
+     * Create an ordinal map that uses the number of unique values of each
+     * {@link SortedSetDocValues} instance as a weight.
+     * @see #build(Object, TermsEnum[], long[], float)
+     */
+    public static OrdinalMap build(Object owner, SortedSetDocValues[] values, float acceptableOverheadRatio) throws IOException {
+      final TermsEnum[] subs = new TermsEnum[values.length];
+      final long[] weights = new long[values.length];
+      for (int i = 0; i < values.length; ++i) {
+        subs[i] = values[i].termsEnum();
+        weights[i] = values[i].getValueCount();
+      }
+      return build(owner, subs, weights, acceptableOverheadRatio);
+    }
+
+    /** 
+     * Creates an ordinal map that allows mapping ords to/from a merged
+     * space from <code>subs</code>.
+     * @param owner a cache key
+     * @param subs TermsEnums that support {@link TermsEnum#ord()}. They need
+     *             not be dense (e.g. can be FilteredTermsEnums}.
+     * @param weights a weight for each sub. This is ideally correlated with
+     *             the number of unique terms that each sub introduces compared
+     *             to the other subs
+     * @throws IOException if an I/O error occurred.
+     */
+    public static OrdinalMap build(Object owner, TermsEnum subs[], long[] weights, float acceptableOverheadRatio) throws IOException {
+      if (subs.length != weights.length) {
+        throw new IllegalArgumentException("subs and weights must have the same length");
+      }
+
+      // enums are not sorted, so let's sort to save memory
+      final SegmentMap segmentMap = new SegmentMap(weights);
+      return new OrdinalMap(owner, subs, segmentMap, acceptableOverheadRatio);
+    }
 
     private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(OrdinalMap.class);
 
@@ -390,21 +493,16 @@ public class MultiDocValues {
     final AppendingPackedLongBuffer firstSegments;
     // for every segment, segmentOrd -> globalOrd
     final LongValues segmentToGlobalOrds[];
+    // the map from/to segment ids
+    final SegmentMap segmentMap;
     // ram usage
     final long ramBytesUsed;
     
-    /** 
-     * Creates an ordinal map that allows mapping ords to/from a merged
-     * space from <code>subs</code>.
-     * @param owner a cache key
-     * @param subs TermsEnums that support {@link TermsEnum#ord()}. They need
-     *             not be dense (e.g. can be FilteredTermsEnums}.
-     * @throws IOException if an I/O error occurred.
-     */
-    public OrdinalMap(Object owner, TermsEnum subs[], float acceptableOverheadRatio) throws IOException {
+    OrdinalMap(Object owner, TermsEnum subs[], SegmentMap segmentMap, float acceptableOverheadRatio) throws IOException {
       // create the ordinal mappings by pulling a termsenum over each sub's 
       // unique terms, and walking a multitermsenum over those
       this.owner = owner;
+      this.segmentMap = segmentMap;
       // even though we accept an overhead ratio, we keep these ones with COMPACT
       // since they are only used to resolve values given a global ord, which is
       // slow anyway
@@ -420,7 +518,7 @@ public class MultiDocValues {
       TermsEnumIndex indexes[] = new TermsEnumIndex[slices.length];
       for (int i = 0; i < slices.length; i++) {
         slices[i] = new ReaderSlice(0, 0, i);
-        indexes[i] = new TermsEnumIndex(subs[i], i);
+        indexes[i] = new TermsEnumIndex(subs[segmentMap.newToOld(i)], i);
       }
       MultiTermsEnum mte = new MultiTermsEnum(slices);
       mte.reset(indexes);
@@ -460,7 +558,9 @@ public class MultiDocValues {
       }
       // ordDeltas is typically the bottleneck, so let's see what we can do to make it faster
       segmentToGlobalOrds = new LongValues[subs.length];
-      long ramBytesUsed = BASE_RAM_BYTES_USED + globalOrdDeltas.ramBytesUsed() + firstSegments.ramBytesUsed() + RamUsageEstimator.shallowSizeOf(segmentToGlobalOrds);
+      long ramBytesUsed = BASE_RAM_BYTES_USED + globalOrdDeltas.ramBytesUsed()
+          + firstSegments.ramBytesUsed() + RamUsageEstimator.shallowSizeOf(segmentToGlobalOrds)
+          + segmentMap.ramBytesUsed();
       for (int i = 0; i < ordDeltas.length; ++i) {
         final MonotonicAppendingLongBuffer deltas = ordDeltas[i];
         if (ordDeltaBits[i] == 0L) {
@@ -503,17 +603,12 @@ public class MultiDocValues {
       this.ramBytesUsed = ramBytesUsed;
     }
 
-    /** Create an {@link OrdinalMap} with the default overhead ratio. */
-    public OrdinalMap(Object owner, TermsEnum subs[]) throws IOException {
-      this(owner, subs, PackedInts.DEFAULT);
-    }
-
     /** 
      * Given a segment number, return a {@link LongValues} instance that maps
      * segment ordinals to global ordinals.
      */
     public LongValues getGlobalOrds(int segmentIndex) {
-      return segmentToGlobalOrds[segmentIndex];
+      return segmentToGlobalOrds[segmentMap.oldToNew(segmentIndex)];
     }
 
     /**
@@ -529,7 +624,7 @@ public class MultiDocValues {
      * segment that contains this term.
      */
     public int getFirstSegmentNumber(long globalOrd) {
-      return (int) firstSegments.get(globalOrd);
+      return segmentMap.newToOld((int) firstSegments.get(globalOrd));
     }
     
     /**
@@ -559,7 +654,6 @@ public class MultiDocValues {
   
     /** Creates a new MultiSortedDocValues over <code>values</code> */
     MultiSortedDocValues(SortedDocValues values[], int docStarts[], OrdinalMap mapping) throws IOException {
-      assert values.length == mapping.segmentToGlobalOrds.length;
       assert docStarts.length == values.length + 1;
       this.values = values;
       this.docStarts = docStarts;
@@ -570,7 +664,7 @@ public class MultiDocValues {
     public int getOrd(int docID) {
       int subIndex = ReaderUtil.subIndex(docID, docStarts);
       int segmentOrd = values[subIndex].getOrd(docID - docStarts[subIndex]);
-      return segmentOrd == -1 ? segmentOrd : (int) mapping.segmentToGlobalOrds[subIndex].get(segmentOrd);
+      return segmentOrd == -1 ? segmentOrd : (int) mapping.getGlobalOrds(subIndex).get(segmentOrd);
     }
  
     @Override
@@ -598,10 +692,10 @@ public class MultiDocValues {
     /** ordinal map mapping ords from <code>values</code> to global ord space */
     public final OrdinalMap mapping;
     int currentSubIndex;
+    LongValues currentGlobalOrds;
     
     /** Creates a new MultiSortedSetDocValues over <code>values</code> */
     MultiSortedSetDocValues(SortedSetDocValues values[], int docStarts[], OrdinalMap mapping) throws IOException {
-      assert values.length == mapping.segmentToGlobalOrds.length;
       assert docStarts.length == values.length + 1;
       this.values = values;
       this.docStarts = docStarts;
@@ -614,13 +708,14 @@ public class MultiDocValues {
       if (segmentOrd == NO_MORE_ORDS) {
         return segmentOrd;
       } else {
-        return mapping.segmentToGlobalOrds[currentSubIndex].get(segmentOrd);
+        return currentGlobalOrds.get(segmentOrd);
       }
     }
 
     @Override
     public void setDocument(int docID) {
       currentSubIndex = ReaderUtil.subIndex(docID, docStarts);
+      currentGlobalOrds = mapping.getGlobalOrds(currentSubIndex);
       values[currentSubIndex].setDocument(docID - docStarts[currentSubIndex]);
     }
  
