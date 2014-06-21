@@ -96,6 +96,11 @@ Other
 
 ======================= Lucene 4.10.0 ======================
 
+New Features
+
+* LUCENE-5778: Support hunspell morphological description fields/aliases.
+  (Robert Muir)
+
 API Changes
 
 * LUCENE-5752: Simplified Automaton API to be immutable. (Mike McCandless)

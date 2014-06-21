@@ -25,6 +25,7 @@ import java.util.zip.ZipFile;
 
 import org.apache.lucene.analysis.hunspell.Dictionary;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.RamUsageTester;
 import org.junit.Ignore;
 
@@ -34,6 +35,7 @@ import org.junit.Ignore;
  * Note some of the files differ only in case. This may be a problem on your operating system!
  */
 @Ignore("enable manually")
+@SuppressSysoutChecks(bugUrl = "prints important memory utilization stats per dictionary")
 public class TestAllDictionaries extends LuceneTestCase {
   
   // set this to the location of where you downloaded all the files
@@ -180,7 +182,7 @@ public class TestAllDictionaries extends LuceneTestCase {
   }
   
   public void testOneDictionary() throws Exception {
-    String toTest = "hu_HU.zip";
+    String toTest = "zu_ZA.zip";
     for (int i = 0; i < tests.length; i++) {
       if (tests[i].equals(toTest)) {
         File f = new File(DICTIONARY_HOME, tests[i]);

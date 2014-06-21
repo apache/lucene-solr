@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.hunspell;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.analysis.util.CharArraySet;
@@ -48,6 +47,10 @@ final class Stemmer {
   private final StringBuilder scratchSegment = new StringBuilder();
   private char scratchBuffer[] = new char[32];
   
+  // its '1' if we have no stem exceptions, otherwise every other form
+  // is really an ID pointing to the exception table
+  private final int formStep;
+  
   /**
    * Constructs a new Stemmer which will use the provided Dictionary to create its stems.
    *
@@ -66,6 +69,7 @@ final class Stemmer {
         suffixReaders[level] = dictionary.suffixes.getBytesReader();
       }
     }
+    formStep = dictionary.hasStemExceptions ? 2 : 1;
   } 
   
   /**
@@ -101,12 +105,12 @@ final class Stemmer {
     if (forms != null) {
       // TODO: some forms should not be added, e.g. ONLYINCOMPOUND
       // just because it exists, does not make it valid...
-      for (int i = 0; i < forms.length; i++) {
-        stems.add(newStem(word, length));
+      for (int i = 0; i < forms.length; i += formStep) {
+        stems.add(newStem(word, length, forms, i));
       }
     }
     try {
-      stems.addAll(stem(word, length, -1, -1, -1, 0, true, true, false, false));
+      boolean v = stems.addAll(stem(word, length, -1, -1, -1, 0, true, true, false, false));
     } catch (IOException bogus) {
       throw new RuntimeException(bogus);
     }
@@ -135,10 +139,26 @@ final class Stemmer {
     return deduped;
   }
   
-  private CharsRef newStem(char buffer[], int length) {
+  private CharsRef newStem(char buffer[], int length, IntsRef forms, int formID) {
+    final String exception;
+    if (dictionary.hasStemExceptions) {
+      int exceptionID = forms.ints[forms.offset + formID + 1];
+      if (exceptionID > 0) {
+        exception = dictionary.getStemException(exceptionID);
+      } else {
+        exception = null;
+      }
+    } else {
+      exception = null;
+    }
+    
     if (dictionary.needsOutputCleaning) {
       scratchSegment.setLength(0);
-      scratchSegment.append(buffer, 0, length);
+      if (exception != null) {
+        scratchSegment.append(exception);
+      } else {
+        scratchSegment.append(buffer, 0, length);
+      }
       try {
         Dictionary.applyMappings(dictionary.oconv, scratchSegment);
       } catch (IOException bogus) {
@@ -148,7 +168,11 @@ final class Stemmer {
       scratchSegment.getChars(0, cleaned.length, cleaned, 0);
       return new CharsRef(cleaned, 0, cleaned.length);
     } else {
-      return new CharsRef(buffer, 0, length);
+      if (exception != null) {
+        return new CharsRef(exception);
+      } else {
+        return new CharsRef(buffer, 0, length);
+      }
     }
   }
 
@@ -387,7 +411,7 @@ final class Stemmer {
 
     IntsRef forms = dictionary.lookupWord(strippedWord, 0, length);
     if (forms != null) {
-      for (int i = 0; i < forms.length; i++) {
+      for (int i = 0; i < forms.length; i += formStep) {
         dictionary.flagLookup.get(forms.ints[forms.offset+i], scratch);
         char wordFlags[] = Dictionary.decodeFlags(scratch);
         if (Dictionary.hasFlag(wordFlags, flag)) {
@@ -413,7 +437,7 @@ final class Stemmer {
               continue;
             }
           }
-          stems.add(newStem(strippedWord, length));
+          stems.add(newStem(strippedWord, length, forms, i));
         }
       }
     }

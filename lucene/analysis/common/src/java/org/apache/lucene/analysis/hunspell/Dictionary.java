@@ -27,6 +27,7 @@ import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesReader;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
 import org.apache.lucene.util.fst.Builder;
@@ -74,6 +75,7 @@ public class Dictionary {
   static final char[] NOFLAGS = new char[0];
   
   private static final String ALIAS_KEY = "AF";
+  private static final String MORPH_ALIAS_KEY = "AM";
   private static final String PREFIX_KEY = "PFX";
   private static final String SUFFIX_KEY = "SFX";
   private static final String FLAG_KEY = "FLAG";
@@ -115,8 +117,20 @@ public class Dictionary {
 
   private FlagParsingStrategy flagParsingStrategy = new SimpleFlagParsingStrategy(); // Default flag parsing strategy
 
+  // AF entries
   private String[] aliases;
   private int aliasCount = 0;
+  
+  // AM entries
+  private String[] morphAliases;
+  private int morphAliasCount = 0;
+  
+  // st: morphological entries (either directly, or aliased from AM)
+  private String[] stemExceptions = new String[8];
+  private int stemExceptionCount = 0;
+  // we set this during sorting, so we know to add an extra FST output.
+  // when set, some words have exceptional stems, and the last entry is a pointer to stemExceptions
+  boolean hasStemExceptions;
   
   private final File tempDir = OfflineSorter.defaultTempDir(); // TODO: make this configurable?
   
@@ -194,6 +208,7 @@ public class Dictionary {
       readDictionaryFiles(dictionaries, decoder, b);
       words = b.finish();
       aliases = null; // no longer needed
+      morphAliases = null; // no longer needed
     } finally {
       IOUtils.closeWhileHandlingException(out, aff1, aff2);
       aff.delete();
@@ -278,6 +293,8 @@ public class Dictionary {
       }
       if (line.startsWith(ALIAS_KEY)) {
         parseAlias(line);
+      } else if (line.startsWith(MORPH_ALIAS_KEY)) {
+        parseMorphAlias(line);
       } else if (line.startsWith(PREFIX_KEY)) {
         parseAffix(prefixes, line, reader, PREFIX_CONDITION_REGEX_PATTERN, seenPatterns, seenStrips);
       } else if (line.startsWith(SUFFIX_KEY)) {
@@ -639,21 +656,67 @@ public class Dictionary {
   }
 
   final char FLAG_SEPARATOR = 0x1f; // flag separator after escaping
+  final char MORPH_SEPARATOR = 0x1e; // separator for boundary of entry (may be followed by morph data)
   
   String unescapeEntry(String entry) {
     StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < entry.length(); i++) {
+    int end = morphBoundary(entry);
+    for (int i = 0; i < end; i++) {
       char ch = entry.charAt(i);
       if (ch == '\\' && i+1 < entry.length()) {
         sb.append(entry.charAt(i+1));
         i++;
       } else if (ch == '/') {
         sb.append(FLAG_SEPARATOR);
+      } else if (ch == MORPH_SEPARATOR || ch == FLAG_SEPARATOR) {
+        // BINARY EXECUTABLES EMBEDDED IN ZULU DICTIONARIES!!!!!!!
       } else {
         sb.append(ch);
       }
     }
+    sb.append(MORPH_SEPARATOR);
+    if (end < entry.length()) {
+      for (int i = end; i < entry.length(); i++) {
+        char c = entry.charAt(i);
+        if (c == FLAG_SEPARATOR || c == MORPH_SEPARATOR) {
+          // BINARY EXECUTABLES EMBEDDED IN ZULU DICTIONARIES!!!!!!!
+        } else {
+          sb.append(c);
+        }
+      }
+    }
     return sb.toString();
+  }
+  
+  static int morphBoundary(String line) {
+    int end = indexOfSpaceOrTab(line, 0);
+    if (end == -1) {
+      return line.length();
+    }
+    while (end >= 0 && end < line.length()) {
+      if (line.charAt(end) == '\t' ||
+          end+3 < line.length() && 
+          Character.isLetter(line.charAt(end+1)) && 
+          Character.isLetter(line.charAt(end+2)) &&
+          line.charAt(end+3) == ':') {
+        break;
+      }
+      end = indexOfSpaceOrTab(line, end+1);
+    }
+    if (end == -1) {
+      return line.length();
+    }
+    return end;
+  }
+  
+  static int indexOfSpaceOrTab(String text, int start) {
+    int pos1 = text.indexOf('\t', start);
+    int pos2 = text.indexOf(' ', start);
+    if (pos1 >= 0 && pos2 >= 0) {
+      return Math.min(pos1, pos2);
+    } else {
+      return Math.max(pos1, pos2);
+    }
   }
   
   /**
@@ -676,9 +739,23 @@ public class Dictionary {
         String line = lines.readLine(); // first line is number of entries (approximately, sometimes)
         
         while ((line = lines.readLine()) != null) {
+          // wild and unpredictable code comment rules
+          if (line.isEmpty() || line.charAt(0) == '/' || line.charAt(0) == '#' || line.charAt(0) == '\t') {
+            continue;
+          }
           line = unescapeEntry(line);
+          // if we havent seen any stem exceptions, try to parse one
+          if (hasStemExceptions == false) {
+            int morphStart = line.indexOf(MORPH_SEPARATOR);
+            if (morphStart >= 0 && morphStart < line.length()) {
+              hasStemExceptions = parseStemException(line.substring(morphStart+1)) != null;
+            }
+          }
           if (needsInputCleaning) {
-            int flagSep = line.lastIndexOf(FLAG_SEPARATOR);
+            int flagSep = line.indexOf(FLAG_SEPARATOR);
+            if (flagSep == -1) {
+              flagSep = line.indexOf(MORPH_SEPARATOR);
+            }
             if (flagSep == -1) {
               CharSequence cleansed = cleanInput(line, sb);
               writer.write(cleansed.toString().getBytes(StandardCharsets.UTF_8));
@@ -711,7 +788,7 @@ public class Dictionary {
         scratch1.length = o1.length;
         
         for (int i = scratch1.length - 1; i >= 0; i--) {
-          if (scratch1.bytes[scratch1.offset + i] == FLAG_SEPARATOR) {
+          if (scratch1.bytes[scratch1.offset + i] == FLAG_SEPARATOR || scratch1.bytes[scratch1.offset + i] == MORPH_SEPARATOR) {
             scratch1.length = i;
             break;
           }
@@ -722,7 +799,7 @@ public class Dictionary {
         scratch2.length = o2.length;
         
         for (int i = scratch2.length - 1; i >= 0; i--) {
-          if (scratch2.bytes[scratch2.offset + i] == FLAG_SEPARATOR) {
+          if (scratch2.bytes[scratch2.offset + i] == FLAG_SEPARATOR || scratch2.bytes[scratch2.offset + i] == MORPH_SEPARATOR) {
             scratch2.length = i;
             break;
           }
@@ -754,22 +831,15 @@ public class Dictionary {
       line = scratchLine.utf8ToString();
       String entry;
       char wordForm[];
-      
-      int flagSep = line.lastIndexOf(FLAG_SEPARATOR);
+      int end;
+
+      int flagSep = line.indexOf(FLAG_SEPARATOR);
       if (flagSep == -1) {
         wordForm = NOFLAGS;
-        entry = line;
+        end = line.indexOf(MORPH_SEPARATOR);
+        entry = line.substring(0, end);
       } else {
-        // note, there can be comments (morph description) after a flag.
-        // we should really look for any whitespace: currently just tab and space
-        int end = line.indexOf('\t', flagSep);
-        if (end == -1)
-          end = line.length();
-        int end2 = line.indexOf(' ', flagSep);
-        if (end2 == -1)
-          end2 = line.length();
-        end = Math.min(end, end2);
-        
+        end = line.indexOf(MORPH_SEPARATOR);
         String flagPart = line.substring(flagSep + 1, end);
         if (aliasCount > 0) {
           flagPart = getAliasValue(Integer.parseInt(flagPart));
@@ -778,6 +848,19 @@ public class Dictionary {
         wordForm = flagParsingStrategy.parseFlags(flagPart);
         Arrays.sort(wordForm);
         entry = line.substring(0, flagSep);
+      }
+      // we possibly have morphological data
+      int stemExceptionID = 0;
+      if (hasStemExceptions && end+1 < line.length()) {
+        String stemException = parseStemException(line.substring(end+1));
+        if (stemException != null) {
+          if (stemExceptionCount == stemExceptions.length) {
+            int newSize = ArrayUtil.oversize(stemExceptionCount+1, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
+            stemExceptions = Arrays.copyOf(stemExceptions, newSize);
+          }
+          stemExceptionID = stemExceptionCount+1; // we use '0' to indicate no exception for the form
+          stemExceptions[stemExceptionCount++] = stemException;
+        }
       }
 
       int cmp = currentEntry == null ? 1 : entry.compareTo(currentEntry);
@@ -800,8 +883,14 @@ public class Dictionary {
           currentEntry = entry;
           currentOrds = new IntsRef(); // must be this way
         }
-        currentOrds.grow(currentOrds.length+1);
-        currentOrds.ints[currentOrds.length++] = ord;
+        if (hasStemExceptions) {
+          currentOrds.grow(currentOrds.length+2);
+          currentOrds.ints[currentOrds.length++] = ord;
+          currentOrds.ints[currentOrds.length++] = stemExceptionID;
+        } else {
+          currentOrds.grow(currentOrds.length+1);
+          currentOrds.ints[currentOrds.length++] = ord;
+        }
       }
     }
     
@@ -858,6 +947,46 @@ public class Dictionary {
     } catch (IndexOutOfBoundsException ex) {
       throw new IllegalArgumentException("Bad flag alias number:" + id, ex);
     }
+  }
+  
+  String getStemException(int id) {
+    return stemExceptions[id-1];
+  }
+  
+  private void parseMorphAlias(String line) {
+    if (morphAliases == null) {
+      //first line should be the aliases count
+      final int count = Integer.parseInt(line.substring(3));
+      morphAliases = new String[count];
+    } else {
+      String arg = line.substring(2); // leave the space
+      morphAliases[morphAliasCount++] = arg;
+    }
+  }
+  
+  private String parseStemException(String morphData) {
+    // first see if its an alias
+    if (morphAliasCount > 0) {
+      try {
+        int alias = Integer.parseInt(morphData.trim());
+        morphData = morphAliases[alias-1];
+      } catch (NumberFormatException e) {  
+        // fine
+      }
+    }
+    // try to parse morph entry
+    int index = morphData.indexOf(" st:");
+    if (index < 0) {
+      index = morphData.indexOf("\tst:");
+    }
+    if (index >= 0) {
+      int endIndex = indexOfSpaceOrTab(morphData, index+1);
+      if (endIndex < 0) {
+        endIndex = morphData.length();
+      }
+      return morphData.substring(index+4, endIndex);
+    }
+    return null;
   }
 
   /**

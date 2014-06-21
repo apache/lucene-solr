@@ -26,6 +26,7 @@ import java.util.zip.ZipFile;
 import org.apache.lucene.analysis.hunspell.Dictionary;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageTester;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.junit.Ignore;
 
 /**
@@ -34,6 +35,7 @@ import org.junit.Ignore;
  * You must click and download every file: sorry!
  */
 @Ignore("enable manually")
+@SuppressSysoutChecks(bugUrl = "prints important memory utilization stats per dictionary")
 public class TestAllDictionaries2 extends LuceneTestCase {
   
   // set this to the location of where you downloaded all the files
