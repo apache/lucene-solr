@@ -94,6 +94,9 @@ Bug Fixes
 
 * SOLR-6095 : SolrCloud cluster can end up without an overseer with overseer roles (Noble Paul, Shalin Mangar)
 
+* SOLR-6165: DataImportHandler should write BigInteger and BigDecimal values as strings.
+  (Anand Sengamalai via shalin)
+
 Other Changes
 ---------------------
 
