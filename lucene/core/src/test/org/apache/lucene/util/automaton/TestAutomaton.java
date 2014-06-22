@@ -648,7 +648,7 @@ public class TestAutomaton extends LuceneTestCase {
     int iters = atLeast(100);
 
     if (VERBOSE) {
-      System.out.println("TEST: numTerms" + numTerms + " iters=" + iters);
+      System.out.println("TEST: numTerms=" + numTerms + " iters=" + iters);
     }
 
     Set<BytesRef> terms = new HashSet<>();
@@ -661,11 +661,13 @@ public class TestAutomaton extends LuceneTestCase {
 
     for(int iter=0;iter<iters;iter++) {
       if (VERBOSE) {
-        System.out.println("TEST: iter=" + iter + " numTerms=" + terms.size());
+        System.out.println("TEST: iter=" + iter + " numTerms=" + terms.size() + " a.numStates=" + a.getNumStates());
+        /*
         System.out.println("  terms:");
         for(BytesRef term : terms) {
           System.out.println("    " + term);
         }
+        */
       }
       switch(random().nextInt(15)) {
 
@@ -941,7 +943,7 @@ public class TestAutomaton extends LuceneTestCase {
 
       case 14:
         // Safety in case we are really unlucky w/ the dice:
-        if (terms.size() <= numTerms * 10) {
+        if (terms.size() <= numTerms * 3) {
           if (VERBOSE) {
             System.out.println("  op=concat finite automaton");
           }
