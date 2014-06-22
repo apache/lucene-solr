@@ -25,6 +25,8 @@ import org.slf4j.LoggerFactory;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -313,8 +315,14 @@ public class JdbcDataSource extends
       for (String colName : colNames) {
         try {
           if (!convertType) {
-            // Use underlying database's type information
-            result.put(colName, resultSet.getObject(colName));
+            // Use underlying database's type information except for BigDecimal and BigInteger
+            // which cannot be serialized by JavaBin/XML. See SOLR-6165
+            Object value = resultSet.getObject(colName);
+            if (value instanceof BigDecimal || value instanceof BigInteger) {
+              result.put(colName, value.toString());
+            } else {
+              result.put(colName, value);
+            }
             continue;
           }
 
