@@ -102,6 +102,9 @@ Other Changes
 
 * SOLR-6173: Fixed wrong failure message in TestDistributedSearch. (shalin)
 
+* SOLR-6178, LUCENE-5775: Deprecate JaspellLookupFactory. (Uwe Schindler,
+  Mike McCandless)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
@@ -280,9 +283,6 @@ Other Changes
 
 * SOLR-6128: Removed deprecated analysis factories and fieldTypes from the example
   schema.xml (hossman)
-
-* SOLR-6178, LUCENE-5775: Deprecate JaspellLookupFactory. (Uwe Schindler,
-  Mike McCandless)
 
 Optimizations
 ----------------------
