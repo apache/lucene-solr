@@ -504,6 +504,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     sreq.actualShards = sreq.shards;
     sreq.params = params;
     shardHandler.submit(sreq, replica, sreq.params);
+    shardHandler.takeCompletedOrError();
   }
 
   protected LeaderStatus amILeader() {
