@@ -76,11 +76,8 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   @Override
   @After
   public void tearDown() throws Exception {
-    if (!proxies.isEmpty()) {
-      for (SocketProxy proxy : proxies.values()) {
-        proxy.close();
-      }
-    }
+    
+    log.info("tearing down replicationFactorTest!");
     
     System.clearProperty("numShards");
     
@@ -88,7 +85,14 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
       super.tearDown();
     } catch (Exception exc) {}
     
-    resetExceptionIgnores();
+    resetExceptionIgnores();    
+    
+    log.info("super.tearDown complete, closing all socket proxies");
+    if (!proxies.isEmpty()) {
+      for (SocketProxy proxy : proxies.values()) {
+        proxy.close();
+      }
+    }    
   }
   
   /**
@@ -142,8 +146,10 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     // test handling when not using direct updates
     log.info("Now testing replication factor handling for repfacttest_c8n_2x2");
     testRf2NotUsingDirectUpdates();
-    
-    log.info("replication factor testing complete");
+        
+    waitForThingsToLevelOut(30000);
+    log.info("replication factor testing complete! final clusterState is: "+
+        cloudClient.getZkStateReader().getClusterState());    
   }
   
   protected void testRf2NotUsingDirectUpdates() throws Exception {
