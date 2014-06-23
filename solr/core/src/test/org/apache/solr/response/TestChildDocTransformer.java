@@ -191,22 +191,28 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
   private void testParentFilterJSON() throws Exception {
 
     String[] tests = new String[] {
-        "/response/docs/[0]/_childDocuments_/[0]/id==3",
-        "/response/docs/[0]/_childDocuments_/[1]/id==2",
-        "/response/docs/[0]/_childDocuments_/[1]/cat/[0]/=='childDocument'",
-        "/response/docs/[0]/_childDocuments_/[1]/title/[0]/=='" + titleVals[0] + "'",
-        "/response/docs/[1]/_childDocuments_/[0]/id==6",
-        "/response/docs/[1]/_childDocuments_/[1]/id==5",
-        "/response/docs/[1]/_childDocuments_/[1]/cat/[0]/=='childDocument'",
-        "/response/docs/[1]/_childDocuments_/[1]/title/[0]/=='" + titleVals[1] + "'"
+        "/response/docs/[0]/id==1",
+        "/response/docs/[0]/_childDocuments_/[0]/id==2",
+        "/response/docs/[0]/_childDocuments_/[0]/cat/[0]/=='childDocument'",
+        "/response/docs/[0]/_childDocuments_/[0]/title/[0]/=='" + titleVals[0] + "'",
+        "/response/docs/[1]/id==4",
+        "/response/docs/[1]/_childDocuments_/[0]/id==5",
+        "/response/docs/[1]/_childDocuments_/[0]/cat/[0]/=='childDocument'",
+        "/response/docs/[1]/_childDocuments_/[0]/title/[0]/=='" + titleVals[1] + "'"
     };
 
 
-    assertJQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
-        "fl", "*,[child parentFilter=\"subject:parentDocument\"]"), tests);
+    assertJQ(req("q", "*:*", 
+                 "sort", "id asc",
+                 "fq", "subject:\"parentDocument\" ",
+                 "fl", "*,[child childFilter='cat:childDocument' parentFilter=\"subject:parentDocument\"]"), 
+             tests);
 
-    assertJQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
-        "fl", "subject,[child parentFilter=\"subject:parentDocument\"]"), tests);
+    assertJQ(req("q", "*:*", 
+                 "sort", "id asc",
+                 "fq", "subject:\"parentDocument\" ",
+                 "fl", "id,[child childFilter='cat:childDocument' parentFilter=\"subject:parentDocument\"]"), 
+             tests);
 
   }
 
@@ -214,20 +220,26 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
 
     String tests[] = new String[] {
         "//*[@numFound='2']",
-        "/response/result/doc[1]/doc[1]/int[@name='id']='3'" ,
-        "/response/result/doc[1]/doc[2]/int[@name='id']='2'" ,
-        "/response/result/doc[1]/doc/arr[@name='cat']/str[1]='childDocument'" ,
-        "/response/result/doc[1]/doc/arr[@name='title']/str[1]='" + titleVals[0] + "'" ,
-        "/response/result/doc[2]/doc[1]/int[@name='id']='6'",
-        "/response/result/doc[2]/doc[2]/int[@name='id']='5'",
-        "/response/result/doc[2]/doc/arr[@name='cat']/str[1]='childDocument'",
-        "/response/result/doc[2]/doc/arr[@name='title']/str[1]='" + titleVals[1] + "'"};
+        "/response/result/doc[1]/int[@name='id']='1'" ,
+        "/response/result/doc[1]/doc[1]/int[@name='id']='2'" ,
+        "/response/result/doc[1]/doc[1]/arr[@name='cat']/str[1]='childDocument'" ,
+        "/response/result/doc[1]/doc[1]/arr[@name='title']/str[1]='" + titleVals[0] + "'" ,
+        "/response/result/doc[2]/int[@name='id']='4'" ,
+        "/response/result/doc[2]/doc[1]/int[@name='id']='5'",
+        "/response/result/doc[2]/doc[1]/arr[@name='cat']/str[1]='childDocument'",
+        "/response/result/doc[2]/doc[1]/arr[@name='title']/str[1]='" + titleVals[1] + "'"};
 
-    assertQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
-        "fl", "*,[child parentFilter=\"subject:parentDocument\"]"), tests);
+    assertQ(req("q", "*:*", 
+                "sort", "id asc",
+                "fq", "subject:\"parentDocument\" ",
+                "fl", "*,[child childFilter='cat:childDocument' parentFilter=\"subject:parentDocument\"]"), 
+            tests);
 
-    assertQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
-        "fl", "subject,[child parentFilter=\"subject:parentDocument\"]"), tests);
+    assertQ(req("q", "*:*", 
+                "sort", "id asc",
+                "fq", "subject:\"parentDocument\" ",
+                "fl", "id,[child childFilter='cat:childDocument' parentFilter=\"subject:parentDocument\"]"), 
+            tests);
   }
 
 }
