@@ -79,13 +79,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   
   @Override
   @After
-  public void tearDown() throws Exception {
-    if (!proxies.isEmpty()) {
-      for (SocketProxy proxy : proxies.values()) {
-        proxy.close();
-      }
-    }
-    
+  public void tearDown() throws Exception {    
     System.clearProperty("numShards");
     
     try {
@@ -93,6 +87,13 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     } catch (Exception exc) {}
     
     resetExceptionIgnores();
+    
+    // close socket proxies after super.tearDown
+    if (!proxies.isEmpty()) {
+      for (SocketProxy proxy : proxies.values()) {
+        proxy.close();
+      }
+    }    
   }
   
   /**

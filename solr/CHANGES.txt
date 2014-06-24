@@ -96,6 +96,9 @@ Bug Fixes
 
 * SOLR-6165: DataImportHandler should write BigInteger and BigDecimal values as strings.
   (Anand Sengamalai via shalin)
+  
+* SOLR-6189: Avoid publishing the state as down if the node is not live when determining
+  if a replica should be in leader-initiated recovery. (Timothy Potter)
 
 Other Changes
 ---------------------
