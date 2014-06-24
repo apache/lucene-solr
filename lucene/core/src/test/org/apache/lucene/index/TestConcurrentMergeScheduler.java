@@ -332,14 +332,17 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
   private static class TrackingCMS extends ConcurrentMergeScheduler {
     long totMergedBytes;
+    CountDownLatch atLeastOneMerge;
 
-    public TrackingCMS() {
+    public TrackingCMS(CountDownLatch atLeastOneMerge) {
       setMaxMergesAndThreads(5, 5);
+      this.atLeastOneMerge = atLeastOneMerge;
     }
 
     @Override
     public void doMerge(MergePolicy.OneMerge merge) throws IOException {
       totMergedBytes += merge.totalBytesSize();
+      atLeastOneMerge.countDown();
       super.doMerge(merge);
     }
   }
@@ -351,7 +354,8 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     }
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwc.setMaxBufferedDocs(5);
-    iwc.setMergeScheduler(new TrackingCMS());
+    CountDownLatch atLeastOneMerge = new CountDownLatch(1);
+    iwc.setMergeScheduler(new TrackingCMS(atLeastOneMerge));
     if (TestUtil.getPostingsFormat("id").equals("SimpleText")) {
       // no
       iwc.setCodec(TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat()));
@@ -366,6 +370,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
         w.deleteDocuments(new Term("id", ""+random().nextInt(i+1)));
       }
     }
+    atLeastOneMerge.await();
     assertTrue(((TrackingCMS) w.getConfig().getMergeScheduler()).totMergedBytes != 0);
     w.shutdown();
     d.close();
