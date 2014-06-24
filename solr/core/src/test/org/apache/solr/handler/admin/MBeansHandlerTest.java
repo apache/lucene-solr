@@ -61,5 +61,13 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
     
     //System.out.println("stats:"+stats);
     assertEquals("Was: 1, Now: 2, Delta: 1", stats.get("requests"));
+
+    xml = h.query(req(
+        CommonParams.QT,"/admin/mbeans",
+        "stats","true",
+        "key","org.apache.solr.handler.admin.CollectionsHandler"
+    ));
+    NamedList<NamedList<NamedList<Object>>> nl = SolrInfoMBeanHandler.fromXML(xml);
+    assertNotNull( nl.get("QUERYHANDLER").get("org.apache.solr.handler.admin.CollectionsHandler"));
   }
 }

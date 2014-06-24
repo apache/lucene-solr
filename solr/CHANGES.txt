@@ -105,6 +105,8 @@ Other Changes
 * SOLR-6178, LUCENE-5775: Deprecate JaspellLookupFactory. (Uwe Schindler,
   Mike McCandless)
 
+* SOLR-5902: Corecontainer level mbeans are not exposed (noble)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
