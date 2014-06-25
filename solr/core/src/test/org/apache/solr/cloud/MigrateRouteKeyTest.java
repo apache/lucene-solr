@@ -90,6 +90,10 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
   public void doTest() throws Exception {
     waitForThingsToLevelOut(15);
 
+    if (usually()) {
+      log.info("Using legacyCloud=false for cluster");
+      CollectionsAPIDistributedZkTest.setClusterProp(cloudClient, "legacyCloud", "false");
+    }
     multipleShardMigrateTest();
     printLayout();
   }

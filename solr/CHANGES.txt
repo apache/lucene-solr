@@ -100,6 +100,9 @@ Bug Fixes
 * SOLR-6189: Avoid publishing the state as down if the node is not live when determining
   if a replica should be in leader-initiated recovery. (Timothy Potter)
 
+* SOLR-6197: The MIGRATE collection API doesn't work when legacyCloud=false is set
+  in cluster properties. (shalin)
+
 Other Changes
 ---------------------
 

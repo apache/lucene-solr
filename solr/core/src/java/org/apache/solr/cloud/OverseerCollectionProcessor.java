@@ -1743,7 +1743,8 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     for (Slice sourceSlice : sourceSlices) {
       for (Slice targetSlice : targetSlices) {
         log.info("Migrating source shard: {} to target shard: {} for split.key = " + splitKey, sourceSlice, targetSlice);
-        migrateKey(clusterState, sourceCollection, sourceSlice, targetCollection, targetSlice, splitKey, timeout, results, asyncId);
+        migrateKey(clusterState, sourceCollection, sourceSlice, targetCollection, targetSlice, splitKey,
+            timeout, results, asyncId, message);
       }
     }
   }
@@ -1751,7 +1752,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   private void migrateKey(ClusterState clusterState, DocCollection sourceCollection, Slice sourceSlice,
                           DocCollection targetCollection, Slice targetSlice,
                           String splitKey, int timeout,
-                          NamedList results, String asyncId) throws KeeperException, InterruptedException {
+                          NamedList results, String asyncId, ZkNodeProps message) throws KeeperException, InterruptedException {
     String tempSourceCollectionName = "split_" + sourceSlice.getName() + "_temp_" + targetSlice.getName();
     if (clusterState.hasCollection(tempSourceCollectionName)) {
       log.info("Deleting temporary collection: " + tempSourceCollectionName);
@@ -1894,15 +1895,25 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
     log.info("Creating a replica of temporary collection: {} on the target leader node: {}",
         tempSourceCollectionName, targetLeader.getNodeName());
-    params = new ModifiableSolrParams();
-    params.set(CoreAdminParams.ACTION, CoreAdminAction.CREATE.toString());
     String tempCollectionReplica2 = tempSourceCollectionName + "_" + tempSourceSlice.getName() + "_replica2";
-    params.set(CoreAdminParams.NAME, tempCollectionReplica2);
-    params.set(CoreAdminParams.COLLECTION, tempSourceCollectionName);
-    params.set(CoreAdminParams.SHARD, tempSourceSlice.getName());
+    props = new HashMap<>();
+    props.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower());
+    props.put(COLLECTION_PROP, tempSourceCollectionName);
+    props.put(SHARD_ID_PROP, tempSourceSlice.getName());
+    props.put("node", targetLeader.getNodeName());
+    props.put(CoreAdminParams.NAME, tempCollectionReplica2);
+    // copy over property params:
+    for (String key : message.keySet()) {
+      if (key.startsWith(COLL_PROP_PREFIX)) {
+        props.put(key, message.getStr(key));
+      }
+    }
+    // add async param
+    if(asyncId != null) {
+      props.put(ASYNC, asyncId);
+    }
+    addReplica(clusterState, new ZkNodeProps(props), results);
 
-    setupAsyncRequest(asyncId, requestMap, params, targetLeader.getNodeName());
-    sendShardRequest(targetLeader.getNodeName(), params, shardHandler);
     collectShardResponses(results, true,
         "MIGRATE failed to create replica of temporary collection in target leader node.",
         shardHandler);
