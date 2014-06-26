@@ -1762,6 +1762,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
       try {
         deleteCollection(new ZkNodeProps(props), results);
+        clusterState = zkStateReader.getClusterState();
       } catch (Exception e) {
         log.warn("Unable to clean up existing temporary collection: " + tempSourceCollectionName, e);
       }

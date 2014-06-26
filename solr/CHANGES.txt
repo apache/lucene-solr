@@ -103,6 +103,9 @@ Bug Fixes
 * SOLR-6197: The MIGRATE collection API doesn't work when legacyCloud=false is set
   in cluster properties. (shalin)
 
+* SOLR-6206: The migrate collection API fails on retry if temp collection already exists.
+  (shalin)
+
 Other Changes
 ---------------------
 
