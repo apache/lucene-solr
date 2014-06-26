@@ -121,6 +121,27 @@ public class OverseerStatusTest extends BasicDistributedZkTest {
     assertEquals("No stats for split in OverseerCollectionProcessor", 1, split.get("errors"));
     assertNotNull(split.get("recent_failures"));
 
+    SimpleOrderedMap<Object> amIleader = (SimpleOrderedMap<Object>) collection_operations.get("am_i_leader");
+    assertNotNull("OverseerCollectionProcessor amILeader stats should not be null", amIleader);
+    assertNotNull(amIleader.get("requests"));
+    assertTrue(Integer.parseInt(amIleader.get("requests").toString()) > 0);
+    assertNotNull(amIleader.get("errors"));
+    assertNotNull(amIleader.get("avgTimePerRequest"));
+
+    amIleader = (SimpleOrderedMap<Object>) overseer_operations.get("am_i_leader");
+    assertNotNull("Overseer amILeader stats should not be null", amIleader);
+    assertNotNull(amIleader.get("requests"));
+    assertTrue(Integer.parseInt(amIleader.get("requests").toString()) > 0);
+    assertNotNull(amIleader.get("errors"));
+    assertNotNull(amIleader.get("avgTimePerRequest"));
+
+    SimpleOrderedMap<Object> updateState = (SimpleOrderedMap<Object>) overseer_operations.get("update_state");
+    assertNotNull("Overseer update_state stats should not be null", updateState);
+    assertNotNull(updateState.get("requests"));
+    assertTrue(Integer.parseInt(updateState.get("requests").toString()) > 0);
+    assertNotNull(updateState.get("errors"));
+    assertNotNull(updateState.get("avgTimePerRequest"));
+
     waitForThingsToLevelOut(15);
   }
 }

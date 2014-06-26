@@ -293,9 +293,20 @@ public class Overseer {
     }
 
     private void updateZkStates(ClusterState clusterState) throws KeeperException, InterruptedException {
-      lastUpdatedTime = System.nanoTime();
-      zkClient.setData(ZkStateReader.CLUSTER_STATE, ZkStateReader.toJSON(clusterState), true);
-
+      TimerContext timerContext = stats.time("update_state");
+      boolean success = false;
+      try {
+        zkClient.setData(ZkStateReader.CLUSTER_STATE, ZkStateReader.toJSON(clusterState), true);
+        lastUpdatedTime = System.nanoTime();
+        success = true;
+      } finally {
+        timerContext.stop();
+        if (success)  {
+          stats.success("update_state");
+        } else  {
+          stats.error("update_state");
+        }
+      }
     }
 
     private void checkIfIamStillLeader() {
@@ -585,6 +596,8 @@ public class Overseer {
     }
 
     private LeaderStatus amILeader() {
+      TimerContext timerContext = stats.time("am_i_leader");
+      boolean success = true;
       try {
         ZkNodeProps props = ZkNodeProps.load(zkClient.getData(
             "/overseer_elect/leader", null, null, true));
@@ -592,6 +605,7 @@ public class Overseer {
           return LeaderStatus.YES;
         }
       } catch (KeeperException e) {
+        success = false;
         if (e.code() == KeeperException.Code.CONNECTIONLOSS) {
           log.error("", e);
           return LeaderStatus.DONT_KNOW;
@@ -601,7 +615,15 @@ public class Overseer {
           log.warn("", e);
         }
       } catch (InterruptedException e) {
+        success = false;
         Thread.currentThread().interrupt();
+      } finally {
+        timerContext.stop();
+        if (success)  {
+          stats.success("am_i_leader");
+        } else  {
+          stats.error("am_i_leader");
+        }
       }
       log.info("According to ZK I (id=" + myId + ") am no longer a leader.");
       return LeaderStatus.NO;
