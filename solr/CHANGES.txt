@@ -25,6 +25,11 @@ $Id$
 
 ==================  4.10.0 =================
 
+New Features
+----------------------
+* SOLR-6196: The overseerstatus collection API instruments amILeader and ZK state update calls.
+  (shalin)
+
 Bug Fixes
 ----------------------
 
