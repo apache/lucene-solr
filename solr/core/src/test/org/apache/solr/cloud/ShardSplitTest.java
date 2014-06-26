@@ -204,7 +204,9 @@ public class ShardSplitTest extends BasicDistributedZkTest {
               }
             }
           } catch (Exception e) {
-            log.error("Exception while adding docs", e);
+            log.error("Exception while adding doc id = " + id, e);
+            // do not select this id for deletion ever
+            deleted.add(String.valueOf(id));
           }
         }
       }
