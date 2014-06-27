@@ -111,6 +111,9 @@ Bug Fixes
 * SOLR-6206: The migrate collection API fails on retry if temp collection already exists.
   (shalin)
 
+* SOLR-6072: The 'deletereplica' API should remove the data and instance directory by default.
+  (shalin)
+
 Other Changes
 ---------------------
 
