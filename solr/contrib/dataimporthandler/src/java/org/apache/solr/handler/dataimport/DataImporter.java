@@ -127,7 +127,7 @@ public class DataImporter {
           LOG.info("Loading DIH Configuration: " + dataconfigFile);
         }
         if(is!=null) {          
-          loadDataConfig(is);
+          config = loadDataConfig(is);
           success = true;
         }      
         
@@ -174,16 +174,17 @@ public class DataImporter {
   public IndexSchema getSchema() {
     return schema;
   }
-  
+
   /**
    * Used by tests
    */
-  void loadAndInit(String configStr) {
-    loadDataConfig(new InputSource(new StringReader(configStr)));       
-  }  
+  public void loadAndInit(String configStr) {
+    config = loadDataConfig(new InputSource(new StringReader(configStr)));       
+  }
 
-  private void loadDataConfig(InputSource configFile) {
+  public DIHConfiguration loadDataConfig(InputSource configFile) {
 
+    DIHConfiguration dihcfg = null;
     try {
       DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
       
@@ -209,18 +210,19 @@ public class DataImporter {
         IOUtils.closeQuietly(configFile.getByteStream());
       }
 
-      config = readFromXml(document);
+      dihcfg = readFromXml(document);
       LOG.info("Data Configuration loaded successfully");
     } catch (Exception e) {
       throw new DataImportHandlerException(SEVERE,
               "Data Config problem: " + e.getMessage(), e);
     }
-    for (Entity e : config.getEntities()) {
+    for (Entity e : dihcfg.getEntities()) {
       if (e.getAllAttributes().containsKey(SqlEntityProcessor.DELTA_QUERY)) {
         isDeltaImportSupported = true;
         break;
       }
     }
+    return dihcfg;
   }
   
   public DIHConfiguration readFromXml(Document xmlDocument) {
@@ -327,7 +329,7 @@ public class DataImporter {
     return propWriter;
   }
 
-  DIHConfiguration getConfig() {
+  public DIHConfiguration getConfig() {
     return config;
   }
 
