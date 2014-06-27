@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -69,6 +70,7 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
     clusterStatusWithCollectionAndShard();
     clusterStatusWithRouteKey();
     clusterStatusAliasTest();
+    clusterStatusRolesTest();
   }
 
   private void clusterStatusWithCollectionAndShard() throws IOException, SolrServerException {
@@ -234,7 +236,40 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
       List<String> collAlias = (List<String>) collection.get("aliases");
       assertEquals("Aliases not found", Lists.newArrayList("myalias"), collAlias);
     } finally {
-      //remove collections
+      client.shutdown();
+    }
+  }
+
+  private void clusterStatusRolesTest() throws Exception  {
+    CloudSolrServer client = createCloudClient(null);
+    try {
+      client.connect();
+      Replica replica = client.getZkStateReader().getLeaderRetry(DEFAULT_COLLECTION, SHARD1);
+
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.ADDROLE.toString());
+      params.set("node", replica.getNodeName());
+      params.set("role", "overseer");
+      SolrRequest request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+      client.request(request);
+
+      params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
+      params.set("collection", DEFAULT_COLLECTION);
+      request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+
+      NamedList<Object> rsp = client.request(request);
+      NamedList<Object> cluster = (NamedList<Object>) rsp.get("cluster");
+      assertNotNull("Cluster state should not be null", cluster);
+      Map<String, Object> roles = (Map<String, Object>) cluster.get("roles");
+      assertNotNull("Role information should not be null", roles);
+      List<String> overseer = (List<String>) roles.get("overseer");
+      assertNotNull(overseer);
+      assertEquals(1, overseer.size());
+      assertTrue(overseer.contains(replica.getNodeName()));
+    } finally {
       client.shutdown();
     }
   }
