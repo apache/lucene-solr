@@ -697,7 +697,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     }
 
     Map roles = null;
-    if(zkStateReader.getZkClient().exists(ZkStateReader.ROLES, true)){
+    if (zkStateReader.getZkClient().exists(ZkStateReader.ROLES, true)) {
       roles = (Map) ZkStateReader.fromJSON(zkStateReader.getZkClient().getData(ZkStateReader.ROLES, null, null, true));
     }
 
@@ -762,6 +762,10 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     if (roles != null)  {
       clusterStatus.add("roles", roles);
     }
+
+    // add live_nodes
+    List<String> liveNodes = zkStateReader.getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true);
+    clusterStatus.add("live_nodes", liveNodes);
 
     results.add("cluster", clusterStatus);
   }
