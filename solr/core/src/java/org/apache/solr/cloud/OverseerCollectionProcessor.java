@@ -864,7 +864,9 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     
     // assume the core exists and try to unload it
     Map m = ZkNodeProps.makeMap("qt", adminPath, CoreAdminParams.ACTION,
-        CoreAdminAction.UNLOAD.toString(), CoreAdminParams.CORE, core);
+        CoreAdminAction.UNLOAD.toString(), CoreAdminParams.CORE, core,
+        CoreAdminParams.DELETE_INSTANCE_DIR, "true",
+        CoreAdminParams.DELETE_DATA_DIR, "true");
     
     ShardRequest sreq = new ShardRequest();
     sreq.purpose = 1;
