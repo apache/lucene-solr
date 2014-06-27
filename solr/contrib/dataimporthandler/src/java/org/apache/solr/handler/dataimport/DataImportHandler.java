@@ -81,6 +81,10 @@ public class DataImportHandler extends RequestHandlerBase implements
 
   private static final String PARAM_WRITER_IMPL = "writerImpl";
   private static final String DEFAULT_WRITER_NAME = "SolrWriter";
+
+  public DataImporter getImporter() {
+    return this.importer;
+  }
   
   @Override
   @SuppressWarnings("unchecked")

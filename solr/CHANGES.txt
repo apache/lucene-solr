@@ -121,6 +121,9 @@ Other Changes
 
 * SOLR-5902: Corecontainer level mbeans are not exposed (noble)
 
+* SOLR-6194: Allow access to DataImporter and DIHConfiguration from DataImportHandler.
+  (Aaron LaBella via shalin)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
