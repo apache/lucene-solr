@@ -146,6 +146,9 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
       assertNotNull(collections.get(COLLECTION_NAME1));
       assertEquals(4, collections.size());
 
+      List<String> liveNodes = (List<String>) cluster.get("live_nodes");
+      assertNotNull("Live nodes should not be null", liveNodes);
+      assertFalse(liveNodes.isEmpty());
     } finally {
       //remove collections
       client.shutdown();

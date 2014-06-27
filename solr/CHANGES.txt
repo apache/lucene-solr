@@ -96,6 +96,8 @@ New Features
 
 * SOLR-6069: The 'clusterstatus' API should return 'roles' information. (shalin)
 
+* SOLR-6044: The 'clusterstatus' API should return live_nodes as well. (shalin)
+
 Bug Fixes
 ----------------------
 
