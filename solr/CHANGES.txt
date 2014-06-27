@@ -94,6 +94,8 @@ New Features
 * SOLR-6196: The overseerstatus collection API instruments amILeader and ZK state update calls.
   (shalin)
 
+* SOLR-6069: The 'clusterstatus' API should return 'roles' information. (shalin)
+
 Bug Fixes
 ----------------------
 

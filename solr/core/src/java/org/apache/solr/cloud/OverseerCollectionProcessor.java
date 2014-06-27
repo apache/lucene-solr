@@ -668,7 +668,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
   }
 
-  private void getClusterStatus(ClusterState clusterState, ZkNodeProps message, NamedList results) {
+  private void getClusterStatus(ClusterState clusterState, ZkNodeProps message, NamedList results) throws KeeperException, InterruptedException {
     String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
 
     // read aliases
@@ -690,6 +690,11 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
           }
         }
       }
+    }
+
+    Map roles = null;
+    if(zkStateReader.getZkClient().exists(ZkStateReader.ROLES, true)){
+      roles = (Map) ZkStateReader.fromJSON(zkStateReader.getZkClient().getData(ZkStateReader.ROLES, null, null, true));
     }
 
     // convert cluster state into a map of writable types
@@ -751,6 +756,11 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     // add the alias map too
     if (aliasVsCollections != null && !aliasVsCollections.isEmpty())  {
       clusterStatus.add("aliases", aliasVsCollections);
+    }
+
+    // add the roles map
+    if (roles != null)  {
+      clusterStatus.add("roles", roles);
     }
 
     results.add("cluster", clusterStatus);
