@@ -81,14 +81,20 @@
   <property name="tests.cachefilehistory" value="10" />
 
   <path id="junit-path">
-    <fileset dir="${common.dir}/test-framework/lib">
+    <fileset dir="${common.dir}/test-framework/lib2">
       <include name="junit-*.jar" />
       <include name="randomizedtesting-runner-*.jar" />
     </fileset>
   </path>
+  <path id="path.junit4">
+    <fileset dir="${common.dir}/test-framework/lib2">
+      <include name="*.jar" />
+    </fileset>
+  </path>
+  
 
   <path id="ant-path">
-    <fileset dir="${common.dir}/test-framework/lib" includes="ant-*.jar"/>
+    <fileset dir="${common.dir}/test-framework/lib2" includes="ant-*.jar"/>
   </path>
 
   <!-- default arguments to pass to JVM executing tests -->
@@ -921,6 +927,7 @@
             debugstream="true"
         >
             <!-- Classpaths. -->
+            <classpath refid="junit-path" />
             <classpath refid="@{junit.classpath}"/>
             <classpath refid="clover.classpath" />
 
@@ -1279,8 +1286,10 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
 
   <target name="install-junit4-taskdef" depends="ivy-configure">
     <!-- JUnit4 taskdef. -->
+    <!--
     <ivy:resolve   file="${common.dir}/test-framework/ivy.xml" type="jar" log="quiet" />
     <ivy:cachepath file="${common.dir}/test-framework/ivy.xml" conf="junit4-stdalone" type="jar" transitive="false" pathid="path.junit4" />
+    -->
 
     <taskdef uri="antlib:com.carrotsearch.junit4">
       <classpath refid="path.junit4" />
@@ -2226,9 +2235,9 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
 
   <target name="-init-forbidden-apis" depends="-install-forbidden-apis">
     <path id="forbidden-apis.allclasses.classpath">
+      <path refid="junit-path"/>
       <path refid="classpath"/>
       <path refid="test.classpath"/>
-      <path refid="junit-path"/>
       <!-- include the output directories, too (so we can still resolve excluded classes: -->
       <pathelement path="${build.dir}/classes/java"/>
       <pathelement path="${build.dir}/classes/test"/>
