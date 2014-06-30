@@ -73,10 +73,9 @@ public class TestConfigSets extends SolrTestCaseJ4 {
       container = setupContainer(getFile("solr/configsets").getAbsolutePath());
       String testDirectory = container.getResourceLoader().getInstanceDir();
 
-      SolrCore core1 = container.create("core1", testDirectory + "/core1", "configSet", "configset-2");
+      SolrCore core1 = container.create(new CoreDescriptor(container, "core1", testDirectory + "/core1", "configSet", "configset-2"));
       assertThat(core1.getCoreDescriptor().getName(), is("core1"));
       assertThat(core1.getDataDir(), is(testDirectory + "/core1" + File.separator + "data" + File.separator));
-      core1.close();
 
     }
     finally {
@@ -92,7 +91,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
       container = setupContainer(getFile("solr/configsets").getAbsolutePath());
       String testDirectory = container.getResourceLoader().getInstanceDir();
 
-      container.create("core1", testDirectory + "/core1", "configSet", "nonexistent");
+      container.create(new CoreDescriptor(container, "core1", testDirectory + "/core1", "configSet", "nonexistent"));
       fail("Expected core creation to fail");
     }
     catch (Exception e) {
@@ -121,8 +120,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
     container.load();
 
     // We initially don't have a /get handler defined
-    SolrCore core = container.create("core1", testDirectory + "/core", "configSet", "configset-2");
-    container.register(core, false);
+    SolrCore core = container.create(new CoreDescriptor(container, "core1", testDirectory + "/core", "configSet", "configset-2"));
     assertThat("No /get handler should be defined in the initial configuration",
         core.getRequestHandler("/get"), is(nullValue()));
 

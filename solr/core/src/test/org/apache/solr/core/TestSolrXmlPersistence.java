@@ -17,26 +17,11 @@
 
 package org.apache.solr.core;
 
-import static org.hamcrest.core.Is.is;
-
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.handler.admin.CoreAdminHandler;
@@ -53,8 +38,19 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import com.google.common.base.Charsets;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.hamcrest.core.Is.is;
 
 public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
 
@@ -446,8 +442,6 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
     try {
       x = cores.create(xd);
       y = cores.create(yd);
-      cores.register(x, false);
-      cores.register(y, false);
 
       assertEquals("cores not added?", 3, cores.getCoreNames().size());
 

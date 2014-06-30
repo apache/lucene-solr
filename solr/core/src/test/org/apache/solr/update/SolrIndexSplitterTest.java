@@ -17,11 +17,7 @@ package org.apache.solr.update;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.UnsupportedEncodingException;
-import java.util.List;
-
-
+import com.google.common.collect.Lists;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -40,8 +36,10 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.common.collect.Lists;
+import java.io.File;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
   File indexDir1 = null, indexDir2 = null, indexDir3 = null;
@@ -165,19 +163,11 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
 
       CoreDescriptor dcore1 = buildCoreDescriptor(h.getCoreContainer(), "split1", instanceDir)
           .withDataDir(indexDir1.getAbsolutePath()).withSchema("schema12.xml").build();
-      if (h.getCoreContainer().getZkController() != null) {
-        h.getCoreContainer().preRegisterInZk(dcore1);
-      }
       core1 = h.getCoreContainer().create(dcore1);
-      h.getCoreContainer().register(core1, false);
 
       CoreDescriptor dcore2 = buildCoreDescriptor(h.getCoreContainer(), "split2", instanceDir)
           .withDataDir(indexDir2.getAbsolutePath()).withSchema("schema12.xml").build();
-      if (h.getCoreContainer().getZkController() != null) {
-        h.getCoreContainer().preRegisterInZk(dcore2);
-      }
       core2 = h.getCoreContainer().create(dcore2);
-      h.getCoreContainer().register(core2, false);
 
       LocalSolrQueryRequest request = null;
       try {

@@ -565,15 +565,12 @@ public class CoreAdminHandler extends RequestHandlerBase {
 
           }
         }
-        coreContainer.preRegisterInZk(dcore);
       }
 
       // make sure we can write out the descriptor first
       coreContainer.getCoresLocator().create(coreContainer, dcore);
       
       SolrCore core = coreContainer.create(dcore);
-      
-      coreContainer.register(core, false);
       
       if (coreContainer.getCoresLocator() instanceof SolrXMLCoresLocator) {
         // hack - in this case we persist once more because a core create race might

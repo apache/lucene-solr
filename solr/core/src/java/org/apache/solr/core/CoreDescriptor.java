@@ -138,6 +138,19 @@ public class CoreDescriptor {
                         Properties coreProps) {
     this(container, name, instanceDir, coreProps, null);
   }
+
+  public CoreDescriptor(CoreContainer container, String name, String instanceDir, String... properties) {
+    this(container, name, instanceDir, toProperties(properties));
+  }
+
+  private static Properties toProperties(String... properties) {
+    Properties props = new Properties();
+    assert properties.length % 2 == 0;
+    for (int i = 0; i < properties.length; i += 2) {
+      props.setProperty(properties[i], properties[i+1]);
+    }
+    return props;
+  }
   
   /**
    * Create a new CoreDescriptor.

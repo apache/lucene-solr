@@ -253,33 +253,12 @@ public class CoreContainer {
             Callable<SolrCore> task = new Callable<SolrCore>() {
               @Override
               public SolrCore call() {
-                SolrCore c = null;
                 try {
-                  if (zkSys.getZkController() != null) {
-                    preRegisterInZk(cd);
-                  }
-                  c = create(cd);
-                  registerCore(cd.isTransient(), name, c, false, false);
+                  return create(cd, false);
                 } catch (Exception e) {
                   SolrException.log(log, null, e);
-                  try {
-              /*    if (isZooKeeperAware()) {
-                    try {
-                      zkSys.zkController.unregister(name, cd);
-                    } catch (InterruptedException e2) {
-                      Thread.currentThread().interrupt();
-                      SolrException.log(log, null, e2);
-                    } catch (KeeperException e3) {
-                      SolrException.log(log, null, e3);
-                    }
-                  }*/
-                  } finally {
-                    if (c != null) {
-                      c.close();
-                    }
-                  }            
+                  return null;
                 }
-                return c;
               }
             };
             pending.add(completionService.submit(task));
@@ -450,12 +429,8 @@ public class CoreContainer {
   public CoresLocator getCoresLocator() {
     return coresLocator;
   }
-
-  protected SolrCore registerCore(boolean isTransientCore, String name, SolrCore core, boolean returnPrevNotClosed) {
-    return registerCore(isTransientCore, name, core, returnPrevNotClosed, true);
-  }
   
-  protected SolrCore registerCore(boolean isTransientCore, String name, SolrCore core, boolean returnPrevNotClosed, boolean registerInZk) {
+  protected SolrCore registerCore(String name, SolrCore core, boolean registerInZk) {
     if( core == null ) {
       throw new RuntimeException( "Can not register a null core." );
     }
@@ -480,7 +455,7 @@ public class CoreContainer {
       core.close();
       throw new IllegalStateException("This CoreContainer has been shutdown");
     }
-    if (isTransientCore) {
+    if (cd.isTransient()) {
       old = solrCores.putTransientCore(cfg, name, core, loader);
     } else {
       old = solrCores.putCore(name, core);
@@ -505,9 +480,7 @@ public class CoreContainer {
     }
     else {
       log.info( "replacing core: "+name );
-      if (!returnPrevNotClosed) {
-        old.close();
-      }
+      old.close();
       if (registerInZk) {
         zkSys.registerInZk(core, false);
       }
@@ -516,40 +489,33 @@ public class CoreContainer {
   }
 
   /**
-   * Registers a SolrCore descriptor in the registry using the core's name.
-   * If returnPrev==false, the old core, if different, is closed.
-   * @return a previous core having the same name if it existed and returnPrev==true
+   * Creates a new core based on a CoreDescriptor, publishing the core state to the cluster
+   * @param cd the CoreDescriptor
+   * @return the newly created core
    */
-  public SolrCore register(SolrCore core, boolean returnPrev) {
-    return registerCore(core.getCoreDescriptor().isTransient(), core.getName(), core, returnPrev);
-  }
-
-  public SolrCore register(String name, SolrCore core, boolean returnPrev) {
-    return registerCore(core.getCoreDescriptor().isTransient(), name, core, returnPrev);
-  }
-
-  public SolrCore create(String name, String instanceDir, String... properties) {
-    Properties props = new Properties();
-    assert properties.length % 2 == 0;
-    for (int i = 0; i < properties.length; i += 2) {
-      props.setProperty(properties[i], properties[i+1]);
-    }
-    return create(new CoreDescriptor(this, name, instanceDir, props));
+  public SolrCore create(CoreDescriptor cd) {
+    return create(cd, true);
   }
 
   /**
-   * Creates a new core based on a descriptor but does not register it.
+   * Creates a new core based on a CoreDescriptor.
    *
-   * @param dcore a core descriptor
+   * @param dcore        a core descriptor
+   * @param publishState publish core state to the cluster if true
+   *
    * @return the newly created core
    */
-  public SolrCore create(CoreDescriptor dcore) {
+  public SolrCore create(CoreDescriptor dcore, boolean publishState) {
 
     if (isShutDown) {
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Solr has shutdown.");
     }
 
     try {
+
+      if (zkSys.getZkController() != null) {
+        zkSys.getZkController().preRegister(dcore);
+      }
 
       ConfigSet coreConfig = coreConfigService.getConfig(dcore);
       log.info("Creating SolrCore '{}' using configuration from {}", dcore.getName(), coreConfig.getName());
@@ -560,6 +526,8 @@ public class CoreContainer {
       if (!isZooKeeperAware() && core.getUpdateHandler().getUpdateLog() != null) {
         core.getUpdateHandler().getUpdateLog().recoverFromLog();
       }
+
+      registerCore(dcore.getName(), core, publishState);
 
       return core;
 
@@ -650,7 +618,7 @@ public class CoreContainer {
         SolrCore newCore = core.reload(coreConfig, core);
         // keep core to orig name link
         solrCores.removeCoreToOrigName(newCore, core);
-        registerCore(false, name, newCore, false, false);
+        registerCore(name, newCore, false);
       } finally {
         solrCores.removeFromPendingOps(name);
       }
@@ -694,7 +662,7 @@ public class CoreContainer {
   public void rename(String name, String toName) {
     try (SolrCore core = getCore(name)) {
       if (core != null) {
-        registerCore(false, toName, core, false);
+        registerCore(toName, core, true);
         name = checkDefault(name);
         SolrCore old = solrCores.remove(name, false);
         coresLocator.rename(this, old.getCoreDescriptor(), core.getCoreDescriptor());
@@ -765,29 +733,12 @@ public class CoreContainer {
                                  // the wait as a consequence of shutting down.
     try {
       if (core == null) {
-        if (zkSys.getZkController() != null) {
-          preRegisterInZk(desc);
-        }
         core = create(desc); // This should throw an error if it fails.
         core.open();
-        registerCore(desc.isTransient(), name, core, false);
       } else {
         core.open();
       }
     } catch(Exception ex){
-      // remains to be seen how transient cores and such
-      // will work in SolrCloud mode, but just to be future
-      // proof...
-      /*if (isZooKeeperAware()) {
-        try {
-          getZkController().unregister(name, desc);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          SolrException.log(log, null, e);
-        } catch (KeeperException e) {
-          SolrException.log(log, null, e);
-        }
-      }*/
       throw recordAndThrow(name, "Unable to create core: " + name, ex);
     } finally {
       solrCores.removeFromPendingOps(name);
@@ -874,10 +825,6 @@ public class CoreContainer {
    */
   public CoreDescriptor getUnloadedCoreDescriptor(String cname) {
     return solrCores.getUnloadedCoreDescriptor(cname);
-  }
-
-  public void preRegisterInZk(final CoreDescriptor p) {
-    zkSys.getZkController().preRegister(p);
   }
 
   public String getSolrHome() {

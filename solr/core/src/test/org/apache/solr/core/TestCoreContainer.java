@@ -17,9 +17,17 @@
 
 package org.apache.solr.core;
 
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsInstanceOf.instanceOf;
+import org.apache.commons.io.FileUtils;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.handler.admin.InfoHandler;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -33,19 +41,6 @@ import java.util.jar.JarOutputStream;
 
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import javax.xml.parsers.ParserConfigurationException;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.TestUtil;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.handler.admin.CoreAdminHandler;
-import org.apache.solr.handler.admin.InfoHandler;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.xml.sax.SAXException;
-
 
 public class TestCoreContainer extends SolrTestCaseJ4 {
 
@@ -93,9 +88,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       SolrCore core2 = cores.create(descriptor2);
       
       assertSame(core1.getLatestSchema(), core2.getLatestSchema());
-      
-      core1.close();
-      core2.close();
+
     } finally {
       cores.shutdown();
       System.clearProperty("shareSchema");
@@ -165,8 +158,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       //add a new core
       CoreDescriptor coreDescriptor = new CoreDescriptor(cores, "core1", solrHomeDirectory.getAbsolutePath());
       SolrCore newCore = cores.create(coreDescriptor);
-      cores.register(newCore, false);
-      
+
       //assert one registered core
 
       assertEquals("There core registered", 1, cores.getCores().size());
@@ -227,7 +219,6 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       ClassLoader coreLoader = core1.getResourceLoader().getClassLoader();
       assertSame(sharedLoader, coreLoader.getParent());
 
-      core1.close();
     } finally {
       cc.shutdown();
     }

@@ -17,8 +17,6 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ClusterState;
@@ -161,13 +159,7 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
     CoreDescriptor dcore = buildCoreDescriptor(container1, "testcore", "testcore")
                               .withDataDir(dataDir4.getAbsolutePath()).build();
 
-    if (container1.getZkController() != null) {
-      container1.preRegisterInZk(dcore);
-    }
-    
     SolrCore core = container1.create(dcore);
-    
-    container1.register(core, false);
     
     ZkController zkController2 = container2.getZkController();
 

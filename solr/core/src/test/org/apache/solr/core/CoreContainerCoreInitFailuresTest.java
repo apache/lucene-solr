@@ -17,17 +17,17 @@
 
 package org.apache.solr.core;
 
-import java.io.File;
-import java.util.Collection;
-import java.util.Map;
-import java.util.regex.Pattern;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.junit.After;
 import org.xml.sax.SAXParseException;
+
+import java.io.File;
+import java.util.Collection;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
   
@@ -188,7 +188,7 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
     FileUtils.copyFile(getFile("solr/collection1/conf/solrconfig-defaults.xml"),
                        FileUtils.getFile(solrHome, "col_bad", "conf", "solrconfig.xml"));
     final CoreDescriptor fixed = new CoreDescriptor(cc, "col_bad", "col_bad");
-    cc.register("col_bad", cc.create(fixed), false);
+    cc.create(fixed);
     
     // check that we have the cores we expect
     cores = cc.getCoreNames();
@@ -247,24 +247,6 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
     }
 
     // -----
-    // register bogus as an alias for col_ok and confirm failure goes away
-    cc.register("bogus", cc.getCore("col_ok"), false);
-
-    // check that we have the cores we expect
-    cores = cc.getCoreNames();
-    assertNotNull("core names is null", cores);
-    assertEquals("wrong number of cores", 3, cores.size());
-    assertTrue("col_ok not found", cores.contains("col_ok"));
-    assertTrue("col_bad not found", cores.contains("col_bad"));
-    assertTrue("bogus not found", cores.contains("bogus"));
-    
-    // check that we have the failures we expect
-    failures = cc.getCoreInitFailures();
-    assertNotNull("core failures is a null map", failures);
-    assertEquals("wrong number of core failures", 0, failures.size());
-
-
-    // -----
     // break col_bad's config and try to RELOAD to add failure
 
     final long col_bad_old_start = getCoreStartTime(cc, "col_bad");
@@ -294,15 +276,14 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
     // check that we have the cores we expect
     cores = cc.getCoreNames();
     assertNotNull("core names is null", cores);
-    assertEquals("wrong number of cores", 3, cores.size());
+    assertEquals("wrong number of cores", 2, cores.size());
     assertTrue("col_ok not found", cores.contains("col_ok"));
     assertTrue("col_bad not found", cores.contains("col_bad"));
-    assertTrue("bogus not found", cores.contains("bogus"));
-    
+
     // check that we have the failures we expect
     failures = cc.getCoreInitFailures();
     assertNotNull("core failures is a null map", failures);
-    assertEquals("wrong number of core failures", 1, failures.size());
+    assertEquals("wrong number of core failures", 2, failures.size());
     Throwable ex = getWrappedException(failures.get("col_bad"));
     assertNotNull("null failure for test core", ex);
     assertTrue("init failure isn't SAXParseException",
@@ -323,15 +304,14 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
     // check that we have the cores we expect
     cores = cc.getCoreNames();
     assertNotNull("core names is null", cores);
-    assertEquals("wrong number of cores", 3, cores.size());
+    assertEquals("wrong number of cores", 2, cores.size());
     assertTrue("col_ok not found", cores.contains("col_ok"));
     assertTrue("col_bad not found", cores.contains("col_bad"));
-    assertTrue("bogus not found", cores.contains("bogus"));
-    
+
     // check that we have the failures we expect
     failures = cc.getCoreInitFailures();
     assertNotNull("core failures is a null map", failures);
-    assertEquals("wrong number of core failures", 0, failures.size());
+    assertEquals("wrong number of core failures", 1, failures.size());
 
   }
 
