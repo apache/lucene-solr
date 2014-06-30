@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
 
 
 class SolrCores {
@@ -44,8 +43,6 @@ class SolrCores {
   private final Map<String, CoreDescriptor> dynamicDescriptors = new LinkedHashMap<>();
 
   private final Map<String, SolrCore> createdCores = new LinkedHashMap<>();
-
-  private Map<SolrCore, String> coreToOrigName = new ConcurrentHashMap<>();
 
   private final CoreContainer container;
 
@@ -230,14 +227,11 @@ class SolrCores {
 
   }
 
-  protected SolrCore remove(String name, boolean removeOrig) {
+  protected SolrCore remove(String name) {
 
     synchronized (modifyLock) {
       SolrCore tmp = cores.remove(name);
       SolrCore ret = null;
-      if (removeOrig && tmp != null) {
-        coreToOrigName.remove(tmp);
-      }
       ret = (ret == null) ? tmp : ret;
       // It could have been a newly-created core. It could have been a transient core. The newly-created cores
       // in particular should be checked. It could have been a dynamic core.
@@ -247,24 +241,6 @@ class SolrCores {
       ret = (ret == null) ? tmp : ret;
       dynamicDescriptors.remove(name);
       return ret;
-    }
-  }
-
-  protected void putCoreToOrigName(SolrCore c, String name) {
-
-    synchronized (modifyLock) {
-      coreToOrigName.put(c, name);
-    }
-
-  }
-
-  protected void removeCoreToOrigName(SolrCore newCore, SolrCore core) {
-
-    synchronized (modifyLock) {
-      String origName = coreToOrigName.remove(core);
-      if (origName != null) {
-        coreToOrigName.put(newCore, origName);
-      }
     }
   }
 
@@ -336,12 +312,6 @@ class SolrCores {
       return new CoreDescriptor(cname, desc);
     }
 
-  }
-
-  protected String getCoreToOrigName(SolrCore solrCore) {
-    synchronized (modifyLock) {
-      return coreToOrigName.get(solrCore);
-    }
   }
 
   // Wait here until any pending operations (load, unload or reload) are completed on this core.
