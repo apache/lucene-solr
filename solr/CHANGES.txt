@@ -161,6 +161,8 @@ Other Changes
 * SOLR-6170: CoreContainer.preRegisterInZk() and CoreContainer.register() commands
   are merged into CoreContainer.create(). (Alan Woodward)
 
+* SOLR-6171: Remove unused SolrCores coreNameToOrig map (Alan Woodward)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
