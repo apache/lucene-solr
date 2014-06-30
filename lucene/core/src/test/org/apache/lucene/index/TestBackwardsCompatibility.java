@@ -40,6 +40,7 @@ import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
@@ -231,6 +232,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
                                     "45.nocfs",
                                     "461.cfs",
                                     "461.nocfs",
+                                    "49.cfs",
+                                    "49.nocfs"
   };
   
   final String[] unsupportedNames = {"19.cfs",
@@ -457,6 +460,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     final boolean is40Index = MultiFields.getMergedFieldInfos(reader).fieldInfo("content5") != null;
     // true if this is a 4.2+ index
     final boolean is42Index = MultiFields.getMergedFieldInfos(reader).fieldInfo("dvSortedSet") != null;
+    // true if this is a 4.9+ index
+    final boolean is49Index = MultiFields.getMergedFieldInfos(reader).fieldInfo("dvSortedNumeric") != null;
 
     assert is40Index; // NOTE: currently we can only do this on trunk!
 
@@ -515,6 +520,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       if (is42Index) {
         dvSortedSet = MultiDocValues.getSortedSetValues(reader, "dvSortedSet");
       }
+      SortedNumericDocValues dvSortedNumeric = null;
+      if (is49Index) {
+        dvSortedNumeric = MultiDocValues.getSortedNumericValues(reader, "dvSortedNumeric");
+      }
       
       for (int i=0;i<35;i++) {
         int id = Integer.parseInt(reader.document(i).get("id"));
@@ -550,6 +559,11 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
           assertEquals(SortedSetDocValues.NO_MORE_ORDS, dvSortedSet.nextOrd());
           term = dvSortedSet.lookupOrd(ord);
           assertEquals(expectedRef, term);
+        }
+        if (is49Index) {
+          dvSortedNumeric.setDocument(i);
+          assertEquals(1, dvSortedNumeric.count());
+          assertEquals(id, dvSortedNumeric.valueAt(0));
         }
       }
     }
@@ -732,6 +746,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     doc.add(new NumericDocValuesField("dvPacked", id));
     doc.add(new NumericDocValuesField("dvShort", (short)id));
     doc.add(new SortedSetDocValuesField("dvSortedSet", ref));
+    doc.add(new SortedNumericDocValuesField("dvSortedNumeric", id));
     // a field with both offsets and term vectors for a cross-check
     FieldType customType3 = new FieldType(TextField.TYPE_STORED);
     customType3.setStoreTermVectors(true);
@@ -858,22 +873,22 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       IndexSearcher searcher = newSearcher(reader);
       
       for (int id=10; id<15; id++) {
-        ScoreDoc[] hits = searcher.search(NumericRangeQuery.newIntRange("trieInt", 4, Integer.valueOf(id), Integer.valueOf(id), true, true), 100).scoreDocs;
+        ScoreDoc[] hits = searcher.search(NumericRangeQuery.newIntRange("trieInt", NumericUtils.PRECISION_STEP_DEFAULT_32, Integer.valueOf(id), Integer.valueOf(id), true, true), 100).scoreDocs;
         assertEquals("wrong number of hits", 1, hits.length);
         StoredDocument d = searcher.doc(hits[0].doc);
         assertEquals(String.valueOf(id), d.get("id"));
         
-        hits = searcher.search(NumericRangeQuery.newLongRange("trieLong", 4, Long.valueOf(id), Long.valueOf(id), true, true), 100).scoreDocs;
+        hits = searcher.search(NumericRangeQuery.newLongRange("trieLong", NumericUtils.PRECISION_STEP_DEFAULT, Long.valueOf(id), Long.valueOf(id), true, true), 100).scoreDocs;
         assertEquals("wrong number of hits", 1, hits.length);
         d = searcher.doc(hits[0].doc);
         assertEquals(String.valueOf(id), d.get("id"));
       }
       
       // check that also lower-precision fields are ok
-      ScoreDoc[] hits = searcher.search(NumericRangeQuery.newIntRange("trieInt", 4, Integer.MIN_VALUE, Integer.MAX_VALUE, false, false), 100).scoreDocs;
+      ScoreDoc[] hits = searcher.search(NumericRangeQuery.newIntRange("trieInt", NumericUtils.PRECISION_STEP_DEFAULT_32, Integer.MIN_VALUE, Integer.MAX_VALUE, false, false), 100).scoreDocs;
       assertEquals("wrong number of hits", 34, hits.length);
       
-      hits = searcher.search(NumericRangeQuery.newLongRange("trieLong", 4, Long.MIN_VALUE, Long.MAX_VALUE, false, false), 100).scoreDocs;
+      hits = searcher.search(NumericRangeQuery.newLongRange("trieLong", NumericUtils.PRECISION_STEP_DEFAULT, Long.MIN_VALUE, Long.MAX_VALUE, false, false), 100).scoreDocs;
       assertEquals("wrong number of hits", 34, hits.length);
       
       // check decoding of terms
