@@ -63,6 +63,9 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
     TrieDateField dt;
     StrField s;
     TrieIntField ti;
+    TrieLongField tl;
+    TrieFloatField tf;
+    TrieDoubleField td;
     BoolField b;
     
     
@@ -82,6 +85,18 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
     ti = new TrieIntField();
     ti.init(schema, initMap);
     assertFalse(ti.hasProperty(FieldType.OMIT_NORMS));
+
+    tl = new TrieLongField();
+    tl.init(schema, initMap);
+    assertFalse(tl.hasProperty(FieldType.OMIT_NORMS));
+
+    tf = new TrieFloatField();
+    tf.init(schema, initMap);
+    assertFalse(tf.hasProperty(FieldType.OMIT_NORMS));
+
+    td = new TrieDoubleField();
+    td.init(schema, initMap);
+    assertFalse(td.hasProperty(FieldType.OMIT_NORMS));
 
     b = new BoolField();
     b.init(schema, initMap);
@@ -112,6 +127,18 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
     ti = new TrieIntField();
     ti.init(schema, initMap);
     assertTrue(ti.hasProperty(FieldType.OMIT_NORMS));
+
+    tl = new TrieLongField();
+    tl.init(schema, initMap);
+    assertTrue(tl.hasProperty(FieldType.OMIT_NORMS));
+
+    tf = new TrieFloatField();
+    tf.init(schema, initMap);
+    assertTrue(tf.hasProperty(FieldType.OMIT_NORMS));
+
+    td = new TrieDoubleField();
+    td.init(schema, initMap);
+    assertTrue(td.hasProperty(FieldType.OMIT_NORMS));
 
     b = new BoolField();
     b.init(schema, initMap);

@@ -89,6 +89,24 @@ Other Changes
 
 ==================  4.10.0 =================
 
+Versions of Major Components
+---------------------
+Apache Tika 1.5
+Carrot2 3.9.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+
+Upgrading from Solr 4.9
+----------------------
+
+* In Solr 3.6, all primitive field types were changed to omit norms by default when the
+  schema version is 1.5 or greater (SOLR-3140), but TrieDateField's default was mistakenly
+  not changed.  As of Solr 4.10, TrieDateField omits norms by default (see SOLR-6211).
+
+Detailed Change List
+----------------------
+
 New Features
 ----------------------
 * SOLR-6196: The overseerstatus collection API instruments amILeader and ZK state update calls.
@@ -117,6 +135,8 @@ Bug Fixes
 
 * SOLR-6072: The 'deletereplica' API should remove the data and instance directory by default.
   (shalin)
+  
+* SOLR-6211: TrieDateField doesn't default to omitNorms=true. (Michael Ryan, Steve Rowe)
 
 Other Changes
 ---------------------
