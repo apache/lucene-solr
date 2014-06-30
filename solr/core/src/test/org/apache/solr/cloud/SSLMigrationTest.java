@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import org.apache.lucene.util.LuceneTestCase.BadApple;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,6 +49,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
  */
 @Slow
 @SuppressSSL
+@BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6213")
 public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
   
   @Override
