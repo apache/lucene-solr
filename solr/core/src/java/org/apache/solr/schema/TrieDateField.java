@@ -21,18 +21,11 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DateUtil;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
-import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.update.processor.TimestampUpdateProcessorFactory; //jdoc
 import org.apache.solr.util.DateMathParser;
-import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.index.StorableField;
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.NumericRangeQuery;
-import org.apache.lucene.uninverting.UninvertingReader.Type;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRef;
 
 import java.text.DateFormat;
 import java.text.DecimalFormat;
@@ -42,11 +35,8 @@ import java.text.NumberFormat;
 import java.text.ParseException;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
-import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Date;
-import java.io.IOException;
 import java.util.TimeZone;
 
 /**
@@ -109,8 +99,11 @@ import java.util.TimeZone;
  *
  * @see TrieField
  */
-public class TrieDateField extends PrimitiveFieldType implements DateValueFieldType {
-
+public class TrieDateField extends TrieField implements DateValueFieldType {
+  {
+    type = TrieTypes.DATE;
+  }
+  
   public static final TimeZone UTC = TimeZone.getTimeZone("UTC");
 
   /**
@@ -254,8 +247,6 @@ public class TrieDateField extends PrimitiveFieldType implements DateValueFieldT
     }
   }
 
-
-
   /**
    * Thread safe DateFormat that can <b>format</b> in the canonical
    * ISO8601 date format, not including the trailing "Z" (since it is
@@ -341,144 +332,16 @@ public class TrieDateField extends PrimitiveFieldType implements DateValueFieldT
     }
   }
 
-  final TrieField wrappedField = new TrieField() {{
-    type = TrieTypes.DATE;
-  }};
-
-  @Override
-  protected void init(IndexSchema schema, Map<String, String> args) {
-    wrappedField.init(schema, args);
-  }
-
   @Override
   public Date toObject(StorableField f) {
-    return (Date) wrappedField.toObject(f);
+    return (Date)super.toObject(f);
   }
-
-  @Override
-  public Object toObject(SchemaField sf, BytesRef term) {
-    return wrappedField.toObject(sf, term);
-  }
-
-  @Override
-  public SortField getSortField(SchemaField field, boolean top) {
-    return wrappedField.getSortField(field, top);
-  }
-
-  @Override
-  public Type getUninversionType(SchemaField sf) {
-    return wrappedField.getUninversionType(sf);
-  }
-
-  @Override
-  public Object marshalSortValue(Object value) {
-    return value;
-  }
-
-  @Override
-  public Object unmarshalSortValue(Object value) {
-    return value;
-  }
-
-  @Override
-  public ValueSource getValueSource(SchemaField field, QParser parser) {
-    return wrappedField.getValueSource(field, parser);
-  }
-
-  /**
-   * @return the precisionStep used to index values into the field
-   */
-  public int getPrecisionStep() {
-    return wrappedField.getPrecisionStep();
-  }
-
-  @Override
-  public NumericType getNumericType() {
-    return wrappedField.getNumericType();
-  }
-
-  @Override
-  public void write(TextResponseWriter writer, String name, StorableField f) throws IOException {
-    wrappedField.write(writer, name, f);
-  }
-
-  @Override
-  public boolean isTokenized() {
-    return wrappedField.isTokenized();
-  }
-
-  @Override
-  public boolean multiValuedFieldCache() {
-    return wrappedField.multiValuedFieldCache();
-  }
-
-  @Override
-  public String storedToReadable(StorableField f) {
-    return wrappedField.storedToReadable(f);
-  }
-
-  @Override
-  public String readableToIndexed(String val) {  
-    return wrappedField.readableToIndexed(val);
-  }
-
-  @Override
-  public String toInternal(String val) {
-    return wrappedField.toInternal(val);
-  }
-
-  @Override
-  public String toExternal(StorableField f) {
-    return wrappedField.toExternal(f);
-  }
-
-  @Override
-  public String indexedToReadable(String _indexedForm) {
-    return wrappedField.indexedToReadable(_indexedForm);
-  }
-  @Override
-  public CharsRef indexedToReadable(BytesRef input, CharsRef charsRef) {
-    // TODO: this could be more efficient, but the sortable types should be deprecated instead
-    return wrappedField.indexedToReadable(input, charsRef);
-  }
-
-  @Override
-  public String storedToIndexed(StorableField f) {
-    return wrappedField.storedToIndexed(f);
-  }
-
-  @Override
-  public StorableField createField(SchemaField field, Object value, float boost) {
-    return wrappedField.createField(field, value, boost);
-  }
-
-  @Override
-  public List<StorableField> createFields(SchemaField field, Object value, float boost) {
-    return wrappedField.createFields(field, value, boost);
-  }
-
-  @Override
-  public Query getRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive, boolean maxInclusive) {
-    return wrappedField.getRangeQuery(parser, field, min, max, minInclusive, maxInclusive);
-  }
-
-  @Override
-  protected boolean hasProperty(int p) {
-    return wrappedField.hasProperty(p);
-  }
-
 
   /** TrieDateField specific range query */
   public Query getRangeQuery(QParser parser, SchemaField sf, Date min, Date max, boolean minInclusive, boolean maxInclusive) {
-    return NumericRangeQuery.newLongRange(sf.getName(), wrappedField.precisionStep,
+    return NumericRangeQuery.newLongRange(sf.getName(), precisionStep,
               min == null ? null : min.getTime(),
               max == null ? null : max.getTime(),
               minInclusive, maxInclusive);
   }
-
-  @Override
-  public void checkSchemaField(SchemaField field) {
-    wrappedField.checkSchemaField(field);
-  }
-
 }

@@ -711,8 +711,6 @@ public class TrieField extends PrimitiveFieldType {
    * that indexes multiple precisions per value.
    */
   public static String getMainValuePrefix(org.apache.solr.schema.FieldType ft) {
-    if (ft instanceof TrieDateField)
-      ft = ((TrieDateField) ft).wrappedField;
     if (ft instanceof TrieField) {
       final TrieField trie = (TrieField)ft;
       if (trie.precisionStep  == Integer.MAX_VALUE)

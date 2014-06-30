@@ -244,11 +244,12 @@ public abstract class RangeEndpointCalculator<T extends Comparable<T>> {
         case LONG:
           calc = new LongRangeEndpointCalculator(request);
           break;
+        case DATE:
+          calc = new DateRangeEndpointCalculator(request, null);
+          break;
         default:
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to range facet on tried field of unexpected type:" + sf.getName());
       }
-    } else if (ft instanceof TrieDateField) {
-      calc = new DateRangeEndpointCalculator(request, null);
     } else {
       throw new SolrException (SolrException.ErrorCode.BAD_REQUEST, "Unable to range facet on field:" + sf);
     } 

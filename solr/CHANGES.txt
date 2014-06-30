@@ -87,6 +87,9 @@ Other Changes
 * SOLR-6169: Finish removal of CoreAdminHandler handleAlias action begun in 4.9 
   (Alan Woodward)
 
+* SOLR-6215: TrieDateField should directly extend TrieField instead of
+  forwarding to a wrapped TrieField. (Steve Rowe)
+
 ==================  4.10.0 =================
 
 Versions of Major Components

@@ -1026,13 +1026,14 @@ public class SimpleFacets {
         case LONG:
           calc = new LongRangeEndpointCalculator(sf);
           break;
+        case DATE:
+          calc = new DateRangeEndpointCalculator(sf, null);
+          break;
         default:
           throw new SolrException
               (SolrException.ErrorCode.BAD_REQUEST,
                   "Unable to range facet on tried field of unexpected type:" + f);
       }
-    } else if (ft instanceof TrieDateField) {
-      calc = new DateRangeEndpointCalculator(sf, null);
     } else {
       throw new SolrException
           (SolrException.ErrorCode.BAD_REQUEST,
