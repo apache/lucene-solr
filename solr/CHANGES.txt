@@ -107,6 +107,10 @@ Upgrading from Solr 4.9
   schema version is 1.5 or greater (SOLR-3140), but TrieDateField's default was mistakenly
   not changed.  As of Solr 4.10, TrieDateField omits norms by default (see SOLR-6211).
 
+* Creating a SolrCore via CoreContainer.create() no longer requires an
+  additional call to CoreContainer.register() to make it available to clients
+  (see SOLR-6170).
+
 Detailed Change List
 ----------------------
 
@@ -153,6 +157,9 @@ Other Changes
 
 * SOLR-6194: Allow access to DataImporter and DIHConfiguration from DataImportHandler.
   (Aaron LaBella via shalin)
+
+* SOLR-6170: CoreContainer.preRegisterInZk() and CoreContainer.register() commands
+  are merged into CoreContainer.create(). (Alan Woodward)
 
 ==================  4.9.0 ==================
 
