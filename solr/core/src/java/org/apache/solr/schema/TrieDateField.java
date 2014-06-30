@@ -114,6 +114,16 @@ public class TrieDateField extends DateField implements DateValueFieldType {
   public boolean isTokenized() {
     return wrappedField.isTokenized();
   }
+  
+  @Override
+  protected boolean hasProperty(int p) {
+    return wrappedField.hasProperty(p);
+  }
+  
+  @Override
+  public boolean isMultiValued() {
+    return wrappedField.isMultiValued();
+  }
 
   @Override
   public boolean multiValuedFieldCache() {
