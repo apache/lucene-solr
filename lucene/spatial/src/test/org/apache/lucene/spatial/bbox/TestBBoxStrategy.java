@@ -22,6 +22,7 @@ import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.spatial.SpatialMatchConcern;
 import org.apache.lucene.spatial.StrategyTestCase;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -42,7 +43,7 @@ public class TestBBoxStrategy extends StrategyTestCase {
     return shape.getBoundingBox();
   }
 
-  @Test
+  @Test @Ignore("Overlaps not supported")
   public void testBasicOperaions() throws IOException {
     getAddAndVerifyIndexedDocuments(DATA_SIMPLE_BBOX);
     

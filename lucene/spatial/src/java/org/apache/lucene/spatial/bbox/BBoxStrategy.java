@@ -53,7 +53,7 @@ import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
  * <ul>
  * <li>Only indexes Rectangles; just one per field value.</li>
  * <li>Can query only by a Rectangle.</li>
- * <li>Supports all {@link SpatialOperation}s.</li>
+ * <li>Supports most {@link SpatialOperation}s -- not Overlaps.</li>
  * <li>Uses the DocValues API for any sorting / relevancy.</li>
  * </ul>
  *
@@ -186,8 +186,7 @@ public class BBoxStrategy extends SpatialStrategy {
     else if( op == SpatialOperation.IsEqualTo      ) spatial = makeEquals(bbox);
     else if( op == SpatialOperation.IsDisjointTo   ) spatial = makeDisjoint(bbox);
     else if( op == SpatialOperation.IsWithin       ) spatial = makeWithin(bbox);
-    else if( op == SpatialOperation.Overlaps       ) spatial = makeIntersects(bbox);
-    else {
+    else { //no Overlaps support yet
         throw new UnsupportedSpatialOperation(op);
     }
     return spatial;
