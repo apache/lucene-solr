@@ -135,10 +135,11 @@ public abstract class ManagedResourceStorage {
     
     @Override
     public void configure(SolrResourceLoader loader, NamedList<String> initArgs) throws SolrException {
-      String storageDirArg = initArgs.get("storageDir");
+      String storageDirArg = initArgs.get(STORAGE_DIR_INIT_ARG);
       
       if (storageDirArg == null || storageDirArg.trim().length() == 0)
-        throw new IllegalArgumentException("Required configuration parameter 'storageDir' not provided!");
+        throw new IllegalArgumentException("Required configuration parameter '"+
+           STORAGE_DIR_INIT_ARG+"' not provided!");
       
       File dir = new File(storageDirArg);
       if (!dir.isDirectory())
