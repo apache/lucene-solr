@@ -26,13 +26,13 @@ import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.packed.AppendingDeltaPackedLongBuffer;
 import org.apache.lucene.util.packed.PackedInts;
+import org.apache.lucene.util.packed.PackedLongValues;
 
 /** Buffers up pending long[] per doc, sorts, then flushes when segment flushes. */
 class SortedNumericDocValuesWriter extends DocValuesWriter {
-  private AppendingDeltaPackedLongBuffer pending; // stream of all values
-  private AppendingDeltaPackedLongBuffer pendingCounts; // count of values per doc
+  private PackedLongValues.Builder pending; // stream of all values
+  private PackedLongValues.Builder pendingCounts; // count of values per doc
   private final Counter iwBytesUsed;
   private long bytesUsed; // this only tracks differences in 'pending' and 'pendingCounts'
   private final FieldInfo fieldInfo;
@@ -43,8 +43,8 @@ class SortedNumericDocValuesWriter extends DocValuesWriter {
   public SortedNumericDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
     this.iwBytesUsed = iwBytesUsed;
-    pending = new AppendingDeltaPackedLongBuffer(PackedInts.COMPACT);
-    pendingCounts = new AppendingDeltaPackedLongBuffer(PackedInts.COMPACT);
+    pending = PackedLongValues.deltaPackedBuilder(PackedInts.COMPACT);
+    pendingCounts = PackedLongValues.deltaPackedBuilder(PackedInts.COMPACT);
     bytesUsed = pending.ramBytesUsed() + pendingCounts.ramBytesUsed();
     iwBytesUsed.addAndGet(bytesUsed);
   }
@@ -105,13 +105,15 @@ class SortedNumericDocValuesWriter extends DocValuesWriter {
   public void flush(SegmentWriteState state, DocValuesConsumer dvConsumer) throws IOException {
     final int maxDoc = state.segmentInfo.getDocCount();
     assert pendingCounts.size() == maxDoc;
+    final PackedLongValues values = pending.build();
+    final PackedLongValues valueCounts = pendingCounts.build();
 
     dvConsumer.addSortedNumericField(fieldInfo,
                               // doc -> valueCount
                               new Iterable<Number>() {
                                 @Override
                                 public Iterator<Number> iterator() {
-                                  return new CountIterator();
+                                  return new CountIterator(valueCounts);
                                 }
                               },
 
@@ -119,15 +121,19 @@ class SortedNumericDocValuesWriter extends DocValuesWriter {
                               new Iterable<Number>() {
                                 @Override
                                 public Iterator<Number> iterator() {
-                                  return new ValuesIterator();
+                                  return new ValuesIterator(values);
                                 }
                               });
   }
   
   // iterates over the values for each doc we have in ram
-  private class ValuesIterator implements Iterator<Number> {
-    final AppendingDeltaPackedLongBuffer.Iterator iter = pending.iterator();
-    
+  private static class ValuesIterator implements Iterator<Number> {
+    final PackedLongValues.Iterator iter;
+
+    ValuesIterator(PackedLongValues values) {
+      iter = values.iterator();
+    }
+
     @Override
     public boolean hasNext() {
       return iter.hasNext();
@@ -147,9 +153,13 @@ class SortedNumericDocValuesWriter extends DocValuesWriter {
     }
   }
   
-  private class CountIterator implements Iterator<Number> {
-    final AppendingDeltaPackedLongBuffer.Iterator iter = pendingCounts.iterator();
-    
+  private static class CountIterator implements Iterator<Number> {
+    final PackedLongValues.Iterator iter;
+
+    CountIterator(PackedLongValues valueCounts) {
+      this.iter = valueCounts.iterator();
+    }
+
     @Override
     public boolean hasNext() {
       return iter.hasNext();

@@ -475,4 +475,20 @@ public final class RamUsageEstimator {
       return bytes + " bytes";
     }
   }
+
+  /**
+   * Return the size of the provided array of {@link Accountable}s by summing
+   * up the shallow size of the array and the
+   * {@link Accountable#ramBytesUsed() memory usage} reported by each
+   * {@link Accountable}.
+   */
+  public static long sizeOf(Accountable[] accountables) {
+    long size = shallowSizeOf(accountables);
+    for (Accountable accountable : accountables) {
+      if (accountable != null) {
+        size += accountable.ramBytesUsed();
+      }
+    }
+    return size;
+  }
 }

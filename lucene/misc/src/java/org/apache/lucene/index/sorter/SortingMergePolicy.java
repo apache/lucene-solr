@@ -38,7 +38,8 @@ import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
+import org.apache.lucene.util.packed.PackedInts;
+import org.apache.lucene.util.packed.PackedLongValues;
 
 /** A {@link MergePolicy} that reorders documents according to a {@link Sort}
  *  before merging them. As a consequence, all segments resulting from a merge
@@ -96,8 +97,8 @@ public final class SortingMergePolicy extends MergePolicy {
       super.setInfo(info);
     }
 
-    private MonotonicAppendingLongBuffer getDeletes(List<AtomicReader> readers) {
-      MonotonicAppendingLongBuffer deletes = new MonotonicAppendingLongBuffer();
+    private PackedLongValues getDeletes(List<AtomicReader> readers) {
+      PackedLongValues.Builder deletes = PackedLongValues.monotonicBuilder(PackedInts.COMPACT);
       int deleteCount = 0;
       for (AtomicReader reader : readers) {
         final int maxDoc = reader.maxDoc();
@@ -110,8 +111,7 @@ public final class SortingMergePolicy extends MergePolicy {
           }
         }
       }
-      deletes.freeze();
-      return deletes;
+      return deletes.build();
     }
 
     @Override
@@ -123,7 +123,7 @@ public final class SortingMergePolicy extends MergePolicy {
         return super.getDocMap(mergeState);
       }
       assert mergeState.docMaps.length == 1; // we returned a singleton reader
-      final MonotonicAppendingLongBuffer deletes = getDeletes(unsortedReaders);
+      final PackedLongValues deletes = getDeletes(unsortedReaders);
       return new MergePolicy.DocMap() {
         @Override
         public int map(int old) {

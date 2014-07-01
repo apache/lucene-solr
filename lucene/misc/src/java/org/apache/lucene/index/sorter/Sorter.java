@@ -27,7 +27,8 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.TimSorter;
-import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
+import org.apache.lucene.util.packed.PackedInts;
+import org.apache.lucene.util.packed.PackedLongValues;
 
 /**
  * Sorts documents of a given index by returning a permutation on the document
@@ -163,21 +164,21 @@ final class Sorter {
     // The reason why we use MonotonicAppendingLongBuffer here is that it
     // wastes very little memory if the index is in random order but can save
     // a lot of memory if the index is already "almost" sorted
-    final MonotonicAppendingLongBuffer newToOld = new MonotonicAppendingLongBuffer();
+    final PackedLongValues.Builder newToOldBuilder = PackedLongValues.monotonicBuilder(PackedInts.COMPACT);
     for (int i = 0; i < maxDoc; ++i) {
-      newToOld.add(docs[i]);
+      newToOldBuilder.add(docs[i]);
     }
-    newToOld.freeze();
+    final PackedLongValues newToOld = newToOldBuilder.build();
 
     for (int i = 0; i < maxDoc; ++i) {
       docs[(int) newToOld.get(i)] = i;
     } // docs is now the oldToNew mapping
 
-    final MonotonicAppendingLongBuffer oldToNew = new MonotonicAppendingLongBuffer();
+    final PackedLongValues.Builder oldToNewBuilder = PackedLongValues.monotonicBuilder(PackedInts.COMPACT);
     for (int i = 0; i < maxDoc; ++i) {
-      oldToNew.add(docs[i]);
+      oldToNewBuilder.add(docs[i]);
     }
-    oldToNew.freeze();
+    final PackedLongValues oldToNew = oldToNewBuilder.build();
     
     return new Sorter.DocMap() {
 

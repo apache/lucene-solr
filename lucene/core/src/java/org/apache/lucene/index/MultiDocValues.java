@@ -29,9 +29,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.packed.AppendingPackedLongBuffer;
-import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
 import org.apache.lucene.util.packed.PackedInts;
+import org.apache.lucene.util.packed.PackedLongValues;
 
 /**
  * A wrapper for CompositeIndexReader providing access to DocValues.
@@ -488,9 +487,9 @@ public class MultiDocValues {
     // cache key of whoever asked for this awful thing
     final Object owner;
     // globalOrd -> (globalOrd - segmentOrd) where segmentOrd is the the ordinal in the first segment that contains this term
-    final MonotonicAppendingLongBuffer globalOrdDeltas;
+    final PackedLongValues globalOrdDeltas;
     // globalOrd -> first segment container
-    final AppendingPackedLongBuffer firstSegments;
+    final PackedLongValues firstSegments;
     // for every segment, segmentOrd -> globalOrd
     final LongValues segmentToGlobalOrds[];
     // the map from/to segment ids
@@ -506,11 +505,11 @@ public class MultiDocValues {
       // even though we accept an overhead ratio, we keep these ones with COMPACT
       // since they are only used to resolve values given a global ord, which is
       // slow anyway
-      globalOrdDeltas = new MonotonicAppendingLongBuffer(PackedInts.COMPACT);
-      firstSegments = new AppendingPackedLongBuffer(PackedInts.COMPACT);
-      final MonotonicAppendingLongBuffer[] ordDeltas = new MonotonicAppendingLongBuffer[subs.length];
+      PackedLongValues.Builder globalOrdDeltas = PackedLongValues.monotonicBuilder(PackedInts.COMPACT);
+      PackedLongValues.Builder firstSegments = PackedLongValues.packedBuilder(PackedInts.COMPACT);
+      final PackedLongValues.Builder[] ordDeltas = new PackedLongValues.Builder[subs.length];
       for (int i = 0; i < ordDeltas.length; i++) {
-        ordDeltas[i] = new MonotonicAppendingLongBuffer(acceptableOverheadRatio);
+        ordDeltas[i] = PackedLongValues.monotonicBuilder(acceptableOverheadRatio);
       }
       long[] ordDeltaBits = new long[subs.length];
       long segmentOrds[] = new long[subs.length];
@@ -551,18 +550,15 @@ public class MultiDocValues {
         globalOrdDeltas.add(globalOrdDelta);
         globalOrd++;
       }
-      firstSegments.freeze();
-      globalOrdDeltas.freeze();
-      for (int i = 0; i < ordDeltas.length; ++i) {
-        ordDeltas[i].freeze();
-      }
+      this.firstSegments = firstSegments.build();
+      this.globalOrdDeltas = globalOrdDeltas.build();
       // ordDeltas is typically the bottleneck, so let's see what we can do to make it faster
       segmentToGlobalOrds = new LongValues[subs.length];
-      long ramBytesUsed = BASE_RAM_BYTES_USED + globalOrdDeltas.ramBytesUsed()
-          + firstSegments.ramBytesUsed() + RamUsageEstimator.shallowSizeOf(segmentToGlobalOrds)
+      long ramBytesUsed = BASE_RAM_BYTES_USED + this.globalOrdDeltas.ramBytesUsed()
+          + this.firstSegments.ramBytesUsed() + RamUsageEstimator.shallowSizeOf(segmentToGlobalOrds)
           + segmentMap.ramBytesUsed();
       for (int i = 0; i < ordDeltas.length; ++i) {
-        final MonotonicAppendingLongBuffer deltas = ordDeltas[i];
+        final PackedLongValues deltas = ordDeltas[i].build();
         if (ordDeltaBits[i] == 0L) {
           // segment ords perfectly match global ordinals
           // likely in case of low cardinalities and large segments
@@ -576,7 +572,7 @@ public class MultiDocValues {
             // monotonic compression mostly adds overhead, let's keep the mapping in plain packed ints
             final int size = (int) deltas.size();
             final PackedInts.Mutable newDeltas = PackedInts.getMutable(size, bitsRequired, acceptableOverheadRatio);
-            final MonotonicAppendingLongBuffer.Iterator it = deltas.iterator();
+            final PackedLongValues.Iterator it = deltas.iterator();
             for (int ord = 0; ord < size; ++ord) {
               newDeltas.set(ord, it.next());
             }
