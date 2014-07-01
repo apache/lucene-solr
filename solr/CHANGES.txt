@@ -145,6 +145,9 @@ Bug Fixes
   
 * SOLR-6211: TrieDateField doesn't default to omitNorms=true. (Michael Ryan, Steve Rowe)
 
+* SOLR-6159: A ZooKeeper session expiry during setup can keep LeaderElector from joining elections.
+  (Steven Bower, shalin)
+
 Other Changes
 ---------------------
 
