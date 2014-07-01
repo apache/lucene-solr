@@ -31,7 +31,7 @@ import java.util.Arrays;
 public final class MultiDocsEnum extends DocsEnum {
   private final MultiTermsEnum parent;
   final DocsEnum[] subDocsEnum;
-  private EnumWithSlice[] subs;
+  private final EnumWithSlice[] subs;
   int numSubs;
   int upto;
   DocsEnum current;
@@ -44,14 +44,16 @@ public final class MultiDocsEnum extends DocsEnum {
   public MultiDocsEnum(MultiTermsEnum parent, int subReaderCount) {
     this.parent = parent;
     subDocsEnum = new DocsEnum[subReaderCount];
+    this.subs = new EnumWithSlice[subReaderCount];
+    for (int i = 0; i < subs.length; i++) {
+      subs[i] = new EnumWithSlice();
+    }
   }
 
   MultiDocsEnum reset(final EnumWithSlice[] subs, final int numSubs) {
     this.numSubs = numSubs;
 
-    this.subs = new EnumWithSlice[subs.length];
-    for(int i=0;i<subs.length;i++) {
-      this.subs[i] = new EnumWithSlice();
+    for(int i=0;i<numSubs;i++) {
       this.subs[i].docsEnum = subs[i].docsEnum;
       this.subs[i].slice = subs[i].slice;
     }

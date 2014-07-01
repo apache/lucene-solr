@@ -31,7 +31,7 @@ import java.util.Arrays;
 public final class MultiDocsAndPositionsEnum extends DocsAndPositionsEnum {
   private final MultiTermsEnum parent;
   final DocsAndPositionsEnum[] subDocsAndPositionsEnum;
-  private EnumWithSlice[] subs;
+  private final EnumWithSlice[] subs;
   int numSubs;
   int upto;
   DocsAndPositionsEnum current;
@@ -42,6 +42,10 @@ public final class MultiDocsAndPositionsEnum extends DocsAndPositionsEnum {
   public MultiDocsAndPositionsEnum(MultiTermsEnum parent, int subReaderCount) {
     this.parent = parent;
     subDocsAndPositionsEnum = new DocsAndPositionsEnum[subReaderCount];
+    this.subs = new EnumWithSlice[subReaderCount];
+    for (int i = 0; i < subs.length; i++) {
+      subs[i] = new EnumWithSlice();
+    }
   }
 
   /** Returns {@code true} if this instance can be reused by
@@ -53,9 +57,7 @@ public final class MultiDocsAndPositionsEnum extends DocsAndPositionsEnum {
   /** Rre-use and reset this instance on the provided slices. */
   public MultiDocsAndPositionsEnum reset(final EnumWithSlice[] subs, final int numSubs) {
     this.numSubs = numSubs;
-    this.subs = new EnumWithSlice[subs.length];
-    for(int i=0;i<subs.length;i++) {
-      this.subs[i] = new EnumWithSlice();
+    for(int i=0;i<numSubs;i++) {
       this.subs[i].docsAndPositionsEnum = subs[i].docsAndPositionsEnum;
       this.subs[i].slice = subs[i].slice;
     }

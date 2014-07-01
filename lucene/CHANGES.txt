@@ -113,6 +113,8 @@ Optimizations
 * LUCENE-5782: OrdinalMap now sorts enums before being built in order to
   improve compression. (Adrien Grand)
 
+* LUCENE-5798: Optimize MultiDocsEnum reuse. (Robert Muir)
+
 ======================= Lucene 4.9.0 =======================
 
 Changes in Runtime Behavior
