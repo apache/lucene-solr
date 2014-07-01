@@ -115,6 +115,11 @@ Optimizations
 
 * LUCENE-5798: Optimize MultiDocsEnum reuse. (Robert Muir)
 
+Test Framework
+
+* LUCENE-5786: Unflushed/ truncated events file (hung testing subprocess).
+  (Dawid Weiss)
+
 ======================= Lucene 4.9.0 =======================
 
 Changes in Runtime Behavior

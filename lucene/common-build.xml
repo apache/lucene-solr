@@ -918,7 +918,7 @@
             heartbeat="${tests.heartbeat}"
             uniqueSuiteNames="false"
             
-            debugstream="true"
+            debugstream="false"
         >
             <!-- Classpaths. -->
             <classpath refid="@{junit.classpath}"/>
