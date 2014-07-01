@@ -30,14 +30,14 @@ import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.packed.AppendingDeltaPackedLongBuffer;
 import org.apache.lucene.util.packed.PackedInts;
+import org.apache.lucene.util.packed.PackedLongValues;
 
 /** Buffers up pending byte[] per doc, deref and sorting via
  *  int ord, then flushes when segment flushes. */
 class SortedDocValuesWriter extends DocValuesWriter {
   final BytesRefHash hash;
-  private AppendingDeltaPackedLongBuffer pending;
+  private PackedLongValues.Builder pending;
   private final Counter iwBytesUsed;
   private long bytesUsed; // this currently only tracks differences in 'pending'
   private final FieldInfo fieldInfo;
@@ -52,7 +52,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
             new ByteBlockPool.DirectTrackingAllocator(iwBytesUsed)),
             BytesRefHash.DEFAULT_CAPACITY,
             new DirectBytesStartArray(BytesRefHash.DEFAULT_CAPACITY, iwBytesUsed));
-    pending = new AppendingDeltaPackedLongBuffer(PackedInts.COMPACT);
+    pending = PackedLongValues.deltaPackedBuilder(PackedInts.COMPACT);
     bytesUsed = pending.ramBytesUsed();
     iwBytesUsed.addAndGet(bytesUsed);
   }
@@ -112,6 +112,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
 
     assert pending.size() == maxDoc;
     final int valueCount = hash.size();
+    final PackedLongValues ords = pending.build();
 
     final int[] sortedValues = hash.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
     final int[] ordMap = new int[valueCount];
@@ -126,7 +127,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
                               new Iterable<BytesRef>() {
                                 @Override
                                 public Iterator<BytesRef> iterator() {
-                                  return new ValuesIterator(sortedValues, valueCount);
+                                  return new ValuesIterator(sortedValues, valueCount, hash);
                                 }
                               },
 
@@ -134,21 +135,23 @@ class SortedDocValuesWriter extends DocValuesWriter {
                               new Iterable<Number>() {
                                 @Override
                                 public Iterator<Number> iterator() {
-                                  return new OrdsIterator(ordMap, maxDoc);
+                                  return new OrdsIterator(ordMap, maxDoc, ords);
                                 }
                               });
   }
 
   // iterates over the unique values we have in ram
-  private class ValuesIterator implements Iterator<BytesRef> {
+  private static class ValuesIterator implements Iterator<BytesRef> {
     final int sortedValues[];
+    final BytesRefHash hash;
     final BytesRef scratch = new BytesRef();
     final int valueCount;
     int ordUpto;
     
-    ValuesIterator(int sortedValues[], int valueCount) {
+    ValuesIterator(int sortedValues[], int valueCount, BytesRefHash hash) {
       this.sortedValues = sortedValues;
       this.valueCount = valueCount;
+      this.hash = hash;
     }
 
     @Override
@@ -173,16 +176,17 @@ class SortedDocValuesWriter extends DocValuesWriter {
   }
   
   // iterates over the ords for each doc we have in ram
-  private class OrdsIterator implements Iterator<Number> {
-    final AppendingDeltaPackedLongBuffer.Iterator iter = pending.iterator();
+  private static class OrdsIterator implements Iterator<Number> {
+    final PackedLongValues.Iterator iter;
     final int ordMap[];
     final int maxDoc;
     int docUpto;
     
-    OrdsIterator(int ordMap[], int maxDoc) {
+    OrdsIterator(int ordMap[], int maxDoc, PackedLongValues ords) {
       this.ordMap = ordMap;
       this.maxDoc = maxDoc;
-      assert pending.size() == maxDoc;
+      assert ords.size() == maxDoc;
+      this.iter = ords.iterator();
     }
     
     @Override

@@ -22,8 +22,8 @@ import java.util.Arrays;
 
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
 import org.apache.lucene.util.packed.PackedInts;
+import org.apache.lucene.util.packed.PackedLongValues;
 
 /**
  * {@link DocIdSet} implementation based on pfor-delta encoding.
@@ -43,14 +43,12 @@ public final class PForDeltaDocIdSet extends DocIdSet implements Accountable {
   static final int[] ITERATIONS = new int[32];
   static final int[] BYTE_BLOCK_COUNTS = new int[32];
   static final int MAX_BYTE_BLOCK_COUNT;
-  static final MonotonicAppendingLongBuffer SINGLE_ZERO_BUFFER = new MonotonicAppendingLongBuffer(0, 64, PackedInts.COMPACT);
-  static final PForDeltaDocIdSet EMPTY = new PForDeltaDocIdSet(null, 0, Integer.MAX_VALUE, SINGLE_ZERO_BUFFER, SINGLE_ZERO_BUFFER);
+  static final PackedLongValues SINGLE_ZERO = PackedLongValues.packedBuilder(PackedInts.COMPACT).add(0L).build();
+  static final PForDeltaDocIdSet EMPTY = new PForDeltaDocIdSet(null, 0, Integer.MAX_VALUE, SINGLE_ZERO, SINGLE_ZERO);
   static final int LAST_BLOCK = 1 << 5; // flag to indicate the last block
   static final int HAS_EXCEPTIONS = 1 << 6;
   static final int UNARY = 1 << 7;
   static {
-    SINGLE_ZERO_BUFFER.add(0);
-    SINGLE_ZERO_BUFFER.freeze();
     int maxByteBLockCount = 0;
     for (int i = 1; i < ITERATIONS.length; ++i) {
       DECODERS[i] = PackedInts.getDecoder(PackedInts.Format.PACKED, PackedInts.VERSION_CURRENT, i);
@@ -282,20 +280,19 @@ public final class PForDeltaDocIdSet extends DocIdSet implements Accountable {
       final byte[] dataArr = Arrays.copyOf(data.bytes, data.length + MAX_BYTE_BLOCK_COUNT);
 
       final int indexSize = (numBlocks - 1) / indexInterval + 1;
-      final MonotonicAppendingLongBuffer docIDs, offsets;
+      final PackedLongValues docIDs, offsets;
       if (indexSize <= 1) {
-        docIDs = offsets = SINGLE_ZERO_BUFFER;
+        docIDs = offsets = SINGLE_ZERO;
       } else {
         final int pageSize = 128;
-        final int initialPageCount = (indexSize + pageSize - 1) / pageSize;
-        docIDs = new MonotonicAppendingLongBuffer(initialPageCount, pageSize, PackedInts.COMPACT);
-        offsets = new MonotonicAppendingLongBuffer(initialPageCount, pageSize, PackedInts.COMPACT);
+        final PackedLongValues.Builder docIDsBuilder = PackedLongValues.monotonicBuilder(pageSize, PackedInts.COMPACT);
+        final PackedLongValues.Builder offsetsBuilder = PackedLongValues.monotonicBuilder(pageSize, PackedInts.COMPACT);
         // Now build the index
-        final Iterator it = new Iterator(dataArr, cardinality, Integer.MAX_VALUE, SINGLE_ZERO_BUFFER, SINGLE_ZERO_BUFFER);
+        final Iterator it = new Iterator(dataArr, cardinality, Integer.MAX_VALUE, SINGLE_ZERO, SINGLE_ZERO);
         index:
         for (int k = 0; k < indexSize; ++k) {
-          docIDs.add(it.docID() + 1);
-          offsets.add(it.offset);
+          docIDsBuilder.add(it.docID() + 1);
+          offsetsBuilder.add(it.offset);
           for (int i = 0; i < indexInterval; ++i) {
             it.skipBlock();
             if (it.docID() == DocIdSetIterator.NO_MORE_DOCS) {
@@ -303,8 +300,8 @@ public final class PForDeltaDocIdSet extends DocIdSet implements Accountable {
             }
           }
         }
-        docIDs.freeze();
-        offsets.freeze();
+        docIDs = docIDsBuilder.build();
+        offsets = offsetsBuilder.build();
       }
 
       return new PForDeltaDocIdSet(dataArr, cardinality, indexInterval, docIDs, offsets);
@@ -313,10 +310,10 @@ public final class PForDeltaDocIdSet extends DocIdSet implements Accountable {
   }
 
   final byte[] data;
-  final MonotonicAppendingLongBuffer docIDs, offsets; // for the index
+  final PackedLongValues docIDs, offsets; // for the index
   final int cardinality, indexInterval;
 
-  PForDeltaDocIdSet(byte[] data, int cardinality, int indexInterval, MonotonicAppendingLongBuffer docIDs, MonotonicAppendingLongBuffer offsets) {
+  PForDeltaDocIdSet(byte[] data, int cardinality, int indexInterval, PackedLongValues docIDs, PackedLongValues offsets) {
     this.data = data;
     this.cardinality = cardinality;
     this.indexInterval = indexInterval;
@@ -342,7 +339,7 @@ public final class PForDeltaDocIdSet extends DocIdSet implements Accountable {
 
     // index
     final int indexInterval;
-    final MonotonicAppendingLongBuffer docIDs, offsets;
+    final PackedLongValues docIDs, offsets;
 
     final int cardinality;
     final byte[] data;
@@ -356,7 +353,7 @@ public final class PForDeltaDocIdSet extends DocIdSet implements Accountable {
     int blockIdx;
     int docID;
 
-    Iterator(byte[] data, int cardinality, int indexInterval, MonotonicAppendingLongBuffer docIDs, MonotonicAppendingLongBuffer offsets) {
+    Iterator(byte[] data, int cardinality, int indexInterval, PackedLongValues docIDs, PackedLongValues offsets) {
       this.data = data;
       this.cardinality = cardinality;
       this.indexInterval = indexInterval;
@@ -519,10 +516,10 @@ public final class PForDeltaDocIdSet extends DocIdSet implements Accountable {
       return 0L;
     }
     long ramBytesUsed = BASE_RAM_BYTES_USED + RamUsageEstimator.sizeOf(data);
-    if (docIDs != SINGLE_ZERO_BUFFER) {
+    if (docIDs != SINGLE_ZERO) {
       ramBytesUsed += docIDs.ramBytesUsed();
     }
-    if (offsets != SINGLE_ZERO_BUFFER) {
+    if (offsets != SINGLE_ZERO) {
       ramBytesUsed += offsets.ramBytesUsed();
     }
     return ramBytesUsed;

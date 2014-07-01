@@ -25,8 +25,8 @@ import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.packed.AppendingDeltaPackedLongBuffer;
 import org.apache.lucene.util.packed.PackedInts;
+import org.apache.lucene.util.packed.PackedLongValues;
 
 /** Buffers up pending long per doc, then flushes when
  *  segment flushes. */
@@ -34,14 +34,14 @@ class NumericDocValuesWriter extends DocValuesWriter {
 
   private final static long MISSING = 0L;
 
-  private AppendingDeltaPackedLongBuffer pending;
+  private PackedLongValues.Builder pending;
   private final Counter iwBytesUsed;
   private long bytesUsed;
   private FixedBitSet docsWithField;
   private final FieldInfo fieldInfo;
 
   public NumericDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed, boolean trackDocsWithField) {
-    pending = new AppendingDeltaPackedLongBuffer(PackedInts.COMPACT);
+    pending = PackedLongValues.deltaPackedBuilder(PackedInts.COMPACT);
     docsWithField = trackDocsWithField ? new FixedBitSet(64) : null;
     bytesUsed = pending.ramBytesUsed() + docsWithFieldBytesUsed();
     this.fieldInfo = fieldInfo;
@@ -87,25 +87,30 @@ class NumericDocValuesWriter extends DocValuesWriter {
   public void flush(SegmentWriteState state, DocValuesConsumer dvConsumer) throws IOException {
 
     final int maxDoc = state.segmentInfo.getDocCount();
+    final PackedLongValues values = pending.build();
 
     dvConsumer.addNumericField(fieldInfo,
                                new Iterable<Number>() {
                                  @Override
                                  public Iterator<Number> iterator() {
-                                   return new NumericIterator(maxDoc);
+                                   return new NumericIterator(maxDoc, values, docsWithField);
                                  }
                                });
   }
 
   // iterates over the values we have in ram
-  private class NumericIterator implements Iterator<Number> {
-    final AppendingDeltaPackedLongBuffer.Iterator iter = pending.iterator();
-    final int size = (int)pending.size();
+  private static class NumericIterator implements Iterator<Number> {
+    final PackedLongValues.Iterator iter;
+    final FixedBitSet docsWithField;
+    final int size;
     final int maxDoc;
     int upto;
     
-    NumericIterator(int maxDoc) {
+    NumericIterator(int maxDoc, PackedLongValues values, FixedBitSet docsWithFields) {
       this.maxDoc = maxDoc;
+      this.iter = values.iterator();
+      this.size = (int) values.size();
+      this.docsWithField = docsWithFields;
     }
     
     @Override

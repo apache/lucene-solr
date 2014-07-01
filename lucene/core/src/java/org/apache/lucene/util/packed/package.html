@@ -50,19 +50,19 @@
     <li><b>{@link org.apache.lucene.util.packed.PagedGrowableWriter}</b><ul>
         <li>Slices data into fixed-size blocks stored in GrowableWriters.</li>
         <li>Supports more than 2B values.</li>
-        <li>You should use Appending(Delta)PackedLongBuffer instead if you don't need random write access.</li>
+        <li>You should use PackedLongValues instead if you don't need random write access.</li>
     </ul></li>
-    <li><b>{@link org.apache.lucene.util.packed.AppendingDeltaPackedLongBuffer}</b><ul>
+    <li><b>{@link org.apache.lucene.util.packed.PackedLongValues#deltaPackedBuilder}</b><ul>
         <li>Can store any sequence of longs.</li>
         <li>Compression is good when values are close to each other.</li>
         <li>Supports random reads, but only sequential writes.</li>
         <li>Can address up to 2^42 values.</li>
     </ul></li>
-    <li><b>{@link org.apache.lucene.util.packed.AppendingPackedLongBuffer}</b><ul>
-        <li>Same as AppendingDeltaPackedLongBuffer but assumes values are 0-based.</li>
+    <li><b>{@link org.apache.lucene.util.packed.PackedLongValues#packedBuilder}</b><ul>
+        <li>Same as deltaPackedBuilder but assumes values are 0-based.</li>
     </ul></li>
-    <li><b>{@link org.apache.lucene.util.packed.MonotonicAppendingLongBuffer}</b><ul>
-        <li>Same as AppendingDeltaPackedLongBuffer except that compression is good when the stream is a succession of affine functions.</li>
+    <li><b>{@link org.apache.lucene.util.packed.PackedLongValues#monotonicBuilder}</b><ul>
+        <li>Same as deltaPackedBuilder except that compression is good when the stream is a succession of affine functions.</li>
     </ul></li>
 </ul>
 

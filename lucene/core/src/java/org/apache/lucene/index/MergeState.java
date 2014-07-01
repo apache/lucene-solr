@@ -22,7 +22,8 @@ import java.util.List;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.InfoStream;
-import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
+import org.apache.lucene.util.packed.PackedInts;
+import org.apache.lucene.util.packed.PackedLongValues;
 
 /** Holds common state used during segment merging.
  *
@@ -69,15 +70,15 @@ public class MergeState {
 
     static DocMap build(final int maxDoc, final Bits liveDocs) {
       assert liveDocs != null;
-      final MonotonicAppendingLongBuffer docMap = new MonotonicAppendingLongBuffer();
+      final PackedLongValues.Builder docMapBuilder = PackedLongValues.monotonicBuilder(PackedInts.COMPACT);
       int del = 0;
       for (int i = 0; i < maxDoc; ++i) {
-        docMap.add(i - del);
+        docMapBuilder.add(i - del);
         if (!liveDocs.get(i)) {
           ++del;
         }
       }
-      docMap.freeze();
+      final PackedLongValues docMap = docMapBuilder.build();
       final int numDeletedDocs = del;
       assert docMap.size() == maxDoc;
       return new DocMap() {

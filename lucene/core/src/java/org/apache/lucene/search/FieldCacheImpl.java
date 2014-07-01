@@ -46,8 +46,8 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.GrowableWriter;
-import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
 import org.apache.lucene.util.packed.PackedInts;
+import org.apache.lucene.util.packed.PackedLongValues;
 
 /**
  * Expert: The default cache implementation, storing all values in memory.
@@ -1159,11 +1159,11 @@ class FieldCacheImpl implements FieldCache {
 
   public static class SortedDocValuesImpl implements Accountable {
     private final PagedBytes.Reader bytes;
-    private final MonotonicAppendingLongBuffer termOrdToBytesOffset;
+    private final PackedLongValues termOrdToBytesOffset;
     private final PackedInts.Reader docToTermOrd;
     private final int numOrd;
 
-    public SortedDocValuesImpl(PagedBytes.Reader bytes, MonotonicAppendingLongBuffer termOrdToBytesOffset, PackedInts.Reader docToTermOrd, int numOrd) {
+    public SortedDocValuesImpl(PagedBytes.Reader bytes, PackedLongValues termOrdToBytesOffset, PackedInts.Reader docToTermOrd, int numOrd) {
       this.bytes = bytes;
       this.docToTermOrd = docToTermOrd;
       this.termOrdToBytesOffset = termOrdToBytesOffset;
@@ -1282,7 +1282,7 @@ class FieldCacheImpl implements FieldCache {
         startTermsBPV = 1;
       }
 
-      MonotonicAppendingLongBuffer termOrdToBytesOffset = new MonotonicAppendingLongBuffer();
+      PackedLongValues.Builder termOrdToBytesOffset = PackedLongValues.monotonicBuilder(PackedInts.COMPACT);
       final GrowableWriter docToTermOrd = new GrowableWriter(startTermsBPV, maxDoc, acceptableOverheadRatio);
 
       int termOrd = 0;
@@ -1315,10 +1315,9 @@ class FieldCacheImpl implements FieldCache {
           termOrd++;
         }
       }
-      termOrdToBytesOffset.freeze();
 
       // maybe an int-only impl?
-      return new SortedDocValuesImpl(bytes.freeze(true), termOrdToBytesOffset, docToTermOrd.getMutable(), termOrd);
+      return new SortedDocValuesImpl(bytes.freeze(true), termOrdToBytesOffset.build(), docToTermOrd.getMutable(), termOrd);
     }
   }
 
