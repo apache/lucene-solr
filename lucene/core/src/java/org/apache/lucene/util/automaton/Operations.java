@@ -505,7 +505,7 @@ final public class Operations {
 
     result.finishState();
 
-    return result;
+    return removeDeadStates(result);
   }
 
   // Simple custom ArrayList<Transition>

@@ -34,7 +34,14 @@ public class TestOperations extends LuceneTestCase {
     Collections.sort(strings);
     Automaton union = Automata.makeStringUnion(strings);
     assertTrue(union.isDeterministic());
-    assertTrue(Operations.sameLanguage(union, naiveUnion(strings)));
+    assertFalse(Operations.hasDeadStatesFromInitial(union));
+    
+    Automaton naiveUnion = naiveUnion(strings);
+    assertTrue(naiveUnion.isDeterministic());
+    assertFalse(Operations.hasDeadStatesFromInitial(naiveUnion));
+
+    
+    assertTrue(Operations.sameLanguage(union, naiveUnion));
   }
 
   private static Automaton naiveUnion(List<BytesRef> strings) {
