@@ -1,0 +1,12 @@
+<dataConfig>
+  <document>
+      <!--
+        Note - In order to index attachments, set processAttachement="true" and drop
+        Tika and its dependencies to example-DIH/solr/mail/lib directory
+       -->
+      <entity processor="MailEntityProcessor" user="email@gmail.com"
+            password="password" host="imap.gmail.com" protocol="gimaps"
+            fetchMailsSince="2014-06-30 00:00:00" batchSize="20" folders="inbox" processAttachement="false"
+            name="mail_entity"/>
+  </document>
+</dataConfig>

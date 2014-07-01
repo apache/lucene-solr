@@ -90,6 +90,10 @@ Other Changes
 * SOLR-6215: TrieDateField should directly extend TrieField instead of
   forwarding to a wrapped TrieField. (Steve Rowe)
 
+* SOLR-2245: Numerous improvements of the MailEntityProcessor, including using
+  the GMail extensions to do server-side date filtering and using GreenMail in
+  the unit test to enable automated tests. (Timothy Potter)
+
 ==================  4.10.0 =================
 
 Versions of Major Components
