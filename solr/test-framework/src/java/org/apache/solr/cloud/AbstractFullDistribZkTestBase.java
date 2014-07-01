@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -1755,4 +1756,75 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     createCollection(collectionInfos, collName, props, client);
   }
 
+  protected List<Replica> ensureAllReplicasAreActive(String testCollectionName, String shardId, int shards, int rf, int maxWaitSecs) throws Exception {
+    long startMs = System.currentTimeMillis();
+    
+    Map<String,Replica> notLeaders = new HashMap<String,Replica>();
+    
+    ZkStateReader zkr = cloudClient.getZkStateReader();
+    zkr.updateClusterState(true); // force the state to be fresh
+
+    ClusterState cs = zkr.getClusterState();
+    Collection<Slice> slices = cs.getActiveSlices(testCollectionName);
+    assertTrue(slices.size() == shards);
+    boolean allReplicasUp = false;
+    long waitMs = 0L;
+    long maxWaitMs = maxWaitSecs * 1000L;
+    Replica leader = null;
+    while (waitMs < maxWaitMs && !allReplicasUp) {
+      // refresh state every 2 secs
+      if (waitMs % 2000 == 0)
+        cloudClient.getZkStateReader().updateClusterState(true);
+      
+      cs = cloudClient.getZkStateReader().getClusterState();
+      assertNotNull(cs);
+      Slice shard = cs.getSlice(testCollectionName, shardId);
+      assertNotNull("No Slice for "+shardId, shard);
+      allReplicasUp = true; // assume true
+      Collection<Replica> replicas = shard.getReplicas();
+      assertTrue(replicas.size() == rf);
+      leader = shard.getLeader();
+      assertNotNull(leader);
+      log.info("Found "+replicas.size()+" replicas and leader on "+
+        leader.getNodeName()+" for "+shardId+" in "+testCollectionName);
+      
+      // ensure all replicas are "active" and identify the non-leader replica
+      for (Replica replica : replicas) {
+        String replicaState = replica.getStr(ZkStateReader.STATE_PROP);
+        if (!ZkStateReader.ACTIVE.equals(replicaState)) {
+          log.info("Replica " + replica.getName() + " is currently " + replicaState);
+          allReplicasUp = false;
+        }
+        
+        if (!leader.equals(replica)) 
+          notLeaders.put(replica.getName(), replica);
+      }
+      
+      if (!allReplicasUp) {
+        try {
+          Thread.sleep(500L);
+        } catch (Exception ignoreMe) {}
+        waitMs += 500L;
+      }
+    } // end while
+    
+    if (!allReplicasUp) 
+      fail("Didn't see all replicas for shard "+shardId+" in "+testCollectionName+
+          " come up within " + maxWaitMs + " ms! ClusterState: " + printClusterStateInfo());
+    
+    if (notLeaders.isEmpty()) 
+      fail("Didn't isolate any replicas that are not the leader! ClusterState: " + printClusterStateInfo());
+    
+    long diffMs = (System.currentTimeMillis() - startMs);
+    log.info("Took " + diffMs + " ms to see all replicas become active.");
+    
+    List<Replica> replicas = new ArrayList<Replica>();
+    replicas.addAll(notLeaders.values());
+    return replicas;
+  }  
+  
+  protected String printClusterStateInfo() throws Exception {
+    cloudClient.getZkStateReader().updateClusterState(true);
+    return String.valueOf(cloudClient.getZkStateReader().getClusterState());
+  }   
 }

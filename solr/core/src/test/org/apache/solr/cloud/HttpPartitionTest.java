@@ -22,7 +22,6 @@ import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -158,7 +157,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     sendDoc(1);
     
     Replica notLeader = 
-        ensureAllReplicasAreActive(testCollectionName, 2, maxWaitSecsToSeeAllActive).get(0);
+        ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 2, maxWaitSecsToSeeAllActive).get(0);
     
     // ok, now introduce a network partition between the leader and the replica
     SocketProxy proxy = getProxyForReplica(notLeader);
@@ -180,7 +179,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     proxy.reopen();
     
     List<Replica> notLeaders = 
-        ensureAllReplicasAreActive(testCollectionName, 2, maxWaitSecsToSeeAllActive);
+        ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 2, maxWaitSecsToSeeAllActive);
     
     sendDoc(3);
     
@@ -212,7 +211,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       proxy.reopen();
     }
     
-    notLeaders = ensureAllReplicasAreActive(testCollectionName, 2, maxWaitSecsToSeeAllActive);
+    notLeaders = ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 2, maxWaitSecsToSeeAllActive);
     
     // verify all docs received
     assertDocsExistInAllReplicas(notLeaders, testCollectionName, 1, numDocs + 3);
@@ -227,7 +226,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     sendDoc(1);
     
     List<Replica> notLeaders = 
-        ensureAllReplicasAreActive(testCollectionName, 3, maxWaitSecsToSeeAllActive);
+        ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, maxWaitSecsToSeeAllActive);
     assertTrue("Expected 2 replicas for collection " + testCollectionName
         + " but found " + notLeaders.size() + "; clusterState: "
         + printClusterStateInfo(),
@@ -257,7 +256,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     proxy1.reopen();
     
     // sent 4 docs in so far, verify they are on the leader and replica
-    notLeaders = ensureAllReplicasAreActive(testCollectionName, 3, maxWaitSecsToSeeAllActive); 
+    notLeaders = ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, maxWaitSecsToSeeAllActive); 
     
     sendDoc(4);
     
@@ -275,7 +274,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     sendDoc(1);
     
     List<Replica> notLeaders = 
-        ensureAllReplicasAreActive(testCollectionName, 3, maxWaitSecsToSeeAllActive);
+        ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, maxWaitSecsToSeeAllActive);
     assertTrue("Expected 2 replicas for collection " + testCollectionName
         + " but found " + notLeaders.size() + "; clusterState: "
         + printClusterStateInfo(),
@@ -306,7 +305,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     proxy1.reopen();
     
     // sent 4 docs in so far, verify they are on the leader and replica
-    notLeaders = ensureAllReplicasAreActive(testCollectionName, 3, maxWaitSecsToSeeAllActive); 
+    notLeaders = ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, maxWaitSecsToSeeAllActive); 
     
     sendDoc(4);
     
@@ -320,7 +319,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(leader));
     
     // since maxShardsPerNode is 1, we're safe to kill the leader
-    notLeaders = ensureAllReplicasAreActive(testCollectionName, 3, maxWaitSecsToSeeAllActive);    
+    notLeaders = ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, maxWaitSecsToSeeAllActive);    
     proxy0 = getProxyForReplica(notLeaders.get(0));
     proxy0.close();
         
@@ -373,12 +372,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     
     assertDocsExistInAllReplicas(activeReps, testCollectionName, 1, 6);
   }
-  
-  protected String printClusterStateInfo() throws Exception {
-    cloudClient.getZkStateReader().updateClusterState(true);
-    return String.valueOf(cloudClient.getZkStateReader().getClusterState());
-  }
-  
+    
   protected List<Replica> getActiveOrRecoveringReplicas(String testCollectionName, String shardId) throws Exception {    
     Map<String,Replica> activeReplicas = new HashMap<String,Replica>();    
     ZkStateReader zkr = cloudClient.getZkStateReader();
@@ -455,66 +449,6 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     doc.addField(id, String.valueOf(docId));
     doc.addField("a_t", "hello" + docId);
     cloudClient.add(doc);
-  }
-  
-  protected List<Replica> ensureAllReplicasAreActive(String testCollectionName, int rf, int maxWaitSecs) throws Exception {
-    long startMs = System.currentTimeMillis();
-    
-    Map<String,Replica> notLeaders = new HashMap<String,Replica>();
-    
-    ZkStateReader zkr = cloudClient.getZkStateReader();
-    ClusterState cs = zkr.getClusterState();
-    Collection<Slice> slices = cs.getActiveSlices(testCollectionName);
-    assertTrue(slices.size() == 1); // shards == 1
-    boolean allReplicasUp = false;
-    long waitMs = 0L;
-    long maxWaitMs = maxWaitSecs * 1000L;
-    Replica leader = null;
-    while (waitMs < maxWaitMs && !allReplicasUp) {
-      cs = zkr.getClusterState();
-      assertNotNull(cs);
-      for (Slice shard : cs.getActiveSlices(testCollectionName)) {
-        allReplicasUp = true; // assume true
-        Collection<Replica> replicas = shard.getReplicas();
-        assertTrue(replicas.size() == rf);
-        leader = shard.getLeader();
-        assertNotNull(leader);
-        
-        // ensure all replicas are "active" and identify the non-leader replica
-        for (Replica replica : replicas) {
-          String replicaState = replica.getStr(ZkStateReader.STATE_PROP);
-          if (!ZkStateReader.ACTIVE.equals(replicaState)) {
-            log.info("Replica " + replica.getName() + " is currently " + replicaState);
-            allReplicasUp = false;
-          }
-          
-          if (!leader.equals(replica)) 
-            notLeaders.put(replica.getName(), replica);
-        }
-        
-        if (!allReplicasUp) {
-          try {
-            Thread.sleep(500L);
-          } catch (Exception ignoreMe) {}
-          waitMs += 500L;
-        }
-      }
-    } // end while
-    
-    if (!allReplicasUp) 
-      fail("Didn't see all replicas come up within " + maxWaitMs + 
-          " ms! ClusterState: " + printClusterStateInfo());
-    
-    if (notLeaders.isEmpty()) 
-      fail("Didn't isolate any replicas that are not the leader! ClusterState: " + 
-         printClusterStateInfo());
-    
-    long diffMs = (System.currentTimeMillis() - startMs);
-    log.info("Took " + diffMs + " ms to see all replicas become active.");
-    
-    List<Replica> replicas = new ArrayList<Replica>();
-    replicas.addAll(notLeaders.values());
-    return replicas;
   }
   
   /**
