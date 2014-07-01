@@ -117,6 +117,8 @@ Optimizations
 
 * LUCENE-5799: Optimize numeric docvalues merging. (Robert Muir)
 
+* LUCENE-5797: Optimize norms merging (Adrien Grand, Robert Muir)
+
 Test Framework
 
 * LUCENE-5786: Unflushed/ truncated events file (hung testing subprocess).
