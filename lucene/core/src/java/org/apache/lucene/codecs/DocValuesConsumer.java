@@ -133,7 +133,8 @@ public abstract class DocValuesConsumer implements Closeable {
                         return new Iterator<Number>() {
                           int readerUpto = -1;
                           int docIDUpto;
-                          Long nextValue;
+                          long nextValue;
+                          boolean nextHasValue;
                           AtomicReader currentReader;
                           NumericDocValues currentValues;
                           Bits currentLiveDocs;
@@ -157,7 +158,7 @@ public abstract class DocValuesConsumer implements Closeable {
                             }
                             assert nextIsSet;
                             nextIsSet = false;
-                            return nextValue;
+                            return nextHasValue ? nextValue : null;
                           }
 
                           private boolean setNext() {
@@ -180,10 +181,11 @@ public abstract class DocValuesConsumer implements Closeable {
 
                               if (currentLiveDocs == null || currentLiveDocs.get(docIDUpto)) {
                                 nextIsSet = true;
-                                if (currentDocsWithField.get(docIDUpto)) {
-                                  nextValue = currentValues.get(docIDUpto);
+                                nextValue = currentValues.get(docIDUpto);
+                                if (nextValue == 0 && currentDocsWithField.get(docIDUpto) == false) {
+                                  nextHasValue = false;
                                 } else {
-                                  nextValue = null;
+                                  nextHasValue = true;
                                 }
                                 docIDUpto++;
                                 return true;
