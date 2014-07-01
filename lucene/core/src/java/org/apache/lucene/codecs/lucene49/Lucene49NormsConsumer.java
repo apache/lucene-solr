@@ -20,7 +20,7 @@ package org.apache.lucene.codecs.lucene49;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Map;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesConsumer;
@@ -79,8 +79,7 @@ class Lucene49NormsConsumer extends DocValuesConsumer {
     long minValue = Long.MAX_VALUE;
     long maxValue = Long.MIN_VALUE;
     // TODO: more efficient?
-    HashSet<Long> uniqueValues = null;
-    uniqueValues = new HashSet<>();
+    NormMap uniqueValues = new NormMap();
     
     long count = 0;
     for (Number nv : values) {
@@ -94,7 +93,7 @@ class Lucene49NormsConsumer extends DocValuesConsumer {
       
       if (uniqueValues != null) {
         if (uniqueValues.add(v)) {
-          if (uniqueValues.size() > 256) {
+          if (uniqueValues.size > 256) {
             uniqueValues = null;
           }
         }
@@ -106,7 +105,7 @@ class Lucene49NormsConsumer extends DocValuesConsumer {
       throw new IllegalStateException("illegal norms data for field " + field.name + ", expected " + maxDoc + " values, got " + count);
     }
     
-    if (uniqueValues != null && uniqueValues.size() == 1) {
+    if (uniqueValues != null && uniqueValues.size == 1) {
       // 0 bpv
       meta.writeByte(CONST_COMPRESSED);
       meta.writeLong(minValue);
@@ -114,7 +113,7 @@ class Lucene49NormsConsumer extends DocValuesConsumer {
       // small number of unique values: this is the typical case:
       // we only use bpv=1,2,4,8     
       PackedInts.Format format = PackedInts.Format.PACKED_SINGLE_BLOCK;
-      int bitsPerValue = PackedInts.bitsRequired(uniqueValues.size()-1);
+      int bitsPerValue = PackedInts.bitsRequired(uniqueValues.size-1);
       if (bitsPerValue == 3) {
         bitsPerValue = 4;
       } else if (bitsPerValue > 4) {
@@ -132,15 +131,12 @@ class Lucene49NormsConsumer extends DocValuesConsumer {
         meta.writeLong(data.getFilePointer());
         data.writeVInt(PackedInts.VERSION_CURRENT);
         
-        Long[] decode = uniqueValues.toArray(new Long[uniqueValues.size()]);
-        Arrays.sort(decode);
-        final HashMap<Long,Integer> encode = new HashMap<>();
+        long[] decode = uniqueValues.getDecodeTable();
         // upgrade to power of two sized array
         int size = 1 << bitsPerValue;
         data.writeVInt(size);
         for (int i = 0; i < decode.length; i++) {
           data.writeLong(decode[i]);
-          encode.put(decode[i], i);
         }
         for (int i = decode.length; i < size; i++) {
           data.writeLong(0);
@@ -151,7 +147,7 @@ class Lucene49NormsConsumer extends DocValuesConsumer {
 
         final PackedInts.Writer writer = PackedInts.getWriterNoHeader(data, format, maxDoc, bitsPerValue, PackedInts.DEFAULT_BUFFER_SIZE);
         for(Number nv : values) {
-          writer.add(encode.get(nv.longValue()));
+          writer.add(uniqueValues.getOrd(nv.longValue()));
         }
         writer.finish();
       }
@@ -209,5 +205,67 @@ class Lucene49NormsConsumer extends DocValuesConsumer {
   @Override
   public void addSortedNumericField(FieldInfo field, Iterable<Number> docToValueCount, Iterable<Number> values) throws IOException {
     throw new UnsupportedOperationException();
+  }
+  
+  // specialized deduplication of long->ord for norms: 99.99999% of the time this will be a single-byte range.
+  static class NormMap {
+    // we use short: at most we will add 257 values to this map before its rejected as too big above.
+    short[] singleByteRange = new short[256];
+    Map<Long,Short> other = new HashMap<Long,Short>();
+    int size;
+    
+    {
+      Arrays.fill(singleByteRange, (short)-1);
+    }
+
+    /** adds an item to the mapping. returns true if actually added */
+    public boolean add(long l) {
+      assert size <= 256; // once we add > 256 values, we nullify the map in addNumericField and don't use this strategy
+      if (l >= Byte.MIN_VALUE && l <= Byte.MAX_VALUE) {
+        int index = (int) (l + 128);
+        short previous = singleByteRange[index];
+        if (previous < 0) {
+          singleByteRange[index] = (short) size;
+          size++;
+          return true;
+        } else {
+          return false;
+        }
+      } else {
+        if (!other.containsKey(l)) {
+          other.put(l, (short)size);
+          size++;
+          return true;
+        } else {
+          return false;
+        }
+      }
+    }
+    
+    /** gets the ordinal for a previously added item */
+    public int getOrd(long l) {
+      if (l >= Byte.MIN_VALUE && l <= Byte.MAX_VALUE) {
+        int index = (int) (l + 128);
+        return singleByteRange[index];
+      } else {
+        // NPE if something is screwed up
+        return other.get(l);
+      }
+    }
+    
+    /** retrieves the ordinal table for previously added items */
+    public long[] getDecodeTable() {
+      long decode[] = new long[size];
+      for (int i = 0; i < singleByteRange.length; i++) {
+        short s = singleByteRange[i];
+        if (s >= 0) {
+          decode[s] = i - 128;
+        }
+      }
+      for (Map.Entry<Long,Short> entry : other.entrySet()) {
+        decode[entry.getValue()] = entry.getKey();
+      }
+      return decode;
+    }
   }
 }
