@@ -52,5 +52,6 @@ public interface ShardParams {
 
   public static final String _ROUTE_ = "_route_";
 
-
+  /** Force a single-pass distributed query? (true/false) */
+  public static final String DISTRIB_SINGLE_PASS = "distrib.singlePass";
 }
