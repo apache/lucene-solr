@@ -18,252 +18,151 @@ package org.apache.solr.handler.dataimport;
 
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.handler.dataimport.config.Entity;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.icegreen.greenmail.imap.ImapHostManager;
-import com.icegreen.greenmail.store.MailFolder;
-import com.icegreen.greenmail.user.GreenMailUser;
-import com.icegreen.greenmail.util.GreenMail;
-import com.icegreen.greenmail.util.GreenMailUtil;
-import com.icegreen.greenmail.util.ServerSetup;
-import com.icegreen.greenmail.imap.ImapConstants;
-
-import java.io.IOException;
-import java.net.ServerSocket;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.mail.Flags;
-import javax.mail.Session;
-import javax.mail.internet.MimeMessage;
+// Test mailbox is like this: foldername(mailcount)
+// top1(2) -> child11(6)
+//         -> child12(0)
+// top2(2) -> child21(1)
+//                 -> grandchild211(2)
+//                 -> grandchild212(1)
+//         -> child22(2)
 
 /**
- * Test for MailEntityProcessor; uses GreenMail embedded Java mail server.
+ * Test for MailEntityProcessor. The tests are marked as ignored because we'd need a mail server (real or mocked) for
+ * these to work.
+ *
+ * TODO: Find a way to make the tests actually test code
+ *
  *
  * @see org.apache.solr.handler.dataimport.MailEntityProcessor
  * @since solr 1.4
  */
 public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
-  
+
   // Credentials
-  private static final String email = "test@localhost.com";
-  private static final String user = "test";
-  private static final String password = "secret";
-  private static final String protocol = "imap";
+  private static final String user = "user";
+  private static final String password = "password";
+  private static final String host = "host";
+  private static final String protocol = "imaps";
 
-  // embedded test mail server
-  private ServerSetup serverSetup;
-  private GreenMail greenMail;
-  private GreenMailUser mailUser;
-  private String hostAndPort;
-  private String sep = ImapConstants.HIERARCHY_DELIMITER;
-  
-  private Calendar cal = Calendar.getInstance();
-  
-  /**
-   * Setup an embedded GreenMail server for testing.
-   */
-  @Override
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
-    
-    int port = findAvailablePort(9103,9193);
-    serverSetup = new ServerSetup(port, null, protocol);
-    greenMail = new GreenMail(serverSetup);
-    greenMail.start();
-    mailUser = greenMail.setUser(email, user, password);    
-    hostAndPort = "localhost:"+port;
-    
-    // Test mailbox is like this: foldername(mailcount)
-    // top1(2) -> child11(6)
-    //         -> child12(0)
-    // top2(2) -> child21(1)
-    //                  -> grandchild211(2)
-    //                  -> grandchild212(1)
-    //         -> child22(2)    
-    ImapHostManager imapMgr = greenMail.getManagers().getImapHostManager();
-    setupFolder(imapMgr, "top1", 2);    
-    setupFolder(imapMgr, "top1"+sep+"child11", 6);    
-    setupFolder(imapMgr, "top2", 2);    
-    setupFolder(imapMgr, "top2"+sep+"child21", 1);    
-    setupFolder(imapMgr, "top2"+sep+"child21"+sep+"grandchild211", 2);    
-    setupFolder(imapMgr, "top2"+sep+"child21"+sep+"grandchild212", 1);    
-    setupFolder(imapMgr, "top2"+sep+"child22", 2);
-    setupFolder(imapMgr, "top3", 2);    
-  }
-    
-  private int findAvailablePort(int min, int max) {
-    for (int port = min; port < max; port++) {
-      try {
-        new ServerSocket(port).close();
-        return port;
-      } catch (IOException e) {
-        // Port is in use
-      }
-    }
-    throw new IllegalStateException("Could not find available port in range " + min + " to " + max);
-  }  
-  
-  @Override
-  @After
-  public void tearDown() throws Exception {
-    greenMail.stop();
-    super.tearDown();
-  }  
-  
-  /**
-   * Creates 1 or more messages in the specified folder. 
-   */
-  protected void setupFolder(ImapHostManager imapMgr, String folderName, int numMessages) throws Exception {
-    setupFolder(imapMgr, folderName, numMessages, 0);
-  }
-  
-  protected void setupFolder(ImapHostManager imapMgr, String folderName, int numMessages, int startAt) throws Exception {
-    cal.setTimeInMillis(System.currentTimeMillis());
-    Date now = cal.getTime();
-    MailFolder folder = imapMgr.getFolder(mailUser, folderName, false);
-    if (folder == null)
-      folder = imapMgr.createMailbox(mailUser, folderName);
-    
-    Session session = GreenMailUtil.getSession(serverSetup);
-    for (int m=0; m < numMessages; m++) {
-      int idx = m + startAt;
-      MimeMessage msg = new MimeMessage(session);
-      msg.setSubject("test"+idx);
-      msg.setFrom("from@localhost.com");
-      msg.setText("test"+idx);
-      msg.setSentDate(now);
-      folder.appendMessage(msg, new Flags(Flags.Flag.RECENT), now);
-    }
-    folder.getMessages();
-  }
+  private static Map<String, String> paramMap = new HashMap<>();
 
-  @SuppressWarnings("unchecked")
   @Test
-  public void testConnection() throws Exception {
+  @Ignore("Needs a Mock Mail Server to work")
+  public void testConnection() {
     // also tests recurse = false and default settings
-    Map<String, String> paramMap = new HashMap<>();
-    paramMap.put("folders", "top1");
-    paramMap.put("recurse", "false");
-    paramMap.put("processAttachments", "false");
-    
-    DataImporter di = new DataImporter();
-    di.loadAndInit(getConfigFromMap(paramMap));
-    RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
-    SolrWriterImpl swi = new SolrWriterImpl();
-    di.runCmd(rp, swi);
-    assertEquals("top1 did not return 2 messages", 2, swi.docs.size());
-  }
-  
-  @SuppressWarnings("unchecked")
-  @Test
-  public void testRecursion() {
-    Map<String, String> paramMap = new HashMap<>();
     paramMap.put("folders", "top2");
-    paramMap.put("recurse", "true");
-    paramMap.put("processAttachments", "false");
+    paramMap.put("recurse", "false");
+    paramMap.put("processAttachement", "false");
     DataImporter di = new DataImporter();
     di.loadAndInit(getConfigFromMap(paramMap));
+    Entity ent = di.getConfig().getEntities().get(0);
     RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
-    assertEquals("top2 and its children did not return 8 messages", 8, swi.docs.size());
+    assertEquals("top1 did not return 2 messages", swi.docs.size(), 2);
   }
 
-  @SuppressWarnings("unchecked")
   @Test
-  public void testExclude() {
-    Map<String, String> paramMap = new HashMap<>();
+  @Ignore("Needs a Mock Mail Server to work")
+  public void testRecursion() {
     paramMap.put("folders", "top2");
     paramMap.put("recurse", "true");
-    paramMap.put("processAttachments", "false");
+    paramMap.put("processAttachement", "false");
+    DataImporter di = new DataImporter();
+    di.loadAndInit(getConfigFromMap(paramMap));
+    Entity ent = di.getConfig().getEntities().get(0);
+    RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
+    SolrWriterImpl swi = new SolrWriterImpl();
+    di.runCmd(rp, swi);
+    assertEquals("top2 and its children did not return 8 messages", swi.docs.size(), 8);
+  }
+
+  @Test
+  @Ignore("Needs a Mock Mail Server to work")
+  public void testExclude() {
+    paramMap.put("folders", "top2");
+    paramMap.put("recurse", "true");
+    paramMap.put("processAttachement", "false");
     paramMap.put("exclude", ".*grandchild.*");
     DataImporter di = new DataImporter();
     di.loadAndInit(getConfigFromMap(paramMap));
+    Entity ent = di.getConfig().getEntities().get(0);
     RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
-    assertEquals("top2 and its direct children did not return 5 messages", 5, swi.docs.size());
+    assertEquals("top2 and its direct children did not return 5 messages", swi.docs.size(), 5);
   }
 
-  @SuppressWarnings("unchecked")
   @Test
+  @Ignore("Needs a Mock Mail Server to work")
   public void testInclude() {
-    Map<String, String> paramMap = new HashMap<>();
     paramMap.put("folders", "top2");
     paramMap.put("recurse", "true");
-    paramMap.put("processAttachments", "false");
+    paramMap.put("processAttachement", "false");
     paramMap.put("include", ".*grandchild.*");
     DataImporter di = new DataImporter();
     di.loadAndInit(getConfigFromMap(paramMap));
+    Entity ent = di.getConfig().getEntities().get(0);
     RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
-    assertEquals("top2 and its direct children did not return 3 messages", 3, swi.docs.size());
+    assertEquals("top2 and its direct children did not return 3 messages", swi.docs.size(), 3);
   }
 
-  @SuppressWarnings("unchecked")
   @Test
+  @Ignore("Needs a Mock Mail Server to work")
   public void testIncludeAndExclude() {
-    Map<String, String> paramMap = new HashMap<>();
     paramMap.put("folders", "top1,top2");
     paramMap.put("recurse", "true");
-    paramMap.put("processAttachments", "false");
+    paramMap.put("processAttachement", "false");
     paramMap.put("exclude", ".*top1.*");
     paramMap.put("include", ".*grandchild.*");
     DataImporter di = new DataImporter();
     di.loadAndInit(getConfigFromMap(paramMap));
+    Entity ent = di.getConfig().getEntities().get(0);
     RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
-    assertEquals("top2 and its direct children did not return 3 messages", 3, swi.docs.size());
+    assertEquals("top2 and its direct children did not return 3 messages", swi.docs.size(), 3);
   }
 
-  @SuppressWarnings("unchecked")
   @Test
+  @Ignore("Needs a Mock Mail Server to work")
   public void testFetchTimeSince() throws ParseException {
-    Map<String, String> paramMap = new HashMap<>();
-    paramMap.put("folders", "top1"+sep+"child11");
+    paramMap.put("folders", "top1/child11");
     paramMap.put("recurse", "true");
-    paramMap.put("processAttachments", "false");
+    paramMap.put("processAttachement", "false");
     paramMap.put("fetchMailsSince", "2008-12-26 00:00:00");
     DataImporter di = new DataImporter();
     di.loadAndInit(getConfigFromMap(paramMap));
+    Entity ent = di.getConfig().getEntities().get(0);
     RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
-    assertEquals("top1"+sep+"child11 and its direct children did not return 6 messages", 6, swi.docs.size());
+    assertEquals("top2 and its direct children did not return 3 messages", swi.docs.size(), 3);
   }
 
-  // configures the data importer to use the MailEntityProcessor we're testing in this class
   private String getConfigFromMap(Map<String, String> params) {
     String conf =
-      "<dataConfig>" +
-      "<document>" +
-      "<entity processor=\"org.apache.solr.handler.dataimport.MailEntityProcessor\" name=\"mail_entity\" " +
-      "someconfig" +
-      ">" +            
-      "<field column=\"messageId\" name=\"id\" />"+
-      "<field column=\"folder\" name=\"folder_s\" />"+
-      "<field column=\"subject\" name=\"subject_s\" />"+
-      "<field column=\"sentDate\" name=\"date_dt\" />"+
-      "<field column=\"from\" name=\"from_s\" />"+
-      "<field column=\"content\" name=\"content_s\" />"+
-      "</entity>" +                    
-      "</document>" +
-      "</dataConfig>";
+            "<dataConfig>" +
+                    "<document>" +
+                    "<entity processor=\"org.apache.solr.handler.dataimport.MailEntityProcessor\" " +
+                    "someconfig" +
+                    "/>" +
+                    "</document>" +
+                    "</dataConfig>";
     params.put("user", user);
     params.put("password", password);
-    params.put("host", hostAndPort);
+    params.put("host", host);
     params.put("protocol", protocol);
     StringBuilder attribs = new StringBuilder("");
     for (String key : params.keySet())
@@ -272,7 +171,6 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
     return conf.replace("someconfig", attribs.toString());
   }
 
-  // collects documents written by the DataImporter (from the MailEntityProcessor)
   static class SolrWriterImpl extends SolrWriter {
     List<SolrInputDocument> docs = new ArrayList<>();
     Boolean deleteAllCalled;
@@ -283,12 +181,7 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
     }
 
     @Override
-    public void close() {
-      // no-op method to avoid NPE in super impl
-    }
-
-    @Override
-    public boolean upload(SolrInputDocument doc) {      
+    public boolean upload(SolrInputDocument doc) {
       return docs.add(doc);
     }
 
