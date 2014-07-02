@@ -70,6 +70,10 @@ New Features
 * SOLR-6103: Added DateRangeField for indexing date ranges, especially
   multi-valued ones. Based on LUCENE-5648. (David Smiley)
 
+* SOLR-5473: Make one state.json per collection (noble, shalin, Timothy Potter ,Jessica Cheng, Anshum Gupta, Mark Miller)
+
+* SOLR-5474: Add stateFormat=2 support to CloudSolrServer (Timothy Potter , noble , Jessica Cheng)
+
 Other Changes
 ----------------------
 

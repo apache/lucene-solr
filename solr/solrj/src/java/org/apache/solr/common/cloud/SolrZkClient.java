@@ -564,6 +564,7 @@ public class SolrZkClient {
   }
 
   public void close() {
+//    log.warn("closed inst :"+inst, new Exception("leakdebug"));
     if (isClosed) return; // it's okay if we over close - same as solrcore
     isClosed = true;
     try {

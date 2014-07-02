@@ -707,7 +707,13 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       Set<String> collections = clusterState.getCollections();
       for (String name : collections) {
         Map<String, Object> collectionStatus = null;
-        collectionStatus = getCollectionStatus((Map<String, Object>) stateMap.get(name), name, shard);
+        if (clusterState.getCollection(name).getStateFormat()>1) {
+          bytes = ZkStateReader.toJSON(clusterState.getCollection(name));
+          Map<String, Object> docCollection = (Map<String, Object>) ZkStateReader.fromJSON(bytes);
+          collectionStatus = getCollectionStatus(docCollection, name, shard);
+        } else  {
+          collectionStatus = getCollectionStatus((Map<String, Object>) stateMap.get(name), name, shard);
+        }
         if (collectionVsAliases.containsKey(name) && !collectionVsAliases.get(name).isEmpty())  {
           collectionStatus.put("aliases", collectionVsAliases.get(name));
         }
@@ -716,8 +722,12 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     } else {
       String routeKey = message.getStr(ShardParams._ROUTE_);
       Map<String, Object> docCollection = null;
-
-      docCollection = (Map<String, Object>) stateMap.get(collection);
+      if (clusterState.getCollection(collection).getStateFormat()>1 ) {
+        bytes = ZkStateReader.toJSON(clusterState.getCollection(collection));
+        docCollection = (Map<String, Object>) ZkStateReader.fromJSON(bytes);
+      } else  {
+        docCollection = (Map<String, Object>) stateMap.get(collection);
+      }
       if (routeKey == null) {
         Map<String, Object> collectionStatus = getCollectionStatus(docCollection, collection, shard);
         if (collectionVsAliases.containsKey(collection) && !collectionVsAliases.get(collection).isEmpty())  {
