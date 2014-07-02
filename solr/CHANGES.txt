@@ -131,6 +131,9 @@ New Features
 
 * SOLR-6044: The 'clusterstatus' API should return live_nodes as well. (shalin)
 
+* SOLR-5768: Add a distrib.singlePass parameter to make EXECUTE_QUERY phase fetch all fields
+  and skip GET_FIELDS. (Gregg Donovan, shalin)
+
 Bug Fixes
 ----------------------
 
