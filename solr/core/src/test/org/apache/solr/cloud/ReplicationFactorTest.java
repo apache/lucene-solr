@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -48,6 +49,7 @@ import org.slf4j.LoggerFactory;
  */
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6157")
 public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   
   private static final transient Logger log = 
