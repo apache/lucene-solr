@@ -1753,11 +1753,11 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       SolrDocument doc = documents.get(docNum - 1);
       Object expected = expectedValues[docNum - 1];
       Object actual = doc.get(fieldName);
-      if (null != expected && null != actual) {
-        if ( ! expected.equals(actual)) {
-          fail( "Unexpected " + fieldName + " field value in document #" + docNum
-              + ": expected=[" + expected + "], actual=[" + actual + "]");
-        }
+      if ((null == expected && null != actual) ||
+          (null != expected && null == actual) ||
+          (null != expected && null != actual && !expected.equals(actual))) {
+        fail("Unexpected " + fieldName + " field value in document #" + docNum
+            + ": expected=[" + expected + "], actual=[" + actual + "]");
       }
     }
   }
