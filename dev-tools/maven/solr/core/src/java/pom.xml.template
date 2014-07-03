@@ -89,7 +89,6 @@
               <signaturesFiles>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/servlet-api.txt</signaturesFile>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/rue.txt</signaturesFile>
               </signaturesFiles>
             </configuration>
             <goals>
