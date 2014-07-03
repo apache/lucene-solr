@@ -127,7 +127,6 @@
               </bundledSignatures>
               <signaturesFiles>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/rue.txt</signaturesFile>
               </signaturesFiles>
             </configuration>
             <goals>
