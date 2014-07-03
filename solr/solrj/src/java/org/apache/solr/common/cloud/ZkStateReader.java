@@ -98,16 +98,10 @@ public class ZkStateReader {
   public static final String LEADER_ELECT_ZKNODE = "/leader_elect";
 
   public static final String SHARD_LEADERS_ZKNODE = "leaders";
-  private final Set<String> watchedCollections = new HashSet<String>();
 
 
-  /**These are collections which are actively watched by this  instance .
-   *
-   */
-  private Map<String , DocCollection> watchedCollectionStates = new ConcurrentHashMap<String, DocCollection>();
-  private Set<String> allCollections = Collections.emptySet();
 
-
+  
   //
   // convenience methods... should these go somewhere else?
   //
@@ -168,8 +162,7 @@ public class ZkStateReader {
           log.info("path={} {}={} specified config exists in ZooKeeper",
               new Object[] {path, CONFIGNAME_PROP, configName});
         }
-      } else  {
-        throw new ZooKeeperException(ErrorCode.INVALID_STATE, "No config data found at path: " + path);
+
       }
     }
     catch (KeeperException e) {
@@ -258,21 +251,22 @@ public class ZkStateReader {
     return aliases;
   }
 
-  public Boolean checkValid(String coll, int version){
+  /*public Boolean checkValid(String coll, int version){
     DocCollection collection = clusterState.getCollectionOrNull(coll);
     if(collection ==null) return null;
-    if(collection.getZNodeVersion() < version){
-      log.info("server older than client {}<{}",collection.getZNodeVersion(),version);
-      DocCollection nu = getCollectionLive(this, coll);
-      if(nu.getZNodeVersion()> collection.getZNodeVersion()){
-        updateWatchedCollection(nu);
+    if(collection.getVersion() < version){
+      log.info("server older than client {}<{}",collection.getVersion(),version);
+      DocCollection nu = getExternCollectionFresh(this, coll);
+      if(nu.getVersion()> collection.getVersion()){
+        updateExternCollection(nu);
         collection = nu;
       }
     }
-    if(collection.getZNodeVersion() == version) return Boolean.TRUE;
-    log.debug("wrong version from client {}!={} ",version, collection.getZNodeVersion());
+    if(collection.getVersion() == version) return Boolean.TRUE;
+    log.info("wrong version from client {}!={} ",version, collection.getVersion());
     return Boolean.FALSE;
-  }
+
+  }*/
   
   public synchronized void createClusterStateWatchersAndUpdate() throws KeeperException,
       InterruptedException {
@@ -305,11 +299,10 @@ public class ZkStateReader {
               byte[] data = zkClient.getData(CLUSTER_STATE, thisWatch, stat ,
                   true);
               Set<String> ln = ZkStateReader.this.clusterState.getLiveNodes();
-              ClusterState clusterState = ClusterState.load(stat.getVersion(), data, ln,ZkStateReader.this, null);
+              ClusterState clusterState = ClusterState.load(stat.getVersion(), data, ln);
               // update volatile
               ZkStateReader.this.clusterState = clusterState;
 
-              updateCollectionNames();
 //              HashSet<String> all = new HashSet<>(colls);;
 //              all.addAll(clusterState.getAllInternalCollections());
 //              all.remove(null);
@@ -384,7 +377,6 @@ public class ZkStateReader {
       liveNodeSet.addAll(liveNodes);
       ClusterState clusterState = ClusterState.load(zkClient, liveNodeSet, ZkStateReader.this);
       this.clusterState = clusterState;
-      updateCollectionNames();
 
       zkClient.exists(ALIASES,
           new Watcher() {
@@ -430,40 +422,6 @@ public class ZkStateReader {
           }, true);
     }
     updateAliases();
-    //on reconnect of SolrZkClient re-add watchers for the watched external collections
-    synchronized (this) {
-      for (String watchedCollection : watchedCollections) {
-        addZkWatch(watchedCollection);
-      }
-    }
-  }
-
-  public void updateCollectionNames() throws KeeperException, InterruptedException {
-    Set<String> colls = getExternColls();
-    colls.addAll(clusterState.getCollectionStates().keySet());
-    allCollections = Collections.unmodifiableSet(colls);
-  }
-
-  private Set<String> getExternColls() throws KeeperException, InterruptedException {
-    List<String> children = null;
-    try {
-      children = zkClient.getChildren(COLLECTIONS_ZKNODE, null, true);
-    } catch (KeeperException.NoNodeException e) {
-      log.warn("Error fetching collection names");
-
-      return new HashSet<>();
-    }
-    if (children == null || children.isEmpty()) return new HashSet<>();
-    HashSet<String> result = new HashSet<>(children.size());
-
-    for (String c : children) {
-      try {
-        if (zkClient.exists(getCollectionPath(c), true)) result.add(c);
-      } catch (Exception e) {
-        log.warn("Error reading collections nodes", e);
-      }
-    }
-    return result;
   }
 
 
@@ -482,7 +440,7 @@ public class ZkStateReader {
         liveNodesSet.addAll(liveNodes);
         
         if (!onlyLiveNodes) {
-          log.debug("Updating cloud state from ZooKeeper... ");
+          log.info("Updating cloud state from ZooKeeper... ");
           
           clusterState = ClusterState.load(zkClient, liveNodesSet,this);
         } else {
@@ -491,7 +449,6 @@ public class ZkStateReader {
           clusterState.setLiveNodes(liveNodesSet);
         }
         this.clusterState = clusterState;
-        updateCollectionNames();
       }
 
     } else {
@@ -550,13 +507,9 @@ public class ZkStateReader {
         }
       }, SOLRCLOUD_UPDATE_DELAY, TimeUnit.MILLISECONDS);
     }
-    synchronized (this) {
-      for (String watchedCollection : watchedCollections) {
-        watchedCollectionStates.put(watchedCollection, getCollectionLive(this, watchedCollection));
-      }
-    }
-  }
 
+  }
+   
   /**
    * @return information about the cluster from ZooKeeper
    */
@@ -679,9 +632,6 @@ public class ZkStateReader {
   public SolrZkClient getZkClient() {
     return zkClient;
   }
-  public Set<String> getAllCollections(){
-    return allCollections;
-  }
 
   public void updateAliases() throws KeeperException, InterruptedException {
     byte[] data = zkClient.getData(ALIASES, null, null, true);
@@ -727,168 +677,5 @@ public class ZkStateReader {
       throw new IllegalStateException("JVM Does not seem to support UTF-8", e);
     }
   }
-
-  public void updateWatchedCollection(DocCollection c) {
-    if(watchedCollections.contains(c.getName())){
-      watchedCollectionStates.put(c.getName(), c);
-      log.info("Updated DocCollection "+c.getName()+" to: ");
-    }
-  }
-
-  /**
-   * <b>Advance usage</b>
-   * This method can be used to fetch a collection object and control whether it hits
-   * the cache only or if information can be looked up from ZooKeeper.
-   *
-   * @param coll the collection name
-   * @param cachedCopyOnly whether to fetch data from cache only or if hitting Zookeeper is acceptable
-   * @return the {@link org.apache.solr.common.cloud.DocCollection}
-   */
-  public DocCollection getCollection(String coll, boolean cachedCopyOnly) {
-    if(clusterState.getCollectionStates().get(coll) != null) {
-      //this collection resides in clusterstate.json. So it's always up-to-date
-      return clusterState.getCollectionStates().get(coll);
-    }
-    if (watchedCollections.contains(coll) || cachedCopyOnly) {
-      DocCollection c = watchedCollectionStates.get(coll);
-      if (c != null || cachedCopyOnly) return c;
-    }
-    return getCollectionLive(this, coll);
-  }
-
-  private Map ephemeralCollectionData;
-
-  /**
-   * this is only set by Overseer not to be set by others and only set inside the Overseer node. If Overseer has
-   unfinished external collections which are yet to be persisted to ZK
-   this map is populated and this class can use that information
-   @param map  The map reference
-   */
-  public void setEphemeralCollectionData(Map map){
-    ephemeralCollectionData = map;
-  }
-
-  public static DocCollection getCollectionLive(ZkStateReader zkStateReader, String coll) {
-    String collectionPath = getCollectionPath(coll);
-    if(zkStateReader.ephemeralCollectionData !=null ){
-      ClusterState cs = (ClusterState) zkStateReader.ephemeralCollectionData.get(collectionPath);
-      if(cs !=null) {
-        return  cs.getCollectionStates().get(coll);
-      }
-    }
-    try {
-      if (!zkStateReader.getZkClient().exists(collectionPath, true)) return null;
-      Stat stat = new Stat();
-      byte[] data = zkStateReader.getZkClient().getData(collectionPath, null, stat, true);
-      ClusterState state = ClusterState.load(stat.getVersion(), data, Collections.<String>emptySet(), zkStateReader, collectionPath);
-      return state.getCollectionStates().get(coll);
-    } catch (KeeperException.NoNodeException e) {
-      log.warn("No node available : " + collectionPath, e);
-      return null;
-    } catch (KeeperException e) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Could not load collection from ZK:" + coll, e);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Could not load collection from ZK:" + coll, e);
-    }
-  }
-
-  public DocCollection getCollection(String coll) {
-    return getCollection(coll, false);
-  }
-
-  public static String getCollectionPath(String coll) {
-    return COLLECTIONS_ZKNODE+"/"+coll + "/state.json";
-  }
-
-  public void addCollectionWatch(String coll) throws KeeperException, InterruptedException {
-    synchronized (this){
-      if(watchedCollections.contains(coll)) return;
-      else {
-        watchedCollections.add(coll);
-      }
-      addZkWatch(coll);
-    }
-
-  }
-
-  private void addZkWatch(final String coll) throws KeeperException, InterruptedException {
-    log.info("addZkWatch {}", coll);
-    final String fullpath = getCollectionPath(coll);
-    synchronized (getUpdateLock()){
-
-      cmdExecutor.ensureExists(fullpath, zkClient);
-      log.info("Updating collection state at {} from ZooKeeper... ",fullpath);
-
-      Watcher watcher = new Watcher() {
-
-        @Override
-        public void process(WatchedEvent event) {
-          // session events are not change events,
-          // and do not remove the watcher
-          if (EventType.None.equals(event.getType())) {
-            return;
-          }
-          log.info("A cluster state change: {}, has occurred - updating... ", (event), ZkStateReader.this.clusterState == null ? 0 : ZkStateReader.this.clusterState.getLiveNodes().size());
-          try {
-
-            // delayed approach
-            // ZkStateReader.this.updateClusterState(false, false);
-            synchronized (ZkStateReader.this.getUpdateLock()) {
-              if(!watchedCollections.contains(coll)) {
-                log.info("Unwatched collection {}",coll);
-                return;
-              }
-              // remake watch
-              final Watcher thisWatch = this;
-              Stat stat = new Stat();
-              byte[] data = zkClient.getData(fullpath, thisWatch, stat, true);
-
-              if(data == null || data.length ==0){
-                log.warn("No value set for collection state : {}", coll);
-                return;
-
-              }
-              ClusterState clusterState = ClusterState.load(stat.getVersion(), data, Collections.<String>emptySet(),ZkStateReader.this,fullpath);
-              // update volatile
-
-              DocCollection newState = clusterState.getCollectionStates().get(coll);
-              watchedCollectionStates.put(coll, newState);
-              log.info("Updating data for {} to ver {} ", coll , newState.getZNodeVersion());
-
-            }
-          } catch (KeeperException e) {
-            if (e.code() == KeeperException.Code.SESSIONEXPIRED
-                || e.code() == KeeperException.Code.CONNECTIONLOSS) {
-              log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK");
-              return;
-            }
-            log.error("Unwatched collection :"+coll , e);
-            throw new ZooKeeperException(ErrorCode.SERVER_ERROR,
-                "", e);
-
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.error("Unwatched collection :"+coll , e);
-            return;
-          }
-        }
-
-      };
-      zkClient.exists(fullpath, watcher, true);
-    }
-
-    watchedCollectionStates.put(coll, getCollectionLive(this, coll));
-  }
-
-  /**This is not a public API. Only used by ZkController */
-  public void removeZKWatch(final String coll){
-    synchronized (this){
-      watchedCollections.remove(coll);
-    }
-  }
-
-
-
 
 }
