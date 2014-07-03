@@ -109,6 +109,8 @@ API Changes
 
 * LUCENE-5752: Simplified Automaton API to be immutable. (Mike McCandless)
 
+* LUCENE-5793: Add equals/hashCode to FieldType. (Shay Banon, Robert Muir)
+
 Optimizations
 
 * LUCENE-5780: Make OrdinalMap more memory-efficient, especially in case the

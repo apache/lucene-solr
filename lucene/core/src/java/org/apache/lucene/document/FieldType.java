@@ -434,4 +434,44 @@ public class FieldType implements IndexableFieldType  {
     checkIfFrozen();
     docValueType = type;
   }
+
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((docValueType == null) ? 0 : docValueType.hashCode());
+    result = prime * result + ((indexOptions == null) ? 0 : indexOptions.hashCode());
+    result = prime * result + (indexed ? 1231 : 1237);
+    result = prime * result + numericPrecisionStep;
+    result = prime * result + ((numericType == null) ? 0 : numericType.hashCode());
+    result = prime * result + (omitNorms ? 1231 : 1237);
+    result = prime * result + (storeTermVectorOffsets ? 1231 : 1237);
+    result = prime * result + (storeTermVectorPayloads ? 1231 : 1237);
+    result = prime * result + (storeTermVectorPositions ? 1231 : 1237);
+    result = prime * result + (storeTermVectors ? 1231 : 1237);
+    result = prime * result + (stored ? 1231 : 1237);
+    result = prime * result + (tokenized ? 1231 : 1237);
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) return true;
+    if (obj == null) return false;
+    if (getClass() != obj.getClass()) return false;
+    FieldType other = (FieldType) obj;
+    if (docValueType != other.docValueType) return false;
+    if (indexOptions != other.indexOptions) return false;
+    if (indexed != other.indexed) return false;
+    if (numericPrecisionStep != other.numericPrecisionStep) return false;
+    if (numericType != other.numericType) return false;
+    if (omitNorms != other.omitNorms) return false;
+    if (storeTermVectorOffsets != other.storeTermVectorOffsets) return false;
+    if (storeTermVectorPayloads != other.storeTermVectorPayloads) return false;
+    if (storeTermVectorPositions != other.storeTermVectorPositions) return false;
+    if (storeTermVectors != other.storeTermVectors) return false;
+    if (stored != other.stored) return false;
+    if (tokenized != other.tokenized) return false;
+    return true;
+  }
 }
