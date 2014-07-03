@@ -1,4 +1,4 @@
-package org.apache.lucene.facet.taxonomy.utils;
+package org.apache.lucene.facet.taxonomy;
 
 import java.io.IOException;
 
