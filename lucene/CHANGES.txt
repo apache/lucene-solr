@@ -101,6 +101,10 @@ New Features
 * LUCENE-5778: Support hunspell morphological description fields/aliases.
   (Robert Muir)
 
+* LUCENE-5801: Added (back) OrdinalMappingAtomicReader for merging search
+  indexes that contain category ordinals from separate taxonomy indexes.
+  (Nicola Buso via Shai Erera)
+  
 API Changes
 
 * LUCENE-5752: Simplified Automaton API to be immutable. (Mike McCandless)
