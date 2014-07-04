@@ -364,6 +364,8 @@ public class RandomIndexWriter implements Closeable {
     // forceMerge since presumably they might open a reader on the dir.
     if (getReaderCalled == false && r.nextInt(8) == 2) {
       doRandomForceMerge();
+      // index may have changed, must commit the changes, or otherwise they are discarded by the call to close()
+      w.commit();
     }
     w.close();
   }
