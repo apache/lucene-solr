@@ -133,6 +133,10 @@ public class MoreLikeThisComponent extends SearchComponent {
         && rb.req.getParams().getBool(COMPONENT_NAME, false)) {
       log.debug("ShardRequest.response.size: " + sreq.responses.size());
       for (ShardResponse r : sreq.responses) {
+        if (r.getException() != null) {
+          // This should only happen in case of using shards.tolerant=true. Omit this ShardResponse
+          continue;
+        }
         NamedList<?> moreLikeThisReponse = (NamedList<?>) r.getSolrResponse()
             .getResponse().get("moreLikeThis");
         log.debug("ShardRequest.response.shard: " + r.getShard());
