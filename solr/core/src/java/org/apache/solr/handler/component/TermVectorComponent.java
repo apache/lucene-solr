@@ -425,7 +425,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
   public void finishStage(ResponseBuilder rb) {
     if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
       
-      NamedList termVectors = new NamedList<>();
+      NamedList<Object> termVectors = new NamedList<>();
       Map.Entry<String, Object>[] arr = new NamedList.NamedListEntry[rb.resultIds.size()];
 
       for (ShardRequest sreq : rb.finished) {
@@ -450,7 +450,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
         }
       }
       // remove nulls in case not all docs were able to be retrieved
-      termVectors.addAll(SolrPluginUtils.removeNulls(new NamedList<>(arr)));
+      termVectors.addAll(SolrPluginUtils.removeNulls(arr, new NamedList<Object>()));
       rb.rsp.add(TERM_VECTORS, termVectors);
     }
   }
