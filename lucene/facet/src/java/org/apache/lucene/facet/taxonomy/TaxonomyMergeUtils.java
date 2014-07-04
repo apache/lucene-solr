@@ -33,30 +33,32 @@ import org.apache.lucene.store.Directory;
  * Utility methods for merging index and taxonomy directories.
  * @lucene.experimental
  */
-public class TaxonomyMergeUtils {
+public abstract class TaxonomyMergeUtils {
+  
+  private TaxonomyMergeUtils() {}
   
   /**
    * Merges the given taxonomy and index directories and commits the changes to
    * the given writers.
    */
-  public static void merge(Directory srcIndexDir, Directory srcTaxDir, OrdinalMap map, IndexWriter destIndexWriter, 
-      DirectoryTaxonomyWriter destTaxWriter) throws IOException {
+  public static void merge(Directory srcIndexDir, Directory srcTaxoDir, OrdinalMap map, IndexWriter destIndexWriter,
+      DirectoryTaxonomyWriter destTaxoWriter) throws IOException {
     
     // merge the taxonomies
-    destTaxWriter.addTaxonomy(srcTaxDir, map);
+    destTaxoWriter.addTaxonomy(srcTaxoDir, map);
     int ordinalMap[] = map.getMap();
     DirectoryReader reader = DirectoryReader.open(srcIndexDir);
-    List<AtomicReaderContext> leaves = reader.leaves();
-    int numReaders = leaves.size();
-    AtomicReader wrappedLeaves[] = new AtomicReader[numReaders];
-    for (int i = 0; i < numReaders; i++) {
-      wrappedLeaves[i] = new OrdinalMappingAtomicReader(leaves.get(i).reader(), ordinalMap);
-    }
     try {
+      List<AtomicReaderContext> leaves = reader.leaves();
+      int numReaders = leaves.size();
+      AtomicReader wrappedLeaves[] = new AtomicReader[numReaders];
+      for (int i = 0; i < numReaders; i++) {
+        wrappedLeaves[i] = new OrdinalMappingAtomicReader(leaves.get(i).reader(), ordinalMap);
+      }
       destIndexWriter.addIndexes(new MultiReader(wrappedLeaves));
       
       // commit changes to taxonomy and index respectively.
-      destTaxWriter.commit();
+      destTaxoWriter.commit();
       destIndexWriter.commit();
     } finally {
       reader.close();

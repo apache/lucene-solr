@@ -141,4 +141,3 @@ public class OrdinalMappingAtomicReader extends FilterAtomicReader {
   }
   
 }
-
