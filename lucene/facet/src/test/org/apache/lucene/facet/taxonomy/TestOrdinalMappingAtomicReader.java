@@ -2,8 +2,6 @@ package org.apache.lucene.facet.taxonomy;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetResult;
@@ -12,8 +10,6 @@ import org.apache.lucene.facet.Facets;
 import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.LabelAndValue;
-import org.apache.lucene.facet.taxonomy.FastTaxonomyFacetCounts;
-import org.apache.lucene.facet.taxonomy.TaxonomyMergeUtils;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.MemoryOrdinalMap;
@@ -45,10 +41,10 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class OrdinalMappingReaderTest extends FacetTestCase {
+public class TestOrdinalMappingAtomicReader extends FacetTestCase {
   
   private static final int NUM_DOCS = 100;
-  private FacetsConfig facetConfig = new FacetsConfig();
+  private final FacetsConfig facetConfig = new FacetsConfig();
   
   @Before
   @Override
@@ -59,61 +55,55 @@ public class OrdinalMappingReaderTest extends FacetTestCase {
 
   @Test
   public void testTaxonomyMergeUtils() throws Exception {
-    Directory dir = newDirectory();
-    Directory taxDir = newDirectory();
-    buildIndexWithFacets(dir, taxDir, true);
+    Directory srcIndexDir = newDirectory();
+    Directory srcTaxoDir = newDirectory();
+    buildIndexWithFacets(srcIndexDir, srcTaxoDir, true);
     
-    Directory dir1 = newDirectory();
-    Directory taxDir1 = newDirectory();
-    buildIndexWithFacets(dir1, taxDir1, false);
+    Directory targetIndexDir = newDirectory();
+    Directory targetTaxoDir = newDirectory();
+    buildIndexWithFacets(targetIndexDir, targetTaxoDir, false);
     
-    IndexWriter destIndexWriter = new IndexWriter(dir1, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
-    DirectoryTaxonomyWriter destTaxWriter = new DirectoryTaxonomyWriter(taxDir1);
+    IndexWriter destIndexWriter = new IndexWriter(targetIndexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
+    DirectoryTaxonomyWriter destTaxoWriter = new DirectoryTaxonomyWriter(targetTaxoDir);
     try {
-      TaxonomyMergeUtils.merge(dir, taxDir, new MemoryOrdinalMap(), destIndexWriter, destTaxWriter);
+      TaxonomyMergeUtils.merge(srcIndexDir, srcTaxoDir, new MemoryOrdinalMap(), destIndexWriter, destTaxoWriter);
     } finally {
-      IOUtils.close(destIndexWriter, destTaxWriter);
+      IOUtils.close(destIndexWriter, destTaxoWriter);
     }
+    verifyResults(targetIndexDir, targetTaxoDir);
     
-    verifyResults(dir1, taxDir1);
-    dir1.close();
-    taxDir1.close();
-    dir.close();
-    taxDir.close();
+    IOUtils.close(targetIndexDir, targetTaxoDir, srcIndexDir, srcTaxoDir);
   }
   
-  private void verifyResults(Directory dir, Directory taxDir) throws IOException {
-    DirectoryReader reader1 = DirectoryReader.open(dir);
-    DirectoryTaxonomyReader taxReader = new DirectoryTaxonomyReader(taxDir);
-    IndexSearcher searcher = newSearcher(reader1);
+  private void verifyResults(Directory indexDir, Directory taxoDir) throws IOException {
+    DirectoryReader indexReader = DirectoryReader.open(indexDir);
+    DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
+    IndexSearcher searcher = newSearcher(indexReader);
     
     FacetsCollector collector = new FacetsCollector();
     FacetsCollector.search(searcher, new MatchAllDocsQuery(), 10, collector);
-    Facets facets = new FastTaxonomyFacetCounts(taxReader, facetConfig, collector);
+    Facets facets = new FastTaxonomyFacetCounts(taxoReader, facetConfig, collector);
     FacetResult result = facets.getTopChildren(10, "tag");
     
     for (LabelAndValue lv: result.labelValues) {
-      int weight = lv.value.intValue();
-      String label = lv.label;
       if (VERBOSE) {
-        System.out.println(label + ": " + weight);
+        System.out.println(lv);
       }
-      assertEquals(NUM_DOCS ,weight);
+      assertEquals(NUM_DOCS, lv.value.intValue());
     }
-    reader1.close();
-    taxReader.close();
+    
+    IOUtils.close(indexReader, taxoReader);
   }
   
-  private void buildIndexWithFacets(Directory dir, Directory taxDir, boolean asc) throws IOException {
-    IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, 
-        new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false));
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
+  private void buildIndexWithFacets(Directory indexDir, Directory taxoDir, boolean asc) throws IOException {
+    IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), indexDir, config);
     
-    DirectoryTaxonomyWriter taxonomyWriter = new DirectoryTaxonomyWriter(taxDir);
+    DirectoryTaxonomyWriter taxonomyWriter = new DirectoryTaxonomyWriter(taxoDir);
     for (int i = 1; i <= NUM_DOCS; i++) {
       Document doc = new Document();
       for (int j = i; j <= NUM_DOCS; j++) {
-        int facetValue = asc? j: NUM_DOCS - j;
+        int facetValue = asc ? j: NUM_DOCS - j;
         doc.add(new FacetField("tag", Integer.toString(facetValue)));
       }
       writer.addDocument(facetConfig.build(taxonomyWriter, doc));
@@ -123,5 +113,5 @@ public class OrdinalMappingReaderTest extends FacetTestCase {
     writer.commit();
     writer.close();
   }
-  
+
 }
