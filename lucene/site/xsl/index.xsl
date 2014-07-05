@@ -74,7 +74,7 @@
           <ul>
             <li><a href="changes/Changes.html">Changes</a>: List of changes in this release.</li>
             <li><a href="SYSTEM_REQUIREMENTS.html">System Requirements</a>: Minimum and supported Java versions.</li>
-            <li><a href="MIGRATE.html">Migration Guide</a>: What changed in Lucene 4; how to migrate code from Lucene 3.x.</li>
+            <li><a href="MIGRATE.html">Migration Guide</a>: What changed in Lucene 5; how to migrate code from Lucene 4.x.</li>
             <li><a href="JRE_VERSION_MIGRATION.html">JRE Version Migration</a>: Information about upgrading between major JRE versions.</li>
             <li><a href="core/org/apache/lucene/codecs/{$defaultCodecPackage}/package-summary.html#package_description">File Formats</a>: Guide to the supported index format used by Lucene.  This can be customized by using <a href="core/org/apache/lucene/codecs/package-summary.html#package_description">an alternate codec</a>.</li>
             <li><a href="core/org/apache/lucene/search/package-summary.html#package_description">Search and Scoring in Lucene</a>: Introduction to how Lucene scores documents.</li>
