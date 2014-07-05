@@ -344,7 +344,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     }
     
     for (SolrServer client : clients) {
-      assertEquals("commitWithin did not work", before + 1, client.query(new SolrQuery("*:*")).getResults().getNumFound());
+      assertEquals("commitWithin did not work on node: " + ((HttpSolrServer)client).getBaseURL(), before + 1, client.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
     
     // TODO: This test currently fails because debug info is obtained only
