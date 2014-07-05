@@ -2196,7 +2196,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
 
   <!-- JFlex task -->
   <target name="-install-jflex" unless="jflex.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="de.jflex" module="jflex" revision="1.5.1"
+    <ivy:cachepath organisation="de.jflex" module="jflex" revision="1.6.0"
                    inline="true" conf="default" transitive="true" pathid="jflex.classpath"/>
     <taskdef name="jflex" classname="jflex.anttask.JFlexTask" classpathref="jflex.classpath"/>
     <property name="jflex.loaded" value="true"/>

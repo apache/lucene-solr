@@ -29,15 +29,8 @@
 
   <import file="../analysis-module-build.xml"/>
 	
-  <target name="jflex" depends="-install-jflex,clean-jflex,-gen-uax29-supp-macros,
-                                -jflex-StandardAnalyzer,-jflex-UAX29URLEmailTokenizer,
+  <target name="jflex" depends="-install-jflex,clean-jflex,-jflex-StandardAnalyzer,-jflex-UAX29URLEmailTokenizer,
                                 -jflex-wiki-tokenizer,-jflex-HTMLStripCharFilter"/>
-
-  <target name="-gen-uax29-supp-macros">
-    <subant target="gen-uax29-supp-macros">
-       <fileset dir="../icu" includes="build.xml"/>
-    </subant>
-  </target>
 
   <target name="-jflex-HTMLStripCharFilter"
           depends="init,generate-jflex-html-char-entities">

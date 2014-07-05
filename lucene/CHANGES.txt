@@ -136,6 +136,13 @@ Test Framework
 * LUCENE-5786: Unflushed/ truncated events file (hung testing subprocess).
   (Dawid Weiss)
 
+Build
+ 
+* LUCENE-5770: Upgrade to JFlex 1.6, which has direct support for
+  supplementary code points - as a result, ICU4J is no longer used
+  to generate surrogate pairs to augment JFlex scanner specifications.
+  (Steve Rowe)
+
 ======================= Lucene 4.9.0 =======================
 
 Changes in Runtime Behavior
