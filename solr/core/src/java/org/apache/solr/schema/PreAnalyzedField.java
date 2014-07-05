@@ -55,6 +55,7 @@ public class PreAnalyzedField extends FieldType {
 
   
   private PreAnalyzedParser parser;
+  private Analyzer analyzer;
   
   @Override
   public void init(IndexSchema schema, Map<String, String> args) {
@@ -81,18 +82,18 @@ public class PreAnalyzedField extends FieldType {
       }
       args.remove(PARSER_IMPL);
     }
-  }
-
-  @Override
-  public Analyzer getIndexAnalyzer() {
-    return new SolrAnalyzer() {
-      
+    // create Analyzer instance for reuse:
+    analyzer = new SolrAnalyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         return new TokenStreamComponents(new PreAnalyzedTokenizer(reader, parser));
       }
-      
     };
+  }
+
+  @Override
+  public Analyzer getIndexAnalyzer() {
+    return analyzer;
   }
   
   @Override

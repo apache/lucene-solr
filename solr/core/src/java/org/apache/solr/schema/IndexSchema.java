@@ -18,7 +18,7 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.AnalyzerWrapper;
+import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Version;
@@ -389,7 +389,7 @@ public class IndexSchema {
     return false;
   }
 
-  private class SolrIndexAnalyzer extends AnalyzerWrapper {
+  private class SolrIndexAnalyzer extends DelegatingAnalyzerWrapper {
     protected final HashMap<String, Analyzer> analyzers;
 
     SolrIndexAnalyzer() {

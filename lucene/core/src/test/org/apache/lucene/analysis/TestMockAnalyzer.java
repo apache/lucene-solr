@@ -277,11 +277,6 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
       }
       
       @Override
-      protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
-        return components;
-      }
-      
-      @Override
       protected Analyzer getWrappedAnalyzer(String fieldName) {
         return delegate;
       }
@@ -295,7 +290,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
     final int positionGap = random().nextInt(1000);
     final int offsetGap = random().nextInt(1000);
     final Analyzer delegate = new MockAnalyzer(random());
-    final Analyzer a = new AnalyzerWrapper(delegate.getReuseStrategy()) {      
+    final Analyzer a = new DelegatingAnalyzerWrapper(delegate.getReuseStrategy()) {
       @Override
       protected Analyzer getWrappedAnalyzer(String fieldName) {
         return delegate;
