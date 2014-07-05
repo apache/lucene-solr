@@ -22,8 +22,8 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.AnalyzerWrapper;
 import org.apache.lucene.analysis.CannedTokenStream;
+import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -606,7 +606,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     fieldAnalyzers.put( "field_tripples", new MockAnalyzer( random(), new CharacterRunAutomaton( new RegExp("...").toAutomaton() ), true ) );
     fieldAnalyzers.put( "field_sliced", fieldAnalyzers.get( "field" ) );
     fieldAnalyzers.put( "field_der_red", fieldAnalyzers.get( "field" ) );  // This is required even though we provide a token stream
-    Analyzer analyzer = new AnalyzerWrapper() {
+    Analyzer analyzer = new DelegatingAnalyzerWrapper(Analyzer.PER_FIELD_REUSE_STRATEGY) {
       public Analyzer getWrappedAnalyzer(String fieldName) {
         return fieldAnalyzers.get( fieldName );
       }

@@ -18,7 +18,7 @@ package org.apache.lucene.analysis.miscellaneous;
  */
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.AnalyzerWrapper;
+import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 
 import java.util.Collections;
 import java.util.Map;
@@ -48,7 +48,7 @@ import java.util.Map;
  * <p>A PerFieldAnalyzerWrapper can be used like any other analyzer, for both indexing
  * and query parsing.
  */
-public final class PerFieldAnalyzerWrapper extends AnalyzerWrapper {
+public final class PerFieldAnalyzerWrapper extends DelegatingAnalyzerWrapper {
   private final Analyzer defaultAnalyzer;
   private final Map<String, Analyzer> fieldAnalyzers;
 

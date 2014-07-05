@@ -33,18 +33,6 @@ import java.io.Reader;
 public abstract class AnalyzerWrapper extends Analyzer {
 
   /**
-   * Creates a new AnalyzerWrapper.  Since the {@link Analyzer.ReuseStrategy} of
-   * the wrapped Analyzers are unknown, {@link #PER_FIELD_REUSE_STRATEGY} is assumed.
-   * @deprecated Use {@link #AnalyzerWrapper(Analyzer.ReuseStrategy)}
-   * and specify a valid {@link Analyzer.ReuseStrategy}, probably retrieved from the
-   * wrapped analyzer using {@link #getReuseStrategy()}.
-   */
-  @Deprecated
-  protected AnalyzerWrapper() {
-    this(PER_FIELD_REUSE_STRATEGY);
-  }
-
-  /**
    * Creates a new AnalyzerWrapper with the given reuse strategy.
    * <p>If you want to wrap a single delegate Analyzer you can probably
    * reuse its strategy when instantiating this subclass:

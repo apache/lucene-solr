@@ -1,14 +1,21 @@
 package org.apache.lucene.analysis.miscellaneous;
 
+import java.io.IOException;
 import java.io.Reader;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.AnalyzerWrapper;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockCharFilter;
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.SimpleAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.util.Rethrow;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -31,8 +38,8 @@ public class TestPerFieldAnalyzerWrapper extends BaseTokenStreamTestCase {
   public void testPerField() throws Exception {
     String text = "Qwerty";
 
-    Map<String, Analyzer> analyzerPerField = new HashMap<>();
-    analyzerPerField.put("special", new SimpleAnalyzer(TEST_VERSION_CURRENT));
+    Map<String,Analyzer> analyzerPerField =
+        Collections.<String,Analyzer>singletonMap("special", new SimpleAnalyzer(TEST_VERSION_CURRENT));
 
     PerFieldAnalyzerWrapper analyzer =
               new PerFieldAnalyzerWrapper(new WhitespaceAnalyzer(TEST_VERSION_CURRENT), analyzerPerField);
@@ -60,6 +67,63 @@ public class TestPerFieldAnalyzerWrapper extends BaseTokenStreamTestCase {
       assertFalse(tokenStream.incrementToken());
       tokenStream.end();
     }
+  }
+  
+  public void testReuseWrapped() throws Exception {
+    final String text = "Qwerty";
+
+    final Analyzer specialAnalyzer = new SimpleAnalyzer(TEST_VERSION_CURRENT);
+    final Analyzer defaultAnalyzer = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
+
+    TokenStream ts1, ts2, ts3, ts4;
+
+    final PerFieldAnalyzerWrapper wrapper1 = new PerFieldAnalyzerWrapper(defaultAnalyzer,
+        Collections.<String,Analyzer>singletonMap("special", specialAnalyzer));
+
+    // test that the PerFieldWrapper returns the same instance as original Analyzer:
+    ts1 = defaultAnalyzer.tokenStream("something", text);
+    ts2 = wrapper1.tokenStream("something", text);
+    assertSame(ts1, ts2);
+
+    ts1 = specialAnalyzer.tokenStream("special", text);
+    ts2 = wrapper1.tokenStream("special", text);
+    assertSame(ts1, ts2);
+
+    // Wrap with another wrapper, which does *not* extend DelegatingAnalyzerWrapper:
+    final AnalyzerWrapper wrapper2 = new AnalyzerWrapper(wrapper1.getReuseStrategy()) {
+      @Override
+      protected Analyzer getWrappedAnalyzer(String fieldName) {
+        return wrapper1;
+      }
+
+      @Override
+      protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
+        try {
+          assertNotSame(specialAnalyzer.tokenStream("special", text), components.getTokenStream());
+        } catch (IOException e) {
+          Rethrow.rethrow(e);
+        }
+        TokenFilter filter = new ASCIIFoldingFilter(components.getTokenStream());
+        return new TokenStreamComponents(components.getTokenizer(), filter);
+      }
+    };
+    ts3 = wrapper2.tokenStream("special", text);
+    assertNotSame(ts1, ts3);
+    assertTrue(ts3 instanceof ASCIIFoldingFilter);
+    // check that cache did not get corrumpted:
+    ts2 = wrapper1.tokenStream("special", text);
+    assertSame(ts1, ts2);
+    
+    // Wrap PerField with another PerField. In that case all TokenStreams returned must be the same:
+    final PerFieldAnalyzerWrapper wrapper3 = new PerFieldAnalyzerWrapper(wrapper1,
+        Collections.<String,Analyzer>singletonMap("moreSpecial", specialAnalyzer));
+    ts1 = specialAnalyzer.tokenStream("special", text);
+    ts2 = wrapper3.tokenStream("special", text);
+    assertSame(ts1, ts2);
+    ts3 = specialAnalyzer.tokenStream("moreSpecial", text);
+    ts4 = wrapper3.tokenStream("moreSpecial", text);
+    assertSame(ts3, ts4);
+    assertSame(ts2, ts3);
   }
   
   public void testCharFilters() throws Exception {

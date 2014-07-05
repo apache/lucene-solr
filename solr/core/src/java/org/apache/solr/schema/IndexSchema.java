@@ -18,8 +18,7 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.AnalyzerWrapper;
-import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
@@ -397,7 +396,7 @@ public class IndexSchema {
     return false;
   }
 
-  private class SolrIndexAnalyzer extends AnalyzerWrapper {
+  private class SolrIndexAnalyzer extends DelegatingAnalyzerWrapper {
     protected final HashMap<String, Analyzer> analyzers;
 
     SolrIndexAnalyzer() {
