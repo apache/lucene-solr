@@ -40,6 +40,7 @@ import java.util.Random;
  */
 public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
+  private static final int REQUEST_STATUS_TIMEOUT = 90;
   private static Logger log = LoggerFactory
       .getLogger(MultiThreadedOCPTest.class);
 
@@ -98,7 +99,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
     }
     assertTrue("More than one tasks were supposed to be running in parallel but they weren't.", pass);
     for(int i=1;i<=NUM_COLLECTIONS;i++) {
-      String state = getRequestStateAfterCompletion(i + "", 30, server);
+      String state = getRequestStateAfterCompletion(i + "", REQUEST_STATUS_TIMEOUT, server);
       assertTrue("Task " + i + " did not complete, final state: " + state,state.equals("completed"));
     }
   }
@@ -127,7 +128,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
       
       assertTrue("Mutual exclusion failed. Found more than one task running for the same collection", runningTasks < 2);
 
-      if(completedTasks == 2 || iterations++ > 90)
+      if(completedTasks == 2 || iterations++ > REQUEST_STATUS_TIMEOUT)
         break;
 
       try {
@@ -138,7 +139,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
       }
     }
     for (int i=1001;i<=1002;i++) {
-      String state = getRequestStateAfterCompletion(i + "", 30, server);
+      String state = getRequestStateAfterCompletion(i + "", REQUEST_STATUS_TIMEOUT, server);
       assertTrue("Task " + i + " did not complete, final state: " + state,state.equals("completed"));
     }
   }
@@ -157,7 +158,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
         "Task with the same requestid already exists.", r.get("error"));
 
     for (int i=3001;i<=3002;i++) {
-      String state = getRequestStateAfterCompletion(i + "", 30, server);
+      String state = getRequestStateAfterCompletion(i + "", REQUEST_STATUS_TIMEOUT, server);
       assertTrue("Task " + i + " did not complete, final state: " + state,state.equals("completed"));
     }
   }
