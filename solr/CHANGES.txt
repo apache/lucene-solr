@@ -158,6 +158,14 @@ Bug Fixes
 * SOLR-6223: SearchComponents may throw NPE when using shards.tolerant and there is a failure
   in the 'GET_FIELDS/GET_HIGHLIGHTS/GET_DEBUG' phase. (Tomás Fernández Löbbe via shalin)
 
+Optimizations
+---------------------
+
+* LUCENE-5803: Solr's schema now uses DelegatingAnalyzerWrapper. This uses less heap
+  for cached TokenStreamComponents because it caches per FieldType not per Field, so
+  indexes with many fields of same type just use one TokenStream per thread.
+  (Shay Banon, Uwe Schindler, Robert Muir)
+
 Other Changes
 ---------------------
 
