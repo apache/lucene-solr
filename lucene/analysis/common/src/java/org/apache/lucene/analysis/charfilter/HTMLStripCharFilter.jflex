@@ -64,7 +64,7 @@ import org.apache.lucene.analysis.util.OpenStringBuilder;
 //
 //        <identifier> := <ID_Start> <ID_Continue>*
 //
-Name = ( ( [:_\p{ID_Start}] | {ID_Start_Supp} ) ( [-.:_\p{ID_Continue}] | {ID_Continue_Supp} )* )
+Name = [:_\p{ID_Start}] [-.:_\p{ID_Continue}]*
 
 // From Apache httpd mod_include documentation
 // <http://httpd.apache.org/docs/current/mod/mod_include.html>:
@@ -140,8 +140,6 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
 
 
 %include HTMLCharacterEntities.jflex
-
-%include HTMLStripCharFilter.SUPPLEMENTARY.jflex-macro
 
 %{
   private static final int INITIAL_INPUT_SEGMENT_SIZE = 1024;
@@ -309,7 +307,7 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
       cumulativeDiff += inputSegment.length() - outputSegment.length();
       // position the correction at (already output length) + (substitution length)
       addOffCorrectMap(outputCharCount + outputSegment.length(), cumulativeDiff);
-      eofReturnValue = outputSegment.length() > 0 ? outputSegment.nextChar() : -1;
+      eofReturnValue = ( ! outputSegment.isRead()) ? outputSegment.nextChar() : -1;
       break;
     }
     case BANG:
@@ -322,7 +320,7 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
     case LEFT_ANGLE_BRACKET_SLASH:
     case LEFT_ANGLE_BRACKET_SPACE: {        // Include
       outputSegment = inputSegment;
-      eofReturnValue = outputSegment.length() > 0 ? outputSegment.nextChar() : -1;
+      eofReturnValue = ( ! outputSegment.isRead()) ? outputSegment.nextChar() : -1;
       break;
     }
     default: {
@@ -789,7 +787,7 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
     }
   }
   [^] {
-    inputSegment.append(zzBuffer[zzStartRead]);
+    inputSegment.append(yytext());
   }
 }
 
@@ -801,7 +799,13 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
     addOffCorrectMap(outputCharCount, cumulativeDiff);
     yybegin(YYINITIAL);
   }
-  [^] { return zzBuffer[zzStartRead]; }
+  [^] { 
+    if (yylength() == 1) {
+      return zzBuffer[zzStartRead];
+    } else {
+      outputSegment.append(yytext()); return outputSegment.nextChar();
+    }
+  }
 }
 
 <COMMENT> {
@@ -916,7 +920,7 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
 
 <AMPERSAND,NUMERIC_CHARACTER,CHARACTER_REFERENCE_TAIL,LEFT_ANGLE_BRACKET_SLASH,END_TAG_TAIL_INCLUDE,END_TAG_TAIL_EXCLUDE,END_TAG_TAIL_SUBSTITUTE,LEFT_ANGLE_BRACKET,LEFT_ANGLE_BRACKET_SPACE,START_TAG_TAIL_INCLUDE,START_TAG_TAIL_EXCLUDE,START_TAG_TAIL_SUBSTITUTE,BANG> {
   [^] {
-    yypushback(1);
+    yypushback(yylength());
     outputSegment = inputSegment;
     outputSegment.restart();
     yybegin(YYINITIAL);
@@ -924,4 +928,10 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
   }
 }
 
-[^] { return zzBuffer[zzStartRead]; }
+[^] { 
+  if (yylength() == 1) {
+    return zzBuffer[zzStartRead];
+  } else {
+    outputSegment.append(yytext()); return outputSegment.nextChar();
+  }
+}

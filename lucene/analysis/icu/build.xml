@@ -104,43 +104,6 @@ are part of the ICU4C package. See http://site.icu-project.org/ </echo>
       <arg value="${rbbi.dst.dir}"/>
     </java>
   </target>
-			
-  <property name="uax29.supp.macros.output.file" 
-            location="../common/src/java/org/apache/lucene/analysis/standard/SUPPLEMENTARY.jflex-macro"/>
-
-  <target name="gen-uax29-supp-macros" depends="compile-tools">
-    <java
-      classname="org.apache.lucene.analysis.icu.GenerateJFlexSupplementaryMacros"
-      dir="."
-      fork="true"
-      failonerror="true"
-      output="${uax29.supp.macros.output.file}">
-      <classpath>
-      	<path refid="icujar"/>
-      	<pathelement location="${build.dir}/classes/tools"/>
-      </classpath>
-      <assertions>
-        <enable package="org.apache.lucene"/>
-      </assertions>
-    </java>
-  </target>
-
-  <property name="html.strip.charfilter.supp.macros.output.file"
-            location="../common/src/java/org/apache/lucene/analysis/charfilter/HTMLStripCharFilter.SUPPLEMENTARY.jflex-macro"/>
-
-  <target name="gen-html-strip-charfilter-supp-macros" depends="compile-tools">
-    <java
-        classname="org.apache.lucene.analysis.icu.GenerateHTMLStripCharFilterSupplementaryMacros"
-        dir="."
-        fork="true"
-        failonerror="true"
-        output="${html.strip.charfilter.supp.macros.output.file}">
-      <classpath>
-        <path refid="icujar"/>
-        <pathelement location="${build.dir}/classes/tools"/>
-      </classpath>
-    </java>
-  </target>
 
   <target name="compile-tools" depends="init,common.compile-tools">
     <compile
@@ -150,6 +113,6 @@ are part of the ICU4C package. See http://site.icu-project.org/ </echo>
     </compile>
   </target>
 
-  <target name="regenerate" depends="gen-html-strip-charfilter-supp-macros,gen-uax29-supp-macros,gen-utr30-data-files,gennorm2,genrbbi"/>
+  <target name="regenerate" depends="gen-utr30-data-files,gennorm2,genrbbi"/>
 
 </project>

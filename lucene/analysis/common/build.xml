@@ -17,7 +17,7 @@
     limitations under the License.
  -->
 
-<project name="analyzers-common" default="default">
+<project name="analyzers-common" default="default" xmlns:ivy="antlib:org.apache.ivy.ant">
 
   <description>
    Analyzers for indexing content in different languages and domains.
@@ -29,15 +29,8 @@
 
   <import file="../analysis-module-build.xml"/>
 	
-  <target name="jflex" depends="-install-jflex,clean-jflex,-gen-uax29-supp-macros,
-                                -jflex-StandardAnalyzer,-jflex-UAX29URLEmailTokenizer,
-                                -jflex-wiki-tokenizer,-jflex-HTMLStripCharFilter"/>
-
-  <target name="-gen-uax29-supp-macros">
-    <subant target="gen-uax29-supp-macros">
-       <fileset dir="../icu" includes="build.xml"/>
-    </subant>
-  </target>
+  <target name="jflex" depends="-install-jflex,clean-jflex,-jflex-StandardAnalyzer,-jflex-UAX29URLEmailTokenizer,
+                                -jflex-wiki-tokenizer,-jflex-HTMLStripCharFilter,-jflex-legacy"/>
 
   <target name="-jflex-HTMLStripCharFilter"
           depends="init,generate-jflex-html-char-entities">
@@ -67,18 +60,10 @@
 
   <target name="-jflex-StandardAnalyzer" depends="init,-install-jflex">
     <run-jflex dir="src/java/org/apache/lucene/analysis/standard" name="StandardTokenizerImpl"/>
-    <run-jflex dir="src/java/org/apache/lucene/analysis/standard" name="ClassicTokenizerImpl"/>
-    <run-jflex dir="src/java/org/apache/lucene/analysis/standard/std31" name="StandardTokenizerImpl31"/>
-    <run-jflex dir="src/java/org/apache/lucene/analysis/standard/std34" name="StandardTokenizerImpl34"/>
-    <run-jflex dir="src/java/org/apache/lucene/analysis/standard/std40" name="StandardTokenizerImpl40"/>
   </target>
 
   <target name="-jflex-UAX29URLEmailTokenizer" depends="init,-install-jflex">
     <run-jflex dir="src/java/org/apache/lucene/analysis/standard" name="UAX29URLEmailTokenizerImpl"/>
-    <run-jflex dir="src/java/org/apache/lucene/analysis/standard/std31" name="UAX29URLEmailTokenizerImpl31"/>
-    <run-jflex dir="src/java/org/apache/lucene/analysis/standard/std34" name="UAX29URLEmailTokenizerImpl34"/>
-    <run-jflex dir="src/java/org/apache/lucene/analysis/standard/std36" name="UAX29URLEmailTokenizerImpl36"/>
-    <run-jflex dir="src/java/org/apache/lucene/analysis/standard/std40" name="UAX29URLEmailTokenizerImpl40"/>
   </target>
   
   <macrodef name="run-jflex">
@@ -97,12 +82,71 @@
       <fileset dir="src/java/org/apache/lucene/analysis/wikipedia" includes="*.java">
         <containsregexp expression="generated.*by.*JFlex"/>
       </fileset>
-      <fileset dir="src/java/org/apache/lucene/analysis/standard" includes="**/*.java">
+      <fileset dir="src/java/org/apache/lucene/analysis/standard" 
+               includes="*.java" excludes="ClassicTokenizerImpl.java">
         <containsregexp expression="generated.*by.*JFlex"/>
       </fileset>
     </delete>
   </target>
-  
+
+  <target name="-jflex-legacy" depends="-install-jflex-1.5.1,-clean-jflex-legacy,-jflex-legacy-StandardAnalyzer,
+                                        -jflex-legacy-UAX29URLEmailTokenizer"/>
+
+  <!-- JFlex 1.5.1 task -->
+  <target name="-install-jflex-1.5.1" unless="jflex-1.5.1.classpath" depends="ivy-availability-check,ivy-configure">
+    <delete dir="${common.build.dir}/ivy-resolution-cache.save" quiet="true" failonerror="false"/>
+    <move file="${common.build.dir}/ivy-resolution-cache" overwrite="true"
+          todir="${common.build.dir}/ivy-resolution-cache.save"/> <!-- Ignore previously resolved JFlex jar. -->
+    <ivy:cachepath organisation="de.jflex" module="jflex" revision="1.5.1"
+                   inline="true" transitive="false" pathid="jflex-1.5.1.classpath"/>
+    <delete dir="${common.build.dir}/ivy-resolution-cache" quiet="true" failonerror="false"/>
+    <move file="${common.build.dir}/ivy-resolution-cache.save" overwrite="true"
+          todir="${common.build.dir}/ivy-resolution-cache"/> <!-- Put back the pre-existing resolution cache --> 
+    <taskdef name="jflex-1.5.1" classname="jflex.anttask.JFlexTask" classpathref="jflex-1.5.1.classpath"/>
+  </target>
+
+  <target name="-jflex-legacy-StandardAnalyzer" depends="init,-install-jflex-1.5.1">
+    <run-jflex-1.5.1 dir="src/java/org/apache/lucene/analysis/standard" name="ClassicTokenizerImpl"/>
+    <run-jflex-1.5.1 dir="src/java/org/apache/lucene/analysis/standard/std31" name="StandardTokenizerImpl31"/>
+    <run-jflex-1.5.1 dir="src/java/org/apache/lucene/analysis/standard/std34" name="StandardTokenizerImpl34"/>
+    <run-jflex-1.5.1 dir="src/java/org/apache/lucene/analysis/standard/std40" name="StandardTokenizerImpl40"/>
+  </target>
+
+  <target name="-jflex-legacy-UAX29URLEmailTokenizer" depends="init,-install-jflex-1.5.1">
+    <run-jflex-1.5.1 dir="src/java/org/apache/lucene/analysis/standard/std31" name="UAX29URLEmailTokenizerImpl31"/>
+    <run-jflex-1.5.1 dir="src/java/org/apache/lucene/analysis/standard/std34" name="UAX29URLEmailTokenizerImpl34"/>
+    <run-jflex-1.5.1 dir="src/java/org/apache/lucene/analysis/standard/std36" name="UAX29URLEmailTokenizerImpl36"/>
+    <run-jflex-1.5.1 dir="src/java/org/apache/lucene/analysis/standard/std40" name="UAX29URLEmailTokenizerImpl40"/>
+  </target>
+
+  <macrodef name="run-jflex-1.5.1">
+    <attribute name="dir"/>
+    <attribute name="name"/>
+    <sequential>
+      <jflex-1.5.1 file="@{dir}/@{name}.jflex" outdir="@{dir}" nobak="on" inputstreamctor="false"/>
+    </sequential>
+  </macrodef>
+
+  <target name="-clean-jflex-legacy">
+    <delete>
+      <fileset dir="src/java/org/apache/lucene/analysis/standard" includes="ClassicTokenizerImpl.java">
+        <containsregexp expression="generated.*by.*JFlex"/>
+      </fileset>
+      <fileset dir="src/java/org/apache/lucene/analysis/standard/std31" includes="*.java">
+        <containsregexp expression="generated.*by.*JFlex"/>
+      </fileset>
+      <fileset dir="src/java/org/apache/lucene/analysis/standard/std34" includes="*.java">
+        <containsregexp expression="generated.*by.*JFlex"/>
+      </fileset>
+      <fileset dir="src/java/org/apache/lucene/analysis/standard/std36" includes="*.java">
+        <containsregexp expression="generated.*by.*JFlex"/>
+      </fileset>
+      <fileset dir="src/java/org/apache/lucene/analysis/standard/std40" includes="*.java">
+        <containsregexp expression="generated.*by.*JFlex"/>
+      </fileset>
+    </delete>
+  </target>
+
   <property name="tld.zones" value="http://www.internic.net/zones/root.zone"/>
   <property name="tld.output" location="src/java/org/apache/lucene/analysis/standard/ASCIITLD.jflex-macro"/>
 
