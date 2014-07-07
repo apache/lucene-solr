@@ -184,7 +184,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
   
   @AfterClass
   public static void afterClass() throws Exception {
-    initCore();
     Thread.sleep(3000); //XXX wait for threads to die...
   }
   
