@@ -148,13 +148,6 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
     doTest(SpatialOperation.Contains);
   }
 
-  @Test
-  @Repeat(iterations = ITERATIONS)
-  public void testDisjoint() throws IOException {
-    setupGrid(-1);
-    doTest(SpatialOperation.IsDisjointTo);
-  }
-
   /** See LUCENE-5062, {@link ContainsPrefixTreeFilter#multiOverlappingIndexedShapes}. */
   @Test
   public void testContainsPairOverlap() throws IOException {

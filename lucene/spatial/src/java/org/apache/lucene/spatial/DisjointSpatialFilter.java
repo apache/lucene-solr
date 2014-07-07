@@ -38,7 +38,10 @@ import java.io.IOException;
  * a way to invert a query shape.
  *
  * @lucene.experimental
+ *
+ * @deprecated See https://issues.apache.org/jira/browse/LUCENE-5692
  */
+@Deprecated
 public class DisjointSpatialFilter extends Filter {
 
   private final String field;//maybe null

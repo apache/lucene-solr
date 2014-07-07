@@ -1,4 +1,3 @@
-
 Lucene Change Log
 
 For more information on past and future Lucene versions, please see:
@@ -83,6 +82,9 @@ API Changes
   Move SortedSetSortField to core and add SortedSetFieldSource to queries/, which
   takes the same selectors. Add helper methods to DocValues.java that are better 
   suited for search code (never return null, etc).  (Mike McCandless, Robert Muir)
+
+* LUCENE-5692: DisjointSpatialFilter is deprecated and RecursivePrefixTreeStrategy
+  no longer supports this predicate. (David Smiley)
 
 Documentation
 
