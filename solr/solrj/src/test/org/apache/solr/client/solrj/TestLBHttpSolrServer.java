@@ -122,7 +122,9 @@ public class TestLBHttpSolrServer extends SolrTestCaseJ4 {
   @Override
   public void tearDown() throws Exception {
     for (SolrInstance aSolr : solr) {
-      aSolr.tearDown();
+      if (aSolr != null)  {
+        aSolr.tearDown();
+      }
     }
     httpClient.getConnectionManager().shutdown();
     super.tearDown();
