@@ -83,9 +83,6 @@ API Changes
   takes the same selectors. Add helper methods to DocValues.java that are better 
   suited for search code (never return null, etc).  (Mike McCandless, Robert Muir)
 
-* LUCENE-5692: DisjointSpatialFilter is deprecated and RecursivePrefixTreeStrategy
-  no longer supports this predicate. (David Smiley)
-
 Documentation
 
 * LUCENE-5392: Add/improve analysis package documentation to reflect
@@ -112,6 +109,9 @@ API Changes
 * LUCENE-5752: Simplified Automaton API to be immutable. (Mike McCandless)
 
 * LUCENE-5793: Add equals/hashCode to FieldType. (Shay Banon, Robert Muir)
+
+* LUCENE-5692: DisjointSpatialFilter is deprecated (used by RecursivePrefixTreeStrategy)
+  (David Smiley)
 
 Optimizations
 
