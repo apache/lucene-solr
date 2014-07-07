@@ -184,6 +184,8 @@ Other Changes
 
 * SOLR-6171: Remove unused SolrCores coreNameToOrig map (Alan Woodward)
 
+* SOLR-5596: Set system property zookeeper.forceSync=no for Solr test cases. (shalin)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components

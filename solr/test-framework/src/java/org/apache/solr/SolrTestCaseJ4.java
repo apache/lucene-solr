@@ -155,7 +155,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     initCoreDataDir = createTempDir("init-core-data");
 
     System.err.println("Creating dataDir: " + initCoreDataDir.getAbsolutePath());
-    
+
+    System.setProperty("zookeeper.forceSync", "no");
     System.setProperty("jetty.testMode", "true");
     System.setProperty("enable.update.log", usually() ? "true" : "false");
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
@@ -187,6 +188,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       coreName = ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME;
     } finally {
       initCoreDataDir = null;
+      System.clearProperty("zookeeper.forceSync");
       System.clearProperty("jetty.testMode");
       System.clearProperty("tests.shardhandler.randomSeed");
       System.clearProperty("enable.update.log");
