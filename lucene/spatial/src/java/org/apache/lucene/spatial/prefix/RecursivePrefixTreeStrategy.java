@@ -71,7 +71,7 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
   @Override
   public Filter makeFilter(SpatialArgs args) {
     final SpatialOperation op = args.getOperation();
-    if (op == SpatialOperation.IsDisjointTo)
+    if (op == SpatialOperation.IsDisjointTo) //Note: in 5x support has been removed
       return new DisjointSpatialFilter(this, args, getFieldName());
 
     Shape shape = args.getShape();
