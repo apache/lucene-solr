@@ -71,11 +71,6 @@ abstract class FilterScorer extends Scorer {
   }
 
   @Override
-  public Collection<ChildScorer> getChildren() {
-    return in.getChildren();
-  }
-
-  @Override
   public AttributeSource attributes() {
     return in.attributes();
   }

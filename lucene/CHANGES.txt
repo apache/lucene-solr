@@ -131,6 +131,11 @@ Optimizations
   to another analyzer, e.g. per field name: PerFieldAnalyzerWrapper and
   Solr's schema support.  (Shay Banon, Uwe Schindler, Robert Muir)
 
+Bug Fixes
+
+* LUCENE-5796: Fixes the Scorer.getChildren() method for two combinations 
+  of BooleanQuery. (Terry Smith via Robert Muir)
+
 Test Framework
 
 * LUCENE-5786: Unflushed/ truncated events file (hung testing subprocess).
