@@ -556,9 +556,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     assertEquals(1, numFound( rQuery(1, "*:*", masterClient)));
     
-    assertVersions(masterClient, slaveClient);
-
     slaveQueryRsp = rQuery(1, "*:*", slaveClient);
+    assertVersions(masterClient, slaveClient);
     SolrDocument d = ((SolrDocumentList) slaveQueryRsp.get("response")).get(0);
     assertEquals("newname = 2000", (String) d.getFieldValue("newname"));
 
