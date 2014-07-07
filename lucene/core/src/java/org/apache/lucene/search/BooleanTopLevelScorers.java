@@ -18,6 +18,10 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+
+import org.apache.lucene.search.Scorer.ChildScorer;
 
 /** Internal document-at-a-time scorers used to deal with stupid coord() computation */
 class BooleanTopLevelScorers {
@@ -38,6 +42,11 @@ class BooleanTopLevelScorers {
     @Override
     public float score() throws IOException {
       return in.score() * boost;
+    }
+
+    @Override
+    public Collection<ChildScorer> getChildren() {
+      return Collections.singleton(new ChildScorer(in, "BOOSTED"));
     }
   }
   
