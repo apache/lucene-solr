@@ -17,14 +17,17 @@
 package org.apache.lucene.util.mutable;
 
 /**
- * {@link MutableValue} implementation of type 
- * <code>double</code>.
+ * {@link MutableValue} implementation of type <code>double</code>.  
+ * When mutating instances of this object, the caller is responsible for ensuring 
+ * that any instance where <code>exists</code> is set to <code>false</code> must also 
+ * <code>value</code> set to <code>0.0D</code> for proper operation.
  */
 public class MutableValueDouble extends MutableValue {
-  public double value;
+  public double value = 0.0D;
 
   @Override
   public Object toObject() {
+    assert exists || 0.0D == value;
     return exists ? value : null;
   }
 
@@ -45,22 +48,24 @@ public class MutableValueDouble extends MutableValue {
 
   @Override
   public boolean equalsSameType(Object other) {
+    assert exists || 0.0D == value;
     MutableValueDouble b = (MutableValueDouble)other;
     return value == b.value && exists == b.exists;
   }
 
   @Override
   public int compareSameType(Object other) {
+    assert exists || 0.0D == value;
     MutableValueDouble b = (MutableValueDouble)other;
     int c = Double.compare(value, b.value);
     if (c != 0) return c;
-    if (!exists) return -1;
-    if (!b.exists) return 1;
-    return 0;
+    if (exists == b.exists) return 0;
+    return exists ? 1 : -1;
   }
 
   @Override
   public int hashCode() {
+    assert exists || 0.0D == value;
     long x = Double.doubleToLongBits(value);
     return (int)x + (int)(x>>>32);
   }

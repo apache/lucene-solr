@@ -138,6 +138,10 @@ Bug Fixes
 * LUCENE-5796: Fixes the Scorer.getChildren() method for two combinations 
   of BooleanQuery. (Terry Smith via Robert Muir)
 
+* LUCENE-5790: Fix compareTo in MutableValueDouble and MutableValueBool, this caused 
+  incorrect results when grouping on fields with missing values. 
+  (海老澤 志信, hossman)
+
 Test Framework
 
 * LUCENE-5786: Unflushed/ truncated events file (hung testing subprocess).
