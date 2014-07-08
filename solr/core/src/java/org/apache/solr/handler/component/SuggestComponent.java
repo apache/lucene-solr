@@ -35,6 +35,7 @@ import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -208,7 +209,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
     Set<SolrSuggester> querySuggesters;
     try {
       querySuggesters = getSuggesters(params);
-    } catch(IllegalArgumentException ex) {
+    } catch(SolrException ex) {
       if (!buildAll && !reloadAll) {
         throw ex;
       } else {
@@ -351,11 +352,12 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
       if (curSuggester != null) {
         solrSuggesters.add(curSuggester);
       } else {
-        throw new IllegalArgumentException("No suggester named " + suggesterName +" was configured");
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No suggester named " + suggesterName +" was configured");
       }
     }
     if (solrSuggesters.size() == 0) {
-        throw new IllegalArgumentException("No default suggester was configured");
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
+            "'" + SUGGEST_DICT + "' parameter not specified and no default suggester configured");
     }
     return solrSuggesters;
     

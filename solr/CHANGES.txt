@@ -161,6 +161,9 @@ Bug Fixes
 * SOLR-6180: Callers of ManagedIndexSchema mutators should hold the schemaUpdateLock.
   (Gregory Chanan via Steve Rowe)
 
+* SOLR-6229: Make SuggestComponent return 400 instead of 500 for bad dictionary selected in request.
+  (Tomás Fernández Löbbe via shalin)
+
 Optimizations
 ---------------------
 
