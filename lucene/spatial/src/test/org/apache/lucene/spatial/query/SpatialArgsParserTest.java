@@ -22,7 +22,9 @@ import com.spatial4j.core.shape.Rectangle;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
+import java.text.ParseException;
 
+//Tests SpatialOperation somewhat too
 public class SpatialArgsParserTest extends LuceneTestCase {
 
   private SpatialContext ctx = SpatialContext.GEO;
@@ -59,6 +61,22 @@ public class SpatialArgsParserTest extends LuceneTestCase {
     }
     catch (Exception ex) {//expected
     }
+
+    assertAlias(SpatialOperation.IsWithin, "CoveredBy");
+    assertAlias(SpatialOperation.IsWithin, "COVEREDBY");
+    assertAlias(SpatialOperation.IsWithin, "coveredBy");
+    assertAlias(SpatialOperation.IsWithin, "Within");
+    assertAlias(SpatialOperation.IsEqualTo, "Equals");
+    assertAlias(SpatialOperation.IsDisjointTo, "disjoint");
+    assertAlias(SpatialOperation.Contains, "Covers");
+  }
+
+  private void assertAlias(SpatialOperation op, final String name) throws ParseException {
+    String arg;
+    SpatialArgs out;
+    arg = name + "(Point(0 0))";
+    out = new SpatialArgsParser().parse(arg, ctx);
+    assertEquals(op, out.getOperation());
   }
 
 }

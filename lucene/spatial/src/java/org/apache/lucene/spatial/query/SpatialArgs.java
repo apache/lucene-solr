@@ -87,9 +87,6 @@ public class SpatialArgs {
 
   /** Check if the arguments make sense -- throw an exception if not */
   public void validate() throws IllegalArgumentException {
-    if (operation.isTargetNeedsArea() && !shape.hasArea()) {
-      throw new IllegalArgumentException(operation + " only supports geometry with area");
-    }
     if (distErr != null && distErrPct != null)
       throw new IllegalArgumentException("Only distErr or distErrPct can be specified.");
   }
