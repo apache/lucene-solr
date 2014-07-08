@@ -315,14 +315,16 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
           log.debug(builder.toString());
         }
         try {
-          IndexSchema newSchema = oldSchema.addFields(newFields);
-          if (null != newSchema) {
-            cmd.getReq().getCore().setLatestSchema(newSchema);
-            cmd.getReq().updateSchemaToLatest();
-            log.debug("Successfully added field(s) to the schema.");
-            break; // success - exit from the retry loop
-          } else {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to add fields.");
+          synchronized (oldSchema.getSchemaUpdateLock()) {
+            IndexSchema newSchema = oldSchema.addFields(newFields);
+            if (null != newSchema) {
+              cmd.getReq().getCore().setLatestSchema(newSchema);
+              cmd.getReq().updateSchemaToLatest();
+              log.debug("Successfully added field(s) to the schema.");
+              break; // success - exit from the retry loop
+            } else {
+              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to add fields.");
+            }
           }
         } catch(ManagedIndexSchema.FieldExistsException e) {
           log.debug("At least one field to be added already exists in the schema - retrying.");

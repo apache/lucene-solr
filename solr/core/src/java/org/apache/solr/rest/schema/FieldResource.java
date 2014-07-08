@@ -166,12 +166,14 @@ public class FieldResource extends BaseFieldResource implements GETable, PUTable
                 while (!success) {
                   try {
                     SchemaField newField = oldSchema.newField(fieldName, fieldType, map);
-                    IndexSchema newSchema = oldSchema.addField(newField, copyFieldNames);
-                    if (null != newSchema) {
-                      getSolrCore().setLatestSchema(newSchema);
-                      success = true;
-                    } else {
-                      throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to add field.");
+                    synchronized (oldSchema.getSchemaUpdateLock()) {
+                      IndexSchema newSchema = oldSchema.addField(newField, copyFieldNames);
+                      if (null != newSchema) {
+                        getSolrCore().setLatestSchema(newSchema);
+                        success = true;
+                      } else {
+                        throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to add field.");
+                      }
                     }
                   } catch (ManagedIndexSchema.SchemaChangedInZkException e) {
                     log.debug("Schema changed while processing request, retrying");

@@ -209,33 +209,30 @@ public final class ManagedIndexSchema extends IndexSchema {
       if (copyFieldNames == null){
         copyFieldNames = Collections.emptyMap();
       }
-      // even though fields is volatile, we need to synchronize to avoid two addFields
-      // happening concurrently (and ending up missing one of them)
-      synchronized (getSchemaUpdateLock()) {
-        newSchema = shallowCopy(true);
+      newSchema = shallowCopy(true);
 
-        for (SchemaField newField : newFields) {
-          if (null != newSchema.getFieldOrNull(newField.getName())) {
-            String msg = "Field '" + newField.getName() + "' already exists.";
-            throw new FieldExistsException(ErrorCode.BAD_REQUEST, msg);
-          }
-          newSchema.fields.put(newField.getName(), newField);
+      for (SchemaField newField : newFields) {
+        if (null != newSchema.getFieldOrNull(newField.getName())) {
+          String msg = "Field '" + newField.getName() + "' already exists.";
+          throw new FieldExistsException(ErrorCode.BAD_REQUEST, msg);
+        }
+        newSchema.fields.put(newField.getName(), newField);
 
-          if (null != newField.getDefaultValue()) {
-            log.debug(newField.getName() + " contains default value: " + newField.getDefaultValue());
-            newSchema.fieldsWithDefaultValue.add(newField);
-          }
-          if (newField.isRequired()) {
-            log.debug("{} is required in this schema", newField.getName());
-            newSchema.requiredFields.add(newField);
-          }
-          Collection<String> copyFields = copyFieldNames.get(newField.getName());
-          if (copyFields != null) {
-            for (String copyField : copyFields) {
-              newSchema.registerCopyField(newField.getName(), copyField);
-            }
+        if (null != newField.getDefaultValue()) {
+          log.debug(newField.getName() + " contains default value: " + newField.getDefaultValue());
+          newSchema.fieldsWithDefaultValue.add(newField);
+        }
+        if (newField.isRequired()) {
+          log.debug("{} is required in this schema", newField.getName());
+          newSchema.requiredFields.add(newField);
+        }
+        Collection<String> copyFields = copyFieldNames.get(newField.getName());
+        if (copyFields != null) {
+          for (String copyField : copyFields) {
+            newSchema.registerCopyField(newField.getName(), copyField);
           }
         }
+
         // Run the callbacks on SchemaAware now that everything else is done
         for (SchemaAware aware : newSchema.schemaAware) {
           aware.inform(newSchema);
@@ -261,29 +258,25 @@ public final class ManagedIndexSchema extends IndexSchema {
     ManagedIndexSchema newSchema = null;
     if (isMutable) {
       boolean success = false;
-      // even though fields is volatile, we need to synchronize to avoid two addCopyFields
-      // happening concurrently (and ending up missing one of them)
-      synchronized (getSchemaUpdateLock()) {
-        newSchema = shallowCopy(true);
-        for (Map.Entry<String, Collection<String>> entry : copyFields.entrySet()) {
-          //Key is the name of the field, values are the destinations
+      newSchema = shallowCopy(true);
+      for (Map.Entry<String, Collection<String>> entry : copyFields.entrySet()) {
+        //Key is the name of the field, values are the destinations
 
-          for (String destination : entry.getValue()) {
-            newSchema.registerCopyField(entry.getKey(), destination);
-          }
+        for (String destination : entry.getValue()) {
+          newSchema.registerCopyField(entry.getKey(), destination);
         }
-        //TODO: move this common stuff out to shared methods
-        // Run the callbacks on SchemaAware now that everything else is done
-        for (SchemaAware aware : newSchema.schemaAware) {
-          aware.inform(newSchema);
-        }
-        newSchema.refreshAnalyzers();
-        success = newSchema.persistManagedSchema(false); // don't just create - update it if it already exists
-        if (success) {
-          log.debug("Added copy fields for {} sources", copyFields.size());
-        } else {
-          log.error("Failed to add copy fields for {} sources", copyFields.size());
-        }
+      }
+      //TODO: move this common stuff out to shared methods
+      // Run the callbacks on SchemaAware now that everything else is done
+      for (SchemaAware aware : newSchema.schemaAware) {
+        aware.inform(newSchema);
+      }
+      newSchema.refreshAnalyzers();
+      success = newSchema.persistManagedSchema(false); // don't just create - update it if it already exists
+      if (success) {
+        log.debug("Added copy fields for {} sources", copyFields.size());
+      } else {
+        log.error("Failed to add copy fields for {} sources", copyFields.size());
       }
     }
     return newSchema;
@@ -431,7 +424,8 @@ public final class ManagedIndexSchema extends IndexSchema {
 
     return newSchema;
   }
-  
+
+  @Override
   public Object getSchemaUpdateLock() {
     return schemaUpdateLock;
   }

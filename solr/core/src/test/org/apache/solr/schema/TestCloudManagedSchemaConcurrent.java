@@ -111,18 +111,19 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
     verifySuccess(request, response);
   }
 
-  private String[] getExpectedFieldResponses(int numAddFieldPuts, int numAddFieldPosts) {
+  private String[] getExpectedFieldResponses(int numAddFieldPuts, String putFieldName,
+                                             int numAddFieldPosts, String postFieldName) {
     String[] expectedAddFields = new String[1 + numAddFieldPuts + numAddFieldPosts];
     expectedAddFields[0] = SUCCESS_XPATH;
 
     for (int i = 0; i < numAddFieldPuts; ++i) {
-      String newFieldName = "newfieldPut" + i;
+      String newFieldName = putFieldName + i;
       expectedAddFields[1 + i] 
           = "/response/arr[@name='fields']/lst/str[@name='name'][.='" + newFieldName + "']";
     }
 
     for (int i = 0; i < numAddFieldPosts; ++i) {
-      String newFieldName = "newfieldPost" + i;
+      String newFieldName = postFieldName + i;
       expectedAddFields[1 + numAddFieldPuts + i]
           = "/response/arr[@name='fields']/lst/str[@name='name'][.='" + newFieldName + "']";
     }
@@ -148,6 +149,11 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
   @Override
   public void doTest() throws Exception {
     setupHarnesses();
+    concurrentOperationsTest();
+    schemaLockTest();
+  }  
+  
+  private void concurrentOperationsTest() throws Exception {
     
     // First, add a bunch of fields via PUT and POST, as well as copyFields,
     // but do it fast enough and verify shards' schemas after all of them are added
@@ -155,16 +161,19 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
     int numAddFieldPuts = 0;
     int numAddFieldPosts = 0;
     List<CopyFieldInfo> copyFields = new ArrayList<>();
+    
+    final String putFieldName = "newfieldPut";
+    final String postFieldName = "newfieldPost";
 
     for (int i = 0; i <= numFields ; ++i) {
       RestTestHarness publisher = restTestHarnesses.get(r.nextInt(restTestHarnesses.size()));
 
       int type = random().nextInt(3);
       if (type == 0) { // send an add field via PUT
-        addFieldPut(publisher, "newfieldPut" + numAddFieldPuts++);
+        addFieldPut(publisher, putFieldName + numAddFieldPuts++);
       }
       else if (type == 1) { // send an add field via POST
-        addFieldPost(publisher, "newfieldPost" + numAddFieldPosts++);
+        addFieldPost(publisher, postFieldName + numAddFieldPosts++);
       }
       else if (type == 2) { // send a copy field
         String sourceField = null;
@@ -196,7 +205,8 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
       }
     }
 
-    String[] expectedAddFields = getExpectedFieldResponses(numAddFieldPuts, numAddFieldPosts);
+    String[] expectedAddFields = getExpectedFieldResponses(numAddFieldPuts, putFieldName,
+                                                           numAddFieldPosts, postFieldName);
     String[] expectedCopyFields = getExpectedCopyFieldResponses(copyFields);
 
     boolean success = false;
@@ -233,6 +243,93 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
       String msg = "QUERY FAILED: xpath=" + result + "  request=" + request + "  response=" + response;
       log.error(msg);
       fail(msg);
+    }
+  }
+
+  private class PutPostThread extends Thread {
+    RestTestHarness harness;
+    String fieldName;
+    boolean isPut;
+    public PutPostThread(RestTestHarness harness, String fieldName, boolean isPut) {
+      this.harness = harness;
+      this.fieldName = fieldName;
+      this.isPut = isPut;
+    }
+
+    public void run() {
+      try {
+        if (isPut) {
+          addFieldPut(harness, fieldName);
+        } else {
+          addFieldPost(harness, fieldName);
+        }
+      } catch (Exception e) {
+        // log.error("###ACTUAL FAILURE!");
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
+  private void schemaLockTest() throws Exception {
+
+    // First, add a bunch of fields via PUT and POST, as well as copyFields,
+    // but do it fast enough and verify shards' schemas after all of them are added
+    int numFields = 25;
+    int numAddFieldPuts = 0;
+    int numAddFieldPosts = 0;
+    
+    final String putFieldName = "newfieldPutThread";
+    final String postFieldName = "newfieldPostThread";
+
+    for (int i = 0; i <= numFields ; ++i) {
+      // System.err.println("###ITERATION: " + i);
+      int postHarness = r.nextInt(restTestHarnesses.size());
+      RestTestHarness publisher = restTestHarnesses.get(postHarness);
+      PutPostThread postThread = new PutPostThread(publisher, postFieldName + numAddFieldPosts++, false);
+      postThread.start();
+
+      int putHarness = r.nextInt(restTestHarnesses.size());
+      publisher = restTestHarnesses.get(putHarness);
+      PutPostThread putThread = new PutPostThread(publisher, putFieldName + numAddFieldPuts++, true);
+      putThread.start();
+      postThread.join();
+      putThread.join();
+
+      String[] expectedAddFields = getExpectedFieldResponses(numAddFieldPuts, putFieldName, 
+                                                             numAddFieldPosts, postFieldName);
+
+      boolean success = false;
+      long maxTimeoutMillis = 100000;
+      long startTime = System.nanoTime();
+      String request = null;
+      String response = null;
+      String result = null;
+
+      while ( ! success
+          && TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutMillis) {
+        Thread.sleep(10);
+
+        // int j = 0;
+        for (RestTestHarness client : restTestHarnesses) {
+          // System.err.println("###CHECKING HARNESS: " + j++ + " for iteration: " + i);
+
+          // verify addFieldPuts and addFieldPosts
+          request = "/schema/fields?wt=xml";
+          response = client.query(request);
+          //System.err.println("###RESPONSE: " + response);
+          result = BaseTestHarness.validateXPath(response, expectedAddFields);
+          if (result != null) {
+            // System.err.println("###FAILURE!");
+            break;
+          }
+        }
+        success = (result == null);
+      }
+      if ( ! success) {
+        String msg = "QUERY FAILED: xpath=" + result + "  request=" + request + "  response=" + response;
+        log.error(msg);
+        fail(msg);
+      }
     }
   }
 
