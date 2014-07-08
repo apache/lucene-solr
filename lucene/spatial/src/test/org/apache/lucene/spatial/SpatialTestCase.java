@@ -70,10 +70,6 @@ public abstract class SpatialTestCase extends LuceneTestCase {
     super.setUp();
     // TODO: change this module to index docvalues instead of uninverting
     uninvertMap.clear();
-    uninvertMap.put("bbox__minX", Type.DOUBLE);
-    uninvertMap.put("bbox__maxX", Type.DOUBLE);
-    uninvertMap.put("bbox__minY", Type.DOUBLE);
-    uninvertMap.put("bbox__maxY", Type.DOUBLE);
     uninvertMap.put("pointvector__x", Type.DOUBLE);
     uninvertMap.put("pointvector__y", Type.DOUBLE);
 

@@ -24,9 +24,6 @@ New Features
   implemented in the spatial module as DateRangePrefixTree used with
   NumberRangePrefixTreeStrategy. (David Smiley)
 
-* LUCENE-4175: Index and search rectangles with spatial BBoxSpatialStrategy.
-  Sort documents by relative overlap of query areas. (Ryan McKinley)
-
 API Changes
 
 * LUCENE-4535: oal.util.FilterIterator is now an internal API.
@@ -103,6 +100,10 @@ New Features
 * LUCENE-5801: Added (back) OrdinalMappingAtomicReader for merging search
   indexes that contain category ordinals from separate taxonomy indexes.
   (Nicola Buso via Shai Erera)
+
+* LUCENE-4175, LUCENE-5714, LUCENE-5779: Index and search rectangles with spatial
+  BBoxSpatialStrategy using most predicates.  Sort documents by relative overlap
+  of query areas or just by indexed shape area. (Ryan McKinley, David Smiley)
   
 API Changes
 

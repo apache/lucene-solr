@@ -23,6 +23,7 @@ import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.spatial.bbox.BBoxStrategy;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.TermQueryPrefixTreeStrategy;
@@ -91,8 +92,19 @@ public class DistanceStrategyTest extends StrategyTestCase {
   }
 
   @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    if (strategy instanceof BBoxStrategy && random().nextBoolean()) {//disable indexing sometimes
+      BBoxStrategy bboxStrategy = (BBoxStrategy)strategy;
+      final FieldType fieldType = new FieldType(bboxStrategy.getFieldType());
+      fieldType.setIndexed(false);
+      bboxStrategy.setFieldType(fieldType);
+    }
+  }
+
+  @Override
   protected boolean needsDocValues() {
-    return (strategy instanceof SerializedDVStrategy);
+    return true;
   }
 
   @Test

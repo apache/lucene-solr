@@ -18,119 +18,99 @@ package org.apache.lucene.spatial.bbox;
  */
 
 import com.spatial4j.core.shape.Rectangle;
-import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.util.Bits;
+import org.apache.lucene.search.IndexSearcher;
 
 import java.io.IOException;
 import java.util.Map;
 
 /**
- * An implementation of the Lucene ValueSource model to support spatial relevance ranking.
+ * A base class for calculating a spatial relevance rank per document from a provided
+ * {@link ValueSource} in which {@link FunctionValues#objectVal(int)} returns a {@link
+ * com.spatial4j.core.shape.Rectangle}.
+ * <p/>
+ * Implementers: remember to implement equals & hashCode if you have
+ * fields!
  *
  * @lucene.experimental
  */
-public class BBoxSimilarityValueSource extends ValueSource {
+public abstract class BBoxSimilarityValueSource extends ValueSource {
 
-  private final BBoxStrategy strategy;
-  private final BBoxSimilarity similarity;
+  private final ValueSource bboxValueSource;
 
-  public BBoxSimilarityValueSource(BBoxStrategy strategy, BBoxSimilarity similarity) {
-    this.strategy = strategy;
-    this.similarity = similarity;
+  public BBoxSimilarityValueSource(ValueSource bboxValueSource) {
+    this.bboxValueSource = bboxValueSource;
   }
 
-  /**
-   * Returns the ValueSource description.
-   *
-   * @return the description
-   */
+  @Override
+  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
+    bboxValueSource.createWeight(context, searcher);
+  }
+
   @Override
   public String description() {
-    return "BBoxSimilarityValueSource(" + similarity + ")";
+    return getClass().getSimpleName()+"(" + bboxValueSource.description() + "," + similarityDescription() + ")";
   }
 
+  /** A comma-separated list of configurable items of the subclass to put into {@link #description()}. */
+  protected abstract String similarityDescription();
 
-  /**
-   * Returns the DocValues used by the function query.
-   *
-   * @param readerContext the AtomicReaderContext which holds an AtomicReader
-   * @return the values
-   */
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    AtomicReader reader = readerContext.reader();
-    final NumericDocValues minX = DocValues.getNumeric(reader, strategy.field_minX);
-    final NumericDocValues minY = DocValues.getNumeric(reader, strategy.field_minY);
-    final NumericDocValues maxX = DocValues.getNumeric(reader, strategy.field_maxX);
-    final NumericDocValues maxY = DocValues.getNumeric(reader, strategy.field_maxY);
 
-    final Bits validMinX = DocValues.getDocsWithField(reader, strategy.field_minX);
-    final Bits validMaxX = DocValues.getDocsWithField(reader, strategy.field_maxX);
+    final FunctionValues shapeValues = bboxValueSource.getValues(context, readerContext);
 
-    return new FunctionValues() {
-      //reused
-      Rectangle rect = strategy.getSpatialContext().makeRectangle(0,0,0,0);
+    return new DoubleDocValues(this) {
+      @Override
+      public double doubleVal(int doc) {
+        //? limit to Rect or call getBoundingBox()? latter would encourage bad practice
+        final Rectangle rect = (Rectangle) shapeValues.objectVal(doc);
+        return rect==null ? 0 : score(rect, null);
+      }
 
       @Override
-      public float floatVal(int doc) {
-        double minXVal = Double.longBitsToDouble(minX.get(doc));
-        double maxXVal = Double.longBitsToDouble(maxX.get(doc));
-        // make sure it has minX and area
-        if ((minXVal != 0 || validMinX.get(doc)) && (maxXVal != 0 || validMaxX.get(doc))) {
-          rect.reset(
-              minXVal, maxXVal,
-              Double.longBitsToDouble(minY.get(doc)), Double.longBitsToDouble(maxY.get(doc)));
-          return (float) similarity.score(rect, null);
-        } else {
-          return (float) similarity.score(null, null);
-        }
+      public boolean exists(int doc) {
+        return shapeValues.exists(doc);
       }
 
       @Override
       public Explanation explain(int doc) {
-        // make sure it has minX and area
-        if (validMinX.get(doc) && validMaxX.get(doc)) {
-          rect.reset(
-              Double.longBitsToDouble(minX.get(doc)), Double.longBitsToDouble(maxX.get(doc)),
-              Double.longBitsToDouble(minY.get(doc)), Double.longBitsToDouble(maxY.get(doc)));
-          Explanation exp = new Explanation();
-          similarity.score(rect, exp);
-          return exp;
-        }
-        return new Explanation(0, "No BBox");
-      }
-
-      @Override
-      public String toString(int doc) {
-        return description() + "=" + floatVal(doc);
+        final Rectangle rect = (Rectangle) shapeValues.objectVal(doc);
+        if (rect == null)
+          return new Explanation(0, "no rect");
+        Explanation exp = new Explanation();
+        score(rect, exp);
+        return exp;
       }
     };
   }
 
   /**
-   * Determines if this ValueSource is equal to another.
-   *
-   * @param o the ValueSource to compare
-   * @return <code>true</code> if the two objects are based upon the same query envelope
+   * Return a relevancy score. If {@code exp} is provided then diagnostic information is added.
+   * @param rect The indexed rectangle; not null.
+   * @param exp Optional diagnostic holder.
+   * @return a score.
    */
+  protected abstract double score(Rectangle rect, Explanation exp);
+
   @Override
   public boolean equals(Object o) {
-    if (o.getClass() != BBoxSimilarityValueSource.class) {
-      return false;
-    }
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;//same class
 
-    BBoxSimilarityValueSource other = (BBoxSimilarityValueSource) o;
-    return similarity.equals(other.similarity);
+    BBoxSimilarityValueSource that = (BBoxSimilarityValueSource) o;
+
+    if (!bboxValueSource.equals(that.bboxValueSource)) return false;
+
+    return true;
   }
 
   @Override
   public int hashCode() {
-    return BBoxSimilarityValueSource.class.hashCode() + similarity.hashCode();
+    return bboxValueSource.hashCode();
   }
 }
