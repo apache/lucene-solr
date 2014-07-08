@@ -195,12 +195,14 @@ public class FieldCollectionResource extends BaseFieldResource implements GETabl
                   }
                 }
                 firstAttempt = false;
-                IndexSchema newSchema = oldSchema.addFields(newFields, copyFields);
-                if (null != newSchema) {
-                  getSolrCore().setLatestSchema(newSchema);
-                  success = true;
-                } else {
-                  throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to add fields.");
+                synchronized (oldSchema.getSchemaUpdateLock()) {
+                  IndexSchema newSchema = oldSchema.addFields(newFields, copyFields);
+                  if (null != newSchema) {
+                    getSolrCore().setLatestSchema(newSchema);
+                    success = true;
+                  } else {
+                    throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to add fields.");
+                  }
                 }
               } catch (ManagedIndexSchema.SchemaChangedInZkException e) {
                 log.debug("Schema changed while processing request, retrying");

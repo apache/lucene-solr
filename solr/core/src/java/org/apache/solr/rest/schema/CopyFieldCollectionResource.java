@@ -171,12 +171,14 @@ public class CopyFieldCollectionResource extends BaseFieldResource implements GE
             boolean success = false;
             while (!success) {
               try {
-                IndexSchema newSchema = oldSchema.addCopyFields(fieldsToCopy);
-                if (null != newSchema) {
-                  getSolrCore().setLatestSchema(newSchema);
-                  success = true;
-                } else {
-                  throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to add fields.");
+                synchronized (oldSchema.getSchemaUpdateLock()) {
+                  IndexSchema newSchema = oldSchema.addCopyFields(fieldsToCopy);
+                  if (null != newSchema) {
+                    getSolrCore().setLatestSchema(newSchema);
+                    success = true;
+                  } else {
+                    throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to add fields.");
+                  }
                 }
               } catch (ManagedIndexSchema.SchemaChangedInZkException e) {
                   log.debug("Schema changed while processing request, retrying");

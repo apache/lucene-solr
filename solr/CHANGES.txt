@@ -157,6 +157,9 @@ Bug Fixes
 
 * SOLR-6223: SearchComponents may throw NPE when using shards.tolerant and there is a failure
   in the 'GET_FIELDS/GET_HIGHLIGHTS/GET_DEBUG' phase. (Tomás Fernández Löbbe via shalin)
+  
+* SOLR-6180: Callers of ManagedIndexSchema mutators should hold the schemaUpdateLock.
+  (Gregory Chanan via Steve Rowe)
 
 Optimizations
 ---------------------
