@@ -18,6 +18,7 @@ package org.apache.solr.handler.component;
  */
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.spelling.suggest.SuggesterParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -163,6 +164,26 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     assertQ(req("qt", rh, 
         SuggesterParams.SUGGEST_RELOAD_ALL, "true"),
         "//str[@name='command'][.='reloadAll']"
+        );
+  }
+  
+  @Test
+  public void testBadSuggesterName() throws Exception {
+    String fakeSuggesterName = "does-not-exist";
+    assertQEx("No suggester named " + fakeSuggesterName +" was configured",
+        req("qt", rh, 
+        SuggesterParams.SUGGEST_DICT, fakeSuggesterName,
+        SuggesterParams.SUGGEST_Q, "exampel",
+        SuggesterParams.SUGGEST_COUNT, "2"),
+        SolrException.ErrorCode.BAD_REQUEST
+        );
+    
+    assertQEx("'" + SuggesterParams.SUGGEST_DICT + 
+        "' parameter not specified and no default suggester configured",
+        req("qt", rh, 
+        SuggesterParams.SUGGEST_Q, "exampel",
+        SuggesterParams.SUGGEST_COUNT, "2"),
+        SolrException.ErrorCode.BAD_REQUEST
         );
   }
   
