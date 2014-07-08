@@ -19,14 +19,17 @@ package org.apache.lucene.util.mutable;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * {@link MutableValue} implementation of type 
- * {@link String}.
+ * {@link MutableValue} implementation of type {@link String}.
+ * When mutating instances of this object, the caller is responsible for ensuring 
+ * that any instance where <code>exists</code> is set to <code>false</code> must also 
+ * have a <code>value</code> with a length set to 0.
  */
 public class MutableValueStr extends MutableValue {
   public BytesRef value = new BytesRef();
 
   @Override
   public Object toObject() {
+    assert exists || 0 == value.length;
     return exists ? value.utf8ToString() : null;
   }
 
@@ -47,12 +50,14 @@ public class MutableValueStr extends MutableValue {
 
   @Override
   public boolean equalsSameType(Object other) {
+    assert exists || 0 == value.length;
     MutableValueStr b = (MutableValueStr)other;
     return value.equals(b.value) && exists == b.exists;
   }
 
   @Override
   public int compareSameType(Object other) {
+    assert exists || 0 == value.length;
     MutableValueStr b = (MutableValueStr)other;
     int c = value.compareTo(b.value);
     if (c != 0) return c;
@@ -63,6 +68,7 @@ public class MutableValueStr extends MutableValue {
 
   @Override
   public int hashCode() {
+    assert exists || 0 == value.length;
     return value.hashCode();
   }
 }
