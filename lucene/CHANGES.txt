@@ -114,6 +114,11 @@ API Changes
 * LUCENE-5692: DisjointSpatialFilter is deprecated (used by RecursivePrefixTreeStrategy)
   (David Smiley)
 
+* LUCENE-5771: SpatialOperation's predicate names are now aliased to OGC standard names.
+  Thus you can use: Disjoint, Equals, Intersects, Overlaps, Within, Contains, Covers,
+  CoveredBy. The area requirement on the predicates was removed, and Overlaps' definition
+  was fixed. (David Smiley)
+
 Optimizations
 
 * LUCENE-5780: Make OrdinalMap more memory-efficient, especially in case the
