@@ -20,6 +20,7 @@ package org.apache.lucene.spatial;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Shape;
 //import org.apache.lucene.spatial.bbox.BBoxStrategy;
+import org.apache.lucene.spatial.bbox.BBoxStrategy;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.TermQueryPrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.tree.GeohashPrefixTree;
@@ -49,7 +50,7 @@ public class QueryEqualsHashCodeTest extends LuceneTestCase {
     strategies.add(new RecursivePrefixTreeStrategy(gridGeohash, "recursive_geohash"));
     strategies.add(new TermQueryPrefixTreeStrategy(gridQuad, "termquery_quad"));
     strategies.add(new PointVectorStrategy(ctx, "pointvector"));
-    //strategies.add(new BBoxStrategy(ctx, "bbox"));
+    strategies.add(new BBoxStrategy(ctx, "bbox"));
     strategies.add(new SerializedDVStrategy(ctx, "serialized"));
     for (SpatialStrategy strategy : strategies) {
       testEqualsHashcode(strategy);
