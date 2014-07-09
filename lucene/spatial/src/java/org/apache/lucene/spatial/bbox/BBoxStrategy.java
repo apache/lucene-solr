@@ -80,9 +80,6 @@ public class BBoxStrategy extends SpatialStrategy {
   public static final String SUFFIX_MAXY = "__maxY";
   public static final String SUFFIX_XDL  = "__xdl";
 
-  private static BytesRef T_BYTES = new BytesRef("T");//same as Solr BoolField
-  private static BytesRef F_BYTES = new BytesRef("F");//same as Solr BoolField
-
   /*
    * The Bounding Box gets stored as four fields for x/y min/max and a flag
    * that says if the box crosses the dateline (xdl).
