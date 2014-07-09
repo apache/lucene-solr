@@ -15,6 +15,7 @@
 
 import subprocess
 import sys
+import os
 
 # recursive, unified output format, treat missing files as present but empty
 DIFF_FLAGS = '-ruN'
@@ -50,7 +51,17 @@ while True:
   elif l.endswith('\n'):
     l = l[:-1]
   if l.startswith('diff ') or l.startswith('Binary files '):
-    keep = not l.endswith('timehints.txt') and l.lower().find('/build/') == -1 and (l.lower().startswith('Only in') or ((l.lower().endswith('.java') or l.lower().endswith('.txt') or l.lower().endswith('.xml') or l.lower().endswith('.iml') or l.lower().endswith('.html') or l.lower().endswith('.template') or l.lower().endswith('.py') or l.lower().endswith('.g') or l.lower().endswith('.properties')) and l.find('/.svn/') == -1))
+
+    if l.endswith('timehints.txt') or l.find('/build/') != -1 or l.find('/.svn/') != -1:
+      keep = False
+    elif l.lower().startswith('Only in'):
+      keep = True
+    elif l.find('/META-INF/') != -1:
+      keep = True
+    else:
+      ext = os.path.splitext(l)[-1]
+      keep = ext in ('.xml', '.iml', '.html', '.template', '.py', '.g', '.properties')
+
     if keep:
       print
       print
