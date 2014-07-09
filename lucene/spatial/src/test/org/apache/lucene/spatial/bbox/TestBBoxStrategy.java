@@ -36,6 +36,11 @@ import java.io.IOException;
 public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
 
   @Override
+  protected boolean needsDocValues() {
+    return true;
+  }
+
+  @Override
   protected Shape randomIndexedShape() {
     Rectangle world = ctx.getWorldBounds();
     if (random().nextInt(10) == 0) // increased chance of getting one of these
