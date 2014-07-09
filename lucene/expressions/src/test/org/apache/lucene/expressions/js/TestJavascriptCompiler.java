@@ -18,6 +18,7 @@ package org.apache.lucene.expressions.js;
 
 import java.text.ParseException;
 
+import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestJavascriptCompiler extends LuceneTestCase {
@@ -29,39 +30,60 @@ public class TestJavascriptCompiler extends LuceneTestCase {
     assertNotNull(JavascriptCompiler.compile("logn(2, 20+10-5.0)"));
   }
 
-  public void testValidNamespaces() throws Exception {
-    assertNotNull(JavascriptCompiler.compile("object.valid0"));
-    assertNotNull(JavascriptCompiler.compile("object0.object1.valid1"));
+  public void testValidVariables() throws Exception {
+    doTestValidVariable("object.valid0");
+    doTestValidVariable("object0.object1.valid1");
+    doTestValidVariable("array0[1]");
+    doTestValidVariable("array0[1].x");
+    doTestValidVariable("multiarray[0][0]");
+    doTestValidVariable("multiarray[0][0].x");
+    doTestValidVariable("strindex['hello']");
+    doTestValidVariable("strindex[\"hello\"]", "strindex['hello']");
+    doTestValidVariable("empty['']");
+    doTestValidVariable("empty[\"\"]", "empty['']");
+    doTestValidVariable("strindex['\u304A\u65E9\u3046\u3054\u3056\u3044\u307E\u3059']");
+    doTestValidVariable("strindex[\"\u304A\u65E9\u3046\u3054\u3056\u3044\u307E\u3059\"]",
+                        "strindex['\u304A\u65E9\u3046\u3054\u3056\u3044\u307E\u3059']");
+    doTestValidVariable("escapes['\\\\\\'']");
+    doTestValidVariable("escapes[\"\\\\\\\"\"]", "escapes['\\\\\"']");
+    doTestValidVariable("mixed[23]['key'].sub.sub");
+    doTestValidVariable("mixed[23]['key'].sub.sub[1]");
+    doTestValidVariable("mixed[23]['key'].sub.sub[1].sub");
+    doTestValidVariable("mixed[23]['key'].sub.sub[1].sub['abc']");
   }
 
-  public void testInvalidNamespaces() throws Exception {
-    try {
-      JavascriptCompiler.compile("object.0invalid");
-      fail();
-    }
-    catch (ParseException expected) {
-      //expected
-    }
+  void doTestValidVariable(String variable) throws Exception {
+    doTestValidVariable(variable, variable);
+  }
 
-    try {
-      JavascriptCompiler.compile("0.invalid");
-      fail();
-    }
-    catch (ParseException expected) {
-      //expected
-    }
+  void doTestValidVariable(String variable, String output) throws Exception {
+    Expression e = JavascriptCompiler.compile(variable);
+    assertNotNull(e);
+    assertEquals(1, e.variables.length);
+    assertEquals(output, e.variables[0]);
+  }
 
-    try {
-      JavascriptCompiler.compile("object..invalid");
-      fail();
-    }
-    catch (ParseException expected) {
-      //expected
-    }
+  public void testInvalidVariables() throws Exception {
+    doTestInvalidVariable("object.0invalid");
+    doTestInvalidVariable("0.invalid");
+    doTestInvalidVariable("object..invalid");
+    doTestInvalidVariable(".invalid");
+    doTestInvalidVariable("negative[-1]");
+    doTestInvalidVariable("float[1.0]");
+    doTestInvalidVariable("missing_end['abc]");
+    doTestInvalidVariable("missing_end[\"abc]");
+    doTestInvalidVariable("missing_begin[abc']");
+    doTestInvalidVariable("missing_begin[abc\"]");
+    doTestInvalidVariable("dot_needed[1]sub");
+    doTestInvalidVariable("dot_needed[1]sub");
+    doTestInvalidVariable("opposite_escape['\\\"']");
+    doTestInvalidVariable("opposite_escape[\"\\'\"]");
+  }
 
+  void doTestInvalidVariable(String variable) {
     try {
-      JavascriptCompiler.compile(".invalid");
-      fail();
+      JavascriptCompiler.compile(variable);
+      fail("\"" + variable + " should have failed to compile");
     }
     catch (ParseException expected) {
       //expected
@@ -151,5 +173,31 @@ public class TestJavascriptCompiler extends LuceneTestCase {
     } catch (IllegalArgumentException expected) {
       assertTrue(expected.getMessage().contains("arguments for method call"));
     }
+  }
+
+  public void testVariableNormalization() throws Exception {
+    // multiple double quotes
+    Expression x = JavascriptCompiler.compile("foo[\"a\"][\"b\"]");
+    assertEquals("foo['a']['b']", x.variables[0]);
+
+    // single and double in the same var
+    x = JavascriptCompiler.compile("foo['a'][\"b\"]");
+    assertEquals("foo['a']['b']", x.variables[0]);
+
+    // escapes remain the same in single quoted strings
+    x = JavascriptCompiler.compile("foo['\\\\\\'\"']");
+    assertEquals("foo['\\\\\\'\"']", x.variables[0]);
+
+    // single quotes are escaped
+    x = JavascriptCompiler.compile("foo[\"'\"]");
+    assertEquals("foo['\\'']", x.variables[0]);
+
+    // double quotes are unescaped
+    x = JavascriptCompiler.compile("foo[\"\\\"\"]");
+    assertEquals("foo['\"']", x.variables[0]);
+
+    // backslash escapes are kept the same
+    x = JavascriptCompiler.compile("foo['\\\\'][\"\\\\\"]");
+    assertEquals("foo['\\\\']['\\\\']", x.variables[0]);
   }
 }

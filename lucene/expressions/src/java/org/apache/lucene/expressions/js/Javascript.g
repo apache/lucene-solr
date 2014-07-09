@@ -309,11 +309,11 @@ unary_operator
 
 postfix
     : primary
-    | NAMESPACE_ID arguments -> ^(AT_CALL NAMESPACE_ID arguments?)
+    | VARIABLE arguments -> ^(AT_CALL VARIABLE arguments?)
     ;
 
 primary
-    : NAMESPACE_ID
+    : VARIABLE
     | numeric
     | AT_LPAREN! conditional AT_RPAREN!
     ;
@@ -330,13 +330,44 @@ numeric
 // * Lexer Rules
 // ***********************************************************************
 
-NAMESPACE_ID
-    : ID (AT_DOT ID)*
+VARIABLE
+    : OBJECT (AT_DOT OBJECT)*
+    ;
+
+fragment
+OBJECT
+    : ID ARRAY*
+    ;
+
+fragment
+ARRAY
+    : '[' STRING ']'
+    | '[' DECIMALINTEGER ']'
     ;
 
 fragment
 ID
     : ('a'..'z'|'A'..'Z'|'_'|'$') ('a'..'z'|'A'..'Z'|'0'..'9'|'_'|'$')*
+    ;
+
+fragment
+STRING
+    : '\'' SINGLE_STRING_CHAR* '\'' { }
+    | '"' DOUBLE_STRING_CHAR* '"'
+    ;
+
+fragment
+SINGLE_STRING_CHAR
+    : '\\\''
+    | '\\\\'
+    | ~('\\'|'\'')
+    ;
+
+fragment
+DOUBLE_STRING_CHAR
+    : '\\"'
+    | '\\\\'
+    | ~('\\'|'"')
     ;
 
 WS
