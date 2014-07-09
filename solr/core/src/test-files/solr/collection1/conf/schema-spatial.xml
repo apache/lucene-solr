@@ -19,10 +19,13 @@
 <schema name="test" version="1.4">
   <types>
 
-    <fieldType name="tint" class="solr.TrieIntField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="tfloat" class="solr.TrieFloatField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="tlong" class="solr.TrieLongField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="tdouble" class="solr.TrieDoubleField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="tint" class="solr.TrieIntField" precisionStep="8"/>
+    <fieldType name="tfloat" class="solr.TrieFloatField" precisionStep="8"/>
+    <fieldType name="tlong" class="solr.TrieLongField" precisionStep="8"/>
+    <fieldType name="tdouble" class="solr.TrieDoubleField" precisionStep="8"/>
+    <fieldType name="tdoubleDV" class="solr.TrieDoubleField" precisionStep="8" docValues="true"/>
+
+    <fieldType name="boolean" class="solr.BoolField"/>
 
     <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
 
@@ -46,6 +49,9 @@
 
     <fieldType name="stqpt_u_oldworldbounds"  class="solr.SpatialTermQueryPrefixTreeFieldType"
                geo="false" distCalculator="cartesian^2" worldBounds="0 0 1000 1000" units="degrees"/>
+
+    <fieldType name="bbox" class="solr.BBoxField"
+               numberType="tdoubleDV" units="degrees"/>
   </types>
 
 
@@ -57,6 +63,7 @@
     <field name="srpt_quad" type="srpt_quad" multiValued="true" />
     <field name="stqpt_geohash" type="stqpt_geohash" multiValued="true" />
     <field name="pointvector" type="pointvector" />
+    <field name="bbox" type="bbox" />
 
   </fields>
 

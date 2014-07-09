@@ -130,6 +130,10 @@ New Features
 * SOLR-5768: Add a distrib.singlePass parameter to make EXECUTE_QUERY phase fetch all fields
   and skip GET_FIELDS. (Gregg Donovan, shalin)
 
+* SOLR-6183: New spatial BBoxField for indexing rectangles with search support for most predicates.
+  It includes extra score relevancy modes in addition to distance: score=overlapRatio|area|area2D.
+  (David Smiley, Ryan McKinley)
+
 Bug Fixes
 ----------------------
 

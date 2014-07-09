@@ -708,6 +708,11 @@
     <fieldType name="location_rpt" class="solr.SpatialRecursivePrefixTreeFieldType"
         geo="true" distErrPct="0.025" maxDistErr="0.000009" units="degrees" />
 
+    <!-- Spatial rectangle (bounding box) field. It supports most spatial predicates, and has
+     special relevancy modes: score=overlapRatio|area|area2D (local-param to the query)-->
+    <fieldType name="bbox" class="solr.BBoxField"
+        geo="true" units="degrees" numberType="tdouble" />
+
    <!-- Money/currency field type. See http://wiki.apache.org/solr/MoneyFieldType
         Parameters:
           defaultCurrency: Specifies the default currency if none specified. Defaults to "USD"
