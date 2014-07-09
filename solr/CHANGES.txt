@@ -196,6 +196,8 @@ Other Changes
 
 * SOLR-5596: Set system property zookeeper.forceSync=no for Solr test cases. (shalin)
 
+* SOLR-2853: Add a unit test for the case when "spellcheck.maxCollationTries=0" (James Dyer)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components

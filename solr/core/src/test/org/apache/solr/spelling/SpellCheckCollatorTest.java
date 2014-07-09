@@ -535,6 +535,33 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
               );
     }
 
-  }  
+  } 
+  @Test
+  public void testZeroTries() throws Exception
+  {
+    SolrCore core = h.getCore();
+    SearchComponent speller = core.getSearchComponent("spellcheck");
+    assertTrue("speller is null and it shouldn't be", speller != null);
+    
+    ModifiableSolrParams params = new ModifiableSolrParams();   
+    params.add(SpellCheckComponent.COMPONENT_NAME, "true");
+    params.add(SpellCheckComponent.SPELLCHECK_BUILD, "true");
+    params.add(SpellCheckComponent.SPELLCHECK_COUNT, "10");   
+    params.add(SpellCheckComponent.SPELLCHECK_COLLATE, "true");
+    params.add(SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES, "0");
+    params.add(SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "2");
+    params.add(CommonParams.Q, "lowerfilt:(+fauth)");
+    SolrRequestHandler handler = core.getRequestHandler("spellCheckCompRH");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    rsp.add("responseHeader", new SimpleOrderedMap());
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
+    handler.handleRequest(req, rsp);
+    req.close();
+    NamedList values = rsp.getValues();
+    NamedList spellCheck = (NamedList) values.get("spellcheck");
+    NamedList suggestions = (NamedList) spellCheck.get("suggestions");
+    List<String> collations = suggestions.getAll("collation");
+    assertTrue(collations.size() == 2);
+  }
   
 }
