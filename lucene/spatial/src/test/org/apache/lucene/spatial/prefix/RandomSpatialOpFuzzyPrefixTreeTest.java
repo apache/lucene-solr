@@ -38,7 +38,6 @@ import org.apache.lucene.spatial.prefix.tree.QuadPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -69,14 +68,6 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
 
   private SpatialPrefixTree grid;
   private SpatialContext ctx2D;
-
-  @Before
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    //Only for Disjoint.  Ugh; need to find a better way.  LUCENE-5692
-    //uninvertMap.put(getClass().getSimpleName(), UninvertingReader.Type.SORTED);
-  }
 
   public void setupGrid(int maxLevels) throws IOException {
     if (randomBoolean())
