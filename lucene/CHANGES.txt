@@ -104,6 +104,10 @@ New Features
 * LUCENE-4175, LUCENE-5714, LUCENE-5779: Index and search rectangles with spatial
   BBoxSpatialStrategy using most predicates.  Sort documents by relative overlap
   of query areas or just by indexed shape area. (Ryan McKinley, David Smiley)
+
+* LUCENE-5806: Extend expressions grammar to support array access in variables.
+  Added helper class VariableContext to parse complex variable into pieces.
+  (Ryan Ernst)
   
 API Changes
 

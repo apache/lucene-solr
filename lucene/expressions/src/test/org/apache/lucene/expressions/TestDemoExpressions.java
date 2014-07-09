@@ -4,9 +4,13 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
+import org.apache.lucene.expressions.js.VariableContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.DoubleConstValueSource;
+import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
@@ -18,6 +22,10 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+
+import static org.apache.lucene.expressions.js.VariableContext.Type.MEMBER;
+import static org.apache.lucene.expressions.js.VariableContext.Type.STR_INDEX;
+import static org.apache.lucene.expressions.js.VariableContext.Type.INT_INDEX;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -223,5 +231,72 @@ public class  TestDemoExpressions extends LuceneTestCase {
     
     d = (FieldDoc) td.scoreDocs[2];
     assertEquals(5.2842D, (Double)d.fields[0], 1E-4);
+  }
+
+  public void testStaticExtendedVariableExample() throws Exception {
+    Expression popularity = JavascriptCompiler.compile("doc[\"popularity\"].value");
+    SimpleBindings bindings = new SimpleBindings();
+    bindings.add("doc['popularity'].value", new IntFieldSource("popularity"));
+    Sort sort = new Sort(popularity.getSortField(bindings, true));
+    TopFieldDocs td = searcher.search(new MatchAllDocsQuery(), null, 3, sort);
+
+    FieldDoc d = (FieldDoc)td.scoreDocs[0];
+    assertEquals(20D, (Double)d.fields[0], 1E-4);
+
+    d = (FieldDoc)td.scoreDocs[1];
+    assertEquals(5D, (Double)d.fields[0], 1E-4);
+
+    d = (FieldDoc)td.scoreDocs[2];
+    assertEquals(2D, (Double)d.fields[0], 1E-4);
+  }
+
+  public void testDynamicExtendedVariableExample() throws Exception {
+    Expression popularity = JavascriptCompiler.compile("doc['popularity'].value + magicarray[0] + fourtytwo");
+
+    // The following is an example of how to write bindings which parse the variable name into pieces.
+    // Note, however, that this requires a lot of error checking.  Each "error case" below should be
+    // filled in with proper error messages for a real use case.
+    Bindings bindings = new Bindings() {
+      @Override
+      public ValueSource getValueSource(String name) {
+        VariableContext[] var = VariableContext.parse(name);
+        assert var[0].type == MEMBER;
+        String base = var[0].text;
+        if (base.equals("doc")) {
+          if (var.length > 1 && var[1].type == STR_INDEX) {
+            String field = var[1].text;
+            if (var.length > 2 && var[2].type == MEMBER && var[2].text.equals("value")) {
+              return new IntFieldSource(field);
+            } else {
+              fail("member: " + var[2].text);// error case, non/missing "value" member access
+            }
+          } else {
+            fail();// error case, doc should be a str indexed array
+          }
+        } else if (base.equals("magicarray")) {
+          if (var.length > 1 && var[1].type == INT_INDEX) {
+            return new DoubleConstValueSource(2048);
+          } else {
+            fail();// error case, magic array isn't an array
+          }
+        } else if (base.equals("fourtytwo")) {
+          return new DoubleConstValueSource(42);
+        } else {
+          fail();// error case (variable doesn't exist)
+        }
+        throw new IllegalArgumentException("Illegal reference '" + name + "'");
+      }
+    };
+    Sort sort = new Sort(popularity.getSortField(bindings, false));
+    TopFieldDocs td = searcher.search(new MatchAllDocsQuery(), null, 3, sort);
+
+    FieldDoc d = (FieldDoc)td.scoreDocs[0];
+    assertEquals(2092D, (Double)d.fields[0], 1E-4);
+
+    d = (FieldDoc)td.scoreDocs[1];
+    assertEquals(2095D, (Double)d.fields[0], 1E-4);
+
+    d = (FieldDoc)td.scoreDocs[2];
+    assertEquals(2110D, (Double)d.fields[0], 1E-4);
   }
 }

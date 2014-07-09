@@ -13,46 +13,51 @@ import java.util.ArrayList;
 @SuppressWarnings("all")
 class JavascriptLexer extends Lexer {
   public static final int EOF=-1;
-  public static final int AT_ADD=4;
-  public static final int AT_BIT_AND=5;
-  public static final int AT_BIT_NOT=6;
-  public static final int AT_BIT_OR=7;
-  public static final int AT_BIT_SHL=8;
-  public static final int AT_BIT_SHR=9;
-  public static final int AT_BIT_SHU=10;
-  public static final int AT_BIT_XOR=11;
-  public static final int AT_BOOL_AND=12;
-  public static final int AT_BOOL_NOT=13;
-  public static final int AT_BOOL_OR=14;
-  public static final int AT_CALL=15;
-  public static final int AT_COLON=16;
-  public static final int AT_COMMA=17;
-  public static final int AT_COMP_EQ=18;
-  public static final int AT_COMP_GT=19;
-  public static final int AT_COMP_GTE=20;
-  public static final int AT_COMP_LT=21;
-  public static final int AT_COMP_LTE=22;
-  public static final int AT_COMP_NEQ=23;
-  public static final int AT_COND_QUE=24;
-  public static final int AT_DIVIDE=25;
-  public static final int AT_DOT=26;
-  public static final int AT_LPAREN=27;
-  public static final int AT_MODULO=28;
-  public static final int AT_MULTIPLY=29;
-  public static final int AT_NEGATE=30;
-  public static final int AT_RPAREN=31;
-  public static final int AT_SUBTRACT=32;
-  public static final int DECIMAL=33;
-  public static final int DECIMALDIGIT=34;
-  public static final int DECIMALINTEGER=35;
-  public static final int EXPONENT=36;
-  public static final int HEX=37;
-  public static final int HEXDIGIT=38;
-  public static final int ID=39;
-  public static final int NAMESPACE_ID=40;
-  public static final int OCTAL=41;
-  public static final int OCTALDIGIT=42;
-  public static final int WS=43;
+  public static final int ARRAY=4;
+  public static final int AT_ADD=5;
+  public static final int AT_BIT_AND=6;
+  public static final int AT_BIT_NOT=7;
+  public static final int AT_BIT_OR=8;
+  public static final int AT_BIT_SHL=9;
+  public static final int AT_BIT_SHR=10;
+  public static final int AT_BIT_SHU=11;
+  public static final int AT_BIT_XOR=12;
+  public static final int AT_BOOL_AND=13;
+  public static final int AT_BOOL_NOT=14;
+  public static final int AT_BOOL_OR=15;
+  public static final int AT_CALL=16;
+  public static final int AT_COLON=17;
+  public static final int AT_COMMA=18;
+  public static final int AT_COMP_EQ=19;
+  public static final int AT_COMP_GT=20;
+  public static final int AT_COMP_GTE=21;
+  public static final int AT_COMP_LT=22;
+  public static final int AT_COMP_LTE=23;
+  public static final int AT_COMP_NEQ=24;
+  public static final int AT_COND_QUE=25;
+  public static final int AT_DIVIDE=26;
+  public static final int AT_DOT=27;
+  public static final int AT_LPAREN=28;
+  public static final int AT_MODULO=29;
+  public static final int AT_MULTIPLY=30;
+  public static final int AT_NEGATE=31;
+  public static final int AT_RPAREN=32;
+  public static final int AT_SUBTRACT=33;
+  public static final int DECIMAL=34;
+  public static final int DECIMALDIGIT=35;
+  public static final int DECIMALINTEGER=36;
+  public static final int DOUBLE_STRING_CHAR=37;
+  public static final int EXPONENT=38;
+  public static final int HEX=39;
+  public static final int HEXDIGIT=40;
+  public static final int ID=41;
+  public static final int OBJECT=42;
+  public static final int OCTAL=43;
+  public static final int OCTALDIGIT=44;
+  public static final int SINGLE_STRING_CHAR=45;
+  public static final int STRING=46;
+  public static final int VARIABLE=47;
+  public static final int WS=48;
 
 
   @Override
@@ -630,17 +635,17 @@ class JavascriptLexer extends Lexer {
   }
   // $ANTLR end "AT_SUBTRACT"
 
-  // $ANTLR start "NAMESPACE_ID"
-  public final void mNAMESPACE_ID() throws RecognitionException {
+  // $ANTLR start "VARIABLE"
+  public final void mVARIABLE() throws RecognitionException {
     try {
-      int _type = NAMESPACE_ID;
+      int _type = VARIABLE;
       int _channel = DEFAULT_TOKEN_CHANNEL;
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:334:5: ( ID ( AT_DOT ID )* )
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:334:7: ID ( AT_DOT ID )*
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:334:5: ( OBJECT ( AT_DOT OBJECT )* )
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:334:7: OBJECT ( AT_DOT OBJECT )*
       {
-      mID(); 
+      mOBJECT(); 
 
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:334:10: ( AT_DOT ID )*
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:334:14: ( AT_DOT OBJECT )*
       loop1:
       while (true) {
         int alt1=2;
@@ -651,11 +656,11 @@ class JavascriptLexer extends Lexer {
 
         switch (alt1) {
         case 1 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:334:11: AT_DOT ID
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:334:15: AT_DOT OBJECT
           {
           mAT_DOT(); 
 
-          mID(); 
+          mOBJECT(); 
 
           }
           break;
@@ -674,43 +679,31 @@ class JavascriptLexer extends Lexer {
       // do for sure before leaving
     }
   }
-  // $ANTLR end "NAMESPACE_ID"
+  // $ANTLR end "VARIABLE"
 
-  // $ANTLR start "ID"
-  public final void mID() throws RecognitionException {
+  // $ANTLR start "OBJECT"
+  public final void mOBJECT() throws RecognitionException {
     try {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:340:5: ( ( 'a' .. 'z' | 'A' .. 'Z' | '_' | '$' ) ( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' | '$' )* )
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:340:7: ( 'a' .. 'z' | 'A' .. 'Z' | '_' | '$' ) ( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' | '$' )*
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:340:5: ( ID ( ARRAY )* )
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:340:7: ID ( ARRAY )*
       {
-      if ( input.LA(1)=='$'||(input.LA(1) >= 'A' && input.LA(1) <= 'Z')||input.LA(1)=='_'||(input.LA(1) >= 'a' && input.LA(1) <= 'z') ) {
-        input.consume();
-      }
-      else {
-        MismatchedSetException mse = new MismatchedSetException(null,input);
-        recover(mse);
-        throw mse;
-      }
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:340:35: ( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' | '$' )*
+      mID(); 
+
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:340:10: ( ARRAY )*
       loop2:
       while (true) {
         int alt2=2;
         int LA2_0 = input.LA(1);
-        if ( (LA2_0=='$'||(LA2_0 >= '0' && LA2_0 <= '9')||(LA2_0 >= 'A' && LA2_0 <= 'Z')||LA2_0=='_'||(LA2_0 >= 'a' && LA2_0 <= 'z')) ) {
+        if ( (LA2_0=='[') ) {
           alt2=1;
         }
 
         switch (alt2) {
         case 1 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:340:10: ARRAY
           {
-          if ( input.LA(1)=='$'||(input.LA(1) >= '0' && input.LA(1) <= '9')||(input.LA(1) >= 'A' && input.LA(1) <= 'Z')||input.LA(1)=='_'||(input.LA(1) >= 'a' && input.LA(1) <= 'z') ) {
-            input.consume();
-          }
-          else {
-            MismatchedSetException mse = new MismatchedSetException(null,input);
-            recover(mse);
-            throw mse;
-          }
+          mARRAY(); 
+
           }
           break;
 
@@ -726,27 +719,382 @@ class JavascriptLexer extends Lexer {
       // do for sure before leaving
     }
   }
+  // $ANTLR end "OBJECT"
+
+  // $ANTLR start "ARRAY"
+  public final void mARRAY() throws RecognitionException {
+    try {
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:345:5: ( '[' STRING ']' | '[' DECIMALINTEGER ']' )
+      int alt3=2;
+      int LA3_0 = input.LA(1);
+      if ( (LA3_0=='[') ) {
+        int LA3_1 = input.LA(2);
+        if ( (LA3_1=='\"'||LA3_1=='\'') ) {
+          alt3=1;
+        }
+        else if ( ((LA3_1 >= '0' && LA3_1 <= '9')) ) {
+          alt3=2;
+        }
+
+        else {
+          int nvaeMark = input.mark();
+          try {
+            input.consume();
+            NoViableAltException nvae =
+              new NoViableAltException("", 3, 1, input);
+            throw nvae;
+          } finally {
+            input.rewind(nvaeMark);
+          }
+        }
+
+      }
+
+      else {
+        NoViableAltException nvae =
+          new NoViableAltException("", 3, 0, input);
+        throw nvae;
+      }
+
+      switch (alt3) {
+        case 1 :
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:345:7: '[' STRING ']'
+          {
+          match('['); 
+          mSTRING(); 
+
+          match(']'); 
+          }
+          break;
+        case 2 :
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:346:7: '[' DECIMALINTEGER ']'
+          {
+          match('['); 
+          mDECIMALINTEGER(); 
+
+          match(']'); 
+          }
+          break;
+
+      }
+    }
+    finally {
+      // do for sure before leaving
+    }
+  }
+  // $ANTLR end "ARRAY"
+
+  // $ANTLR start "ID"
+  public final void mID() throws RecognitionException {
+    try {
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:351:5: ( ( 'a' .. 'z' | 'A' .. 'Z' | '_' | '$' ) ( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' | '$' )* )
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:351:7: ( 'a' .. 'z' | 'A' .. 'Z' | '_' | '$' ) ( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' | '$' )*
+      {
+      if ( input.LA(1)=='$'||(input.LA(1) >= 'A' && input.LA(1) <= 'Z')||input.LA(1)=='_'||(input.LA(1) >= 'a' && input.LA(1) <= 'z') ) {
+        input.consume();
+      }
+      else {
+        MismatchedSetException mse = new MismatchedSetException(null,input);
+        recover(mse);
+        throw mse;
+      }
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:351:35: ( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' | '$' )*
+      loop4:
+      while (true) {
+        int alt4=2;
+        int LA4_0 = input.LA(1);
+        if ( (LA4_0=='$'||(LA4_0 >= '0' && LA4_0 <= '9')||(LA4_0 >= 'A' && LA4_0 <= 'Z')||LA4_0=='_'||(LA4_0 >= 'a' && LA4_0 <= 'z')) ) {
+          alt4=1;
+        }
+
+        switch (alt4) {
+        case 1 :
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:
+          {
+          if ( input.LA(1)=='$'||(input.LA(1) >= '0' && input.LA(1) <= '9')||(input.LA(1) >= 'A' && input.LA(1) <= 'Z')||input.LA(1)=='_'||(input.LA(1) >= 'a' && input.LA(1) <= 'z') ) {
+            input.consume();
+          }
+          else {
+            MismatchedSetException mse = new MismatchedSetException(null,input);
+            recover(mse);
+            throw mse;
+          }
+          }
+          break;
+
+        default :
+          break loop4;
+        }
+      }
+
+      }
+
+    }
+    finally {
+      // do for sure before leaving
+    }
+  }
   // $ANTLR end "ID"
+
+  // $ANTLR start "STRING"
+  public final void mSTRING() throws RecognitionException {
+    try {
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:356:5: ( '\\'' ( SINGLE_STRING_CHAR )* '\\'' | '\"' ( DOUBLE_STRING_CHAR )* '\"' )
+      int alt7=2;
+      int LA7_0 = input.LA(1);
+      if ( (LA7_0=='\'') ) {
+        alt7=1;
+      }
+      else if ( (LA7_0=='\"') ) {
+        alt7=2;
+      }
+
+      else {
+        NoViableAltException nvae =
+          new NoViableAltException("", 7, 0, input);
+        throw nvae;
+      }
+
+      switch (alt7) {
+        case 1 :
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:356:7: '\\'' ( SINGLE_STRING_CHAR )* '\\''
+          {
+          match('\''); 
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:356:12: ( SINGLE_STRING_CHAR )*
+          loop5:
+          while (true) {
+            int alt5=2;
+            int LA5_0 = input.LA(1);
+            if ( ((LA5_0 >= '\u0000' && LA5_0 <= '&')||(LA5_0 >= '(' && LA5_0 <= '\uFFFF')) ) {
+              alt5=1;
+            }
+
+            switch (alt5) {
+            case 1 :
+              // src/java/org/apache/lucene/expressions/js/Javascript.g:356:12: SINGLE_STRING_CHAR
+              {
+              mSINGLE_STRING_CHAR(); 
+
+              }
+              break;
+
+            default :
+              break loop5;
+            }
+          }
+
+          match('\''); 
+           
+          }
+          break;
+        case 2 :
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:357:7: '\"' ( DOUBLE_STRING_CHAR )* '\"'
+          {
+          match('\"'); 
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:357:11: ( DOUBLE_STRING_CHAR )*
+          loop6:
+          while (true) {
+            int alt6=2;
+            int LA6_0 = input.LA(1);
+            if ( ((LA6_0 >= '\u0000' && LA6_0 <= '!')||(LA6_0 >= '#' && LA6_0 <= '\uFFFF')) ) {
+              alt6=1;
+            }
+
+            switch (alt6) {
+            case 1 :
+              // src/java/org/apache/lucene/expressions/js/Javascript.g:357:11: DOUBLE_STRING_CHAR
+              {
+              mDOUBLE_STRING_CHAR(); 
+
+              }
+              break;
+
+            default :
+              break loop6;
+            }
+          }
+
+          match('\"'); 
+          }
+          break;
+
+      }
+    }
+    finally {
+      // do for sure before leaving
+    }
+  }
+  // $ANTLR end "STRING"
+
+  // $ANTLR start "SINGLE_STRING_CHAR"
+  public final void mSINGLE_STRING_CHAR() throws RecognitionException {
+    try {
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:362:5: ( '\\\\\\'' | '\\\\\\\\' |~ ( '\\\\' | '\\'' ) )
+      int alt8=3;
+      int LA8_0 = input.LA(1);
+      if ( (LA8_0=='\\') ) {
+        int LA8_1 = input.LA(2);
+        if ( (LA8_1=='\'') ) {
+          alt8=1;
+        }
+        else if ( (LA8_1=='\\') ) {
+          alt8=2;
+        }
+
+        else {
+          int nvaeMark = input.mark();
+          try {
+            input.consume();
+            NoViableAltException nvae =
+              new NoViableAltException("", 8, 1, input);
+            throw nvae;
+          } finally {
+            input.rewind(nvaeMark);
+          }
+        }
+
+      }
+      else if ( ((LA8_0 >= '\u0000' && LA8_0 <= '&')||(LA8_0 >= '(' && LA8_0 <= '[')||(LA8_0 >= ']' && LA8_0 <= '\uFFFF')) ) {
+        alt8=3;
+      }
+
+      else {
+        NoViableAltException nvae =
+          new NoViableAltException("", 8, 0, input);
+        throw nvae;
+      }
+
+      switch (alt8) {
+        case 1 :
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:362:7: '\\\\\\''
+          {
+          match("\\'"); 
+
+          }
+          break;
+        case 2 :
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:363:7: '\\\\\\\\'
+          {
+          match("\\\\"); 
+
+          }
+          break;
+        case 3 :
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:364:7: ~ ( '\\\\' | '\\'' )
+          {
+          if ( (input.LA(1) >= '\u0000' && input.LA(1) <= '&')||(input.LA(1) >= '(' && input.LA(1) <= '[')||(input.LA(1) >= ']' && input.LA(1) <= '\uFFFF') ) {
+            input.consume();
+          }
+          else {
+            MismatchedSetException mse = new MismatchedSetException(null,input);
+            recover(mse);
+            throw mse;
+          }
+          }
+          break;
+
+      }
+    }
+    finally {
+      // do for sure before leaving
+    }
+  }
+  // $ANTLR end "SINGLE_STRING_CHAR"
+
+  // $ANTLR start "DOUBLE_STRING_CHAR"
+  public final void mDOUBLE_STRING_CHAR() throws RecognitionException {
+    try {
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:369:5: ( '\\\\\"' | '\\\\\\\\' |~ ( '\\\\' | '\"' ) )
+      int alt9=3;
+      int LA9_0 = input.LA(1);
+      if ( (LA9_0=='\\') ) {
+        int LA9_1 = input.LA(2);
+        if ( (LA9_1=='\"') ) {
+          alt9=1;
+        }
+        else if ( (LA9_1=='\\') ) {
+          alt9=2;
+        }
+
+        else {
+          int nvaeMark = input.mark();
+          try {
+            input.consume();
+            NoViableAltException nvae =
+              new NoViableAltException("", 9, 1, input);
+            throw nvae;
+          } finally {
+            input.rewind(nvaeMark);
+          }
+        }
+
+      }
+      else if ( ((LA9_0 >= '\u0000' && LA9_0 <= '!')||(LA9_0 >= '#' && LA9_0 <= '[')||(LA9_0 >= ']' && LA9_0 <= '\uFFFF')) ) {
+        alt9=3;
+      }
+
+      else {
+        NoViableAltException nvae =
+          new NoViableAltException("", 9, 0, input);
+        throw nvae;
+      }
+
+      switch (alt9) {
+        case 1 :
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:369:7: '\\\\\"'
+          {
+          match("\\\""); 
+
+          }
+          break;
+        case 2 :
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:370:7: '\\\\\\\\'
+          {
+          match("\\\\"); 
+
+          }
+          break;
+        case 3 :
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:371:7: ~ ( '\\\\' | '\"' )
+          {
+          if ( (input.LA(1) >= '\u0000' && input.LA(1) <= '!')||(input.LA(1) >= '#' && input.LA(1) <= '[')||(input.LA(1) >= ']' && input.LA(1) <= '\uFFFF') ) {
+            input.consume();
+          }
+          else {
+            MismatchedSetException mse = new MismatchedSetException(null,input);
+            recover(mse);
+            throw mse;
+          }
+          }
+          break;
+
+      }
+    }
+    finally {
+      // do for sure before leaving
+    }
+  }
+  // $ANTLR end "DOUBLE_STRING_CHAR"
 
   // $ANTLR start "WS"
   public final void mWS() throws RecognitionException {
     try {
       int _type = WS;
       int _channel = DEFAULT_TOKEN_CHANNEL;
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:343:5: ( ( ' ' | '\\t' | '\\n' | '\\r' )+ )
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:343:7: ( ' ' | '\\t' | '\\n' | '\\r' )+
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:374:5: ( ( ' ' | '\\t' | '\\n' | '\\r' )+ )
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:374:7: ( ' ' | '\\t' | '\\n' | '\\r' )+
       {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:343:7: ( ' ' | '\\t' | '\\n' | '\\r' )+
-      int cnt3=0;
-      loop3:
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:374:7: ( ' ' | '\\t' | '\\n' | '\\r' )+
+      int cnt10=0;
+      loop10:
       while (true) {
-        int alt3=2;
-        int LA3_0 = input.LA(1);
-        if ( ((LA3_0 >= '\t' && LA3_0 <= '\n')||LA3_0=='\r'||LA3_0==' ') ) {
-          alt3=1;
+        int alt10=2;
+        int LA10_0 = input.LA(1);
+        if ( ((LA10_0 >= '\t' && LA10_0 <= '\n')||LA10_0=='\r'||LA10_0==' ') ) {
+          alt10=1;
         }
 
-        switch (alt3) {
+        switch (alt10) {
         case 1 :
           // src/java/org/apache/lucene/expressions/js/Javascript.g:
           {
@@ -762,11 +1110,11 @@ class JavascriptLexer extends Lexer {
           break;
 
         default :
-          if ( cnt3 >= 1 ) break loop3;
-          EarlyExitException eee = new EarlyExitException(3, input);
+          if ( cnt10 >= 1 ) break loop10;
+          EarlyExitException eee = new EarlyExitException(10, input);
           throw eee;
         }
-        cnt3++;
+        cnt10++;
       }
 
       skip();
@@ -786,27 +1134,27 @@ class JavascriptLexer extends Lexer {
     try {
       int _type = DECIMAL;
       int _channel = DEFAULT_TOKEN_CHANNEL;
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:347:5: ( DECIMALINTEGER AT_DOT ( DECIMALDIGIT )* ( EXPONENT )? | AT_DOT ( DECIMALDIGIT )+ ( EXPONENT )? | DECIMALINTEGER ( EXPONENT )? )
-      int alt9=3;
-      alt9 = dfa9.predict(input);
-      switch (alt9) {
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:378:5: ( DECIMALINTEGER AT_DOT ( DECIMALDIGIT )* ( EXPONENT )? | AT_DOT ( DECIMALDIGIT )+ ( EXPONENT )? | DECIMALINTEGER ( EXPONENT )? )
+      int alt16=3;
+      alt16 = dfa16.predict(input);
+      switch (alt16) {
         case 1 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:347:7: DECIMALINTEGER AT_DOT ( DECIMALDIGIT )* ( EXPONENT )?
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:378:7: DECIMALINTEGER AT_DOT ( DECIMALDIGIT )* ( EXPONENT )?
           {
           mDECIMALINTEGER(); 
 
           mAT_DOT(); 
 
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:347:29: ( DECIMALDIGIT )*
-          loop4:
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:378:29: ( DECIMALDIGIT )*
+          loop11:
           while (true) {
-            int alt4=2;
-            int LA4_0 = input.LA(1);
-            if ( ((LA4_0 >= '0' && LA4_0 <= '9')) ) {
-              alt4=1;
+            int alt11=2;
+            int LA11_0 = input.LA(1);
+            if ( ((LA11_0 >= '0' && LA11_0 <= '9')) ) {
+              alt11=1;
             }
 
-            switch (alt4) {
+            switch (alt11) {
             case 1 :
               // src/java/org/apache/lucene/expressions/js/Javascript.g:
               {
@@ -822,19 +1170,19 @@ class JavascriptLexer extends Lexer {
               break;
 
             default :
-              break loop4;
+              break loop11;
             }
           }
 
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:347:43: ( EXPONENT )?
-          int alt5=2;
-          int LA5_0 = input.LA(1);
-          if ( (LA5_0=='E'||LA5_0=='e') ) {
-            alt5=1;
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:378:43: ( EXPONENT )?
+          int alt12=2;
+          int LA12_0 = input.LA(1);
+          if ( (LA12_0=='E'||LA12_0=='e') ) {
+            alt12=1;
           }
-          switch (alt5) {
+          switch (alt12) {
             case 1 :
-              // src/java/org/apache/lucene/expressions/js/Javascript.g:347:43: EXPONENT
+              // src/java/org/apache/lucene/expressions/js/Javascript.g:378:43: EXPONENT
               {
               mEXPONENT(); 
 
@@ -846,21 +1194,21 @@ class JavascriptLexer extends Lexer {
           }
           break;
         case 2 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:348:7: AT_DOT ( DECIMALDIGIT )+ ( EXPONENT )?
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:379:7: AT_DOT ( DECIMALDIGIT )+ ( EXPONENT )?
           {
           mAT_DOT(); 
 
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:348:14: ( DECIMALDIGIT )+
-          int cnt6=0;
-          loop6:
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:379:14: ( DECIMALDIGIT )+
+          int cnt13=0;
+          loop13:
           while (true) {
-            int alt6=2;
-            int LA6_0 = input.LA(1);
-            if ( ((LA6_0 >= '0' && LA6_0 <= '9')) ) {
-              alt6=1;
+            int alt13=2;
+            int LA13_0 = input.LA(1);
+            if ( ((LA13_0 >= '0' && LA13_0 <= '9')) ) {
+              alt13=1;
             }
 
-            switch (alt6) {
+            switch (alt13) {
             case 1 :
               // src/java/org/apache/lucene/expressions/js/Javascript.g:
               {
@@ -876,22 +1224,22 @@ class JavascriptLexer extends Lexer {
               break;
 
             default :
-              if ( cnt6 >= 1 ) break loop6;
-              EarlyExitException eee = new EarlyExitException(6, input);
+              if ( cnt13 >= 1 ) break loop13;
+              EarlyExitException eee = new EarlyExitException(13, input);
               throw eee;
             }
-            cnt6++;
+            cnt13++;
           }
 
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:348:28: ( EXPONENT )?
-          int alt7=2;
-          int LA7_0 = input.LA(1);
-          if ( (LA7_0=='E'||LA7_0=='e') ) {
-            alt7=1;
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:379:28: ( EXPONENT )?
+          int alt14=2;
+          int LA14_0 = input.LA(1);
+          if ( (LA14_0=='E'||LA14_0=='e') ) {
+            alt14=1;
           }
-          switch (alt7) {
+          switch (alt14) {
             case 1 :
-              // src/java/org/apache/lucene/expressions/js/Javascript.g:348:28: EXPONENT
+              // src/java/org/apache/lucene/expressions/js/Javascript.g:379:28: EXPONENT
               {
               mEXPONENT(); 
 
@@ -903,19 +1251,19 @@ class JavascriptLexer extends Lexer {
           }
           break;
         case 3 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:349:7: DECIMALINTEGER ( EXPONENT )?
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:380:7: DECIMALINTEGER ( EXPONENT )?
           {
           mDECIMALINTEGER(); 
 
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:349:22: ( EXPONENT )?
-          int alt8=2;
-          int LA8_0 = input.LA(1);
-          if ( (LA8_0=='E'||LA8_0=='e') ) {
-            alt8=1;
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:380:22: ( EXPONENT )?
+          int alt15=2;
+          int LA15_0 = input.LA(1);
+          if ( (LA15_0=='E'||LA15_0=='e') ) {
+            alt15=1;
           }
-          switch (alt8) {
+          switch (alt15) {
             case 1 :
-              // src/java/org/apache/lucene/expressions/js/Javascript.g:349:22: EXPONENT
+              // src/java/org/apache/lucene/expressions/js/Javascript.g:380:22: EXPONENT
               {
               mEXPONENT(); 
 
@@ -942,21 +1290,21 @@ class JavascriptLexer extends Lexer {
     try {
       int _type = OCTAL;
       int _channel = DEFAULT_TOKEN_CHANNEL;
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:353:5: ( '0' ( OCTALDIGIT )+ )
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:353:7: '0' ( OCTALDIGIT )+
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:384:5: ( '0' ( OCTALDIGIT )+ )
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:384:7: '0' ( OCTALDIGIT )+
       {
       match('0'); 
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:353:11: ( OCTALDIGIT )+
-      int cnt10=0;
-      loop10:
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:384:11: ( OCTALDIGIT )+
+      int cnt17=0;
+      loop17:
       while (true) {
-        int alt10=2;
-        int LA10_0 = input.LA(1);
-        if ( ((LA10_0 >= '0' && LA10_0 <= '7')) ) {
-          alt10=1;
+        int alt17=2;
+        int LA17_0 = input.LA(1);
+        if ( ((LA17_0 >= '0' && LA17_0 <= '7')) ) {
+          alt17=1;
         }
 
-        switch (alt10) {
+        switch (alt17) {
         case 1 :
           // src/java/org/apache/lucene/expressions/js/Javascript.g:
           {
@@ -972,11 +1320,11 @@ class JavascriptLexer extends Lexer {
           break;
 
         default :
-          if ( cnt10 >= 1 ) break loop10;
-          EarlyExitException eee = new EarlyExitException(10, input);
+          if ( cnt17 >= 1 ) break loop17;
+          EarlyExitException eee = new EarlyExitException(17, input);
           throw eee;
         }
-        cnt10++;
+        cnt17++;
       }
 
       }
@@ -995,19 +1343,19 @@ class JavascriptLexer extends Lexer {
     try {
       int _type = HEX;
       int _channel = DEFAULT_TOKEN_CHANNEL;
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:357:5: ( ( '0x' | '0X' ) ( HEXDIGIT )+ )
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:357:7: ( '0x' | '0X' ) ( HEXDIGIT )+
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:388:5: ( ( '0x' | '0X' ) ( HEXDIGIT )+ )
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:388:7: ( '0x' | '0X' ) ( HEXDIGIT )+
       {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:357:7: ( '0x' | '0X' )
-      int alt11=2;
-      int LA11_0 = input.LA(1);
-      if ( (LA11_0=='0') ) {
-        int LA11_1 = input.LA(2);
-        if ( (LA11_1=='x') ) {
-          alt11=1;
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:388:7: ( '0x' | '0X' )
+      int alt18=2;
+      int LA18_0 = input.LA(1);
+      if ( (LA18_0=='0') ) {
+        int LA18_1 = input.LA(2);
+        if ( (LA18_1=='x') ) {
+          alt18=1;
         }
-        else if ( (LA11_1=='X') ) {
-          alt11=2;
+        else if ( (LA18_1=='X') ) {
+          alt18=2;
         }
 
         else {
@@ -1015,7 +1363,7 @@ class JavascriptLexer extends Lexer {
           try {
             input.consume();
             NoViableAltException nvae =
-              new NoViableAltException("", 11, 1, input);
+              new NoViableAltException("", 18, 1, input);
             throw nvae;
           } finally {
             input.rewind(nvaeMark);
@@ -1026,20 +1374,20 @@ class JavascriptLexer extends Lexer {
 
       else {
         NoViableAltException nvae =
-          new NoViableAltException("", 11, 0, input);
+          new NoViableAltException("", 18, 0, input);
         throw nvae;
       }
 
-      switch (alt11) {
+      switch (alt18) {
         case 1 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:357:8: '0x'
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:388:8: '0x'
           {
           match("0x"); 
 
           }
           break;
         case 2 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:357:13: '0X'
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:388:13: '0X'
           {
           match("0X"); 
 
@@ -1048,17 +1396,17 @@ class JavascriptLexer extends Lexer {
 
       }
 
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:357:19: ( HEXDIGIT )+
-      int cnt12=0;
-      loop12:
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:388:19: ( HEXDIGIT )+
+      int cnt19=0;
+      loop19:
       while (true) {
-        int alt12=2;
-        int LA12_0 = input.LA(1);
-        if ( ((LA12_0 >= '0' && LA12_0 <= '9')||(LA12_0 >= 'A' && LA12_0 <= 'F')||(LA12_0 >= 'a' && LA12_0 <= 'f')) ) {
-          alt12=1;
+        int alt19=2;
+        int LA19_0 = input.LA(1);
+        if ( ((LA19_0 >= '0' && LA19_0 <= '9')||(LA19_0 >= 'A' && LA19_0 <= 'F')||(LA19_0 >= 'a' && LA19_0 <= 'f')) ) {
+          alt19=1;
         }
 
-        switch (alt12) {
+        switch (alt19) {
         case 1 :
           // src/java/org/apache/lucene/expressions/js/Javascript.g:
           {
@@ -1074,11 +1422,11 @@ class JavascriptLexer extends Lexer {
           break;
 
         default :
-          if ( cnt12 >= 1 ) break loop12;
-          EarlyExitException eee = new EarlyExitException(12, input);
+          if ( cnt19 >= 1 ) break loop19;
+          EarlyExitException eee = new EarlyExitException(19, input);
           throw eee;
         }
-        cnt12++;
+        cnt19++;
       }
 
       }
@@ -1095,43 +1443,43 @@ class JavascriptLexer extends Lexer {
   // $ANTLR start "DECIMALINTEGER"
   public final void mDECIMALINTEGER() throws RecognitionException {
     try {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:363:5: ( '0' | '1' .. '9' ( DECIMALDIGIT )* )
-      int alt14=2;
-      int LA14_0 = input.LA(1);
-      if ( (LA14_0=='0') ) {
-        alt14=1;
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:394:5: ( '0' | '1' .. '9' ( DECIMALDIGIT )* )
+      int alt21=2;
+      int LA21_0 = input.LA(1);
+      if ( (LA21_0=='0') ) {
+        alt21=1;
       }
-      else if ( ((LA14_0 >= '1' && LA14_0 <= '9')) ) {
-        alt14=2;
+      else if ( ((LA21_0 >= '1' && LA21_0 <= '9')) ) {
+        alt21=2;
       }
 
       else {
         NoViableAltException nvae =
-          new NoViableAltException("", 14, 0, input);
+          new NoViableAltException("", 21, 0, input);
         throw nvae;
       }
 
-      switch (alt14) {
+      switch (alt21) {
         case 1 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:363:7: '0'
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:394:7: '0'
           {
           match('0'); 
           }
           break;
         case 2 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:364:7: '1' .. '9' ( DECIMALDIGIT )*
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:395:7: '1' .. '9' ( DECIMALDIGIT )*
           {
           matchRange('1','9'); 
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:364:16: ( DECIMALDIGIT )*
-          loop13:
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:395:16: ( DECIMALDIGIT )*
+          loop20:
           while (true) {
-            int alt13=2;
-            int LA13_0 = input.LA(1);
-            if ( ((LA13_0 >= '0' && LA13_0 <= '9')) ) {
-              alt13=1;
+            int alt20=2;
+            int LA20_0 = input.LA(1);
+            if ( ((LA20_0 >= '0' && LA20_0 <= '9')) ) {
+              alt20=1;
             }
 
-            switch (alt13) {
+            switch (alt20) {
             case 1 :
               // src/java/org/apache/lucene/expressions/js/Javascript.g:
               {
@@ -1147,7 +1495,7 @@ class JavascriptLexer extends Lexer {
               break;
 
             default :
-              break loop13;
+              break loop20;
             }
           }
 
@@ -1165,8 +1513,8 @@ class JavascriptLexer extends Lexer {
   // $ANTLR start "EXPONENT"
   public final void mEXPONENT() throws RecognitionException {
     try {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:369:5: ( ( 'e' | 'E' ) ( '+' | '-' )? ( DECIMALDIGIT )+ )
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:369:7: ( 'e' | 'E' ) ( '+' | '-' )? ( DECIMALDIGIT )+
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:400:5: ( ( 'e' | 'E' ) ( '+' | '-' )? ( DECIMALDIGIT )+ )
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:400:7: ( 'e' | 'E' ) ( '+' | '-' )? ( DECIMALDIGIT )+
       {
       if ( input.LA(1)=='E'||input.LA(1)=='e' ) {
         input.consume();
@@ -1176,13 +1524,13 @@ class JavascriptLexer extends Lexer {
         recover(mse);
         throw mse;
       }
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:369:17: ( '+' | '-' )?
-      int alt15=2;
-      int LA15_0 = input.LA(1);
-      if ( (LA15_0=='+'||LA15_0=='-') ) {
-        alt15=1;
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:400:17: ( '+' | '-' )?
+      int alt22=2;
+      int LA22_0 = input.LA(1);
+      if ( (LA22_0=='+'||LA22_0=='-') ) {
+        alt22=1;
       }
-      switch (alt15) {
+      switch (alt22) {
         case 1 :
           // src/java/org/apache/lucene/expressions/js/Javascript.g:
           {
@@ -1199,17 +1547,17 @@ class JavascriptLexer extends Lexer {
 
       }
 
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:369:28: ( DECIMALDIGIT )+
-      int cnt16=0;
-      loop16:
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:400:28: ( DECIMALDIGIT )+
+      int cnt23=0;
+      loop23:
       while (true) {
-        int alt16=2;
-        int LA16_0 = input.LA(1);
-        if ( ((LA16_0 >= '0' && LA16_0 <= '9')) ) {
-          alt16=1;
+        int alt23=2;
+        int LA23_0 = input.LA(1);
+        if ( ((LA23_0 >= '0' && LA23_0 <= '9')) ) {
+          alt23=1;
         }
 
-        switch (alt16) {
+        switch (alt23) {
         case 1 :
           // src/java/org/apache/lucene/expressions/js/Javascript.g:
           {
@@ -1225,11 +1573,11 @@ class JavascriptLexer extends Lexer {
           break;
 
         default :
-          if ( cnt16 >= 1 ) break loop16;
-          EarlyExitException eee = new EarlyExitException(16, input);
+          if ( cnt23 >= 1 ) break loop23;
+          EarlyExitException eee = new EarlyExitException(23, input);
           throw eee;
         }
-        cnt16++;
+        cnt23++;
       }
 
       }
@@ -1244,7 +1592,7 @@ class JavascriptLexer extends Lexer {
   // $ANTLR start "DECIMALDIGIT"
   public final void mDECIMALDIGIT() throws RecognitionException {
     try {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:374:5: ( '0' .. '9' )
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:405:5: ( '0' .. '9' )
       // src/java/org/apache/lucene/expressions/js/Javascript.g:
       {
       if ( (input.LA(1) >= '0' && input.LA(1) <= '9') ) {
@@ -1267,7 +1615,7 @@ class JavascriptLexer extends Lexer {
   // $ANTLR start "HEXDIGIT"
   public final void mHEXDIGIT() throws RecognitionException {
     try {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:379:5: ( DECIMALDIGIT | 'a' .. 'f' | 'A' .. 'F' )
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:410:5: ( DECIMALDIGIT | 'a' .. 'f' | 'A' .. 'F' )
       // src/java/org/apache/lucene/expressions/js/Javascript.g:
       {
       if ( (input.LA(1) >= '0' && input.LA(1) <= '9')||(input.LA(1) >= 'A' && input.LA(1) <= 'F')||(input.LA(1) >= 'a' && input.LA(1) <= 'f') ) {
@@ -1290,7 +1638,7 @@ class JavascriptLexer extends Lexer {
   // $ANTLR start "OCTALDIGIT"
   public final void mOCTALDIGIT() throws RecognitionException {
     try {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:386:5: ( '0' .. '7' )
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:417:5: ( '0' .. '7' )
       // src/java/org/apache/lucene/expressions/js/Javascript.g:
       {
       if ( (input.LA(1) >= '0' && input.LA(1) <= '7') ) {
@@ -1312,41 +1660,41 @@ class JavascriptLexer extends Lexer {
 
   @Override
   public void mTokens() throws RecognitionException {
-    // src/java/org/apache/lucene/expressions/js/Javascript.g:1:8: ( AT_ADD | AT_BIT_AND | AT_BIT_NOT | AT_BIT_OR | AT_BIT_SHL | AT_BIT_SHR | AT_BIT_SHU | AT_BIT_XOR | AT_BOOL_AND | AT_BOOL_NOT | AT_BOOL_OR | AT_COLON | AT_COMMA | AT_COMP_EQ | AT_COMP_GT | AT_COMP_GTE | AT_COMP_LT | AT_COMP_LTE | AT_COMP_NEQ | AT_COND_QUE | AT_DIVIDE | AT_DOT | AT_LPAREN | AT_MODULO | AT_MULTIPLY | AT_RPAREN | AT_SUBTRACT | NAMESPACE_ID | WS | DECIMAL | OCTAL | HEX )
-    int alt17=32;
+    // src/java/org/apache/lucene/expressions/js/Javascript.g:1:8: ( AT_ADD | AT_BIT_AND | AT_BIT_NOT | AT_BIT_OR | AT_BIT_SHL | AT_BIT_SHR | AT_BIT_SHU | AT_BIT_XOR | AT_BOOL_AND | AT_BOOL_NOT | AT_BOOL_OR | AT_COLON | AT_COMMA | AT_COMP_EQ | AT_COMP_GT | AT_COMP_GTE | AT_COMP_LT | AT_COMP_LTE | AT_COMP_NEQ | AT_COND_QUE | AT_DIVIDE | AT_DOT | AT_LPAREN | AT_MODULO | AT_MULTIPLY | AT_RPAREN | AT_SUBTRACT | VARIABLE | WS | DECIMAL | OCTAL | HEX )
+    int alt24=32;
     switch ( input.LA(1) ) {
     case '+':
       {
-      alt17=1;
+      alt24=1;
       }
       break;
     case '&':
       {
-      int LA17_2 = input.LA(2);
-      if ( (LA17_2=='&') ) {
-        alt17=9;
+      int LA24_2 = input.LA(2);
+      if ( (LA24_2=='&') ) {
+        alt24=9;
       }
 
       else {
-        alt17=2;
+        alt24=2;
       }
 
       }
       break;
     case '~':
       {
-      alt17=3;
+      alt24=3;
       }
       break;
     case '|':
       {
-      int LA17_4 = input.LA(2);
-      if ( (LA17_4=='|') ) {
-        alt17=11;
+      int LA24_4 = input.LA(2);
+      if ( (LA24_4=='|') ) {
+        alt24=11;
       }
 
       else {
-        alt17=4;
+        alt24=4;
       }
 
       }
@@ -1356,16 +1704,16 @@ class JavascriptLexer extends Lexer {
       switch ( input.LA(2) ) {
       case '<':
         {
-        alt17=5;
+        alt24=5;
         }
         break;
       case '=':
         {
-        alt17=18;
+        alt24=18;
         }
         break;
       default:
-        alt17=17;
+        alt24=17;
       }
       }
       break;
@@ -1374,106 +1722,106 @@ class JavascriptLexer extends Lexer {
       switch ( input.LA(2) ) {
       case '>':
         {
-        int LA17_31 = input.LA(3);
-        if ( (LA17_31=='>') ) {
-          alt17=7;
+        int LA24_31 = input.LA(3);
+        if ( (LA24_31=='>') ) {
+          alt24=7;
         }
 
         else {
-          alt17=6;
+          alt24=6;
         }
 
         }
         break;
       case '=':
         {
-        alt17=16;
+        alt24=16;
         }
         break;
       default:
-        alt17=15;
+        alt24=15;
       }
       }
       break;
     case '^':
       {
-      alt17=8;
+      alt24=8;
       }
       break;
     case '!':
       {
-      int LA17_8 = input.LA(2);
-      if ( (LA17_8=='=') ) {
-        alt17=19;
+      int LA24_8 = input.LA(2);
+      if ( (LA24_8=='=') ) {
+        alt24=19;
       }
 
       else {
-        alt17=10;
+        alt24=10;
       }
 
       }
       break;
     case ':':
       {
-      alt17=12;
+      alt24=12;
       }
       break;
     case ',':
       {
-      alt17=13;
+      alt24=13;
       }
       break;
     case '=':
       {
-      alt17=14;
+      alt24=14;
       }
       break;
     case '?':
       {
-      alt17=20;
+      alt24=20;
       }
       break;
     case '/':
       {
-      alt17=21;
+      alt24=21;
       }
       break;
     case '.':
       {
-      int LA17_14 = input.LA(2);
-      if ( ((LA17_14 >= '0' && LA17_14 <= '9')) ) {
-        alt17=30;
+      int LA24_14 = input.LA(2);
+      if ( ((LA24_14 >= '0' && LA24_14 <= '9')) ) {
+        alt24=30;
       }
 
       else {
-        alt17=22;
+        alt24=22;
       }
 
       }
       break;
     case '(':
       {
-      alt17=23;
+      alt24=23;
       }
       break;
     case '%':
       {
-      alt17=24;
+      alt24=24;
       }
       break;
     case '*':
       {
-      alt17=25;
+      alt24=25;
       }
       break;
     case ')':
       {
-      alt17=26;
+      alt24=26;
       }
       break;
     case '-':
       {
-      alt17=27;
+      alt24=27;
       }
       break;
     case '$':
@@ -1531,7 +1879,7 @@ class JavascriptLexer extends Lexer {
     case 'y':
     case 'z':
       {
-      alt17=28;
+      alt24=28;
       }
       break;
     case '\t':
@@ -1539,7 +1887,7 @@ class JavascriptLexer extends Lexer {
     case '\r':
     case ' ':
       {
-      alt17=29;
+      alt24=29;
       }
       break;
     case '0':
@@ -1548,7 +1896,7 @@ class JavascriptLexer extends Lexer {
       case 'X':
       case 'x':
         {
-        alt17=32;
+        alt24=32;
         }
         break;
       case '0':
@@ -1560,11 +1908,11 @@ class JavascriptLexer extends Lexer {
       case '6':
       case '7':
         {
-        alt17=31;
+        alt24=31;
         }
         break;
       default:
-        alt17=30;
+        alt24=30;
       }
       }
       break;
@@ -1578,15 +1926,15 @@ class JavascriptLexer extends Lexer {
     case '8':
     case '9':
       {
-      alt17=30;
+      alt24=30;
       }
       break;
     default:
       NoViableAltException nvae =
-        new NoViableAltException("", 17, 0, input);
+        new NoViableAltException("", 24, 0, input);
       throw nvae;
     }
-    switch (alt17) {
+    switch (alt24) {
       case 1 :
         // src/java/org/apache/lucene/expressions/js/Javascript.g:1:10: AT_ADD
         {
@@ -1777,35 +2125,35 @@ class JavascriptLexer extends Lexer {
         }
         break;
       case 28 :
-        // src/java/org/apache/lucene/expressions/js/Javascript.g:1:298: NAMESPACE_ID
+        // src/java/org/apache/lucene/expressions/js/Javascript.g:1:298: VARIABLE
         {
-        mNAMESPACE_ID(); 
+        mVARIABLE(); 
 
         }
         break;
       case 29 :
-        // src/java/org/apache/lucene/expressions/js/Javascript.g:1:311: WS
+        // src/java/org/apache/lucene/expressions/js/Javascript.g:1:307: WS
         {
         mWS(); 
 
         }
         break;
       case 30 :
-        // src/java/org/apache/lucene/expressions/js/Javascript.g:1:314: DECIMAL
+        // src/java/org/apache/lucene/expressions/js/Javascript.g:1:310: DECIMAL
         {
         mDECIMAL(); 
 
         }
         break;
       case 31 :
-        // src/java/org/apache/lucene/expressions/js/Javascript.g:1:322: OCTAL
+        // src/java/org/apache/lucene/expressions/js/Javascript.g:1:318: OCTAL
         {
         mOCTAL(); 
 
         }
         break;
       case 32 :
-        // src/java/org/apache/lucene/expressions/js/Javascript.g:1:328: HEX
+        // src/java/org/apache/lucene/expressions/js/Javascript.g:1:324: HEX
         {
         mHEX(); 
 
@@ -1816,20 +2164,20 @@ class JavascriptLexer extends Lexer {
   }
 
 
-  protected DFA9 dfa9 = new DFA9(this);
-  static final String DFA9_eotS =
+  protected DFA16 dfa16 = new DFA16(this);
+  static final String DFA16_eotS =
     "\1\uffff\2\4\3\uffff\1\4";
-  static final String DFA9_eofS =
+  static final String DFA16_eofS =
     "\7\uffff";
-  static final String DFA9_minS =
+  static final String DFA16_minS =
     "\3\56\3\uffff\1\56";
-  static final String DFA9_maxS =
+  static final String DFA16_maxS =
     "\1\71\1\56\1\71\3\uffff\1\71";
-  static final String DFA9_acceptS =
+  static final String DFA16_acceptS =
     "\3\uffff\1\2\1\3\1\1\1\uffff";
-  static final String DFA9_specialS =
+  static final String DFA16_specialS =
     "\7\uffff}>";
-  static final String[] DFA9_transitionS = {
+  static final String[] DFA16_transitionS = {
       "\1\3\1\uffff\1\1\11\2",
       "\1\5",
       "\1\5\1\uffff\12\6",
@@ -1839,38 +2187,38 @@ class JavascriptLexer extends Lexer {
       "\1\5\1\uffff\12\6"
   };
 
-  static final short[] DFA9_eot = DFA.unpackEncodedString(DFA9_eotS);
-  static final short[] DFA9_eof = DFA.unpackEncodedString(DFA9_eofS);
-  static final char[] DFA9_min = DFA.unpackEncodedStringToUnsignedChars(DFA9_minS);
-  static final char[] DFA9_max = DFA.unpackEncodedStringToUnsignedChars(DFA9_maxS);
-  static final short[] DFA9_accept = DFA.unpackEncodedString(DFA9_acceptS);
-  static final short[] DFA9_special = DFA.unpackEncodedString(DFA9_specialS);
-  static final short[][] DFA9_transition;
+  static final short[] DFA16_eot = DFA.unpackEncodedString(DFA16_eotS);
+  static final short[] DFA16_eof = DFA.unpackEncodedString(DFA16_eofS);
+  static final char[] DFA16_min = DFA.unpackEncodedStringToUnsignedChars(DFA16_minS);
+  static final char[] DFA16_max = DFA.unpackEncodedStringToUnsignedChars(DFA16_maxS);
+  static final short[] DFA16_accept = DFA.unpackEncodedString(DFA16_acceptS);
+  static final short[] DFA16_special = DFA.unpackEncodedString(DFA16_specialS);
+  static final short[][] DFA16_transition;
 
   static {
-    int numStates = DFA9_transitionS.length;
-    DFA9_transition = new short[numStates][];
+    int numStates = DFA16_transitionS.length;
+    DFA16_transition = new short[numStates][];
     for (int i=0; i<numStates; i++) {
-      DFA9_transition[i] = DFA.unpackEncodedString(DFA9_transitionS[i]);
+      DFA16_transition[i] = DFA.unpackEncodedString(DFA16_transitionS[i]);
     }
   }
 
-  protected class DFA9 extends DFA {
+  protected class DFA16 extends DFA {
 
-    public DFA9(BaseRecognizer recognizer) {
+    public DFA16(BaseRecognizer recognizer) {
       this.recognizer = recognizer;
-      this.decisionNumber = 9;
-      this.eot = DFA9_eot;
-      this.eof = DFA9_eof;
-      this.min = DFA9_min;
-      this.max = DFA9_max;
-      this.accept = DFA9_accept;
-      this.special = DFA9_special;
-      this.transition = DFA9_transition;
+      this.decisionNumber = 16;
+      this.eot = DFA16_eot;
+      this.eof = DFA16_eof;
+      this.min = DFA16_min;
+      this.max = DFA16_max;
+      this.accept = DFA16_accept;
+      this.special = DFA16_special;
+      this.transition = DFA16_transition;
     }
     @Override
     public String getDescription() {
-      return "346:1: DECIMAL : ( DECIMALINTEGER AT_DOT ( DECIMALDIGIT )* ( EXPONENT )? | AT_DOT ( DECIMALDIGIT )+ ( EXPONENT )? | DECIMALINTEGER ( EXPONENT )? );";
+      return "377:1: DECIMAL : ( DECIMALINTEGER AT_DOT ( DECIMALDIGIT )* ( EXPONENT )? | AT_DOT ( DECIMALDIGIT )+ ( EXPONENT )? | DECIMALINTEGER ( EXPONENT )? );";
     }
   }
 

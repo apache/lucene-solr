@@ -62,6 +62,11 @@ public final class SimpleBindings extends Bindings {
   public void add(SortField sortField) {
     map.put(sortField.getField(), sortField);
   }
+
+  /**
+   * Bind a {@link ValueSource} directly to the given name.
+   */
+  public void add(String name, ValueSource source) { map.put(name, source); }
   
   /** 
    * Adds an Expression to the bindings.
@@ -79,6 +84,8 @@ public final class SimpleBindings extends Bindings {
       throw new IllegalArgumentException("Invalid reference '" + name + "'");
     } else if (o instanceof Expression) {
       return ((Expression)o).getValueSource(this);
+    } else if (o instanceof ValueSource) {
+      return ((ValueSource)o);
     }
     SortField field = (SortField) o;
     switch(field.getType()) {
