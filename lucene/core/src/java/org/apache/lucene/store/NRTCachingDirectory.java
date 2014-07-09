@@ -84,30 +84,6 @@ public class NRTCachingDirectory extends FilterDirectory {
     maxCachedBytes = (long) (maxCachedMB*1024*1024);
   }
 
-  @Override
-  public LockFactory getLockFactory() {
-    return in.getLockFactory();
-  }
-
-  @Override
-  public void setLockFactory(LockFactory lf) throws IOException {
-    in.setLockFactory(lf);
-  }
-
-  @Override
-  public String getLockID() {
-    return in.getLockID();
-  }
-
-  @Override
-  public Lock makeLock(String name) {
-    return in.makeLock(name);
-  }
-
-  @Override
-  public void clearLock(String name) throws IOException {
-    in.clearLock(name);
-  }
 
   @Override
   public String toString() {
