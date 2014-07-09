@@ -24,6 +24,7 @@ import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.impl.RectangleImpl;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.spatial.SpatialMatchConcern;
 import org.apache.lucene.spatial.prefix.RandomSpatialOpStrategyTestCase;
 import org.apache.lucene.spatial.query.SpatialOperation;
@@ -95,7 +96,13 @@ public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
       this.ctx = factory.newSpatialContext();
     }
     this.strategy = new BBoxStrategy(ctx, "bbox");
-
+    //test we can disable docValues for predicate tests
+    if (random().nextBoolean()) {
+      BBoxStrategy bboxStrategy = (BBoxStrategy) strategy;
+      FieldType fieldType = new FieldType(bboxStrategy.getFieldType());
+      fieldType.setDocValueType(null);
+      bboxStrategy.setFieldType(fieldType);
+    }
     for (SpatialOperation operation : SpatialOperation.values()) {
       if (operation == SpatialOperation.Overlaps)
         continue;//unsupported
@@ -244,10 +251,17 @@ public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
 
   public void testAreaValueSource() throws IOException {
     setupGeo();
+    //test we can disable indexed for this test
+    BBoxStrategy bboxStrategy = (BBoxStrategy) strategy;
+    if (random().nextBoolean()) {
+      FieldType fieldType = new FieldType(bboxStrategy.getFieldType());
+      fieldType.setIndexed(false);
+      bboxStrategy.setFieldType(fieldType);
+    }
+
     adoc("100", ctx.makeRectangle(0, 20, 40, 80));
     adoc("999", (Shape) null);
     commit();
-    BBoxStrategy bboxStrategy = (BBoxStrategy) strategy;
     checkValueSource(new ShapeAreaValueSource(bboxStrategy.makeShapeValueSource(), ctx, false),
         new float[]{800f, 0f}, 0f);
     checkValueSource(new ShapeAreaValueSource(bboxStrategy.makeShapeValueSource(), ctx, true),//geo
