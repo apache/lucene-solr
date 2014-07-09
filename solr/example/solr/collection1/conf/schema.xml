@@ -709,9 +709,11 @@
         geo="true" distErrPct="0.025" maxDistErr="0.000009" units="degrees" />
 
     <!-- Spatial rectangle (bounding box) field. It supports most spatial predicates, and has
-     special relevancy modes: score=overlapRatio|area|area2D (local-param to the query)-->
+     special relevancy modes: score=overlapRatio|area|area2D (local-param to the query).  DocValues is recommended for
+     relevancy. -->
     <fieldType name="bbox" class="solr.BBoxField"
-        geo="true" units="degrees" numberType="tdouble" />
+               geo="true" units="degrees" numberType="_bbox_coord" />
+    <fieldType name="_bbox_coord" class="solr.TrieDoubleField" precisionStep="8" docValues="true" stored="false"/>
 
    <!-- Money/currency field type. See http://wiki.apache.org/solr/MoneyFieldType
         Parameters:

@@ -18,11 +18,13 @@ package org.apache.solr.schema;
  */
 
 import com.spatial4j.core.shape.Rectangle;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.spatial.bbox.BBoxOverlapRatioValueSource;
 import org.apache.lucene.spatial.bbox.BBoxStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.util.ShapeAreaValueSource;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.search.QParser;
 
 import java.util.ArrayList;
@@ -32,7 +34,7 @@ import java.util.Map;
 public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements SchemaAware {
   private static final String PARAM_QUERY_TARGET_PROPORTION = "queryTargetProportion";
   private static final String PARAM_MIN_SIDE_LENGTH = "minSideLength";
-  private String numberFieldName = "tdouble";
+  private String numberFieldName;//required
   private String booleanFieldName = "boolean";
 
   private IndexSchema schema;
@@ -42,9 +44,11 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
     super.init(schema, args);
 
     String v = args.remove("numberType");
-    if (v != null) {
-      numberFieldName = v;
+    if (v == null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "The field type: " + typeName
+          + " must specify the numberType attribute.");
     }
+    numberFieldName = v;
 
     v = args.remove("booleanType");
     if (v != null) {
@@ -92,9 +96,16 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
   @Override
   protected BBoxStrategy newSpatialStrategy(String s) {
     BBoxStrategy strategy = new BBoxStrategy(ctx, s);
-    //Solr's FieldType ought to expose Lucene FieldType. Instead as a hack we create a field with a dummy value.
+    //Solr's FieldType ought to expose Lucene FieldType. Instead as a hack we create a Field with a dummy value.
     SchemaField field = schema.getField(strategy.getFieldName() + BBoxStrategy.SUFFIX_MINX);
-    strategy.setFieldType((org.apache.lucene.document.FieldType) field.createField(0.0, 1.0f).fieldType());
+    org.apache.lucene.document.FieldType luceneType =
+        (org.apache.lucene.document.FieldType) field.createField(0.0, 1.0f).fieldType();
+    //and annoyingly this field isn't going to have a docValues format because Solr uses a separate Field for that
+    if (field.hasDocValues()) {
+      luceneType = new org.apache.lucene.document.FieldType(luceneType);
+      luceneType.setDocValueType(FieldInfo.DocValuesType.NUMERIC);
+    }
+    strategy.setFieldType(luceneType);
     return strategy;
   }
 

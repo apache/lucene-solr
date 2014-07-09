@@ -17,12 +17,15 @@ package org.apache.solr.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 //Unlike TestSolr4Spatial, not parameterized / not generic.
+//We exclude Codecs that don't support DocValues (though not sure if this list is quite right)
+@LuceneTestCase.SuppressCodecs({"Lucene3x", "Appending", "Lucene40", "Lucene41"})
 public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
   @BeforeClass
