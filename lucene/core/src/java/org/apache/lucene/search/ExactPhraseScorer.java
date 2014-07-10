@@ -32,26 +32,24 @@ final class ExactPhraseScorer extends Scorer {
   private final int[] counts = new int[CHUNK];
   private final int[] gens = new int[CHUNK];
 
-  boolean noDocs;
   private final long cost;
 
   private final static class ChunkState {
     final DocsAndPositionsEnum posEnum;
     final int offset;
-    final boolean useAdvance;
     int posUpto;
     int posLimit;
     int pos;
     int lastPos;
 
-    public ChunkState(DocsAndPositionsEnum posEnum, int offset, boolean useAdvance) {
+    public ChunkState(DocsAndPositionsEnum posEnum, int offset) {
       this.posEnum = posEnum;
       this.offset = offset;
-      this.useAdvance = useAdvance;
     }
   }
 
   private final ChunkState[] chunkStates;
+  private final DocsAndPositionsEnum lead;
 
   private int docID = -1;
   private int freq;
@@ -67,119 +65,53 @@ final class ExactPhraseScorer extends Scorer {
 
     endMinus1 = postings.length-1;
     
+    lead = postings[0].postings;
     // min(cost)
-    cost = postings[0].postings.cost();
+    cost = lead.cost();
 
     for(int i=0;i<postings.length;i++) {
+      chunkStates[i] = new ChunkState(postings[i].postings, -postings[i].position);
+    }
+  }
+  
+  private int doNext(int doc) throws IOException {
+    for(;;) {
+      // TODO: don't dup this logic from conjunctionscorer :)
+      advanceHead: for(;;) {
+        for (int i = 1; i < chunkStates.length; i++) {
+          final DocsAndPositionsEnum de = chunkStates[i].posEnum;
+          if (de.docID() < doc) {
+            int d = de.advance(doc);
 
-      // Coarse optimization: advance(target) is fairly
-      // costly, so, if the relative freq of the 2nd
-      // rarest term is not that much (> 1/5th) rarer than
-      // the first term, then we just use .nextDoc() when
-      // ANDing.  This buys ~15% gain for phrases where
-      // freq of rarest 2 terms is close:
-      final boolean useAdvance = postings[i].docFreq > 5*postings[0].docFreq;
-      chunkStates[i] = new ChunkState(postings[i].postings, -postings[i].position, useAdvance);
-      if (i > 0 && postings[i].postings.nextDoc() == DocIdSetIterator.NO_MORE_DOCS) {
-        noDocs = true;
-        return;
+            if (d > doc) {
+              // DocsEnum beyond the current doc - break and advance lead to the new highest doc.
+              doc = d;
+              break advanceHead;
+            }
+          }
+        }
+        // all DocsEnums are on the same doc
+        if (doc == NO_MORE_DOCS) {
+          return doc;
+        } else if (phraseFreq() > 0) {
+          return doc;            // success: matches phrase
+        } else {
+          doc = lead.nextDoc();  // doesn't match phrase
+        }
       }
+      // advance head for next iteration
+      doc = lead.advance(doc);
     }
   }
 
   @Override
   public int nextDoc() throws IOException {
-    while(true) {
-
-      // first (rarest) term
-      final int doc = chunkStates[0].posEnum.nextDoc();
-      if (doc == DocIdSetIterator.NO_MORE_DOCS) {
-        docID = doc;
-        return doc;
-      }
-
-      // not-first terms
-      int i = 1;
-      while(i < chunkStates.length) {
-        final ChunkState cs = chunkStates[i];
-        int doc2 = cs.posEnum.docID();
-        if (cs.useAdvance) {
-          if (doc2 < doc) {
-            doc2 = cs.posEnum.advance(doc);
-          }
-        } else {
-          int iter = 0;
-          while(doc2 < doc) {
-            // safety net -- fallback to .advance if we've
-            // done too many .nextDocs
-            if (++iter == 50) {
-              doc2 = cs.posEnum.advance(doc);
-              break;
-            } else {
-              doc2 = cs.posEnum.nextDoc();
-            }
-          }
-        }
-        if (doc2 > doc) {
-          break;
-        }
-        i++;
-      }
-
-      if (i == chunkStates.length) {
-        // this doc has all the terms -- now test whether
-        // phrase occurs
-        docID = doc;
-
-        freq = phraseFreq();
-        if (freq != 0) {
-          return docID;
-        }
-      }
-    }
+    return docID = doNext(lead.nextDoc());
   }
 
   @Override
   public int advance(int target) throws IOException {
-
-    // first term
-    int doc = chunkStates[0].posEnum.advance(target);
-    if (doc == DocIdSetIterator.NO_MORE_DOCS) {
-      docID = DocIdSetIterator.NO_MORE_DOCS;
-      return doc;
-    }
-
-    while(true) {
-      
-      // not-first terms
-      int i = 1;
-      while(i < chunkStates.length) {
-        int doc2 = chunkStates[i].posEnum.docID();
-        if (doc2 < doc) {
-          doc2 = chunkStates[i].posEnum.advance(doc);
-        }
-        if (doc2 > doc) {
-          break;
-        }
-        i++;
-      }
-
-      if (i == chunkStates.length) {
-        // this doc has all the terms -- now test whether
-        // phrase occurs
-        docID = doc;
-        freq = phraseFreq();
-        if (freq != 0) {
-          return docID;
-        }
-      }
-
-      doc = chunkStates[0].posEnum.nextDoc();
-      if (doc == DocIdSetIterator.NO_MORE_DOCS) {
-        docID = doc;
-        return doc;
-      }
-    }
+    return docID = doNext(lead.advance(target));
   }
 
   @Override

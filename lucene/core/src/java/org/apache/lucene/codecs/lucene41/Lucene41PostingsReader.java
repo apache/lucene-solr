@@ -656,7 +656,11 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
       doc = -1;
       accum = 0;
       docUpto = 0;
-      nextSkipDoc = BLOCK_SIZE - 1;
+      if (docFreq > BLOCK_SIZE) {
+        nextSkipDoc = BLOCK_SIZE - 1; // we won't skip if target is found in first block
+      } else {
+        nextSkipDoc = NO_MORE_DOCS; // not enough docs for skipping
+      }
       docBufferUpto = BLOCK_SIZE;
       skipped = false;
       return this;
@@ -781,7 +785,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
       //   System.out.println("  FPR.advance target=" + target);
       // }
 
-      if (docFreq > BLOCK_SIZE && target > nextSkipDoc) {
+      if (target > nextSkipDoc) {
         // if (DEBUG) {
         //   System.out.println("    try skipper");
         // }
@@ -1117,7 +1121,11 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
       doc = -1;
       accum = 0;
       docUpto = 0;
-      nextSkipDoc = BLOCK_SIZE - 1;
+      if (docFreq > BLOCK_SIZE) {
+        nextSkipDoc = BLOCK_SIZE - 1; // we won't skip if target is found in first block
+      } else {
+        nextSkipDoc = NO_MORE_DOCS; // not enough docs for skipping
+      }
       docBufferUpto = BLOCK_SIZE;
       skipped = false;
       return this;
@@ -1301,7 +1309,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
       //   System.out.println("  FPR.advance target=" + target);
       // }
 
-      if (docFreq > BLOCK_SIZE && target > nextSkipDoc) {
+      if (target > nextSkipDoc) {
 
         // if (DEBUG) {
         //   System.out.println("    try skipper");
