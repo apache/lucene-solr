@@ -54,21 +54,22 @@ import org.apache.lucene.util.NumericUtils;
  *
  * <h4>Characteristics:</h4>
  * <ul>
- * <li>Only indexes Rectangles; just one per field value.</li>
- * <li>Can query only by a Rectangle.</li>
- * <li>Supports most {@link SpatialOperation}s -- not Overlaps.</li>
+ * <li>Only indexes Rectangles; just one per field value. Other shapes can be provided
+ * and the bounding box will be used.</li>
+ * <li>Can query only by a Rectangle. Providing other shapes is an error.</li>
+ * <li>Supports most {@link SpatialOperation}s but not Overlaps.</li>
  * <li>Uses the DocValues API for any sorting / relevancy.</li>
  * </ul>
  *
  * <h4>Implementation:</h4>
  * This uses 4 double fields for minX, maxX, minY, maxY
  * and a boolean to mark a dateline cross. Depending on the particular {@link
- * SpatialOperation}s, there is a variety of {@link NumericRangeQuery}s to be
+ * SpatialOperation}s, there are a variety of {@link NumericRangeQuery}s to be
  * done.
  * The {@link #makeOverlapRatioValueSource(com.spatial4j.core.shape.Rectangle, double)}
  * works by calculating the query bbox overlap percentage against the indexed
  * shape overlap percentage. The indexed shape's coordinates are retrieved from
- * {@link AtomicReader#getNumericDocValues}
+ * {@link AtomicReader#getNumericDocValues}.
  *
  * @lucene.experimental
  */
@@ -117,6 +118,9 @@ public class BBoxStrategy extends SpatialStrategy {
     return fieldType;
   }
 
+  /** Used to customize the indexing options of the 4 number fields, and to a lesser degree the XDL field too. Search
+   * requires indexed=true, and relevancy requires docValues. If these features aren't needed then disable them.
+   * {@link FieldType#freeze()} is called on the argument. */
   public void setFieldType(FieldType fieldType) {
     fieldType.freeze();
     this.fieldType = fieldType;
@@ -136,17 +140,25 @@ public class BBoxStrategy extends SpatialStrategy {
 
   @Override
   public Field[] createIndexableFields(Shape shape) {
-    if (shape instanceof Rectangle)
-      return createIndexableFields((Rectangle)shape);
-    throw new UnsupportedOperationException("Can only index a Rectangle, not " + shape);
+    return createIndexableFields(shape.getBoundingBox());
   }
 
-  /** Field subclass circumventing Field limitations. This one instance can optionally index, store,
-   * or have DocValues.
+  public Field[] createIndexableFields(Rectangle bbox) {
+    Field[] fields = new Field[5];
+    fields[0] = new ComboField(field_minX, bbox.getMinX(), fieldType);
+    fields[1] = new ComboField(field_maxX, bbox.getMaxX(), fieldType);
+    fields[2] = new ComboField(field_minY, bbox.getMinY(), fieldType);
+    fields[3] = new ComboField(field_maxY, bbox.getMaxY(), fieldType);
+    fields[4] = new ComboField(field_xdl, bbox.getCrossesDateLine()?"T":"F", xdlFieldType);
+    return fields;
+  }
+
+  /** Field subclass circumventing Field limitations. This one instance can have any combination of indexed, stored,
+   * and docValues.
    */
   private static class ComboField extends Field {
     private ComboField(String name, Object value, FieldType type) {
-      super(name, type);//this expert constructor allows us to have a field that has docValues & indexed
+      super(name, type);//this expert constructor allows us to have a field that has docValues & indexed/stored
       super.fieldsData = value;
     }
 
@@ -163,16 +175,6 @@ public class BBoxStrategy extends SpatialStrategy {
         return Float.floatToIntBits(number.floatValue());
       return number.longValue();
     }
-  }
-
-  public Field[] createIndexableFields(Rectangle bbox) {
-    Field[] fields = new Field[5];
-    fields[0] = new ComboField(field_minX, bbox.getMinX(), fieldType);
-    fields[1] = new ComboField(field_maxX, bbox.getMaxX(), fieldType);
-    fields[2] = new ComboField(field_minY, bbox.getMinY(), fieldType);
-    fields[3] = new ComboField(field_maxY, bbox.getMaxY(), fieldType);
-    fields[4] = new ComboField(field_xdl, bbox.getCrossesDateLine()?"T":"F", xdlFieldType);
-    return fields;
   }
 
   //---------------------------------
