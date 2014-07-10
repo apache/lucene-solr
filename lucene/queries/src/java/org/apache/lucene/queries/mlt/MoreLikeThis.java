@@ -604,22 +604,19 @@ public final class MoreLikeThis {
   /**
    * Create the More like query from a PriorityQueue
    */
-  private Query createQuery(PriorityQueue<Object[]> q) {
+  private Query createQuery(PriorityQueue<ScoreTerm> q) {
     BooleanQuery query = new BooleanQuery();
-    Object cur;
-    int qterms = 0;
-    float bestScore = 0;
+    ScoreTerm scoreTerm;
+    float bestScore = -1;
 
-    while ((cur = q.pop()) != null) {
-      Object[] ar = (Object[]) cur;
-      TermQuery tq = new TermQuery(new Term((String) ar[1], (String) ar[0]));
+    while ((scoreTerm = q.pop()) != null) {
+      TermQuery tq = new TermQuery(new Term(scoreTerm.topField, scoreTerm.word));
 
       if (boost) {
-        if (qterms == 0) {
-          bestScore = ((Float) ar[2]);
+        if (bestScore == -1) {
+          bestScore = (scoreTerm.score);
         }
-        float myScore = ((Float) ar[2]);
-
+        float myScore = (scoreTerm.score);
         tq.setBoost(boostFactor * myScore / bestScore);
       }
 
@@ -629,13 +626,7 @@ public final class MoreLikeThis {
       catch (BooleanQuery.TooManyClauses ignore) {
         break;
       }
-
-      qterms++;
-      if (maxQueryTerms > 0 && qterms >= maxQueryTerms) {
-        break;
-      }
     }
-
     return query;
   }
 
@@ -644,10 +635,11 @@ public final class MoreLikeThis {
    *
    * @param words a map of words keyed on the word(String) with Int objects as the values.
    */
-  private PriorityQueue<Object[]> createQueue(Map<String, Int> words) throws IOException {
+  private PriorityQueue<ScoreTerm> createQueue(Map<String, Int> words) throws IOException {
     // have collected all words in doc and their freqs
     int numDocs = ir.numDocs();
-    FreqQ res = new FreqQ(words.size()); // will order words by score
+    final int limit = Math.min(maxQueryTerms, words.size());
+    FreqQ queue = new FreqQ(limit); // will order words by score
 
     for (String word : words.keySet()) { // for every word
       int tf = words.get(word).x; // term freq in the source doc
@@ -679,16 +671,18 @@ public final class MoreLikeThis {
       float idf = similarity.idf(docFreq, numDocs);
       float score = tf * idf;
 
-      // only really need 1st 3 entries, other ones are for troubleshooting
-      res.insertWithOverflow(new Object[]{word,                   // the word
-          topField,               // the top field
-          score,       // overall score
-          idf,         // idf
-          docFreq,   // freq in all docs
-          tf
-      });
+      if (queue.size() < limit) {
+        // there is still space in the queue
+        queue.add(new ScoreTerm(word, topField, score, idf, docFreq, tf));
+      } else {
+        ScoreTerm term = queue.top();
+        if (term.score < score) { // update the smallest in the queue in place and update the queue.
+          term.update(word, topField, score, idf, docFreq, tf);
+          queue.updateTop();
+        }
+      }
     }
-    return res;
+    return queue;
   }
 
   /**
@@ -717,7 +711,7 @@ public final class MoreLikeThis {
    *
    * @param docNum the id of the lucene document from which to find terms
    */
-  public PriorityQueue<Object[]> retrieveTerms(int docNum) throws IOException {
+  private PriorityQueue<ScoreTerm> retrieveTerms(int docNum) throws IOException {
     Map<String, Int> termFreqMap = new HashMap<>();
     for (String fieldName : fieldNames) {
       final Fields vectors = ir.getTermVectors(docNum);
@@ -857,7 +851,7 @@ public final class MoreLikeThis {
    * @return the most interesting words in the document ordered by score, with the highest scoring, or best entry, first
    * @see #retrieveInterestingTerms
    */
-  public PriorityQueue<Object[]> retrieveTerms(Reader r, String fieldName) throws IOException {
+  private PriorityQueue<ScoreTerm> retrieveTerms(Reader r, String fieldName) throws IOException {
     Map<String, Int> words = new HashMap<>();
     addTermFrequencies(r, words, fieldName);
     return createQueue(words);
@@ -868,13 +862,12 @@ public final class MoreLikeThis {
    */
   public String[] retrieveInterestingTerms(int docNum) throws IOException {
     ArrayList<Object> al = new ArrayList<>(maxQueryTerms);
-    PriorityQueue<Object[]> pq = retrieveTerms(docNum);
-    Object cur;
+    PriorityQueue<ScoreTerm> pq = retrieveTerms(docNum);
+    ScoreTerm scoreTerm;
     int lim = maxQueryTerms; // have to be careful, retrieveTerms returns all words but that's probably not useful to our caller...
     // we just want to return the top words
-    while (((cur = pq.pop()) != null) && lim-- > 0) {
-      Object[] ar = (Object[]) cur;
-      al.add(ar[0]); // the 1st entry is the interesting word
+    while (((scoreTerm = pq.pop()) != null) && lim-- > 0) {
+      al.add(scoreTerm.word); // the 1st entry is the interesting word
     }
     String[] res = new String[al.size()];
     return al.toArray(res);
@@ -892,13 +885,12 @@ public final class MoreLikeThis {
    */
   public String[] retrieveInterestingTerms(Reader r, String fieldName) throws IOException {
     ArrayList<Object> al = new ArrayList<>(maxQueryTerms);
-    PriorityQueue<Object[]> pq = retrieveTerms(r, fieldName);
-    Object cur;
+    PriorityQueue<ScoreTerm> pq = retrieveTerms(r, fieldName);
+    ScoreTerm scoreTerm;
     int lim = maxQueryTerms; // have to be careful, retrieveTerms returns all words but that's probably not useful to our caller...
     // we just want to return the top words
-    while (((cur = pq.pop()) != null) && lim-- > 0) {
-      Object[] ar = (Object[]) cur;
-      al.add(ar[0]); // the 1st entry is the interesting word
+    while (((scoreTerm = pq.pop()) != null) && lim-- > 0) {
+      al.add(scoreTerm.word); // the 1st entry is the interesting word
     }
     String[] res = new String[al.size()];
     return al.toArray(res);
@@ -907,16 +899,42 @@ public final class MoreLikeThis {
   /**
    * PriorityQueue that orders words by score.
    */
-  private static class FreqQ extends PriorityQueue<Object[]> {
-    FreqQ(int s) {
-      super(s);
+  private static class FreqQ extends PriorityQueue<ScoreTerm> {
+    FreqQ(int maxSize) {
+      super(maxSize);
     }
 
     @Override
-    protected boolean lessThan(Object[] aa, Object[] bb) {
-      Float fa = (Float) aa[2];
-      Float fb = (Float) bb[2];
-      return fa > fb;
+    protected boolean lessThan(ScoreTerm a, ScoreTerm b) {
+      return a.score < b.score;
+    }
+  }
+
+  private static class ScoreTerm {
+    // only really need 1st 3 entries, other ones are for troubleshooting
+    String word;
+    String topField;
+    float score;
+    float idf;
+    int docFreq;
+    int tf;
+
+    ScoreTerm(String word, String topField, float score, float idf, int docFreq, int tf) {
+      this.word = word;
+      this.topField = topField;
+      this.score = score;
+      this.idf = idf;
+      this.docFreq = docFreq;
+      this.tf = tf;
+    }
+
+    void update(String word, String topField, float score, float idf, int docFreq, int tf) {
+      this.word = word;
+      this.topField = topField;
+      this.score = score;
+      this.idf = idf;
+      this.docFreq = docFreq;
+      this.tf = tf;
     }
   }
 

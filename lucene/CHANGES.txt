@@ -143,6 +143,10 @@ Optimizations
   to another analyzer, e.g. per field name: PerFieldAnalyzerWrapper and
   Solr's schema support.  (Shay Banon, Uwe Schindler, Robert Muir)
 
+* LUCENE-5795: MoreLikeThisQuery now only collects the top N terms instead
+  of collecting all terms from the like text when building the query. 
+  (Alex Ksikes, Simon Willnauer)
+
 Bug Fixes
 
 * LUCENE-5796: Fixes the Scorer.getChildren() method for two combinations 
