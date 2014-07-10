@@ -24,6 +24,7 @@ import java.util.Set;
 
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.store.RAMDirectory;      // javadocs
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.IOUtils;
 
 // TODO
@@ -63,7 +64,7 @@ import org.apache.lucene.util.IOUtils;
  * @lucene.experimental
  */
 
-public class NRTCachingDirectory extends FilterDirectory {
+public class NRTCachingDirectory extends FilterDirectory implements Accountable {
 
   private final RAMDirectory cache = new RAMDirectory();
 
@@ -115,12 +116,6 @@ public class NRTCachingDirectory extends FilterDirectory {
       }
     }
     return files.toArray(new String[files.size()]);
-  }
-
-  /** Returns how many bytes are being used by the
-   *  RAMDirectory cache */
-  public long cacheRamBytesUsed()  {
-    return cache.ramBytesUsed();
   }
 
   @Override
@@ -260,5 +255,10 @@ public class NRTCachingDirectory extends FilterDirectory {
         cache.deleteFile(fileName);
       }
     }
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return cache.ramBytesUsed();
   }
 }
