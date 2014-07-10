@@ -249,12 +249,7 @@ public class MultiPhraseQuery extends Query {
       }
 
       if (slop == 0) {
-        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity.simScorer(stats, context));
-        if (s.noDocs) {
-          return null;
-        } else {
-          return s;
-        }
+        return new ExactPhraseScorer(this, postingsFreqs, similarity.simScorer(stats, context));
       } else {
         return new SloppyPhraseScorer(this, postingsFreqs, slop, similarity.simScorer(stats, context));
       }
@@ -472,7 +467,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
     }
   }
 
-  private int _doc;
+  private int _doc = -1;
   private int _freq;
   private DocsQueue _queue;
   private IntQueue _posList;
