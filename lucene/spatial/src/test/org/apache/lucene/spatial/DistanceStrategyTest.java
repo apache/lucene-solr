@@ -22,7 +22,6 @@ import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
-import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.spatial.bbox.BBoxStrategy;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
@@ -137,14 +136,6 @@ public class DistanceStrategyTest extends StrategyTestCase {
     Shape queryShape = ctx.makeCircle(2.01, 0.99, dist);
     checkValueSource(strategy.makeRecipDistanceValueSource(queryShape),
         new float[]{1.00f, 0.10f, 0f}, 0.09f);
-  }
-
-  @Override
-  protected Document newDoc(String id, Shape shape) {
-    //called by adoc().  Make compatible with BBoxStrategy.
-    if (shape != null && strategy instanceof BBoxStrategy)
-      shape = ctx.makeRectangle(shape.getCenter(), shape.getCenter());
-    return super.newDoc(id, shape);
   }
 
   void checkDistValueSource(Point pt, float... distances) throws IOException {
