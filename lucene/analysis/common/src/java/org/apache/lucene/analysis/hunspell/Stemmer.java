@@ -218,7 +218,7 @@ final class Stemmer {
       fst.getFirstArc(arc);
       IntsRef NO_OUTPUT = outputs.getNoOutput();
       IntsRef output = NO_OUTPUT;
-      for (int i = 0; i < length; i++) {
+      for (int i = 0; i < length-1; i++) {
         if (i > 0) {
           int ch = word[i-1];
           if (fst.findTargetArc(ch, arc, arc, bytesReader) == null) {
@@ -292,7 +292,7 @@ final class Stemmer {
       fst.getFirstArc(arc);
       IntsRef NO_OUTPUT = outputs.getNoOutput();
       IntsRef output = NO_OUTPUT;
-      for (int i = length; i >= 0; i--) {
+      for (int i = length; i > 0; i--) {
         if (i < length) {
           int ch = word[i];
           if (fst.findTargetArc(ch, arc, arc, bytesReader) == null) {

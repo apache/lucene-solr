@@ -1,0 +1,10 @@
+SET UTF-8
+
+SFX A Y 1
+SFX A   baz        yuck         baz
+
+SFX B Y 1
+SFX B   bar        foo    .
+
+SFX C Y 1
+SFX C   eer        tasty  .

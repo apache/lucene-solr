@@ -159,6 +159,9 @@ Bug Fixes
 * LUCENE-5817: Fix hunspell zero-affix handling: previously only zero-strips worked
   correctly.  (Robert Muir)
 
+* LUCENE-5818: Fix hunspell overgeneration for short strings that also match affixes.
+  (Robert Muir)
+
 Test Framework
 
 * LUCENE-5786: Unflushed/ truncated events file (hung testing subprocess).
