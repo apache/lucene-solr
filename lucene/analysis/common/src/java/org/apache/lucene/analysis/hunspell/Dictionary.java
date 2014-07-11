@@ -435,7 +435,7 @@ public class Dictionary {
       
       char flag = flagParsingStrategy.parseFlag(ruleArgs[1]);
       String strip = ruleArgs[2].equals("0") ? "" : ruleArgs[2];
-      String affixArg = ruleArgs[3];
+      String affixArg = ruleArgs[3].equals("0") ? "" : ruleArgs[3];
       char appendFlags[] = null;
       
       int flagSep = affixArg.lastIndexOf('/');
@@ -452,8 +452,6 @@ public class Dictionary {
         twoStageAffix = true;
       }
       
-      // TODO: add test and fix zero-affix handling!
-
       String condition = ruleArgs.length > 4 ? ruleArgs[4] : ".";
       // at least the gascon affix file has this issue
       if (condition.startsWith("[") && condition.indexOf(']') == -1) {
