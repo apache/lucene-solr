@@ -156,6 +156,9 @@ Bug Fixes
   incorrect results when grouping on fields with missing values. 
   (海老澤 志信, hossman)
 
+* LUCENE-5817: Fix hunspell zero-affix handling: previously only zero-strips worked
+  correctly.  (Robert Muir)
+
 Test Framework
 
 * LUCENE-5786: Unflushed/ truncated events file (hung testing subprocess).
