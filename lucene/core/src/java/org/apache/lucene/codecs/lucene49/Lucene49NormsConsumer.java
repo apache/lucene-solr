@@ -210,8 +210,8 @@ class Lucene49NormsConsumer extends DocValuesConsumer {
   // specialized deduplication of long->ord for norms: 99.99999% of the time this will be a single-byte range.
   static class NormMap {
     // we use short: at most we will add 257 values to this map before its rejected as too big above.
-    short[] singleByteRange = new short[256];
-    Map<Long,Short> other = new HashMap<Long,Short>();
+    final short[] singleByteRange = new short[256];
+    final Map<Long,Short> other = new HashMap<Long,Short>();
     int size;
     
     {
