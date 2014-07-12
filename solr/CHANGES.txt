@@ -168,6 +168,9 @@ Bug Fixes
 * SOLR-6229: Make SuggestComponent return 400 instead of 500 for bad dictionary selected in request.
   (Tomás Fernández Löbbe via shalin)
 
+* SOLR-6235: Leader initiated recovery should use coreNodeName instead of coreName to avoid marking
+  all replicas having common core name as down. (shalin)
+
 Optimizations
 ---------------------
 

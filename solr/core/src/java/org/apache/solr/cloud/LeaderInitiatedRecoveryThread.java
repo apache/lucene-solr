@@ -10,6 +10,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
@@ -92,6 +93,7 @@ public class LeaderInitiatedRecoveryThread extends Thread {
     String recoveryUrl = nodeProps.getBaseUrl();
     String replicaNodeName = nodeProps.getNodeName();
     String coreNeedingRecovery = nodeProps.getCoreName();
+    String replicaCoreNodeName = ((Replica) nodeProps.getNodeProps()).getName();
     String replicaUrl = nodeProps.getCoreUrl();
     
     log.info(getName()+" started running to send REQUESTRECOVERY command to "+replicaUrl+
@@ -103,10 +105,10 @@ public class LeaderInitiatedRecoveryThread extends Thread {
     
     while (continueTrying && ++tries < maxTries) {
       if (tries > 1) {
-        log.warn("Asking core "+coreNeedingRecovery+" on  " + recoveryUrl + 
-            " to recover; unsuccessful after "+tries+" of "+maxTries+" attempts so far ...");              
+        log.warn("Asking core={} coreNodeName={} on " + recoveryUrl +
+            " to recover; unsuccessful after "+tries+" of "+maxTries+" attempts so far ...", coreNeedingRecovery, replicaCoreNodeName);
       } else {
-        log.info("Asking core "+coreNeedingRecovery+" on  " + recoveryUrl + " to recover");              
+        log.info("Asking core={} coreNodeName={} on " + recoveryUrl + " to recover", coreNeedingRecovery, replicaCoreNodeName);
       }
       
       HttpSolrServer server = new HttpSolrServer(recoveryUrl);
@@ -116,8 +118,8 @@ public class LeaderInitiatedRecoveryThread extends Thread {
         try {
           server.request(recoverRequestCmd);
           
-          log.info("Successfully sent "+CoreAdminAction.REQUESTRECOVERY+
-              " command to core "+coreNeedingRecovery+" on "+recoveryUrl);
+          log.info("Successfully sent " + CoreAdminAction.REQUESTRECOVERY +
+              " command to core={} coreNodeName={} on " + recoveryUrl, coreNeedingRecovery, replicaCoreNodeName);
           
           continueTrying = false; // succeeded, so stop looping
         } catch (Throwable t) {
@@ -147,8 +149,8 @@ public class LeaderInitiatedRecoveryThread extends Thread {
         }
         
         if (coreContainer.isShutDown()) {
-          log.warn("Stop trying to send recovery command to downed replica "+coreNeedingRecovery+
-              " on "+replicaNodeName+" because my core container is shutdown.");
+          log.warn("Stop trying to send recovery command to downed replica core={} coreNodeName={} on "
+              + replicaNodeName + " because my core container is shutdown.", coreNeedingRecovery, replicaCoreNodeName);
           continueTrying = false;
           break;
         }
@@ -174,11 +176,11 @@ public class LeaderInitiatedRecoveryThread extends Thread {
           try {
             // call out to ZooKeeper to get the leader-initiated recovery state
             String lirState = 
-                zkController.getLeaderInitiatedRecoveryState(collection, shardId, coreNeedingRecovery);
+                zkController.getLeaderInitiatedRecoveryState(collection, shardId, replicaCoreNodeName);
             
             if (lirState == null) {
-              log.warn("Stop trying to send recovery command to downed replica "+coreNeedingRecovery+
-                  " on "+replicaNodeName+" because the znode no longer exists.");
+              log.warn("Stop trying to send recovery command to downed replica core="+coreNeedingRecovery+
+                  ",coreNodeName=" + replicaCoreNodeName + " on "+replicaNodeName+" because the znode no longer exists.");
               continueTrying = false;
               break;              
             }
@@ -202,8 +204,8 @@ public class LeaderInitiatedRecoveryThread extends Thread {
                   if (ZkStateReader.DOWN.equals(lirState)) {
                     // OK, so the replica thinks it is active, but it never ack'd the leader initiated recovery
                     // so its state cannot be trusted and it needs to be told to recover again ... and we keep looping here
-                    log.warn("Replica "+coreNeedingRecovery+" set to active but the leader thinks it should be in recovery;"
-                        + " forcing it back to down state to re-run the leader-initiated recovery process; props: "+replicaProps.get(0));
+                    log.warn("Replica core={} coreNodeName={} set to active but the leader thinks it should be in recovery;"
+                        + " forcing it back to down state to re-run the leader-initiated recovery process; props: "+replicaProps.get(0), coreNeedingRecovery, replicaCoreNodeName);
                     zkController.ensureReplicaInLeaderInitiatedRecovery(collection, 
                         shardId, replicaUrl, nodeProps, true); // force republish state to "down"
                   }
@@ -211,7 +213,7 @@ public class LeaderInitiatedRecoveryThread extends Thread {
               }                    
             }                  
           } catch (Exception ignoreMe) {
-            log.warn("Failed to determine state of "+coreNeedingRecovery+" due to: "+ignoreMe);
+            log.warn("Failed to determine state of core={} coreNodeName={} due to: "+ignoreMe, coreNeedingRecovery, replicaCoreNodeName);
             // eventually this loop will exhaust max tries and stop so we can just log this for now
           }                
         }

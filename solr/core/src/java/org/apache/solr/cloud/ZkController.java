@@ -988,7 +988,8 @@ public final class ZkController {
       }
       
       // see if the leader told us to recover
-      String lirState = getLeaderInitiatedRecoveryState(collection, shardId, coreName);
+      String lirState = getLeaderInitiatedRecoveryState(collection, shardId,
+          core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
       if (ZkStateReader.DOWN.equals(lirState)) {
         log.info("Leader marked core "+core.getName()+" down; starting recovery process");
         core.getUpdateHandler().getSolrCoreState().doRecovery(cc, core.getCoreDescriptor());
@@ -1041,12 +1042,12 @@ public final class ZkController {
     // If the leader initiated recovery, then verify that this replica has performed
     // recovery as requested before becoming active; don't even look at lirState if going down
     if (!ZkStateReader.DOWN.equals(state)) {
-      String lirState = getLeaderInitiatedRecoveryState(collection, shardId, cd.getName());
+      String lirState = getLeaderInitiatedRecoveryState(collection, shardId, coreNodeName);
       if (lirState != null) {
         if ("active".equals(state)) {
           // trying to become active, so leader-initiated state must be recovering
           if (ZkStateReader.RECOVERING.equals(lirState)) {
-            updateLeaderInitiatedRecoveryState(collection, shardId, cd.getName(), ZkStateReader.ACTIVE);
+            updateLeaderInitiatedRecoveryState(collection, shardId, coreNodeName, ZkStateReader.ACTIVE);
           } else if (ZkStateReader.DOWN.equals(lirState)) {
             throw new SolrException(ErrorCode.INVALID_STATE, 
                 "Cannot publish state of core '"+cd.getName()+"' as active without recovering first!");
@@ -1054,7 +1055,7 @@ public final class ZkController {
         } else if (ZkStateReader.RECOVERING.equals(state)) {
           // if it is currently DOWN, then trying to enter into recovering state is good
           if (ZkStateReader.DOWN.equals(lirState)) {
-            updateLeaderInitiatedRecoveryState(collection, shardId, cd.getName(), ZkStateReader.RECOVERING);
+            updateLeaderInitiatedRecoveryState(collection, shardId, coreNodeName, ZkStateReader.RECOVERING);
           }
         }
       }
@@ -1485,7 +1486,8 @@ public final class ZkController {
 
     String leaderBaseUrl = leaderProps.getBaseUrl();
     String leaderCoreName = leaderProps.getCoreName();
-    
+
+    String myCoreNodeName = cloudDesc.getCoreNodeName();
     String myCoreName = descriptor.getName();
     String ourUrl = ZkCoreNodeProps.getCoreUrl(getBaseUrl(), myCoreName);
     
@@ -1496,18 +1498,18 @@ public final class ZkController {
       // then we don't need the leader to wait on seeing the down state
       String lirState = null;
       try {
-        lirState = getLeaderInitiatedRecoveryState(collection, shard, myCoreName);
+        lirState = getLeaderInitiatedRecoveryState(collection, shard, myCoreNodeName);
       } catch (Exception exc) {
-        log.error("Failed to determine if replica "+myCoreName+
+        log.error("Failed to determine if replica "+myCoreNodeName+
             " is in leader-initiated recovery due to: "+exc, exc);
       }
       
       if (lirState != null) {
-        log.info("Replica "+myCoreName+
+        log.info("Replica "+myCoreNodeName+
             " is already in leader-initiated recovery, so not waiting for leader to see down state.");
       } else {
         
-        log.info("Replica "+myCoreName+
+        log.info("Replica "+myCoreNodeName+
             " NOT in leader-initiated recovery, need to wait for leader to see down state.");
             
         HttpSolrServer server = null;
@@ -1777,6 +1779,9 @@ public final class ZkController {
     // recovery signal once
     boolean nodeIsLive = true;
     boolean publishDownState = false;
+    String replicaNodeName = replicaCoreProps.getNodeName();
+    String replicaCoreNodeName = ((Replica)replicaCoreProps.getNodeProps()).getName();
+    assert replicaCoreNodeName != null : "No core name for replica "+replicaNodeName;
     synchronized (replicasInLeaderInitiatedRecovery) {
       if (replicasInLeaderInitiatedRecovery.containsKey(replicaUrl)) {     
         if (!forcePublishState) {
@@ -1784,26 +1789,22 @@ public final class ZkController {
           return false; // already in this recovery process
         }
       }
-      
-      // if the replica's state is not DOWN right now, make it so ...        
-      String replicaNodeName = replicaCoreProps.getNodeName();      
-      String replicaCoreName = replicaCoreProps.getCoreName();      
-      assert replicaCoreName != null : "No core name for replica "+replicaNodeName;
-      
+
+      // if the replica's state is not DOWN right now, make it so ...
       // we only really need to try to send the recovery command if the node itself is "live"
       if (getZkStateReader().getClusterState().liveNodesContain(replicaNodeName)) {
         replicasInLeaderInitiatedRecovery.put(replicaUrl, 
-            getLeaderInitiatedRecoveryZnodePath(collection, shardId, replicaCoreName));          
+            getLeaderInitiatedRecoveryZnodePath(collection, shardId, replicaCoreNodeName));
         // create a znode that requires the replica needs to "ack" to verify it knows it was out-of-sync
-        updateLeaderInitiatedRecoveryState(collection, shardId, replicaCoreName, ZkStateReader.DOWN);
-        log.info("Put replica "+replicaCoreName+" on "+
-          replicaNodeName+" into leader-initiated recovery.");
+        updateLeaderInitiatedRecoveryState(collection, shardId, replicaCoreNodeName, ZkStateReader.DOWN);
+        log.info("Put replica core={} coreNodeName={} on "+
+          replicaNodeName+" into leader-initiated recovery.", replicaCoreProps.getCoreName(), replicaCoreNodeName);
         publishDownState = true;        
       } else {
         nodeIsLive = false; // we really don't need to send the recovery request if the node is NOT live
-        log.info("Node "+replicaNodeName+
-          " is not live, so skipping leader-initiated recovery for replica: "+
-          replicaCoreName);
+        log.info("Node " + replicaNodeName +
+                " is not live, so skipping leader-initiated recovery for replica: core={} coreNodeName={}",
+            replicaCoreProps.getCoreName(), replicaCoreNodeName);
         // publishDownState will be false to avoid publishing the "down" state too many times
         // as many errors can occur together and will each call into this method (SOLR-6189)        
       }      
@@ -1818,8 +1819,8 @@ public final class ZkController {
           ZkStateReader.NODE_NAME_PROP, replicaCoreProps.getNodeName(),
           ZkStateReader.SHARD_ID_PROP, shardId,
           ZkStateReader.COLLECTION_PROP, collection);
-      log.warn("Leader is publishing core={} state={} on behalf of un-reachable replica {}; forcePublishState? "+forcePublishState,
-          replicaCoreName, ZkStateReader.DOWN, replicaUrl);
+      log.warn("Leader is publishing core={} coreNodeName ={} state={} on behalf of un-reachable replica {}; forcePublishState? "+forcePublishState,
+          replicaCoreName, replicaCoreNodeName, ZkStateReader.DOWN, replicaUrl);
       overseerJobQueue.offer(ZkStateReader.toJSON(m));      
     }
     
@@ -1840,12 +1841,12 @@ public final class ZkController {
     }
   }  
   
-  public String getLeaderInitiatedRecoveryState(String collection, String shardId, String coreName) {
+  public String getLeaderInitiatedRecoveryState(String collection, String shardId, String coreNodeName) {
     
-    if (collection == null || shardId == null || coreName == null)
+    if (collection == null || shardId == null || coreNodeName == null)
       return null; // if we don't have complete data about a core in cloud mode, return null
     
-    String znodePath = getLeaderInitiatedRecoveryZnodePath(collection, shardId, coreName);    
+    String znodePath = getLeaderInitiatedRecoveryZnodePath(collection, shardId, coreNodeName);
     String state = null;
     try {
       byte[] data = zkClient.getData(znodePath, null, new Stat(), false);
@@ -1875,14 +1876,14 @@ public final class ZkController {
     return state;
   }
   
-  private void updateLeaderInitiatedRecoveryState(String collection, String shardId, String coreName, String state) {
-    if (collection == null || shardId == null || coreName == null) {
+  private void updateLeaderInitiatedRecoveryState(String collection, String shardId, String coreNodeName, String state) {
+    if (collection == null || shardId == null || coreNodeName == null) {
       log.warn("Cannot set leader-initiated recovery state znode to "+state+" using: collection="+collection+
-          "; shardId="+shardId+"; coreName="+coreName);
+          "; shardId="+shardId+"; coreNodeName="+coreNodeName);
       return; // if we don't have complete data about a core in cloud mode, do nothing
     }
 
-    String znodePath = getLeaderInitiatedRecoveryZnodePath(collection, shardId, coreName);
+    String znodePath = getLeaderInitiatedRecoveryZnodePath(collection, shardId, coreNodeName);
     
     if (ZkStateReader.ACTIVE.equals(state)) {
       // since we're marking it active, we don't need this znode anymore, so delete instead of update
@@ -1923,7 +1924,7 @@ public final class ZkController {
     return "/collections/"+collection+"/leader_initiated_recovery/"+shardId;
   }  
   
-  public String getLeaderInitiatedRecoveryZnodePath(String collection, String shardId, String coreName) {
-    return getLeaderInitiatedRecoveryZnodePath(collection, shardId)+"/"+coreName;
+  public String getLeaderInitiatedRecoveryZnodePath(String collection, String shardId, String coreNodeName) {
+    return getLeaderInitiatedRecoveryZnodePath(collection, shardId)+"/"+coreNodeName;
   }
 }
