@@ -578,17 +578,17 @@ public class ZkStateReader {
   }
 
   public List<ZkCoreNodeProps> getReplicaProps(String collection,
-      String shardId, String thisCoreNodeName, String coreName) {
-    return getReplicaProps(collection, shardId, thisCoreNodeName, coreName, null);
+      String shardId, String thisCoreNodeName) {
+    return getReplicaProps(collection, shardId, thisCoreNodeName);
   }
   
   public List<ZkCoreNodeProps> getReplicaProps(String collection,
-      String shardId, String thisCoreNodeName, String coreName, String mustMatchStateFilter) {
-    return getReplicaProps(collection, shardId, thisCoreNodeName, coreName, mustMatchStateFilter, null);
+      String shardId, String thisCoreNodeName, String mustMatchStateFilter) {
+    return getReplicaProps(collection, shardId, thisCoreNodeName, mustMatchStateFilter, null);
   }
   
   public List<ZkCoreNodeProps> getReplicaProps(String collection,
-      String shardId, String thisCoreNodeName, String coreName, String mustMatchStateFilter, String mustNotMatchStateFilter) {
+      String shardId, String thisCoreNodeName, String mustMatchStateFilter, String mustNotMatchStateFilter) {
     assert thisCoreNodeName != null;
     ClusterState clusterState = this.clusterState;
     if (clusterState == null) {

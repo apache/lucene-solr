@@ -195,7 +195,7 @@ public class LeaderInitiatedRecoveryThread extends Thread {
             } else {
               String leaderCoreNodeName = zkStateReader.getLeaderRetry(collection, shardId, 5000).getName();
               List<ZkCoreNodeProps> replicaProps = 
-                  zkStateReader.getReplicaProps(collection, shardId, leaderCoreNodeName, coreNeedingRecovery, null, null);
+                  zkStateReader.getReplicaProps(collection, shardId, leaderCoreNodeName);
               if (replicaProps != null && replicaProps.size() > 0) {
                 String replicaState = replicaProps.get(0).getState();
                 if (ZkStateReader.ACTIVE.equals(replicaState)) {

@@ -201,6 +201,8 @@ Other Changes
 
 * SOLR-2853: Add a unit test for the case when "spellcheck.maxCollationTries=0" (James Dyer)
 
+* SOLR-6240: Removed unused coreName parameter in ZkStateReader.getReplicaProps. (shalin)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
