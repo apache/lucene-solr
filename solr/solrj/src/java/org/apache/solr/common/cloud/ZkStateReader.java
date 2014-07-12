@@ -557,7 +557,7 @@ public class ZkStateReader {
 
   public List<ZkCoreNodeProps> getReplicaProps(String collection,
       String shardId, String thisCoreNodeName) {
-    return getReplicaProps(collection, shardId, thisCoreNodeName);
+    return getReplicaProps(collection, shardId, thisCoreNodeName, null);
   }
   
   public List<ZkCoreNodeProps> getReplicaProps(String collection,
