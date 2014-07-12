@@ -357,7 +357,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
             log.info("After core={} coreNodeName={} was elected leader, it was found in state: "
                 + lirState + " and needing recovery.", coreName, coreNodeName);
             List<ZkCoreNodeProps> replicaProps = 
-                zkController.getZkStateReader().getReplicaProps(collection, shardId, coreNodeName, null);
+                zkController.getZkStateReader().getReplicaProps(collection, shardId, coreNodeName);
             
             if (replicaProps != null && replicaProps.size() > 0) {                
               ZkCoreNodeProps coreNodeProps = null;

@@ -623,8 +623,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
       forwardToLeader = false;
       List<ZkCoreNodeProps> replicaProps = zkController.getZkStateReader()
-          .getReplicaProps(collection, shardId, leaderReplica.getName(),
-              req.getCore().getName());
+          .getReplicaProps(collection, shardId, leaderReplica.getName());
       if (replicaProps != null) {
         nodes = new ArrayList<>(replicaProps.size());
         for (ZkCoreNodeProps props : replicaProps) {
