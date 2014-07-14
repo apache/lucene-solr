@@ -90,7 +90,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * @lucene.experimental
  */
 
-final class VersionBlockTreeTermsWriter extends FieldsConsumer {
+public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
 
   // private static boolean DEBUG = IDVersionSegmentTermsEnum.DEBUG;
 

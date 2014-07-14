@@ -44,7 +44,7 @@ import org.apache.lucene.util.fst.PairOutputs.Pair;
  * @lucene.experimental
  */
 
-final class VersionBlockTreeTermsReader extends FieldsProducer {
+public final class VersionBlockTreeTermsReader extends FieldsProducer {
 
   // Open input to the main terms dict file (_X.tiv)
   final IndexInput in;
