@@ -207,6 +207,8 @@ Other Changes
 
 * SOLR-6241: Harden the HttpPartitionTest. (shalin)
 
+* SOLR-6228: Fixed bug in TestReplicationHandler.doTestIndexAndConfigReplication. (shalin)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
