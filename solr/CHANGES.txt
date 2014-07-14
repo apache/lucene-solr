@@ -171,6 +171,8 @@ Bug Fixes
 * SOLR-6235: Leader initiated recovery should use coreNodeName instead of coreName to avoid marking
   all replicas having common core name as down. (shalin)
 
+* SOLR-6208: JettySolrRunner QueuedThreadPool's configuration code is never executed. (dweiss via shalin)
+
 Optimizations
 ---------------------
 
