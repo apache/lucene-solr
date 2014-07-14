@@ -117,7 +117,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
     } catch (NullPointerException e) {
       // okay
     }
-    log.warn("Stopping recovery for zkNodeName=" + coreZkNodeName + "core=" + coreName);
+    log.warn("Stopping recovery for core={} coreNodeName={}", coreName, coreZkNodeName);
   }
 
   
