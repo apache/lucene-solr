@@ -25,12 +25,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
@@ -215,6 +217,16 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     
     // verify all docs received
     assertDocsExistInAllReplicas(notLeaders, testCollectionName, 1, numDocs + 3);
+
+    // try to clean up
+    try {
+      CollectionAdminRequest req = new CollectionAdminRequest.Delete();
+      req.setCollectionName(testCollectionName);
+      req.process(cloudClient);
+    } catch (Exception e) {
+      // don't fail the test
+      log.warn("Could not delete collection {} after test completed", testCollectionName);
+    }
   }
   
   protected void testRf3() throws Exception {
@@ -260,7 +272,16 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     
     sendDoc(4);
     
-    assertDocsExistInAllReplicas(notLeaders, testCollectionName, 1, 4);    
+    assertDocsExistInAllReplicas(notLeaders, testCollectionName, 1, 4);
+    // try to clean up
+    try {
+      CollectionAdminRequest req = new CollectionAdminRequest.Delete();
+      req.setCollectionName(testCollectionName);
+      req.process(cloudClient);
+    } catch (Exception e) {
+      // don't fail the test
+      log.warn("Could not delete collection {} after test completed", testCollectionName);
+    }
   }
   
   protected void testRf3WithLeaderFailover() throws Exception {
@@ -359,17 +380,22 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     
     proxy0.reopen();
     
-    Thread.sleep(10000L);
-    
-    cloudClient.getZkStateReader().updateClusterState(true);
-    
+    long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
+    while (System.nanoTime() < timeout) {
+      cloudClient.getZkStateReader().updateClusterState(true);
+
+      List<Replica> activeReps = getActiveOrRecoveringReplicas(testCollectionName, "shard1");
+      if (activeReps.size() == 2) break;
+      Thread.sleep(1000);
+    }
+
     List<Replica> activeReps = getActiveOrRecoveringReplicas(testCollectionName, "shard1");
     assertTrue("Expected 2 of 3 replicas to be active but only found "+
-      activeReps.size()+"; "+activeReps+"; clusterState: "+printClusterStateInfo(), 
-      activeReps.size() == 2);
-        
+            activeReps.size()+"; "+activeReps+"; clusterState: "+printClusterStateInfo(),
+        activeReps.size() == 2);
+
     sendDoc(6);
-    
+
     assertDocsExistInAllReplicas(activeReps, testCollectionName, 1, 6);
   }
     
@@ -377,7 +403,6 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     Map<String,Replica> activeReplicas = new HashMap<String,Replica>();    
     ZkStateReader zkr = cloudClient.getZkStateReader();
     ClusterState cs = zkr.getClusterState();
-    cs = zkr.getClusterState();
     assertNotNull(cs);
     for (Slice shard : cs.getActiveSlices(testCollectionName)) {
       if (shard.getName().equals(shardId)) {

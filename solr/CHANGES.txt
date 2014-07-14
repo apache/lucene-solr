@@ -203,6 +203,8 @@ Other Changes
 
 * SOLR-6240: Removed unused coreName parameter in ZkStateReader.getReplicaProps. (shalin)
 
+* SOLR-6241: Harden the HttpPartitionTest. (shalin)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
