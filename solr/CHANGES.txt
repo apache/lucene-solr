@@ -209,6 +209,10 @@ Other Changes
 
 * SOLR-6228: Fixed bug in TestReplicationHandler.doTestIndexAndConfigReplication. (shalin)
 
+* SOLR-6120: On Windows, when the war is not extracted, the zkcli.bat script
+  will print a helpful message indicating that the war must be unzipped instead
+  of a java error about a missing class.
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
