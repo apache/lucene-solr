@@ -211,7 +211,7 @@ Other Changes
 
 * SOLR-6120: On Windows, when the war is not extracted, the zkcli.bat script
   will print a helpful message indicating that the war must be unzipped instead
-  of a java error about a missing class.
+  of a java error about a missing class. (shalin, Shawn Heisey)
 
 ==================  4.9.0 ==================
 
