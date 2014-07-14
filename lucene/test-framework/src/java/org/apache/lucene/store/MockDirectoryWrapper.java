@@ -192,6 +192,9 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   private boolean mustSync() {
     Directory delegate = in;
     while (delegate instanceof FilterDirectory) {
+      if (delegate instanceof NRTCachingDirectory) {
+        return true;
+      }
       delegate = ((FilterDirectory) delegate).getDelegate();
     }
     return delegate instanceof NRTCachingDirectory;
