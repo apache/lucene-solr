@@ -354,8 +354,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           
           String lirState = zkController.getLeaderInitiatedRecoveryState(coll, shardId, replicaCoreNodeName);
           if (ZkStateReader.DOWN.equals(lirState) || ZkStateReader.RECOVERY_FAILED.equals(lirState)) {
-            log.info("After core={} coreNodeName={} was elected leader, it was found in state: "
-                + lirState + " and needing recovery.", coreName, coreNodeName);
+            log.info("After core={} coreNodeName={} was elected leader, a replica coreNodeName={} was found in state: "
+                + lirState + " and needing recovery.", coreName, coreNodeName, replicaCoreNodeName);
             List<ZkCoreNodeProps> replicaProps = 
                 zkController.getZkStateReader().getReplicaProps(collection, shardId, coreNodeName);
             
