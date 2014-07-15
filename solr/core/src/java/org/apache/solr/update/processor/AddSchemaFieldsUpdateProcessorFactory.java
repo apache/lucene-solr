@@ -22,6 +22,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
@@ -127,13 +128,8 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
   private List<TypeMapping> typeMappings = Collections.emptyList();
   private SelectorParams inclusions = new SelectorParams();
   private Collection<SelectorParams> exclusions = new ArrayList<>();
-  private FieldNameSelector selector = null;
+  private SolrResourceLoader solrResourceLoader = null;
   private String defaultFieldType;
-
-  protected final FieldMutatingUpdateProcessor.FieldNameSelector getSelector() {
-    if (null != selector) return selector;
-    throw new SolrException(SERVER_ERROR, "selector was never initialized, inform(SolrCore) never called???");
-  }
 
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, 
@@ -168,26 +164,11 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
 
   @Override
   public void inform(SolrCore core) {
-    selector = FieldMutatingUpdateProcessor.createFieldNameSelector
-        (core.getResourceLoader(), core, inclusions, getDefaultSelector(core));
-
-    for (SelectorParams exc : exclusions) {
-      selector = FieldMutatingUpdateProcessor.wrap(selector, FieldMutatingUpdateProcessor.createFieldNameSelector
-          (core.getResourceLoader(), core, exc, FieldMutatingUpdateProcessor.SELECT_NO_FIELDS));
-    }
+    solrResourceLoader = core.getResourceLoader();
 
     for (TypeMapping typeMapping : typeMappings) {
       typeMapping.populateValueClasses(core);
     }
-  }
-
-  private FieldNameSelector getDefaultSelector(final SolrCore core) {
-    return new FieldNameSelector() {
-      @Override
-      public boolean shouldMutate(final String fieldName) {
-        return null == core.getLatestSchema().getFieldTypeNoEx(fieldName);
-      }
-    };
   }
 
   private static List<TypeMapping> parseTypeMappings(NamedList args) {
@@ -281,17 +262,23 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
     
     @Override
     public void processAdd(AddUpdateCommand cmd) throws IOException {
-      if ( ! cmd.getReq().getCore().getLatestSchema().isMutable()) {
+      if ( ! cmd.getReq().getSchema().isMutable()) {
         final String message = "This IndexSchema is not mutable.";
         throw new SolrException(BAD_REQUEST, message);
       }
       final SolrInputDocument doc = cmd.getSolrInputDocument();
       final SolrCore core = cmd.getReq().getCore();
+      // use the cmd's schema rather than the latest, because the schema
+      // can be updated during processing.  Using the cmd's schema guarantees
+      // this will be detected and the cmd's schema updated.
+      IndexSchema oldSchema = cmd.getReq().getSchema();
       for (;;) {
-        final IndexSchema oldSchema = core.getLatestSchema();
         List<SchemaField> newFields = new ArrayList<>();
+        // build a selector each time through the loop b/c the schema we are
+        // processing may have changed
+        FieldNameSelector selector = buildSelector(oldSchema);
         for (final String fieldName : doc.getFieldNames()) {
-          if (selector.shouldMutate(fieldName)) { // returns false if the field already exists in the latest schema
+          if (selector.shouldMutate(fieldName)) { // returns false if the field already exists in the current schema
             String fieldTypeName = mapValueClassesToFieldType(doc.getField(fieldName));
             newFields.add(oldSchema.newField(fieldName, fieldTypeName, Collections.<String,Object>emptyMap()));
           }
@@ -314,28 +301,32 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
           builder.append("]");
           log.debug(builder.toString());
         }
-        try {
-          synchronized (oldSchema.getSchemaUpdateLock()) {
+        // Need to hold the lock during the entire attempt to ensure that
+        // the schema on the request is the latest
+        synchronized (oldSchema.getSchemaUpdateLock()) {
+          try {
             IndexSchema newSchema = oldSchema.addFields(newFields);
             if (null != newSchema) {
-              cmd.getReq().getCore().setLatestSchema(newSchema);
+              core.setLatestSchema(newSchema);
               cmd.getReq().updateSchemaToLatest();
               log.debug("Successfully added field(s) to the schema.");
               break; // success - exit from the retry loop
             } else {
               throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to add fields.");
             }
+          } catch (ManagedIndexSchema.FieldExistsException e) {
+            log.error("At least one field to be added already exists in the schema - retrying.");
+            oldSchema = core.getLatestSchema();
+            cmd.getReq().updateSchemaToLatest();
+          } catch (ManagedIndexSchema.SchemaChangedInZkException e) {
+            log.debug("Schema changed while processing request - retrying.");
+            oldSchema = core.getLatestSchema();
+            cmd.getReq().updateSchemaToLatest();
           }
-        } catch(ManagedIndexSchema.FieldExistsException e) {
-          log.debug("At least one field to be added already exists in the schema - retrying.");
-          // No action: at least one field to be added already exists in the schema, so retry 
-          // We should never get here, since selector.shouldMutate(field) will exclude already existing fields
-        } catch(ManagedIndexSchema.SchemaChangedInZkException e) {
-          log.debug("Schema changed while processing request - retrying.");
         }
       }
       super.processAdd(cmd);
-    }                          
+    }
 
     private String mapValueClassesToFieldType(SolrInputField field) {
       NEXT_TYPE_MAPPING: for (TypeMapping typeMapping : typeMappings) {
@@ -353,6 +344,26 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
       }
       // At least one of this field's values is not an instance of any configured fieldType's valueClass-s
       return defaultFieldType;
+    }
+
+    private FieldNameSelector getDefaultSelector(final IndexSchema schema) {
+      return new FieldNameSelector() {
+        @Override
+        public boolean shouldMutate(final String fieldName) {
+          return null == schema.getFieldTypeNoEx(fieldName);
+        }
+      };
+    }
+
+    private FieldNameSelector buildSelector(IndexSchema schema) {
+      FieldNameSelector selector = FieldMutatingUpdateProcessor.createFieldNameSelector
+        (solrResourceLoader, schema, inclusions, getDefaultSelector(schema));
+
+      for (SelectorParams exc : exclusions) {
+        selector = FieldMutatingUpdateProcessor.wrap(selector, FieldMutatingUpdateProcessor.createFieldNameSelector
+          (solrResourceLoader, schema, exc, FieldMutatingUpdateProcessor.SELECT_NO_FIELDS));
+      }
+      return selector;
     }
   }
 }

@@ -32,7 +32,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.schema.FieldType;
-
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.AddUpdateCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -184,8 +184,8 @@ public abstract class FieldMutatingUpdateProcessor
 
   /**
    * Utility method that can be used to define a FieldNameSelector
-   * using the same types of rules as the FieldMutatingUpdateProcessor init 
-   * code.  This may be useful for Factories that wish to define default 
+   * using the same types of rules as the FieldMutatingUpdateProcessor init
+   * code.  This may be useful for Factories that wish to define default
    * selectors in similar terms to what the configuration would look like.
    * @lucene.internal
    */
@@ -198,23 +198,52 @@ public abstract class FieldMutatingUpdateProcessor
     if (params.noSelectorsSpecified()) {
       return defSelector;
     }
-    
-    return new ConfigurableFieldNameSelector(loader, core, params); 
+
+    final ConfigurableFieldNameSelectorHelper helper =
+      new ConfigurableFieldNameSelectorHelper(loader, params);
+    return new FieldNameSelector() {
+      @Override
+      public boolean shouldMutate(String fieldName) {
+        return helper.shouldMutateBasedOnSchema(fieldName, core.getLatestSchema());
+      }
+    };
+  }
+
+  /**
+   * Utility method that can be used to define a FieldNameSelector
+   * using the same types of rules as the FieldMutatingUpdateProcessor init 
+   * code.  This may be useful for Factories that wish to define default 
+   * selectors in similar terms to what the configuration would look like.
+   * Uses {@code schema} for checking field existence.
+   * @lucene.internal
+   */
+  public static FieldNameSelector createFieldNameSelector
+    (final SolrResourceLoader loader,
+     final IndexSchema schema,
+     final SelectorParams params,
+     final FieldNameSelector defSelector) {
+
+    if (params.noSelectorsSpecified()) {
+      return defSelector;
+    }
+
+    final ConfigurableFieldNameSelectorHelper helper =
+      new ConfigurableFieldNameSelectorHelper(loader, params);
+    return new FieldNameSelector() {
+      @Override
+      public boolean shouldMutate(String fieldName) {
+        return helper.shouldMutateBasedOnSchema(fieldName, schema);
+      }
+    };
   }
   
-  
-  
-  private static final class ConfigurableFieldNameSelector 
-    implements FieldNameSelector {
+  private static final class ConfigurableFieldNameSelectorHelper {
 
-    final SolrCore core;
     final SelectorParams params;
     final Collection<Class> classes;
 
-    private ConfigurableFieldNameSelector(final SolrResourceLoader loader,
-                                          final SolrCore core,
+    private ConfigurableFieldNameSelectorHelper(final SolrResourceLoader loader,
                                           final SelectorParams params) {
-      this.core = core;
       this.params = params;
 
       final Collection<Class> classes = new ArrayList<>(params.typeClass.size());
@@ -229,9 +258,7 @@ public abstract class FieldMutatingUpdateProcessor
       this.classes = classes;
     }
 
-    @Override
-    public boolean shouldMutate(final String fieldName) {
-      
+    public boolean shouldMutateBasedOnSchema(final String fieldName, IndexSchema schema) {
       // order of checks is based on what should be quicker
       // (ie: set lookups faster the looping over instanceOf / matches tests
       
@@ -241,7 +268,7 @@ public abstract class FieldMutatingUpdateProcessor
       
       // do not consider it an error if the fieldName has no type
       // there might be another processor dealing with it later
-      FieldType t =  core.getLatestSchema().getFieldTypeNoEx(fieldName);
+      FieldType t =  schema.getFieldTypeNoEx(fieldName);
       final boolean fieldExists = (null != t);
 
       if ( (null != params.fieldNameMatchesSchemaField) &&

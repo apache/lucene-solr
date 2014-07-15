@@ -175,6 +175,14 @@ Bug Fixes
 
 * SOLR-6245: Socket and Connection configuration are ignored in HttpSolrServer when passing in HttpClient.
   (Patanachai Tangchaisin, shalin)
+  
+* SOLR-6137: Schemaless concurrency improvements:
+  - Fixed an NPE when reloading a managed schema with no dynamic copy fields
+  - Moved parsing and schema fields addition to after the distributed phase
+  - AddSchemaFieldsUpdateProcessor now uses a fixed schema rather than always
+    retrieving the latest, and holds the schema update lock through the entire
+    schema swap-out process
+  (Gregory Chanan via Steve Rowe)
 
 Optimizations
 ---------------------

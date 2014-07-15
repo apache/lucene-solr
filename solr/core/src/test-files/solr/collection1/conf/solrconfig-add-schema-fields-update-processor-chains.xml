@@ -66,6 +66,8 @@
   </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="add-fields">
+    <processor class="solr.LogUpdateProcessorFactory" />
+    <processor class="solr.DistributedUpdateProcessorFactory" />
     <processor class="solr.AddSchemaFieldsUpdateProcessorFactory">
       <str name="defaultFieldType">text</str>
       <lst name="typeMapping">
@@ -98,6 +100,8 @@
   </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="parse-and-add-fields">
+    <processor class="solr.LogUpdateProcessorFactory" />
+    <processor class="solr.DistributedUpdateProcessorFactory" />
     <processor class="solr.ParseBooleanFieldUpdateProcessorFactory"/>
     <processor class="solr.ParseLongFieldUpdateProcessorFactory"/>
     <processor class="solr.ParseDoubleFieldUpdateProcessorFactory"/>
