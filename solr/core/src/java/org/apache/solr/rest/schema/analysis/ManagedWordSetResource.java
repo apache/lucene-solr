@@ -16,9 +16,11 @@ package org.apache.solr.rest.schema.analysis;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -104,6 +106,8 @@ public class ManagedWordSetResource extends ManagedResource
       } else {
         managedWords.addAll(wordList);        
       }
+    } else {
+      storeManagedData(new ArrayList<String>(0)); // stores an empty word set      
     }
     
     log.info("Loaded "+managedWords.size()+" words for "+getResourceId());      

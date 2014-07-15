@@ -116,7 +116,23 @@ public abstract class ManagedResourceStorage {
     if (storageIO instanceof FileStorageIO) {
       // using local fs, if storageDir is not set in the solrconfig.xml, assume the configDir for the core
       if (initArgs.get(STORAGE_DIR_INIT_ARG) == null) {
-        initArgs.add(STORAGE_DIR_INIT_ARG, resourceLoader.getConfigDir());      
+        File configDir = new File(resourceLoader.getConfigDir());
+        boolean hasAccess = false;
+        try {
+          hasAccess = configDir.isDirectory() && configDir.canWrite();
+        } catch (java.security.AccessControlException ace) {}
+        
+        if (hasAccess) {
+          initArgs.add(STORAGE_DIR_INIT_ARG, configDir.getAbsolutePath());
+        } else {
+          // most likely this is because of a unit test 
+          // that doesn't have write-access to the config dir
+          // while this failover approach is not ideal, it's better
+          // than causing the core to fail esp. if managed resources aren't being used
+          log.warn("Cannot write to config directory "+configDir.getAbsolutePath()+
+              "; switching to use InMemory storage instead.");
+          storageIO = new ManagedResourceStorage.InMemoryStorageIO();
+        }
       }       
     }
     
@@ -134,10 +150,11 @@ public abstract class ManagedResourceStorage {
     
     @Override
     public void configure(SolrResourceLoader loader, NamedList<String> initArgs) throws SolrException {
-      String storageDirArg = initArgs.get("storageDir");
+      String storageDirArg = initArgs.get(STORAGE_DIR_INIT_ARG);
       
       if (storageDirArg == null || storageDirArg.trim().length() == 0)
-        throw new IllegalArgumentException("Required configuration parameter 'storageDir' not provided!");
+        throw new IllegalArgumentException("Required configuration parameter '"+
+           STORAGE_DIR_INIT_ARG+"' not provided!");
       
       File dir = new File(storageDirArg);
       if (!dir.isDirectory())

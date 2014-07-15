@@ -16,6 +16,7 @@ package org.apache.solr.rest;
  * limitations under the License.
  */
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Set;
@@ -221,5 +222,30 @@ public class TestRestManager extends SolrRestletTestBase {
 
     // make sure it's really gone
     assertJQ("/config/managed", "/managedResources==[]");
+  }
+  
+  @Test
+  public void testReloadFromPersistentStorage() throws Exception {
+    SolrResourceLoader loader = new SolrResourceLoader("./");
+    File unitTestStorageDir = createTempDir("testRestManager");
+    assertTrue(unitTestStorageDir.getAbsolutePath()+" is not a directory!", 
+        unitTestStorageDir.isDirectory());    
+    assertTrue(unitTestStorageDir.canRead());
+    assertTrue(unitTestStorageDir.canWrite());
+
+    NamedList<String> ioInitArgs = new NamedList<>();
+    ioInitArgs.add(ManagedResourceStorage.STORAGE_DIR_INIT_ARG, 
+        unitTestStorageDir.getAbsolutePath());
+    
+    StorageIO storageIO = new ManagedResourceStorage.FileStorageIO();
+    storageIO.configure(loader, ioInitArgs);
+    
+    NamedList<String> initArgs = new NamedList<>();
+    RestManager restManager = new RestManager();
+    restManager.init(loader, initArgs, storageIO);
+    
+    // verifies a RestManager can be reloaded from a previous RestManager's data
+    RestManager restManager2 = new RestManager();
+    restManager2.init(loader, initArgs, storageIO);    
   }
 }

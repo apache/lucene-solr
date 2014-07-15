@@ -82,6 +82,7 @@ public abstract class ManagedResource {
    */
   public void loadManagedDataAndNotify(List<ManagedResourceObserver> observers) 
       throws SolrException {
+
     // load managed data from storage
     reloadFromStorage();
     
@@ -89,7 +90,7 @@ public abstract class ManagedResource {
     // also, as most analysis components will alter the initArgs it is processes them
     // we need to clone the managed initArgs
     notifyObserversDuringInit(managedInitArgs, observers);
-
+    
     // some basic date tracking around when the data was initialized and updated
     initializedOn = new Date();
     lastUpdateSinceInitialization = null;    
@@ -105,10 +106,8 @@ public abstract class ManagedResource {
   protected void notifyObserversDuringInit(NamedList<?> args, List<ManagedResourceObserver> observers)
       throws SolrException {
 
-    if (observers == null || observers.isEmpty()) {
-      log.warn("No registered observers for {}", getResourceId());
+    if (observers == null || observers.isEmpty())
       return;
-    }
     
     for (ManagedResourceObserver observer : observers) {
       // clone the args for each observer as some components
@@ -163,7 +162,7 @@ public abstract class ManagedResource {
       return false;
     }
     boolean madeChanges = false;
-    if ( ! managedInitArgs.equals(updatedArgs)) {
+    if (!managedInitArgs.equals(updatedArgs)) {
       managedInitArgs = (NamedList<Object>)updatedArgs.clone();
       madeChanges = true;
     }
@@ -251,14 +250,17 @@ public abstract class ManagedResource {
     } catch (Throwable storeErr) {
       
       // store failed, so try to reset the state of this object by reloading
-      // from storage and then failing the store request
-      try {
-        reloadFromStorage();
-      } catch (Exception reloadExc) {
-        // note: the data we're managing now remains in a dubious state
-        // however the text analysis component remains unaffected 
-        // (at least until core reload)
-        log.error("Failed to load stop words from storage due to: "+reloadExc);
+      // from storage and then failing the store request, but only do that
+      // if we've successfully initialized before
+      if (initializedOn != null) {
+        try {
+          reloadFromStorage();
+        } catch (Exception reloadExc) {
+          // note: the data we're managing now remains in a dubious state
+          // however the text analysis component remains unaffected 
+          // (at least until core reload)
+          log.error("Failed to load stop words from storage due to: "+reloadExc);
+        }
       }
       
       String errMsg = String.format(Locale.ROOT,
@@ -273,6 +275,9 @@ public abstract class ManagedResource {
    * Returns this resource's initialization timestamp.
    */
   public String getInitializedOn() {
+    if (initializedOn == null)
+      return null;
+    
     StringBuilder dateBuf = new StringBuilder();
     try {
       DateUtil.formatDate(initializedOn, null, dateBuf);
@@ -315,7 +320,10 @@ public abstract class ManagedResource {
     toStore.put(INIT_ARGS_JSON_FIELD, convertNamedListToMap(managedInitArgs));
     
     // report important dates when data was init'd / updated
-    toStore.put(INITIALIZED_ON_JSON_FIELD, getInitializedOn());
+    String initializedOnStr = getInitializedOn();
+    if (initializedOnStr != null) {
+      toStore.put(INITIALIZED_ON_JSON_FIELD, initializedOnStr);
+    }
     
     // if the managed data has been updated since initialization (ie. it's dirty)
     // return that in the response as well ... which gives a good hint that the

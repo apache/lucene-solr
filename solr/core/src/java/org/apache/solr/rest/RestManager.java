@@ -452,7 +452,11 @@ public class RestManager {
         throws SolrException {
       
       if (managedData == null) {
-        return; // this is OK, just means there are no stored registrations
+        // this is OK, just means there are no stored registrations
+        // storing an empty list is safe and avoid future warnings about
+        // the data not existing
+        storeManagedData(new ArrayList<Map<String,String>>(0));
+        return;
       }
       
       List<Object> managedList = (List<Object>)managedData;
