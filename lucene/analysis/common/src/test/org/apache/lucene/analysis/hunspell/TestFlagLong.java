@@ -29,5 +29,6 @@ public class TestFlagLong extends StemmerTestBase {
     assertStemsTo("foo", "foo");
     assertStemsTo("foos", "foo");
     assertStemsTo("fooss");
+    assertStemsTo("foobogus");
   }
 }
