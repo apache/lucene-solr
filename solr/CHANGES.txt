@@ -233,6 +233,9 @@ Other Changes
   will print a helpful message indicating that the war must be unzipped instead
   of a java error about a missing class. (shalin, Shawn Heisey)
 
+* SOLR-6179: Better strategy for handling empty managed data to avoid spurious
+  warning messages in the logs. (Timothy Potter) 
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
