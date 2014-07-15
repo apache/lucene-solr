@@ -84,6 +84,7 @@ public class Dictionary {
   private static final String IGNORE_KEY = "IGNORE";
   private static final String ICONV_KEY = "ICONV";
   private static final String OCONV_KEY = "OCONV";
+  private static final String FULLSTRIP_KEY = "FULLSTRIP";
 
   private static final String NUM_FLAG_TYPE = "num";
   private static final String UTF8_FLAG_TYPE = "UTF-8";
@@ -149,6 +150,9 @@ public class Dictionary {
   
   boolean needsInputCleaning;
   boolean needsOutputCleaning;
+  
+  // true if we can strip suffixes "down to nothing"
+  boolean fullStrip;
   
   /**
    * Creates a new Dictionary containing the information read from the provided InputStreams to hunspell affix
@@ -334,6 +338,8 @@ public class Dictionary {
           oconv = res;
           needsOutputCleaning |= oconv != null;
         }
+      } else if (line.startsWith(FULLSTRIP_KEY)) {
+        fullStrip = true;
       }
     }
     
