@@ -184,6 +184,8 @@ Bug Fixes
     schema swap-out process
   (Gregory Chanan via Steve Rowe)
 
+* SOLR-6136: ConcurrentUpdateSolrServer includes a Spin Lock (Brandon Chapman, Timothy Potter)
+
 Optimizations
 ---------------------
 
