@@ -23,10 +23,6 @@
     <conf name="test" transitive="false"/>
   </configurations>
   <dependencies>
-    <dependency org="javax.activation" name="activation" rev="${/javax.activation/activation}" conf="compile->*"/>
-    <dependency org="com.sun.mail" name="javax.mail" rev="${/com.sun.mail/javax.mail}"  conf="compile->*"/>
-    <dependency org="com.sun.mail" name="gimap" rev="${/com.sun.mail/gimap}"  conf="compile->*"/>
-
     <dependency org="hsqldb" name="hsqldb" rev="${/hsqldb/hsqldb}" conf="test->*"/>
     <dependency org="org.apache.derby" name="derby" rev="${/org.apache.derby/derby}" conf="test->*"/>
     <dependency org="org.easymock" name="easymock" rev="${/org.easymock/easymock}" conf="test->*"/>
