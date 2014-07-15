@@ -173,6 +173,9 @@ Bug Fixes
 
 * SOLR-6208: JettySolrRunner QueuedThreadPool's configuration code is never executed. (dweiss via shalin)
 
+* SOLR-6245: Socket and Connection configuration are ignored in HttpSolrServer when passing in HttpClient.
+  (Patanachai Tangchaisin, shalin)
+
 Optimizations
 ---------------------
 
