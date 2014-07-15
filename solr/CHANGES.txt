@@ -70,6 +70,13 @@ New Features
 * SOLR-6103: Added DateRangeField for indexing date ranges, especially
   multi-valued ones. Based on LUCENE-5648. (David Smiley)
 
+* SOLR-2245: Improvements to the MailEntityProcessor:
+  - Support for server-side date filtering if using GMail; requires new
+    dependency on the Sun Gmail Java mail extensions
+  - Support for using the last_index_time from the previous run as the 
+    value for the fetchMailsSince filter.
+  (Peter Sturge, Timothy Potter)
+
 Other Changes
 ----------------------
 
