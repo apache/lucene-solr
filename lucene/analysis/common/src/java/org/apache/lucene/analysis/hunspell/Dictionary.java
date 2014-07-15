@@ -1063,8 +1063,6 @@ public class Dictionary {
   /**
    * Implementation of {@link FlagParsingStrategy} that assumes each flag is encoded as two ASCII characters whose codes
    * must be combined into a single character.
-   *
-   * TODO (rmuir) test
    */
   private static class DoubleASCIIFlagParsingStrategy extends FlagParsingStrategy {
 
@@ -1079,8 +1077,13 @@ public class Dictionary {
         throw new IllegalArgumentException("Invalid flags (should be even number of characters): " + rawFlags);
       }
       for (int i = 0; i < rawFlags.length(); i+=2) {
-        char cookedFlag = (char) ((int) rawFlags.charAt(i) + (int) rawFlags.charAt(i + 1));
-        builder.append(cookedFlag);
+        char f1 = rawFlags.charAt(i);
+        char f2 = rawFlags.charAt(i+1);
+        if (f1 >= 256 || f2 >= 256) {
+          throw new IllegalArgumentException("Invalid flags (LONG flags must be double ASCII): " + rawFlags);
+        }
+        char combined = (char) (f1 << 8 | f2);
+        builder.append(combined);
       }
       
       char flags[] = new char[builder.length()];

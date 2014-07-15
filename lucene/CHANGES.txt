@@ -163,6 +163,8 @@ Bug Fixes
   match affixes, words are only stripped to a zero-length string if FULLSTRIP option
   is specifed in the dictionary.  (Robert Muir)
 
+* LUCENE-5824: Fix hunspell 'long' flag handling. (Robert Muir)
+
 Test Framework
 
 * LUCENE-5786: Unflushed/ truncated events file (hung testing subprocess).
