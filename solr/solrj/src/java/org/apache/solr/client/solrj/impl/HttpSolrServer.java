@@ -439,9 +439,6 @@ public class HttpSolrServer extends SolrServer {
   }
   
   protected NamedList<Object> executeMethod(HttpRequestBase method, final ResponseParser processor) throws SolrServerException {
-    // XXX client already has this set, is this needed?
-    method.getParams().setParameter(ClientPNames.HANDLE_REDIRECTS,
-        followRedirects);
     method.addHeader("User-Agent", AGENT);
     
     InputStream respBody = null;
