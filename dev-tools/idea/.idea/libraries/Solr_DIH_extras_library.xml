@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="Solr DIH extras library">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/solr/contrib/dataimporthandler-extras/lib" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+    <jarDirectory url="file://$PROJECT_DIR$/solr/contrib/dataimporthandler-extras/lib" recursive="false" />
+  </library>
+</component>
