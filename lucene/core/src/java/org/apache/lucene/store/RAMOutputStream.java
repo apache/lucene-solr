@@ -31,7 +31,7 @@ import org.apache.lucene.util.Accountable;
 public class RAMOutputStream extends IndexOutput implements Accountable {
   static final int BUFFER_SIZE = 1024;
 
-  private RAMFile file;
+  private final RAMFile file;
 
   private byte[] currentBuffer;
   private int currentBufferIndex;
