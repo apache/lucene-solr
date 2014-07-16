@@ -57,8 +57,8 @@ public abstract class AbstractBadConfigTestBase extends SolrTestCaseJ4 {
       }
 
       CoreContainer cc = h.getCoreContainer();
-      for (Map.Entry<String, Exception> entry : cc.getCoreInitFailures().entrySet()) {
-        if (matches(entry.getValue(), errString))
+      for (Map.Entry<String, CoreContainer.CoreLoadFailure> entry : cc.getCoreInitFailures().entrySet()) {
+        if (matches(entry.getValue().exception, errString))
           return;
       }
     }

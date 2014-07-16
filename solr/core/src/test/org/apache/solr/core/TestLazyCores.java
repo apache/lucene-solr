@@ -17,16 +17,6 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
-
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -44,6 +34,16 @@ import org.apache.solr.util.TestHarness;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 public class TestLazyCores extends SolrTestCaseJ4 {
 
@@ -554,10 +554,10 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   }
 
   // See fi the message you expect is in the list of failures
-  private void testMessage(Map<String, Exception> failures, String lookFor) {
+  private void testMessage(Map<String, CoreContainer.CoreLoadFailure> failures, String lookFor) {
     List<String> messages = new ArrayList<>();
-    for (Exception e : failures.values()) {
-      String message = e.getCause().getMessage();
+    for (CoreContainer.CoreLoadFailure e : failures.values()) {
+      String message = e.exception.getCause().getMessage();
       messages.add(message);
       if (message.contains(lookFor)) return;
     }
@@ -673,8 +673,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   }
 
   private void removeOne(CoreContainer cc, String coreName) {
-    SolrCore tmp = cc.remove(coreName);
-    if (tmp != null) tmp.close();
+    cc.unload(coreName);
   }
   public static void checkNotInCores(CoreContainer cc, String... nameCheck) {
     Collection<String> names = cc.getCoreNames();

@@ -59,8 +59,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
 
     assertEquals(COLLECTION1, cores.getDefaultCoreName());
     
-    cores.remove("");
-    core.close();
+    cores.unload("");
     core.close();
 
     CoreDescriptor cd = new CoreDescriptor(cores, COLLECTION1, "collection1",

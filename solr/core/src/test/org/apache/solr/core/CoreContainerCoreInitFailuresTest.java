@@ -50,7 +50,7 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
 
   public void testFlowWithEmpty() throws Exception {
     // reused state
-    Map<String,Exception> failures = null;
+    Map<String,CoreContainer.CoreLoadFailure> failures = null;
     Collection<String> cores = null;
     Exception fail = null;
 
@@ -97,7 +97,7 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
     failures = cc.getCoreInitFailures();
     assertNotNull("core failures is a null map", failures);
     assertEquals("wrong number of core failures", 1, failures.size());
-    fail = failures.get("bogus");
+    fail = failures.get("bogus").exception;
     assertNotNull("null failure for test core", fail);
     assertTrue("init failure doesn't mention problem: " + fail.getCause().getMessage(),
                0 < fail.getCause().getMessage().indexOf("bogus_path"));
@@ -125,7 +125,7 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
   public void testFlowBadFromStart() throws Exception {
 
     // reused state
-    Map<String,Exception> failures = null;
+    Map<String,CoreContainer.CoreLoadFailure> failures = null;
     Collection<String> cores = null;
     Exception fail = null;
 
@@ -164,7 +164,7 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
     failures = cc.getCoreInitFailures();
     assertNotNull("core failures is a null map", failures);
     assertEquals("wrong number of core failures", 1, failures.size());
-    fail = failures.get("col_bad");
+    fail = failures.get("col_bad").exception;
     assertNotNull("null failure for test core", fail);
     assertTrue("init failure doesn't mention problem: " + fail.getMessage(),
                0 < fail.getMessage().indexOf("DummyMergePolicy"));
@@ -227,7 +227,7 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
     failures = cc.getCoreInitFailures();
     assertNotNull("core failures is a null map", failures);
     assertEquals("wrong number of core failures", 1, failures.size());
-    fail = failures.get("bogus");
+    fail = failures.get("bogus").exception;
     assertNotNull("null failure for test core", fail);
     assertTrue("init failure doesn't mention problem: " + fail.getCause().getMessage(),
                0 < fail.getCause().getMessage().indexOf("bogus_path"));
@@ -284,7 +284,7 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
     failures = cc.getCoreInitFailures();
     assertNotNull("core failures is a null map", failures);
     assertEquals("wrong number of core failures", 2, failures.size());
-    Throwable ex = getWrappedException(failures.get("col_bad"));
+    Throwable ex = getWrappedException(failures.get("col_bad").exception);
     assertNotNull("null failure for test core", ex);
     assertTrue("init failure isn't SAXParseException",
                ex instanceof SAXParseException);
