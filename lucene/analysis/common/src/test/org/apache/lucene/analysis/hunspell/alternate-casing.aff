@@ -1,0 +1,15 @@
+SET UTF-8
+
+LANG tr_TR
+
+PFX A Y 1
+PFX A 0 ı . +dotlessprefix
+
+PFX B Y 1
+PFX B 0 i . +dottedprefix
+
+SFX X Y 1
+SFX X 0 ı . +dotlesssuffix
+
+SFX Y Y 1
+SFX Y 0 i . +dottedsuffix
