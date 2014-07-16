@@ -108,6 +108,9 @@ New Features
 * LUCENE-5806: Extend expressions grammar to support array access in variables.
   Added helper class VariableContext to parse complex variable into pieces.
   (Ryan Ernst)
+
+* LUCENE-5826: Support proper hunspell case handling, LANG, KEEPCASE, NEEDAFFIX,
+  and ONLYINCOMPOUND flags.  (Robert Muir)
   
 API Changes
 

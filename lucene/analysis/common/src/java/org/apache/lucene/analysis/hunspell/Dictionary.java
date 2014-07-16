@@ -85,6 +85,11 @@ public class Dictionary {
   private static final String ICONV_KEY = "ICONV";
   private static final String OCONV_KEY = "OCONV";
   private static final String FULLSTRIP_KEY = "FULLSTRIP";
+  private static final String LANG_KEY = "LANG";
+  private static final String KEEPCASE_KEY = "KEEPCASE";
+  private static final String NEEDAFFIX_KEY = "NEEDAFFIX";
+  private static final String PSEUDOROOT_KEY = "PSEUDOROOT";
+  private static final String ONLYINCOMPOUND_KEY = "ONLYINCOMPOUND";
 
   private static final String NUM_FLAG_TYPE = "num";
   private static final String UTF8_FLAG_TYPE = "UTF-8";
@@ -140,6 +145,9 @@ public class Dictionary {
   boolean twoStageAffix; // if no affixes have continuation classes, no need to do 2-level affix stripping
   
   int circumfix = -1; // circumfix flag, or -1 if one is not defined
+  int keepcase = -1;  // keepcase flag, or -1 if one is not defined
+  int needaffix = -1; // needaffix flag, or -1 if one is not defined
+  int onlyincompound = -1; // onlyincompound flag, or -1 if one is not defined
   
   // ignored characters (dictionary, affix, inputs)
   private char[] ignore;
@@ -153,6 +161,11 @@ public class Dictionary {
   
   // true if we can strip suffixes "down to nothing"
   boolean fullStrip;
+  
+  // language declaration of the dictionary
+  String language;
+  // true if case algorithms should use alternate (Turkish/Azeri) mapping
+  boolean alternateCasing;
   
   /**
    * Creates a new Dictionary containing the information read from the provided InputStreams to hunspell affix
@@ -315,6 +328,24 @@ public class Dictionary {
           throw new ParseException("Illegal CIRCUMFIX declaration", reader.getLineNumber());
         }
         circumfix = flagParsingStrategy.parseFlag(parts[1]);
+      } else if (line.startsWith(KEEPCASE_KEY)) {
+        String parts[] = line.split("\\s+");
+        if (parts.length != 2) {
+          throw new ParseException("Illegal KEEPCASE declaration", reader.getLineNumber());
+        }
+        keepcase = flagParsingStrategy.parseFlag(parts[1]);
+      } else if (line.startsWith(NEEDAFFIX_KEY) || line.startsWith(PSEUDOROOT_KEY)) {
+        String parts[] = line.split("\\s+");
+        if (parts.length != 2) {
+          throw new ParseException("Illegal NEEDAFFIX declaration", reader.getLineNumber());
+        }
+        needaffix = flagParsingStrategy.parseFlag(parts[1]);
+      } else if (line.startsWith(ONLYINCOMPOUND_KEY)) {
+        String parts[] = line.split("\\s+");
+        if (parts.length != 2) {
+          throw new ParseException("Illegal ONLYINCOMPOUND declaration", reader.getLineNumber());
+        }
+        onlyincompound = flagParsingStrategy.parseFlag(parts[1]);
       } else if (line.startsWith(IGNORE_KEY)) {
         String parts[] = line.split("\\s+");
         if (parts.length != 2) {
@@ -340,6 +371,9 @@ public class Dictionary {
         }
       } else if (line.startsWith(FULLSTRIP_KEY)) {
         fullStrip = true;
+      } else if (line.startsWith(LANG_KEY)) {
+        language = line.substring(LANG_KEY.length()).trim();
+        alternateCasing = "tr_TR".equals(language) || "az_AZ".equals(language);
       }
     }
     
@@ -1108,7 +1142,7 @@ public class Dictionary {
       
       if (ignoreCase && iconv == null) {
         // if we have no input conversion mappings, do this on-the-fly
-        ch = Character.toLowerCase(ch);
+        ch = caseFold(ch);
       }
       
       reuse.append(ch);
@@ -1122,12 +1156,27 @@ public class Dictionary {
       }
       if (ignoreCase) {
         for (int i = 0; i < reuse.length(); i++) {
-          reuse.setCharAt(i, Character.toLowerCase(reuse.charAt(i)));
+          reuse.setCharAt(i, caseFold(reuse.charAt(i)));
         }
       }
     }
     
     return reuse;
+  }
+  
+  /** folds single character (according to LANG if present) */
+  char caseFold(char c) {
+    if (alternateCasing) {
+      if (c == 'I') {
+        return 'ı';
+      } else if (c == 'İ') {
+        return 'i';
+      } else {
+        return Character.toLowerCase(c);
+      }
+    } else {
+      return Character.toLowerCase(c);
+    }
   }
   
   // TODO: this could be more efficient!
