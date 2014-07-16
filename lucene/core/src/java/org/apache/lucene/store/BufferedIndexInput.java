@@ -389,7 +389,7 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
   
   @Override
   public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
-    return wrap("SlicedIndexInput(" + sliceDescription + " in " + this + ")", this, offset, length);
+    return wrap(sliceDescription, this, offset, length);
   }
 
   /**
@@ -426,10 +426,11 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
   }
   
   /** 
-   * Wraps a portion of a file with buffering. 
+   * Wraps a portion of another IndexInput with buffering.
+   * <p><b>Please note:</b> This is in most cases ineffective, because it may double buffer!
    */
-  public static BufferedIndexInput wrap(String description, IndexInput other, long offset, long length) {
-    return new SlicedIndexInput(description, other, offset, length);
+  public static BufferedIndexInput wrap(String sliceDescription, IndexInput other, long offset, long length) {
+    return new SlicedIndexInput(sliceDescription, other, offset, length);
   }
   
   /** 
@@ -441,11 +442,10 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
     long length;
     
     SlicedIndexInput(String sliceDescription, IndexInput base, long offset, long length) {
-      super("SlicedIndexInput(" + sliceDescription + " in " + base + " slice=" + offset + ":" + (offset+length) + ")", BufferedIndexInput.BUFFER_SIZE);
-      if (offset < 0 || length < 0) {
-        throw new IllegalArgumentException();
+      super((sliceDescription == null) ? base.toString() : (base.toString() + " [slice=" + sliceDescription + "]"), BufferedIndexInput.BUFFER_SIZE);
+      if (offset < 0 || length < 0 || offset + length > base.length()) {
+        throw new IllegalArgumentException("slice() " + sliceDescription + " out of bounds: "  + base);
       }
-      assert offset + length <= base.length();
       this.base = base.clone();
       this.fileOffset = offset;
       this.length = length;

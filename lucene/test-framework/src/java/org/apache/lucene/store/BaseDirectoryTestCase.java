@@ -17,6 +17,7 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -435,6 +436,25 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     o.close();
     IndexInput i = dir.openInput("out", newIOContext(random()));
     i.seek(1024);
+    i.close();
+    dir.close();
+  }
+
+  public void testSeekPastEOF() throws Exception {
+    Directory dir = getDirectory(createTempDir("testSeekPastEOF"));
+    IndexOutput o = dir.createOutput("out", newIOContext(random()));
+    final int len = random().nextInt(2048);
+    byte[] b = new byte[len];
+    o.writeBytes(b, 0, len);
+    o.close();
+    IndexInput i = dir.openInput("out", newIOContext(random()));
+    try {
+      i.seek(len + random().nextInt(2048));
+      i.readByte();
+      fail("Did not get EOFException");
+    } catch (EOFException eof) {
+      // pass
+    }
     i.close();
     dir.close();
   }
