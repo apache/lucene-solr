@@ -123,7 +123,7 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
     int trials = 50;
     // generate enough docs so that we can expect at least a doc per slice
     int numDocsPerTrial = (int)(slices * (Math.log(slices) + 1));
-    SolrServer ss = clients.get(random().nextInt(clients.size() + 1));
+    SolrServer ss = clients.get(random().nextInt(clients.size()));
     int docNumber = 0;
     for (int i = 0; i < trials; ++i) {
       List<SolrInputDocument> docs = new ArrayList<>();
