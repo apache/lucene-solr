@@ -172,6 +172,9 @@ Bug Fixes
 
 * LUCENE-5824: Fix hunspell 'long' flag handling. (Robert Muir)
 
+* LUCENE-5827: Make all Directory implementations correctly fail with
+  IllegalArgumentException if slices are out of bounds.  (Uwe SChindler)
+
 Test Framework
 
 * LUCENE-5786: Unflushed/ truncated events file (hung testing subprocess).
