@@ -230,7 +230,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
 
           @Override
           public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
-            return new SeeksCountingStream(this.input.clone());
+            return new SeeksCountingStream(this.input.slice(sliceDescription, offset, length));
           }
     }
 }
