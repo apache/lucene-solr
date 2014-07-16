@@ -38,6 +38,7 @@ import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -82,7 +83,7 @@ public class ConcurrentUpdateSolrServerTest extends SolrJettyTestBase {
     }
 
     private void setParameters(HttpServletRequest req) {
-      parameters = req.getParameterMap();
+      //parameters = req.getParameterMap();
     }
 
     @Override
@@ -164,7 +165,7 @@ public class ConcurrentUpdateSolrServerTest extends SolrJettyTestBase {
     cuss.blockUntilFinished();
     
     int poolSize = 5;
-    ExecutorService threadPool = Executors.newFixedThreadPool(poolSize);
+    ExecutorService threadPool = Executors.newFixedThreadPool(poolSize, new SolrjNamedThreadFactory("testCUSS"));
 
     int numDocs = 100;
     int numRunnables = 5;
