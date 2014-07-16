@@ -108,10 +108,19 @@ public class MailEntityProcessor extends EntityProcessorBase {
     String varName = ConfigNameConstants.IMPORTER_NS_SHORT + "." + cname + "."
         + DocBuilder.LAST_INDEX_TIME;
     Object varValue = context.getVariableResolver().resolve(varName);
+    if ("1970-01-01 00:00:00".equals(varValue) && 
+        !"".equals(getStringFromContext("fetchMailsSince", ""))) {
+      // favor fetchMailsSince in this case because the value from
+      // dataimport.properties is the default/init value
+      varValue = getStringFromContext("fetchMailsSince", "");
+    }
+    
+    LOG.info(varName+"="+varValue);    
     if (varValue == null || "".equals(varValue)) {
       varName = ConfigNameConstants.IMPORTER_NS_SHORT + "."
           + DocBuilder.LAST_INDEX_TIME;
       varValue = context.getVariableResolver().resolve(varName);
+      LOG.info(varName+"="+varValue);
     }
       
     if (varValue != null && varValue instanceof String) {
