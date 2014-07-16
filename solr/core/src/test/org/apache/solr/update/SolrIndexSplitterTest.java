@@ -187,10 +187,8 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       assertEquals("id:dorothy should not be present in split index2", 0, server2.query(new SolrQuery("id:dorothy")).getResults().getNumFound());
       assertEquals("id:kansas should be present in split index2", 1, server2.query(new SolrQuery("id:kansas")).getResults().getNumFound());
     } finally {
-      h.getCoreContainer().remove("split2");
-      h.getCoreContainer().remove("split1");
-      if (core2 != null) core2.close();
-      if (core1 != null) core1.close();
+      h.getCoreContainer().unload("split2");
+      h.getCoreContainer().unload("split1");
     }
   }
 

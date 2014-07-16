@@ -19,6 +19,7 @@ package org.apache.solr.core;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.InfoHandler;
@@ -39,8 +40,11 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
+import static org.junit.matchers.JUnitMatchers.containsString;
 
 
 public class TestCoreContainer extends SolrTestCaseJ4 {
@@ -169,14 +173,19 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
             "/solr/cores[@transientCacheSize='32']");
       }
 
-      newCore.close();
-      cores.remove("core1");
+      cores.unload("core1");
       //assert cero cores
       assertEquals("There should not be cores", 0, cores.getCores().size());
       
       // try and remove a core that does not exist
-      SolrCore ret = cores.remove("non_existent_core");
-      assertNull(ret);
+      try {
+        cores.unload("non_existent_core");
+        fail("Should have thrown an exception when unloading a non-existent core");
+      }
+      catch (SolrException e) {
+        assertThat(e.getMessage(), containsString("Cannot unload non-existent core [non_existent_core]"));
+      }
+
     } finally {
       cores.shutdown();
     }
@@ -205,6 +214,37 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     //init
     System.setProperty(SOLR_HOME_PROP, solrHomeDirectory.getAbsolutePath());
+  }
+
+  @Test
+  public void testDeleteBadCores() throws Exception {
+
+    MockCoresLocator cl = new MockCoresLocator();
+
+    solrHomeDirectory = createTempDir("_deleteBadCores");
+    SolrResourceLoader resourceLoader = new SolrResourceLoader(solrHomeDirectory.getAbsolutePath());
+    File instanceDir = new File(solrHomeDirectory, "_deleteBadCores");
+    System.setProperty("configsets", getFile("solr/configsets").getAbsolutePath());
+
+    final CoreContainer cc = new CoreContainer(resourceLoader, ConfigSolr.fromString(resourceLoader, EMPTY_SOLR_XML2), cl);
+    CoreDescriptor badcore = new CoreDescriptor(cc, "badcore", instanceDir.getAbsolutePath(), "configSet", "nosuchconfigset");
+    cl.add(badcore);
+
+    try {
+      cc.load();
+      assertThat(cc.getCoreInitFailures().size(), is(1));
+      assertThat(cc.getCoreInitFailures().get("badcore").exception.getMessage(), containsString("nosuchconfigset"));
+      cc.unload("badcore", true, true, true);
+      assertThat(cc.getCoreInitFailures().size(), is(0));
+
+      // can we create the core now with a good config?
+      SolrCore core = cc.create(new CoreDescriptor(cc, "badcore", instanceDir.getAbsolutePath(), "configSet", "minimal"));
+      assertThat(core, not(nullValue()));
+
+    }
+    finally {
+      cc.shutdown();
+    }
   }
 
   @Test
@@ -279,6 +319,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   
   private static final String EMPTY_SOLR_XML2 ="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
       "<solr>\n" +
+      "<str name=\"configSetBaseDir\">${configsets:configsets}</str>" +
       "</solr>";
 
   private static final String CUSTOM_HANDLERS_SOLR_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
@@ -323,5 +364,44 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       cc.shutdown();
     }
 
+  }
+
+  private static class MockCoresLocator implements CoresLocator {
+
+    List<CoreDescriptor> cores = new ArrayList<>();
+
+    void add(CoreDescriptor cd) {
+      cores.add(cd);
+    }
+
+    @Override
+    public void create(CoreContainer cc, CoreDescriptor... coreDescriptors) {
+      // noop
+    }
+
+    @Override
+    public void persist(CoreContainer cc, CoreDescriptor... coreDescriptors) {
+
+    }
+
+    @Override
+    public void delete(CoreContainer cc, CoreDescriptor... coreDescriptors) {
+
+    }
+
+    @Override
+    public void rename(CoreContainer cc, CoreDescriptor oldCD, CoreDescriptor newCD) {
+
+    }
+
+    @Override
+    public void swap(CoreContainer cc, CoreDescriptor cd1, CoreDescriptor cd2) {
+
+    }
+
+    @Override
+    public List<CoreDescriptor> discover(CoreContainer cc) {
+      return cores;
+    }
   }
 }

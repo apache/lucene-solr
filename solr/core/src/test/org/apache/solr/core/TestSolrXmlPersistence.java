@@ -458,8 +458,7 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
       TestHarness.validateXPath(locator.xml,
           "/solr/cores/core[@name='X' and not(@solr.core.instanceDir) and not (@solr.core.configName)]");
 
-      // delete a core, check persistence again
-      assertNotNull("removing X returned null", cores.remove("X"));
+      cores.unload("X");
 
       TestHarness.validateXPath(locator.xml, "/solr[@persistent='true']",
           "/solr/cores[@defaultCoreName='collection1']",
@@ -468,15 +467,6 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
           "2=count(/solr/cores/core)");
 
     } finally {
-      // y is closed by the container, but
-      // x has been removed from the container
-      if (x != null) {
-        try {
-          x.close();
-        } catch (Exception e) {
-          log.error("", e);
-        }
-      }
       cores.shutdown();
     }
   }

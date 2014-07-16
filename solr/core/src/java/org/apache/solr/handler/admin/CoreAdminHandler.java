@@ -19,7 +19,6 @@ package org.apache.solr.handler.admin;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -45,7 +44,6 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
@@ -629,100 +627,16 @@ public class CoreAdminHandler extends RequestHandlerBase {
   /**
    * Handle "UNLOAD" Action
    */
-  protected void handleUnloadAction(SolrQueryRequest req,
-      SolrQueryResponse rsp) throws SolrException {
+  protected void handleUnloadAction(SolrQueryRequest req, SolrQueryResponse rsp) throws SolrException {
+
     SolrParams params = req.getParams();
     String cname = params.get(CoreAdminParams.CORE);
-    Boolean closeCore = true;
-    if (!coreContainer.isLoadedNotPendingClose(cname)) {
-      closeCore = false;
-    }
-    SolrCore core = coreContainer.remove(cname);
-    try {
-      if (core == null) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "No such core exists '" + cname + "'");
-      } else {
-        if (coreContainer.getZkController() != null) {
-          // we are unloading, cancel any ongoing recovery
-          if (core != null) {
-            if (coreContainer.getZkController() != null) {
-              core.getSolrCoreState().cancelRecovery();
-            }
-          }
-        }
-        
-        if (params.getBool(CoreAdminParams.DELETE_INDEX, false)) {
-          try {
-            core.getDirectoryFactory().remove(core.getIndexDir());
-          } catch (Exception e) {
-            SolrException.log(log, "Failed to flag index dir for removal for core:"
-                    + core.getName() + " dir:" + core.getIndexDir());
-          }
-        }
-      }
+    boolean deleteIndexDir = params.getBool(CoreAdminParams.DELETE_INDEX, false);
+    boolean deleteDataDir = params.getBool(CoreAdminParams.DELETE_DATA_DIR, false);
+    boolean deleteInstanceDir = params.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, false);
 
-      if (params.getBool(CoreAdminParams.DELETE_DATA_DIR, false)) {
-        try {
-          core.getDirectoryFactory().remove(core.getDataDir(), true);
-        } catch (Exception e) {
-          SolrException.log(log, "Failed to flag data dir for removal for core:"
-                  + core.getName() + " dir:" + core.getDataDir());
-        }
-      }
-      
-      if (params.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, false)) {
-        core.addCloseHook(new CloseHook() {
-          @Override
-          public void preClose(SolrCore core) {}
-          
-          @Override
-          public void postClose(SolrCore core) {
-            CoreDescriptor cd = core.getCoreDescriptor();
-            if (cd != null) {
-              File instanceDir = new File(cd.getInstanceDir());
-              try {
-                FileUtils.deleteDirectory(instanceDir);
-              } catch (IOException e) {
-                SolrException.log(log, "Failed to delete instance dir for core:"
-                    + core.getName() + " dir:" + instanceDir.getAbsolutePath());
-              }
-            }
-          }
-        });
-      }
-    } finally {
-      // it's important that we try and cancel recovery
-      // before we close here - else we might close the
-      // core *in* recovery and end up locked in recovery
-      // waiting to for recovery to be cancelled
-      if (core != null) {
-        if (coreContainer.getZkController() != null) {
-          core.getSolrCoreState().cancelRecovery();
-        }
-        if (closeCore) {
-          core.close();
-        }
-        
-        if (coreContainer.getZkController() != null) {
-          log.info("Unregistering core " + core.getName() + " from cloudstate.");
-          try {
-            coreContainer.getZkController().unregister(cname,
-                core.getCoreDescriptor());
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                "Could not unregister core " + cname + " from cloudstate: "
-                    + e.getMessage(), e);
-          } catch (KeeperException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                "Could not unregister core " + cname + " from cloudstate: "
-                    + e.getMessage(), e);
-          }
-        }
-      }
-    }
-    
+    coreContainer.unload(cname, deleteIndexDir, deleteDataDir, deleteInstanceDir);
+
   }
 
   /**
@@ -735,20 +649,22 @@ public class CoreAdminHandler extends RequestHandlerBase {
     String cname = params.get(CoreAdminParams.CORE);
     String indexInfo = params.get(CoreAdminParams.INDEX_INFO);
     boolean isIndexInfoNeeded = Boolean.parseBoolean(null == indexInfo ? "true" : indexInfo);
-    boolean doPersist = false;
     NamedList<Object> status = new SimpleOrderedMap<>();
-    Map<String,Exception> allFailures = coreContainer.getCoreInitFailures();
+    Map<String, Exception> failures = new HashMap<>();
+    for (Map.Entry<String, CoreContainer.CoreLoadFailure> failure : coreContainer.getCoreInitFailures().entrySet()) {
+      failures.put(failure.getKey(), failure.getValue().exception);
+    }
     try {
       if (cname == null) {
         rsp.add("defaultCoreName", coreContainer.getDefaultCoreName());
         for (String name : coreContainer.getAllCoreNames()) {
           status.add(name, getCoreStatus(coreContainer, name, isIndexInfoNeeded));
         }
-        rsp.add("initFailures", allFailures);
+        rsp.add("initFailures", failures);
       } else {
-        Map failures = allFailures.containsKey(cname)
-          ? Collections.singletonMap(cname, allFailures.get(cname))
-          : Collections.emptyMap();
+        failures = failures.containsKey(cname)
+          ? Collections.singletonMap(cname, failures.get(cname))
+          : Collections.<String, Exception>emptyMap();
         rsp.add("initFailures", failures);
         status.add(cname, getCoreStatus(coreContainer, cname, isIndexInfoNeeded));
       }

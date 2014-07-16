@@ -17,6 +17,7 @@
 
 package org.apache.solr.core;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -30,19 +31,19 @@ import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.FileUtils;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -59,8 +60,18 @@ public class CoreContainer {
 
   private final SolrCores solrCores = new SolrCores(this);
 
-  protected final Map<String,Exception> coreInitFailures =
-    Collections.synchronizedMap(new LinkedHashMap<String,Exception>());
+  public static class CoreLoadFailure {
+
+    public final CoreDescriptor cd;
+    public final Exception exception;
+
+    public CoreLoadFailure(CoreDescriptor cd, Exception loadFailure) {
+      this.cd = cd;
+      this.exception = loadFailure;
+    }
+  }
+
+  protected final Map<String, CoreLoadFailure> coreInitFailures = new ConcurrentHashMap<>();
 
   protected CoreAdminHandler coreAdminHandler = null;
   protected CollectionsHandler collectionsHandler = null;
@@ -423,9 +434,7 @@ public class CoreContainer {
 
     core.setName(name);
 
-    synchronized (coreInitFailures) {
-      coreInitFailures.remove(name);
-    }
+    coreInitFailures.remove(name);
 
     if( old == null || old == core) {
       log.info( "registering core: "+name );
@@ -489,7 +498,8 @@ public class CoreContainer {
 
     }
     catch (Exception e) {
-      throw recordAndThrow(dcore.getName(), "Unable to create core: " + dcore.getName(), e);
+      coreInitFailures.put(dcore.getName(), new CoreLoadFailure(dcore, e));
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to create core [" + dcore.getName() + "]", e);
     }
 
   }
@@ -542,11 +552,8 @@ public class CoreContainer {
    *  <li>Registering an existing SolrCore with a name already contained in this Map (ie: ALIAS or SWAP) will remove the Exception.</li>
    * </ul>
    */
-  public Map<String,Exception> getCoreInitFailures() {
-    synchronized ( coreInitFailures ) {
-      return Collections.unmodifiableMap(new LinkedHashMap<>
-                                         (coreInitFailures));
-    }
+  public Map<String, CoreLoadFailure> getCoreInitFailures() {
+    return ImmutableMap.copyOf(coreInitFailures);
   }
 
 
@@ -559,28 +566,29 @@ public class CoreContainer {
    * @param name the name of the SolrCore to reload
    */
   public void reload(String name) {
+
+    name = checkDefault(name);
+
+    SolrCore core = solrCores.getCoreFromAnyList(name, false);
+    if (core == null)
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "No such core: " + name );
+
+    CoreDescriptor cd = core.getCoreDescriptor();
     try {
-      name = checkDefault(name);
-
-      SolrCore core = solrCores.getCoreFromAnyList(name, false);
-      if (core == null)
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "No such core: " + name );
-
-      try {
-        solrCores.waitAddPendingCoreOps(name);
-        CoreDescriptor cd = core.getCoreDescriptor();
-        ConfigSet coreConfig = coreConfigService.getConfig(cd);
-        log.info("Reloading SolrCore '{}' using configuration from {}", cd.getName(), coreConfig.getName());
-        SolrCore newCore = core.reload(coreConfig, core);
-        registerCore(name, newCore, false);
-      } finally {
-        solrCores.removeFromPendingOps(name);
-      }
-      // :TODO: Java7...
-      // http://docs.oracle.com/javase/7/docs/technotes/guides/language/catch-multiple.html
-    } catch (Exception ex) {
-      throw recordAndThrow(name, "Unable to reload core: " + name, ex);
+      solrCores.waitAddPendingCoreOps(name);
+      ConfigSet coreConfig = coreConfigService.getConfig(cd);
+      log.info("Reloading SolrCore '{}' using configuration from {}", cd.getName(), coreConfig.getName());
+      SolrCore newCore = core.reload(coreConfig, core);
+      registerCore(name, newCore, false);
     }
+    catch (Exception e) {
+      coreInitFailures.put(cd.getName(), new CoreLoadFailure(cd, e));
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to reload core [" + cd.getName() + "]", e);
+    }
+    finally {
+      solrCores.removeFromPendingOps(name);
+    }
+
   }
 
   //5.0 remove all checkDefaults?
@@ -603,14 +611,71 @@ public class CoreContainer {
 
     log.info("swapped: "+n0 + " with " + n1);
   }
-  
-  /** Removes and returns registered core w/o decrementing it's reference count */
-  public SolrCore remove( String name ) {
+
+  /**
+   * Unload a core from this container, leaving all files on disk
+   * @param name the name of the core to unload
+   */
+  public void unload(String name) {
+    unload(name, false, false, false);
+  }
+
+  /**
+   * Unload a core from this container, optionally removing the core's data and configuration
+   *
+   * @param name the name of the core to unload
+   * @param deleteIndexDir if true, delete the core's index on close
+   * @param deleteDataDir if true, delete the core's data directory on close
+   * @param deleteInstanceDir if true, delete the core's instance directory on close
+   */
+  public void unload(String name, boolean deleteIndexDir, boolean deleteDataDir, boolean deleteInstanceDir) {
+
     name = checkDefault(name);
+
+    // check for core-init errors first
+    CoreLoadFailure loadFailure = coreInitFailures.remove(name);
+    if (loadFailure != null) {
+      // getting the index directory requires opening a DirectoryFactory with a SolrConfig, etc,
+      // which we may not be able to do because of the init error.  So we just go with what we
+      // can glean from the CoreDescriptor - datadir and instancedir
+      SolrCore.deleteUnloadedCore(loadFailure.cd, deleteDataDir, deleteInstanceDir);
+      return;
+    }
+
     CoreDescriptor cd = solrCores.getCoreDescriptor(name);
-    SolrCore removed = solrCores.remove(name);
+    if (cd == null)
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Cannot unload non-existent core [" + name + "]");
+
+    boolean close = solrCores.isLoadedNotPendingClose(name);
+    SolrCore core = solrCores.remove(name);
     coresLocator.delete(this, cd);
-    return removed;
+
+    if (core == null) {
+      // transient core
+      SolrCore.deleteUnloadedCore(cd, deleteDataDir, deleteInstanceDir);
+      return;
+    }
+
+    if (zkSys.getZkController() != null) {
+      // cancel recovery in cloud mode
+      core.getSolrCoreState().cancelRecovery();
+    }
+
+    core.unloadOnClose(deleteIndexDir, deleteDataDir, deleteInstanceDir);
+    if (close)
+      core.close();
+
+    if (zkSys.getZkController() != null) {
+      try {
+        zkSys.getZkController().unregister(name, cd);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted while unregistering core [" + name + "] from cloud state");
+      } catch (KeeperException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Error unregistering core [" + name + "] from cloud state", e);
+      }
+    }
+
   }
 
   public void rename(String name, String toName) {
@@ -670,11 +735,11 @@ public class CoreContainer {
 
       // if there was an error initalizing this core, throw a 500
       // error with the details for clients attempting to access it.
-      Exception e = getCoreInitFailures().get(name);
-      if (null != e) {
+      CoreLoadFailure loadFailure = getCoreInitFailures().get(name);
+      if (null != loadFailure) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "SolrCore '" + name +
                                 "' is not available due to init failure: " +
-                                e.getMessage(), e);
+                                loadFailure.exception.getMessage(), loadFailure.exception);
       }
       // otherwise the user is simply asking for something that doesn't exist.
       return null;
@@ -688,13 +753,10 @@ public class CoreContainer {
     try {
       if (core == null) {
         core = create(desc); // This should throw an error if it fails.
-        core.open();
-      } else {
-        core.open();
       }
-    } catch(Exception ex){
-      throw recordAndThrow(name, "Unable to create core: " + name, ex);
-    } finally {
+      core.open();
+    }
+    finally {
       solrCores.removeFromPendingOps(name);
     }
 
@@ -800,16 +862,6 @@ public class CoreContainer {
   
   public UpdateShardHandler getUpdateShardHandler() {
     return updateShardHandler;
-  }
-  
-  // Just to tidy up the code where it did this in-line.
-  private SolrException recordAndThrow(String name, String msg, Exception ex) {
-    synchronized (coreInitFailures) {
-      coreInitFailures.remove(name);
-      coreInitFailures.put(name, ex);
-    }
-    log.error(msg, ex);
-    return new SolrException(ErrorCode.SERVER_ERROR, msg, ex);
   }
 
   public SolrResourceLoader getResourceLoader() {

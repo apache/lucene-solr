@@ -122,11 +122,15 @@ Upgrading from Solr 4.9
   additional call to CoreContainer.register() to make it available to clients
   (see SOLR-6170).
 
+* CoreContainer.remove() has been removed.  You should now use CoreContainer.unload() to
+  delete a SolrCore (see SOLR-6232).
+
 Detailed Change List
 ----------------------
 
 New Features
 ----------------------
+
 * SOLR-6196: The overseerstatus collection API instruments amILeader and ZK state update calls.
   (shalin)
 
@@ -140,6 +144,8 @@ New Features
 * SOLR-6183: New spatial BBoxField for indexing rectangles with search support for most predicates.
   It includes extra score relevancy modes in addition to distance: score=overlapRatio|area|area2D.
   (David Smiley, Ryan McKinley)
+
+* SOLR-6232: You can now unload/delete cores that have failed to initialize (Alan Woodward)
 
 Bug Fixes
 ----------------------
@@ -234,7 +240,10 @@ Other Changes
   of a java error about a missing class. (shalin, Shawn Heisey)
 
 * SOLR-6179: Better strategy for handling empty managed data to avoid spurious
-  warning messages in the logs. (Timothy Potter) 
+  warning messages in the logs. (Timothy Potter)
+
+* SOLR-6232: CoreContainer.remove() replaced with CoreContainer.unload().  A call to
+  unload will also close the core.
 
 ==================  4.9.0 ==================
 

@@ -17,6 +17,7 @@
 
 package org.apache.solr.core;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexDeletionPolicy;
@@ -2446,6 +2447,65 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   
   public Codec getCodec() {
     return codec;
+  }
+
+  public void unloadOnClose(boolean deleteIndexDir, boolean deleteDataDir, boolean deleteInstanceDir) {
+    if (deleteIndexDir) {
+      try {
+        directoryFactory.remove(getIndexDir());
+      } catch (Exception e) {
+        SolrException.log(log, "Failed to flag index dir for removal for core:" + name + " dir:" + getIndexDir());
+      }
+    }
+    if (deleteDataDir) {
+      try {
+        directoryFactory.remove(getDataDir(), true);
+      } catch (Exception e) {
+        SolrException.log(log, "Failed to flag data dir for removal for core:" + name + " dir:" + getDataDir());
+      }
+    }
+    if (deleteInstanceDir) {
+      addCloseHook(new CloseHook() {
+        @Override
+        public void preClose(SolrCore core) {
+        }
+
+        @Override
+        public void postClose(SolrCore core) {
+          CoreDescriptor cd = core.getCoreDescriptor();
+          if (cd != null) {
+            File instanceDir = new File(cd.getInstanceDir());
+            try {
+              FileUtils.deleteDirectory(instanceDir);
+            } catch (IOException e) {
+              SolrException.log(log, "Failed to delete instance dir for core:"
+                  + core.getName() + " dir:" + instanceDir.getAbsolutePath());
+            }
+          }
+        }
+      });
+    }
+  }
+
+  public static void deleteUnloadedCore(CoreDescriptor cd, boolean deleteDataDir, boolean deleteInstanceDir) {
+    if (deleteDataDir) {
+      File dataDir = new File(cd.getDataDir());
+      try {
+        FileUtils.deleteDirectory(dataDir);
+      } catch (IOException e) {
+        SolrException.log(log, "Failed to delete data dir for unloaded core:" + cd.getName()
+            + " dir:" + dataDir.getAbsolutePath());
+      }
+    }
+    if (deleteInstanceDir) {
+      File instanceDir = new File(cd.getInstanceDir());
+      try {
+        FileUtils.deleteDirectory(instanceDir);
+      } catch (IOException e) {
+        SolrException.log(log, "Failed to delete instance dir for unloaded core:" + cd.getName()
+            + " dir:" + instanceDir.getAbsolutePath());
+      }
+    }
   }
 
   public final class LazyQueryResponseWriterWrapper implements QueryResponseWriter {
