@@ -16,6 +16,7 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
@@ -42,6 +43,7 @@ import java.util.TreeMap;
 /**
  * Tests a schemaless collection configuration with SolrCloud
  */
+@SuppressSSL
 public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(TestCloudManagedSchemaConcurrent.class);
   private static final String SUCCESS_XPATH = "/response/lst[@name='responseHeader']/int[@name='status'][.='0']";
