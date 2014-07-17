@@ -26,7 +26,7 @@
     </orderEntry>
     <orderEntry type="library" name="Solr core library" level="project" />
     <orderEntry type="library" name="Solrj library" level="project" />
-    <orderEntry type="library" name="Solr DIH library" level="project" />
+    <orderEntry type="library" name="Solr DIH extras library" level="project" />
     <orderEntry type="library" name="Solr extraction library" level="project" />
     <orderEntry type="module" module-name="solr-core" />
     <orderEntry type="module" module-name="solrj" />
