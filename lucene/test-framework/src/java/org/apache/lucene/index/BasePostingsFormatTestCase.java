@@ -45,9 +45,9 @@ import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
@@ -57,8 +57,6 @@ import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.RamUsageTester;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
@@ -658,8 +656,6 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     if (VERBOSE) {
       System.out.println("\nTEST: now build index");
     }
-
-    int maxIndexOptionNoOffsets = Arrays.asList(IndexOptions.values()).indexOf(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
 
     // TODO use allowPayloads
 
@@ -1537,6 +1533,15 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
                         //System.out.println("  term=" + term + " docFreq=" + docFreq + " ttDF=" + termToDocFreq.get(term));
                         assertTrue(docFreq <= termFreqs.get(term).docFreq);
                         assertTrue(totalTermFreq <= termFreqs.get(term).totalTermFreq);
+                      }
+                    }
+
+                    // Also test seekCeil
+                    for(int iter=0;iter<10;iter++) {
+                      BytesRef term = new BytesRef(TestUtil.randomRealisticUnicodeString(random()));
+                      SeekStatus status = termsEnum.seekCeil(term);
+                      if (status == SeekStatus.NOT_FOUND) {
+                        assertTrue(term.compareTo(termsEnum.term()) < 0);
                       }
                     }
                   }

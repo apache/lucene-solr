@@ -176,9 +176,11 @@ class FreqProxFields extends Fields {
 
       // not found:
       ord = lo + 1;
-      if (ord == numTerms) {
+      if (ord >= numTerms) {
         return SeekStatus.END;
       } else {
+        int textStart = postingsArray.textStarts[sortedTermIDs[ord]];
+        terms.bytePool.setBytesRef(scratch, textStart);
         return SeekStatus.NOT_FOUND;
       }
     }
