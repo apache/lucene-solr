@@ -135,18 +135,27 @@ public final class BlockTreeTermsReader extends FieldsProducer {
       for(int i=0;i<numFields;i++) {
         final int field = in.readVInt();
         final long numTerms = in.readVLong();
-        assert numTerms >= 0;
+        if (numTerms <= 0) {
+          throw new CorruptIndexException("Illegal numTerms for field number: " + field + " (resource=" + in + ")");
+        }
         final int numBytes = in.readVInt();
+        if (numBytes < 0) {
+          throw new CorruptIndexException("invalid rootCode for field number: " + field + ", numBytes=" + numBytes + " (resource=" + in + ")");
+        }
         final BytesRef rootCode = new BytesRef(new byte[numBytes]);
         in.readBytes(rootCode.bytes, 0, numBytes);
         rootCode.length = numBytes;
         final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
-        assert fieldInfo != null: "field=" + field;
+        if (fieldInfo == null) {
+          throw new CorruptIndexException("invalid field number: " + field + ", resource=" + in + ")");
+        }
         final long sumTotalTermFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY ? -1 : in.readVLong();
         final long sumDocFreq = in.readVLong();
         final int docCount = in.readVInt();
         final int longsSize = version >= BlockTreeTermsWriter.VERSION_META_ARRAY ? in.readVInt() : 0;
-
+        if (longsSize < 0) {
+          throw new CorruptIndexException("invalid longsSize for field: " + fieldInfo.name + ", longsSize=" + longsSize + " (resource=" + in + ")");
+        }
         BytesRef minTerm, maxTerm;
         if (version >= BlockTreeTermsWriter.VERSION_MIN_MAX_TERMS) {
           minTerm = readBytesRef(in);

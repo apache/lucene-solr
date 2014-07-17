@@ -22,6 +22,7 @@ import java.util.Collection;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.LiveDocsFormat;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.store.DataOutput; // javadocs
@@ -88,9 +89,12 @@ public class Lucene40LiveDocsFormat extends LiveDocsFormat {
   public Bits readLiveDocs(Directory dir, SegmentCommitInfo info, IOContext context) throws IOException {
     String filename = IndexFileNames.fileNameFromGeneration(info.info.name, DELETES_EXTENSION, info.getDelGen());
     final BitVector liveDocs = new BitVector(dir, filename, context);
-    assert liveDocs.count() == info.info.getDocCount() - info.getDelCount():
-      "liveDocs.count()=" + liveDocs.count() + " info.docCount=" + info.info.getDocCount() + " info.getDelCount()=" + info.getDelCount();
-    assert liveDocs.length() == info.info.getDocCount();
+    if (liveDocs.length() != info.info.getDocCount()) {
+      throw new CorruptIndexException("liveDocs.length()=" + liveDocs.length() + "info.docCount=" + info.info.getDocCount() + " (filename=" + filename + ")");
+    }
+    if (liveDocs.count() != info.info.getDocCount() - info.getDelCount()) {
+      throw new CorruptIndexException("liveDocs.count()=" + liveDocs.count() + " info.docCount=" + info.info.getDocCount() + " info.getDelCount()=" + info.getDelCount() + " (filename=" + filename + ")");
+    }
     return liveDocs;
   }
 
