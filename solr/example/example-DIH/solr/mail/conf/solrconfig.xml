@@ -75,6 +75,8 @@
   <lib dir="../../../../contrib/dataimporthandler/lib/" regex=".*\.jar" />
   <lib dir="../../../../dist/" regex="solr-dataimporthandler-.*\.jar" />
 
+  <lib dir="../../../../contrib/dataimporthandler-extras/lib/" regex=".*\.jar" />
+
   <lib dir="../../../../contrib/extraction/lib" regex=".*\.jar" />
   <lib dir="../../../../dist/" regex="solr-cell-\d.*\.jar" />
 
