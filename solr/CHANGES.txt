@@ -242,6 +242,8 @@ Other Changes
 * SOLR-6232: CoreContainer.remove() replaced with CoreContainer.unload().  A call to
   unload will also close the core.
 
+* SOLR-3893: DIH should not depend on mail.jar,activation.jar (Timothy Potter, Steve Rowe)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
