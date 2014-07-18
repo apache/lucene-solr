@@ -70,13 +70,6 @@ New Features
 * SOLR-6103: Added DateRangeField for indexing date ranges, especially
   multi-valued ones. Based on LUCENE-5648. (David Smiley)
 
-* SOLR-2245: Improvements to the MailEntityProcessor:
-  - Support for server-side date filtering if using GMail; requires new
-    dependency on the Sun Gmail Java mail extensions
-  - Support for using the last_index_time from the previous run as the 
-    value for the fetchMailsSince filter.
-  (Peter Sturge, Timothy Potter)
-
 Other Changes
 ----------------------
 
@@ -96,10 +89,6 @@ Other Changes
 
 * SOLR-6215: TrieDateField should directly extend TrieField instead of
   forwarding to a wrapped TrieField. (Steve Rowe)
-
-* SOLR-2245: Numerous improvements of the MailEntityProcessor, including using
-  the GMail extensions to do server-side date filtering and using GreenMail in
-  the unit test to enable automated tests. (Timothy Potter)
 
 ==================  4.10.0 =================
 
@@ -146,6 +135,14 @@ New Features
   (David Smiley, Ryan McKinley)
 
 * SOLR-6232: You can now unload/delete cores that have failed to initialize (Alan Woodward)
+
+* SOLR-2245: Improvements to the MailEntityProcessor:
+  - Support for server-side date filtering if using GMail; requires new
+    dependency on the Sun Gmail Java mail extensions
+  - Support for using the last_index_time from the previous run as the
+    value for the fetchMailsSince filter.
+  (Peter Sturge, Timothy Potter)
+
 
 Bug Fixes
 ----------------------

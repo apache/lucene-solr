@@ -108,14 +108,35 @@ public class MailEntityProcessor extends EntityProcessorBase {
     String varName = ConfigNameConstants.IMPORTER_NS_SHORT + "." + cname + "."
         + DocBuilder.LAST_INDEX_TIME;
     Object varValue = context.getVariableResolver().resolve(varName);
-    if ("1970-01-01 00:00:00".equals(varValue) && 
+    LOG.info(varName+"="+varValue);    
+    
+    if (varValue != null && !"".equals(varValue) && 
         !"".equals(getStringFromContext("fetchMailsSince", ""))) {
-      // favor fetchMailsSince in this case because the value from
-      // dataimport.properties is the default/init value
-      varValue = getStringFromContext("fetchMailsSince", "");
+
+      // need to check if varValue is the epoch, which we'll take to mean the
+      // initial value, in which case means we should use fetchMailsSince instead
+      Date tmp = null;
+      try {
+        tmp = sinceDateParser.parse((String)varValue);
+        if (tmp.getTime() == 0) {
+          LOG.info("Ignoring initial value "+varValue+" for "+varName+
+              " in favor of fetchMailsSince config parameter");
+          tmp = null; // don't use this value
+        }
+      } catch (ParseException e) {
+        // probably ok to ignore this since we have other options below
+        // as we're just trying to figure out if the date is 0
+        LOG.warn("Failed to parse "+varValue+" from "+varName+" due to: "+e);
+      }    
+      
+      if (tmp == null) {
+        // favor fetchMailsSince in this case because the value from
+        // dataimport.properties is the default/init value
+        varValue = getStringFromContext("fetchMailsSince", "");
+        LOG.info("fetchMailsSince="+varValue);            
+      }
     }
     
-    LOG.info(varName+"="+varValue);    
     if (varValue == null || "".equals(varValue)) {
       varName = ConfigNameConstants.IMPORTER_NS_SHORT + "."
           + DocBuilder.LAST_INDEX_TIME;
