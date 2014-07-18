@@ -69,12 +69,18 @@ New Features
 
 * SOLR-6232: You can now unload/delete cores that have failed to initialize (Alan Woodward)
 
+* SOLR-2245: Improvements to the MailEntityProcessor:
+  - Support for server-side date filtering if using GMail; requires new
+    dependency on the Sun Gmail Java mail extensions
+  - Support for using the last_index_time from the previous run as the
+    value for the fetchMailsSince filter.
+  (Peter Sturge, Timothy Potter)
+
+
 Bug Fixes
 ----------------------
 
 * SOLR-6095 : SolrCloud cluster can end up without an overseer with overseer roles (Noble Paul, Shalin Mangar)
-
-* SOLR-6165: DataImportHandler should write BigInteger and BigDecimal values as strings.
   (Anand Sengamalai via shalin)
   
 * SOLR-6189: Avoid publishing the state as down if the node is not live when determining

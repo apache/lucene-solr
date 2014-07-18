@@ -35,7 +35,7 @@ To import data from the slashdot feed, connect to
 
 To import data from your imap server
 
-1. Edit the example-DIH/solr/mail/conf/data-config.xml and add details about username, password, imap server
+1. Edit the example-DIH/solr/mail/conf/mail-data-config.xml and add details about username, password, imap server
 2. Connect to http://localhost:8983/solr/mail/dataimport?command=full-import
 
 To copy data from db Solr core, connect to
