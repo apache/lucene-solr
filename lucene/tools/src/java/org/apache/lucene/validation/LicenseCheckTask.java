@@ -52,6 +52,9 @@ public class LicenseCheckTask extends Task {
   public final static String CHECKSUM_TYPE = "sha1";
   private static final int CHECKSUM_BUFFER_SIZE = 8 * 1024;
   private static final int CHECKSUM_BYTE_MASK = 0xFF;
+  private static final String FAILURE_MESSAGE = "License check failed. Check the logs.\n"
+      + "If you recently modified ivy-versions.properties or any module's ivy.xml,\n"
+      + "make sure you run \"ant clean-jars jar-checksums\" before running precommit.";
 
   private boolean skipSnapshotsChecksum;
   private boolean skipChecksum;
@@ -133,7 +136,7 @@ public class LicenseCheckTask extends Task {
     processJars();
 
     if (failures) {
-      throw new BuildException("License check failed. Check the logs.");
+      throw new BuildException(FAILURE_MESSAGE);
     }
   }
 
