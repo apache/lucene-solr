@@ -187,10 +187,36 @@ public class CompositeIdRouter extends HashBasedRouter {
     boolean triLevel;
     int pieces;
 
-    public KeyParser(String key) {
-      String[] parts = key.split(SEPARATOR);
+    public KeyParser(final String key) {
       this.key = key;
-      pieces = parts.length;
+      List<String> partsList = new ArrayList<>(3);
+      int firstSeparatorPos = key.indexOf(SEPARATOR);
+      if (-1 == firstSeparatorPos) {
+        partsList.add(key);
+      } else {
+        partsList.add(key.substring(0, firstSeparatorPos));
+        int lastPos = key.length() - 1;
+        // Don't make any more parts if the first separator is the last char
+        if (firstSeparatorPos < lastPos) {
+          int secondSeparatorPos = key.indexOf(SEPARATOR, firstSeparatorPos + 1);
+          if (-1 == secondSeparatorPos) {
+            partsList.add(key.substring(firstSeparatorPos + 1));
+          } else if (secondSeparatorPos == lastPos) {
+            // Don't make any more parts if the key has exactly two separators and 
+            // they're the last two chars - back-compatibility with the behavior of
+            // String.split() - see SOLR-6257.
+            if (firstSeparatorPos < secondSeparatorPos - 1) {
+              partsList.add(key.substring(firstSeparatorPos + 1, secondSeparatorPos));
+            }
+          } else { // The second separator is not the last char
+            partsList.add(key.substring(firstSeparatorPos + 1, secondSeparatorPos));
+            partsList.add(key.substring(secondSeparatorPos + 1));
+          }
+          // Ignore any further separators beyond the first two
+        }
+      }
+      pieces = partsList.size();
+      String[] parts = partsList.toArray(new String[pieces]);
       numBits = new int[2];
       if (key.endsWith("!") && pieces < 3)
         pieces++;

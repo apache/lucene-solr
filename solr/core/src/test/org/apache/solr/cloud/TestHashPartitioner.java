@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocCollection;
@@ -197,25 +198,73 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
     doQuery(coll, "d/1!", "shard3,shard4");   // top bit of hash(b)==0, so shard3 and shard4
   }
 
-  /***
-  public void testPrintHashCodes() throws Exception {
-   // from negative to positive, the upper bits of the hash ranges should be
-   // shard1: 11
-   // shard2: 10
-   // shard3: 00
-   // shard4: 01
-
-   String[] highBitsToShard = {"shard3","shard4","shard1","shard2"};
-
-
-   for (int i = 0; i<26; i++) {
-      String id  = new String(Character.toChars('a'+i));
-      int hash = hash(id);
-      System.out.println("hash of " + id + " is " + Integer.toHexString(hash) + " high bits=" + (hash>>>30)
-          + " shard="+highBitsToShard[hash>>>30]);
+  /** Make sure CompositeIdRouter doesn't throw exceptions for non-conforming IDs */
+  public void testNonConformingCompositeIds() throws Exception {
+    DocRouter router = DocRouter.getDocRouter(CompositeIdRouter.NAME);
+    DocCollection coll = createCollection(4, router);
+    String[] ids = { "A!B!C!D", "!!!!!!", "A!!!!B", "A!!B!!C", "A/59!B", "A/8/!B/19/", 
+                     "A!B/-5", "!/130!", "!!A/1000", "A//8!B///10!C////" };
+    for (int i = 0 ; i < ids.length ; ++i) {
+      try {
+        Slice targetSlice = coll.getRouter().getTargetSlice(ids[i], null, null, coll);
+        assertNotNull(targetSlice);
+      } catch (Exception e) {
+        throw new Exception("Exception routing id '" + ids[i] + "'", e);
+      }
     }
   }
-  ***/
+
+  /** Make sure CompositeIdRouter can route random IDs without throwing exceptions */
+  public void testRandomCompositeIds() throws Exception {
+    DocRouter router = DocRouter.getDocRouter(CompositeIdRouter.NAME);
+    DocCollection coll = createCollection(TestUtil.nextInt(random(), 1, 10), router);
+    StringBuilder idBuilder = new StringBuilder();
+    for (int i = 0 ; i < 10000 ; ++i) {
+      idBuilder.setLength(0);
+      int numParts = TestUtil.nextInt(random(), 1, 30);
+      for (int part = 0; part < numParts; ++part) {
+        switch (random().nextInt(5)) {
+          case 0: idBuilder.append('!'); break;
+          case 1: idBuilder.append('/'); break;
+          case 2: idBuilder.append(TestUtil.nextInt(random(),-100, 1000)); break;
+          default: {
+            int length = TestUtil.nextInt(random(), 1, 10);
+            char[] str = new char[length];
+            TestUtil.randomFixedLengthUnicodeString(random(), str, 0, length);
+            idBuilder.append(str);
+            break;
+          } 
+        }
+      }
+      String id = idBuilder.toString();
+      try {
+        Slice targetSlice = router.getTargetSlice(id, null, null, coll);
+        assertNotNull(targetSlice);
+      } catch (Exception e) {
+        throw new Exception("Exception routing id '" + id + "'", e);
+      }
+    }
+  }
+
+  /***
+    public void testPrintHashCodes() throws Exception {
+     // from negative to positive, the upper bits of the hash ranges should be
+     // shard1: 11
+     // shard2: 10
+     // shard3: 00
+     // shard4: 01
+  
+     String[] highBitsToShard = {"shard3","shard4","shard1","shard2"};
+  
+  
+     for (int i = 0; i<26; i++) {
+        String id  = new String(Character.toChars('a'+i));
+        int hash = hash(id);
+        System.out.println("hash of " + id + " is " + Integer.toHexString(hash) + " high bits=" + (hash>>>30)
+            + " shard="+highBitsToShard[hash>>>30]);
+      }
+    }
+    ***/
 
 
 
