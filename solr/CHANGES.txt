@@ -196,6 +196,10 @@ Bug Fixes
 
 * SOLR-6136: ConcurrentUpdateSolrServer includes a Spin Lock (Brandon Chapman, Timothy Potter)
 
+* SOLR-6257: More than two "!"-s in a doc ID throws an
+  ArrayIndexOutOfBoundsException when using the composite id router.
+  (Steve Rowe)
+
 Optimizations
 ---------------------
 
