@@ -324,7 +324,7 @@ class Lucene49DocValuesConsumer extends DocValuesConsumer implements Closeable {
       // we could avoid this, but its not much and less overall RAM than the previous approach!
       RAMOutputStream addressBuffer = new RAMOutputStream();
       MonotonicBlockPackedWriter termAddresses = new MonotonicBlockPackedWriter(addressBuffer, BLOCK_SIZE);
-      BytesRef lastTerm = new BytesRef();
+      BytesRef lastTerm = new BytesRef(Math.max(0, maxLength));
       long count = 0;
       for (BytesRef v : values) {
         if (count % ADDRESS_INTERVAL == 0) {
