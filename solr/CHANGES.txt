@@ -204,6 +204,10 @@ Optimizations
   indexes with many fields of same type just use one TokenStream per thread.
   (Shay Banon, Uwe Schindler, Robert Muir)
 
+* SOLR-6259: Reduce CPU usage by avoiding repeated costly calls to Document.getField inside
+  DocumentBuilder.toDocument for use-cases with large number of fields and copyFields.
+  (Steven Bower via shalin)
+
 Other Changes
 ---------------------
 
