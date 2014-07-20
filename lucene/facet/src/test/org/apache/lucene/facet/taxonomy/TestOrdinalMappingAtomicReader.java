@@ -2,6 +2,7 @@ package org.apache.lucene.facet.taxonomy;
 
 import java.io.IOException;
 
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetResult;
@@ -13,13 +14,16 @@ import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.MemoryOrdinalMap;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -66,7 +70,7 @@ public class TestOrdinalMappingAtomicReader extends FacetTestCase {
     IndexWriter destIndexWriter = new IndexWriter(targetIndexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
     DirectoryTaxonomyWriter destTaxoWriter = new DirectoryTaxonomyWriter(targetTaxoDir);
     try {
-      TaxonomyMergeUtils.merge(srcIndexDir, srcTaxoDir, new MemoryOrdinalMap(), destIndexWriter, destTaxoWriter);
+      TaxonomyMergeUtils.merge(srcIndexDir, srcTaxoDir, new MemoryOrdinalMap(), destIndexWriter, destTaxoWriter, facetConfig);
     } finally {
       IOUtils.close(destIndexWriter, destTaxoWriter);
     }
@@ -92,6 +96,11 @@ public class TestOrdinalMappingAtomicReader extends FacetTestCase {
       assertEquals(NUM_DOCS, lv.value.intValue());
     }
     
+    BinaryDocValues bdv = MultiDocValues.getBinaryValues(indexReader, "bdv");
+    BinaryDocValues cbdv = MultiDocValues.getBinaryValues(indexReader, "cbdv");
+    for (int i = 0; i < indexReader.maxDoc(); i++) {
+      assertEquals(Integer.parseInt(cbdv.get(i).utf8ToString()), Integer.parseInt(bdv.get(i).utf8ToString())*2);
+    }
     IOUtils.close(indexReader, taxoReader);
   }
   
@@ -106,6 +115,9 @@ public class TestOrdinalMappingAtomicReader extends FacetTestCase {
         int facetValue = asc ? j: NUM_DOCS - j;
         doc.add(new FacetField("tag", Integer.toString(facetValue)));
       }
+      // make sure OrdinalMappingAtomicReader ignores non-facet fields
+      doc.add(new BinaryDocValuesField("bdv", new BytesRef(Integer.toString(i))));
+      doc.add(new BinaryDocValuesField("cbdv", new BytesRef(Integer.toString(i*2))));
       writer.addDocument(facetConfig.build(taxonomyWriter, doc));
     }
     taxonomyWriter.commit();

@@ -18,8 +18,11 @@ package org.apache.lucene.facet.taxonomy;
  */
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.facet.FacetsConfig.DimConfig;
 import org.apache.lucene.facet.taxonomy.OrdinalsReader.OrdinalsSegmentReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.OrdinalMap;
 import org.apache.lucene.index.AtomicReader;
@@ -107,15 +110,21 @@ public class OrdinalMappingAtomicReader extends FilterAtomicReader {
   
   private final int[] ordinalMap;
   private final InnerFacetsConfig facetsConfig;
+  private final Set<String> facetFields;
   
   /**
-   * Wraps an AtomicReader, mapping ordinals according to the ordinalMap,
-   * using the provided indexingParams.
+   * Wraps an AtomicReader, mapping ordinals according to the ordinalMap, using
+   * the provided {@link FacetsConfig} which was used to build the wrapped
+   * reader.
    */
-  public OrdinalMappingAtomicReader(AtomicReader in, int[] ordinalMap) {
+  public OrdinalMappingAtomicReader(AtomicReader in, int[] ordinalMap, FacetsConfig srcConfig) {
     super(in);
     this.ordinalMap = ordinalMap;
     facetsConfig = new InnerFacetsConfig();
+    facetFields = new HashSet<>();
+    for (DimConfig dc : srcConfig.getDimConfigs().values()) {
+      facetFields.add(dc.indexFieldName);
+    }
   }
   
   /**
@@ -136,8 +145,12 @@ public class OrdinalMappingAtomicReader extends FilterAtomicReader {
   
   @Override
   public BinaryDocValues getBinaryDocValues(String field) throws IOException {
-    final OrdinalsReader ordsReader = getOrdinalsReader(field);
-    return new OrdinalMappingBinaryDocValues(ordsReader.getReader(in.getContext()));
+    if (facetFields.contains(field)) {
+      final OrdinalsReader ordsReader = getOrdinalsReader(field);
+      return new OrdinalMappingBinaryDocValues(ordsReader.getReader(in.getContext()));
+    } else {
+      return in.getBinaryDocValues(field);
+    }
   }
   
 }
