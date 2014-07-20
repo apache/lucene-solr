@@ -118,6 +118,11 @@ New Features
   "any" term) are allowed.  This is a generalization of
   MultiPhraseQuery and span queries, and enables "correct" (including
   position) length search-time graph synonyms.  (Mike McCandless)
+
+* LUCENE-5819: Add OrdsLucene41 block tree terms dict and postings
+  format, to include term ordinals in the index so the optional
+  TermsEnum.ord() and TermsEnum.seekExact(long ord) APIs work.  (Mike
+  McCandless)
   
 API Changes
 

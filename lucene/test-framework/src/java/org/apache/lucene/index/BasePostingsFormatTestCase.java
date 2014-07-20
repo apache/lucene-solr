@@ -59,6 +59,11 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.RamUsageTester;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.AutomatonTestUtil.RandomAcceptedStrings;
+import org.apache.lucene.util.automaton.AutomatonTestUtil;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -293,17 +298,28 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
   }
   
   private static class FieldAndTerm {
-    String field;
-    BytesRef term;
+    final String field;
+    final BytesRef term;
+    final long ord;
 
-    public FieldAndTerm(String field, BytesRef term) {
+    public FieldAndTerm(String field, BytesRef term, long ord) {
       this.field = field;
       this.term = BytesRef.deepCopyOf(term);
+      this.ord = ord;
+    }
+  }
+
+  private static class SeedAndOrd {
+    final long seed;
+    long ord;
+
+    public SeedAndOrd(long seed) {
+      this.seed = seed;
     }
   }
 
   // Holds all postings:
-  private static Map<String,SortedMap<BytesRef,Long>> fields;
+  private static Map<String,SortedMap<BytesRef,SeedAndOrd>> fields;
 
   private static FieldInfos fieldInfos;
 
@@ -359,7 +375,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
                                                 null, DocValuesType.NUMERIC, -1, null);
       fieldUpto++;
 
-      SortedMap<BytesRef,Long> postings = new TreeMap<>();
+      SortedMap<BytesRef,SeedAndOrd> postings = new TreeMap<>();
       fields.put(field, postings);
       Set<String> seenTerms = new HashSet<>();
 
@@ -370,7 +386,9 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
         numTerms = TestUtil.nextInt(random(), 2, 20);
       }
 
-      for(int termUpto=0;termUpto<numTerms;termUpto++) {
+      while (postings.size() < numTerms) {
+        int termUpto = postings.size();
+        // Cannot contain surrogates else default Java string sort order (by UTF16 code unit) is different from Lucene:
         String term = TestUtil.randomSimpleString(random());
         if (seenTerms.contains(term)) {
           continue;
@@ -392,7 +410,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
         }
 
         long termSeed = random().nextLong();
-        postings.put(new BytesRef(term), termSeed);
+        postings.put(new BytesRef(term), new SeedAndOrd(termSeed));
 
         // NOTE: sort of silly: we enum all the docs just to
         // get the maxDoc
@@ -403,6 +421,12 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
           lastDoc = doc;
         }
         maxDoc = Math.max(lastDoc, maxDoc);
+      }
+
+      // assign ords
+      long ord = 0;
+      for(SeedAndOrd ent : postings.values()) {
+        ent.ord = ord++;
       }
     }
 
@@ -420,10 +444,11 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     }
 
     allTerms = new ArrayList<>();
-    for(Map.Entry<String,SortedMap<BytesRef,Long>> fieldEnt : fields.entrySet()) {
+    for(Map.Entry<String,SortedMap<BytesRef,SeedAndOrd>> fieldEnt : fields.entrySet()) {
       String field = fieldEnt.getKey();
-      for(Map.Entry<BytesRef,Long> termEnt : fieldEnt.getValue().entrySet()) {
-        allTerms.add(new FieldAndTerm(field, termEnt.getKey()));
+      long ord = 0;
+      for(Map.Entry<BytesRef,SeedAndOrd> termEnt : fieldEnt.getValue().entrySet()) {
+        allTerms.add(new FieldAndTerm(field, termEnt.getKey(), ord++));
       }
     }
 
@@ -441,12 +466,12 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
   }
 
   private static class SeedFields extends Fields {
-    final Map<String,SortedMap<BytesRef,Long>> fields;
+    final Map<String,SortedMap<BytesRef,SeedAndOrd>> fields;
     final FieldInfos fieldInfos;
     final IndexOptions maxAllowed;
     final boolean allowPayloads;
 
-    public SeedFields(Map<String,SortedMap<BytesRef,Long>> fields, FieldInfos fieldInfos, IndexOptions maxAllowed, boolean allowPayloads) {
+    public SeedFields(Map<String,SortedMap<BytesRef,SeedAndOrd>> fields, FieldInfos fieldInfos, IndexOptions maxAllowed, boolean allowPayloads) {
       this.fields = fields;
       this.fieldInfos = fieldInfos;
       this.maxAllowed = maxAllowed;
@@ -460,7 +485,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
 
     @Override
     public Terms terms(String field) {
-      SortedMap<BytesRef,Long> terms = fields.get(field);
+      SortedMap<BytesRef,SeedAndOrd> terms = fields.get(field);
       if (terms == null) {
         return null;
       } else {
@@ -475,12 +500,12 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
   }
 
   private static class SeedTerms extends Terms {
-    final SortedMap<BytesRef,Long> terms;
+    final SortedMap<BytesRef,SeedAndOrd> terms;
     final FieldInfo fieldInfo;
     final IndexOptions maxAllowed;
     final boolean allowPayloads;
 
-    public SeedTerms(SortedMap<BytesRef,Long> terms, FieldInfo fieldInfo, IndexOptions maxAllowed, boolean allowPayloads) {
+    public SeedTerms(SortedMap<BytesRef,SeedAndOrd> terms, FieldInfo fieldInfo, IndexOptions maxAllowed, boolean allowPayloads) {
       this.terms = terms;
       this.fieldInfo = fieldInfo;
       this.maxAllowed = maxAllowed;
@@ -545,15 +570,15 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
   }
 
   private static class SeedTermsEnum extends TermsEnum {
-    final SortedMap<BytesRef,Long> terms;
+    final SortedMap<BytesRef,SeedAndOrd> terms;
     final IndexOptions maxAllowed;
     final boolean allowPayloads;
 
-    private Iterator<Map.Entry<BytesRef,Long>> iterator;
+    private Iterator<Map.Entry<BytesRef,SeedAndOrd>> iterator;
 
-    private Map.Entry<BytesRef,Long> current;
+    private Map.Entry<BytesRef,SeedAndOrd> current;
 
-    public SeedTermsEnum(SortedMap<BytesRef,Long> terms, IndexOptions maxAllowed, boolean allowPayloads) {
+    public SeedTermsEnum(SortedMap<BytesRef,SeedAndOrd> terms, IndexOptions maxAllowed, boolean allowPayloads) {
       this.terms = terms;
       this.maxAllowed = maxAllowed;
       this.allowPayloads = allowPayloads;
@@ -565,7 +590,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
 
     @Override
     public SeekStatus seekCeil(BytesRef text) {
-      SortedMap<BytesRef,Long> tailMap = terms.tailMap(text);
+      SortedMap<BytesRef,SeedAndOrd> tailMap = terms.tailMap(text);
       if (tailMap.isEmpty()) {
         return SeekStatus.END;
       } else {
@@ -600,7 +625,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
 
     @Override
     public long ord() {
-      throw new UnsupportedOperationException();
+      return current.getValue().ord;
     }
 
     @Override
@@ -621,7 +646,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
       if ((flags & DocsEnum.FLAG_FREQS) != 0 && maxAllowed.compareTo(IndexOptions.DOCS_AND_FREQS) < 0) {
         return null;
       }
-      return getSeedPostings(current.getKey().utf8ToString(), current.getValue(), false, maxAllowed, allowPayloads);
+      return getSeedPostings(current.getKey().utf8ToString(), current.getValue().seed, false, maxAllowed, allowPayloads);
     }
 
     @Override
@@ -638,7 +663,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
       if ((flags & DocsAndPositionsEnum.FLAG_PAYLOADS) != 0 && allowPayloads == false) {
         return null;
       }
-      return getSeedPostings(current.getKey().utf8ToString(), current.getValue(), false, maxAllowed, allowPayloads);
+      return getSeedPostings(current.getKey().utf8ToString(), current.getValue().seed, false, maxAllowed, allowPayloads);
     }
   }
 
@@ -766,7 +791,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
 
     // NOTE: can be empty list if we are using liveDocs:
     SeedPostings expected = getSeedPostings(term.utf8ToString(), 
-                                            fields.get(field).get(term),
+                                            fields.get(field).get(term).seed,
                                             useLiveDocs,
                                             maxIndexOptions,
                                             true);
@@ -1104,12 +1129,16 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     // Test random terms/fields:
     List<TermState> termStates = new ArrayList<>();
     List<FieldAndTerm> termStateTerms = new ArrayList<>();
+
+    boolean supportsOrds = true;
     
     Collections.shuffle(allTerms, random());
     int upto = 0;
     while (upto < allTerms.size()) {
 
       boolean useTermState = termStates.size() != 0 && random().nextInt(5) == 1;
+      boolean useTermOrd = supportsOrds && useTermState == false && random().nextInt(5) == 1;
+
       FieldAndTerm fieldAndTerm;
       TermsEnum termsEnum;
 
@@ -1119,7 +1148,11 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
         // Seek by random field+term:
         fieldAndTerm = allTerms.get(upto++);
         if (VERBOSE) {
-          System.out.println("\nTEST: seek to term=" + fieldAndTerm.field + ":" + fieldAndTerm.term.utf8ToString() );
+          if (useTermOrd) {
+            System.out.println("\nTEST: seek to term=" + fieldAndTerm.field + ":" + fieldAndTerm.term.utf8ToString() + " using ord=" + fieldAndTerm.ord);
+          } else {
+            System.out.println("\nTEST: seek to term=" + fieldAndTerm.field + ":" + fieldAndTerm.term.utf8ToString() );
+          }
         }
       } else {
         // Seek by previous saved TermState
@@ -1136,9 +1169,36 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
       termsEnum = terms.iterator(null);
 
       if (!useTermState) {
-        assertTrue(termsEnum.seekExact(fieldAndTerm.term));
+        if (useTermOrd) {
+          // Try seek by ord sometimes:
+          try {
+            termsEnum.seekExact(fieldAndTerm.ord);
+          } catch (UnsupportedOperationException uoe) {
+            supportsOrds = false;
+            assertTrue(termsEnum.seekExact(fieldAndTerm.term));
+          }
+        } else {
+          assertTrue(termsEnum.seekExact(fieldAndTerm.term));
+        }
       } else {
         termsEnum.seekExact(fieldAndTerm.term, termState);
+      }
+
+      long termOrd;
+      if (supportsOrds) {
+        try {
+          termOrd = termsEnum.ord();
+        } catch (UnsupportedOperationException uoe) {
+          supportsOrds = false;
+          termOrd = -1;
+        }
+      } else {
+        termOrd = -1;
+      }
+
+      if (termOrd != -1) {
+        // PostingsFormat supports ords
+        assertEquals(fieldAndTerm.ord, termsEnum.ord());
       }
 
       boolean savedTermState = false;
@@ -1183,6 +1243,71 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
                    maxIndexOptions,
                    options,
                    alwaysTestMax);
+      }
+    }
+
+    // Test Terms.intersect:
+    for(String field : fields.keySet()) {
+      while (true) {
+        Automaton a = AutomatonTestUtil.randomAutomaton(random());
+        CompiledAutomaton ca = new CompiledAutomaton(a);
+        if (ca.type != CompiledAutomaton.AUTOMATON_TYPE.NORMAL) {
+          // Keep retrying until we get an A that will really "use" the PF's intersect code:
+          continue;
+        }
+        // System.out.println("A:\n" + a.toDot());
+
+        BytesRef startTerm = null;
+        if (random().nextBoolean()) {
+          RandomAcceptedStrings ras = new RandomAcceptedStrings(a);
+          for (int iter=0;iter<100;iter++) {
+            int[] codePoints = ras.getRandomAcceptedString(random());
+            if (codePoints.length == 0) {
+              continue;
+            }
+            startTerm = new BytesRef(UnicodeUtil.newString(codePoints, 0, codePoints.length));
+            break;
+          }
+          // Don't allow empty string startTerm:
+          if (startTerm == null) {
+            continue;
+          }
+        }
+        TermsEnum intersected = fieldsSource.terms(field).intersect(ca, startTerm);
+
+        Set<BytesRef> intersectedTerms = new HashSet<BytesRef>();
+        BytesRef term;
+        while ((term = intersected.next()) != null) {
+          if (startTerm != null) {
+            // NOTE: not <=
+            assertTrue(startTerm.compareTo(term) < 0);
+          }
+          intersectedTerms.add(BytesRef.deepCopyOf(term));     
+          verifyEnum(threadState,
+                     field,
+                     term,
+                     intersected,
+                     maxTestOptions,
+                     maxIndexOptions,
+                     options,
+                     alwaysTestMax);
+        }
+
+        if (ca.runAutomaton == null) {
+          assertTrue(intersectedTerms.isEmpty());
+        } else {
+          for(BytesRef term2 : fields.get(field).keySet()) {
+            boolean expected;
+            if (startTerm != null && startTerm.compareTo(term2) >= 0) {
+              expected = false;
+            } else {
+              expected = ca.runAutomaton.run(term2.bytes, term2.offset, term2.length);
+            }
+            assertEquals("term=" + term2, expected, intersectedTerms.contains(term2));
+          }
+        }
+
+        break;
       }
     }
   }
@@ -1284,7 +1409,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     }
   }
   
-  public void testEmptyField() throws Exception {
+  public void testJustEmptyField() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
     iwc.setCodec(getCodec());
@@ -1449,6 +1574,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
                     DocsEnum docs = null;
                     while(termsEnum.next() != null) {
                       BytesRef term = termsEnum.term();
+
                       if (random().nextBoolean()) {
                         docs = termsEnum.docs(null, docs, DocsEnum.FLAG_FREQS);
                       } else if (docs instanceof DocsAndPositionsEnum) {
@@ -1584,11 +1710,24 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
 
     TermsEnum termsEnum = terms.iterator(null);
     long termCount = 0;
+    boolean supportsOrds = true;
     while(termsEnum.next() != null) {
       BytesRef term = termsEnum.term();
-      termCount++;
       assertEquals(termFreqs.get(term.utf8ToString()).docFreq, termsEnum.docFreq());
       assertEquals(termFreqs.get(term.utf8ToString()).totalTermFreq, termsEnum.totalTermFreq());
+      if (supportsOrds) {
+        long ord;
+        try {
+          ord = termsEnum.ord();
+        } catch (UnsupportedOperationException uoe) {
+          supportsOrds = false;
+          ord = -1;
+        }
+        if (ord != -1) {
+          assertEquals(termCount, ord);
+        }
+      }
+      termCount++;
     }
     assertEquals(termFreqs.size(), termCount);
 
