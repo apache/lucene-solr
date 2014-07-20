@@ -76,6 +76,17 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
+  public void testRollbackHandler() throws Exception {
+    List rows = new ArrayList();
+    rows.add(createMap("id", "1", "FORCE_ROLLBACK", "true"));
+    MockDataSource.setIterator("select * from x", rows.iterator());
+
+    runFullImport(dataConfigWithRollbackHandler);
+
+    assertTrue("Rollback event listener was not called", RollbackEventListener.executed);
+  }
+
+  @Test
   @SuppressWarnings("unchecked")
   public void testDynamicFields() throws Exception {
     List rows = new ArrayList();
@@ -276,6 +287,13 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
     }
   }
 
+  public static class ForcedExceptionTransformer extends Transformer {
+    @Override
+    public Object transformRow(Map<String, Object> row, Context context) {
+      throw new DataImportHandlerException(DataImportHandlerException.SEVERE, "ForcedException");
+    }
+  }
+
   public static class MockDataSource2 extends MockDataSource  {
 
   }
@@ -290,6 +308,15 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   }
 
   public static class EndEventListener implements EventListener {
+    public static boolean executed = false;
+
+    @Override
+    public void onEvent(Context ctx) {
+      executed = true;
+    }
+  }
+
+  public static class RollbackEventListener implements EventListener {
     public static boolean executed = false;
 
     @Override
@@ -346,6 +373,15 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
           "        <entity name=\"books\" query=\"select * from x\">\n" +
           "            <field column=\"ID\" />\n" +
           "            <field column=\"Desc\" />\n" +
+          "        </entity>\n" +
+          "    </document>\n" +
+          "</dataConfig>";
+
+  private final String dataConfigWithRollbackHandler = "<dataConfig> <dataSource  type=\"MockDataSource\"/>\n" +
+          "    <document onRollback=\"TestDocBuilder2$RollbackEventListener\">\n" +
+          "        <entity name=\"books\" query=\"select * from x\" transformer=\"TestDocBuilder2$ForcedExceptionTransformer\">\n" +
+          "            <field column=\"id\" />\n" +
+          "            <field column=\"FORCE_ROLLBACK\" />\n" +
           "        </entity>\n" +
           "    </document>\n" +
           "</dataConfig>";
