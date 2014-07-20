@@ -308,6 +308,9 @@ public class DocBuilder {
     writer.rollback();
     statusMessages.put("", "Indexing failed. Rolled back all changes.");
     addStatusMessage("Rolledback");
+    if ((config != null) && (config.getOnRollback() != null)) {
+      invokeEventListener(config.getOnRollback());
+    }
   }
 
   private void doFullDump() {

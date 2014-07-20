@@ -143,6 +143,9 @@ New Features
     value for the fetchMailsSince filter.
   (Peter Sturge, Timothy Potter)
 
+* SOLR-6258: Added onRollback event handler hook to Data Import Handler (DIH).
+  (ehatcher)
+
 
 Bug Fixes
 ----------------------
