@@ -533,8 +533,7 @@ public class Automaton {
       } else {
         b.append(" [shape=circle,label=\"" + state + "\"]\n");
       }
-      int numTransitions = getNumTransitions(state);
-      initTransition(state, t);
+      int numTransitions = initTransition(state, t);
       //System.out.println("toDot: state " + state + " has " + numTransitions + " transitions; t.nextTrans=" + t.transitionUpto);
       for(int i=0;i<numTransitions;i++) {
         getNextTransition(t);

@@ -111,6 +111,13 @@ New Features
 
 * LUCENE-5826: Support proper hunspell case handling, LANG, KEEPCASE, NEEDAFFIX,
   and ONLYINCOMPOUND flags.  (Robert Muir)
+
+* LUCENE-5815: Add TermAutomatonQuery, a proximity query allowing you
+  to create an arbitrary automaton, using terms on the transitions,
+  expressing which sequence of sequential terms (including a special
+  "any" term) are allowed.  This is a generalization of
+  MultiPhraseQuery and span queries, and enables "correct" (including
+  position) length search-time graph synonyms.  (Mike McCandless)
   
 API Changes
 
