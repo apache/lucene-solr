@@ -3,6 +3,7 @@ package org.apache.lucene.facet.taxonomy;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.OrdinalMap;
 import org.apache.lucene.index.AtomicReader;
@@ -42,7 +43,7 @@ public abstract class TaxonomyMergeUtils {
    * the given writers.
    */
   public static void merge(Directory srcIndexDir, Directory srcTaxoDir, OrdinalMap map, IndexWriter destIndexWriter,
-      DirectoryTaxonomyWriter destTaxoWriter) throws IOException {
+      DirectoryTaxonomyWriter destTaxoWriter, FacetsConfig srcConfig) throws IOException {
     
     // merge the taxonomies
     destTaxoWriter.addTaxonomy(srcTaxoDir, map);
@@ -53,7 +54,7 @@ public abstract class TaxonomyMergeUtils {
       int numReaders = leaves.size();
       AtomicReader wrappedLeaves[] = new AtomicReader[numReaders];
       for (int i = 0; i < numReaders; i++) {
-        wrappedLeaves[i] = new OrdinalMappingAtomicReader(leaves.get(i).reader(), ordinalMap);
+        wrappedLeaves[i] = new OrdinalMappingAtomicReader(leaves.get(i).reader(), ordinalMap, srcConfig);
       }
       destIndexWriter.addIndexes(new MultiReader(wrappedLeaves));
       
