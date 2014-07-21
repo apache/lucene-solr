@@ -55,8 +55,16 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 public class TestFieldCacheSort extends LuceneTestCase {
 
-  /** Tests sorting on type string */
   public void testString() throws IOException {
+    testString(SortField.Type.STRING);
+  }
+
+  public void testStringVal() throws Exception {
+    testString(SortField.Type.STRING_VAL);
+  }
+
+  /** Tests sorting on type string */
+  private void testString(SortField.Type sortType) throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
@@ -65,12 +73,13 @@ public class TestFieldCacheSort extends LuceneTestCase {
     doc = new Document();
     doc.add(newStringField("value", "bar", Field.Store.YES));
     writer.addDocument(doc);
+    Type type = sortType == SortField.Type.STRING ? Type.SORTED : Type.BINARY;
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
-                     Collections.singletonMap("value", Type.SORTED));
+                     Collections.singletonMap("value", type));
     writer.shutdown();
     
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.STRING));
+    Sort sort = new Sort(new SortField("value", sortType));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(2, td.totalHits);
@@ -82,8 +91,16 @@ public class TestFieldCacheSort extends LuceneTestCase {
     dir.close();
   }
   
-  /** Tests sorting on type string with a missing value */
   public void testStringMissing() throws IOException {
+    testStringMissing(SortField.Type.STRING);
+  }
+  
+  public void testStringValMissing() throws IOException {
+    testStringMissing(SortField.Type.STRING_VAL);
+  }
+  
+  /** Tests sorting on type string with a missing value */
+  private void testStringMissing(SortField.Type sortType) throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
@@ -94,12 +111,13 @@ public class TestFieldCacheSort extends LuceneTestCase {
     doc = new Document();
     doc.add(newStringField("value", "bar", Field.Store.YES));
     writer.addDocument(doc);
+    Type type = sortType == SortField.Type.STRING ? Type.SORTED : Type.BINARY;
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
-                     Collections.singletonMap("value", Type.SORTED));
+                     Collections.singletonMap("value", type));
     writer.shutdown();
     
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.STRING));
+    Sort sort = new Sort(new SortField("value", sortType));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
@@ -112,8 +130,16 @@ public class TestFieldCacheSort extends LuceneTestCase {
     dir.close();
   }
   
-  /** Tests reverse sorting on type string */
   public void testStringReverse() throws IOException {
+    testStringReverse(SortField.Type.STRING);
+  }
+  
+  public void testStringValReverse() throws IOException {
+    testStringReverse(SortField.Type.STRING_VAL);
+  }
+  
+  /** Tests reverse sorting on type string */
+  private void testStringReverse(SortField.Type sortType) throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
@@ -122,12 +148,13 @@ public class TestFieldCacheSort extends LuceneTestCase {
     doc = new Document();
     doc.add(newStringField("value", "foo", Field.Store.YES));
     writer.addDocument(doc);
+    Type type = sortType == SortField.Type.STRING ? Type.SORTED : Type.BINARY;
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
-                     Collections.singletonMap("value", Type.SORTED));
+                     Collections.singletonMap("value", type));
     writer.shutdown();
     
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.STRING, true));
+    Sort sort = new Sort(new SortField("value", sortType, true));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(2, td.totalHits);
@@ -139,66 +166,17 @@ public class TestFieldCacheSort extends LuceneTestCase {
     dir.close();
   }
   
-  /** Tests sorting on type string_val */
-  public void testStringVal() throws IOException {
-    Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(newStringField("value", "foo", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("value", "bar", Field.Store.YES));
-    writer.addDocument(doc);
-    IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
-                     Collections.singletonMap("value", Type.BINARY));
-    writer.shutdown();
-    
-    IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.STRING_VAL));
-
-    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(2, td.totalHits);
-    // 'bar' comes before 'foo'
-    assertEquals("bar", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("foo", searcher.doc(td.scoreDocs[1].doc).get("value"));
-
-    ir.close();
-    dir.close();
+  public void testStringMissingSortedFirst() throws IOException {
+    testStringMissingSortedFirst(SortField.Type.STRING);
   }
   
-  /** Tests sorting on type string_val with a missing value */
-  public void testStringValMissing() throws IOException {
-    Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("value", "foo", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("value", "bar", Field.Store.YES));
-    writer.addDocument(doc);
-    IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
-                     Collections.singletonMap("value", Type.BINARY));
-    writer.shutdown();
-    
-    IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.STRING_VAL));
-
-    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits);
-    // null comes first
-    assertNull(searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("bar", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("foo", searcher.doc(td.scoreDocs[2].doc).get("value"));
-
-    ir.close();
-    dir.close();
+  public void testStringValMissingSortedFirst() throws IOException {
+    testStringMissingSortedFirst(SortField.Type.STRING_VAL);
   }
 
   /** Tests sorting on type string with a missing
    *  value sorted first */
-  public void testStringMissingSortedFirst() throws IOException {
+  private void testStringMissingSortedFirst(SortField.Type sortType) throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
@@ -209,12 +187,13 @@ public class TestFieldCacheSort extends LuceneTestCase {
     doc = new Document();
     doc.add(newStringField("value", "bar", Field.Store.YES));
     writer.addDocument(doc);
+    Type type = sortType == SortField.Type.STRING ? Type.SORTED : Type.BINARY;
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
-                     Collections.singletonMap("value", Type.SORTED));
+                     Collections.singletonMap("value", type));
     writer.shutdown();
     
     IndexSearcher searcher = newSearcher(ir);
-    SortField sf = new SortField("value", SortField.Type.STRING);
+    SortField sf = new SortField("value", sortType);
     Sort sort = new Sort(sf);
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
@@ -228,9 +207,17 @@ public class TestFieldCacheSort extends LuceneTestCase {
     dir.close();
   }
 
+  public void testStringMissingSortedFirstReverse() throws IOException {
+    testStringMissingSortedFirstReverse(SortField.Type.STRING);
+  }
+  
+  public void testStringValMissingSortedFirstReverse() throws IOException {
+    testStringMissingSortedFirstReverse(SortField.Type.STRING_VAL);
+  }
+  
   /** Tests reverse sorting on type string with a missing
    *  value sorted first */
-  public void testStringMissingSortedFirstReverse() throws IOException {
+  private void testStringMissingSortedFirstReverse(SortField.Type sortType) throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
@@ -241,12 +228,13 @@ public class TestFieldCacheSort extends LuceneTestCase {
     doc = new Document();
     doc.add(newStringField("value", "bar", Field.Store.YES));
     writer.addDocument(doc);
+    Type type = sortType == SortField.Type.STRING ? Type.SORTED : Type.BINARY;
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
-                     Collections.singletonMap("value", Type.SORTED));
+                     Collections.singletonMap("value", type));
     writer.shutdown();
     
     IndexSearcher searcher = newSearcher(ir);
-    SortField sf = new SortField("value", SortField.Type.STRING, true);
+    SortField sf = new SortField("value", sortType, true);
     Sort sort = new Sort(sf);
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
@@ -260,9 +248,17 @@ public class TestFieldCacheSort extends LuceneTestCase {
     dir.close();
   }
 
+  public void testStringMissingSortedLast() throws IOException {
+    testStringMissingSortedLast(SortField.Type.STRING);
+  }
+  
+  public void testStringValMissingSortedLast() throws IOException {
+    testStringMissingSortedLast(SortField.Type.STRING_VAL);
+  }
+
   /** Tests sorting on type string with a missing
    *  value sorted last */
-  public void testStringValMissingSortedLast() throws IOException {
+  private void testStringMissingSortedLast(SortField.Type sortType) throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
@@ -273,12 +269,13 @@ public class TestFieldCacheSort extends LuceneTestCase {
     doc = new Document();
     doc.add(newStringField("value", "bar", Field.Store.YES));
     writer.addDocument(doc);
+    Type type = sortType == SortField.Type.STRING ? Type.SORTED : Type.BINARY;
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
-                     Collections.singletonMap("value", Type.SORTED));
+                     Collections.singletonMap("value", type));
     writer.shutdown();
     
     IndexSearcher searcher = newSearcher(ir);
-    SortField sf = new SortField("value", SortField.Type.STRING);
+    SortField sf = new SortField("value", sortType);
     sf.setMissingValue(SortField.STRING_LAST);
     Sort sort = new Sort(sf);
 
@@ -293,9 +290,17 @@ public class TestFieldCacheSort extends LuceneTestCase {
     dir.close();
   }
 
+  public void testStringMissingSortedLastReverse() throws IOException {
+    testStringMissingSortedLastReverse(SortField.Type.STRING);
+  }
+  
+  public void testStringValMissingSortedLastReverse() throws IOException {
+    testStringMissingSortedLastReverse(SortField.Type.STRING_VAL);
+  }
+
   /** Tests reverse sorting on type string with a missing
    *  value sorted last */
-  public void testStringValMissingSortedLastReverse() throws IOException {
+  private void testStringMissingSortedLastReverse(SortField.Type sortType) throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
@@ -306,12 +311,13 @@ public class TestFieldCacheSort extends LuceneTestCase {
     doc = new Document();
     doc.add(newStringField("value", "bar", Field.Store.YES));
     writer.addDocument(doc);
+    Type type = sortType == SortField.Type.STRING ? Type.SORTED : Type.BINARY;
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
-                     Collections.singletonMap("value", Type.SORTED));
+                     Collections.singletonMap("value", type));
     writer.shutdown();
     
     IndexSearcher searcher = newSearcher(ir);
-    SortField sf = new SortField("value", SortField.Type.STRING, true);
+    SortField sf = new SortField("value", sortType, true);
     sf.setMissingValue(SortField.STRING_LAST);
     Sort sort = new Sort(sf);
 
@@ -321,33 +327,6 @@ public class TestFieldCacheSort extends LuceneTestCase {
     assertNull(searcher.doc(td.scoreDocs[0].doc).get("value"));
     assertEquals("foo", searcher.doc(td.scoreDocs[1].doc).get("value"));
     assertEquals("bar", searcher.doc(td.scoreDocs[2].doc).get("value"));
-
-    ir.close();
-    dir.close();
-  }
-  
-  /** Tests reverse sorting on type string_val */
-  public void testStringValReverse() throws IOException {
-    Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(newStringField("value", "bar", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("value", "foo", Field.Store.YES));
-    writer.addDocument(doc);
-    IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
-                     Collections.singletonMap("value", Type.BINARY));
-    writer.shutdown();
-    
-    IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.STRING_VAL, true));
-
-    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(2, td.totalHits);
-    // 'foo' comes after 'bar' in reverse order
-    assertEquals("foo", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("bar", searcher.doc(td.scoreDocs[1].doc).get("value"));
 
     ir.close();
     dir.close();

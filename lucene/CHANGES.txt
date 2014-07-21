@@ -123,6 +123,8 @@ New Features
   format, to include term ordinals in the index so the optional
   TermsEnum.ord() and TermsEnum.seekExact(long ord) APIs work.  (Mike
   McCandless)
+
+* LUCENE-5835: TermValComparator can sort missing values last. (Adrien Grand)
   
 API Changes
 

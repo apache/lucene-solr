@@ -97,6 +97,20 @@ public class TestSearchAfter extends LuceneTestCase {
       }
     }
 
+    // Also test missing first / last for the "string_val" sorts:
+    for(String field : new String[] {"sortedbytesdocvaluesval", "straightbytesdocvalues"}) {
+      for(int rev=0;rev<2;rev++) {
+        boolean reversed = rev == 0;
+        SortField sf = new SortField(field, SortField.Type.STRING_VAL, reversed);
+        sf.setMissingValue(SortField.STRING_FIRST);
+        allSortFields.add(sf);
+
+        sf = new SortField(field, SortField.Type.STRING_VAL, reversed);
+        sf.setMissingValue(SortField.STRING_LAST);
+        allSortFields.add(sf);
+      }
+    }
+
     int limit = allSortFields.size();
     for(int i=0;i<limit;i++) {
       SortField sf = allSortFields.get(i);
