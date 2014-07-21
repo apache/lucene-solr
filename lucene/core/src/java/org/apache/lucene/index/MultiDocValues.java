@@ -253,7 +253,7 @@ public class MultiDocValues {
       AtomicReaderContext context = leaves.get(i);
       SortedNumericDocValues v = context.reader().getSortedNumericDocValues(field);
       if (v == null) {
-        v = DocValues.emptySortedNumeric();
+        v = DocValues.emptySortedNumeric(context.reader().maxDoc());
       } else {
         anyReal = true;
       }

@@ -214,7 +214,7 @@ final class SegmentMerger {
             for (AtomicReader reader : mergeState.readers) {
               SortedNumericDocValues values = reader.getSortedNumericDocValues(field.name);
               if (values == null) {
-                values = DocValues.emptySortedNumeric();
+                values = DocValues.emptySortedNumeric(reader.maxDoc());
               }
               toMerge.add(values);
             }

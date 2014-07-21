@@ -171,6 +171,9 @@ Optimizations
   warning in javadocs. It is almost always a better idea to implement
   slicing on your own!  (Uwe Schindler, Robert Muir)
 
+* LUCENE-5834: Empty sorted set and numeric doc values are now singletons.
+  (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-5796: Fixes the Scorer.getChildren() method for two combinations 

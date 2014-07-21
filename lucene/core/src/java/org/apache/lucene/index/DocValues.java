@@ -77,66 +77,25 @@ public final class DocValues {
       }
     };
   }
-  
-  /** 
+
+  /**
    * An empty SortedNumericDocValues which returns zero values for every document 
    */
-  public static final SortedNumericDocValues emptySortedNumeric() {
-    return new SortedNumericDocValues() {
-      @Override
-      public void setDocument(int doc) {}
-
-      @Override
-      public long valueAt(int index) {
-        throw new IndexOutOfBoundsException();
-      }
-
-      @Override
-      public int count() {
-        return 0;
-      }
-    };
+  public static final SortedNumericDocValues emptySortedNumeric(int maxDoc) {
+    return singleton(emptyNumeric(), new Bits.MatchNoBits(maxDoc));
   }
 
   /** 
    * An empty SortedDocValues which returns {@link SortedSetDocValues#NO_MORE_ORDS} for every document 
    */
-  public static final SortedSetDocValues emptySortedSet() {
-    return new RandomAccessOrds() {
-      @Override
-      public long nextOrd() {
-        return NO_MORE_ORDS;
-      }
-      
-      @Override
-      public void setDocument(int docID) {}
-      
-      @Override
-      public BytesRef lookupOrd(long ord) {
-        throw new IndexOutOfBoundsException();
-      }
-      
-      @Override
-      public long getValueCount() {
-        return 0;
-      }
-      
-      @Override
-      public long ordAt(int index) {
-        throw new IndexOutOfBoundsException();
-      }
-      
-      @Override
-      public int cardinality() {
-        return 0;
-      }
-    };
+  public static final RandomAccessOrds emptySortedSet() {
+    return singleton(emptySorted());
   }
   
   /** 
    * Returns a multi-valued view over the provided SortedDocValues 
    */
-  public static SortedSetDocValues singleton(SortedDocValues dv) {
+  public static RandomAccessOrds singleton(SortedDocValues dv) {
     return new SingletonSortedSetDocValues(dv);
   }
   
@@ -286,7 +245,7 @@ public final class DocValues {
     if (dv == null) {
       NumericDocValues single = in.getNumericDocValues(field);
       if (single == null) {
-        return emptySortedNumeric();
+        return emptySortedNumeric(in.maxDoc());
       }
       Bits bits = in.getDocsWithField(field);
       return singleton(single, bits);
