@@ -41,12 +41,19 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 
 /** random sorting tests */
 public class TestSortRandom extends LuceneTestCase {
 
   public void testRandomStringSort() throws Exception {
+    testRandomStringSort(SortField.Type.STRING);
+  }
+
+  public void testRandomStringValSort() throws Exception {
+    testRandomStringSort(SortField.Type.STRING_VAL);
+  }
+
+  private void testRandomStringSort(SortField.Type type) throws Exception {
     Random random = new Random(random().nextLong());
 
     final int NUM_DOCS = atLeast(100);
@@ -135,7 +142,7 @@ public class TestSortRandom extends LuceneTestCase {
       final boolean sortMissingLast;
       final boolean missingIsNull;
       if (defaultCodecSupportsDocValues() && random.nextBoolean()) {
-        sf = new SortField("stringdv", SortField.Type.STRING, reverse);
+        sf = new SortField("stringdv", type, reverse);
         // Can only use sort missing if the DVFormat
         // supports docsWithField:
         sortMissingLast = defaultCodecSupportsDocsWithField() && random().nextBoolean();

@@ -193,7 +193,7 @@ public class SortField {
     };
 
   public void setMissingValue(Object missingValue) {
-    if (type == Type.STRING) {
+    if (type == Type.STRING || type == Type.STRING_VAL) {
       if (missingValue != STRING_FIRST && missingValue != STRING_LAST) {
         throw new IllegalArgumentException("For STRING type, missing value must be either STRING_FIRST or STRING_LAST");
       }
@@ -426,8 +426,7 @@ public class SortField {
       return new FieldComparator.TermOrdValComparator(numHits, field, missingValue == STRING_LAST);
 
     case STRING_VAL:
-      // TODO: should we remove this?  who really uses it?
-      return new FieldComparator.TermValComparator(numHits, field);
+      return new FieldComparator.TermValComparator(numHits, field, missingValue == STRING_LAST);
 
     case REWRITEABLE:
       throw new IllegalStateException("SortField needs to be rewritten through Sort.rewrite(..) and SortField.rewrite(..)");
