@@ -195,6 +195,8 @@ Bug Fixes
 * LUCENE-5827: Make all Directory implementations correctly fail with
   IllegalArgumentException if slices are out of bounds.  (Uwe SChindler)
 
+* LUCENE-5838: Fix hunspell when the .aff file has over 64k affixes. (Robert Muir)
+
 Test Framework
 
 * LUCENE-5786: Unflushed/ truncated events file (hung testing subprocess).
