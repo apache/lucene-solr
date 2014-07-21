@@ -60,7 +60,7 @@ while True:
       keep = True
     else:
       ext = os.path.splitext(l)[-1]
-      keep = ext in ('.xml', '.iml', '.html', '.template', '.py', '.g', '.properties')
+      keep = ext in ('.xml', '.iml', '.html', '.template', '.py', '.g', '.properties', '.java')
 
     if keep:
       print

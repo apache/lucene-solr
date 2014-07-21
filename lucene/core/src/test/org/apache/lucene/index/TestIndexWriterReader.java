@@ -1029,6 +1029,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
                 (format.equals("FSTPulsing41") ||
                  format.equals("FSTOrdPulsing41") ||
                  format.equals("FST41") ||
+                 format.equals("OrdsLucene41") ||
                  format.equals("FSTOrd41") ||
                  format.equals("SimpleText") ||
                  format.equals("Memory") ||

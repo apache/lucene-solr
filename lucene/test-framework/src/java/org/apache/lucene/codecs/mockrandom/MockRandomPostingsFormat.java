@@ -38,6 +38,8 @@ import org.apache.lucene.codecs.blockterms.VariableGapTermsIndexReader;
 import org.apache.lucene.codecs.blockterms.VariableGapTermsIndexWriter;
 import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
 import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
+import org.apache.lucene.codecs.blocktreeords.OrdsBlockTreeTermsReader;
+import org.apache.lucene.codecs.blocktreeords.OrdsBlockTreeTermsWriter;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsReader;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsWriter;
 import org.apache.lucene.codecs.mockintblock.MockFixedIntBlockPostingsFormat;
@@ -191,7 +193,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
     }
 
     final FieldsConsumer fields;
-    final int t1 = random.nextInt(4);
+    final int t1 = random.nextInt(5);
 
     if (t1 == 0) {
       boolean success = false;
@@ -234,7 +236,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
           postingsWriter.close();
         }
       }
-    } else {
+    } else if (t1 == 3) {
 
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: writing Block terms dict");
@@ -304,6 +306,30 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
           }
         }
       }
+    } else if (t1 == 4) {
+      // Use OrdsBlockTree terms dict
+      if (LuceneTestCase.VERBOSE) {
+        System.out.println("MockRandomCodec: writing OrdsBlockTree");
+      }
+
+      // TODO: would be nice to allow 1 but this is very
+      // slow to write
+      final int minTermsInBlock = TestUtil.nextInt(random, 2, 100);
+      final int maxTermsInBlock = Math.max(2, (minTermsInBlock-1)*2 + random.nextInt(100));
+
+      boolean success = false;
+      try {
+        fields = new OrdsBlockTreeTermsWriter(state, postingsWriter, minTermsInBlock, maxTermsInBlock);
+        success = true;
+      } finally {
+        if (!success) {
+          postingsWriter.close();
+        }
+      }
+      
+    } else {
+      // BUG!
+      throw new AssertionError();
     }
 
     return fields;
@@ -351,7 +377,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
     }
 
     final FieldsProducer fields;
-    final int t1 = random.nextInt(4);
+    final int t1 = random.nextInt(5);
     if (t1 == 0) {
       boolean success = false;
       try {
@@ -393,7 +419,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
           postingsReader.close();
         }
       }
-    } else {
+    } else if (t1 == 3) {
 
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: reading Block terms dict");
@@ -464,6 +490,29 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
           }
         }
       }
+    } else if (t1 == 4) {
+      // Use OrdsBlockTree terms dict
+      if (LuceneTestCase.VERBOSE) {
+        System.out.println("MockRandomCodec: reading OrdsBlockTree terms dict");
+      }
+
+      boolean success = false;
+      try {
+        fields = new OrdsBlockTreeTermsReader(state.directory,
+                                              state.fieldInfos,
+                                              state.segmentInfo,
+                                              postingsReader,
+                                              state.context,
+                                              state.segmentSuffix);
+        success = true;
+      } finally {
+        if (!success) {
+          postingsReader.close();
+        }
+      }
+    } else {
+      // BUG!
+      throw new AssertionError();
     }
 
     return fields;

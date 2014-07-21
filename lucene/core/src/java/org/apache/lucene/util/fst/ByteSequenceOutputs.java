@@ -23,6 +23,7 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.StringHelper;
 
 /**
  * An FST {@link Outputs} implementation where each output
@@ -80,13 +81,16 @@ public final class ByteSequenceOutputs extends Outputs<BytesRef> {
     if (inc == NO_OUTPUT) {
       // no prefix removed
       return output;
-    } else if (inc.length == output.length) {
-      // entire output removed
-      return NO_OUTPUT;
     } else {
-      assert inc.length < output.length: "inc.length=" + inc.length + " vs output.length=" + output.length;
-      assert inc.length > 0;
-      return new BytesRef(output.bytes, output.offset + inc.length, output.length-inc.length);
+      assert StringHelper.startsWith(output, inc);
+      if (inc.length == output.length) {
+        // entire output removed
+        return NO_OUTPUT;
+      } else {
+        assert inc.length < output.length: "inc.length=" + inc.length + " vs output.length=" + output.length;
+        assert inc.length > 0;
+        return new BytesRef(output.bytes, output.offset + inc.length, output.length-inc.length);
+      }
     }
   }
 
