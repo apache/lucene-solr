@@ -55,6 +55,7 @@ public class TestOrdinalMappingAtomicReader extends FacetTestCase {
   public void setUp() throws Exception {
     super.setUp();
     facetConfig.setMultiValued("tag", true);
+    facetConfig.setIndexFieldName("tag", "$tags"); // add custom index field name
   }
 
   @Test
@@ -86,15 +87,22 @@ public class TestOrdinalMappingAtomicReader extends FacetTestCase {
     
     FacetsCollector collector = new FacetsCollector();
     FacetsCollector.search(searcher, new MatchAllDocsQuery(), 10, collector);
-    Facets facets = new FastTaxonomyFacetCounts(taxoReader, facetConfig, collector);
-    FacetResult result = facets.getTopChildren(10, "tag");
-    
+
+    // tag facets
+    Facets tagFacets = new FastTaxonomyFacetCounts("$tags", taxoReader, facetConfig, collector);
+    FacetResult result = tagFacets.getTopChildren(10, "tag");
     for (LabelAndValue lv: result.labelValues) {
       if (VERBOSE) {
         System.out.println(lv);
       }
       assertEquals(NUM_DOCS, lv.value.intValue());
     }
+    
+    // id facets
+    Facets idFacets = new FastTaxonomyFacetCounts(taxoReader, facetConfig, collector);
+    FacetResult idResult = idFacets.getTopChildren(10, "id");
+    assertEquals(NUM_DOCS, idResult.childCount);
+    assertEquals(NUM_DOCS * 2, idResult.value); // each "id" appears twice
     
     BinaryDocValues bdv = MultiDocValues.getBinaryValues(indexReader, "bdv");
     BinaryDocValues cbdv = MultiDocValues.getBinaryValues(indexReader, "cbdv");
@@ -115,7 +123,10 @@ public class TestOrdinalMappingAtomicReader extends FacetTestCase {
         int facetValue = asc ? j: NUM_DOCS - j;
         doc.add(new FacetField("tag", Integer.toString(facetValue)));
       }
-      // make sure OrdinalMappingAtomicReader ignores non-facet fields
+      // add a facet under default dim config
+      doc.add(new FacetField("id", Integer.toString(i)));
+      
+      // make sure OrdinalMappingAtomicReader ignores non-facet BinaryDocValues fields
       doc.add(new BinaryDocValuesField("bdv", new BytesRef(Integer.toString(i))));
       doc.add(new BinaryDocValuesField("cbdv", new BytesRef(Integer.toString(i*2))));
       writer.addDocument(facetConfig.build(taxonomyWriter, doc));

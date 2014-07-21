@@ -125,6 +125,10 @@ public class OrdinalMappingAtomicReader extends FilterAtomicReader {
     for (DimConfig dc : srcConfig.getDimConfigs().values()) {
       facetFields.add(dc.indexFieldName);
     }
+    // always add the default indexFieldName. This is because FacetsConfig does
+    // not explicitly record dimensions that were indexed under the default
+    // DimConfig, unless they have a custome DimConfig.
+    facetFields.add(FacetsConfig.DEFAULT_DIM_CONFIG.indexFieldName);
   }
   
   /**
