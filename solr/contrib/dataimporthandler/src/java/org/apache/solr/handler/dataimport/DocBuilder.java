@@ -125,6 +125,7 @@ public class DocBuilder {
       }
       indexerNamespace.put(INDEX_START_TIME, dataImporter.getIndexStartTime());
       indexerNamespace.put("request", new HashMap<>(reqParams.getRawParams()));
+      indexerNamespace.put("handlerName", dataImporter.getHandlerName());
       for (Entity entity : dataImporter.getConfig().getEntities()) {
         Map<String, Object> entityNamespace = new HashMap<>();
         String key = SolrWriter.LAST_INDEX_KEY;

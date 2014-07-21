@@ -146,6 +146,8 @@ New Features
 * SOLR-6258: Added onRollback event handler hook to Data Import Handler (DIH).
   (ehatcher)
 
+* SOLR-6263: Add DIH handler name to variable resolver as ${dih.handlerName}. (ehatcher)
+
 
 Bug Fixes
 ----------------------
