@@ -342,14 +342,14 @@ public  class LeaderElector {
       if (EventType.None.equals(event.getType())) {
         return;
       }
-      if(canceled) {
+      if (canceled) {
         log.info("This watcher is not active anymore {}", myNode);
         try {
-          zkClient.delete(myNode,-1,true);
-        }catch (KeeperException.NoNodeException nne) {
-          //expected . don't do anything
-        }  catch (Exception e) {
-          log.warn("My watched node still exists and can't remove "+myNode, e);
+          zkClient.delete(myNode, -1, true);
+        } catch (KeeperException.NoNodeException nne) {
+          // expected . don't do anything
+        } catch (Exception e) {
+          log.warn("My watched node still exists and can't remove " + myNode, e);
         }
         return;
       }
