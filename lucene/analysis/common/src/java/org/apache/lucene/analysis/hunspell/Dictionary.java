@@ -289,8 +289,8 @@ public class Dictionary {
    * @throws IOException Can be thrown while reading from the InputStream
    */
   private void readAffixFile(InputStream affixStream, CharsetDecoder decoder) throws IOException, ParseException {
-    TreeMap<String, List<Character>> prefixes = new TreeMap<>();
-    TreeMap<String, List<Character>> suffixes = new TreeMap<>();
+    TreeMap<String, List<Integer>> prefixes = new TreeMap<>();
+    TreeMap<String, List<Integer>> suffixes = new TreeMap<>();
     Map<String,Integer> seenPatterns = new HashMap<>();
     
     // zero condition -> 0 ord
@@ -397,16 +397,15 @@ public class Dictionary {
     stripOffsets[currentIndex] = currentOffset;
   }
   
-  private FST<IntsRef> affixFST(TreeMap<String,List<Character>> affixes) throws IOException {
+  private FST<IntsRef> affixFST(TreeMap<String,List<Integer>> affixes) throws IOException {
     IntSequenceOutputs outputs = IntSequenceOutputs.getSingleton();
     Builder<IntsRef> builder = new Builder<>(FST.INPUT_TYPE.BYTE4, outputs);
-    
     IntsRef scratch = new IntsRef();
-    for (Map.Entry<String,List<Character>> entry : affixes.entrySet()) {
+    for (Map.Entry<String,List<Integer>> entry : affixes.entrySet()) {
       Util.toUTF32(entry.getKey(), scratch);
-      List<Character> entries = entry.getValue();
+      List<Integer> entries = entry.getValue();
       IntsRef output = new IntsRef(entries.size());
-      for (Character c : entries) {
+      for (Integer c : entries) {
         output.ints[output.length++] = c;
       }
       builder.add(scratch, output);
@@ -444,7 +443,7 @@ public class Dictionary {
    * @param seenPatterns map from condition -> index of patterns, for deduplication.
    * @throws IOException Can be thrown while reading the rule
    */
-  private void parseAffix(TreeMap<String,List<Character>> affixes,
+  private void parseAffix(TreeMap<String,List<Integer>> affixes,
                           String header,
                           LineNumberReader reader,
                           String conditionPattern,
@@ -564,13 +563,12 @@ public class Dictionary {
         affixArg = new StringBuilder(affixArg).reverse().toString();
       }
       
-      List<Character> list = affixes.get(affixArg);
+      List<Integer> list = affixes.get(affixArg);
       if (list == null) {
         list = new ArrayList<>();
         affixes.put(affixArg, list);
       }
-      
-      list.add((char)currentAffix);
+      list.add(currentAffix);
       currentAffix++;
     }
   }
