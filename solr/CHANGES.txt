@@ -114,6 +114,13 @@ Upgrading from Solr 4.9
 * CoreContainer.remove() has been removed.  You should now use CoreContainer.unload() to
   delete a SolrCore (see SOLR-6232).
 
+* solr.xml parsing has been improved to better account for the expected data types of 
+  various options.  As part of this fix, additional error checking has also been added to
+  provide errors in the event of duplicated options, or unknown option names that may 
+  indicate a typo.  Users who have modified their solr.xml in the past and now upgrade may 
+  get errors on startup if they have typos or unexpected options specified in their solr.xml 
+  file.  (See SOLR-5746 for more information.)
+
 Detailed Change List
 ----------------------
 
@@ -204,6 +211,11 @@ Bug Fixes
 * SOLR-6257: More than two "!"-s in a doc ID throws an
   ArrayIndexOutOfBoundsException when using the composite id router.
   (Steve Rowe)
+
+* SOLR-5746: Bugs in solr.xml parsing have been fixed to more correctly deal with the various 
+  datatypes of options people can specify, additional error handling of duplicated/unidentified 
+  options has also been added. (Maciej Zasada, hossman)
+
 
 Optimizations
 ---------------------

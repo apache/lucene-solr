@@ -158,7 +158,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
       fail("Should have thrown an exception here");
     } catch (InvocationTargetException ite) {
       assertTrue("Should be failing to create default solr.xml in code",
-          ite.getTargetException().getCause().getMessage().indexOf("solr.xml does not exist") != -1);
+          ite.getCause().getMessage().contains("solr.xml does not exist"));
     } finally {
       closeZK();
     }

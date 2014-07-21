@@ -23,7 +23,7 @@
   <str name="infoHandler">testInfoHandler</str>
   <str name="managementPath">testManagementPath</str>
   <str name="sharedLib">testSharedLib</str>
-  <str name="shareSchema">${shareSchema:testShareSchema}</str>
+  <str name="shareSchema">${shareSchema:true}</str>
   <int name="transientCacheSize">66</int>
 
   <solrcloud>
@@ -41,7 +41,7 @@
 
   <logging>
     <str name="class">testLoggingClass</str>
-    <str name="enabled">testLoggingEnabled</str>
+    <str name="enabled">true</str>
     <watcher>
       <int name="size">88</int>
       <int name="threshold">99</int>

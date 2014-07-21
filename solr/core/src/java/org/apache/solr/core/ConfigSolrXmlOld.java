@@ -17,14 +17,6 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.util.DOMUtil;
-import org.apache.solr.util.PropertiesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import java.io.File;
@@ -37,6 +29,15 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.util.DOMUtil;
+import org.apache.solr.util.PropertiesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 
 /**
@@ -62,7 +63,6 @@ public class ConfigSolrXmlOld extends ConfigSolr {
     try {
       checkForIllegalConfig();
       fillPropMap();
-      config.substituteProperties();
       initCoreList();
       this.persistor = isPersistent() ? new SolrXMLCoresLocator(originalXML, this)
                                       : new SolrXMLCoresLocator.NonPersistingLocator(originalXML, this);
@@ -123,63 +123,59 @@ public class ConfigSolrXmlOld extends ConfigSolr {
   }
   
   private void fillPropMap() {
-    
-    propMap.put(CfgProp.SOLR_CORELOADTHREADS,
-        config.getVal("solr/@coreLoadThreads", false));
-    propMap
-        .put(CfgProp.SOLR_SHAREDLIB, config.getVal("solr/@sharedLib", false));
-    propMap.put(CfgProp.SOLR_ZKHOST, config.getVal("solr/@zkHost", false));
-    
-    propMap.put(CfgProp.SOLR_LOGGING_CLASS,
-        config.getVal("solr/logging/@class", false));
-    propMap.put(CfgProp.SOLR_LOGGING_ENABLED,
-        config.getVal("solr/logging/@enabled", false));
-    propMap.put(CfgProp.SOLR_LOGGING_WATCHER_SIZE,
-        config.getVal("solr/logging/watcher/@size", false));
-    propMap.put(CfgProp.SOLR_LOGGING_WATCHER_THRESHOLD,
-        config.getVal("solr/logging/watcher/@threshold", false));
-    
-    propMap.put(CfgProp.SOLR_ADMINHANDLER,
-        config.getVal("solr/cores/@adminHandler", false));
-    propMap.put(CfgProp.SOLR_COLLECTIONSHANDLER, config.getVal("solr/cores/@collectionsHandler", false));
-    propMap.put(CfgProp.SOLR_INFOHANDLER, config.getVal("solr/cores/@infoHandler", false));
-    propMap.put(CfgProp.SOLR_DISTRIBUPDATECONNTIMEOUT,
-        config.getVal("solr/cores/@distribUpdateConnTimeout", false));
-    propMap.put(CfgProp.SOLR_DISTRIBUPDATESOTIMEOUT,
-        config.getVal("solr/cores/@distribUpdateSoTimeout", false));
-    propMap.put(CfgProp.SOLR_MAXUPDATECONNECTIONS,
-        config.getVal("solr/cores/@maxUpdateConnections", false));
-    propMap.put(CfgProp.SOLR_MAXUPDATECONNECTIONSPERHOST,
-        config.getVal("solr/cores/@maxUpdateConnectionsPerHost", false));
-    propMap.put(CfgProp.SOLR_HOST, config.getVal("solr/cores/@host", false));
-    propMap.put(CfgProp.SOLR_HOSTCONTEXT,
-        config.getVal("solr/cores/@hostContext", false));
-    propMap.put(CfgProp.SOLR_HOSTPORT,
-        config.getVal("solr/cores/@hostPort", false));
-    propMap.put(CfgProp.SOLR_LEADERVOTEWAIT,
-        config.getVal("solr/cores/@leaderVoteWait", false));
-    propMap.put(CfgProp.SOLR_GENERICCORENODENAMES,
-        config.getVal("solr/cores/@genericCoreNodeNames", false));
-    propMap.put(CfgProp.SOLR_MANAGEMENTPATH,
-        config.getVal("solr/cores/@managementPath", false));
-    propMap.put(CfgProp.SOLR_SHARESCHEMA,
-        config.getVal("solr/cores/@shareSchema", false));
-    propMap.put(CfgProp.SOLR_TRANSIENTCACHESIZE,
-        config.getVal("solr/cores/@transientCacheSize", false));
-    propMap.put(CfgProp.SOLR_ZKCLIENTTIMEOUT,
-        config.getVal("solr/cores/@zkClientTimeout", false));
-    propMap.put(CfgProp.SOLR_CONFIGSETBASEDIR, config.getVal("solr/cores/@configSetBaseDir", false));
+    storeConfigPropertyAsInt(CfgProp.SOLR_CORELOADTHREADS, "solr/@coreLoadThreads");
+    storeConfigPropertyAsString(CfgProp.SOLR_SHAREDLIB, "solr/@sharedLib");
+    storeConfigPropertyAsString(CfgProp.SOLR_ZKHOST, "solr/@zkHost");
+    storeConfigPropertyAsString(CfgProp.SOLR_LOGGING_CLASS, "solr/logging/@class");
+    storeConfigPropertyAsBoolean(CfgProp.SOLR_LOGGING_ENABLED, "solr/logging/@enabled");
+    storeConfigPropertyAsInt(CfgProp.SOLR_LOGGING_WATCHER_SIZE, "solr/logging/watcher/@size");
+    storeConfigPropertyAsString(CfgProp.SOLR_LOGGING_WATCHER_THRESHOLD, "solr/logging/watcher/@threshold");
+    storeConfigPropertyAsString(CfgProp.SOLR_ADMINHANDLER, "solr/cores/@adminHandler");
+    storeConfigPropertyAsString(CfgProp.SOLR_COLLECTIONSHANDLER, "solr/cores/@collectionsHandler");
+    storeConfigPropertyAsString(CfgProp.SOLR_INFOHANDLER, "solr/cores/@infoHandler");
+    storeConfigPropertyAsInt(CfgProp.SOLR_DISTRIBUPDATECONNTIMEOUT, "solr/cores/@distribUpdateConnTimeout");
+    storeConfigPropertyAsInt(CfgProp.SOLR_DISTRIBUPDATESOTIMEOUT, "solr/cores/@distribUpdateSoTimeout");
+    storeConfigPropertyAsInt(CfgProp.SOLR_MAXUPDATECONNECTIONS, "solr/cores/@maxUpdateConnections");
+    storeConfigPropertyAsInt(CfgProp.SOLR_MAXUPDATECONNECTIONSPERHOST, "solr/cores/@maxUpdateConnectionsPerHost");
+    storeConfigPropertyAsString(CfgProp.SOLR_HOST, "solr/cores/@host");
+    storeConfigPropertyAsString(CfgProp.SOLR_HOSTCONTEXT, "solr/cores/@hostContext");
+    storeConfigPropertyAsString(CfgProp.SOLR_HOSTPORT, "solr/cores/@hostPort");
+    storeConfigPropertyAsInt(CfgProp.SOLR_LEADERVOTEWAIT, "solr/cores/@leaderVoteWait");
+    storeConfigPropertyAsBoolean(CfgProp.SOLR_GENERICCORENODENAMES, "solr/cores/@genericCoreNodeNames");
+    storeConfigPropertyAsString(CfgProp.SOLR_MANAGEMENTPATH, "solr/cores/@managementPath");
+    storeConfigPropertyAsBoolean(CfgProp.SOLR_SHARESCHEMA, "solr/cores/@shareSchema");
+    storeConfigPropertyAsInt(CfgProp.SOLR_TRANSIENTCACHESIZE, "solr/cores/@transientCacheSize");
+    storeConfigPropertyAsInt(CfgProp.SOLR_ZKCLIENTTIMEOUT, "solr/cores/@zkClientTimeout");
+    storeConfigPropertyAsString(CfgProp.SOLR_CONFIGSETBASEDIR, "solr/cores/@configSetBaseDir");
 
     // These have no counterpart in 5.0, asking, for any of these in Solr 5.0
     // will result in an error being
     // thrown.
-    propMap.put(CfgProp.SOLR_CORES_DEFAULT_CORE_NAME,
-        config.getVal("solr/cores/@defaultCoreName", false));
-    propMap.put(CfgProp.SOLR_PERSISTENT,
-        config.getVal("solr/@persistent", false));
-    propMap.put(CfgProp.SOLR_ADMINPATH,
-        config.getVal("solr/cores/@adminPath", false));
-    
+    storeConfigPropertyAsString(CfgProp.SOLR_CORES_DEFAULT_CORE_NAME, "solr/cores/@defaultCoreName");
+    storeConfigPropertyAsString(CfgProp.SOLR_PERSISTENT, "solr/@persistent");
+    storeConfigPropertyAsString(CfgProp.SOLR_ADMINPATH, "solr/cores/@adminPath");
+  }
+
+  private void storeConfigPropertyAsInt(CfgProp key, String xmlPath) {
+    String valueAsString = config.getVal(xmlPath, false);
+    if (StringUtils.isNotBlank(valueAsString)) {
+      propMap.put(key, Integer.parseInt(valueAsString));
+    } else {
+      propMap.put(key, null);
+    }
+  }
+
+  private void storeConfigPropertyAsBoolean(CfgProp key, String xmlPath) {
+    String valueAsString = config.getVal(xmlPath, false);
+    if (StringUtils.isNotBlank(valueAsString)) {
+      propMap.put(key, Boolean.parseBoolean(valueAsString));
+    } else {
+      propMap.put(key, null);
+    }
+  }
+
+  private void storeConfigPropertyAsString(CfgProp key, String xmlPath) {
+    propMap.put(key, config.getVal(xmlPath, false));
   }
 
   private void initCoreList() throws IOException {
@@ -196,7 +192,6 @@ public class ConfigSolrXmlOld extends ConfigSolr {
       String name = DOMUtil.getAttr(node, CoreDescriptor.CORE_NAME, null);
 
       String dataDir = DOMUtil.getAttr(node, CoreDescriptor.CORE_DATADIR, null);
-      if (dataDir != null) dataDir = PropertiesUtil.substituteProperty(dataDir, null);
       if (name != null) {
         if (!names.contains(name)) {
           names.add(name);
@@ -208,7 +203,6 @@ public class ConfigSolrXmlOld extends ConfigSolr {
       }
 
       String instDir = DOMUtil.getAttr(node, CoreDescriptor.CORE_INSTDIR, null);
-      if (instDir != null) instDir = PropertiesUtil.substituteProperty(instDir, null);
 
       if (dataDir != null) {
         String absData = null;
@@ -259,7 +253,7 @@ public class ConfigSolrXmlOld extends ConfigSolr {
           String propVal = DOMUtil.getAttr(node, property);
           if (propVal == null)
             propVal = defaultVal;
-          return PropertiesUtil.substituteProperty(propVal, null);
+          return propVal;
         }
       }
     }
