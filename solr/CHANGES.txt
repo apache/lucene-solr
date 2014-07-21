@@ -272,6 +272,9 @@ Other Changes
 
 * SOLR-3893: DIH should not depend on mail.jar,activation.jar (Timothy Potter, Steve Rowe)
 
+* SOLR-6252: A couple of small improvements to UnInvertedField class. 
+  (Vamsee Yarlagadda, Gregory Chanan, Mark Miller)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
