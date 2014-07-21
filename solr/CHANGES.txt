@@ -215,6 +215,9 @@ Optimizations
   DocumentBuilder.toDocument for use-cases with large number of fields and copyFields.
   (Steven Bower via shalin)
 
+* SOLR-5968: BinaryResponseWriter fetches unnecessary stored fields when only pseudo-fields
+  are requested. (Gregg Donovan via shalin)
+
 Other Changes
 ---------------------
 
