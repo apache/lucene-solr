@@ -357,4 +357,31 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     w.close();
     dir.close();
   }
+
+  public void testSeekCeilNotFound() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    // Get empty string in there!
+    doc.add(newStringField("field", "", Field.Store.NO));
+    w.addDocument(doc);
+    
+    for(int i=0;i<36;i++) {
+      doc = new Document();
+      String term = "" + (char) (97+i);
+      String term2 = "a" + (char) (97+i);
+      doc.add(newTextField("field", term + " " + term2, Field.Store.NO));
+      w.addDocument(doc);
+    }
+
+    w.forceMerge(1);
+    IndexReader r = w.getReader();
+    TermsEnum te = MultiFields.getTerms(r, "field").iterator(null);
+    assertEquals(TermsEnum.SeekStatus.NOT_FOUND, te.seekCeil(new BytesRef(new byte[] {0x22})));
+    assertEquals("a", te.term().utf8ToString());
+    assertEquals(1L, te.ord());
+    r.close();
+    w.close();
+    dir.close();
+  }
 }

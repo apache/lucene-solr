@@ -655,19 +655,6 @@ final class OrdsSegmentTermsEnumFrame {
           // return NOT_FOUND:
           fillTerm();
 
-          if (!exactOnly && !ste.termExists) {
-            // We are on a sub-block, and caller wants
-            // us to position to the next term after
-            // the target, so we must recurse into the
-            // sub-frame(s):
-            ste.currentFrame = ste.pushFrame(null, ste.currentFrame.lastSubFP, termLen, ste.currentFrame.termOrd);
-            ste.currentFrame.loadBlock();
-            while (ste.currentFrame.next()) {
-              ste.currentFrame = ste.pushFrame(null, ste.currentFrame.lastSubFP, ste.term.length, ste.currentFrame.termOrd);
-              ste.currentFrame.loadBlock();
-            }
-          }
-                
           //if (DEBUG) System.out.println("        not found");
           return SeekStatus.NOT_FOUND;
         } else if (stop) {
@@ -742,6 +729,8 @@ final class OrdsSegmentTermsEnumFrame {
       final int termLen = prefix + suffix;
       startBytePos = suffixesReader.getPosition();
       suffixesReader.skipBytes(suffix);
+      // Must save ord before we skip over a sub-block in case we push, below:
+      long prevTermOrd = termOrd;
       if (ste.termExists) {
         state.termBlockOrd++;
         termOrd++;
@@ -795,10 +784,10 @@ final class OrdsSegmentTermsEnumFrame {
             // us to position to the next term after
             // the target, so we must recurse into the
             // sub-frame(s):
-            ste.currentFrame = ste.pushFrame(null, ste.currentFrame.lastSubFP, termLen, ste.currentFrame.termOrd);
+            ste.currentFrame = ste.pushFrame(null, ste.currentFrame.lastSubFP, termLen, prevTermOrd);
             ste.currentFrame.loadBlock();
             while (ste.currentFrame.next()) {
-              ste.currentFrame = ste.pushFrame(null, ste.currentFrame.lastSubFP, ste.term.length, ste.currentFrame.termOrd);
+              ste.currentFrame = ste.pushFrame(null, ste.currentFrame.lastSubFP, ste.term.length, prevTermOrd);
               ste.currentFrame.loadBlock();
             }
           }

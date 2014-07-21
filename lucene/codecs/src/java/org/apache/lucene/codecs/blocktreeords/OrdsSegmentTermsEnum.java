@@ -186,6 +186,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
         // }
       }
       assert length == f.prefix;
+      assert termOrd == f.termOrdOrig;
     } else {
       f.nextEnt = -1;
       f.prefix = length;

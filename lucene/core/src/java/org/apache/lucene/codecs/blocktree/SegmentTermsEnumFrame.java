@@ -552,19 +552,6 @@ final class SegmentTermsEnumFrame {
           // return NOT_FOUND:
           fillTerm();
 
-          if (!exactOnly && !ste.termExists) {
-            // We are on a sub-block, and caller wants
-            // us to position to the next term after
-            // the target, so we must recurse into the
-            // sub-frame(s):
-            ste.currentFrame = ste.pushFrame(null, ste.currentFrame.lastSubFP, termLen);
-            ste.currentFrame.loadBlock();
-            while (ste.currentFrame.next()) {
-              ste.currentFrame = ste.pushFrame(null, ste.currentFrame.lastSubFP, ste.term.length);
-              ste.currentFrame.loadBlock();
-            }
-          }
-                
           //if (DEBUG) System.out.println("        not found");
           return SeekStatus.NOT_FOUND;
         } else if (stop) {
