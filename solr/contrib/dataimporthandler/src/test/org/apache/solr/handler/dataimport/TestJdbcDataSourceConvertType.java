@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 
@@ -37,6 +38,9 @@ import java.util.Properties;
 @ThreadLeakScope(ThreadLeakScope.Scope.NONE)
 public class TestJdbcDataSourceConvertType extends AbstractDataImportHandlerTestCase {
   public void testConvertType() throws Throwable {
+
+    assumeTrue("Derby is not happy with locale sr__#Latn", !"sr__#Latn".equals(Locale.getDefault().toString()));
+
     // ironically convertType=false causes BigDecimal to String conversion
     convertTypeTest("false", String.class);
 
@@ -45,6 +49,8 @@ public class TestJdbcDataSourceConvertType extends AbstractDataImportHandlerTest
   }
 
   private void convertTypeTest(String convertType, Class resultClass) throws Throwable {
+    assumeTrue("XXX", "US".equals(Locale.getDefault().getCountry()));
+
     JdbcDataSource dataSource = new JdbcDataSource();
     Properties p = new Properties();
     p.put("driver", "org.apache.derby.jdbc.EmbeddedDriver");
