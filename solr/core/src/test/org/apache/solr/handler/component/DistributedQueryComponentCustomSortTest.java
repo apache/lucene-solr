@@ -64,8 +64,6 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
     index(id, "13", "text", "d", "payload", ByteBuffer.wrap(new byte[] { (byte)0x80, 0x11, 0x33 }));             // 12 
     commit();
                                                                                           
-    handle.put("QTime", SKIPVAL);
-
     QueryResponse rsp;
     rsp = query("q", "*:*", "fl", "id", "sort", "payload asc", "rows", "20");
     assertFieldValues(rsp.getResults(), id, 7, 1, 6, 4, 2, 10, 12, 3, 5, 9, 8, 13, 11); 

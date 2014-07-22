@@ -76,7 +76,6 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
     
     handle.put("explain", SKIPVAL);
     handle.put("debug", SKIPVAL);
-    handle.put("QTime", SKIPVAL);
     handle.put("maxScore", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     handle.put("score", SKIPVAL);

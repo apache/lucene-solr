@@ -830,6 +830,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   protected void compareSolrResponses(SolrResponse a, SolrResponse b) {
+    // SOLR-3345: Checking QTime value can be skipped as there is no guarantee that the numbers will match.
+    handle.put("QTime", SKIPVAL);
     String cmp = compare(a.getResponse(), b.getResponse(), flags, handle);
     if (cmp != null) {
       log.error("Mismatched responses:\n" + a + "\n" + b);

@@ -67,7 +67,6 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
   @Override
   public void doTest() throws Exception {
     handle.clear();
-    handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     
     waitForRecoveriesToFinish(false);

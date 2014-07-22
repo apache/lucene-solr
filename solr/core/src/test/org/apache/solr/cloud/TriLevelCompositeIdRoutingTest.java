@@ -56,7 +56,6 @@ public class TriLevelCompositeIdRoutingTest extends ShardRoutingTest {
     boolean testFinished = false;
     try {
       handle.clear();
-      handle.put("QTime", SKIPVAL);
       handle.put("timestamp", SKIPVAL);
 
       // todo: do I have to do this here?

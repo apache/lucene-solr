@@ -68,7 +68,6 @@ public class MergeStrategyTest extends BaseDistributedSearchTestCase {
     commit();
 
     handle.put("explain", SKIPVAL);
-    handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     handle.put("score", SKIPVAL);
     handle.put("wt", SKIP);

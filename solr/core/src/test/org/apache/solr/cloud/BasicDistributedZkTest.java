@@ -156,7 +156,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     waitForRecoveriesToFinish(false);
     
     handle.clear();
-    handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
 
     del("*:*");

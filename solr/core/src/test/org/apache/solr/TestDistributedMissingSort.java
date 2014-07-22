@@ -93,7 +93,6 @@ public class TestDistributedMissingSort extends BaseDistributedSearchTestCase {
     commit();
 
     handle.clear();
-    handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     handle.put("_version_", SKIPVAL); // not a cloud test, but may use updateLog
   }

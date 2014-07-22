@@ -137,7 +137,6 @@ public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
     assertNotNull(cloudClient);
     
     handle.clear();
-    handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     
     waitForThingsToLevelOut(30);

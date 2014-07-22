@@ -90,7 +90,6 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
     commit();
 
     handle.clear();
-    handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     handle.put("maxScore", SKIPVAL);
     // we care only about the mlt results

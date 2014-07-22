@@ -275,6 +275,9 @@ Other Changes
 * SOLR-6252: A couple of small improvements to UnInvertedField class. 
   (Vamsee Yarlagadda, Gregory Chanan, Mark Miller)
 
+* SOLR-3345: BaseDistributedSearchTestCase should always ignore QTime.
+  (Vamsee Yarlagadda, Benson Margulies via Mark Miller)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components

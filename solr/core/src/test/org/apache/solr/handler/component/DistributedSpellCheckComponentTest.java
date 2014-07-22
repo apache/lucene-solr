@@ -126,7 +126,6 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
     commit();
 
     handle.clear();
-    handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     handle.put("maxScore", SKIPVAL);
     // we care only about the spellcheck results

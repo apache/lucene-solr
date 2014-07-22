@@ -69,7 +69,6 @@ public class DistribDocExpirationUpdateProcessorTest extends AbstractFullDistrib
 
     handle.clear();
     handle.put("maxScore", SKIPVAL);
-    handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     
     // some docs with no expiration

@@ -70,7 +70,6 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
 
 
     handle.put("explain", SKIPVAL);
-    handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     handle.put("score", SKIPVAL);
     handle.put("wt", SKIP);

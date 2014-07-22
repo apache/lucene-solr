@@ -41,7 +41,6 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
     commit();
 
     handle.clear();
-    handle.put("QTime", SKIPVAL);
 
     query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "b_t");
     query("qt", "/terms", "shards.qt", "/terms", "terms.limit", 5, "terms", "true", "terms.fl", "b_t", "terms.lower", "s");

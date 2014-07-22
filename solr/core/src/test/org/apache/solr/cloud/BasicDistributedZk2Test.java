@@ -77,7 +77,6 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     boolean testFinished = false;
     try {
       handle.clear();
-      handle.put("QTime", SKIPVAL);
       handle.put("timestamp", SKIPVAL);
       
       testNodeWithoutCollectionForwarding();

@@ -57,7 +57,6 @@ public class RecoveryZkTest extends AbstractFullDistribZkTestBase {
   @Override
   public void doTest() throws Exception {
     handle.clear();
-    handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     
     // start a couple indexing threads
