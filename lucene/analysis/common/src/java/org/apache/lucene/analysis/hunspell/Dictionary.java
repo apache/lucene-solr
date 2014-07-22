@@ -474,9 +474,10 @@ public class Dictionary {
       
       char flag = flagParsingStrategy.parseFlag(ruleArgs[1]);
       String strip = ruleArgs[2].equals("0") ? "" : ruleArgs[2];
-      String affixArg = ruleArgs[3].equals("0") ? "" : ruleArgs[3];
+      String affixArg = ruleArgs[3];
       char appendFlags[] = null;
       
+      // first: parse continuation classes out of affix
       int flagSep = affixArg.lastIndexOf('/');
       if (flagSep != -1) {
         String flagPart = affixArg.substring(flagSep + 1);
@@ -489,6 +490,10 @@ public class Dictionary {
         appendFlags = flagParsingStrategy.parseFlags(flagPart);
         Arrays.sort(appendFlags);
         twoStageAffix = true;
+      }
+      // zero affix -> empty string
+      if ("0".equals(affixArg)) {
+        affixArg = "";
       }
       
       String condition = ruleArgs.length > 4 ? ruleArgs[4] : ".";
