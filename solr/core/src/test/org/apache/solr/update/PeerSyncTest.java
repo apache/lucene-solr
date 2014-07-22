@@ -54,7 +54,6 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
   @Override
   public void doTest() throws Exception {
     handle.clear();
-    handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     handle.put("score", SKIPVAL);
     handle.put("maxScore", SKIPVAL);

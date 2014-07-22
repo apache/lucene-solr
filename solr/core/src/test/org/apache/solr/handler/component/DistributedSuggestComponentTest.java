@@ -92,7 +92,6 @@ public class DistributedSuggestComponentTest extends BaseDistributedSearchTestCa
     commit();
 
     handle.clear();
-    handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     handle.put("maxScore", SKIPVAL);
     handle.put("response", SKIP);

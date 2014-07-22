@@ -81,7 +81,6 @@ public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
   public void doTest() throws Exception {
     
     handle.clear();
-    handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     
     waitForThingsToLevelOut(30);

@@ -52,7 +52,6 @@ public class TestHighlightDedupGrouping extends BaseDistributedSearchTestCase {
     commit();
 
     handle.clear();
-    handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     handle.put("grouped", UNORDERED);   // distrib grouping doesn't guarantee order of top level group commands
 
@@ -82,7 +81,6 @@ public class TestHighlightDedupGrouping extends BaseDistributedSearchTestCase {
     commit();
 
     handle.clear();
-    handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     handle.put("grouped", UNORDERED);   // distrib grouping doesn't guarantee order of top level group commands
 

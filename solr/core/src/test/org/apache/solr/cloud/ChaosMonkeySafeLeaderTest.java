@@ -96,7 +96,6 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   public void doTest() throws Exception {
     
     handle.clear();
-    handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     
     // randomly turn on 1 seconds 'soft' commit
