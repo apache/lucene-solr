@@ -125,6 +125,9 @@ New Features
   McCandless)
 
 * LUCENE-5835: TermValComparator can sort missing values last. (Adrien Grand)
+
+* LUCENE-5825: Benchmark module can use custom postings format, e.g.:
+ codec.postingsFormat=Memory (Varun Shenoy, David Smiley)
   
 API Changes
 
