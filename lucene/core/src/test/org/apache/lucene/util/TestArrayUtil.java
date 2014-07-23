@@ -29,7 +29,7 @@ public class TestArrayUtil extends LuceneTestCase {
     long copyCost = 0;
 
     // Make sure ArrayUtil hits Integer.MAX_VALUE, if we insist:
-    while(currentSize != Integer.MAX_VALUE) {
+    while (currentSize != ArrayUtil.MAX_ARRAY_LENGTH) {
       int nextSize = ArrayUtil.oversize(1+currentSize, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
       assertTrue(nextSize > currentSize);
       if (currentSize > 0) {
@@ -44,9 +44,22 @@ public class TestArrayUtil extends LuceneTestCase {
   public void testMaxSize() {
     // intentionally pass invalid elemSizes:
     for(int elemSize=0;elemSize<10;elemSize++) {
-      assertEquals(Integer.MAX_VALUE, ArrayUtil.oversize(Integer.MAX_VALUE, elemSize));
-      assertEquals(Integer.MAX_VALUE, ArrayUtil.oversize(Integer.MAX_VALUE-1, elemSize));
+      assertEquals(ArrayUtil.MAX_ARRAY_LENGTH, ArrayUtil.oversize(ArrayUtil.MAX_ARRAY_LENGTH, elemSize));
+      assertEquals(ArrayUtil.MAX_ARRAY_LENGTH, ArrayUtil.oversize(ArrayUtil.MAX_ARRAY_LENGTH-1, elemSize));
     }
+  }
+
+  public void testTooBig() {
+    try {
+      ArrayUtil.oversize(ArrayUtil.MAX_ARRAY_LENGTH+1, 1);
+      fail("did not hit exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+  }
+
+  public void testExactLimit() {
+    assertEquals(ArrayUtil.MAX_ARRAY_LENGTH, ArrayUtil.oversize(ArrayUtil.MAX_ARRAY_LENGTH, 1));
   }
 
   public void testInvalidElementSizes() {
