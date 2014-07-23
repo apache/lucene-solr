@@ -119,6 +119,12 @@ class Lucene49DocValuesProducer extends DocValuesProducer implements Closeable {
       if (version != version2) {
         throw new CorruptIndexException("Format versions mismatch");
       }
+      
+      // NOTE: data file is too costly to verify checksum against all the bytes on open,
+      // but for now we at least verify proper structure of the checksum footer: which looks
+      // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
+      // such as file truncation.
+      CodecUtil.retrieveChecksum(data);
 
       success = true;
     } finally {

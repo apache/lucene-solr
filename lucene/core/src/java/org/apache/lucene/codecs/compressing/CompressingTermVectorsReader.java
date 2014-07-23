@@ -133,6 +133,16 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
         throw new CorruptIndexException("Version mismatch between stored fields index and data: " + version + " != " + version2);
       }
       assert CodecUtil.headerLength(codecNameDat) == vectorsStream.getFilePointer();
+      
+      long pos = vectorsStream.getFilePointer();
+      if (version >= VERSION_CHECKSUM) {
+        // NOTE: data file is too costly to verify checksum against all the bytes on open,
+        // but for now we at least verify proper structure of the checksum footer: which looks
+        // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
+        // such as file truncation.
+        CodecUtil.retrieveChecksum(vectorsStream);
+        vectorsStream.seek(pos);
+      }
 
       packedIntsVersion = vectorsStream.readVInt();
       chunkSize = vectorsStream.readVInt();

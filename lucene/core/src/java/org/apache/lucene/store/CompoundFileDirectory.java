@@ -88,6 +88,7 @@ public final class CompoundFileDirectory extends BaseDirectory {
   private static final Map<String,FileEntry> SENTINEL = Collections.emptyMap();
   private final CompoundFileWriter writer;
   private final IndexInput handle;
+  private int version;
   
   /**
    * Create a new CompoundFileDirectory.
@@ -103,6 +104,14 @@ public final class CompoundFileDirectory extends BaseDirectory {
       handle = directory.openInput(fileName, context);
       try {
         this.entries = readEntries(handle, directory, fileName);
+        if (version >= CompoundFileWriter.VERSION_CHECKSUM) {
+          CodecUtil.checkHeader(handle, CompoundFileWriter.DATA_CODEC, version, version);
+          // NOTE: data file is too costly to verify checksum against all the bytes on open,
+          // but for now we at least verify proper structure of the checksum footer: which looks
+          // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
+          // such as file truncation.
+          CodecUtil.retrieveChecksum(handle);
+        }
         success = true;
       } finally {
         if (!success) {
@@ -126,7 +135,7 @@ public final class CompoundFileDirectory extends BaseDirectory {
   private static final byte CODEC_MAGIC_BYTE4 = (byte) CodecUtil.CODEC_MAGIC;
 
   /** Helper method that reads CFS entries from an input stream */
-  private static final Map<String, FileEntry> readEntries(
+  private final Map<String, FileEntry> readEntries(
       IndexInput handle, Directory dir, String name) throws IOException {
     IndexInput stream = null; 
     ChecksumIndexInput entriesStream = null;
@@ -149,7 +158,7 @@ public final class CompoundFileDirectory extends BaseDirectory {
           throw new CorruptIndexException("Illegal/impossible header for CFS file: " 
                                          + secondByte + "," + thirdByte + "," + fourthByte);
         }
-        int version = CodecUtil.checkHeaderNoMagic(stream, CompoundFileWriter.DATA_CODEC, 
+        version = CodecUtil.checkHeaderNoMagic(stream, CompoundFileWriter.DATA_CODEC, 
             CompoundFileWriter.VERSION_START, CompoundFileWriter.VERSION_CURRENT);
         final String entriesFileName = IndexFileNames.segmentFileName(
                                               IndexFileNames.stripExtension(name), "",
@@ -176,6 +185,7 @@ public final class CompoundFileDirectory extends BaseDirectory {
       } else {
         // TODO remove once 3.x is not supported anymore
         mapping = readLegacyEntries(stream, firstInt);
+        version = -1; // version before versioning was added
       }
       success = true;
     } finally {
