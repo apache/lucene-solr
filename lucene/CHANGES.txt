@@ -205,6 +205,10 @@ Bug Fixes
 
 * LUCENE-5838: Fix hunspell when the .aff file has over 64k affixes. (Robert Muir)
 
+* LUCENE-5844: ArrayUtil.grow/oversize now returns a maximum of
+  Integer.MAX_VALUE - 8 for the maximum array size.  (Robert Muir,
+  Mike McCandless)
+
 Test Framework
 
 * LUCENE-5786: Unflushed/ truncated events file (hung testing subprocess).
