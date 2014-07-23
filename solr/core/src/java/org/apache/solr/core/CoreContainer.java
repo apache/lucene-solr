@@ -499,6 +499,7 @@ public class CoreContainer {
     }
     catch (Exception e) {
       coreInitFailures.put(dcore.getName(), new CoreLoadFailure(dcore, e));
+      log.error("Error creating core [{}]: {}", dcore.getName(), e.getMessage(), e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to create core [" + dcore.getName() + "]", e);
     }
 
