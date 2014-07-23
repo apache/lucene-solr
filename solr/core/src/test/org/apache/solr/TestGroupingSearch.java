@@ -317,7 +317,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     assertJQ(
         req,
         "/grouped=={'value1_s1':{'matches':5,'groups':[{'groupValue':'1','doclist':{'numFound':3,'start':0,'docs':[{'id':'1'}]}}]}}",
-        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',3,'b',2]},'facet_dates':{},'facet_ranges':{}}"
+        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',3,'b',2]},'facet_dates':{},'facet_ranges':{},'facet_intervals':{}}"
     );
 
     // Facet counts based on groups
@@ -326,7 +326,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     assertJQ(
         req,
         "/grouped=={'value1_s1':{'matches':5,'groups':[{'groupValue':'1','doclist':{'numFound':3,'start':0,'docs':[{'id':'1'}]}}]}}",
-        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]},'facet_dates':{},'facet_ranges':{}}"
+        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]},'facet_dates':{},'facet_ranges':{},'facet_intervals':{}}"
     );
 
     // Facet counts based on groups and with group.func. This should trigger FunctionAllGroupHeadsCollector
@@ -335,7 +335,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     assertJQ(
         req,
         "/grouped=={'strdist(1,value1_s1,edit)':{'matches':5,'groups':[{'groupValue':1.0,'doclist':{'numFound':3,'start':0,'docs':[{'id':'1'}]}}]}}",
-        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]},'facet_dates':{},'facet_ranges':{}}"
+        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]},'facet_dates':{},'facet_ranges':{},'facet_intervals':{}}"
     );
 
     // Facet counts based on groups without sort on an int field.
@@ -344,7 +344,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     assertJQ(
         req,
         "/grouped=={'value4_i':{'matches':5,'groups':[{'groupValue':1,'doclist':{'numFound':3,'start':0,'docs':[{'id':'1'}]}}]}}",
-        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]},'facet_dates':{},'facet_ranges':{}}"
+        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]},'facet_dates':{},'facet_ranges':{},'facet_intervals':{}}"
     );
 
     // Multi select facets AND group.truncate=true
@@ -353,7 +353,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     assertJQ(
         req,
         "/grouped=={'value4_i':{'matches':2,'groups':[{'groupValue':2,'doclist':{'numFound':2,'start':0,'docs':[{'id':'3'}]}}]}}",
-        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]},'facet_dates':{},'facet_ranges':{}}"
+        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]},'facet_dates':{},'facet_ranges':{},'facet_intervals':{}}"
     );
 
     // Multi select facets AND group.truncate=false
@@ -362,7 +362,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     assertJQ(
         req,
         "/grouped=={'value4_i':{'matches':2,'groups':[{'groupValue':2,'doclist':{'numFound':2,'start':0,'docs':[{'id':'3'}]}}]}}",
-        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',3,'b',2]},'facet_dates':{},'facet_ranges':{}}"
+        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',3,'b',2]},'facet_dates':{},'facet_ranges':{},'facet_intervals':{}}"
     );
 
     // Multi select facets AND group.truncate=true
@@ -371,7 +371,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     assertJQ(
         req,
         "/grouped=={'sub(value4_i,1)':{'matches':2,'groups':[{'groupValue':1.0,'doclist':{'numFound':2,'start':0,'docs':[{'id':'3'}]}}]}}",
-        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]},'facet_dates':{},'facet_ranges':{}}"
+        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]},'facet_dates':{},'facet_ranges':{},'facet_intervals':{}}"
     );
   }
 
@@ -394,7 +394,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     assertJQ(
         req,
         "/grouped=={'cat_sI':{'matches':2,'groups':[{'groupValue':'a','doclist':{'numFound':1,'start':0,'docs':[{'id':'5'}]}}]}}",
-        "/facet_counts=={'facet_queries':{'LW1':2,'LM1':2,'LM3':2},'facet_fields':{},'facet_dates':{},'facet_ranges':{}}"
+        "/facet_counts=={'facet_queries':{'LW1':2,'LM1':2,'LM3':2},'facet_fields':{},'facet_dates':{},'facet_ranges':{},'facet_intervals':{}}"
     );
   }
 

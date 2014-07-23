@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -326,92 +327,16 @@ public class FacetComponent extends SearchComponent
       }
 
       // Distributed facet_dates
-      //
-      // The implementation below uses the first encountered shard's 
-      // facet_dates as the basis for subsequent shards' data to be merged.
-      // (the "NOW" param should ensure consistency)
-      @SuppressWarnings("unchecked")
-      SimpleOrderedMap<SimpleOrderedMap<Object>> facet_dates = 
-        (SimpleOrderedMap<SimpleOrderedMap<Object>>) 
-        facet_counts.get("facet_dates");
-      
-      if (facet_dates != null) {
+      doDistribDates(fi, facet_counts);
 
-        // go through each facet_date
-        for (Map.Entry<String,SimpleOrderedMap<Object>> entry : facet_dates) {
-          final String field = entry.getKey();
-          if (fi.dateFacets.get(field) == null) { 
-            // first time we've seen this field, no merging
-            fi.dateFacets.add(field, entry.getValue());
-
-          } else { 
-            // not the first time, merge current field
-
-            SimpleOrderedMap<Object> shardFieldValues 
-              = entry.getValue();
-            SimpleOrderedMap<Object> existFieldValues 
-              = fi.dateFacets.get(field);
-
-            for (Map.Entry<String,Object> existPair : existFieldValues) {
-              final String key = existPair.getKey();
-              if (key.equals("gap") || 
-                  key.equals("end") || 
-                  key.equals("start")) {
-                // we can skip these, must all be the same across shards
-                continue; 
-              }
-              // can be null if inconsistencies in shards responses
-              Integer newValue = (Integer) shardFieldValues.get(key);
-              if  (null != newValue) {
-                Integer oldValue = ((Integer) existPair.getValue());
-                existPair.setValue(oldValue + newValue);
-              }
-            }
-          }
-        }
-      }
 
       // Distributed facet_ranges
-      //
-      // The implementation below uses the first encountered shard's 
-      // facet_ranges as the basis for subsequent shards' data to be merged.
-      @SuppressWarnings("unchecked")
-      SimpleOrderedMap<SimpleOrderedMap<Object>> facet_ranges = 
-        (SimpleOrderedMap<SimpleOrderedMap<Object>>) 
-        facet_counts.get("facet_ranges");
-      
-      if (facet_ranges != null) {
+      doDistribRanges(fi, facet_counts);
 
-        // go through each facet_range
-        for (Map.Entry<String,SimpleOrderedMap<Object>> entry : facet_ranges) {
-          final String field = entry.getKey();
-          if (fi.rangeFacets.get(field) == null) { 
-            // first time we've seen this field, no merging
-            fi.rangeFacets.add(field, entry.getValue());
 
-          } else { 
-            // not the first time, merge current field counts
+      // Distributed facet_intervals
+      doDistribIntervals(fi, facet_counts);
 
-            @SuppressWarnings("unchecked")
-            NamedList<Integer> shardFieldValues 
-              = (NamedList<Integer>) entry.getValue().get("counts");
-
-            @SuppressWarnings("unchecked")
-            NamedList<Integer> existFieldValues 
-              = (NamedList<Integer>) fi.rangeFacets.get(field).get("counts");
-
-            for (Map.Entry<String,Integer> existPair : existFieldValues) {
-              final String key = existPair.getKey();
-              // can be null if inconsistencies in shards responses
-              Integer newValue = shardFieldValues.get(key);
-              if  (null != newValue) {
-                Integer oldValue = existPair.getValue();
-                existPair.setValue(oldValue + newValue);
-              }
-            }
-          }
-        }
-      }
     }
 
     //
@@ -473,6 +398,145 @@ public class FacetComponent extends SearchComponent
                 lst = dff._toRefine[shardNum] = new ArrayList<>();
               }
               lst.add(sfc.name);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  //
+  // The implementation below uses the first encountered shard's
+  // facet_intervals as the basis for subsequent shards' data to be merged.
+  private void doDistribIntervals(FacetInfo fi, NamedList facet_counts) {
+    @SuppressWarnings("unchecked")
+    SimpleOrderedMap<SimpleOrderedMap<Integer>> facet_intervals =
+        (SimpleOrderedMap<SimpleOrderedMap<Integer>>)
+            facet_counts.get("facet_intervals");
+
+    if (facet_intervals != null) {
+
+      for (Map.Entry<String, SimpleOrderedMap<Integer>> entry : facet_intervals) {
+        final String field = entry.getKey();
+        SimpleOrderedMap<Integer> existingCounts = fi.intervalFacets.get(field);
+        if (existingCounts == null) {
+          // first time we've seen this field, no merging
+          fi.intervalFacets.add(field, entry.getValue());
+
+        } else {
+          // not the first time, merge current field counts
+          Iterator<Map.Entry<String, Integer>> newItr = entry.getValue().iterator();
+          Iterator<Map.Entry<String, Integer>> exItr = existingCounts.iterator();
+
+          // all intervals should be returned by each shard, even if they have zero count,
+          // and in the same order
+          while (exItr.hasNext()) {
+            Map.Entry<String, Integer> exItem = exItr.next();
+            if (!newItr.hasNext()) {
+              throw new SolrException(ErrorCode.SERVER_ERROR,
+                  "Interval facet shard response missing key: " + exItem.getKey());
+            }
+            Map.Entry<String, Integer> newItem = newItr.next();
+            if (!newItem.getKey().equals(exItem.getKey())) {
+              throw new SolrException(ErrorCode.SERVER_ERROR,
+                  "Interval facet shard response has extra key: " + newItem.getKey());
+            }
+            exItem.setValue(exItem.getValue() + newItem.getValue());
+          }
+          if (newItr.hasNext()) {
+            throw new SolrException(ErrorCode.SERVER_ERROR,
+                "Interval facet shard response has at least one extra key: "
+                + newItr.next().getKey());
+          }
+        }
+      }
+    }
+  }
+
+  //
+  // The implementation below uses the first encountered shard's
+  // facet_ranges as the basis for subsequent shards' data to be merged.
+
+  private void doDistribRanges(FacetInfo fi, NamedList facet_counts) {
+    @SuppressWarnings("unchecked")
+    SimpleOrderedMap<SimpleOrderedMap<Object>> facet_ranges =
+      (SimpleOrderedMap<SimpleOrderedMap<Object>>)
+      facet_counts.get("facet_ranges");
+
+    if (facet_ranges != null) {
+
+      // go through each facet_range
+      for (Map.Entry<String,SimpleOrderedMap<Object>> entry : facet_ranges) {
+        final String field = entry.getKey();
+        if (fi.rangeFacets.get(field) == null) {
+          // first time we've seen this field, no merging
+          fi.rangeFacets.add(field, entry.getValue());
+
+        } else {
+          // not the first time, merge current field counts
+
+          @SuppressWarnings("unchecked")
+          NamedList<Integer> shardFieldValues
+            = (NamedList<Integer>) entry.getValue().get("counts");
+
+          @SuppressWarnings("unchecked")
+          NamedList<Integer> existFieldValues
+            = (NamedList<Integer>) fi.rangeFacets.get(field).get("counts");
+
+          for (Map.Entry<String,Integer> existPair : existFieldValues) {
+            final String key = existPair.getKey();
+            // can be null if inconsistencies in shards responses
+            Integer newValue = shardFieldValues.get(key);
+            if  (null != newValue) {
+              Integer oldValue = existPair.getValue();
+              existPair.setValue(oldValue + newValue);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  //
+  // The implementation below uses the first encountered shard's
+  // facet_dates as the basis for subsequent shards' data to be merged.
+  // (the "NOW" param should ensure consistency)
+  private void doDistribDates(FacetInfo fi, NamedList facet_counts) {
+    @SuppressWarnings("unchecked")
+    SimpleOrderedMap<SimpleOrderedMap<Object>> facet_dates =
+      (SimpleOrderedMap<SimpleOrderedMap<Object>>)
+      facet_counts.get("facet_dates");
+
+    if (facet_dates != null) {
+
+      // go through each facet_date
+      for (Map.Entry<String,SimpleOrderedMap<Object>> entry : facet_dates) {
+        final String field = entry.getKey();
+        if (fi.dateFacets.get(field) == null) {
+          // first time we've seen this field, no merging
+          fi.dateFacets.add(field, entry.getValue());
+
+        } else {
+          // not the first time, merge current field
+
+          SimpleOrderedMap<Object> shardFieldValues
+            = entry.getValue();
+          SimpleOrderedMap<Object> existFieldValues
+            = fi.dateFacets.get(field);
+
+          for (Map.Entry<String,Object> existPair : existFieldValues) {
+            final String key = existPair.getKey();
+            if (key.equals("gap") ||
+                key.equals("end") ||
+                key.equals("start")) {
+              // we can skip these, must all be the same across shards
+              continue;
+            }
+            // can be null if inconsistencies in shards responses
+            Integer newValue = (Integer) shardFieldValues.get(key);
+            if  (null != newValue) {
+              Integer oldValue = ((Integer) existPair.getValue());
+              existPair.setValue(oldValue + newValue);
             }
           }
         }
@@ -589,6 +653,7 @@ public class FacetComponent extends SearchComponent
 
     facet_counts.add("facet_dates", fi.dateFacets);
     facet_counts.add("facet_ranges", fi.rangeFacets);
+    facet_counts.add("facet_intervals", fi.intervalFacets);
 
     rb.rsp.add("facet_counts", facet_counts);
 
@@ -636,6 +701,8 @@ public class FacetComponent extends SearchComponent
     public SimpleOrderedMap<SimpleOrderedMap<Object>> dateFacets
       = new SimpleOrderedMap<>();
     public SimpleOrderedMap<SimpleOrderedMap<Object>> rangeFacets
+      = new SimpleOrderedMap<>();
+    public SimpleOrderedMap<SimpleOrderedMap<Integer>> intervalFacets
       = new SimpleOrderedMap<>();
 
     void parse(SolrParams params, ResponseBuilder rb) {

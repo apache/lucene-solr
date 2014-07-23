@@ -155,6 +155,9 @@ New Features
 
 * SOLR-6263: Add DIH handler name to variable resolver as ${dih.handlerName}. (ehatcher)
 
+* SOLR-6216: Better faceting for multiple intervals on DV fields (Tomas Fernandez-Lobbe
+  via Erick Erickson)
+
 
 Bug Fixes
 ----------------------

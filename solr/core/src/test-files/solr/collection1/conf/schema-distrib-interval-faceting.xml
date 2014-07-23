@@ -24,6 +24,7 @@
     <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="date" class="solr.TrieDateField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
     <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
+    <fieldtype name="boolean" class="solr.BoolField" sortMissingLast="true"/>
   </types>
 
   <fields>
@@ -49,6 +50,24 @@
     <dynamicField name="*_dt"    type="date"   indexed="true"  stored="false" docValues="false"/>
     <dynamicField name="*_dt_dv" type="date"   indexed="true"  stored="false" docValues="true"/>
     <dynamicField name="*_dts_dv" type="date"  indexed="true"  stored="false" docValues="true"  multiValued="true"/>
+    <dynamicField name="*_b"  type="boolean" indexed="true"  stored="true"/>
+    
+    <dynamicField name="*_ti1" type="int"    indexed="true"  stored="true" multiValued="false"/>
+    <dynamicField name="*_tl" type="long"   indexed="true"  stored="true"/>
+    <dynamicField name="*_tl1" type="long"   indexed="true"  stored="true" multiValued="false"/>
+    <dynamicField name="*_tf" type="float"  indexed="true"  stored="true"/>
+    <dynamicField name="*_tf1" type="float"  indexed="true"  stored="true" multiValued="false"/>
+    <dynamicField name="*_td" type="double" indexed="true"  stored="true"/>
+    <dynamicField name="*_td1" type="double" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="*_tds" type="double" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="*_tdt" type="date"  indexed="true"  stored="true"/>
+    <dynamicField name="*_tdt1" type="date"  indexed="true"  stored="true" multiValued="false"/>
+    
+    <dynamicField name="*_i1" type="int"    indexed="true"  stored="true" multiValued="false"/>
+    <dynamicField name="*_l1" type="long"   indexed="true"  stored="true" multiValued="false"/>
+    <dynamicField name="*_f1" type="float"  indexed="true"  stored="true" multiValued="false"/>
+    <dynamicField name="*_d1" type="double" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="*_dt1" type="date"  indexed="true"  stored="true" multiValued="false"/>
   </fields>
 
   <defaultSearchField>id</defaultSearchField>

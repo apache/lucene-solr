@@ -852,6 +852,28 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       unIgnoreException(".");
     }
   }
+  /**
+   * Makes sure a query throws a SolrException with the listed response code and expected message
+   * @param failMessage The assert message to show when the query doesn't throw the expected exception
+   * @param exceptionMessage A substring of the message expected in the exception
+   * @param req Solr request
+   * @param code expected error code for the query
+   */
+  public static void assertQEx(String failMessage, String exceptionMessage, SolrQueryRequest req, SolrException.ErrorCode code ) {
+    try {
+      ignoreException(".");
+      h.query(req);
+      fail( failMessage );
+    } catch (SolrException e) {
+      assertEquals( code.code, e.code() );
+      assertTrue("Unexpected error message. Expecting \"" + exceptionMessage + 
+          "\" but got \"" + e.getMessage() + "\"", e.getMessage()!= null && e.getMessage().contains(exceptionMessage));
+    } catch (Exception e2) {
+      throw new RuntimeException("Exception during query", e2);
+    } finally {
+      unIgnoreException(".");
+    }
+  }
 
 
   /**
