@@ -128,6 +128,11 @@ New Features
 
 * LUCENE-5825: Benchmark module can use custom postings format, e.g.:
  codec.postingsFormat=Memory (Varun Shenoy, David Smiley)
+
+* LUCENE-5842: When opening large files (where its to expensive to compare
+  checksum against all the bytes), retrieve checksum to validate structure
+  of footer, this can detect some forms of corruption such as truncation.
+  (Robert Muir)
   
 API Changes
 

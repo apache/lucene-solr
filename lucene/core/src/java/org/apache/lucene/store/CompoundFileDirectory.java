@@ -104,6 +104,14 @@ public final class CompoundFileDirectory extends BaseDirectory {
       handle = directory.openInput(fileName, context);
       try {
         this.entries = readEntries(directory, fileName);
+        if (version >= CompoundFileWriter.VERSION_CHECKSUM) {
+          CodecUtil.checkHeader(handle, CompoundFileWriter.DATA_CODEC, version, version);
+          // NOTE: data file is too costly to verify checksum against all the bytes on open,
+          // but for now we at least verify proper structure of the checksum footer: which looks
+          // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
+          // such as file truncation.
+          CodecUtil.retrieveChecksum(handle);
+        }
         success = true;
       } finally {
         if (!success) {

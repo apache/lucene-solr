@@ -122,6 +122,15 @@ public final class BlockTreeTermsReader extends FieldsProducer {
 
       // Have PostingsReader init itself
       postingsReader.init(in);
+      
+      
+      // NOTE: data file is too costly to verify checksum against all the bytes on open,
+      // but for now we at least verify proper structure of the checksum footer: which looks
+      // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
+      // such as file truncation.
+      if (version >= BlockTreeTermsWriter.VERSION_CHECKSUM) {
+        CodecUtil.retrieveChecksum(in);
+      }
 
       // Read per-field details
       seekDir(in, dirOffset);
