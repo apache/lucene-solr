@@ -72,6 +72,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.component.ResponseBuilder;
+import org.apache.solr.request.IntervalFacets.FacetInterval;
 import org.apache.solr.schema.BoolField;
 import org.apache.solr.schema.DateField;
 import org.apache.solr.schema.FieldType;
@@ -245,6 +246,7 @@ public class SimpleFacets {
    * @see #getFacetFieldCounts
    * @see #getFacetDateCounts
    * @see #getFacetRangeCounts
+   * @see #getFacetIntervalCounts
    * @see FacetParams#FACET
    * @return a NamedList of Facet Count info or null
    */
@@ -260,6 +262,7 @@ public class SimpleFacets {
       facetResponse.add("facet_fields", getFacetFieldCounts());
       facetResponse.add("facet_dates", getFacetDateCounts());
       facetResponse.add("facet_ranges", getFacetRangeCounts());
+      facetResponse.add("facet_intervals", getFacetIntervalCounts());
 
     } catch (IOException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
@@ -1557,6 +1560,41 @@ public class SimpleFacets {
       return dmp.parseMath(gap);
     }
   }
-  
+
+  /**
+   * Returns a <code>NamedList</code> with each entry having the "key" of the interval as name and the count of docs 
+   * in that interval as value. All intervals added in the request are included in the returned 
+   * <code>NamedList</code> (included those with 0 count), and it's required that the order of the intervals
+   * is deterministic and equals in all shards of a distributed request, otherwise the collation of results
+   * will fail. 
+   * 
+   */
+  public NamedList<Object> getFacetIntervalCounts() throws IOException, SyntaxError {
+    NamedList<Object> res = new SimpleOrderedMap<Object>();
+    String[] fields = params.getParams(FacetParams.FACET_INTERVAL);
+    if (fields == null || fields.length == 0) return res;
+
+    for (String field : fields) {
+      parseParams(FacetParams.FACET_INTERVAL, field);
+      String[] intervalStrs = required.getFieldParams(field, FacetParams.FACET_INTERVAL_SET);
+      SchemaField schemaField = searcher.getCore().getLatestSchema().getField(field);
+      if (!schemaField.hasDocValues()) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Interval Faceting only on fields with doc values");
+      }
+      if (params.getBool(GroupParams.GROUP_FACET, false)) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Interval Faceting can't be used with " + GroupParams.GROUP_FACET);
+      }
+      
+      SimpleOrderedMap<Integer> fieldResults = new SimpleOrderedMap<Integer>();
+      res.add(field, fieldResults);
+      IntervalFacets intervalFacets = new IntervalFacets(schemaField, searcher, docs, intervalStrs);
+      for (FacetInterval interval : intervalFacets) {
+        fieldResults.add(interval.getKey(), interval.getCount());
+      }
+    }
+
+    return res;
+  }
+
 }
 

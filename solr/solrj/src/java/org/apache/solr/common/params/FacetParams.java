@@ -254,6 +254,15 @@ public interface FacetParams {
    */
   public static final String FACET_RANGE_INCLUDE = FACET_RANGE + ".include";
 
+  /**
+   * Any field whose values the user wants to enumerate as explicit intervals of terms.
+   */
+  public static final String FACET_INTERVAL = FACET + ".interval";
+
+  /**
+   * Set of terms for a single interval to facet on.
+   */
+  public static final String FACET_INTERVAL_SET = FACET_INTERVAL + ".set";
 
   /**
    * An enumeration of the legal values for {@link #FACET_RANGE_OTHER} and {@link #FACET_DATE_OTHER} ...
