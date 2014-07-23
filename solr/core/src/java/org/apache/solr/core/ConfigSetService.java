@@ -64,7 +64,8 @@ public abstract class ConfigSetService {
     }
     catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Could not load core configuration for core " + dcore.getName(), e);
+                              "Could not load conf for core " + dcore.getName() + 
+                              ": " + e.getMessage(), e);
     }
 
   }
