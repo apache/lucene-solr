@@ -935,7 +935,7 @@ public abstract class FieldComparator<T> {
    *  comparisons are done using BytesRef.compareTo, which is
    *  slow for medium to large result sets but possibly
    *  very fast for very small results sets. */
-  public static final class TermValComparator extends FieldComparator<BytesRef> {
+  public static class TermValComparator extends FieldComparator<BytesRef> {
     
     private final BytesRef[] values;
     private final BytesRef[] tempBRs;
@@ -945,8 +945,6 @@ public abstract class FieldComparator<T> {
     private BytesRef bottom;
     private BytesRef topValue;
     private final int missingSortCmp;
-
-    // TODO: add missing first/last support here?
 
     /** Sole constructor. */
     public TermValComparator(int numHits, String field, boolean sortMissingLast) {
