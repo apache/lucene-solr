@@ -423,15 +423,15 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
 
     // Pending stack of terms and blocks.  As terms arrive (in sorted order)
     // we append to this stack, and once the top of the stack has enough
-    // terms starting with a common prefix, write write a new block with
+    // terms starting with a common prefix, we write a new block with
     // those terms and replace those terms in the stack with a new block:
     private final List<PendingEntry> pending = new ArrayList<>();
 
     // Reused in writeBlocks:
     private final List<PendingBlock> newBlocks = new ArrayList<>();
 
-    private BytesRef minTerm;
-    private BytesRef maxTerm = new BytesRef();
+    private PendingTerm firstPendingTerm;
+    private PendingTerm lastPendingTerm;
 
     /** Writes the top count entries in pending, using prevTerm to compute the prefix. */
     void writeBlocks(int prefixLength, int count) throws IOException {
@@ -761,11 +761,10 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
         PendingTerm term = new PendingTerm(BytesRef.deepCopyOf(text), state);
         pending.add(term);
         numTerms++;
-
-        if (minTerm == null) {
-          minTerm = BytesRef.deepCopyOf(text);
+        if (firstPendingTerm == null) {
+          firstPendingTerm = term;
         }
-        maxTerm.copyBytes(text);
+        lastPendingTerm = term;
       }
     }
 
@@ -834,6 +833,12 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
         //   System.out.println("SAVED to " + dotFileName);
         //   w.close();
         // }
+
+        assert firstPendingTerm != null;
+        BytesRef minTerm = new BytesRef(firstPendingTerm.termBytes);
+
+        assert lastPendingTerm != null;
+        BytesRef maxTerm = new BytesRef(lastPendingTerm.termBytes);
 
         fields.add(new FieldMetaData(fieldInfo,
                                      ((PendingBlock) pending.get(0)).index.getEmptyOutput(),
