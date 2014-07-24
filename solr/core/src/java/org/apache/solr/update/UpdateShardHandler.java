@@ -55,6 +55,7 @@ public class UpdateShardHandler {
     params.set(HttpClientUtil.PROP_SO_TIMEOUT, cfg.getDistributedSocketTimeout());
     params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, cfg.getDistributedConnectionTimeout());
     params.set(HttpClientUtil.PROP_USE_RETRY, false);
+    log.info("Creating UpdateShardHandler HTTP client with params: {}", params);
     client = HttpClientUtil.createClient(params, clientConnectionManager);
   }
   
