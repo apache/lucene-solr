@@ -158,6 +158,9 @@ New Features
 * SOLR-6216: Better faceting for multiple intervals on DV fields (Tomas Fernandez-Lobbe
   via Erick Erickson)
 
+* SOLR-6267: Let user override Interval Faceting key with LocalParams (Tomas Fernandez_Lobbe
+  via Erick Erickson)
+
 
 Bug Fixes
 ----------------------

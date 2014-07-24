@@ -22,12 +22,15 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.IntervalFacets.FacetInterval;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
 
@@ -60,7 +63,7 @@ import org.apache.solr.search.SyntaxError;
  * be faster in cases where there are a larger number of intervals per field.
  * <p/>
  * To use this class, create an instance using
- * {@link #IntervalFacets(SchemaField, SolrIndexSearcher, DocSet, String[])}
+ * {@link #IntervalFacets(SchemaField, SolrIndexSearcher, DocSet, String[], SolrParams)}
  * and then iterate the {@link FacetInterval} using {@link #iterator()}
  * <p/>
  * Intervals Format</br>
@@ -82,11 +85,14 @@ import org.apache.solr.search.SyntaxError;
  * comparator can't be changed.
  * Commas, brackets and square brackets can be escaped by using '\' in front of them.
  * Whitespaces before and after the values will be omitted. Start limit can't be grater
- * than the end limit. Equal limits are allowed.
+ * than the end limit. Equal limits are allowed.<p>
+ * As with facet.query, the key used to display the result can be set by using local params
+ * syntax, for example:<p>
+ * <code>{!key='First Half'}[0,5) </code>
  * <p/>
  * To use this class:
  * <pre>
- * IntervalFacets intervalFacets = new IntervalFacets(schemaField, searcher, docs, intervalStrs);
+ * IntervalFacets intervalFacets = new IntervalFacets(schemaField, searcher, docs, intervalStrs, params);
  * for (FacetInterval interval : intervalFacets) {
  *     results.add(interval.getKey(), interval.getCount());
  * }
@@ -98,19 +104,19 @@ public class IntervalFacets implements Iterable<FacetInterval> {
   private final DocSet docs;
   private final FacetInterval[] intervals;
 
-  public IntervalFacets(SchemaField schemaField, SolrIndexSearcher searcher, DocSet docs, String[] intervals) throws SyntaxError, IOException {
+  public IntervalFacets(SchemaField schemaField, SolrIndexSearcher searcher, DocSet docs, String[] intervals, SolrParams params) throws SyntaxError, IOException {
     this.schemaField = schemaField;
     this.searcher = searcher;
     this.docs = docs;
-    this.intervals = getSortedIntervals(intervals);
+    this.intervals = getSortedIntervals(intervals, params);
     doCount();
   }
 
-  private FacetInterval[] getSortedIntervals(String[] intervals) throws SyntaxError {
+  private FacetInterval[] getSortedIntervals(String[] intervals, SolrParams params) throws SyntaxError {
     FacetInterval[] sortedIntervals = new FacetInterval[intervals.length];
     int idx = 0;
     for (String intervalStr : intervals) {
-      sortedIntervals[idx++] = new FacetInterval(schemaField, intervalStr);
+      sortedIntervals[idx++] = new FacetInterval(schemaField, intervalStr, params);
     }
     
     /*
@@ -400,11 +406,31 @@ public class IntervalFacets implements Iterable<FacetInterval> {
      */
     private int count;
 
-    FacetInterval(SchemaField schemaField, String intervalStr) throws SyntaxError {
+    FacetInterval(SchemaField schemaField, String intervalStr, SolrParams params) throws SyntaxError {
       if (intervalStr == null) throw new SyntaxError("empty facet interval");
       intervalStr = intervalStr.trim();
       if (intervalStr.length() == 0) throw new SyntaxError("empty facet interval");
-      key = intervalStr;
+      
+      try {
+        SolrParams localParams = QueryParsing.getLocalParams(intervalStr, params);
+        if (localParams != null ) {
+          int localParamEndIdx = 2; // omit index of {!
+          while (true) {
+            localParamEndIdx = intervalStr.indexOf(QueryParsing.LOCALPARAM_END, localParamEndIdx);
+            // Local param could be escaping '}'
+            if (intervalStr.charAt(localParamEndIdx - 1) != '\\') {
+              break;
+            }
+            localParamEndIdx++;
+          }
+          intervalStr = intervalStr.substring(localParamEndIdx + 1);
+          key = localParams.get(CommonParams.OUTPUT_KEY, intervalStr);
+        } else {
+          key = intervalStr;
+        }
+      } catch (SyntaxError e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+      }
       if (intervalStr.charAt(0) == '(') {
         startOpen = true;
       } else if (intervalStr.charAt(0) == '[') {
