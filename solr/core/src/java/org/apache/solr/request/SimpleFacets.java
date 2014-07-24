@@ -1587,7 +1587,7 @@ public class SimpleFacets {
       
       SimpleOrderedMap<Integer> fieldResults = new SimpleOrderedMap<Integer>();
       res.add(field, fieldResults);
-      IntervalFacets intervalFacets = new IntervalFacets(schemaField, searcher, docs, intervalStrs);
+      IntervalFacets intervalFacets = new IntervalFacets(schemaField, searcher, docs, intervalStrs, params);
       for (FacetInterval interval : intervalFacets) {
         fieldResults.add(interval.getKey(), interval.getCount());
       }

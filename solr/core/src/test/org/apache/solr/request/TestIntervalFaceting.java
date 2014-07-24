@@ -389,6 +389,24 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     assertBadInterval("test_s_dv", "(B,A)", "Start is higher than end in interval for key");
     assertBadInterval("test_s_dv", "(a,B)", "Start is higher than end in interval for key");
     
+    assertIntervalKey("test_s_dv", "[A,B]", "[A,B]");
+    assertIntervalKey("test_s_dv", "(A,*]", "(A,*]");
+    assertIntervalKey("test_s_dv", "{!}(A,*]", "(A,*]");
+    assertIntervalKey("test_s_dv", "{!key=foo}(A,*]", "foo");
+    assertIntervalKey("test_s_dv", "{!key='foo'}(A,*]", "foo");
+    assertIntervalKey("test_s_dv", "{!key='foo bar'}(A,*]", "foo bar");
+    assertIntervalKey("test_s_dv", "{!key='foo' bar}(A,*]", "foo");
+    assertIntervalKey("test_s_dv", "{!key=$i}(A,*]", "foo", "i", "foo");
+    assertIntervalKey("test_s_dv", "{!key=$i}(A,*]", "foo bar", "i", "foo bar");
+    assertIntervalKey("test_s_dv", "{!key=$i}(A,*]", "'foo'", "i", "'foo'");
+    assertIntervalKey("test_s_dv", "{!key=$i}(A,*]", "\"foo\"", "i", "\"foo\"");
+    assertIntervalKey("test_s_dv", "{!key='[A,B]'}(A,B)", "[A,B]");
+    assertIntervalKey("test_s_dv", "{!key='\\{\\{\\{'}(A,B)", "{{{");
+    assertIntervalKey("test_s_dv", "{!key='\\{A,B\\}'}(A,B)", "{A,B}");
+    assertIntervalKey("test_s_dv", "{!key='\"A,B\"'}(A,B)", "\"A,B\"");
+    assertIntervalKey("test_s_dv", "{!key='A..B'}(A,B)", "A..B");
+    assertIntervalKey("test_s_dv", "{!key='A TO B'}(A,B)", "A TO B");
+    
     
     assertU(adoc("id", "1", "test_s_dv", "dog", "test_l_dv", "1"));
     assertU(adoc("id", "2", "test_s_dv", "cat", "test_l_dv", "2"));
@@ -496,7 +514,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
   private void assertStringInterval(String fieldName, String intervalStr,
                                     String expectedStart, String expectedEnd) throws SyntaxError {
     SchemaField f = h.getCore().getLatestSchema().getField(fieldName);
-    FacetInterval interval = new FacetInterval(f, intervalStr);
+    FacetInterval interval = new FacetInterval(f, intervalStr, new ModifiableSolrParams());
 
     assertEquals("Expected start " + expectedStart + " but found " + f.getType().toObject(f, interval.start),
         interval.start, new BytesRef(f.getType().toInternal(expectedStart)));
@@ -508,7 +526,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
   private void assertBadInterval(String fieldName, String intervalStr, String errorMsg) {
     SchemaField f = h.getCore().getLatestSchema().getField(fieldName);
     try {
-      new FacetInterval(f, intervalStr);
+      new FacetInterval(f, intervalStr, new ModifiableSolrParams());
       fail("Expecting SyntaxError for interval String: " + intervalStr);
     } catch (SyntaxError e) {
       assertTrue("Unexpected error message for interval String: " + intervalStr + ": " +
@@ -518,7 +536,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
 
   private void assertInterval(String fieldName, String intervalStr, long[] included, long[] lowerThanStart, long[] graterThanEnd) throws SyntaxError {
     SchemaField f = h.getCore().getLatestSchema().getField(fieldName);
-    FacetInterval interval = new FacetInterval(f, intervalStr);
+    FacetInterval interval = new FacetInterval(f, intervalStr, new ModifiableSolrParams());
     for (long l : included) {
       assertEquals("Value " + l + " should be INCLUDED for interval" + interval,
           IntervalCompareResult.INCLUDED, interval.includes(l));
@@ -532,6 +550,61 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
           IntervalCompareResult.GREATER_THAN_END, interval.includes(l));
     }
 
+  }
+  
+  private void assertIntervalKey(String fieldName, String intervalStr,
+      String expectedKey, String...params) throws SyntaxError {
+    assert (params.length&1)==0:"Params must have an even number of elements";
+    SchemaField f = h.getCore().getLatestSchema().getField(fieldName);
+    ModifiableSolrParams solrParams = new ModifiableSolrParams();
+    for (int i = 0; i < params.length - 1;) {
+      solrParams.set(params[i], params[i+1]);
+      i+=2;
+    }
+    FacetInterval interval = new FacetInterval(f, intervalStr, solrParams);
+    
+    assertEquals("Expected key " + expectedKey + " but found " + interval.getKey(), 
+        expectedKey, interval.getKey());
+  }
+  
+  public void testChangeKey() {
+    assertU(adoc("id", "1", "test_s_dv", "dog"));
+    assertU(adoc("id", "2", "test_s_dv", "cat"));
+    assertU(adoc("id", "3", "test_s_dv", "bird"));
+    assertU(adoc("id", "4", "test_s_dv", "cat"));
+    assertU(adoc("id", "5", "test_s_dv", "turtle"));
+    assertU(adoc("id", "6", "test_s_dv", "dog"));
+    assertU(adoc("id", "7", "test_s_dv", "dog"));
+    assertU(adoc("id", "8", "test_s_dv", "dog"));
+    assertU(adoc("id", "9", "test_s_dv", "cat"));
+    assertU(adoc("id", "10"));
+    assertU(commit());
+    
+    assertQ(req("q", "*:*", "facet", "true", "facet.interval", "test_s_dv", 
+        "f.test_s_dv.facet.interval.set", "{!key=foo}[bird,bird]", 
+        "f.test_s_dv.facet.interval.set", "{!key='bar'}(bird,dog)"), 
+        "//lst[@name='facet_intervals']/lst[@name='test_s_dv']/int[@name='foo'][.=1]",
+        "//lst[@name='facet_intervals']/lst[@name='test_s_dv']/int[@name='bar'][.=3]");
+    
+    assertQ(req("q", "*:*", "facet", "true", "facet.interval", "test_s_dv", 
+        "f.test_s_dv.facet.interval.set", "{!key=Birds}[bird,bird]", 
+        "f.test_s_dv.facet.interval.set", "{!key='foo bar'}(bird,dog)"), 
+        "//lst[@name='facet_intervals']/lst[@name='test_s_dv']/int[@name='Birds'][.=1]",
+        "//lst[@name='facet_intervals']/lst[@name='test_s_dv']/int[@name='foo bar'][.=3]");
+    
+    assertQ(req("q", "*:*", "facet", "true", "facet.interval", "test_s_dv", 
+        "f.test_s_dv.facet.interval.set", "{!key=$p}[bird,bird]", 
+        "p", "foo bar"), 
+        "//lst[@name='facet_intervals']/lst[@name='test_s_dv']/int[@name='foo bar'][.=1]");
+    
+    assertQ(req("q", "*:*", "facet", "true", "facet.interval", "test_s_dv", 
+        "f.test_s_dv.facet.interval.set", "{!key='[bird,\\}'}[bird,*]", 
+        "f.test_s_dv.facet.interval.set", "{!key='\\{bird,dog\\}'}(bird,dog)",
+        "f.test_s_dv.facet.interval.set", "{!key='foo'}(bird,dog})"), 
+        "//lst[@name='facet_intervals']/lst[@name='test_s_dv']/int[@name='[bird,}'][.=9]",
+        "//lst[@name='facet_intervals']/lst[@name='test_s_dv']/int[@name='{bird,dog}'][.=3]",
+        "//lst[@name='facet_intervals']/lst[@name='test_s_dv']/int[@name='foo'][.=7]");
+    
   }
 
   @Test
@@ -755,7 +828,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     assertIntervalQuery(field, "[0,2)", "2");
     assertIntervalQuery(field, "(0,2]", "2");
     assertIntervalQuery(field, "[*,5]", "6");
-    assertIntervalQuery(field, "[*,3)", "3", "[2,5)", "3", "[6,8)", "2", "[3,*]", "7", "[10,10]", "1");
+    assertIntervalQuery(field, "[*,3)", "3", "[2,5)", "3", "[6,8)", "2", "[3,*]", "7", "[10,10]", "1", "[10,10]", "1", "[10,10]", "1");
 
   }
 
