@@ -153,7 +153,8 @@ final class SegmentTermsEnumFrame {
     entCount = code >>> 1;
     assert entCount > 0;
     isLastInFloor = (code & 1) != 0;
-    assert arc == null || (isLastInFloor || isFloor);
+
+    assert arc == null || (isLastInFloor || isFloor): "fp=" + fp + " arc=" + arc + " isFloor=" + isFloor + " isLastInFloor=" + isLastInFloor;
 
     // TODO: if suffixes were stored in random-access
     // array structure, then we could do binary search

@@ -109,6 +109,9 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
       doc.add(newTextField("field", term, Field.Store.NO));
       w.addDocument(doc);
     }
+    if (VERBOSE) {
+      System.out.println("TEST: now forceMerge");
+    }
     w.forceMerge(1);
     IndexReader r = w.getReader();
     TermsEnum te = MultiFields.getTerms(r, "field").iterator(null);

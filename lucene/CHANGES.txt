@@ -182,6 +182,9 @@ Optimizations
 * LUCENE-5834: Empty sorted set and numeric doc values are now singletons.
   (Adrien Grand)
 
+* LUCENE-5841: Improve performance of block tree terms dictionary when
+  assigning terms to blocks.  (Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-5796: Fixes the Scorer.getChildren() method for two combinations 
