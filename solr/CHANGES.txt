@@ -281,6 +281,8 @@ Other Changes
 * SOLR-3345: BaseDistributedSearchTestCase should always ignore QTime.
   (Vamsee Yarlagadda, Benson Margulies via Mark Miller)
 
+* SOLR-6270: Increased timeouts for MultiThreadedOCPTest. (shalin)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
