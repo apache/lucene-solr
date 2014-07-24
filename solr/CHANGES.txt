@@ -283,6 +283,9 @@ Other Changes
 
 * SOLR-6270: Increased timeouts for MultiThreadedOCPTest. (shalin)
 
+* SOLR-6274: UpdateShardHandler should log the params used to configure it's
+  HttpClient. (Ramkumar Aiyengar via Mark Miller)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
