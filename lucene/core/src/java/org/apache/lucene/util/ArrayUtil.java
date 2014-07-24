@@ -28,10 +28,8 @@ import java.util.Comparator;
 
 public final class ArrayUtil {
 
-  /** Maximum length for an array (Integer.MAX_VALUE - 8).  stackoverflow
-   *  consensus seems to be this value and it's also what ArrayList.java
-   *  uses as its limit.  */
-  public static final int MAX_ARRAY_LENGTH = Integer.MAX_VALUE - 8;
+  /** Maximum length for an array (Integer.MAX_VALUE - RamUsageEstimator.NUM_BYTES_ARRAY_HEADER). */
+  public static final int MAX_ARRAY_LENGTH = Integer.MAX_VALUE - RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
 
   private ArrayUtil() {} // no instance
 
