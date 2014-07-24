@@ -102,6 +102,31 @@ public abstract class StringHelper {
    * Otherwise <code>false</code>.
    * 
    * @param ref
+   *         the {@code byte[]} to test
+   * @param prefix
+   *         the expected prefix
+   * @return Returns <code>true</code> iff the ref starts with the given prefix.
+   *         Otherwise <code>false</code>.
+   */
+  public static boolean startsWith(byte[] ref, BytesRef prefix) {
+    if (ref.length < prefix.length) {
+      return false;
+    }
+
+    for(int i=0;i<prefix.length;i++) {
+      if (ref[i] != prefix.bytes[prefix.offset+i]) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Returns <code>true</code> iff the ref starts with the given prefix.
+   * Otherwise <code>false</code>.
+   * 
+   * @param ref
    *          the {@link BytesRef} to test
    * @param prefix
    *          the expected prefix

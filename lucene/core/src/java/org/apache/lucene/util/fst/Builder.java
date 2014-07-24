@@ -80,22 +80,14 @@ public class Builder<T> {
   // current "frontier"
   private UnCompiledNode<T>[] frontier;
 
-  /** Expert: this is invoked by Builder whenever a suffix
-   *  is serialized. */
-  public static abstract class FreezeTail<T> {
-    public abstract void freeze(final UnCompiledNode<T>[] frontier, int prefixLenPlus1, IntsRef prevInput) throws IOException;
-  }
-
-  private final FreezeTail<T> freezeTail;
-
   /**
    * Instantiates an FST/FSA builder without any pruning. A shortcut
    * to {@link #Builder(FST.INPUT_TYPE, int, int, boolean,
-   * boolean, int, Outputs, FreezeTail, boolean, float,
+   * boolean, int, Outputs, boolean, float,
    * boolean, int)} with pruning options turned off.
    */
   public Builder(FST.INPUT_TYPE inputType, Outputs<T> outputs) {
-    this(inputType, 0, 0, true, true, Integer.MAX_VALUE, outputs, null, false, PackedInts.COMPACT, true, 15);
+    this(inputType, 0, 0, true, true, Integer.MAX_VALUE, outputs, false, PackedInts.COMPACT, true, 15);
   }
 
   /**
@@ -151,11 +143,10 @@ public class Builder<T> {
    */
   public Builder(FST.INPUT_TYPE inputType, int minSuffixCount1, int minSuffixCount2, boolean doShareSuffix,
                  boolean doShareNonSingletonNodes, int shareMaxTailLength, Outputs<T> outputs,
-                 FreezeTail<T> freezeTail, boolean doPackFST, float acceptableOverheadRatio, boolean allowArrayArcs,
+                 boolean doPackFST, float acceptableOverheadRatio, boolean allowArrayArcs,
                  int bytesPageBits) {
     this.minSuffixCount1 = minSuffixCount1;
     this.minSuffixCount2 = minSuffixCount2;
-    this.freezeTail = freezeTail;
     this.doShareNonSingletonNodes = doShareNonSingletonNodes;
     this.shareMaxTailLength = shareMaxTailLength;
     this.doPackFST = doPackFST;
@@ -209,100 +200,95 @@ public class Builder<T> {
   }
 
   private void freezeTail(int prefixLenPlus1) throws IOException {
-    if (freezeTail != null) {
-      // Custom plugin:
-      freezeTail.freeze(frontier, prefixLenPlus1, lastInput);
-    } else {
-      //System.out.println("  compileTail " + prefixLenPlus1);
-      final int downTo = Math.max(1, prefixLenPlus1);
-      for(int idx=lastInput.length; idx >= downTo; idx--) {
+    //System.out.println("  compileTail " + prefixLenPlus1);
+    final int downTo = Math.max(1, prefixLenPlus1);
+    for(int idx=lastInput.length; idx >= downTo; idx--) {
 
-        boolean doPrune = false;
-        boolean doCompile = false;
+      boolean doPrune = false;
+      boolean doCompile = false;
 
-        final UnCompiledNode<T> node = frontier[idx];
-        final UnCompiledNode<T> parent = frontier[idx-1];
+      final UnCompiledNode<T> node = frontier[idx];
+      final UnCompiledNode<T> parent = frontier[idx-1];
 
-        if (node.inputCount < minSuffixCount1) {
+      if (node.inputCount < minSuffixCount1) {
+        doPrune = true;
+        doCompile = true;
+      } else if (idx > prefixLenPlus1) {
+        // prune if parent's inputCount is less than suffixMinCount2
+        if (parent.inputCount < minSuffixCount2 || (minSuffixCount2 == 1 && parent.inputCount == 1 && idx > 1)) {
+          // my parent, about to be compiled, doesn't make the cut, so
+          // I'm definitely pruned 
+
+          // if minSuffixCount2 is 1, we keep only up
+          // until the 'distinguished edge', ie we keep only the
+          // 'divergent' part of the FST. if my parent, about to be
+          // compiled, has inputCount 1 then we are already past the
+          // distinguished edge.  NOTE: this only works if
+          // the FST outputs are not "compressible" (simple
+          // ords ARE compressible).
           doPrune = true;
-          doCompile = true;
-        } else if (idx > prefixLenPlus1) {
-          // prune if parent's inputCount is less than suffixMinCount2
-          if (parent.inputCount < minSuffixCount2 || (minSuffixCount2 == 1 && parent.inputCount == 1 && idx > 1)) {
-            // my parent, about to be compiled, doesn't make the cut, so
-            // I'm definitely pruned 
-
-            // if minSuffixCount2 is 1, we keep only up
-            // until the 'distinguished edge', ie we keep only the
-            // 'divergent' part of the FST. if my parent, about to be
-            // compiled, has inputCount 1 then we are already past the
-            // distinguished edge.  NOTE: this only works if
-            // the FST outputs are not "compressible" (simple
-            // ords ARE compressible).
-            doPrune = true;
-          } else {
-            // my parent, about to be compiled, does make the cut, so
-            // I'm definitely not pruned 
-            doPrune = false;
-          }
-          doCompile = true;
         } else {
-          // if pruning is disabled (count is 0) we can always
-          // compile current node
-          doCompile = minSuffixCount2 == 0;
+          // my parent, about to be compiled, does make the cut, so
+          // I'm definitely not pruned 
+          doPrune = false;
         }
+        doCompile = true;
+      } else {
+        // if pruning is disabled (count is 0) we can always
+        // compile current node
+        doCompile = minSuffixCount2 == 0;
+      }
 
-        //System.out.println("    label=" + ((char) lastInput.ints[lastInput.offset+idx-1]) + " idx=" + idx + " inputCount=" + frontier[idx].inputCount + " doCompile=" + doCompile + " doPrune=" + doPrune);
+      //System.out.println("    label=" + ((char) lastInput.ints[lastInput.offset+idx-1]) + " idx=" + idx + " inputCount=" + frontier[idx].inputCount + " doCompile=" + doCompile + " doPrune=" + doPrune);
 
-        if (node.inputCount < minSuffixCount2 || (minSuffixCount2 == 1 && node.inputCount == 1 && idx > 1)) {
-          // drop all arcs
-          for(int arcIdx=0;arcIdx<node.numArcs;arcIdx++) {
-            @SuppressWarnings({"rawtypes","unchecked"}) final UnCompiledNode<T> target =
-                (UnCompiledNode<T>) node.arcs[arcIdx].target;
-            target.clear();
-          }
-          node.numArcs = 0;
+      if (node.inputCount < minSuffixCount2 || (minSuffixCount2 == 1 && node.inputCount == 1 && idx > 1)) {
+        // drop all arcs
+        for(int arcIdx=0;arcIdx<node.numArcs;arcIdx++) {
+          @SuppressWarnings({"rawtypes","unchecked"}) final UnCompiledNode<T> target =
+          (UnCompiledNode<T>) node.arcs[arcIdx].target;
+          target.clear();
         }
+        node.numArcs = 0;
+      }
 
-        if (doPrune) {
-          // this node doesn't make it -- deref it
-          node.clear();
-          parent.deleteLast(lastInput.ints[lastInput.offset+idx-1], node);
+      if (doPrune) {
+        // this node doesn't make it -- deref it
+        node.clear();
+        parent.deleteLast(lastInput.ints[lastInput.offset+idx-1], node);
+      } else {
+
+        if (minSuffixCount2 != 0) {
+          compileAllTargets(node, lastInput.length-idx);
+        }
+        final T nextFinalOutput = node.output;
+
+        // We "fake" the node as being final if it has no
+        // outgoing arcs; in theory we could leave it
+        // as non-final (the FST can represent this), but
+        // FSTEnum, Util, etc., have trouble w/ non-final
+        // dead-end states:
+        final boolean isFinal = node.isFinal || node.numArcs == 0;
+
+        if (doCompile) {
+          // this node makes it and we now compile it.  first,
+          // compile any targets that were previously
+          // undecided:
+          parent.replaceLast(lastInput.ints[lastInput.offset + idx-1],
+                             compileNode(node, 1+lastInput.length-idx),
+                             nextFinalOutput,
+                             isFinal);
         } else {
-
-          if (minSuffixCount2 != 0) {
-            compileAllTargets(node, lastInput.length-idx);
-          }
-          final T nextFinalOutput = node.output;
-
-          // We "fake" the node as being final if it has no
-          // outgoing arcs; in theory we could leave it
-          // as non-final (the FST can represent this), but
-          // FSTEnum, Util, etc., have trouble w/ non-final
-          // dead-end states:
-          final boolean isFinal = node.isFinal || node.numArcs == 0;
-
-          if (doCompile) {
-            // this node makes it and we now compile it.  first,
-            // compile any targets that were previously
-            // undecided:
-            parent.replaceLast(lastInput.ints[lastInput.offset + idx-1],
-                               compileNode(node, 1+lastInput.length-idx),
-                               nextFinalOutput,
-                               isFinal);
-          } else {
-            // replaceLast just to install
-            // nextFinalOutput/isFinal onto the arc
-            parent.replaceLast(lastInput.ints[lastInput.offset + idx-1],
-                               node,
-                               nextFinalOutput,
-                               isFinal);
-            // this node will stay in play for now, since we are
-            // undecided on whether to prune it.  later, it
-            // will be either compiled or pruned, so we must
-            // allocate a new node:
-            frontier[idx] = new UnCompiledNode<>(this, idx);
-          }
+          // replaceLast just to install
+          // nextFinalOutput/isFinal onto the arc
+          parent.replaceLast(lastInput.ints[lastInput.offset + idx-1],
+                             node,
+                             nextFinalOutput,
+                             isFinal);
+          // this node will stay in play for now, since we are
+          // undecided on whether to prune it.  later, it
+          // will be either compiled or pruned, so we must
+          // allocate a new node:
+          frontier[idx] = new UnCompiledNode<>(this, idx);
         }
       }
     }

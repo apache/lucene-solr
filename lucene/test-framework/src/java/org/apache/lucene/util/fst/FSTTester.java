@@ -288,7 +288,6 @@ public class FSTTester<T> {
                                               allowRandomSuffixSharing ? random.nextBoolean() : true,
                                               allowRandomSuffixSharing ? TestUtil.nextInt(random, 1, 10) : Integer.MAX_VALUE,
                                               outputs,
-                                              null,
                                               willRewrite,
                                               PackedInts.DEFAULT,
                                               true,

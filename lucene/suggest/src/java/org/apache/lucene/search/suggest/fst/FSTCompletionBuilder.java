@@ -239,7 +239,7 @@ public class FSTCompletionBuilder {
     final Object empty = outputs.getNoOutput();
     final Builder<Object> builder = new Builder<>(
         FST.INPUT_TYPE.BYTE1, 0, 0, true, true, 
-        shareMaxTailLength, outputs, null, false, 
+        shareMaxTailLength, outputs, false, 
         PackedInts.DEFAULT, true, 15);
     
     BytesRef scratch = new BytesRef();

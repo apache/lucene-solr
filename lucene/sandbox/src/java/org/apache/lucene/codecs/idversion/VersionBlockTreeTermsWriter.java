@@ -45,11 +45,11 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
-import org.apache.lucene.util.fst.NoOutputs;
 import org.apache.lucene.util.fst.PairOutputs.Pair;
 import org.apache.lucene.util.fst.PairOutputs;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
@@ -96,8 +96,6 @@ import org.apache.lucene.util.packed.PackedInts;
 
 public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
 
-  // private static boolean DEBUG = IDVersionSegmentTermsEnum.DEBUG;
-
   static final PairOutputs<BytesRef,Long> FST_OUTPUTS = new PairOutputs<>(ByteSequenceOutputs.getSingleton(),
                                                                           PositiveIntOutputs.getSingleton());
 
@@ -113,7 +111,7 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
    *  #VersionBlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int)}. */
   public final static int DEFAULT_MAX_BLOCK_SIZE = 48;
 
-  //public final static boolean DEBUG = false;
+  // public final static boolean DEBUG = false;
   //private final static boolean SAVE_DOT_FILES = false;
 
   static final int OUTPUT_FLAGS_NUM_BITS = 2;
@@ -262,20 +260,40 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
   }
 
   private static final class PendingTerm extends PendingEntry {
-    public final BytesRef term;
+    public final byte[] termBytes;
     // stats + metadata
     public final BlockTermState state;
 
     public PendingTerm(BytesRef term, BlockTermState state) {
       super(true);
-      this.term = term;
+      this.termBytes = new byte[term.length];
+      System.arraycopy(term.bytes, term.offset, termBytes, 0, term.length);
       this.state = state;
     }
 
     @Override
     public String toString() {
-      return term.utf8ToString();
+      return brToString(termBytes);
     }
+  }
+
+  // for debugging
+  @SuppressWarnings("unused")
+  static String brToString(BytesRef b) {
+    try {
+      return b.utf8ToString() + " " + b;
+    } catch (Throwable t) {
+      // If BytesRef isn't actually UTF8, or it's eg a
+      // prefix of UTF8 that ends mid-unicode-char, we
+      // fallback to hex:
+      return b.toString();
+    }
+  }
+
+  // for debugging
+  @SuppressWarnings("unused")
+  static String brToString(byte[] b) {
+    return brToString(new BytesRef(b));
   }
 
   private static final class PendingBlock extends PendingEntry {
@@ -286,7 +304,6 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
     public final boolean hasTerms;
     public final boolean isFloor;
     public final int floorLeadByte;
-    private final IntsRef scratchIntsRef = new IntsRef();
     /** Max version for all terms in this block. */
     private final long maxVersion;
 
@@ -303,12 +320,13 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
 
     @Override
     public String toString() {
-      return "BLOCK: " + prefix.utf8ToString();
+      return "BLOCK: " + brToString(prefix);
     }
 
-    public void compileIndex(List<PendingBlock> floorBlocks, RAMOutputStream scratchBytes) throws IOException {
+    public void compileIndex(List<PendingBlock> blocks, RAMOutputStream scratchBytes, IntsRef scratchIntsRef) throws IOException {
 
-      assert (isFloor && floorBlocks != null && floorBlocks.size() != 0) || (!isFloor && floorBlocks == null): "isFloor=" + isFloor + " floorBlocks=" + floorBlocks;
+      assert (isFloor && blocks.size() > 1) || (isFloor == false && blocks.size() == 1): "isFloor=" + isFloor + " blocks=" + blocks;
+      assert this == blocks.get(0);
 
       assert scratchBytes.getFilePointer() == 0;
 
@@ -319,9 +337,9 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
       // outputs sharing in the FST
       scratchBytes.writeVLong(encodeOutput(fp, hasTerms, isFloor));
       if (isFloor) {
-        scratchBytes.writeVInt(floorBlocks.size());
-        for (PendingBlock sub : floorBlocks) {
-          assert sub.floorLeadByte != -1;
+        scratchBytes.writeVInt(blocks.size()-1);
+        for (int i=1;i<blocks.size();i++) {
+          PendingBlock sub = blocks.get(i);
           maxVersionIndex = Math.max(maxVersionIndex, sub.maxVersion);
           //if (DEBUG) {
           //  System.out.println("    write floorLeadByte=" + Integer.toHexString(sub.floorLeadByte&0xff));
@@ -334,7 +352,7 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
 
       final Builder<Pair<BytesRef,Long>> indexBuilder = new Builder<>(FST.INPUT_TYPE.BYTE1,
                                                                       0, 0, true, false, Integer.MAX_VALUE,
-                                                                      FST_OUTPUTS, null, false,
+                                                                      FST_OUTPUTS, false,
                                                                       PackedInts.COMPACT, true, 15);
       //if (DEBUG) {
       //  System.out.println("  compile index for prefix=" + prefix);
@@ -347,26 +365,18 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
       scratchBytes.reset();
 
       // Copy over index for all sub-blocks
-
-      if (subIndices != null) {
-        for(FST<Pair<BytesRef,Long>> subIndex : subIndices) {
-          append(indexBuilder, subIndex);
-        }
-      }
-
-      if (floorBlocks != null) {
-        for (PendingBlock sub : floorBlocks) {
-          if (sub.subIndices != null) {
-            for(FST<Pair<BytesRef,Long>> subIndex : sub.subIndices) {
-              append(indexBuilder, subIndex);
-            }
+      for(PendingBlock block : blocks) {
+        if (block.subIndices != null) {
+          for(FST<Pair<BytesRef,Long>> subIndex : block.subIndices) {
+            append(indexBuilder, subIndex, scratchIntsRef);
           }
-          sub.subIndices = null;
+          block.subIndices = null;
         }
       }
 
       index = indexBuilder.finish();
-      subIndices = null;
+
+      assert subIndices == null;
 
       /*
       Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"));
@@ -379,7 +389,7 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
     // TODO: maybe we could add bulk-add method to
     // Builder?  Takes FST and unions it w/ current
     // FST.
-    private void append(Builder<Pair<BytesRef,Long>> builder, FST<Pair<BytesRef,Long>> subIndex) throws IOException {
+    private void append(Builder<Pair<BytesRef,Long>> builder, FST<Pair<BytesRef,Long>> subIndex, IntsRef scratchIntsRef) throws IOException {
       final BytesRefFSTEnum<Pair<BytesRef,Long>> subIndexEnum = new BytesRefFSTEnum<>(subIndex);
       BytesRefFSTEnum.InputOutput<Pair<BytesRef,Long>> indexEnt;
       while((indexEnt = subIndexEnum.next()) != null) {
@@ -391,7 +401,8 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
     }
   }
 
-  final RAMOutputStream scratchBytes = new RAMOutputStream();
+  private final RAMOutputStream scratchBytes = new RAMOutputStream();
+  private final IntsRef scratchIntsRef = new IntsRef();
 
   class TermsWriter extends TermsConsumer {
     private final FieldInfo fieldInfo;
@@ -400,387 +411,201 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
     final FixedBitSet docsSeen;
     long indexStartFP;
 
-    // Used only to partition terms into the block tree; we
-    // don't pull an FST from this builder:
-    private final NoOutputs noOutputs;
-    private final Builder<Object> blockBuilder;
+    // Records index into pending where the current prefix at that
+    // length "started"; for example, if current term starts with 't',
+    // startsByPrefix[0] is the index into pending for the first
+    // term/sub-block starting with 't'.  We use this to figure out when
+    // to write a new block:
+    private final BytesRef lastTerm = new BytesRef();
+    private int[] prefixStarts = new int[8];
 
-    // PendingTerm or PendingBlock:
+    private final long[] longs;
+
+    // Pending stack of terms and blocks.  As terms arrive (in sorted order)
+    // we append to this stack, and once the top of the stack has enough
+    // terms starting with a common prefix, write write a new block with
+    // those terms and replace those terms in the stack with a new block:
     private final List<PendingEntry> pending = new ArrayList<>();
 
-    // Index into pending of most recently written block
-    private int lastBlockIndex = -1;
-
-    // Re-used when segmenting a too-large block into floor
-    // blocks:
-    private int[] subBytes = new int[10];
-    private int[] subTermCounts = new int[10];
-    private int[] subTermCountSums = new int[10];
-    private int[] subSubCounts = new int[10];
+    // Reused in writeBlocks:
+    private final List<PendingBlock> newBlocks = new ArrayList<>();
 
     private BytesRef minTerm;
     private BytesRef maxTerm = new BytesRef();
 
-    // This class assigns terms to blocks "naturally", ie,
-    // according to the number of terms under a given prefix
-    // that we encounter:
-    private class FindBlocks extends Builder.FreezeTail<Object> {
+    /** Writes the top count entries in pending, using prevTerm to compute the prefix. */
+    void writeBlocks(int prefixLength, int count) throws IOException {
 
-      @Override
-      public void freeze(final Builder.UnCompiledNode<Object>[] frontier, int prefixLenPlus1, final IntsRef lastInput) throws IOException {
+      assert count > 0;
 
-        //if (DEBUG) System.out.println("  freeze prefixLenPlus1=" + prefixLenPlus1);
-
-        for(int idx=lastInput.length; idx >= prefixLenPlus1; idx--) {
-          final Builder.UnCompiledNode<Object> node = frontier[idx];
-
-          long totCount = 0;
-
-          if (node.isFinal) {
-            totCount++;
-          }
-
-          for(int arcIdx=0;arcIdx<node.numArcs;arcIdx++) {
-            @SuppressWarnings("unchecked") final Builder.UnCompiledNode<Object> target = (Builder.UnCompiledNode<Object>) node.arcs[arcIdx].target;
-            totCount += target.inputCount;
-            target.clear();
-            node.arcs[arcIdx].target = null;
-          }
-          node.numArcs = 0;
-
-          if (totCount >= minItemsInBlock || idx == 0) {
-            // We are on a prefix node that has enough
-            // entries (terms or sub-blocks) under it to let
-            // us write a new block or multiple blocks (main
-            // block + follow on floor blocks):
-            //if (DEBUG) {
-            //  if (totCount < minItemsInBlock && idx != 0) {
-            //    System.out.println("  force block has terms");
-            //  }
-            //}
-            writeBlocks(lastInput, idx, (int) totCount);
-            node.inputCount = 1;
-          } else {
-            // stragglers!  carry count upwards
-            node.inputCount = totCount;
-          }
-          frontier[idx] = new Builder.UnCompiledNode<>(blockBuilder, idx);
-        }
+      /*
+      if (DEBUG) {
+        BytesRef br = new BytesRef(lastTerm.bytes);
+        br.offset = lastTerm.offset;
+        br.length = prefixLength;
+        System.out.println("writeBlocks: " + br.utf8ToString() + " count=" + count);
       }
-    }
+      */
 
-    // Write the top count entries on the pending stack as
-    // one or more blocks.  Returns how many blocks were
-    // written.  If the entry count is <= maxItemsPerBlock
-    // we just write a single block; else we break into
-    // primary (initial) block and then one or more
-    // following floor blocks:
+      // Root block better write all remaining pending entries:
+      assert prefixLength > 0 || count == pending.size();
 
-    void writeBlocks(IntsRef prevTerm, int prefixLength, int count) throws IOException {
-      if (count <= maxItemsInBlock) {
-        // Easy case: not floor block.  Eg, prefix is "foo",
-        // and we found 30 terms/sub-blocks starting w/ that
-        // prefix, and minItemsInBlock <= 30 <=
-        // maxItemsInBlock.
-        final PendingBlock nonFloorBlock = writeBlock(prevTerm, prefixLength, prefixLength, count, count, 0, false, -1, true);
-        nonFloorBlock.compileIndex(null, scratchBytes);
-        pending.add(nonFloorBlock);
-      } else {
-        // Floor block case.  Eg, prefix is "foo" but we
-        // have 100 terms/sub-blocks starting w/ that
-        // prefix.  We segment the entries into a primary
-        // block and following floor blocks using the first
-        // label in the suffix to assign to floor blocks.
+      int lastSuffixLeadLabel = -1;
 
-        // TODO: we could store min & max suffix start byte
-        // in each block, to make floor blocks authoritative
+      // True if we saw at least one term in this block (we record if a block
+      // only points to sub-blocks in the terms index so we can avoid seeking
+      // to it when we are looking for a term):
+      boolean hasTerms = false;
+      boolean hasSubBlocks = false;
 
-        /*
-        if (DEBUG) {
-          final BytesRef prefix = new BytesRef(prefixLength);
-          for(int m=0;m<prefixLength;m++) {
-            prefix.bytes[m] = (byte) prevTerm.ints[m];
-          }
-          prefix.length = prefixLength;
-          //System.out.println("\nWBS count=" + count + " prefix=" + prefix.utf8ToString() + " " + prefix);
-          System.out.println("writeBlocks: prefix=" + toString(prefix) + " " + prefix + " count=" + count + " pending.size()=" + pending.size());
-        }
-        */
-        //System.out.println("\nwbs count=" + count);
+      int start = pending.size()-count;
+      int end = pending.size();
+      int nextBlockStart = start;
+      int nextFloorLeadLabel = -1;
 
-        final int savLabel = prevTerm.ints[prevTerm.offset + prefixLength];
+      for (int i=start; i<end; i++) {
 
-        // Count up how many items fall under
-        // each unique label after the prefix.
-        
-        // TODO: this is wasteful since the builder had
-        // already done this (partitioned these sub-terms
-        // according to their leading prefix byte)
-        
-        final List<PendingEntry> slice = pending.subList(pending.size()-count, pending.size());
-        int lastSuffixLeadLabel = -1;
-        int termCount = 0;
-        int subCount = 0;
-        int numSubs = 0;
+        PendingEntry ent = pending.get(i);
 
-        for(PendingEntry ent : slice) {
+        int suffixLeadLabel;
 
-          // First byte in the suffix of this term
-          final int suffixLeadLabel;
-          if (ent.isTerm) {
-            PendingTerm term = (PendingTerm) ent;
-            if (term.term.length == prefixLength) {
-              // Suffix is 0, ie prefix 'foo' and term is
-              // 'foo' so the term has empty string suffix
-              // in this block
-              assert lastSuffixLeadLabel == -1;
-              assert numSubs == 0;
-              suffixLeadLabel = -1;
-            } else {
-              suffixLeadLabel = term.term.bytes[term.term.offset + prefixLength] & 0xff;
-            }
+        if (ent.isTerm) {
+          PendingTerm term = (PendingTerm) ent;
+          if (term.termBytes.length == prefixLength) {
+            // Suffix is 0, i.e. prefix 'foo' and term is
+            // 'foo' so the term has empty string suffix
+            // in this block
+            assert lastSuffixLeadLabel == -1;
+            suffixLeadLabel = -1;
           } else {
-            PendingBlock block = (PendingBlock) ent;
-            assert block.prefix.length > prefixLength;
-            suffixLeadLabel = block.prefix.bytes[block.prefix.offset + prefixLength] & 0xff;
+            suffixLeadLabel = term.termBytes[prefixLength] & 0xff;
           }
-
-          if (suffixLeadLabel != lastSuffixLeadLabel && (termCount + subCount) != 0) {
-            if (subBytes.length == numSubs) {
-              subBytes = ArrayUtil.grow(subBytes);
-              subTermCounts = ArrayUtil.grow(subTermCounts);
-              subSubCounts = ArrayUtil.grow(subSubCounts);
-            }
-            subBytes[numSubs] = lastSuffixLeadLabel;
-            lastSuffixLeadLabel = suffixLeadLabel;
-            subTermCounts[numSubs] = termCount;
-            subSubCounts[numSubs] = subCount;
-            /*
-            if (suffixLeadLabel == -1) {
-              System.out.println("  sub " + -1 + " termCount=" + termCount + " subCount=" + subCount);
-            } else {
-              System.out.println("  sub " + Integer.toHexString(suffixLeadLabel) + " termCount=" + termCount + " subCount=" + subCount);
-            }
-            */
-            termCount = subCount = 0;
-            numSubs++;
-          }
-
-          if (ent.isTerm) {
-            termCount++;
-          } else {
-            subCount++;
-          }
-        }
-
-        if (subBytes.length == numSubs) {
-          subBytes = ArrayUtil.grow(subBytes);
-          subTermCounts = ArrayUtil.grow(subTermCounts);
-          subSubCounts = ArrayUtil.grow(subSubCounts);
-        }
-
-        subBytes[numSubs] = lastSuffixLeadLabel;
-        subTermCounts[numSubs] = termCount;
-        subSubCounts[numSubs] = subCount;
-        numSubs++;
-        /*
-        if (lastSuffixLeadLabel == -1) {
-          System.out.println("  sub " + -1 + " termCount=" + termCount + " subCount=" + subCount);
         } else {
-          System.out.println("  sub " + Integer.toHexString(lastSuffixLeadLabel) + " termCount=" + termCount + " subCount=" + subCount);
+          PendingBlock block = (PendingBlock) ent;
+          assert block.prefix.length > prefixLength;
+          suffixLeadLabel = block.prefix.bytes[block.prefix.offset + prefixLength] & 0xff;
         }
-        */
+        // if (DEBUG) System.out.println("  i=" + i + " ent=" + ent + " suffixLeadLabel=" + suffixLeadLabel);
 
-        if (subTermCountSums.length < numSubs) {
-          subTermCountSums = ArrayUtil.grow(subTermCountSums, numSubs);
-        }
+        if (suffixLeadLabel != lastSuffixLeadLabel) {
+          int itemsInBlock = i - nextBlockStart;
+          if (itemsInBlock >= minItemsInBlock && end-nextBlockStart > maxItemsInBlock) {
+            // The count is too large for one block, so we must break it into "floor" blocks, where we record
+            // the leading label of the suffix of the first term in each floor block, so at search time we can
+            // jump to the right floor block.  We just use a naive greedy segmenter here: make a new floor
+            // block as soon as we have at least minItemsInBlock.  This is not always best: it often produces
+            // a too-small block as the final block:
+            boolean isFloor = itemsInBlock < count;
+            newBlocks.add(writeBlock(prefixLength, isFloor, nextFloorLeadLabel, nextBlockStart, i, hasTerms, hasSubBlocks));
 
-        // Roll up (backwards) the termCounts; postings impl
-        // needs this to know where to pull the term slice
-        // from its pending terms stack:
-        int sum = 0;
-        for(int idx=numSubs-1;idx>=0;idx--) {
-          sum += subTermCounts[idx];
-          subTermCountSums[idx] = sum;
-        }
-
-        // TODO: make a better segmenter?  It'd have to
-        // absorb the too-small end blocks backwards into
-        // the previous blocks
-
-        // Naive greedy segmentation; this is not always
-        // best (it can produce a too-small block as the
-        // last block):
-        int pendingCount = 0;
-        int startLabel = subBytes[0];
-        int curStart = count;
-        subCount = 0;
-
-        final List<PendingBlock> floorBlocks = new ArrayList<>();
-        PendingBlock firstBlock = null;
-
-        for(int sub=0;sub<numSubs;sub++) {
-          pendingCount += subTermCounts[sub] + subSubCounts[sub];
-          //System.out.println("  " + (subTermCounts[sub] + subSubCounts[sub]));
-          subCount++;
-
-          // Greedily make a floor block as soon as we've
-          // crossed the min count
-          if (pendingCount >= minItemsInBlock) {
-            final int curPrefixLength;
-            if (startLabel == -1) {
-              curPrefixLength = prefixLength;
-            } else {
-              curPrefixLength = 1+prefixLength;
-              // floor term:
-              prevTerm.ints[prevTerm.offset + prefixLength] = startLabel;
-            }
-            //System.out.println("  " + subCount + " subs");
-            final PendingBlock floorBlock = writeBlock(prevTerm, prefixLength, curPrefixLength, curStart, pendingCount, subTermCountSums[1+sub], true, startLabel, curStart == pendingCount);
-            if (firstBlock == null) {
-              firstBlock = floorBlock;
-            } else {
-              floorBlocks.add(floorBlock);
-            }
-            curStart -= pendingCount;
-            //System.out.println("    = " + pendingCount);
-            pendingCount = 0;
-
-            assert minItemsInBlock == 1 || subCount > 1: "minItemsInBlock=" + minItemsInBlock + " subCount=" + subCount + " sub=" + sub + " of " + numSubs + " subTermCount=" + subTermCountSums[sub] + " subSubCount=" + subSubCounts[sub] + " depth=" + prefixLength;
-            subCount = 0;
-            startLabel = subBytes[sub+1];
-
-            if (curStart == 0) {
-              break;
-            }
-
-            if (curStart <= maxItemsInBlock) {
-              // remainder is small enough to fit into a
-              // block.  NOTE that this may be too small (<
-              // minItemsInBlock); need a true segmenter
-              // here
-              assert startLabel != -1;
-              assert firstBlock != null;
-              prevTerm.ints[prevTerm.offset + prefixLength] = startLabel;
-              //System.out.println("  final " + (numSubs-sub-1) + " subs");
-              /*
-              for(sub++;sub < numSubs;sub++) {
-                System.out.println("  " + (subTermCounts[sub] + subSubCounts[sub]));
-              }
-              System.out.println("    = " + curStart);
-              if (curStart < minItemsInBlock) {
-                System.out.println("      **");
-              }
-              */
-              floorBlocks.add(writeBlock(prevTerm, prefixLength, prefixLength+1, curStart, curStart, 0, true, startLabel, true));
-              break;
-            }
+            hasTerms = false;
+            hasSubBlocks = false;
+            nextFloorLeadLabel = suffixLeadLabel;
+            nextBlockStart = i;
           }
+
+          lastSuffixLeadLabel = suffixLeadLabel;
         }
 
-        prevTerm.ints[prevTerm.offset + prefixLength] = savLabel;
-
-        assert firstBlock != null;
-        firstBlock.compileIndex(floorBlocks, scratchBytes);
-
-        pending.add(firstBlock);
-        //if (DEBUG) System.out.println("  done pending.size()=" + pending.size());
+        if (ent.isTerm) {
+          hasTerms = true;
+        } else {
+          hasSubBlocks = true;
+        }
       }
-      lastBlockIndex = pending.size()-1;
+
+      // Write last block, if any:
+      if (nextBlockStart < end) {
+        int itemsInBlock = end - nextBlockStart;
+        boolean isFloor = itemsInBlock < count;
+        newBlocks.add(writeBlock(prefixLength, isFloor, nextFloorLeadLabel, nextBlockStart, end, hasTerms, hasSubBlocks));
+      }
+
+      assert newBlocks.isEmpty() == false;
+
+      PendingBlock firstBlock = newBlocks.get(0);
+
+      assert firstBlock.isFloor || newBlocks.size() == 1;
+
+      firstBlock.compileIndex(newBlocks, scratchBytes, scratchIntsRef);
+
+      // Remove slice from the top of the pending stack, that we just wrote:
+      pending.subList(pending.size()-count, pending.size()).clear();
+
+      // Append new block
+      pending.add(firstBlock);
+
+      newBlocks.clear();
     }
 
-    // for debugging
-    @SuppressWarnings("unused")
-    private String toString(BytesRef b) {
-      try {
-        return b.utf8ToString() + " " + b;
-      } catch (Throwable t) {
-        // If BytesRef isn't actually UTF8, or it's eg a
-        // prefix of UTF8 that ends mid-unicode-char, we
-        // fallback to hex:
-        return b.toString();
-      }
-    }
+    /** Writes the specified slice (start is inclusive, end is exclusive)
+     *  from pending stack as a new block.  If isFloor is true, there
+     *  were too many (more than maxItemsInBlock) entries sharing the
+     *  same prefix, and so we broke it into multiple floor blocks where
+     *  we record the starting label of the suffix of each floor block. */
+    private PendingBlock writeBlock(int prefixLength, boolean isFloor, int floorLeadLabel, int start, int end, boolean hasTerms, boolean hasSubBlocks) throws IOException {
 
-    // Writes all entries in the pending slice as a single
-    // block: 
-    private PendingBlock writeBlock(IntsRef prevTerm, int prefixLength, int indexPrefixLength, int startBackwards, int length,
-                                    int futureTermCount, boolean isFloor, int floorLeadByte, boolean isLastInFloor) throws IOException {
+      assert end > start;
 
-      assert length > 0;
+      long startFP = out.getFilePointer();
 
-      final int start = pending.size()-startBackwards;
+      // if (DEBUG) System.out.println("    writeBlock fp=" + startFP + " isFloor=" + isFloor + " floorLeadLabel=" + floorLeadLabel + " start=" + start + " end=" + end + " hasTerms=" + hasTerms + " hasSubBlocks=" + hasSubBlocks);
 
-      assert start >= 0: "pending.size()=" + pending.size() + " startBackwards=" + startBackwards + " length=" + length;
+      boolean hasFloorLeadLabel = isFloor && floorLeadLabel != -1;
 
-      final List<PendingEntry> slice = pending.subList(start, start + length);
-
-      final long startFP = out.getFilePointer();
-
-      final BytesRef prefix = new BytesRef(indexPrefixLength);
-      for(int m=0;m<indexPrefixLength;m++) {
-        prefix.bytes[m] = (byte) prevTerm.ints[m];
-      }
-      prefix.length = indexPrefixLength;
+      final BytesRef prefix = new BytesRef(prefixLength + (hasFloorLeadLabel ? 1 : 0));
+      System.arraycopy(lastTerm.bytes, 0, prefix.bytes, 0, prefixLength);
+      prefix.length = prefixLength;
 
       // Write block header:
-      out.writeVInt((length<<1)|(isLastInFloor ? 1:0));
+      int numEntries = end - start;
+      int code = numEntries << 1;
+      if (end == pending.size()) {
+        // Last block:
+        code |= 1;
+      }
+      out.writeVInt(code);
 
       // if (DEBUG) {
-      //  System.out.println("  writeBlock " + (isFloor ? "(floor) " : "") + "seg=" + segment + " pending.size()=" + pending.size() + " prefixLength=" + prefixLength + " indexPrefix=" + toString(prefix) + " entCount=" + length + " startFP=" + startFP + " futureTermCount=" + futureTermCount + (isFloor ? (" floorLeadByte=" + Integer.toHexString(floorLeadByte&0xff)) : "") + " isLastInFloor=" + isLastInFloor);
+      //   System.out.println("  writeBlock " + (isFloor ? "(floor) " : "") + "seg=" + segment + " pending.size()=" + pending.size() + " prefixLength=" + prefixLength + " indexPrefix=" + brToString(prefix) + " entCount=" + length + " startFP=" + startFP + (isFloor ? (" floorLeadByte=" + Integer.toHexString(floorLeadByte&0xff)) : "") + " isLastInFloor=" + isLastInFloor);
       // }
 
       // 1st pass: pack term suffix bytes into byte[] blob
       // TODO: cutover to bulk int codec... simple64?
 
-      final boolean isLeafBlock;
-      if (lastBlockIndex < start) {
-        // This block definitely does not contain sub-blocks:
-        isLeafBlock = true;
-        //System.out.println("no scan true isFloor=" + isFloor);
-      } else if (!isFloor) {
-        // This block definitely does contain at least one sub-block:
-        isLeafBlock = false;
-        //System.out.println("no scan false " + lastBlockIndex + " vs start=" + start + " len=" + length);
-      } else {
-        // Must scan up-front to see if there is a sub-block
-        boolean v = true;
-        //System.out.println("scan " + lastBlockIndex + " vs start=" + start + " len=" + length);
-        for (PendingEntry ent : slice) {
-          if (!ent.isTerm) {
-            v = false;
-            break;
-          }
-        }
-        isLeafBlock = v;
-      }
+      // We optimize the leaf block case (block has only terms), writing a more
+      // compact format in this case:
+      boolean isLeafBlock = hasSubBlocks == false;
 
       final List<FST<Pair<BytesRef,Long>>> subIndices;
 
-      int termCount;
-
-      long[] longs = new long[longsSize];
       boolean absolute = true;
       long maxVersionInBlock = -1;
 
-      // int countx = 0;
       if (isLeafBlock) {
+        // Only terms:
         subIndices = null;
-        for (PendingEntry ent : slice) {
-          assert ent.isTerm;
+        for (int i=start;i<end;i++) {
+          PendingEntry ent = pending.get(i);
+          assert ent.isTerm: "i=" + i;
+
           PendingTerm term = (PendingTerm) ent;
+          assert StringHelper.startsWith(term.termBytes, prefix): "term.term=" + term.termBytes + " prefix=" + prefix;
           BlockTermState state = term.state;
           maxVersionInBlock = Math.max(maxVersionInBlock, ((IDVersionTermState) state).idVersion);
-          final int suffix = term.term.length - prefixLength;
-          // if (DEBUG) {
-          //    BytesRef suffixBytes = new BytesRef(suffix);
-          //    System.arraycopy(term.term.bytes, prefixLength, suffixBytes.bytes, 0, suffix);
-          //    suffixBytes.length = suffix;
-          //    System.out.println("    " + (countx++) + ": write term suffix=" + toString(suffixBytes));
-          // }
+          final int suffix = term.termBytes.length - prefixLength;
+          /*
+          if (DEBUG) {
+            BytesRef suffixBytes = new BytesRef(suffix);
+            System.arraycopy(term.term.bytes, prefixLength, suffixBytes.bytes, 0, suffix);
+            suffixBytes.length = suffix;
+            System.out.println("    write term suffix=" + suffixBytes);
+          }
+          */
           // For leaf block we write suffix straight
           suffixWriter.writeVInt(suffix);
-          suffixWriter.writeBytes(term.term.bytes, prefixLength, suffix);
+          suffixWriter.writeBytes(term.termBytes, prefixLength, suffix);
+          assert floorLeadLabel == -1 || (term.termBytes[prefixLength] & 0xff) >= floorLeadLabel;
 
           // Write term meta data
           postingsWriter.encodeTerm(longs, bytesWriter, fieldInfo, state, absolute);
@@ -792,26 +617,30 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
           bytesWriter.reset();
           absolute = false;
         }
-        termCount = length;
       } else {
+        // Mixed terms and sub-blocks:
         subIndices = new ArrayList<>();
-        termCount = 0;
-        for (PendingEntry ent : slice) {
+        for (int i=start;i<end;i++) {
+          PendingEntry ent = pending.get(i);
           if (ent.isTerm) {
             PendingTerm term = (PendingTerm) ent;
+            assert StringHelper.startsWith(term.termBytes, prefix): "term.term=" + term.termBytes + " prefix=" + prefix;
             BlockTermState state = term.state;
             maxVersionInBlock = Math.max(maxVersionInBlock, ((IDVersionTermState) state).idVersion);
-            final int suffix = term.term.length - prefixLength;
-            // if (DEBUG) {
-            //    BytesRef suffixBytes = new BytesRef(suffix);
-            //    System.arraycopy(term.term.bytes, prefixLength, suffixBytes.bytes, 0, suffix);
-            //    suffixBytes.length = suffix;
-            //    System.out.println("    " + (countx++) + ": write term suffix=" + toString(suffixBytes));
-            // }
+            final int suffix = term.termBytes.length - prefixLength;
+            /*
+            if (DEBUG) {
+              BytesRef suffixBytes = new BytesRef(suffix);
+              System.arraycopy(term.term.bytes, prefixLength, suffixBytes.bytes, 0, suffix);
+              suffixBytes.length = suffix;
+              System.out.println("    write term suffix=" + suffixBytes);
+            }
+            */
             // For non-leaf block we borrow 1 bit to record
             // if entry is term or sub-block
             suffixWriter.writeVInt(suffix<<1);
-            suffixWriter.writeBytes(term.term.bytes, prefixLength, suffix);
+            suffixWriter.writeBytes(term.termBytes, prefixLength, suffix);
+            assert floorLeadLabel == -1 || (term.termBytes[prefixLength] & 0xff) >= floorLeadLabel;
 
             // TODO: now that terms dict "sees" these longs,
             // we can explore better column-stride encodings
@@ -830,11 +659,10 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
             bytesWriter.writeTo(metaWriter);
             bytesWriter.reset();
             absolute = false;
-
-            termCount++;
           } else {
             PendingBlock block = (PendingBlock) ent;
             maxVersionInBlock = Math.max(maxVersionInBlock, block.maxVersion);
+            assert StringHelper.startsWith(block.prefix, prefix);
             final int suffix = block.prefix.length - prefixLength;
 
             assert suffix > 0;
@@ -843,14 +671,19 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
             // if entry is term or sub-block
             suffixWriter.writeVInt((suffix<<1)|1);
             suffixWriter.writeBytes(block.prefix.bytes, prefixLength, suffix);
+
+            assert floorLeadLabel == -1 || (block.prefix.bytes[prefixLength] & 0xff) >= floorLeadLabel;
+
             assert block.fp < startFP;
 
-            // if (DEBUG) {
-            //    BytesRef suffixBytes = new BytesRef(suffix);
-            //    System.arraycopy(block.prefix.bytes, prefixLength, suffixBytes.bytes, 0, suffix);
-            //    suffixBytes.length = suffix;
-            //    System.out.println("    " + (countx++) + ": write sub-block suffix=" + toString(suffixBytes) + " subFP=" + block.fp + " subCode=" + (startFP-block.fp) + " floor=" + block.isFloor);
-            // }
+            /*
+            if (DEBUG) {
+              BytesRef suffixBytes = new BytesRef(suffix);
+              System.arraycopy(block.prefix.bytes, prefixLength, suffixBytes.bytes, 0, suffix);
+              suffixBytes.length = suffix;
+              System.out.println("    write sub-block suffix=" + brToString(suffixBytes) + " subFP=" + block.fp + " subCode=" + (startFP-block.fp) + " floor=" + block.isFloor);
+            }
+            */
 
             suffixWriter.writeVLong(startFP - block.fp);
             subIndices.add(block.index);
@@ -874,50 +707,30 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
       metaWriter.writeTo(out);
       metaWriter.reset();
 
-      // Remove slice replaced by block:
-      slice.clear();
-
-      if (lastBlockIndex >= start) {
-        if (lastBlockIndex < start+length) {
-          lastBlockIndex = start;
-        } else {
-          lastBlockIndex -= length;
-        }
-      }
-
       // if (DEBUG) {
       //   System.out.println("      fpEnd=" + out.getFilePointer());
       // }
 
-      return new PendingBlock(prefix, maxVersionInBlock, startFP, termCount != 0, isFloor, floorLeadByte, subIndices);
+      if (hasFloorLeadLabel) {
+        // We already allocated to length+1 above:
+        prefix.bytes[prefix.length++] = (byte) floorLeadLabel;
+      }
+
+      return new PendingBlock(prefix, maxVersionInBlock, startFP, hasTerms, isFloor, floorLeadLabel, subIndices);
     }
 
     TermsWriter(FieldInfo fieldInfo) {
       this.fieldInfo = fieldInfo;
       docsSeen = new FixedBitSet(maxDoc);
 
-      noOutputs = NoOutputs.getSingleton();
-
-      // This Builder is just used transiently to fragment
-      // terms into "good" blocks; we don't save the
-      // resulting FST:
-      blockBuilder = new Builder<>(FST.INPUT_TYPE.BYTE1,
-                                   0, 0, true,
-                                   true, Integer.MAX_VALUE,
-                                   noOutputs,
-                                   new FindBlocks(), false,
-                                   PackedInts.COMPACT,
-                                   true, 15);
-
       this.longsSize = postingsWriter.setField(fieldInfo);
+      this.longs = new long[longsSize];
     }
     
     @Override
     public Comparator<BytesRef> getComparator() {
       return BytesRef.getUTF8SortedAsUnicodeComparator();
     }
-
-    private final IntsRef scratchIntsRef = new IntsRef();
 
     @Override
     public PostingsConsumer startTerm(BytesRef text) throws IOException {
@@ -939,7 +752,7 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
       assert stats.docFreq > 0;
       //if (DEBUG) System.out.println("BTTW.finishTerm term=" + fieldInfo.name + ":" + toString(text) + " seg=" + segment + " df=" + stats.docFreq);
       if (((IDVersionPostingsWriter) postingsWriter).lastDocID != -1) {
-        blockBuilder.add(Util.toIntsRef(text, scratchIntsRef), noOutputs.getNoOutput());
+        pushTerm(text);
         BlockTermState state = postingsWriter.newTermState();
         state.docFreq = stats.docFreq;
         state.totalTermFreq = stats.totalTermFreq;
@@ -956,11 +769,52 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
       }
     }
 
+    /** Pushes the new term to the top of the stack, and writes new blocks. */
+    private void pushTerm(BytesRef text) throws IOException {
+      int limit = Math.min(lastTerm.length, text.length);
+
+      // Find common prefix between last term and current term:
+      int pos = 0;
+      while (pos < limit && lastTerm.bytes[pos] == text.bytes[text.offset+pos]) {
+        pos++;
+      }
+
+      // if (DEBUG) System.out.println("  shared=" + pos + "  lastTerm.length=" + lastTerm.length);
+
+      // Close the "abandoned" suffix now:
+      for(int i=lastTerm.length-1;i>=pos;i--) {
+
+        // How many items on top of the stack share the current suffix
+        // we are closing:
+        int prefixTopSize = pending.size() - prefixStarts[i];
+        if (prefixTopSize >= minItemsInBlock) {
+          // if (DEBUG) System.out.println("pushTerm i=" + i + " prefixTopSize=" + prefixTopSize + " minItemsInBlock=" + minItemsInBlock);
+          writeBlocks(i+1, prefixTopSize);
+          prefixStarts[i] -= prefixTopSize-1;
+        }
+      }
+
+      if (prefixStarts.length < text.length) {
+        prefixStarts = ArrayUtil.grow(prefixStarts, text.length);
+      }
+
+      // Init new tail:
+      for(int i=pos;i<text.length;i++) {
+        prefixStarts[i] = pending.size();
+      }
+
+      lastTerm.copyBytes(text);
+    }
+
     // Finishes all terms in this field
     @Override
     public void finish(long sumTotalTermFreq, long sumDocFreq, int docCount) throws IOException {
       if (numTerms > 0) {
-        blockBuilder.finish();
+
+        // TODO: if pending.size() is already 1 with a non-zero prefix length
+        // we can save writing a "degenerate" root block, but we have to
+        // fix all the places that assume the root block's prefix is the empty string:
+        writeBlocks(0, pending.size());
 
         // We better have one final "root" block:
         assert pending.size() == 1 && !pending.get(0).isTerm: "pending.size()=" + pending.size() + " pending=" + pending;
