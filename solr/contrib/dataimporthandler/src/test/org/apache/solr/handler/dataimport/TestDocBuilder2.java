@@ -76,14 +76,15 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
-  public void testRollbackHandler() throws Exception {
+  public void testErrorHandler() throws Exception {
     List rows = new ArrayList();
-    rows.add(createMap("id", "1", "FORCE_ROLLBACK", "true"));
+    rows.add(createMap("id", "1", "FORCE_ERROR", "true"));
     MockDataSource.setIterator("select * from x", rows.iterator());
 
-    runFullImport(dataConfigWithRollbackHandler);
+    runFullImport(dataConfigWithErrorHandler);
 
-    assertTrue("Rollback event listener was not called", RollbackEventListener.executed);
+    assertTrue("Error event listener was not called", ErrorEventListener.executed);
+    assertTrue(ErrorEventListener.lastException.getMessage().contains("ForcedException"));
   }
 
   @Test
@@ -316,12 +317,14 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
     }
   }
 
-  public static class RollbackEventListener implements EventListener {
+  public static class ErrorEventListener implements EventListener {
     public static boolean executed = false;
+    public static Exception lastException = null;
 
     @Override
     public void onEvent(Context ctx) {
       executed = true;
+      lastException = ((ContextImpl) ctx).lastException;
     }
   }
 
@@ -377,11 +380,11 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
           "    </document>\n" +
           "</dataConfig>";
 
-  private final String dataConfigWithRollbackHandler = "<dataConfig> <dataSource  type=\"MockDataSource\"/>\n" +
-          "    <document onRollback=\"TestDocBuilder2$RollbackEventListener\">\n" +
+  private final String dataConfigWithErrorHandler = "<dataConfig> <dataSource  type=\"MockDataSource\"/>\n" +
+          "    <document onError=\"TestDocBuilder2$ErrorEventListener\">\n" +
           "        <entity name=\"books\" query=\"select * from x\" transformer=\"TestDocBuilder2$ForcedExceptionTransformer\">\n" +
           "            <field column=\"id\" />\n" +
-          "            <field column=\"FORCE_ROLLBACK\" />\n" +
+          "            <field column=\"FORCE_ERROR\" />\n" +
           "        </entity>\n" +
           "    </document>\n" +
           "</dataConfig>";

@@ -222,6 +222,8 @@ Bug Fixes
   datatypes of options people can specify, additional error handling of duplicated/unidentified 
   options has also been added. (Maciej Zasada, hossman)
 
+* SOLR-5847: Fixed data import abort button in admin UI. (ehatcher)
+
 
 Optimizations
 ---------------------
@@ -288,6 +290,15 @@ Other Changes
 
 * SOLR-6274: UpdateShardHandler should log the params used to configure it's
   HttpClient. (Ramkumar Aiyengar via Mark Miller)
+
+* SOLR-6194: Opened up "public" access to DataSource, DocBuilder, and EntityProcessorWrapper
+  in DIH. (Aaron LaBella via ehatcher)
+
+* SOLR-6269: Renamed "rollback" to "error" in DIH internals, including renaming onRollback
+  to onError introduced in SOLR-6258. (ehatcher)
+
+* SOLR-3622: When using DIH in SolrCloud-mode, rollback will no longer be called when
+  an error occurs. (ehatcher)
 
 ==================  4.9.0 ==================
 

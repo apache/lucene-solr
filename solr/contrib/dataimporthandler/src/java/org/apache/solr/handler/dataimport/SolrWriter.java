@@ -117,7 +117,7 @@ public class SolrWriter extends DIHWriterBase implements DIHWriter {
       RollbackUpdateCommand rollback = new RollbackUpdateCommand(req);
       processor.processRollback(rollback);
     } catch (Exception e) {
-      log.error("Exception while solr rollback.", e);
+      log.error("Exception during rollback command.", e);
     }
   }
 

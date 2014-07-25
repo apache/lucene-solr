@@ -54,6 +54,8 @@ public class ContextImpl extends Context {
 
   DocBuilder docBuilder;
 
+  Exception lastException = null;
+
 
   public ContextImpl(EntityProcessorWrapper epw, VariableResolver resolver,
                      DataSource ds, String currProcess,

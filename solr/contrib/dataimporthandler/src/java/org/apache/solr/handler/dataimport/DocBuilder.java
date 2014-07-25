@@ -94,7 +94,9 @@ public class DocBuilder {
      
     writer = solrWriter;
     ContextImpl ctx = new ContextImpl(null, null, null, null, reqParams.getRawParams(), null, this);
-    writer.init(ctx);
+    if (writer != null) {
+      writer.init(ctx);
+    }
   }
 
 
@@ -146,25 +148,31 @@ public class DocBuilder {
       return null;
     }
   }
-  
 
   private void invokeEventListener(String className) {
+    invokeEventListener(className, null);
+  }
+
+
+  private void invokeEventListener(String className, Exception lastException) {
     try {
       EventListener listener = (EventListener) loadClass(className, dataImporter.getCore()).newInstance();
-      notifyListener(listener);
+      notifyListener(listener, lastException);
     } catch (Exception e) {
       wrapAndThrow(SEVERE, e, "Unable to load class : " + className);
     }
   }
 
-  private void notifyListener(EventListener listener) {
+  private void notifyListener(EventListener listener, Exception lastException) {
     String currentProcess;
     if (dataImporter.getStatus() == DataImporter.Status.RUNNING_DELTA_DUMP) {
       currentProcess = Context.DELTA_DUMP;
     } else {
       currentProcess = Context.FULL_DUMP;
     }
-    listener.onEvent(new ContextImpl(null, getVariableResolver(), null, currentProcess, session, null, this));
+    ContextImpl ctx = new ContextImpl(null, getVariableResolver(), null, currentProcess, session, null, this);
+    ctx.lastException = lastException;
+    listener.onEvent(ctx);
   }
 
   @SuppressWarnings("unchecked")
@@ -234,7 +242,7 @@ public class DocBuilder {
       if (stop.get()) {
         // Dont commit if aborted using command=abort
         statusMessages.put("Aborted", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT).format(new Date()));
-        rollback();
+        handleError("Aborted", null);
       } else {
         // Do not commit unnecessarily if this is a delta-import and no documents were created or deleted
         if (!reqParams.isClean()) {
@@ -305,12 +313,15 @@ public class DocBuilder {
     }
   }
 
-  void rollback() {
-    writer.rollback();
-    statusMessages.put("", "Indexing failed. Rolled back all changes.");
-    addStatusMessage("Rolledback");
-    if ((config != null) && (config.getOnRollback() != null)) {
-      invokeEventListener(config.getOnRollback());
+  void handleError(String message, Exception e) {
+    if (!dataImporter.getCore().getCoreDescriptor().getCoreContainer().isZooKeeperAware()) {
+      writer.rollback();
+    }
+
+    statusMessages.put(message, "Indexing error");
+    addStatusMessage(message);
+    if ((config != null) && (config.getOnError() != null)) {
+      invokeEventListener(config.getOnError(), e);
     }
   }
 
@@ -688,7 +699,7 @@ public class DocBuilder {
     }
   }
 
-  private EntityProcessorWrapper getEntityProcessorWrapper(Entity entity) {
+  public EntityProcessorWrapper getEntityProcessorWrapper(Entity entity) {
     EntityProcessor entityProcessor = null;
     if (entity.getProcessorName() == null) {
       entityProcessor = new SqlEntityProcessor();
