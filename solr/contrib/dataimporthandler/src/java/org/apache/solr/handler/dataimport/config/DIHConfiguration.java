@@ -56,7 +56,7 @@ public class DIHConfiguration {
   private final List<Entity> entities;
   private final String onImportStart;
   private final String onImportEnd;
-  private final String onRollback;
+  private final String onError;
   private final List<Map<String, String>> functions;
   private final Script script;
   private final Map<String, Map<String,String>> dataSources;
@@ -72,7 +72,7 @@ public class DIHConfiguration {
     this.deleteQuery = ConfigParseUtil.getStringAttribute(element, "deleteQuery", null);
     this.onImportStart = ConfigParseUtil.getStringAttribute(element, "onImportStart", null);
     this.onImportEnd = ConfigParseUtil.getStringAttribute(element, "onImportEnd", null);
-    this.onRollback = ConfigParseUtil.getStringAttribute(element, "onRollback", null);
+    this.onError = ConfigParseUtil.getStringAttribute(element, "onError", null);
     List<Entity> modEntities = new ArrayList<>();
     List<Element> l = ConfigParseUtil.getChildNodes(element, "entity");
     boolean docRootFound = false;
@@ -165,8 +165,8 @@ public class DIHConfiguration {
   public String getOnImportEnd() {
     return onImportEnd;
   }
-  public String getOnRollback() {
-    return onRollback;
+  public String getOnError() {
+    return onError;
   }
   public List<Map<String,String>> getFunctions() {
     return functions;

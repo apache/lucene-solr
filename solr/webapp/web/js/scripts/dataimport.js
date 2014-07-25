@@ -350,7 +350,7 @@ sammy.get
                 {
                   url : handler_url + '?command=abort&wt=json',
                   dataType : 'json',
-                  type: 'POST',
+                  type: 'GET',
                   context: $( this ),
                   beforeSend : function( xhr, settings )
                   {

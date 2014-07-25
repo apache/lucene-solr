@@ -179,7 +179,11 @@ public class DataImporter {
    * Used by tests
    */
   public void loadAndInit(String configStr) {
-    config = loadDataConfig(new InputSource(new StringReader(configStr)));       
+    config = loadDataConfig(new InputSource(new StringReader(configStr)));
+  }
+
+  public void loadAndInit(InputSource configFile) {
+    config = loadDataConfig(configFile);
   }
 
   public DIHConfiguration loadDataConfig(InputSource configFile) {
@@ -349,7 +353,7 @@ public class DataImporter {
     return store.get(key);
   }
 
-  DataSource getDataSourceInstance(Entity key, String name, Context ctx) {
+  public DataSource getDataSourceInstance(Entity key, String name, Context ctx) {
     Map<String,String> p = requestLevelDataSourceProps.get(name);
     if (p == null)
       p = config.getDataSources().get(name);
@@ -404,7 +408,6 @@ public class DataImporter {
   public void doFullImport(DIHWriter writer, RequestInfo requestParams) {
     LOG.info("Starting Full Import");
     setStatus(Status.RUNNING_FULL_DUMP);
-    boolean success = false;
     try {
       DIHProperties dihPropWriter = createPropertyWriter();
       setIndexStartTime(dihPropWriter.getCurrentTimestamp());
@@ -413,14 +416,10 @@ public class DataImporter {
       docBuilder.execute();
       if (!requestParams.isDebug())
         cumulativeStatistics.add(docBuilder.importStatistics);
-      success = true;
     } catch (Exception e) {
       SolrException.log(LOG, "Full Import failed", e);
+      docBuilder.handleError("Full Import failed", e);
     } finally {
-      if (!success) {
-        docBuilder.rollback();
-      }
-      
       setStatus(Status.IDLE);
       DocBuilder.INSTANCE.set(null);
     }
@@ -437,7 +436,6 @@ public class DataImporter {
   public void doDeltaImport(DIHWriter writer, RequestInfo requestParams) {
     LOG.info("Starting Delta Import");
     setStatus(Status.RUNNING_DELTA_DUMP);
-    boolean success = false;
     try {
       DIHProperties dihPropWriter = createPropertyWriter();
       setIndexStartTime(dihPropWriter.getCurrentTimestamp());
@@ -446,13 +444,10 @@ public class DataImporter {
       docBuilder.execute();
       if (!requestParams.isDebug())
         cumulativeStatistics.add(docBuilder.importStatistics);
-      success = true;
     } catch (Exception e) {
       LOG.error("Delta Import Failed", e);
+      docBuilder.handleError("Delta Import Failed", e);
     } finally {
-      if (!success) {
-        docBuilder.rollback();
-      }
       setStatus(Status.IDLE);
       DocBuilder.INSTANCE.set(null);
     }
@@ -510,10 +505,15 @@ public class DataImporter {
 
   }
 
-  DocBuilder getDocBuilder() {
+  public DocBuilder getDocBuilder() {
     return docBuilder;
   }
-  
+
+  public DocBuilder getDocBuilder(DIHWriter writer, RequestInfo requestParams) {
+    DIHProperties dihPropWriter = createPropertyWriter();
+    return new DocBuilder(this, writer, dihPropWriter, requestParams);
+  }
+
   Map<String, Evaluator> getEvaluators() {
     return getEvaluators(config.getFunctions());
   }
