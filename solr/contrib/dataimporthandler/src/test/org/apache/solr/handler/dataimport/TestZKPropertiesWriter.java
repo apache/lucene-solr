@@ -83,6 +83,7 @@ public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
 
     zkServer = null;
     zkDir = null;
+    cc = null;
   }
 
   @Test
