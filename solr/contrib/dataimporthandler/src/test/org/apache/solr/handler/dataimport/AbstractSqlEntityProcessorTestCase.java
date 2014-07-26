@@ -565,7 +565,7 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
     sb.append("\n<dataConfig> \n");
     sb.append("<propertyWriter type=''SimplePropertiesWriter'' directory=''" + fileLocation + "'' filename=''" + fileName + "'' />\n");
     sb.append("<dataSource name=''hsqldb'' driver=''org.hsqldb.jdbcDriver'' url=''jdbc:hsqldb:mem:.'' /> \n");
-    sb.append("<dataSource name=''derby'' driver=''org.apache.derby.jdbc.EmbeddedDriver'' url=''jdbc:derby:memory:derbyDB;'' /> \n");
+    sb.append("<dataSource name=''derby'' driver=''org.apache.derby.jdbc.EmbeddedDriver'' url=''jdbc:derby:memory:derbyDB;territory=en_US'' /> \n");
     sb.append("<document name=''TestSqlEntityProcessor''> \n");
     sb.append("<entity name=''People'' ");
     sb.append("pk=''" + (random().nextBoolean() ? "ID" : "People.ID") + "'' ");

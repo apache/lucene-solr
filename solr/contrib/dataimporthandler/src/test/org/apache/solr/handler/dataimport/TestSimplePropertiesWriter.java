@@ -131,7 +131,7 @@ public class TestSimplePropertiesWriter extends AbstractDIHJdbcTestCase {
     String q = useJdbcEscapeSyntax ? "" : "'";
     sb.append("<dataConfig> \n");
     sb.append("<propertyWriter dateFormat=\"" + dateFormat + "\" type=\"SimplePropertiesWriter\" directory=\"" + fileLocation + "\" filename=\"" + fileName + "\" />\n");
-    sb.append("<dataSource name=\"derby\" driver=\"org.apache.derby.jdbc.EmbeddedDriver\" url=\"jdbc:derby:memory:derbyDB;\" /> \n");
+    sb.append("<dataSource name=\"derby\" driver=\"org.apache.derby.jdbc.EmbeddedDriver\" url=\"jdbc:derby:memory:derbyDB;territory=en_US\" /> \n");
     sb.append("<document name=\"TestSimplePropertiesWriter\"> \n");
     sb.append("<entity name=\"SomeDates\" processor=\"SqlEntityProcessor\" dataSource=\"derby\" ");
     sb.append("query=\"select 1 as id, YEAR(" + q + "${dih.last_index_time}" + q + ") as AYEAR_S from sysibm.sysdummy1 \" >\n");

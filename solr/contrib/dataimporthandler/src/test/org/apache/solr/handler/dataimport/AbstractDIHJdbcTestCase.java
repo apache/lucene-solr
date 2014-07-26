@@ -74,7 +74,7 @@ public abstract class AbstractDIHJdbcTestCase extends
   @AfterClass
   public static void afterClassDihJdbcTest() throws Exception {
     try {
-      DriverManager.getConnection("jdbc:derby:;shutdown=true");
+      DriverManager.getConnection("jdbc:derby:;shutdown=true;territory=en_US");
     } catch (SQLException e) {
       // ignore...we might not even be using derby this time...
     }
@@ -109,7 +109,7 @@ public abstract class AbstractDIHJdbcTestCase extends
       if (dbToUse == Database.DERBY) {
         try {
           conn = DriverManager
-              .getConnection("jdbc:derby:memory:derbyDB;drop=true");
+              .getConnection("jdbc:derby:memory:derbyDB;drop=true;territory=en_US");
         } catch (SQLException e) {
           if (!"08006".equals(e.getSQLState())) {
             throw e;
@@ -136,7 +136,7 @@ public abstract class AbstractDIHJdbcTestCase extends
   
   protected Connection newConnection() throws Exception {
     if (dbToUse == Database.DERBY) {
-      return DriverManager.getConnection("jdbc:derby:memory:derbyDB;");
+      return DriverManager.getConnection("jdbc:derby:memory:derbyDB;territory=en_US");
     } else if (dbToUse == Database.HSQLDB) {
       return DriverManager.getConnection("jdbc:hsqldb:mem:.");
     }
@@ -148,7 +148,7 @@ public abstract class AbstractDIHJdbcTestCase extends
     try {
       if (dbToUse == Database.DERBY) {
         conn = DriverManager
-            .getConnection("jdbc:derby:memory:derbyDB;create=true");
+            .getConnection("jdbc:derby:memory:derbyDB;create=true;territory=en_US");
       } else if (dbToUse == Database.HSQLDB) {
         conn = DriverManager.getConnection("jdbc:hsqldb:mem:.");
       } else {
@@ -160,17 +160,6 @@ public abstract class AbstractDIHJdbcTestCase extends
       while(cause.getCause()!=null) {
         cause = cause.getCause();
       }
-      String message = cause.getMessage();
-      if(cause instanceof StandardException) {
-        message = ((StandardException) cause).getMessageId();
-      }
-      //Derby INVALID_LOCALE_DESCRIPTION
-      if("XBM0X.D".equals(message)) {
-        log.warn("Skipping test because Database " + dbToUse + " does not support the locale " + Locale.getDefault());
-        skipThisTest = true;
-        Assume.assumeNoException(sqe); 
-        throw sqe;
-      }      
     } finally {
       try {
         conn.close();

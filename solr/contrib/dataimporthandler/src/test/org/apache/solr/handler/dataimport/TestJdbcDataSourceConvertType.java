@@ -52,7 +52,7 @@ public class TestJdbcDataSourceConvertType extends AbstractDataImportHandlerTest
     JdbcDataSource dataSource = new JdbcDataSource();
     Properties p = new Properties();
     p.put("driver", "org.apache.derby.jdbc.EmbeddedDriver");
-    p.put("url", "jdbc:derby:memory:tempDB;create=true");
+    p.put("url", "jdbc:derby:memory:tempDB;create=true;territory=en_US");
     p.put("convertType", convertType);
 
     List<Map<String, String>> flds = new ArrayList<>();
