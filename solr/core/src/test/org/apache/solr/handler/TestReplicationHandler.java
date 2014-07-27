@@ -194,6 +194,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       Thread.sleep(100);
       res = query(query, server);
     }
+    log.info("Waited for {}ms and found {} docs", timeSlept, numFound(res));
     return res;
   }
   
