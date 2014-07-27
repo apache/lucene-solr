@@ -300,6 +300,8 @@ Other Changes
 * SOLR-3622: When using DIH in SolrCloud-mode, rollback will no longer be called when
   an error occurs. (ehatcher)
 
+* SOLR-6231: Increased timeouts and hardened the RollingRestartTest. (Noble Paul, shalin)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
