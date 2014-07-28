@@ -43,7 +43,7 @@
   </path>
 
   <!-- specialized to ONLY depend on solrj -->
-  <target name="javadocs" depends="compile-core,define-lucene-javadoc-url,lucene-javadocs,javadocs-solrj">
+  <target name="javadocs" depends="compile-core,define-lucene-javadoc-url,lucene-javadocs,javadocs-solrj,check-javadocs-uptodate" unless="javadocs-uptodate-${name}">
     <sequential>
       <mkdir dir="${javadoc.dir}/${name}"/>
       <solr-invoke-javadoc>

@@ -51,7 +51,8 @@
   </target>
 
   <!-- Specialized to depend on nothing -->
-  <target name="javadocs" depends="compile-core,define-lucene-javadoc-url">
+  <target name="javadocs" depends="compile-core,define-lucene-javadoc-url,check-javadocs-uptodate"
+          unless="javadocs-uptodate-${name}">
     <sequential>
       <mkdir dir="${javadoc.dir}/${name}"/>
       <solr-invoke-javadoc>

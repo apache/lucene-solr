@@ -2012,6 +2012,15 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
     </sequential>
   </macrodef>
 
+  <target name="check-javadocs-uptodate">
+    <uptodate property="javadocs-uptodate-${name}" targetfile="${build.dir}/${final.name}-javadoc.jar">
+      <srcfiles dir="${src.dir}">
+        <include name="**/*.java"/>
+        <include name="**/*.html"/>
+      </srcfiles>
+    </uptodate>
+  </target>
+
   <macrodef name="modules-crawl">
     <attribute name="target" default=""/>
     <attribute name="failonerror" default="true"/>
