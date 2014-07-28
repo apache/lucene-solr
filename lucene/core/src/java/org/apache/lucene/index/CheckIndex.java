@@ -536,6 +536,7 @@ public class CheckIndex {
       AtomicReader reader = null;
 
       try {
+        msg(infoStream, "    version=" + (version == null ? "3.0" : version));
         final Codec codec = info.info.getCodec();
         msg(infoStream, "    codec=" + codec);
         segInfoStat.codec = codec;

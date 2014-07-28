@@ -939,7 +939,19 @@ def testDemo(isSrc, version, jdk):
     if numHits < 100:
       raise RuntimeError('lucene demo\'s SearchFiles found too few results: %s' % numHits)
     print('      got %d hits for query "lucene"' % numHits)
+  print('    checkindex with %s...' % jdk)
+  run('%s; java -ea -cp "%s" org.apache.lucene.index.CheckIndex index' % (javaExe(jdk), cp), 'checkindex.log')
+  s = open('checkindex.log').read()
+  m = re.search(r'^\s+version=(.*?)$', s, re.MULTILINE)
+  if m is None:
+    raise RuntimeError('unable to locate version=NNN output from CheckIndex; see checkindex.log')
+  actualVersion = m.group(1)
+  if removeTrailingZeros(actualVersion) != removeTrailingZeros(version):
+    raise RuntimeError('wrong version from CheckIndex: got "%s" but expected "%s"' % (actualVersion, version))
 
+def removeTrailingZeros(version):
+  return re.sub(r'(\.0)*$', '', version)
+  
 def checkMaven(baseURL, tmpDir, svnRevision, version, isSigned):
   # Locate the release branch in subversion
   m = re.match('(\d+)\.(\d+)', version) # Get Major.minor version components
@@ -1274,7 +1286,7 @@ def main():
         testArgs = sys.argv[nextArgNum + 1]
         nextArgNum += 2
     if nextArgNum <= lastArgNum:
-      isSigned = (sys.argv[nextArgNum] == "True")
+      isSigned = (sys.argv[nextArgNum].lower() == "true")
       nextArgNum += 1
     if nextArgNum <= lastArgNum and testArgs == '':
       if sys.argv[nextArgNum] == '-testArgs':
