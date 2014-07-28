@@ -304,6 +304,8 @@ Other Changes
 
 * SOLR-6231: Increased timeouts and hardened the RollingRestartTest. (Noble Paul, shalin)
 
+* SOLR-6290: Harden and speed up CollectionsAPIAsyncDistributedZkTest. (Mark Miller, shalin)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
