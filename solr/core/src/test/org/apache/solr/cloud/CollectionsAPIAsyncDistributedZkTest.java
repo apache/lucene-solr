@@ -34,7 +34,7 @@ import java.io.IOException;
  */
 @Slow
 public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkTestBase {
-
+  private static final int MAX_TIMEOUT_SECONDS = 60;
   private static final boolean DEBUG = false;
 
   @Before
@@ -51,8 +51,8 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
   public CollectionsAPIAsyncDistributedZkTest() {
     fixShardCount = true;
 
-    sliceCount = 2;
-    shardCount = 4;
+    sliceCount = 1;
+    shardCount = 1;
   }
 
   @Override
@@ -67,16 +67,16 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
 
   private void testSolrJAPICalls() throws Exception {
     SolrServer server = createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(0)));
-    CollectionAdminRequest.createCollection("testasynccollectioncreation", 2, "conf1", server, "1001");
+    CollectionAdminRequest.createCollection("testasynccollectioncreation", 1, "conf1", server, "1001");
     String state = null;
 
-    state = getRequestStateAfterCompletion("1001", 10, server);
+    state = getRequestStateAfterCompletion("1001", MAX_TIMEOUT_SECONDS, server);
 
     assertEquals("CreateCollection task did not complete!", "completed", state);
 
-    CollectionAdminRequest.createCollection("testasynccollectioncreation", 2, "conf1", server, "1002");
+    CollectionAdminRequest.createCollection("testasynccollectioncreation", 1, "conf1", server, "1002");
 
-    state = getRequestStateAfterCompletion("1002", 3, server);
+    state = getRequestStateAfterCompletion("1002", MAX_TIMEOUT_SECONDS, server);
 
     assertEquals("Recreating a collection with the same name didn't fail, should have.", "failed", state);
 
@@ -85,12 +85,12 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
     addReplica.setShardName("shard1");
     addReplica.setAsyncId("1003");
     server.request(addReplica);
-    state = getRequestStateAfterCompletion("1003", 60, server);
+    state = getRequestStateAfterCompletion("1003", MAX_TIMEOUT_SECONDS, server);
     assertEquals("Add replica did not complete", "completed", state);
 
     CollectionAdminRequest.splitShard("testasynccollectioncreation", "shard1", server, "1004");
 
-    state = getRequestStateAfterCompletion("1004", 60, server);
+    state = getRequestStateAfterCompletion("1004", MAX_TIMEOUT_SECONDS * 2, server);
 
     assertEquals("Shard split did not complete. Last recorded state: " + state, "completed", state);
   }
