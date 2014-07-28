@@ -58,6 +58,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.packed.BlockPackedReader;
 import org.apache.lucene.util.packed.MonotonicBlockPackedReader;
@@ -90,13 +91,8 @@ class Lucene45DocValuesProducer extends DocValuesProducer implements Closeable {
   /** expert: instantiates a new reader */
   @SuppressWarnings("deprecation")
   protected Lucene45DocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
-    Version ver;
-    try {
-      ver = Version.parseLeniently(state.segmentInfo.getVersion());
-    } catch (IllegalArgumentException e) {
-      ver = null;
-    }
-    lenientFieldInfoCheck = ver == null || !ver.onOrAfter(Version.LUCENE_4_9);
+    String ver = state.segmentInfo.getVersion();
+    lenientFieldInfoCheck = StringHelper.getVersionComparator().compare(ver, "4.9.0") < 0;
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     // read in the entries from the metadata file.
     ChecksumIndexInput in = state.directory.openChecksumInput(metaName, state.context);

@@ -41,6 +41,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
 
 /**
@@ -199,15 +200,8 @@ public final class SegmentReader extends AtomicReader implements Accountable {
       return;
     }
 
-    Version ver;
-    try {
-      ver = Version.parseLeniently(si.info.getVersion());
-    } catch (IllegalArgumentException e) {
-      // happened in TestBackwardsCompatibility on a 4.0.0.2 index (no matching
-      // Version constant), anyway it's a pre-4.9 index.
-      ver = null;
-    }
-    if (ver != null && ver.onOrAfter(Version.LUCENE_4_9)) {
+    String ver = si.info.getVersion();
+    if (ver != null && StringHelper.getVersionComparator().compare(ver, "4.9.0") >= 0) {
       DocValuesProducer baseProducer = null;
       for (FieldInfo fi : fieldInfos) {
         if (!fi.hasDocValues()) continue;
