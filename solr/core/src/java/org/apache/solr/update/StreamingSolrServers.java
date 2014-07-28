@@ -123,4 +123,8 @@ public class StreamingSolrServers {
   public HttpClient getHttpClient() {
     return httpClient;
   }
+  
+  public ExecutorService getUpdateExecutor() {
+    return updateExecutor;
+  }
 }

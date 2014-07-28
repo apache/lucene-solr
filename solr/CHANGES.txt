@@ -224,6 +224,8 @@ Bug Fixes
 
 * SOLR-5847: Fixed data import abort button in admin UI. (ehatcher)
 
+* SOLR-6264: Distributed commit and optimize are executed serially across all 
+  replicas. (Mark Miller, Timothy Potter)
 
 Optimizations
 ---------------------
