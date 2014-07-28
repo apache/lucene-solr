@@ -40,7 +40,8 @@
    <fileset dir="lib"/>
   </path>
 
-  <target name="javadocs" depends="javadocs-analyzers-common,javadocs-queryparser,javadocs-facet,javadocs-expressions,compile-core">
+  <target name="javadocs" depends="javadocs-analyzers-common,javadocs-queryparser,javadocs-facet,javadocs-expressions,compile-core,check-javadocs-uptodate"
+          unless="javadocs-uptodate-${name}">
     <!-- we link the example source in the javadocs, as its ref'ed elsewhere -->
     <invoke-module-javadoc linksource="yes">
       <links>

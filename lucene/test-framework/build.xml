@@ -54,7 +54,8 @@
   <target name="-check-forbidden-rue"/>
 
   <target name="javadocs-core" depends="javadocs"/>
-  <target name="javadocs" depends="init,javadocs-lucene-core,javadocs-lucene-codecs">
+  <target name="javadocs" depends="init,javadocs-lucene-core,javadocs-lucene-codecs,check-javadocs-uptodate"
+          unless="javadocs-uptodate-${name}">
     <sequential>
       <mkdir dir="${javadoc.dir}/test-framework"/>
       <invoke-javadoc overview="${src.dir}/overview.html"

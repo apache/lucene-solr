@@ -59,7 +59,7 @@
   <!-- Override common-solr.javadocs to include JUnit links -->
   <!-- and to copy the built javadocs to ${dest}/docs/api/test-framework -->
   <target name="javadocs"
-          depends="compile-core,jar-test-framework,lucene-javadocs,javadocs-test-framework,define-lucene-javadoc-url">
+          depends="compile-core,jar-test-framework,lucene-javadocs,javadocs-test-framework,define-lucene-javadoc-url,check-javadocs-uptodate" unless="javadocs-uptodate-${name}">
     <sequential>
       <mkdir dir="${javadoc.dir}/${name}"/>
       <!-- NOTE: explicitly not using solr-invoke-javadoc, or attempting to 

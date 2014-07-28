@@ -38,7 +38,8 @@
 
   <target name="init" depends="module-build.init,jar-facet"/>
 
-  <target name="javadocs" depends="javadocs-facet,compile-core">
+  <target name="javadocs" depends="javadocs-facet,compile-core,check-javadocs-uptodate"
+          unless="javadocs-uptodate-${name}">
     <invoke-module-javadoc>
       <links>
         <link href="../facet"/>

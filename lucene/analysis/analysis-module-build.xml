@@ -32,7 +32,8 @@
 
   <import file="../module-build.xml"/>
 
-  <target name="javadocs" depends="javadocs-analyzers-common, compile-core">
+  <target name="javadocs" depends="javadocs-analyzers-common, compile-core, check-javadocs-uptodate"
+          unless="javadocs-uptodate-${name}">
     <invoke-module-javadoc>
       <links>
         <link href="../analyzers-common"/>

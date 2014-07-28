@@ -57,8 +57,9 @@
   <target name="test-core" depends="common.test"/>
 
   <target name="javadocs-core" depends="javadocs"/>
-  <target name="javadocs" description="Generate javadoc for core classes">
-  	<sequential>
+  <target name="javadocs" description="Generate javadoc for core classes" 
+          depends="check-javadocs-uptodate" unless="javadocs-uptodate-${name}">
+     <sequential>
       <mkdir dir="${javadoc.dir}/core"/>
       <invoke-javadoc destdir="${javadoc.dir}/core" title="${Name} ${version} core API">
         <sources>

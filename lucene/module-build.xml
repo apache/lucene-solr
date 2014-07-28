@@ -60,9 +60,10 @@
     <antcall target="common.test" inheritRefs="true" />
   </target>
   <target name="build-artifacts-and-tests" depends="jar, compile-test" />
-	
+
   <!-- TODO: why does this previous depend on compile-core? -->
-  <target name="javadocs" depends="compile-core,javadocs-lucene-core">
+  <target name="javadocs" depends="compile-core,javadocs-lucene-core,check-javadocs-uptodate"
+                          unless="javadocs-uptodate-${name}">
     <invoke-module-javadoc/>
   </target>	
 
