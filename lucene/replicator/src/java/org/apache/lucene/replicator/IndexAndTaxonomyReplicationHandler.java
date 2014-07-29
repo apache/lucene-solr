@@ -166,8 +166,8 @@ public class IndexAndTaxonomyReplicationHandler implements ReplicationHandler {
     // side-effects, e.g. if it hits sudden IO errors while opening the index
     // (and can end up deleting the entire index). It is not our job to protect
     // against those errors, app will probably hit them elsewhere.
-    IndexReplicationHandler.cleanupOldIndexFiles(indexDir, indexSegmentsFile);
-    IndexReplicationHandler.cleanupOldIndexFiles(taxoDir, taxoSegmentsFile);
+    IndexReplicationHandler.cleanupOldIndexFiles(indexDir, indexSegmentsFile, infoStream);
+    IndexReplicationHandler.cleanupOldIndexFiles(taxoDir, taxoSegmentsFile, infoStream);
 
     // successfully updated the index, notify the callback that the index is
     // ready.
