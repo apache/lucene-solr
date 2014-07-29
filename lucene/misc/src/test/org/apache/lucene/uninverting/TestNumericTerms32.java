@@ -108,6 +108,7 @@ public class TestNumericTerms32 extends LuceneTestCase {
   @AfterClass
   public static void afterClass() throws Exception {
     searcher = null;
+    TestUtil.checkReader(reader);
     reader.close();
     reader = null;
     directory.close();

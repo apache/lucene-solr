@@ -49,6 +49,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 /*
  * Tests sorting (but with fieldcache instead of docvalues)
@@ -87,6 +88,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     assertEquals("bar", searcher.doc(td.scoreDocs[0].doc).get("value"));
     assertEquals("foo", searcher.doc(td.scoreDocs[1].doc).get("value"));
 
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -125,7 +127,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     assertNull(searcher.doc(td.scoreDocs[0].doc).get("value"));
     assertEquals("bar", searcher.doc(td.scoreDocs[1].doc).get("value"));
     assertEquals("foo", searcher.doc(td.scoreDocs[2].doc).get("value"));
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -161,7 +163,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     // 'foo' comes after 'bar' in reverse order
     assertEquals("foo", searcher.doc(td.scoreDocs[0].doc).get("value"));
     assertEquals("bar", searcher.doc(td.scoreDocs[1].doc).get("value"));
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -202,7 +204,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     assertNull(searcher.doc(td.scoreDocs[0].doc).get("value"));
     assertEquals("bar", searcher.doc(td.scoreDocs[1].doc).get("value"));
     assertEquals("foo", searcher.doc(td.scoreDocs[2].doc).get("value"));
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -243,7 +245,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     assertEquals("bar", searcher.doc(td.scoreDocs[1].doc).get("value"));
     // null comes last
     assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -285,7 +287,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     assertEquals("foo", searcher.doc(td.scoreDocs[1].doc).get("value"));
     // null comes last
     assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -327,7 +329,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     assertNull(searcher.doc(td.scoreDocs[0].doc).get("value"));
     assertEquals("foo", searcher.doc(td.scoreDocs[1].doc).get("value"));
     assertEquals("bar", searcher.doc(td.scoreDocs[2].doc).get("value"));
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -353,7 +355,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     // docid 0, then docid 1
     assertEquals(0, td.scoreDocs[0].doc);
     assertEquals(1, td.scoreDocs[1].doc);
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -379,7 +381,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     // docid 1, then docid 0
     assertEquals(1, td.scoreDocs[0].doc);
     assertEquals(0, td.scoreDocs[1].doc);
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -409,7 +411,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     for (int i = 0; i < actual.scoreDocs.length; i++) {
       assertEquals(actual.scoreDocs[i].doc, expected.scoreDocs[i].doc);
     }
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -438,7 +440,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     assertEquals(expected.totalHits, actual.totalHits);
     assertEquals(actual.scoreDocs[0].doc, expected.scoreDocs[1].doc);
     assertEquals(actual.scoreDocs[1].doc, expected.scoreDocs[0].doc);
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -469,7 +471,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
     assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
     assertEquals("300000", searcher.doc(td.scoreDocs[2].doc).get("value"));
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -499,7 +501,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
     assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
     assertEquals("4", searcher.doc(td.scoreDocs[2].doc).get("value"));
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -531,7 +533,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
     assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
     assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -562,7 +564,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     assertEquals("300000", searcher.doc(td.scoreDocs[0].doc).get("value"));
     assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
     assertEquals("-1", searcher.doc(td.scoreDocs[2].doc).get("value"));
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -593,7 +595,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
     assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
     assertEquals("3000000000", searcher.doc(td.scoreDocs[2].doc).get("value"));
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -623,7 +625,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
     assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
     assertEquals("4", searcher.doc(td.scoreDocs[2].doc).get("value"));
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -655,7 +657,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
     assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
     assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -686,7 +688,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     assertEquals("3000000000", searcher.doc(td.scoreDocs[0].doc).get("value"));
     assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
     assertEquals("-1", searcher.doc(td.scoreDocs[2].doc).get("value"));
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -717,7 +719,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
     assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).get("value"));
     assertEquals("30.1", searcher.doc(td.scoreDocs[2].doc).get("value"));
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -747,7 +749,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
     assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
     assertEquals("4.2", searcher.doc(td.scoreDocs[2].doc).get("value"));
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -779,7 +781,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
     assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).get("value"));
     assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -810,7 +812,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     assertEquals("30.1", searcher.doc(td.scoreDocs[0].doc).get("value"));
     assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).get("value"));
     assertEquals("-1.3", searcher.doc(td.scoreDocs[2].doc).get("value"));
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -845,7 +847,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[1].doc).get("value"));
     assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[2].doc).get("value"));
     assertEquals("30.1", searcher.doc(td.scoreDocs[3].doc).get("value"));
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -878,7 +880,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     // check sign bits
     assertEquals(1, Double.doubleToLongBits(v0) >>> 63);
     assertEquals(0, Double.doubleToLongBits(v1) >>> 63);
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -912,7 +914,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
     assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[2].doc).get("value"));
     assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[3].doc).get("value"));
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -948,7 +950,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[1].doc).get("value"));
     assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[2].doc).get("value"));
     assertNull(searcher.doc(td.scoreDocs[3].doc).get("value"));
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -983,7 +985,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[1].doc).get("value"));
     assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[2].doc).get("value"));
     assertEquals("-1.3", searcher.doc(td.scoreDocs[3].doc).get("value"));
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -1010,11 +1012,12 @@ public class TestFieldCacheSort extends LuceneTestCase {
     // null sorts first
     assertEquals(1, hits.scoreDocs[0].doc);
     assertEquals(0, hits.scoreDocs[1].doc);
+    TestUtil.checkReader(r);
     r.close();
     dir.close();
   }
   
-  /** test that we don't throw exception on multi-valued field (LUCENE-2142) */
+  /** test that we throw exception on multi-valued field, creates corrupt reader, use SORTED_SET instead */
   public void testMultiValuedField() throws IOException {
     Directory indexStore = newDirectory();
     IndexWriter writer = new IndexWriter(indexStore, newIndexWriterConfig(
@@ -1030,14 +1033,13 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Sort sort = new Sort(
         new SortField("string", SortField.Type.STRING),
         SortField.FIELD_DOC);
-    // this should not throw AIOOBE or RuntimeEx
     IndexReader reader = UninvertingReader.wrap(DirectoryReader.open(indexStore),
                          Collections.singletonMap("string", Type.SORTED));
-    // NOTE: we can't wrap this with newSearcher, because when the API is abused in this way,
-    // the number of ords can exceed the number of documents, and AssertingAtomicReader will get angry,
-    // rightfully so (its a broken dv)
     IndexSearcher searcher = new IndexSearcher(reader);
-    searcher.search(new MatchAllDocsQuery(), null, 500, sort);
+    try {
+      searcher.search(new MatchAllDocsQuery(), null, 500, sort);
+      fail("didn't get expected exception");
+    } catch (IllegalStateException expected) {}
     reader.close();
     indexStore.close();
   }
@@ -1073,6 +1075,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     assertEquals(maxScore, s.search(q, null, 3, Sort.RELEVANCE, random().nextBoolean(), true).getMaxScore(), 0.0);
     assertEquals(maxScore, s.search(q, null, 3, new Sort(new SortField[] {new SortField("id", SortField.Type.INT, false)}), random().nextBoolean(), true).getMaxScore(), 0.0);
     assertEquals(maxScore, s.search(q, null, 3, new Sort(new SortField[] {new SortField("id", SortField.Type.INT, true)}), random().nextBoolean(), true).getMaxScore(), 0.0);
+    TestUtil.checkReader(r);
     r.close();
     d.close();
   }
@@ -1124,7 +1127,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(1, td.totalHits);
     assertEquals("foo", searcher.doc(td.scoreDocs[0].doc).get("value"));
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -1149,7 +1152,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     
     assertEquals(expected.totalHits, actual.totalHits);
     assertEquals(expected.scoreDocs[0].score, actual.scoreDocs[0].score, 0F);
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -1183,7 +1186,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     // 'bar' comes before 'foo'
     assertEquals("bar", searcher.doc(td.scoreDocs[0].doc).get("value"));
     assertEquals("foo", searcher.doc(td.scoreDocs[1].doc).get("value"));
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
@@ -1210,7 +1213,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     assertEquals(2, td.totalHits);
     assertEquals(1, td.scoreDocs[0].doc);
     assertEquals(0, td.scoreDocs[1].doc);
-
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }

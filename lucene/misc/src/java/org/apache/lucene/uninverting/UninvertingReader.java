@@ -227,15 +227,13 @@ public class UninvertingReader extends FilterAtomicReader {
 
   @Override
   public NumericDocValues getNumericDocValues(String field) throws IOException {
-    Type v = mapping.get(field);
+    Type v = getType(field);
     if (v != null) {
       switch (v) {
         case INTEGER: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.NUMERIC_UTILS_INT_PARSER, true);
         case FLOAT: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.NUMERIC_UTILS_FLOAT_PARSER, true);
         case LONG: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.NUMERIC_UTILS_LONG_PARSER, true);
         case DOUBLE: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.NUMERIC_UTILS_DOUBLE_PARSER, true);
-        default:
-          throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + v);
       }
     }
     return super.getNumericDocValues(field);
@@ -243,11 +241,9 @@ public class UninvertingReader extends FilterAtomicReader {
 
   @Override
   public BinaryDocValues getBinaryDocValues(String field) throws IOException {
-    Type v = mapping.get(field);
+    Type v = getType(field);
     if (v == Type.BINARY) {
       return FieldCache.DEFAULT.getTerms(in, field, true);
-    } else if (v != null && v != Type.SORTED) {
-      throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + v);
     } else {
       return in.getBinaryDocValues(field);
     }
@@ -255,11 +251,9 @@ public class UninvertingReader extends FilterAtomicReader {
 
   @Override
   public SortedDocValues getSortedDocValues(String field) throws IOException {
-    Type v = mapping.get(field);
+    Type v = getType(field);
     if (v == Type.SORTED) {
       return FieldCache.DEFAULT.getTermsIndex(in, field);
-    } else if (v != null) {
-      throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + v);
     } else {
       return in.getSortedDocValues(field);
     }
@@ -267,7 +261,7 @@ public class UninvertingReader extends FilterAtomicReader {
   
   @Override
   public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
-    Type v = mapping.get(field);
+    Type v = getType(field);
     if (v != null) {
       switch (v) {
         case SORTED_SET_INTEGER:
@@ -278,10 +272,6 @@ public class UninvertingReader extends FilterAtomicReader {
           return FieldCache.DEFAULT.getDocTermOrds(in, field, FieldCache.INT64_TERM_PREFIX);
         case SORTED_SET_BINARY:
           return FieldCache.DEFAULT.getDocTermOrds(in, field, null);
-        default:
-          if (v != Type.SORTED) {
-            throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + v);
-          }
       }
     }
     return in.getSortedSetDocValues(field);
@@ -289,11 +279,23 @@ public class UninvertingReader extends FilterAtomicReader {
 
   @Override
   public Bits getDocsWithField(String field) throws IOException {
-    if (mapping.containsKey(field)) {
+    if (getType(field) != null) {
       return FieldCache.DEFAULT.getDocsWithField(in, field);
     } else {
       return in.getDocsWithField(field);
     }
+  }
+  
+  /** 
+   * Returns the field's uninversion type, or null 
+   * if the field doesn't exist or doesn't have a mapping.
+   */
+  private Type getType(String field) {
+    FieldInfo info = fieldInfos.fieldInfo(field);
+    if (info == null || info.hasDocValues() == false) {
+      return null;
+    }
+    return mapping.get(field);
   }
 
   @Override

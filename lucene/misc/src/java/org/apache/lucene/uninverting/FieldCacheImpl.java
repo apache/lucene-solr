@@ -644,13 +644,6 @@ class FieldCacheImpl implements FieldCache {
 
       int startTermsBPV;
 
-      final int termCountHardLimit;
-      if (maxDoc == Integer.MAX_VALUE) {
-        termCountHardLimit = Integer.MAX_VALUE;
-      } else {
-        termCountHardLimit = maxDoc+1;
-      }
-
       // TODO: use Uninvert?
       if (terms != null) {
         // Try for coarse estimate for number of bits; this
@@ -658,11 +651,8 @@ class FieldCacheImpl implements FieldCache {
         // is fine -- GrowableWriter will reallocate as needed
         long numUniqueTerms = terms.size();
         if (numUniqueTerms != -1L) {
-          if (numUniqueTerms > termCountHardLimit) {
-            // app is misusing the API (there is more than
-            // one term per doc); in this case we make best
-            // effort to load what we can (see LUCENE-2142)
-            numUniqueTerms = termCountHardLimit;
+          if (numUniqueTerms > maxDoc) {
+            throw new IllegalStateException("Type mismatch: " + key.field + " was indexed with multiple values per document, use SORTED_SET instead");
           }
 
           startTermsBPV = PackedInts.bitsRequired(numUniqueTerms);
@@ -689,8 +679,8 @@ class FieldCacheImpl implements FieldCache {
           if (term == null) {
             break;
           }
-          if (termOrd >= termCountHardLimit) {
-            break;
+          if (termOrd >= maxDoc) {
+            throw new IllegalStateException("Type mismatch: " + key.field + " was indexed with multiple values per document, use SORTED_SET instead");
           }
 
           termOrdToBytesOffset.add(bytes.copyUsingLengthPrefix(term));
