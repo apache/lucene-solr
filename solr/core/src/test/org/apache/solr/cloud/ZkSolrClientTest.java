@@ -17,8 +17,8 @@ package org.apache.solr.cloud;
  * the License.
  */
 
-import java.io.File;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import junit.framework.Assert;
@@ -38,61 +38,72 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
   }
-  
+
+  class ZkConnection implements AutoCloseable {
+
+    private ZkTestServer server = null;
+    private SolrZkClient zkClient = null;
+
+    ZkConnection() throws Exception {
+      this (true);
+    }
+
+    ZkConnection(boolean makeRoot) throws Exception {
+      String zkDir = createTempDir("zkData").getAbsolutePath();
+      server = new ZkTestServer(zkDir);
+      server.run();
+
+      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
+      if (makeRoot) AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
+
+      zkClient = new SolrZkClient(server.getZkAddress(), AbstractZkTestCase.TIMEOUT);
+    }
+
+    public ZkTestServer getServer () {
+      return server;
+    }
+
+    public SolrZkClient getClient () {
+      return zkClient;
+    }
+
+    @Override
+    public void close() throws Exception {
+      if (zkClient != null) zkClient.close();
+      if (server != null) server.shutdown();
+    }
+  }
+
   public void testConnect() throws Exception {
-    String zkDir = createTempDir("zkData").getAbsolutePath();
-    ZkTestServer server = null;
-
-    server = new ZkTestServer(zkDir);
-    server.run();
-    AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-    SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), AbstractZkTestCase.TIMEOUT);
-
-    zkClient.close();
-    server.shutdown();
+    try (ZkConnection conn = new ZkConnection (false)) {
+      // do nothing
+    }
   }
 
   public void testMakeRootNode() throws Exception {
-    String zkDir = createTempDir("zkData").getAbsolutePath();
-    ZkTestServer server = null;
-
-    server = new ZkTestServer(zkDir);
-    server.run();
-    AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-    AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
-
-    SolrZkClient zkClient = new SolrZkClient(server.getZkHost(),
-        AbstractZkTestCase.TIMEOUT);
-
-    assertTrue(zkClient.exists("/solr", true));
-
-    zkClient.close();
-    server.shutdown();
+    try (ZkConnection conn = new ZkConnection ()) {
+      final SolrZkClient zkClient = new SolrZkClient(conn.getServer().getZkHost(), AbstractZkTestCase.TIMEOUT);
+      try {
+        assertTrue(zkClient.exists("/solr", true));
+      } finally {
+        zkClient.close();
+      }
+    }
   }
-  
+
   public void testClean() throws Exception {
-    String zkDir = createTempDir("zkData").getAbsolutePath();
-    ZkTestServer server = null;
+    try (ZkConnection conn = new ZkConnection ()) {
+      final SolrZkClient zkClient = conn.getClient();
 
-    server = new ZkTestServer(zkDir);
-    server.run();
-    AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-    
+      zkClient.makePath("/test/path/here", true);
 
-    SolrZkClient zkClient = new SolrZkClient(server.getZkHost(),
-        AbstractZkTestCase.TIMEOUT);
+      zkClient.makePath("/zz/path/here", true);
 
-    zkClient.makePath("/test/path/here", true);
-    
-    zkClient.makePath("/zz/path/here", true);
-    
-    zkClient.clean("/");
-    
-    assertFalse(zkClient.exists("/test", true));
-    assertFalse(zkClient.exists("/zz", true));
+      zkClient.clean("/");
 
-    zkClient.close();
-    server.shutdown();
+      assertFalse(zkClient.exists("/test", true));
+      assertFalse(zkClient.exists("/zz", true));
+    }
   }
 
   public void testReconnect() throws Exception {
@@ -188,18 +199,44 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
     }
   }
 
+  public void testMultipleWatchesAsync() throws Exception {
+    try (ZkConnection conn = new ZkConnection ()) {
+      final SolrZkClient zkClient = conn.getClient();
+      zkClient.makePath("/collections", true);
+
+      final int numColls = random().nextInt(100);
+      final CountDownLatch latch = new CountDownLatch(numColls);
+
+      for (int i = 1; i <= numColls; i ++) {
+        String collPath = "/collections/collection" + i;
+        zkClient.makePath(collPath, true);
+        zkClient.getChildren(collPath, new Watcher() {
+          @Override
+          public void process(WatchedEvent event) {
+            latch.countDown();
+            try {
+              Thread.sleep(1000);
+            }
+            catch (InterruptedException e) {}
+          }
+        }, true);
+      }
+
+      for (int i = 1; i <= numColls; i ++) {
+        String shardsPath = "/collections/collection" + i + "/shards";
+        zkClient.makePath(shardsPath, true);
+      }
+
+      assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
+    }
+  }
+
   public void testWatchChildren() throws Exception {
-    String zkDir = createTempDir("zkData").getAbsolutePath();
-    
-    final AtomicInteger cnt = new AtomicInteger();
-    ZkTestServer server = new ZkTestServer(zkDir);
-    server.run();
-    AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-    Thread.sleep(400);
-    AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
-    final SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), AbstractZkTestCase.TIMEOUT);
-    try {
+    try (ZkConnection conn = new ZkConnection ()) {
+      final SolrZkClient zkClient = conn.getClient();
+      final AtomicInteger cnt = new AtomicInteger();
       final CountDownLatch latch = new CountDownLatch(1);
+
       zkClient.makePath("/collections", true);
 
       zkClient.getChildren("/collections", new Watcher() {
@@ -248,14 +285,6 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
       
       assertEquals(2, cnt.intValue());
 
-    } finally {
-
-      if (zkClient != null) {
-        zkClient.close();
-      }
-      if (server != null) {
-        server.shutdown();
-      }
     }
   }
 
