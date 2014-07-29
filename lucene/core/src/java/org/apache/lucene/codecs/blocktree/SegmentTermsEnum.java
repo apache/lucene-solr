@@ -913,7 +913,9 @@ final class SegmentTermsEnum extends TermsEnum {
     // Pop finished blocks
     while (currentFrame.nextEnt == currentFrame.entCount) {
       if (!currentFrame.isLastInFloor) {
+        // Advance to next floor block
         currentFrame.loadNextFloorBlock();
+        break;
       } else {
         //if (DEBUG) System.out.println("  pop frame");
         if (currentFrame.ord == 0) {
