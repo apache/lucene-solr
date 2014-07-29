@@ -141,7 +141,7 @@ public class IndexReplicationHandler implements ReplicationHandler {
    * directory. It suppresses any exceptions that occur, as this can be retried
    * the next time.
    */
-  public static void cleanupOldIndexFiles(Directory dir, String segmentsFile) {
+  public static void cleanupOldIndexFiles(Directory dir, String segmentsFile, InfoStream infoStream) {
     try {
       IndexCommit commit = getLastCommit(dir);
       // commit == null means weird IO errors occurred, ignore them
@@ -164,9 +164,12 @@ public class IndexReplicationHandler implements ReplicationHandler {
         }
       }
     } catch (Throwable t) {
-      // ignore any errors that happens during this state and only log it. this
+      // ignore any errors that happen during this state and only log it. this
       // cleanup will have a chance to succeed the next time we get a new
       // revision.
+      if (infoStream.isEnabled(INFO_STREAM_COMPONENT)) {
+        infoStream.message(INFO_STREAM_COMPONENT, "cleanupOldIndexFiles(): failed on error " + t.getMessage());
+      }
     }
   }
   
@@ -280,7 +283,7 @@ public class IndexReplicationHandler implements ReplicationHandler {
     // side-effects, e.g. if it hits sudden IO errors while opening the index
     // (and can end up deleting the entire index). It is not our job to protect
     // against those errors, app will probably hit them elsewhere.
-    cleanupOldIndexFiles(indexDir, segmentsFile);
+    cleanupOldIndexFiles(indexDir, segmentsFile, infoStream);
 
     // successfully updated the index, notify the callback that the index is
     // ready.
