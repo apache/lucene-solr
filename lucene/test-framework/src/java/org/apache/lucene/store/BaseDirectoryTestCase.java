@@ -914,5 +914,52 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     input.close();
     dir.close();
   }
+  
+  /** try to stress slices of slices */
+  public void testSliceOfSlice() throws Exception {
+    Directory dir = getDirectory(createTempDir("sliceOfSlice"));
+    IndexOutput output = dir.createOutput("bytes", newIOContext(random()));
+    int num = TestUtil.nextInt(random(), 50, 2500);
+    byte bytes[] = new byte[num];
+    random().nextBytes(bytes);
+    for (int i = 0; i < bytes.length; i++) {
+      output.writeByte(bytes[i]);
+    }
+    output.close();
+    
+    IndexInput input = dir.openInput("bytes", newIOContext(random()));
+    // seek to a random spot shouldnt impact slicing.
+    input.seek(TestUtil.nextLong(random(), 0, input.length()));
+    for (int i = 0; i < num; i += 16) {
+      IndexInput slice1 = input.slice("slice1", i, num-i);
+      assertEquals(0, slice1.getFilePointer());
+      assertEquals(num-i, slice1.length());
+      
+      // seek to a random spot shouldnt impact slicing.
+      slice1.seek(TestUtil.nextLong(random(), 0, slice1.length()));
+      for (int j = 0; j < slice1.length(); j += 16) {
+        IndexInput slice2 = slice1.slice("slice2", j, num-i-j);
+        assertEquals(0, slice2.getFilePointer());
+        assertEquals(num-i-j, slice2.length());
+        byte data[] = new byte[num];
+        System.arraycopy(bytes, 0, data, 0, i+j);
+        if (random().nextBoolean()) {
+          // read the bytes for this slice-of-slice
+          slice2.readBytes(data, i+j, num-i-j);
+        } else {
+          // seek to a random spot in between, read some, seek back and read the rest
+          long seek = TestUtil.nextLong(random(), 0, slice2.length());
+          slice2.seek(seek);
+          slice2.readBytes(data, (int)(i+j+seek), (int)(num-i-j-seek));
+          slice2.seek(0);
+          slice2.readBytes(data, i+j, (int)seek);
+        }
+        assertArrayEquals(bytes, data);
+      }
+    }
+    
+    input.close();
+    dir.close();
+  }
 }
 
