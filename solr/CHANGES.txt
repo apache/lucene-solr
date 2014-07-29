@@ -242,6 +242,9 @@ Optimizations
 * SOLR-5968: BinaryResponseWriter fetches unnecessary stored fields when only pseudo-fields
   are requested. (Gregg Donovan via shalin)
 
+* SOLR-6261: Run ZooKeeper watch event callbacks in parallel to the ZooKeeper
+  event thread. (Ramkumar Aiyengar via Mark Miller)
+
 Other Changes
 ---------------------
 
