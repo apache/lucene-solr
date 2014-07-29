@@ -72,7 +72,7 @@ public abstract class AbstractDefaultValueUpdateProcessorFactory
    * to any document which does not already have a value in 
    * <code>fieldName</code>
    */
-  protected static abstract class DefaultValueUpdateProcessor 
+  static abstract class DefaultValueUpdateProcessor
     extends UpdateRequestProcessor {
 
     final String fieldName;

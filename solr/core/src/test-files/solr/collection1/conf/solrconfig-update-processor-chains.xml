@@ -468,6 +468,18 @@
     </processor>
   </updateRequestProcessorChain>
 
+
+  <updateRequestProcessorChain name="default-values-fallback-to-unique">
+    <processor class="solr.UUIDUpdateProcessorFactory">
+      <str name="fieldName">id</str>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="default-values-fallback-to-unique-automatically">
+    <processor class="solr.UUIDUpdateProcessorFactory">
+    </processor>
+  </updateRequestProcessorChain>
+
   <updateRequestProcessorChain name="uniq-values">
     <processor class="solr.UniqFieldsUpdateProcessorFactory">
       <str name="fieldRegex">uniq_.*</str>

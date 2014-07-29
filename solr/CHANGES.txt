@@ -161,6 +161,11 @@ New Features
 * SOLR-6267: Let user override Interval Faceting key with LocalParams (Tomas Fernandez_Lobbe
   via Erick Erickson)
 
+* SOLR-6020: Auto-generate a unique key in schema-less example if data does not have an id field.
+  The UUIDUpdateProcessor was improved to not require a field name in configuration and generate
+  a UUID into the unique Key field.
+  (Vitaliy Zhovtyuk, hossman, Steve Rowe, Erik Hatcher, shalin)
+
 
 Bug Fixes
 ----------------------
