@@ -539,10 +539,9 @@ final class SegmentTermsEnumFrame {
           // keep scanning
 
           if (nextEnt == entCount) {
-            // nocommit?
-            //if (exactOnly) {
-            //fillTerm();
-            //}
+            if (exactOnly) {
+              fillTerm();
+            }
             // We are done scanning this block
             break nextTerm;
           } else {
@@ -659,11 +658,10 @@ final class SegmentTermsEnumFrame {
           // keep scanning
 
           if (nextEnt == entCount) {
-            // nocommit?
-            //if (exactOnly) {
-            //fillTerm();
-            //termExists = true;
-            //}
+            if (exactOnly) {
+              fillTerm();
+              //termExists = true;
+            }
             // We are done scanning this block
             break nextTerm;
           } else {

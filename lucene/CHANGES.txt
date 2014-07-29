@@ -134,6 +134,12 @@ New Features
   of footer, this can detect some forms of corruption such as truncation.
   (Robert Muir)
 
+* LUCENE-5843: Added IndexWriter.MAX_DOCS which is the maximum number
+  of documents allowed in a single index, and any operations that add
+  documents will now throw IllegalStateException if the max count
+  would be exceeded, instead of silently creating an unusable
+  index.  (Mike McCandless)
+  
 API Changes
 
 * LUCENE-5752: Simplified Automaton API to be immutable. (Mike McCandless)
@@ -215,12 +221,6 @@ Bug Fixes
   Integer.MAX_VALUE - 8 for the maximum array size.  (Robert Muir,
   Mike McCandless)
 
-* LUCENE-5843: Added IndexWriter.MAX_DOCS which is the maximum number
-  of documents allowed in a single index, and any operations that add
-  documents will now throw IllegalStateException if the max count
-  would be exceeded, instead of silently creating an unusable
-  index.  (Mike McCandless)
-  
 Test Framework
 
 * LUCENE-5786: Unflushed/ truncated events file (hung testing subprocess).
