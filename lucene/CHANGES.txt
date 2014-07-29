@@ -133,6 +133,12 @@ New Features
   checksum against all the bytes), retrieve checksum to validate structure
   of footer, this can detect some forms of corruption such as truncation.
   (Robert Muir)
+
+* LUCENE-5843: Added IndexWriter.MAX_DOCS which is the maximum number
+  of documents allowed in a single index, and any operations that add
+  documents will now throw IllegalStateException if the max count
+  would be exceeded, instead of silently creating an unusable
+  index.  (Mike McCandless)
   
 API Changes
 
