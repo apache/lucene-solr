@@ -88,7 +88,7 @@ class ComplexPhraseQParser extends QParser {
       defaultField = getReq().getSchema().getDefaultSearchFieldName();
     }
 
-    lparser = new ComplexPhraseQueryParser(getReq().getCore().getSolrConfig().luceneMatchVersion, defaultField, getReq().getSchema().getQueryAnalyzer());
+    lparser = new ComplexPhraseQueryParser(defaultField, getReq().getSchema().getQueryAnalyzer());
 
     if (localParams != null)
       inOrder = localParams.getBool("inOrder", inOrder);

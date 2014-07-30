@@ -113,7 +113,7 @@ public class TestStemmerOverrideFilter extends BaseTokenStreamTestCase {
         output.add(entry.getValue());
       }
     }
-    Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT);
+    Tokenizer tokenizer = new WhitespaceTokenizer();
     tokenizer.setReader(new StringReader(input.toString()));
     TokenStream stream = new PorterStemFilter(new StemmerOverrideFilter(
         tokenizer, builder.build()));

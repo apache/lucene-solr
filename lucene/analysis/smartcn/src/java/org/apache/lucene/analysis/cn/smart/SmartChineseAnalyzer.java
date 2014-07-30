@@ -88,8 +88,7 @@ public final class SmartChineseAnalyzer extends Analyzer {
       // make sure it is unmodifiable as we expose it in the outer class
       return CharArraySet.unmodifiableSet(WordlistLoader.getWordSet(IOUtils
           .getDecodingReader(SmartChineseAnalyzer.class, DEFAULT_STOPWORD_FILE,
-              StandardCharsets.UTF_8), STOPWORD_FILE_COMMENT,
-          Version.LUCENE_CURRENT));
+              StandardCharsets.UTF_8), STOPWORD_FILE_COMMENT));
     }
   }
 
@@ -149,7 +148,7 @@ public final class SmartChineseAnalyzer extends Analyzer {
     // The porter stemming is too strict, this is not a bug, this is a feature:)
     result = new PorterStemFilter(result);
     if (!stopWords.isEmpty()) {
-      result = new StopFilter(matchVersion, result, stopWords);
+      result = new StopFilter(result, stopWords);
     }
     return new TokenStreamComponents(tokenizer, result);
   }

@@ -47,7 +47,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 @SuppressCodecs("Direct")
 public class TestBugInSomething extends BaseTokenStreamTestCase {
   public void test() throws Exception {
-    final CharArraySet cas = new CharArraySet(TEST_VERSION_CURRENT, 3, false);
+    final CharArraySet cas = new CharArraySet(3, false);
     cas.add("jjp");
     cas.add("wlmwoknt");
     cas.add("tcgyreo");
@@ -62,7 +62,7 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
         Tokenizer t = new MockTokenizer(MockTokenFilter.ENGLISH_STOPSET, false, -65);
-        TokenFilter f = new CommonGramsFilter(TEST_VERSION_CURRENT, t, cas);
+        TokenFilter f = new CommonGramsFilter(t, cas);
         return new TokenStreamComponents(t, f);
       }
 
@@ -263,7 +263,7 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
   }
   
   public void testCuriousWikipediaString() throws Exception {
-    final CharArraySet protWords = new CharArraySet(TEST_VERSION_CURRENT, new HashSet<>(
+    final CharArraySet protWords = new CharArraySet(new HashSet<>(
         Arrays.asList("rrdpafa", "pupmmlu", "xlq", "dyy", "zqrxrrck", "o", "hsrlfvcha")), false);
     final byte table[] = new byte[] { 
         -57, 26, 1, 48, 63, -23, 55, -84, 18, 120, -97, 103, 58, 13, 84, 89, 57, -13, -63, 

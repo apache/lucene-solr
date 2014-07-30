@@ -20,15 +20,11 @@ package org.apache.lucene.analysis.miscellaneous;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 
 /**
  * Trims leading and trailing whitespace from Tokens in the stream.
- * <p>As of Lucene 4.4, this filter does not support updateOffsets=true anymore
- * as it can lead to broken token streams.
  */
 public final class TrimFilter extends TokenFilter {
 
@@ -36,10 +32,9 @@ public final class TrimFilter extends TokenFilter {
 
   /**
    * Create a new {@link TrimFilter}.
-   * @param version       the Lucene match version
    * @param in            the stream to consume
    */
-  public TrimFilter(Version version, TokenStream in) {
+  public TrimFilter(TokenStream in) {
     super(in);
   }
 

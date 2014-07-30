@@ -82,7 +82,7 @@ public class ManagedStopFilterFactory extends BaseManagedTokenFilterFactory {
     // which is slightly inefficient to do for every instance of the managed filter
     // but ManagedResource's don't have access to the luceneMatchVersion
     boolean ignoreCase = args.getBooleanArg("ignoreCase");
-    stopWords = new CharArraySet(luceneMatchVersion, managedWords.size(), ignoreCase);
+    stopWords = new CharArraySet(managedWords.size(), ignoreCase);
     stopWords.addAll(managedWords);
   }
        
@@ -94,6 +94,6 @@ public class ManagedStopFilterFactory extends BaseManagedTokenFilterFactory {
     if (stopWords == null) {
       throw new IllegalStateException("Managed stopwords not initialized correctly!");
     }
-    return new StopFilter(luceneMatchVersion, input, stopWords);
+    return new StopFilter(input, stopWords);
   }
 }

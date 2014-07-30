@@ -38,7 +38,6 @@ public class StandardFilterFactory extends TokenFilterFactory {
   /** Creates a new StandardFilterFactory */
   public StandardFilterFactory(Map<String,String> args) {
     super(args);
-    assureMatchVersion();
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -46,6 +45,6 @@ public class StandardFilterFactory extends TokenFilterFactory {
   
   @Override
   public StandardFilter create(TokenStream input) {
-    return new StandardFilter(luceneMatchVersion, input);
+    return new StandardFilter(input);
   }
 }

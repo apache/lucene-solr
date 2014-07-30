@@ -48,7 +48,7 @@ public class TestFinnishLightStemFilter extends BaseTokenStreamTestCase {
   }
   
   public void testKeyword() throws IOException {
-    final CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("edeltäjistään"), false);
+    final CharArraySet exclusionSet = new CharArraySet( asSet("edeltäjistään"), false);
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {

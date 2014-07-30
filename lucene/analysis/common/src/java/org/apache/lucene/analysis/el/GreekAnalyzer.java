@@ -69,10 +69,9 @@ public final class GreekAnalyzer extends StopwordAnalyzerBase {
   
   /**
    * Builds an analyzer with the default stop words.
-   * @param matchVersion Lucene compatibility version
    */
-  public GreekAnalyzer(Version matchVersion) {
-    this(matchVersion, DefaultSetHolder.DEFAULT_SET);
+  public GreekAnalyzer() {
+    this(DefaultSetHolder.DEFAULT_SET);
   }
   
   /**
@@ -81,11 +80,10 @@ public final class GreekAnalyzer extends StopwordAnalyzerBase {
    * <b>NOTE:</b> The stopwords set should be pre-processed with the logic of 
    * {@link GreekLowerCaseFilter} for best results.
    *  
-   * @param matchVersion Lucene compatibility version
    * @param stopwords a stopword set
    */
-  public GreekAnalyzer(Version matchVersion, CharArraySet stopwords) {
-    super(matchVersion, stopwords);
+  public GreekAnalyzer(CharArraySet stopwords) {
+    super(stopwords);
   }
   
   /**
@@ -100,10 +98,10 @@ public final class GreekAnalyzer extends StopwordAnalyzerBase {
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
-    final Tokenizer source = new StandardTokenizer(matchVersion);
-    TokenStream result = new GreekLowerCaseFilter(matchVersion, source);
-    result = new StandardFilter(matchVersion, result);
-    result = new StopFilter(matchVersion, result, stopwords);
+    final Tokenizer source = new StandardTokenizer();
+    TokenStream result = new GreekLowerCaseFilter(source);
+    result = new StandardFilter(result);
+    result = new StopFilter(result, stopwords);
     result = new GreekStemFilter(result);
     return new TokenStreamComponents(source, result);
   }

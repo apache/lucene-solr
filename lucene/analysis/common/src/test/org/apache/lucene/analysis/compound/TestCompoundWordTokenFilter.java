@@ -42,7 +42,7 @@ import org.xml.sax.InputSource;
 public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
 
   private static CharArraySet makeDictionary(String... dictionary) {
-    return new CharArraySet(TEST_VERSION_CURRENT, Arrays.asList(dictionary), true);
+    return new CharArraySet(Arrays.asList(dictionary), true);
   }
 
   public void testHyphenationCompoundWordsDA() throws Exception {

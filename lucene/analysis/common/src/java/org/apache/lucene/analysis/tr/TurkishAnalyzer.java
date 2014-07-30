@@ -38,6 +38,7 @@ import org.tartarus.snowball.ext.TurkishStemmer;
  */
 public final class TurkishAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;
+  private final Version matchVersion;
   
   /** File containing default Turkish stopwords. */
   public final static String DEFAULT_STOPWORD_FILE = "stopwords.txt";
@@ -101,9 +102,9 @@ public final class TurkishAnalyzer extends StopwordAnalyzerBase {
    * @param stemExclusionSet a set of terms not to be stemmed
    */
   public TurkishAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet) {
-    super(matchVersion, stopwords);
-    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(
-        matchVersion, stemExclusionSet));
+    super(stopwords);
+    this.matchVersion = matchVersion;
+    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionSet));
   }
 
   /**
@@ -120,12 +121,12 @@ public final class TurkishAnalyzer extends StopwordAnalyzerBase {
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
-    final Tokenizer source = new StandardTokenizer(matchVersion);
-    TokenStream result = new StandardFilter(matchVersion, source);
+    final Tokenizer source = new StandardTokenizer();
+    TokenStream result = new StandardFilter(source);
     if(matchVersion.onOrAfter(Version.LUCENE_4_8))
       result = new ApostropheFilter(result);
     result = new TurkishLowerCaseFilter(result);
-    result = new StopFilter(matchVersion, result, stopwords);
+    result = new StopFilter(result, stopwords);
     if(!stemExclusionSet.isEmpty())
       result = new SetKeywordMarkerFilter(result, stemExclusionSet);
     result = new SnowballFilter(result, new TurkishStemmer());

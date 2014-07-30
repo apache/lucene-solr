@@ -113,7 +113,7 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
   }
   
   public void testReset() throws Exception {
-    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT);
+    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer();
     tokenizer.setReader(new StringReader("abcde"));
     NGramTokenFilter filter = new NGramTokenFilter(TEST_VERSION_CURRENT, tokenizer, 1, 1);
     assertTokenStreamContents(filter, new String[]{"a","b","c","d","e"}, new int[]{0,0,0,0,0}, new int[]{5,5,5,5,5}, new int[]{1,0,0,0,0});

@@ -60,7 +60,7 @@ public class LongToEnglishQueryMaker implements QueryMaker {
   @Override
   public void setConfig(Config config) throws Exception {
     Analyzer anlzr = NewAnalyzerTask.createAnalyzer(config.get("analyzer", StandardAnalyzer.class.getName()));
-    parser = new QueryParser(Version.LUCENE_CURRENT, DocMaker.BODY_FIELD, anlzr);
+    parser = new QueryParser(DocMaker.BODY_FIELD, anlzr);
   }
 
   @Override

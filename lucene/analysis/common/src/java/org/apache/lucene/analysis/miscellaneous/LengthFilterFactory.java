@@ -50,7 +50,7 @@ public class LengthFilterFactory extends TokenFilterFactory {
   
   @Override
   public LengthFilter create(TokenStream input) {
-    final LengthFilter filter = new LengthFilter(luceneMatchVersion, input,min,max);
+    final LengthFilter filter = new LengthFilter(input,min,max);
     return filter;
   }
 }

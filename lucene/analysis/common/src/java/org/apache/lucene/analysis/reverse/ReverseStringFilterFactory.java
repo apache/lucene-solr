@@ -40,7 +40,6 @@ public class ReverseStringFilterFactory extends TokenFilterFactory {
   /** Creates a new ReverseStringFilterFactory */
   public ReverseStringFilterFactory(Map<String,String> args) {
     super(args);
-    assureMatchVersion();
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -48,7 +47,7 @@ public class ReverseStringFilterFactory extends TokenFilterFactory {
   
   @Override
   public ReverseStringFilter create(TokenStream in) {
-    return new ReverseStringFilter(luceneMatchVersion,in);
+    return new ReverseStringFilter(in);
   }
 }
 

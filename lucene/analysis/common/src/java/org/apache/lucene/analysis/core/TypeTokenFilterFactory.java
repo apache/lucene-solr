@@ -72,7 +72,7 @@ public class TypeTokenFilterFactory extends TokenFilterFactory implements Resour
 
   @Override
   public TokenStream create(TokenStream input) {
-    final TokenStream filter = new TypeTokenFilter(luceneMatchVersion, input, stopTypes, useWhitelist);
+    final TokenStream filter = new TypeTokenFilter(input, stopTypes, useWhitelist);
     return filter;
   }
 }

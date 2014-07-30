@@ -134,8 +134,8 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
       analyzer = new Analyzer() {
         @Override
         protected TokenStreamComponents createComponents(String fieldName) {
-          Tokenizer tokenizer = factory == null ? new WhitespaceTokenizer(Version.LUCENE_CURRENT) : factory.create();
-          TokenStream stream = ignoreCase ? new LowerCaseFilter(Version.LUCENE_CURRENT, tokenizer) : tokenizer;
+          Tokenizer tokenizer = factory == null ? new WhitespaceTokenizer() : factory.create();
+          TokenStream stream = ignoreCase ? new LowerCaseFilter(tokenizer) : tokenizer;
           return new TokenStreamComponents(tokenizer, stream);
         }
       };
@@ -202,7 +202,12 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
   private Analyzer loadAnalyzer(ResourceLoader loader, String cname) throws IOException {
     Class<? extends Analyzer> clazz = loader.findClass(cname, Analyzer.class);
     try {
-      Analyzer analyzer = clazz.getConstructor(Version.class).newInstance(Version.LUCENE_CURRENT);
+      Analyzer analyzer = null;
+      try {
+        analyzer = clazz.getConstructor().newInstance();
+      } catch (NoSuchMethodException e) {
+        analyzer = clazz.getConstructor(Version.class).newInstance(Version.LUCENE_CURRENT);
+      }
       if (analyzer instanceof ResourceLoaderAware) {
         ((ResourceLoaderAware) analyzer).inform(loader);
       }

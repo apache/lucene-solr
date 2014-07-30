@@ -17,50 +17,31 @@ package org.apache.lucene.analysis.core;
  * limitations under the License.
  */
 
-import java.io.Reader;
-
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.CharTokenizer;
 import org.apache.lucene.util.AttributeFactory;
-import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.Version;
 
 /**
  * A WhitespaceTokenizer is a tokenizer that divides text at whitespace.
- * Adjacent sequences of non-Whitespace characters form tokens. <a
- * name="version"/>
- * <p>
- * You must specify the required {@link Version} compatibility when creating
- * {@link WhitespaceTokenizer}:
- * <ul>
- * <li>As of 3.1, {@link CharTokenizer} uses an int based API to normalize and
- * detect token characters. See {@link CharTokenizer#isTokenChar(int)} and
- * {@link CharTokenizer#normalize(int)} for details.</li>
- * </ul>
+ * Adjacent sequences of non-Whitespace characters form tokens.
  */
 public final class WhitespaceTokenizer extends CharTokenizer {
   
   /**
-   * Construct a new WhitespaceTokenizer. * @param matchVersion Lucene version
-   * to match See {@link <a href="#version">above</a>}
-   *
+   * Construct a new WhitespaceTokenizer.
    */
-  public WhitespaceTokenizer(Version matchVersion) {
-    super(matchVersion);
+  public WhitespaceTokenizer() {
   }
 
   /**
    * Construct a new WhitespaceTokenizer using a given
    * {@link org.apache.lucene.util.AttributeFactory}.
    *
-   * @param
-   *          matchVersion Lucene version to match See
-   *          {@link <a href="#version">above</a>}
    * @param factory
    *          the attribute factory to use for this {@link Tokenizer}
    */
-  public WhitespaceTokenizer(Version matchVersion, AttributeFactory factory) {
-    super(matchVersion, factory);
+  public WhitespaceTokenizer(AttributeFactory factory) {
+    super(factory);
   }
   
   /** Collects only characters which do not satisfy

@@ -37,7 +37,7 @@ import static org.apache.lucene.analysis.miscellaneous.CapitalizationFilter.*;
 /** Tests {@link CapitalizationFilter} */
 public class TestCapitalizationFilter extends BaseTokenStreamTestCase {  
   public void testCapitalization() throws Exception {
-    CharArraySet keep = new CharArraySet(TEST_VERSION_CURRENT,
+    CharArraySet keep = new CharArraySet(
         Arrays.asList("and", "the", "it", "BIG"), false);
     
     assertCapitalizesTo("kiTTEN", new String[] { "Kitten" }, 

@@ -47,7 +47,7 @@ public class TrimFilterFactory extends TokenFilterFactory {
   
   @Override
   public TrimFilter create(TokenStream input) {
-    final TrimFilter filter = new TrimFilter(luceneMatchVersion, input);
+    final TrimFilter filter = new TrimFilter(input);
     return filter;
   }
 }

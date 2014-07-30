@@ -37,11 +37,11 @@
       <filter class="solr.PorterStemFilterFactory"/>
     </analyzer>
   </fieldtype>
-  <fieldtype name="textStandardAnalyzer40" class="solr.TextField">
-    <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer" luceneMatchVersion="LUCENE_4_0"/>
+  <fieldtype name="textTurkishAnalyzer40" class="solr.TextField">
+    <analyzer class="org.apache.lucene.analysis.tr.TurkishAnalyzer" luceneMatchVersion="LUCENE_4_0"/>
   </fieldtype>
-  <fieldtype name="textStandardAnalyzerDefault" class="solr.TextField">
-    <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
+  <fieldtype name="textTurkishAnalyzerDefault" class="solr.TextField">
+    <analyzer class="org.apache.lucene.analysis.tr.TurkishAnalyzer"/>
   </fieldtype>
  </types>
  <fields>
@@ -49,8 +49,8 @@
    <field name="signatureField" type="string" indexed="true" stored="false"/>
    <field name="text40" type="text40" indexed="true" stored="false" />
    <field name="textDefault" type="textDefault" indexed="true" stored="false" />
-   <field name="textStandardAnalyzer40" type="textStandardAnalyzer40" indexed="true" stored="false" />
-   <field name="textStandardAnalyzerDefault" type="textStandardAnalyzerDefault" indexed="true" stored="false" />
+   <field name="textTurkishAnalyzer40" type="textTurkishAnalyzer40" indexed="true" stored="false" />
+   <field name="textTurkishAnalyzerDefault" type="textTurkishAnalyzerDefault" indexed="true" stored="false" />
    <field name="_version_" type="long" indexed="true" stored="true" multiValued="false" />
    <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>
  </fields>

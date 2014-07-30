@@ -52,8 +52,8 @@ public class TestSuggestSpellingConverter extends BaseTokenStreamTestCase {
         Tokenizer tokenizer = new KeywordTokenizer();
         TokenStream filter = new PatternReplaceFilter(tokenizer, 
             Pattern.compile("([^\\p{L}\\p{M}\\p{N}\\p{Cs}]*[\\p{L}\\p{M}\\p{N}\\p{Cs}\\_]+:)|([^\\p{L}\\p{M}\\p{N}\\p{Cs}])+"), " ", true);
-        filter = new LowerCaseFilter(TEST_VERSION_CURRENT, filter);
-        filter = new TrimFilter(TEST_VERSION_CURRENT, filter);
+        filter = new LowerCaseFilter(filter);
+        filter = new TrimFilter(filter);
         return new TokenStreamComponents(tokenizer, filter);
       }
     });

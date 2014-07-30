@@ -22,9 +22,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.apache.lucene.util.Version;
-
-
 /**
  * A simple class that stores Strings as char[]'s in a
  * hash table.  Note that this is not a general purpose
@@ -34,18 +31,6 @@ import org.apache.lucene.util.Version;
  * is in the set without the necessity of converting it
  * to a String first.
  *
- * <a name="version"></a>
- * <p>You must specify the required {@link Version}
- * compatibility when creating {@link CharArraySet}:
- * <ul>
- *   <li> As of 3.1, supplementary characters are
- *       properly lowercased.</li>
- * </ul>
- * Before 3.1 supplementary characters could not be
- * lowercased correctly due to the lack of Unicode 4
- * support in JDK 1.4. To use instances of
- * {@link CharArraySet} with the behavior before Lucene
- * 3.1 pass a {@link Version} < 3.1 to the constructors.
  * <P>
  * <em>Please note:</em> This class implements {@link java.util.Set Set} but
  * does not behave like it should in all cases. The generic type is
@@ -64,33 +49,27 @@ public class CharArraySet extends AbstractSet<Object> {
   /**
    * Create set with enough capacity to hold startSize terms
    * 
-   * @param matchVersion
-   *          compatibility match version see <a href="#version">Version
-   *          note</a> above for details.
    * @param startSize
    *          the initial capacity
    * @param ignoreCase
    *          <code>false</code> if and only if the set should be case sensitive
    *          otherwise <code>true</code>.
    */
-  public CharArraySet(Version matchVersion, int startSize, boolean ignoreCase) {
-    this(new CharArrayMap<>(matchVersion, startSize, ignoreCase));
+  public CharArraySet(int startSize, boolean ignoreCase) {
+    this(new CharArrayMap<>(startSize, ignoreCase));
   }
 
   /**
    * Creates a set from a Collection of objects. 
    * 
-   * @param matchVersion
-   *          compatibility match version see <a href="#version">Version
-   *          note</a> above for details.
    * @param c
    *          a collection whose elements to be placed into the set
    * @param ignoreCase
    *          <code>false</code> if and only if the set should be case sensitive
    *          otherwise <code>true</code>.
    */
-  public CharArraySet(Version matchVersion, Collection<?> c, boolean ignoreCase) {
-    this(matchVersion, c.size(), ignoreCase);
+  public CharArraySet(Collection<?> c, boolean ignoreCase) {
+    this(c.size(), ignoreCase);
     addAll(c);
   }
 
@@ -172,32 +151,21 @@ public class CharArraySet extends AbstractSet<Object> {
   /**
    * Returns a copy of the given set as a {@link CharArraySet}. If the given set
    * is a {@link CharArraySet} the ignoreCase property will be preserved.
-   * <p>
-   * <b>Note:</b> If you intend to create a copy of another {@link CharArraySet} where
-   * the {@link Version} of the source set differs from its copy
-   * {@link #CharArraySet(Version, Collection, boolean)} should be used instead.
-   * The {@link #copy(Version, Set)} will preserve the {@link Version} of the
-   * source set it is an instance of {@link CharArraySet}.
-   * </p>
    * 
-   * @param matchVersion
-   *          compatibility match version see <a href="#version">Version
-   *          note</a> above for details. This argument will be ignored if the
-   *          given set is a {@link CharArraySet}.
    * @param set
    *          a set to copy
    * @return a copy of the given set as a {@link CharArraySet}. If the given set
    *         is a {@link CharArraySet} the ignoreCase property as well as the
    *         matchVersion will be of the given set will be preserved.
    */
-  public static CharArraySet copy(final Version matchVersion, final Set<?> set) {
+  public static CharArraySet copy(final Set<?> set) {
     if(set == EMPTY_SET)
       return EMPTY_SET;
     if(set instanceof CharArraySet) {
       final CharArraySet source = (CharArraySet) set;
-      return new CharArraySet(CharArrayMap.copy(source.map.matchVersion, source.map));
+      return new CharArraySet(CharArrayMap.copy(source.map));
     }
-    return new CharArraySet(matchVersion, set, false);
+    return new CharArraySet(set, false);
   }
   
   /**

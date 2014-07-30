@@ -45,7 +45,7 @@ public class TestTurkishAnalyzer extends BaseTokenStreamTestCase {
   
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("ağacı"), false);
+    CharArraySet exclusionSet = new CharArraySet(asSet("ağacı"), false);
     Analyzer a = new TurkishAnalyzer(TEST_VERSION_CURRENT, 
         TurkishAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "ağacı", "ağacı");

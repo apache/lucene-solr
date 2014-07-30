@@ -17,13 +17,8 @@ package org.apache.lucene.analysis.core;
  * limitations under the License.
  */
 
-import java.io.Reader;
-
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.util.CharTokenizer;
 import org.apache.lucene.util.AttributeFactory;
-import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.Version;
 
 /**
  * LowerCaseTokenizer performs the function of LetterTokenizer
@@ -35,41 +30,24 @@ import org.apache.lucene.util.Version;
  * Note: this does a decent job for most European languages, but does a terrible
  * job for some Asian languages, where words are not separated by spaces.
  * </p>
- * <p>
- * <a name="version"/>
- * You must specify the required {@link Version} compatibility when creating
- * {@link LowerCaseTokenizer}:
- * <ul>
- * <li>As of 3.1, {@link CharTokenizer} uses an int based API to normalize and
- * detect token characters. See {@link CharTokenizer#isTokenChar(int)} and
- * {@link CharTokenizer#normalize(int)} for details.</li>
- * </ul>
- * </p>
  */
 public final class LowerCaseTokenizer extends LetterTokenizer {
   
   /**
    * Construct a new LowerCaseTokenizer.
-   * 
-   * @param matchVersion
-   *          Lucene version to match See {@link <a href="#version">above</a>}
-   * 
    */
-  public LowerCaseTokenizer(Version matchVersion) {
-    super(matchVersion);
+  public LowerCaseTokenizer() {
   }
 
   /**
    * Construct a new LowerCaseTokenizer using a given
    * {@link org.apache.lucene.util.AttributeFactory}.
    *
-   * @param matchVersion
-   *          Lucene version to match See {@link <a href="#version">above</a>}
    * @param factory
    *          the attribute factory to use for this {@link Tokenizer}
    */
-  public LowerCaseTokenizer(Version matchVersion, AttributeFactory factory) {
-    super(matchVersion, factory);
+  public LowerCaseTokenizer(AttributeFactory factory) {
+    super(factory);
   }
   
   /** Converts char to lower case

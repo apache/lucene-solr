@@ -37,7 +37,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.Version;
 
 /** Simple command-line based search demo. */
 public class SearchFiles {
@@ -91,8 +90,7 @@ public class SearchFiles {
     
     IndexReader reader = DirectoryReader.open(FSDirectory.open(new File(index)));
     IndexSearcher searcher = new IndexSearcher(reader);
-    // :Post-Release-Update-Version.LUCENE_XY:
-    Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_5_0);
+    Analyzer analyzer = new StandardAnalyzer();
 
     BufferedReader in = null;
     if (queries != null) {
@@ -100,8 +98,7 @@ public class SearchFiles {
     } else {
       in = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
     }
-    // :Post-Release-Update-Version.LUCENE_XY:
-    QueryParser parser = new QueryParser(Version.LUCENE_5_0, field, analyzer);
+    QueryParser parser = new QueryParser(field, analyzer);
     while (true) {
       if (queries == null && queryString == null) {                        // prompt the user
         System.out.println("Enter query: ");

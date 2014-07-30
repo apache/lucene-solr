@@ -69,7 +69,7 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
     static {
       try {
         DEFAULT_SET = WordlistLoader.getSnowballWordSet(IOUtils.getDecodingReader(SnowballFilter.class, 
-            DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8), Version.LUCENE_CURRENT);
+            DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8));
       } catch (IOException ex) {
         // default set should always be present as it is part of the
         // distribution (JAR)
@@ -91,35 +91,31 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
    * Builds an analyzer with the default stop words:
    * {@link #getDefaultStopSet()}.
    */
-  public GermanAnalyzer(Version matchVersion) {
-    this(matchVersion, DefaultSetHolder.DEFAULT_SET);
+  public GermanAnalyzer() {
+    this(DefaultSetHolder.DEFAULT_SET);
   }
   
   /**
    * Builds an analyzer with the given stop words 
    * 
-   * @param matchVersion
-   *          lucene compatibility version
    * @param stopwords
    *          a stopword set
    */
-  public GermanAnalyzer(Version matchVersion, CharArraySet stopwords) {
-    this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
+  public GermanAnalyzer(CharArraySet stopwords) {
+    this(stopwords, CharArraySet.EMPTY_SET);
   }
   
   /**
    * Builds an analyzer with the given stop words
    * 
-   * @param matchVersion
-   *          lucene compatibility version
    * @param stopwords
    *          a stopword set
    * @param stemExclusionSet
    *          a stemming exclusion set
    */
-  public GermanAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet) {
-    super(matchVersion, stopwords);
-    exclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stemExclusionSet));
+  public GermanAnalyzer(CharArraySet stopwords, CharArraySet stemExclusionSet) {
+    super(stopwords);
+    exclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionSet));
   }
 
   /**
@@ -135,10 +131,10 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
-    final Tokenizer source = new StandardTokenizer(matchVersion);
-    TokenStream result = new StandardFilter(matchVersion, source);
-    result = new LowerCaseFilter(matchVersion, result);
-    result = new StopFilter( matchVersion, result, stopwords);
+    final Tokenizer source = new StandardTokenizer();
+    TokenStream result = new StandardFilter(source);
+    result = new LowerCaseFilter(result);
+    result = new StopFilter(result, stopwords);
     result = new SetKeywordMarkerFilter(result, exclusionSet);
     result = new GermanNormalizationFilter(result);
     result = new GermanLightStemFilter(result);

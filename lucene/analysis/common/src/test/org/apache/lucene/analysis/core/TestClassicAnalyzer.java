@@ -40,16 +40,16 @@ import java.util.Random;
 
 public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
 
-  private Analyzer  a = new ClassicAnalyzer(TEST_VERSION_CURRENT);
+  private Analyzer  a = new ClassicAnalyzer();
 
   public void testMaxTermLength() throws Exception {
-    ClassicAnalyzer sa = new ClassicAnalyzer(TEST_VERSION_CURRENT);
+    ClassicAnalyzer sa = new ClassicAnalyzer();
     sa.setMaxTokenLength(5);
     assertAnalyzesTo(sa, "ab cd toolong xy z", new String[]{"ab", "cd", "xy", "z"});
   }
 
   public void testMaxTermLength2() throws Exception {
-    ClassicAnalyzer sa = new ClassicAnalyzer(TEST_VERSION_CURRENT);
+    ClassicAnalyzer sa = new ClassicAnalyzer();
     assertAnalyzesTo(sa, "ab cd toolong xy z", new String[]{"ab", "cd", "toolong", "xy", "z"});
     sa.setMaxTokenLength(5);
     
@@ -113,7 +113,7 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
 
   public void testLucene1140() throws Exception {
     try {
-      ClassicAnalyzer analyzer = new ClassicAnalyzer(TEST_VERSION_CURRENT);
+      ClassicAnalyzer analyzer = new ClassicAnalyzer();
       assertAnalyzesTo(analyzer, "www.nutch.org.", new String[]{ "www.nutch.org" }, new String[] { "<HOST>" });
     } catch (NullPointerException e) {
       fail("Should not throw an NPE and it did");
@@ -123,7 +123,7 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
 
   public void testDomainNames() throws Exception {
     // Current lucene should not show the bug
-    ClassicAnalyzer a2 = new ClassicAnalyzer(TEST_VERSION_CURRENT);
+    ClassicAnalyzer a2 = new ClassicAnalyzer();
 
     // domain names
     assertAnalyzesTo(a2, "www.nutch.org", new String[]{"www.nutch.org"});
@@ -137,7 +137,7 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
 
     // 2.4 should not show the bug. But, alas, it's also obsolete,
     // so we check latest released (Robert's gonna break this on 4.0 soon :) )
-    a2 = new ClassicAnalyzer(TEST_VERSION_CURRENT);
+    a2 = new ClassicAnalyzer();
     assertAnalyzesTo(a2, "www.nutch.org.", new String[]{ "www.nutch.org" }, new String[] { "<HOST>" });
   }
 
@@ -244,7 +244,7 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
   }
 
   public void testJava14BWCompatibility() throws Exception {
-    ClassicAnalyzer sa = new ClassicAnalyzer(TEST_VERSION_CURRENT);
+    ClassicAnalyzer sa = new ClassicAnalyzer();
     assertAnalyzesTo(sa, "test\u02C6test", new String[] { "test", "test" });
   }
 
@@ -253,8 +253,7 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
   */
   public void testWickedLongTerm() throws IOException {
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-      TEST_VERSION_CURRENT, new ClassicAnalyzer(TEST_VERSION_CURRENT)));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new ClassicAnalyzer()));
 
     char[] chars = new char[IndexWriter.MAX_TERM_LENGTH];
     Arrays.fill(chars, 'x');
@@ -300,7 +299,7 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
     // maximum length term, and search on that term:
     doc = new Document();
     doc.add(new TextField("content", bigTerm, Field.Store.NO));
-    ClassicAnalyzer sa = new ClassicAnalyzer(TEST_VERSION_CURRENT);
+    ClassicAnalyzer sa = new ClassicAnalyzer();
     sa.setMaxTokenLength(100000);
     writer  = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, sa));
     writer.addDocument(doc);
@@ -314,12 +313,12 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new ClassicAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new ClassicAnalyzer(), 1000*RANDOM_MULTIPLIER);
   }
   
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
-    checkRandomData(random, new ClassicAnalyzer(TEST_VERSION_CURRENT), 100*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, new ClassicAnalyzer(), 100*RANDOM_MULTIPLIER, 8192);
   }
 }

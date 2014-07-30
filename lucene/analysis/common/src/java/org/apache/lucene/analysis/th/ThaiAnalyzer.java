@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
-import org.apache.lucene.analysis.core.StopAnalyzer;
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
@@ -35,6 +34,7 @@ import org.apache.lucene.util.Version;
  * {@link Analyzer} for Thai language. It uses {@link java.text.BreakIterator} to break words.
  */
 public final class ThaiAnalyzer extends StopwordAnalyzerBase {
+  private final Version matchVersion;
   
   /** File containing default Thai stopwords. */
   public final static String DEFAULT_STOPWORD_FILE = "stopwords.txt";
@@ -87,7 +87,8 @@ public final class ThaiAnalyzer extends StopwordAnalyzerBase {
    * @param stopwords a stopword set
    */
   public ThaiAnalyzer(Version matchVersion, CharArraySet stopwords) {
-    super(matchVersion, stopwords);
+    super(stopwords);
+    this.matchVersion = matchVersion;
   }
 
   /**
@@ -104,15 +105,15 @@ public final class ThaiAnalyzer extends StopwordAnalyzerBase {
   protected TokenStreamComponents createComponents(String fieldName) {
     if (matchVersion.onOrAfter(Version.LUCENE_4_8)) {
       final Tokenizer source = new ThaiTokenizer();
-      TokenStream result = new LowerCaseFilter(matchVersion, source);
-      result = new StopFilter(matchVersion, result, stopwords);
+      TokenStream result = new LowerCaseFilter(source);
+      result = new StopFilter(result, stopwords);
       return new TokenStreamComponents(source, result);
     } else {
-      final Tokenizer source = new StandardTokenizer(matchVersion);
-      TokenStream result = new StandardFilter(matchVersion, source);
-      result = new LowerCaseFilter(matchVersion, result);
-      result = new ThaiWordFilter(matchVersion, result);
-      return new TokenStreamComponents(source, new StopFilter(matchVersion, result, stopwords));
+      final Tokenizer source = new StandardTokenizer();
+      TokenStream result = new StandardFilter(source);
+      result = new LowerCaseFilter(result);
+      result = new ThaiWordFilter(result);
+      return new TokenStreamComponents(source, new StopFilter(result, stopwords));
     }
   }
 }

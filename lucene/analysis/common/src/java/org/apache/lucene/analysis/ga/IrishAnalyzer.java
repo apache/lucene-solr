@@ -32,7 +32,6 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.ElisionFilter;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
-import org.apache.lucene.util.Version;
 import org.tartarus.snowball.ext.IrishStemmer;
 
 /**
@@ -45,7 +44,7 @@ public final class IrishAnalyzer extends StopwordAnalyzerBase {
   public final static String DEFAULT_STOPWORD_FILE = "stopwords.txt";
   
   private static final CharArraySet DEFAULT_ARTICLES = CharArraySet.unmodifiableSet(
-      new CharArraySet(Version.LUCENE_CURRENT, 
+      new CharArraySet(
           Arrays.asList(
               "d", "m", "b"
           ), true));
@@ -56,7 +55,7 @@ public final class IrishAnalyzer extends StopwordAnalyzerBase {
    * with phrase queries versus tAthair (which would not have a gap).
    */
   private static final CharArraySet HYPHENATIONS = CharArraySet.unmodifiableSet(
-      new CharArraySet(Version.LUCENE_CURRENT,
+      new CharArraySet(
           Arrays.asList(
               "h", "n", "t"
           ), true));
@@ -91,18 +90,17 @@ public final class IrishAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer with the default stop words: {@link #DEFAULT_STOPWORD_FILE}.
    */
-  public IrishAnalyzer(Version matchVersion) {
-    this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
+  public IrishAnalyzer() {
+    this(DefaultSetHolder.DEFAULT_STOP_SET);
   }
   
   /**
    * Builds an analyzer with the given stop words.
    * 
-   * @param matchVersion lucene compatibility version
    * @param stopwords a stopword set
    */
-  public IrishAnalyzer(Version matchVersion, CharArraySet stopwords) {
-    this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
+  public IrishAnalyzer(CharArraySet stopwords) {
+    this(stopwords, CharArraySet.EMPTY_SET);
   }
 
   /**
@@ -110,14 +108,12 @@ public final class IrishAnalyzer extends StopwordAnalyzerBase {
    * provided this analyzer will add a {@link SetKeywordMarkerFilter} before
    * stemming.
    * 
-   * @param matchVersion lucene compatibility version
    * @param stopwords a stopword set
    * @param stemExclusionSet a set of terms not to be stemmed
    */
-  public IrishAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet) {
-    super(matchVersion, stopwords);
-    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(
-        matchVersion, stemExclusionSet));
+  public IrishAnalyzer(CharArraySet stopwords, CharArraySet stemExclusionSet) {
+    super(stopwords);
+    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionSet));
   }
 
   /**
@@ -134,12 +130,12 @@ public final class IrishAnalyzer extends StopwordAnalyzerBase {
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
-    final Tokenizer source = new StandardTokenizer(matchVersion);
-    TokenStream result = new StandardFilter(matchVersion, source);
-    result = new StopFilter(matchVersion, result, HYPHENATIONS);
+    final Tokenizer source = new StandardTokenizer();
+    TokenStream result = new StandardFilter(source);
+    result = new StopFilter(result, HYPHENATIONS);
     result = new ElisionFilter(result, DEFAULT_ARTICLES);
     result = new IrishLowerCaseFilter(result);
-    result = new StopFilter(matchVersion, result, stopwords);
+    result = new StopFilter(result, stopwords);
     if(!stemExclusionSet.isEmpty())
       result = new SetKeywordMarkerFilter(result, stemExclusionSet);
     result = new SnowballFilter(result, new IrishStemmer());

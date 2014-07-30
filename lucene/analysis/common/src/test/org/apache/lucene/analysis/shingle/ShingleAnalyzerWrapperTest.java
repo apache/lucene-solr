@@ -309,9 +309,9 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
     Analyzer delegate = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
-        CharArraySet stopSet = StopFilter.makeStopSet(TEST_VERSION_CURRENT, "into");
+        CharArraySet stopSet = StopFilter.makeStopSet("into");
         Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        TokenFilter filter = new StopFilter(TEST_VERSION_CURRENT, tokenizer, stopSet);
+        TokenFilter filter = new StopFilter(tokenizer, stopSet);
         return new TokenStreamComponents(tokenizer, filter);
       }
     };

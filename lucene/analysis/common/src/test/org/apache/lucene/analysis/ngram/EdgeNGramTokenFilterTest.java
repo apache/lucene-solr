@@ -160,7 +160,7 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
   }
   
   public void testReset() throws Exception {
-    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT);
+    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer();
     tokenizer.setReader(new StringReader("abcde"));
     EdgeNGramTokenFilter filter = new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, tokenizer, 1, 3);
     assertTokenStreamContents(filter, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{5,5,5});
@@ -200,7 +200,7 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
   }
 
   public void testGraphs() throws IOException {
-    TokenStream tk = new LetterTokenizer(TEST_VERSION_CURRENT);
+    TokenStream tk = new LetterTokenizer();
     ((Tokenizer)tk).setReader(new StringReader("abc d efgh ij klmno p q"));
     tk = new ShingleFilter(tk);
     tk = new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, tk, 7, 10);

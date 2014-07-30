@@ -39,7 +39,6 @@ public class LowerCaseTokenizerFactory extends TokenizerFactory implements Multi
   /** Creates a new LowerCaseTokenizerFactory */
   public LowerCaseTokenizerFactory(Map<String,String> args) {
     super(args);
-    assureMatchVersion();
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -47,7 +46,7 @@ public class LowerCaseTokenizerFactory extends TokenizerFactory implements Multi
 
   @Override
   public LowerCaseTokenizer create(AttributeFactory factory) {
-    return new LowerCaseTokenizer(luceneMatchVersion, factory);
+    return new LowerCaseTokenizer(factory);
   }
 
   @Override

@@ -88,7 +88,7 @@ public class DistanceFacetsExample implements Closeable {
   /** Build the example index. */
   public void index() throws IOException {
     IndexWriter writer = new IndexWriter(indexDir, new IndexWriterConfig(FacetExamples.EXAMPLES_VER, 
-        new WhitespaceAnalyzer(FacetExamples.EXAMPLES_VER)));
+        new WhitespaceAnalyzer()));
 
     // TODO: we could index in radians instead ... saves all the conversions in getBoundingBoxFilter
 
