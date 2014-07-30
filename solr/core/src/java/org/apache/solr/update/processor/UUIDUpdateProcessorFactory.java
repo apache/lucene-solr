@@ -50,7 +50,7 @@ import org.apache.solr.schema.SchemaField;
  *
  * <p>
  * If field name is omitted in processor configuration,
- * then  @{link org.apache.solr.schema.IndexSchema#getUniqueKeyField()}</code>
+ * then  @{link org.apache.solr.schema.IndexSchema#getUniqueKeyField()}
  * is used as field and a new <code>UUID</code> will be generated
  * and added as the value of that field. The field type of the uniqueKeyField
  * must be anything which accepts a string or UUID value.
