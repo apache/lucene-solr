@@ -36,7 +36,8 @@ public class TestMultiFields extends LuceneTestCase {
 
       Directory dir = newDirectory();
 
-      IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE));
+      IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+                                             .setMergePolicy(NoMergePolicy.INSTANCE));
       // we can do this because we use NoMergePolicy (and dont merge to "nothing")
       w.setKeepFullyDeletedSegments(true);
 
@@ -155,7 +156,7 @@ public class TestMultiFields extends LuceneTestCase {
 
   public void testSeparateEnums() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     Document d = new Document();
     d.add(newStringField("f", "j", Field.Store.NO));
     w.addDocument(d);
@@ -173,7 +174,7 @@ public class TestMultiFields extends LuceneTestCase {
   
   public void testTermDocsEnum() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     Document d = new Document();
     d.add(newStringField("f", "j", Field.Store.NO));
     w.addDocument(d);

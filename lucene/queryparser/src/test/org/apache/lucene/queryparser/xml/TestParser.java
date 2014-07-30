@@ -65,7 +65,7 @@ public class TestParser extends LuceneTestCase {
     BufferedReader d = new BufferedReader(new InputStreamReader(
         TestParser.class.getResourceAsStream("reuters21578.txt"), StandardCharsets.US_ASCII));
     dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(analyzer));
     String line = d.readLine();
     while (line != null) {
       int endOfDate = line.indexOf('\t');

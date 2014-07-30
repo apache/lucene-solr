@@ -47,7 +47,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
   public void testPositionsSimple() throws IOException {
     Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+        newIndexWriterConfig(new MockAnalyzer(random())));
     for (int i = 0; i < 39; i++) {
       Document doc = new Document();
       FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
@@ -111,7 +111,8 @@ public class TestDocsAndPositions extends LuceneTestCase {
   public void testRandomPositions() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+        newIndexWriterConfig(new MockAnalyzer(random()))
+          .setMergePolicy(newLogMergePolicy()));
     int numDocs = atLeast(47);
     int max = 1051;
     int term = random().nextInt(max);
@@ -194,7 +195,8 @@ public class TestDocsAndPositions extends LuceneTestCase {
   public void testRandomDocs() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
-                                                     newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+                                                     newIndexWriterConfig(new MockAnalyzer(random()))
+                                                       .setMergePolicy(newLogMergePolicy()));
     int numDocs = atLeast(49);
     int max = 15678;
     int term = random().nextInt(max);
@@ -273,7 +275,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
   public void testLargeNumberOfPositions() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+        newIndexWriterConfig(new MockAnalyzer(random())));
     int howMany = 1000;
     FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
     customType.setOmitNorms(true);

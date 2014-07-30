@@ -199,7 +199,7 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
     handler = new IndexAndTaxonomyReplicationHandler(handlerIndexDir, handlerTaxoDir, callback);
     client = new ReplicationClient(replicator, handler, sourceDirFactory);
     
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig conf = newIndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     publishIndexWriter = new IndexWriter(publishIndexDir, conf);
     publishTaxoWriter = new SnapshotDirectoryTaxonomyWriter(publishTaxoDir);

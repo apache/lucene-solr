@@ -36,7 +36,7 @@ public class TestFieldValueFilter extends LuceneTestCase {
   public void testFieldValueFilterNoValue() throws IOException {
     Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+        newIndexWriterConfig(new MockAnalyzer(random())));
     int docs = atLeast(10);
     int[] docStates = buildIndex(writer, docs);
     int numDocsNoValue = 0;
@@ -64,7 +64,7 @@ public class TestFieldValueFilter extends LuceneTestCase {
   public void testFieldValueFilter() throws IOException {
     Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+        newIndexWriterConfig(new MockAnalyzer(random())));
     int docs = atLeast(10);
     int[] docStates = buildIndex(writer, docs);
     int numDocsWithValue = 0;

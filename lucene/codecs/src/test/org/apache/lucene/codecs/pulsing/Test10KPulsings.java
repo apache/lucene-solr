@@ -56,7 +56,7 @@ public class Test10KPulsings extends LuceneTestCase {
     BaseDirectoryWrapper dir = newFSDirectory(f);
     dir.setCheckIndexOnClose(false); // we do this ourselves explicitly
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(cp));
+        newIndexWriterConfig(new MockAnalyzer(random())).setCodec(cp));
     
     Document document = new Document();
     FieldType ft = new FieldType(TextField.TYPE_STORED);
@@ -107,7 +107,7 @@ public class Test10KPulsings extends LuceneTestCase {
     BaseDirectoryWrapper dir = newFSDirectory(f);
     dir.setCheckIndexOnClose(false); // we do this ourselves explicitly
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(cp));
+        newIndexWriterConfig(new MockAnalyzer(random())).setCodec(cp));
     
     Document document = new Document();
     FieldType ft = new FieldType(TextField.TYPE_STORED);

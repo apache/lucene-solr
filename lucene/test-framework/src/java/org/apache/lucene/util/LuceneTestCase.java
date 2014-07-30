@@ -920,8 +920,8 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /** create a new index writer config with random defaults */
-  public static IndexWriterConfig newIndexWriterConfig(Version v, Analyzer a) {
-    return newIndexWriterConfig(random(), v, a);
+  public static IndexWriterConfig newIndexWriterConfig(Analyzer a) {
+    return newIndexWriterConfig(random(), TEST_VERSION_CURRENT, a);
   }
   
   /** create a new index writer config with random defaults using the specified random */

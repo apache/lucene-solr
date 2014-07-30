@@ -73,8 +73,8 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
   public static void beforeClass() throws Exception {
     // NOTE: turn off compound file, this test will open some index files directly.
     LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true;
-    IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, 
-        new MockAnalyzer(random(), MockTokenizer.KEYWORD, false)).setUseCompoundFile(false);
+    IndexWriterConfig config = newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
+                                 .setUseCompoundFile(false);
     
     termIndexInterval = config.getTermIndexInterval();
     indexDivisor = TestUtil.nextInt(random(), 1, 10);

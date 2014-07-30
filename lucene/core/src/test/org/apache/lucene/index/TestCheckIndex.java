@@ -39,7 +39,8 @@ public class TestCheckIndex extends LuceneTestCase {
 
   public void testDeletedDocs() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(2));
+    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+                                                 .setMaxBufferedDocs(2));
     for(int i=0;i<19;i++) {
       Document doc = new Document();
       FieldType customType = new FieldType(TextField.TYPE_STORED);
@@ -101,7 +102,7 @@ public class TestCheckIndex extends LuceneTestCase {
   // LUCENE-4221: we have to let these thru, for now
   public void testBogusTermVectors() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
     Document doc = new Document();
     FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     ft.setStoreTermVectors(true);

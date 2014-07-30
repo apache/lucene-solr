@@ -54,7 +54,7 @@ public class TestLucene40PostingsReader extends LuceneTestCase {
    */
   public void testPostings() throws Exception {
     Directory dir = newFSDirectory(createTempDir("postings"));
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(Codec.forName("Lucene40"));
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     

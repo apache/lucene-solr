@@ -123,7 +123,7 @@ public class TestDoc extends LuceneTestCase {
 
       IndexWriter writer = new IndexWriter(
           directory,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
+          newIndexWriterConfig(new MockAnalyzer(random())).
               setOpenMode(OpenMode.CREATE).
               setMaxBufferedDocs(-1).
               setMergePolicy(newLogMergePolicy(10))
@@ -165,7 +165,7 @@ public class TestDoc extends LuceneTestCase {
 
       writer = new IndexWriter(
           directory,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
+          newIndexWriterConfig(new MockAnalyzer(random())).
               setOpenMode(OpenMode.CREATE).
               setMaxBufferedDocs(-1).
               setMergePolicy(newLogMergePolicy(10))

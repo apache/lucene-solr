@@ -1090,7 +1090,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   public void testPositionIncrements() throws Exception {
     Directory dir = newDirectory();
     Analyzer a = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET);
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, a));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(a));
     Document doc = new Document();
     doc.add(newTextField("field", "the wizard of ozzy", Field.Store.NO));
     w.addDocument(doc);

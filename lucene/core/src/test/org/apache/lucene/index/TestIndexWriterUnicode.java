@@ -233,7 +233,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
   
   public void testEmbeddedFFFF() throws Throwable {
     Directory d = newDirectory();
-    IndexWriter w = new IndexWriter(d, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter w = new IndexWriter(d, newIndexWriterConfig(new MockAnalyzer(random())));
     Document doc = new Document();
     doc.add(newTextField("field", "a a\uffffb", Field.Store.NO));
     w.addDocument(doc);
@@ -250,7 +250,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
   // LUCENE-510
   public void testInvalidUTF16() throws Throwable {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new TestIndexWriter.StringSplitAnalyzer()));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new TestIndexWriter.StringSplitAnalyzer()));
     Document doc = new Document();
 
     final int count = utf8Data.length/2;

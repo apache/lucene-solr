@@ -40,7 +40,7 @@ public class TestCachedOrdinalsReader extends FacetTestCase {
     // LUCENE-5303: OrdinalsCache used the ThreadLocal BinaryDV instead of reader.getCoreCacheKey().
     Directory indexDir = newDirectory();
     Directory taxoDir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(indexDir, conf);
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
     FacetsConfig config = new FacetsConfig();

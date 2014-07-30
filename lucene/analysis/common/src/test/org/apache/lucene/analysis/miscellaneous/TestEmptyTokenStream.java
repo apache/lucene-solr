@@ -52,8 +52,7 @@ public class TestEmptyTokenStream extends BaseTokenStreamTestCase {
 
   public void testIndexWriter_LUCENE4656() throws IOException {
     Directory directory = newDirectory();
-    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, null));
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(null));
 
     TokenStream ts = new EmptyTokenStream();
     assertFalse(ts.hasAttribute(TermToBytesRefAttribute.class));

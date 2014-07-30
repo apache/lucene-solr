@@ -161,7 +161,7 @@ public class TestBooleanOr extends LuceneTestCase {
 
   public void testBooleanScorerMax() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter riw = new RandomIndexWriter(random(), dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    RandomIndexWriter riw = new RandomIndexWriter(random(), dir, newIndexWriterConfig(new MockAnalyzer(random())));
 
     int docCount = atLeast(10000);
 

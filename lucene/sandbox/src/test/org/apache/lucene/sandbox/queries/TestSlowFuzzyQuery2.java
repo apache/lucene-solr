@@ -90,7 +90,7 @@ public class TestSlowFuzzyQuery2 extends LuceneTestCase {
     int terms = (int) Math.pow(2, bits);
     
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false)).setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false)).setMergePolicy(newLogMergePolicy()));
 
     Document doc = new Document();
     Field field = newTextField("field", "", Field.Store.NO);

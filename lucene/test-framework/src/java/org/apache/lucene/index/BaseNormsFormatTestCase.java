@@ -148,7 +148,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     
     Directory dir = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    IndexWriterConfig conf = newIndexWriterConfig(analyzer);
     conf.setSimilarity(new CannedNormSimilarity(norms));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
     Document doc = new Document();

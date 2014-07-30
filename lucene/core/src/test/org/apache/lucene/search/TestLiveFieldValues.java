@@ -44,7 +44,7 @@ public class TestLiveFieldValues extends LuceneTestCase {
   public void test() throws Exception {
 
     Directory dir = newFSDirectory(createTempDir("livefieldupdates"));
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
 
     final IndexWriter w = new IndexWriter(dir, iwc);
 

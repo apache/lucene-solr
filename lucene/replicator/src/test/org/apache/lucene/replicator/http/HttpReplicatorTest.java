@@ -86,7 +86,7 @@ public class HttpReplicatorTest extends ReplicatorTestCase {
     serverReplicator = new LocalReplicator();
     startServer();
     
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig conf = newIndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     writer = new IndexWriter(serverIndexDir, conf);
     reader = DirectoryReader.open(writer, false);

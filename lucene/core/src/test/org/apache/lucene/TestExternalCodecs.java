@@ -69,7 +69,7 @@ public class TestExternalCodecs extends LuceneTestCase {
     dir.setCheckIndexOnClose(false); // we use a custom codec provider
     IndexWriter w = new IndexWriter(
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
+        newIndexWriterConfig(new MockAnalyzer(random())).
         setCodec(new CustomPerFieldCodec()).
             setMergePolicy(newLogMergePolicy(3))
     );

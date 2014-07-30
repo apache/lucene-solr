@@ -467,7 +467,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   
   private void doTestZeroPosIncrSloppy(Query q, int nExpected) throws IOException {
     Directory dir = newDirectory(); // random dir
-    IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig cfg = newIndexWriterConfig(null);
     IndexWriter writer = new IndexWriter(dir, cfg);
     Document doc = new Document();
     doc.add(new TextField("field", new CannedTokenStream(INCR_0_DOC_TOKENS)));

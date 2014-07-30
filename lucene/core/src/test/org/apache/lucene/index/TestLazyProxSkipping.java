@@ -78,9 +78,9 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         // note: test explicitly disables payloads
         IndexWriter writer = new IndexWriter(
             directory,
-            newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).
-                setMaxBufferedDocs(10).
-                setMergePolicy(newLogMergePolicy(false))
+            newIndexWriterConfig(analyzer)
+              .setMaxBufferedDocs(10)
+              .setMergePolicy(newLogMergePolicy(false))
         );
         
         for (int i = 0; i < numDocs; i++) {
@@ -145,7 +145,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
     
     public void testSeek() throws IOException {
         Directory directory = newDirectory();
-        IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+        IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(new MockAnalyzer(random())));
         for (int i = 0; i < 10; i++) {
             Document doc = new Document();
             doc.add(newTextField(this.field, "a b", Field.Store.YES));

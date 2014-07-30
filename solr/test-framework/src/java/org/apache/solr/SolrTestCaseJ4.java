@@ -276,12 +276,12 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
   
   /** sets system properties based on 
-   * {@link #newIndexWriterConfig(org.apache.lucene.util.Version, org.apache.lucene.analysis.Analyzer)}
+   * {@link #newIndexWriterConfig(org.apache.lucene.analysis.Analyzer)}
    * 
    * configs can use these system properties to vary the indexwriter settings
    */
   public static void newRandomConfig() {
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
 
     System.setProperty("useCompoundFile", String.valueOf(iwc.getUseCompoundFile()));
 

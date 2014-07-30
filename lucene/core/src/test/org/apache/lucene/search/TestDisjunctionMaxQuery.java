@@ -100,8 +100,8 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     
     index = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), index,
-        newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random()))
-                                                     .setSimilarity(sim).setMergePolicy(newLogMergePolicy()));
+        newIndexWriterConfig(new MockAnalyzer(random()))
+                             .setSimilarity(sim).setMergePolicy(newLogMergePolicy()));
     
     // hed is the most important field, dek is secondary
     

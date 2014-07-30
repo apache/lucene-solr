@@ -288,8 +288,8 @@ public class TestSurrogates extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(),
                                                 dir,
-                                                newIndexWriterConfig( TEST_VERSION_CURRENT,
-                                                                      new MockAnalyzer(random())).setCodec(new PreFlexRWCodec()));
+                                                newIndexWriterConfig(new MockAnalyzer(random()))
+                                                  .setCodec(new PreFlexRWCodec()));
 
     final int numField = TestUtil.nextInt(random(), 2, 5);
 

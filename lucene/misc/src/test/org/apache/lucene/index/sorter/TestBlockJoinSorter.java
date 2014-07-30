@@ -66,7 +66,7 @@ public class TestBlockJoinSorter extends LuceneTestCase {
 
   public void test() throws IOException {
     final int numParents = atLeast(200);
-    IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig cfg = newIndexWriterConfig(new MockAnalyzer(random()));
     cfg.setMergePolicy(newLogMergePolicy());
     final RandomIndexWriter writer = new RandomIndexWriter(random(), newDirectory(), cfg);
     final Document parentDoc = new Document();

@@ -437,7 +437,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
   @Test
   public void testHugeLabel() throws Exception {
     Directory indexDir = newDirectory(), taxoDir = newDirectory();
-    IndexWriter indexWriter = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter indexWriter = new IndexWriter(indexDir, newIndexWriterConfig(new MockAnalyzer(random())));
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE, new Cl2oTaxonomyWriterCache(2, 1f, 1));
     FacetsConfig config = new FacetsConfig();
     

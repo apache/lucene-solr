@@ -47,12 +47,12 @@ public class TestFilteredSearch extends LuceneTestCase {
     Directory directory = newDirectory();
     int[] filterBits = {1, 36};
     SimpleDocIdSetFilter filter = new SimpleDocIdSetFilter(filterBits);
-    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     searchFiltered(writer, directory, filter, enforceSingleSegment);
     // run the test on more than one segment
     enforceSingleSegment = false;
     writer.close();
-    writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(10).setMergePolicy(newLogMergePolicy()));
+    writer = new IndexWriter(directory, newIndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(10).setMergePolicy(newLogMergePolicy()));
     // we index 60 docs - this will create 6 segments
     searchFiltered(writer, directory, filter, enforceSingleSegment);
     writer.close();

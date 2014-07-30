@@ -57,8 +57,7 @@ public class GroupingSearchTest extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(
         random(),
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT,
-            new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     boolean canUseIDV = !"Lucene3x".equals(w.w.getConfig().getCodec().getName());
     List<Document> documents = new ArrayList<>();
     // 0
@@ -227,8 +226,7 @@ public class GroupingSearchTest extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(
         random(),
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT,
-            new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     Document doc = new Document();
     doc.add(newField("group", "foo", StringField.TYPE_NOT_STORED));
     w.addDocument(doc);

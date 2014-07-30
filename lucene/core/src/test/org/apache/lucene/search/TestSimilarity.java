@@ -55,7 +55,7 @@ public class TestSimilarity extends LuceneTestCase {
   public void testSimilarity() throws Exception {
     Directory store = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), store, 
-        newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+        newIndexWriterConfig(new MockAnalyzer(random()))
         .setSimilarity(new SimpleSimilarity()));
     
     Document d1 = new Document();

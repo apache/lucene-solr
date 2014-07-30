@@ -43,7 +43,8 @@ public class TestDocValuesWithThreads extends LuceneTestCase {
 
   public void test() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+                                           .setMergePolicy(newLogMergePolicy()));
 
     final List<Long> numbers = new ArrayList<>();
     final List<BytesRef> binary = new ArrayList<>();

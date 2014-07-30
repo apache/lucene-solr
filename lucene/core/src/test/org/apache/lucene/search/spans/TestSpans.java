@@ -54,7 +54,7 @@ public class TestSpans extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(random(), directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter writer= new RandomIndexWriter(random(), directory, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
       doc.add(newTextField(field, docFields[i], Field.Store.YES));

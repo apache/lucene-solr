@@ -50,7 +50,7 @@ public class LocalReplicatorTest extends ReplicatorTestCase {
   public void setUp() throws Exception {
     super.setUp();
     sourceDir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig conf = newIndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     sourceWriter = new IndexWriter(sourceDir, conf);
     replicator = new LocalReplicator();

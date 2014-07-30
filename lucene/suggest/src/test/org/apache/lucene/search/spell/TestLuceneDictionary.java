@@ -49,7 +49,7 @@ public class TestLuceneDictionary extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     store = newDirectory();
-    IndexWriter writer = new IndexWriter(store, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
+    IndexWriter writer = new IndexWriter(store, newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
 
     Document doc;
 
@@ -177,7 +177,7 @@ public class TestLuceneDictionary extends LuceneTestCase {
     Directory dir = newDirectory();
     SpellChecker sc = new SpellChecker(dir);
     indexReader = DirectoryReader.open(store);
-    sc.indexDictionary(new LuceneDictionary(indexReader, "contents"), newIndexWriterConfig(TEST_VERSION_CURRENT, null), false);
+    sc.indexDictionary(new LuceneDictionary(indexReader, "contents"), newIndexWriterConfig(null), false);
     String[] suggestions = sc.suggestSimilar("Tam", 1);
     assertEquals(1, suggestions.length);
     assertEquals("Tom", suggestions[0]);

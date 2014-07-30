@@ -82,8 +82,7 @@ public class TestJoinUtil extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(
         random(),
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT,
-            new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
 
     // 0
     Document doc = new Document();
@@ -173,8 +172,7 @@ public class TestJoinUtil extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(
         random(),
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT,
-            new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
 
     // 0
     Document doc = new Document();
@@ -220,8 +218,7 @@ public class TestJoinUtil extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(
         random(),
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT,
-            new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
 
     // 0
     Document doc = new Document();
@@ -316,8 +313,7 @@ public class TestJoinUtil extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(
         random(),
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT,
-            new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
 
     // 0
     Document doc = new Document();
@@ -424,7 +420,7 @@ public class TestJoinUtil extends LuceneTestCase {
       RandomIndexWriter w = new RandomIndexWriter(
           random(),
           dir,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false)).setMergePolicy(newLogMergePolicy())
+          newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false)).setMergePolicy(newLogMergePolicy())
       );
       final boolean scoreDocsInOrder = TestJoinUtil.random().nextBoolean();
       IndexIterationContext context = createContext(numberOfDocumentsToIndex, w, multipleValuesPerDocument, scoreDocsInOrder);

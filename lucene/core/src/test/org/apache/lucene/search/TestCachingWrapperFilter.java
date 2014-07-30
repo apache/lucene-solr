@@ -271,7 +271,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(
         random(),
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
+        newIndexWriterConfig(new MockAnalyzer(random())).
             setMergeScheduler(new SerialMergeScheduler()).
             // asserts below requires no unexpected merges:
             setMergePolicy(newLogMergePolicy(10))

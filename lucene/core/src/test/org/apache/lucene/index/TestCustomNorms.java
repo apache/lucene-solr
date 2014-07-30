@@ -47,8 +47,7 @@ public class TestCustomNorms extends LuceneTestCase {
     MockAnalyzer analyzer = new MockAnalyzer(random());
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
 
-    IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        analyzer);
+    IndexWriterConfig config = newIndexWriterConfig(analyzer);
     Similarity provider = new MySimProvider();
     config.setSimilarity(provider);
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);

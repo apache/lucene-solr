@@ -78,7 +78,7 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
 
     Directory directory = newDirectory();
     // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     final DocValuesFormat fast = DocValuesFormat.forName("Lucene49");
     final DocValuesFormat slow = DocValuesFormat.forName("SimpleText");
     iwc.setCodec(new Lucene49Codec() {

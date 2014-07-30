@@ -46,9 +46,8 @@ public class TestNeverDelete extends LuceneTestCase {
     }
     final RandomIndexWriter w = new RandomIndexWriter(random(),
                                                       d,
-                                                      newIndexWriterConfig(TEST_VERSION_CURRENT,
-                                                                           new MockAnalyzer(random()))
-                                                      .setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));
+                                                      newIndexWriterConfig(new MockAnalyzer(random()))
+                                                        .setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));
     w.w.getConfig().setMaxBufferedDocs(TestUtil.nextInt(random(), 5, 30));
 
     w.commit();

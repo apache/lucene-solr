@@ -46,7 +46,7 @@ public abstract class BaseMergePolicyTestCase extends LuceneTestCase {
         super.merge(writer, trigger, newMergesFound);
       }
     };
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergeScheduler(mergeScheduler).setMergePolicy(mergePolicy()));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())).setMergeScheduler(mergeScheduler).setMergePolicy(mergePolicy()));
     writer.getConfig().getMergePolicy().setNoCFSRatio(random().nextBoolean() ? 0 : 1);
     final int numSegments = TestUtil.nextInt(random(), 2, 20);
     for (int i = 0; i < numSegments; ++i) {

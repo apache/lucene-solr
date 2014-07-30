@@ -47,7 +47,7 @@ public class TestPulsingReuse extends LuceneTestCase {
     Codec cp = TestUtil.alwaysPostingsFormat(new Pulsing41PostingsFormat(1));
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(cp));
+        newIndexWriterConfig(new MockAnalyzer(random())).setCodec(cp));
     Document doc = new Document();
     doc.add(new TextField("foo", "a b b c c c d e f g g h i i j j k", Field.Store.NO));
     iw.addDocument(doc);
@@ -85,7 +85,7 @@ public class TestPulsingReuse extends LuceneTestCase {
     Codec cp = TestUtil.alwaysPostingsFormat(new NestedPulsingPostingsFormat());
     BaseDirectoryWrapper dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(cp));
+        newIndexWriterConfig(new MockAnalyzer(random())).setCodec(cp));
     Document doc = new Document();
     doc.add(new TextField("foo", "a b b c c c d e f g g g h i i j j k l l m m m", Field.Store.NO));
     // note: the reuse is imperfect, here we would have 4 enums (lost reuse when we get an enum for 'm')

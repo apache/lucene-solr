@@ -107,7 +107,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
   public static void beforeClass() throws Exception {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer())
+        newIndexWriterConfig(new PayloadAnalyzer())
         .setSimilarity(similarity));
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {

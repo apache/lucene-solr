@@ -61,7 +61,7 @@ public class TestPayloads extends LuceneTestCase {
     public void testPayloadFieldBit() throws Exception {
         Directory ram = newDirectory();
         PayloadAnalyzer analyzer = new PayloadAnalyzer();
-        IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer));
+        IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(analyzer));
         Document d = new Document();
         // this field won't have any payloads
         d.add(newTextField("f1", "This field has no payloads", Field.Store.NO));
@@ -89,8 +89,8 @@ public class TestPayloads extends LuceneTestCase {
         // now we add another document which has payloads for field f3 and verify if the SegmentMerger
         // enabled payloads for that field
         analyzer = new PayloadAnalyzer(); // Clear payload state for each field
-        writer = new IndexWriter(ram, newIndexWriterConfig( TEST_VERSION_CURRENT,
-            analyzer).setOpenMode(OpenMode.CREATE));
+        writer = new IndexWriter(ram, newIndexWriterConfig(analyzer)
+                                        .setOpenMode(OpenMode.CREATE));
         d = new Document();
         d.add(newTextField("f1", "This field has no payloads", Field.Store.NO));
         d.add(newTextField("f2", "This field has payloads in all docs", Field.Store.NO));
@@ -126,8 +126,7 @@ public class TestPayloads extends LuceneTestCase {
     // different tests to verify the payload encoding
     private void performTest(Directory dir) throws Exception {
         PayloadAnalyzer analyzer = new PayloadAnalyzer();
-        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-            TEST_VERSION_CURRENT, analyzer)
+        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(analyzer)
             .setOpenMode(OpenMode.CREATE)
             .setMergePolicy(newLogMergePolicy()));
         
@@ -265,8 +264,8 @@ public class TestPayloads extends LuceneTestCase {
         
         // test long payload
         analyzer = new PayloadAnalyzer();
-        writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT,
-            analyzer).setOpenMode(OpenMode.CREATE));
+        writer = new IndexWriter(dir, newIndexWriterConfig(analyzer)
+                                        .setOpenMode(OpenMode.CREATE));
         String singleTerm = "lucene";
         
         d = new Document();
@@ -453,8 +452,7 @@ public class TestPayloads extends LuceneTestCase {
         final ByteArrayPool pool = new ByteArrayPool(numThreads, 5);
         
         Directory dir = newDirectory();
-        final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( 
-            TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+        final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
         final String field = "test";
         
         Thread[] ingesters = new Thread[numThreads];
@@ -585,7 +583,7 @@ public class TestPayloads extends LuceneTestCase {
   /** some docs have payload att, some not */
   public void testMixupDocs() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();

@@ -341,7 +341,7 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
     if (MMapDirectory.UNMAP_SUPPORTED)
       mmapDir.setUseUnmap(true);
     MockDirectoryWrapper dir = new MockDirectoryWrapper(random, mmapDir);
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, newIndexWriterConfig(new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     Document doc = new Document();
     Field docid = newStringField("docid", "0", Field.Store.YES);
     Field junk = newStringField("junk", "", Field.Store.YES);

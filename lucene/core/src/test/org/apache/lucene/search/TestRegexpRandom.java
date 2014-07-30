@@ -49,7 +49,7 @@ public class TestRegexpRandom extends LuceneTestCase {
     super.setUp();
     dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+        newIndexWriterConfig(new MockAnalyzer(random()))
         .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
     
     Document doc = new Document();

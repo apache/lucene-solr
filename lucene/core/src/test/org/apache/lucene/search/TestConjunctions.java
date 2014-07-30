@@ -50,7 +50,7 @@ public class TestConjunctions extends LuceneTestCase {
     super.setUp();
     analyzer = new MockAnalyzer(random());
     dir = newDirectory();
-    IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    IndexWriterConfig config = newIndexWriterConfig(analyzer);
     config.setMergePolicy(newLogMergePolicy()); // we will use docids to validate
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
     writer.addDocument(doc("lucene", "lucene is a very popular search engine library"));

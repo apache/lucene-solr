@@ -67,7 +67,7 @@ public class TestOmitPositions extends LuceneTestCase {
   public void testPositions() throws Exception {
     Directory ram = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
-    IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer));
+    IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(analyzer));
     Document d = new Document();
         
     // f1,f2,f3: docs only
@@ -190,8 +190,9 @@ public class TestOmitPositions extends LuceneTestCase {
   public void testNoPrxFile() throws Throwable {
     Directory ram = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
-    IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(
-                                                                   TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(3).setMergePolicy(newLogMergePolicy()));
+    IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(analyzer)
+                                                .setMaxBufferedDocs(3)
+                                                .setMergePolicy(newLogMergePolicy()));
     LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
     lmp.setMergeFactor(2);
     lmp.setNoCFSRatio(0.0);

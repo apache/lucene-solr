@@ -56,7 +56,7 @@ public class TestLazyDocument extends LuceneTestCase {
 
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriter writer = new IndexWriter
-      (dir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+      (dir, newIndexWriterConfig(analyzer));
     try {
       for (int docid = 0; docid < NUM_DOCS; docid++) {
         Document d = new Document();

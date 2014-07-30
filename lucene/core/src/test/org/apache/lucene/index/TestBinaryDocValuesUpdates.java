@@ -93,8 +93,8 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
   
   public void testUpdatesAreFlushed() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)).setRAMBufferSizeMB(0.00000001));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false))
+                                                .setRAMBufferSizeMB(0.00000001));
     writer.addDocument(doc(0)); // val=1
     writer.addDocument(doc(1)); // val=2
     writer.addDocument(doc(3)); // val=2
@@ -115,7 +115,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
   
   public void testSimple() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     // make sure random config doesn't flush on us
     conf.setMaxBufferedDocs(10);
     conf.setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
@@ -148,7 +148,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
   
   public void testUpdateFewSegments() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setMaxBufferedDocs(2); // generate few segments
     conf.setMergePolicy(NoMergePolicy.INSTANCE); // prevent merges for this test
     IndexWriter writer = new IndexWriter(dir, conf);
@@ -195,7 +195,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
   
   public void testReopen() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
     writer.addDocument(doc(0));
     writer.addDocument(doc(1));
@@ -232,7 +232,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     // create an index with a segment with only deletes, a segment with both
     // deletes and updates and a segment with only updates
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setMaxBufferedDocs(10); // control segment flushing
     conf.setMergePolicy(NoMergePolicy.INSTANCE); // prevent merges for this test
     IndexWriter writer = new IndexWriter(dir, conf);
@@ -281,7 +281,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
   public void testUpdatesWithDeletes() throws Exception {
     // update and delete different documents in the same commit session
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setMaxBufferedDocs(10); // control segment flushing
     IndexWriter writer = new IndexWriter(dir, conf);
     
@@ -315,7 +315,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
   public void testUpdateAndDeleteSameDocument() throws Exception {
     // update and delete same document in same commit session
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setMaxBufferedDocs(10); // control segment flushing
     IndexWriter writer = new IndexWriter(dir, conf);
     
@@ -348,7 +348,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
   
   public void testMultipleDocValuesTypes() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setMaxBufferedDocs(10); // prevent merges
     IndexWriter writer = new IndexWriter(dir, conf);
     
@@ -397,7 +397,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
   
   public void testMultipleBinaryDocValues() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setMaxBufferedDocs(10); // prevent merges
     IndexWriter writer = new IndexWriter(dir, conf);
     
@@ -430,7 +430,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
   
   public void testDocumentWithNoValue() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
     
     for (int i = 0; i < 2; i++) {
@@ -462,7 +462,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     // we don't support adding new fields or updating existing non-binary-dv
     // fields through binary updates
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
     
     Document doc = new Document();
@@ -492,7 +492,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
   
   public void testDifferentDVFormatPerField() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setCodec(new Lucene49Codec() {
       @Override
       public DocValuesFormat getDocValuesFormatForField(String field) {
@@ -529,7 +529,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
   
   public void testUpdateSameDocMultipleTimes() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
     
     Document doc = new Document();
@@ -556,7 +556,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
   public void testSegmentMerges() throws Exception {
     Directory dir = newDirectory();
     Random random = random();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random));
     IndexWriter writer = new IndexWriter(dir, conf);
     
     int docid = 0;
@@ -584,7 +584,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
         writer.commit();
       } else if (random.nextDouble() < 0.1) {
         writer.close();
-        conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+        conf = newIndexWriterConfig(new MockAnalyzer(random));
         writer = new IndexWriter(dir, conf);
       }
 
@@ -627,7 +627,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
   public void testUpdateDocumentByMultipleTerms() throws Exception {
     // make sure the order of updates is respected, even when multiple terms affect same document
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
     
     Document doc = new Document();
@@ -655,7 +655,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
   public void testManyReopensAndFields() throws Exception {
     Directory dir = newDirectory();
     final Random random = random();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random));
     LogMergePolicy lmp = newLogMergePolicy();
     lmp.setMergeFactor(3); // merge often
     conf.setMergePolicy(lmp);
@@ -743,7 +743,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
   
   public void testUpdateSegmentWithNoDocValues() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     // prevent merges, otherwise by the time updates are applied
     // (writer.close()), the segments might have merged and that update becomes
     // legit.
@@ -797,7 +797,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
   
   public void testUpdateSegmentWithPostingButNoDocValues() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     // prevent merges, otherwise by the time updates are applied
     // (writer.close()), the segments might have merged and that update becomes
     // legit.
@@ -840,7 +840,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     // this used to fail because FieldInfos.Builder neglected to update
     // globalFieldMaps.docValueTypes map
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
     
     Document doc = new Document();
@@ -865,7 +865,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     
     boolean oldValue = OLD_FORMAT_IMPERSONATION_IS_ACTIVE;
     // create a segment with an old Codec
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setCodec(oldCodecs[random().nextInt(oldCodecs.length)]);
     OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true;
     IndexWriter writer = new IndexWriter(dir, conf);
@@ -875,7 +875,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     writer.addDocument(doc);
     writer.close();
     
-    conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    conf = newIndexWriterConfig(new MockAnalyzer(random()));
     writer = new IndexWriter(dir, conf);
     writer.updateBinaryDocValue(new Term("id", "doc"), "f", toBytes(4L));
     OLD_FORMAT_IMPERSONATION_IS_ACTIVE = false;
@@ -893,7 +893,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
   
   public void testStressMultiThreading() throws Exception {
     final Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     final IndexWriter writer = new IndexWriter(dir, conf);
     
     // create index
@@ -1022,7 +1022,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
   public void testUpdateDifferentDocsInDifferentGens() throws Exception {
     // update same document multiple times across generations
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setMaxBufferedDocs(4);
     IndexWriter writer = new IndexWriter(dir, conf);
     final int numDocs = atLeast(10);
@@ -1058,7 +1058,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
 
   public void testChangeCodec() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setMergePolicy(NoMergePolicy.INSTANCE); // disable merges to simplify test assertions.
     conf.setCodec(new Lucene49Codec() {
       @Override
@@ -1075,7 +1075,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     writer.close();
     
     // change format
-    conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setMergePolicy(NoMergePolicy.INSTANCE); // disable merges to simplify test assertions.
     conf.setCodec(new Lucene49Codec() {
       @Override
@@ -1106,7 +1106,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
 
   public void testAddIndexes() throws Exception {
     Directory dir1 = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir1, conf);
     
     final int numDocs = atLeast(50);
@@ -1136,7 +1136,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     writer.close();
     
     Directory dir2 = newDirectory();
-    conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    conf = newIndexWriterConfig(new MockAnalyzer(random()));
     writer = new IndexWriter(dir2, conf);
     if (random().nextBoolean()) {
       writer.addIndexes(dir1);
@@ -1163,7 +1163,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
 
   public void testDeleteUnusedUpdatesFiles() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
     
     Document doc = new Document();
@@ -1194,7 +1194,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     // LUCENE-5248: make sure that when there are many updates, we don't use too much RAM
     Directory dir = newDirectory();
     final Random random = random();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random));
     conf.setRAMBufferSizeMB(IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB);
     conf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH); // don't flush by doc
     IndexWriter writer = new IndexWriter(dir, conf);
@@ -1260,7 +1260,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
   
   public void testUpdatesOrder() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
     
     Document doc = new Document();
@@ -1286,7 +1286,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
   
   public void testUpdateAllDeletedSegment() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
     
     Document doc = new Document();
@@ -1310,7 +1310,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
 
   public void testUpdateTwoNonexistingTerms() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
     
     Document doc = new Document();
@@ -1335,7 +1335,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     // LUCENE-5591: make sure we pass an IOContext with an approximate
     // segmentSize in FlushInfo
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     // we want a single large enough segment so that a doc-values update writes a large file
     conf.setMergePolicy(NoMergePolicy.INSTANCE);
     conf.setMaxBufferedDocs(Integer.MAX_VALUE); // manually flush
@@ -1348,7 +1348,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     writer.close();
     
     NRTCachingDirectory cachingDir = new NRTCachingDirectory(dir, 100, 1/(1024.*1024.));
-    conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    conf = newIndexWriterConfig(new MockAnalyzer(random()));
     // we want a single large enough segment so that a doc-values update writes a large file
     conf.setMergePolicy(NoMergePolicy.INSTANCE);
     conf.setMaxBufferedDocs(Integer.MAX_VALUE); // manually flush

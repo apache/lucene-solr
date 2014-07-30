@@ -32,7 +32,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
 
   public void testForceMergeDeletes() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     TieredMergePolicy tmp = newTieredMergePolicy();
     conf.setMergePolicy(tmp);
     conf.setMaxBufferedDocs(4);
@@ -75,7 +75,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
         System.out.println("TEST: iter=" + iter);
       }
       Directory dir = newDirectory();
-      IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+      IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
       conf.setMergeScheduler(new SerialMergeScheduler());
       TieredMergePolicy tmp = newTieredMergePolicy();
       conf.setMergePolicy(tmp);
@@ -112,7 +112,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
 
   public void testForceMergeDeletesMaxSegSize() throws Exception {
     final Directory dir = newDirectory();
-    final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    final IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     final TieredMergePolicy tmp = new TieredMergePolicy();
     tmp.setMaxMergedSegmentMB(0.01);
     tmp.setForceMergeDeletesPctAllowed(0.0);

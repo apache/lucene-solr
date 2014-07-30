@@ -52,7 +52,7 @@ public class TestPrefixRandom extends LuceneTestCase {
     super.setUp();
     dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
+        newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
         .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
     
     Document doc = new Document();

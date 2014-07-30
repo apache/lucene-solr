@@ -38,8 +38,7 @@ public class TestIndexWriterNRTIsCurrent extends LuceneTestCase {
   public void testIsCurrentWithThreads() throws
       IOException, InterruptedException {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
     ReaderHolder holder = new ReaderHolder();
     ReaderThread[] threads = new ReaderThread[atLeast(3)];

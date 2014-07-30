@@ -39,14 +39,14 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
    */
   public void testEmptyIndex() throws IOException {
     Directory rd1 = newDirectory();
-    IndexWriter iw = new IndexWriter(rd1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter iw = new IndexWriter(rd1, newIndexWriterConfig(new MockAnalyzer(random())));
     iw.close();
     // create a copy:
     Directory rd2 = newDirectory(rd1);
 
     Directory rdOut = newDirectory();
 
-    IndexWriter iwOut = new IndexWriter(rdOut, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter iwOut = new IndexWriter(rdOut, newIndexWriterConfig(new MockAnalyzer(random())));
     
     ParallelAtomicReader apr = new ParallelAtomicReader(
         SlowCompositeReaderWrapper.wrap(DirectoryReader.open(rd1)),
@@ -89,7 +89,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("\nTEST: make 1st writer");
       }
-      IndexWriter iw = new IndexWriter(rd1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+      IndexWriter iw = new IndexWriter(rd1, newIndexWriterConfig(new MockAnalyzer(random())));
       Document doc = new Document();
       Field idField = newTextField("id", "", Field.Store.NO);
       doc.add(idField);
@@ -117,14 +117,15 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
       assertEquals(1, ir.numDocs());
       ir.close();
 
-      iw = new IndexWriter(rd1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
+      iw = new IndexWriter(rd1, newIndexWriterConfig(new MockAnalyzer(random()))
+                                  .setOpenMode(OpenMode.APPEND));
       iw.forceMerge(1);
       iw.close();
     }
 
     Directory rd2 = newDirectory();
     {
-      IndexWriter iw = new IndexWriter(rd2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+      IndexWriter iw = new IndexWriter(rd2, newIndexWriterConfig(new MockAnalyzer(random())));
       Document doc = new Document();
       iw.addDocument(doc);
       iw.close();
@@ -132,7 +133,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
 
     Directory rdOut = newDirectory();
 
-    IndexWriter iwOut = new IndexWriter(rdOut, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter iwOut = new IndexWriter(rdOut, newIndexWriterConfig(new MockAnalyzer(random())));
     final DirectoryReader reader1, reader2;
     ParallelAtomicReader pr = new ParallelAtomicReader(
         SlowCompositeReaderWrapper.wrap(reader1 = DirectoryReader.open(rd1)),

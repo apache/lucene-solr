@@ -94,7 +94,7 @@ public class TestValueSources extends LuceneTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     dir = newDirectory();
-    IndexWriterConfig iwConfig = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwConfig = newIndexWriterConfig(new MockAnalyzer(random()));
     iwConfig.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConfig);
     Document document = new Document();

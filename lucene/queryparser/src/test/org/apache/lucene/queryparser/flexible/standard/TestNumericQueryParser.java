@@ -189,7 +189,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
     
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+        newIndexWriterConfig(new MockAnalyzer(random()))
             .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000))
             .setMergePolicy(newLogMergePolicy()));
     

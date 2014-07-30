@@ -46,8 +46,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     RandomIndexWriter w = new RandomIndexWriter(
         random(),
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT,
-            new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     boolean canUseDV = !"Lucene3x".equals(w.w.getConfig().getCodec().getName());
     boolean useDv = canUseDV && random().nextBoolean();
 
@@ -272,8 +271,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     RandomIndexWriter w = new RandomIndexWriter(
         random(),
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT,
-            new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE));
+        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE));
     boolean useDv = false;
 
     // Cannot assert this since we use NoMergePolicy:
@@ -495,10 +493,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(
         random,
         dir,
-        newIndexWriterConfig(
-            TEST_VERSION_CURRENT,
-            new MockAnalyzer(random)
-        )
+        newIndexWriterConfig(new MockAnalyzer(random))
     );
     boolean canUseDV = !"Lucene3x".equals(writer.w.getConfig().getCodec().getName());
     boolean useDv = canUseDV && !multipleFacetValuesPerDocument && random.nextBoolean();

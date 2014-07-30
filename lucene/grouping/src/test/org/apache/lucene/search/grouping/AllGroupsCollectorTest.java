@@ -46,8 +46,7 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(
         random(),
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT,
-            new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     boolean canUseIDV = !"Lucene3x".equals(w.w.getConfig().getCodec().getName());
 
     // 0

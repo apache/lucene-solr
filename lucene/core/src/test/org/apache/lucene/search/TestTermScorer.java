@@ -48,7 +48,7 @@ public class TestTermScorer extends LuceneTestCase {
     directory = newDirectory();
     
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+        newIndexWriterConfig(new MockAnalyzer(random()))
         .setMergePolicy(newLogMergePolicy())
         .setSimilarity(new DefaultSimilarity()));
     for (int i = 0; i < values.length; i++) {

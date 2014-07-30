@@ -1284,7 +1284,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
 
   public void testJustEmptyField() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(null);
     iwc.setCodec(getCodec());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
@@ -1309,7 +1309,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
   
   public void testEmptyFieldAndEmptyTerm() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(null);
     iwc.setCodec(getCodec());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
@@ -1336,7 +1336,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
   // TODO: can this be improved?
   public void testGhosts() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(null);
     iwc.setCodec(getCodec());
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);

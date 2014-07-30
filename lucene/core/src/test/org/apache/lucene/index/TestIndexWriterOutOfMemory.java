@@ -92,7 +92,7 @@ public class TestIndexWriterOutOfMemory extends LuceneTestCase {
         dir.setThrottling(MockDirectoryWrapper.Throttling.NEVER);
         dir.setUseSlowOpenClosers(false);
       
-        IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+        IndexWriterConfig conf = newIndexWriterConfig(analyzer);
         // just for now, try to keep this test reproducible
         conf.setMergeScheduler(new SerialMergeScheduler());
       

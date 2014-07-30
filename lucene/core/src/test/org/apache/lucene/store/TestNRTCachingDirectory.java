@@ -54,7 +54,7 @@ public class TestNRTCachingDirectory extends BaseDirectoryTestCase {
     NRTCachingDirectory cachedDir = new NRTCachingDirectory(dir, 2.0, 25.0);
     MockAnalyzer analyzer = new MockAnalyzer(random());
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    IndexWriterConfig conf = newIndexWriterConfig(analyzer);
     RandomIndexWriter w = new RandomIndexWriter(random(), cachedDir, conf);
     final LineFileDocs docs = new LineFileDocs(random(),
                                                defaultCodecSupportsDocValues());

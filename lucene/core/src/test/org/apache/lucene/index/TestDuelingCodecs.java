@@ -71,12 +71,12 @@ public class TestDuelingCodecs extends LuceneTestCase {
 
     // but these can be different
     // TODO: this turns this into a really big test of Multi*, is that what we want?
-    IndexWriterConfig leftConfig = newIndexWriterConfig(TEST_VERSION_CURRENT, leftAnalyzer);
+    IndexWriterConfig leftConfig = newIndexWriterConfig(leftAnalyzer);
     leftConfig.setCodec(leftCodec);
     // preserve docids
     leftConfig.setMergePolicy(newLogMergePolicy());
 
-    IndexWriterConfig rightConfig = newIndexWriterConfig(TEST_VERSION_CURRENT, rightAnalyzer);
+    IndexWriterConfig rightConfig = newIndexWriterConfig(rightAnalyzer);
     rightConfig.setCodec(rightCodec);
     // preserve docids
     rightConfig.setMergePolicy(newLogMergePolicy());

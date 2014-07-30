@@ -147,7 +147,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
   public void testReuse() throws Exception {
     Directory dir = newDirectory();
     // test that IWC cannot be reused across two IWs
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig conf = newIndexWriterConfig(null);
     new RandomIndexWriter(random(), dir, conf).close();
 
     // this should fail

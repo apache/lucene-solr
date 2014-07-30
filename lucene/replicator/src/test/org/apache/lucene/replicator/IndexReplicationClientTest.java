@@ -142,7 +142,7 @@ public class IndexReplicationClientTest extends ReplicatorTestCase {
     handler = new IndexReplicationHandler(handlerDir, callback);
     client = new ReplicationClient(replicator, handler, sourceDirFactory);
     
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig conf = newIndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     publishWriter = new IndexWriter(publishDir, conf);
   }

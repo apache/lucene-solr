@@ -309,7 +309,7 @@ public class TestFSTs extends LuceneTestCase {
     MockAnalyzer analyzer = new MockAnalyzer(random());
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
 
-    final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(-1).setRAMBufferSizeMB(64);
+    final IndexWriterConfig conf = newIndexWriterConfig(analyzer).setMaxBufferedDocs(-1).setRAMBufferSizeMB(64);
     final File tempDir = createTempDir("fstlines");
     final Directory dir = newFSDirectory(tempDir);
     final IndexWriter writer = new IndexWriter(dir, conf);
@@ -850,7 +850,7 @@ public class TestFSTs extends LuceneTestCase {
         System.out.println("TEST: cycle=" + cycle);
       }
       RandomIndexWriter w = new RandomIndexWriter(random(), dir,
-                                                  newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(IndexWriterConfig.OpenMode.CREATE));
+                                                  newIndexWriterConfig(new MockAnalyzer(random())).setOpenMode(IndexWriterConfig.OpenMode.CREATE));
       Document doc = new Document();
       Field idField = newStringField("id", "", Field.Store.NO);
       doc.add(idField);
@@ -980,7 +980,7 @@ public class TestFSTs extends LuceneTestCase {
     Directory dir = newDirectory();
 
     RandomIndexWriter w = new RandomIndexWriter(random(), dir,
-                                                newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(IndexWriterConfig.OpenMode.CREATE));
+                                                newIndexWriterConfig(new MockAnalyzer(random())).setOpenMode(IndexWriterConfig.OpenMode.CREATE));
     Document doc = new Document();
     Field f = newStringField("field", "", Field.Store.NO);
     doc.add(f);

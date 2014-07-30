@@ -204,7 +204,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     Directory dir = newDirectory();
     // Test can deadlock if we use SMS:
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergeScheduler(new ConcurrentMergeScheduler()));
+        new MockAnalyzer(random())).setMergeScheduler(new ConcurrentMergeScheduler()));
     writer.addDocument(new Document());
     writer.commit();
     final CountDownLatch awaitEnterWarm = new CountDownLatch(1);
@@ -306,7 +306,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
   public void testReferenceDecrementIllegally() throws Exception {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergeScheduler(new ConcurrentMergeScheduler()));
+        new MockAnalyzer(random())).setMergeScheduler(new ConcurrentMergeScheduler()));
     SearcherManager sm = new SearcherManager(writer, false, new SearcherFactory());
     writer.addDocument(new Document());
     writer.commit();

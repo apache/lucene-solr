@@ -241,7 +241,7 @@ public class TestTaxonomyFacetCounts2 extends FacetTestCase {
     // 3. Segment w/ categories and results
     // 4. Segment w/ categories, but only some results
     
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setMergePolicy(NoMergePolicy.INSTANCE); // prevent merges, so we can control the index segments
     IndexWriter indexWriter = new IndexWriter(indexDir, conf);
     TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);

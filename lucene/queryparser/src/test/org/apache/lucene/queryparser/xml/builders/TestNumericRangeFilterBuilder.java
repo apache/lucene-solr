@@ -63,7 +63,7 @@ public class TestNumericRangeFilterBuilder extends LuceneTestCase {
     Document doc = getDocumentFromString(xml);
     Filter filter = filterBuilder.getFilter(doc.getDocumentElement());
     Directory ramDir = newDirectory();
-    IndexWriter writer = new IndexWriter(ramDir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
+    IndexWriter writer = new IndexWriter(ramDir, newIndexWriterConfig(null));
     writer.commit();
     try {
       AtomicReader reader = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(ramDir));

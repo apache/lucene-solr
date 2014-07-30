@@ -41,7 +41,7 @@ public class TestFunctionQuerySort extends LuceneTestCase {
 
   public void testSearchAfterWhenSortingByFunctionValues() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(null);
     iwc.setMergePolicy(newLogMergePolicy()); // depends on docid order
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
 

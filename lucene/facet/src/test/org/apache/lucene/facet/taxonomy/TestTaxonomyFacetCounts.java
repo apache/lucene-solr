@@ -262,7 +262,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
   public void testReallyNoNormsForDrillDown() throws Exception {
     Directory dir = newDirectory();
     Directory taxoDir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setSimilarity(new PerFieldSimilarityWrapper() {
         final Similarity sim = new DefaultSimilarity();
 
@@ -416,7 +416,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     assumeTrue("default Codec doesn't support huge BinaryDocValues", TestUtil.fieldSupportsHugeBinaryDocValues(FacetsConfig.DEFAULT_INDEX_FIELD_NAME));
     Directory dir = newDirectory();
     Directory taxoDir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
 
@@ -508,7 +508,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     Directory taxoDir = newDirectory();
     
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
-    IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(new MockAnalyzer(random())));
     FacetsConfig config = new FacetsConfig();
     config.setIndexFieldName("b", "$b");
     
@@ -538,7 +538,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     Directory taxoDir = newDirectory();
     
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
-    IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(new MockAnalyzer(random())));
     FacetsConfig config = new FacetsConfig();
     for(int i = atLeast(30); i > 0; --i) {
       Document doc = new Document();
@@ -566,7 +566,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     Directory taxoDir = newDirectory();
     
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
-    IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(new MockAnalyzer(random())));
     FacetsConfig config = new FacetsConfig();
 
     Document doc = new Document();
@@ -594,7 +594,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     Directory taxoDir = newDirectory();
     
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
-    IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(new MockAnalyzer(random())));
     FacetsConfig config = new FacetsConfig();
     for (int i = 0; i < 10; i++) {
       Document doc = new Document();
@@ -636,7 +636,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     Directory indexDir = newDirectory();
     Directory taxoDir = newDirectory();
     
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setMergePolicy(NoMergePolicy.INSTANCE); // prevent merges
     IndexWriter indexWriter = new IndexWriter(indexDir, iwc);
 

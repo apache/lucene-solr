@@ -90,10 +90,10 @@ public class TestTermdocPerf extends LuceneTestCase {
     doc.add(newStringField(field, val, Field.Store.NO));
     IndexWriter writer = new IndexWriter(
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).
-            setOpenMode(OpenMode.CREATE).
-            setMaxBufferedDocs(100).
-            setMergePolicy(newLogMergePolicy(100))
+        newIndexWriterConfig(analyzer)
+          .setOpenMode(OpenMode.CREATE)
+          .setMaxBufferedDocs(100)
+          .setMergePolicy(newLogMergePolicy(100))
     );
 
     for (int i=0; i<ndocs; i++) {

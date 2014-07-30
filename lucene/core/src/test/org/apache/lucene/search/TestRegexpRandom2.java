@@ -62,7 +62,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     dir = newDirectory();
     fieldName = random().nextBoolean() ? "field" : ""; // sometimes use an empty string as field name
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
+        newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
         .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
     Document doc = new Document();
     Field field = newStringField(fieldName, "", Field.Store.NO);

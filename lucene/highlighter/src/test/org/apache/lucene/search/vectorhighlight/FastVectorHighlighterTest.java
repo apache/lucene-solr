@@ -59,7 +59,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
   
   public void testSimpleHighlightTest() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     Document doc = new Document();
     FieldType type = new FieldType(TextField.TYPE_STORED);
     type.setStoreTermVectorOffsets(true);
@@ -89,7 +89,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
   
   public void testPhraseHighlightLongTextTest() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     Document doc = new Document();
     FieldType type = new FieldType(TextField.TYPE_STORED);
     type.setStoreTermVectorOffsets(true);
@@ -135,7 +135,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
   // see LUCENE-4899
   public void testPhraseHighlightTest() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     Document doc = new Document();
     FieldType type = new FieldType(TextField.TYPE_STORED);
     type.setStoreTermVectorOffsets(true);
@@ -262,7 +262,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
 
   public void testBoostedPhraseHighlightTest() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter( dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer( random() ) ) );
+    IndexWriter writer = new IndexWriter( dir, newIndexWriterConfig(new MockAnalyzer( random() ) ) );
     Document doc = new Document();
     FieldType type = new FieldType( TextField.TYPE_STORED  );
     type.setStoreTermVectorOffsets( true );
@@ -307,7 +307,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
 
   public void testCommonTermsQueryHighlight() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT,  new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET)));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET)));
     FieldType type = new FieldType(TextField.TYPE_STORED);
     type.setStoreTermVectorOffsets(true);
     type.setStoreTermVectorPositions(true);
@@ -461,7 +461,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
 
   public void testMultiValuedSortByScore() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter( dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer( random() ) ) );
+    IndexWriter writer = new IndexWriter( dir, newIndexWriterConfig(new MockAnalyzer( random() ) ) );
     Document doc = new Document();
     FieldType type = new FieldType( TextField.TYPE_STORED );
     type.setStoreTermVectorOffsets( true );
@@ -509,7 +509,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
   
   public void testBooleanPhraseWithSynonym() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     Document doc = new Document();
     FieldType type = new FieldType(TextField.TYPE_NOT_STORED);
     type.setStoreTermVectorOffsets(true);
@@ -613,7 +613,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     };
 
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter( dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer ) );
+    IndexWriter writer = new IndexWriter( dir, newIndexWriterConfig(analyzer));
     writer.addDocument( doc );
 
     FastVectorHighlighter highlighter = new FastVectorHighlighter();
