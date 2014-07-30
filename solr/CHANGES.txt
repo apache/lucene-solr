@@ -314,6 +314,8 @@ Other Changes
 
 * SOLR-6290: Harden and speed up CollectionsAPIAsyncDistributedZkTest. (Mark Miller, shalin)
 
+* SOLR-6281: Made PostingsSolrHighlighter more configurable via subclass extension. (David Smiley)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
