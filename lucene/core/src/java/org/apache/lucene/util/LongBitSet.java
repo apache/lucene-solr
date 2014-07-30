@@ -101,24 +101,21 @@ public final class LongBitSet {
     int i = (int) (index >> 6);               // div 64
     // signed shift will keep a negative index and force an
     // array-index-out-of-bounds-exception, removing the need for an explicit check.
-    int bit = (int) (index & 0x3f);           // mod 64
-    long bitmask = 1L << bit;
+    long bitmask = 1L << index;
     return (bits[i] & bitmask) != 0;
   }
 
   public void set(long index) {
     assert index >= 0 && index < numBits: "index=" + index + " numBits=" + numBits;
     int wordNum = (int) (index >> 6);      // div 64
-    int bit = (int) (index & 0x3f);     // mod 64
-    long bitmask = 1L << bit;
+    long bitmask = 1L << index;
     bits[wordNum] |= bitmask;
   }
 
   public boolean getAndSet(long index) {
     assert index >= 0 && index < numBits;
     int wordNum = (int) (index >> 6);      // div 64
-    int bit = (int) (index & 0x3f);     // mod 64
-    long bitmask = 1L << bit;
+    long bitmask = 1L << index;
     boolean val = (bits[wordNum] & bitmask) != 0;
     bits[wordNum] |= bitmask;
     return val;
@@ -127,16 +124,14 @@ public final class LongBitSet {
   public void clear(long index) {
     assert index >= 0 && index < numBits;
     int wordNum = (int) (index >> 6);
-    int bit = (int) (index & 0x03f);
-    long bitmask = 1L << bit;
+    long bitmask = 1L << index;
     bits[wordNum] &= ~bitmask;
   }
 
   public boolean getAndClear(long index) {
     assert index >= 0 && index < numBits;
     int wordNum = (int) (index >> 6);      // div 64
-    int bit = (int) (index & 0x3f);     // mod 64
-    long bitmask = 1L << bit;
+    long bitmask = 1L << index;
     boolean val = (bits[wordNum] & bitmask) != 0;
     bits[wordNum] &= ~bitmask;
     return val;
@@ -148,8 +143,7 @@ public final class LongBitSet {
   public long nextSetBit(long index) {
     assert index >= 0 && index < numBits;
     int i = (int) (index >> 6);
-    final int subIndex = (int) (index & 0x3f);      // index within the word
-    long word = bits[i] >> subIndex;  // skip all the bits to the right of index
+    long word = bits[i] >> index;  // skip all the bits to the right of index
 
     if (word!=0) {
       return index + Long.numberOfTrailingZeros(word);
