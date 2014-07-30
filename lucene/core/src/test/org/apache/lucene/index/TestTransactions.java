@@ -100,7 +100,7 @@ public class TestTransactions extends LuceneTestCase {
 
       IndexWriter writer1 = new IndexWriter(
           dir1,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
+          newIndexWriterConfig(new MockAnalyzer(random())).
               setMaxBufferedDocs(3).
               setMergeScheduler(new ConcurrentMergeScheduler()).
               setMergePolicy(newLogMergePolicy(2))
@@ -111,7 +111,7 @@ public class TestTransactions extends LuceneTestCase {
       // happen @ different times
       IndexWriter writer2 = new IndexWriter(
           dir2,
-          newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).
+          newIndexWriterConfig(new MockAnalyzer(random())).
               setMaxBufferedDocs(2).
               setMergeScheduler(new ConcurrentMergeScheduler()).
               setMergePolicy(newLogMergePolicy(3))
@@ -212,7 +212,7 @@ public class TestTransactions extends LuceneTestCase {
   }
 
   public void initIndex(Directory dir) throws Throwable {
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     for(int j=0; j<7; j++) {
       Document d = new Document();
       int n = random().nextInt();

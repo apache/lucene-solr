@@ -45,8 +45,7 @@ public class TestSimilarityProvider extends LuceneTestCase {
     super.setUp();
     directory = newDirectory();
     PerFieldSimilarityWrapper sim = new ExampleSimilarityProvider();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, 
-        new MockAnalyzer(random())).setSimilarity(sim);
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random())).setSimilarity(sim);
     RandomIndexWriter iw = new RandomIndexWriter(random(), directory, iwc);
     Document doc = new Document();
     Field field = newTextField("foo", "", Field.Store.NO);

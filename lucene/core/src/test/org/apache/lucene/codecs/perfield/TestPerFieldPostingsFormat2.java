@@ -97,8 +97,8 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
   @Test
   public void testMergeUnusedPerFieldCodec() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig iwconf = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE).setCodec(new MockCodec());
+    IndexWriterConfig iwconf = newIndexWriterConfig(new MockAnalyzer(random()))
+                                 .setOpenMode(OpenMode.CREATE).setCodec(new MockCodec());
     IndexWriter writer = newWriter(dir, iwconf);
     addDocs(writer, 10);
     writer.commit();
@@ -124,8 +124,8 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: make new index");
     }
-    IndexWriterConfig iwconf = newIndexWriterConfig(TEST_VERSION_CURRENT,
-             new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE).setCodec(new MockCodec());
+    IndexWriterConfig iwconf = newIndexWriterConfig(new MockAnalyzer(random()))
+                                 .setOpenMode(OpenMode.CREATE).setCodec(new MockCodec());
     iwconf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
     //((LogMergePolicy) iwconf.getMergePolicy()).setMergeFactor(10);
     IndexWriter writer = newWriter(dir, iwconf);
@@ -144,7 +144,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     assertQuery(new Term("content", "aaa"), dir, 10);
     Codec codec = iwconf.getCodec();
 
-    iwconf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+    iwconf = newIndexWriterConfig(new MockAnalyzer(random()))
         .setOpenMode(OpenMode.APPEND).setCodec(codec);
     //((LogMergePolicy) iwconf.getMergePolicy()).setNoCFSRatio(0.0);
     //((LogMergePolicy) iwconf.getMergePolicy()).setMergeFactor(10);
@@ -301,7 +301,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
   
   private void doTestMixedPostings(Codec codec) throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(codec);
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();

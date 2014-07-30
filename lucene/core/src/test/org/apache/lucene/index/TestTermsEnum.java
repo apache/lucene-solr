@@ -351,7 +351,7 @@ public class TestTermsEnum extends LuceneTestCase {
 
   private IndexReader makeIndex(String... terms) throws Exception {
     d = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
 
     /*
     iwc.setCodec(new StandardCodec(minTermsInBlock, maxTermsInBlock));
@@ -718,7 +718,7 @@ public class TestTermsEnum extends LuceneTestCase {
 
   public void testIntersectBasic() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setMergePolicy(new LogDocMergePolicy());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
@@ -768,7 +768,7 @@ public class TestTermsEnum extends LuceneTestCase {
   }
   public void testIntersectStartTerm() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setMergePolicy(new LogDocMergePolicy());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
@@ -825,7 +825,7 @@ public class TestTermsEnum extends LuceneTestCase {
 
   public void testIntersectEmptyString() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setMergePolicy(new LogDocMergePolicy());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
@@ -977,7 +977,7 @@ public class TestTermsEnum extends LuceneTestCase {
       }
       sb.append(' ');
       sb.append(termsList.get(termCount).utf8ToString());
-      IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+      IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
       iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
       RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
       Document doc = new Document();

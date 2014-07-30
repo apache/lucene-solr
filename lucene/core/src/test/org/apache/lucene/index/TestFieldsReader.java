@@ -52,7 +52,8 @@ public class TestFieldsReader extends LuceneTestCase {
       fieldInfos.addOrUpdate(field.name(), field.fieldType());
     }
     dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy());
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()))
+                               .setMergePolicy(newLogMergePolicy());
     conf.getMergePolicy().setNoCFSRatio(0.0);
     IndexWriter writer = new IndexWriter(dir, conf);
     writer.addDocument(testDoc);
@@ -197,8 +198,8 @@ public class TestFieldsReader extends LuceneTestCase {
 
     try {
       Directory dir = new FaultyFSDirectory(indexDir);
-      IndexWriterConfig iwc = newIndexWriterConfig( 
-          TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE);
+      IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
+                                .setOpenMode(OpenMode.CREATE);
       IndexWriter writer = new IndexWriter(dir, iwc);
       for(int i=0;i<2;i++)
         writer.addDocument(testDoc);

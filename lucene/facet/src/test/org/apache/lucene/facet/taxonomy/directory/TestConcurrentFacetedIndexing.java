@@ -83,7 +83,7 @@ public class TestConcurrentFacetedIndexing extends FacetTestCase {
     final Directory indexDir = newDirectory();
     final Directory taxoDir = newDirectory();
     final ConcurrentHashMap<String,String> values = new ConcurrentHashMap<>();
-    final IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
+    final IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(null));
     final DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE, newTaxoWriterCache(numDocs.get()));
     final Thread[] indexThreads = new Thread[atLeast(4)];
     final FacetsConfig config = new FacetsConfig();

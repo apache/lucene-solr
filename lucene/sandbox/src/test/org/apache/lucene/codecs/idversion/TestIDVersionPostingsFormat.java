@@ -66,7 +66,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
 
   public void testBasic() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
@@ -189,7 +189,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
 
   public void testRandom() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     int minItemsInBlock = TestUtil.nextInt(random(), 2, 50);
     int maxItemsInBlock = 2*(minItemsInBlock-1) + random().nextInt(50);
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat(minItemsInBlock, maxItemsInBlock)));
@@ -358,7 +358,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
 
   public void testMoreThanOneDocPerIDOneSegment() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
@@ -379,7 +379,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
 
   public void testMoreThanOneDocPerIDTwoSegments() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
     iwc.setMergePolicy(new TieredMergePolicy());
     MergeScheduler ms = iwc.getMergeScheduler();
@@ -415,7 +415,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
 
   public void testMoreThanOneDocPerIDWithUpdates() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
@@ -432,7 +432,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
 
   public void testMoreThanOneDocPerIDWithDeletes() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
@@ -460,7 +460,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
           return new TokenStreamComponents(tokenizer, filt);
         }
       };
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, a);
+    IndexWriterConfig iwc = newIndexWriterConfig(a);
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
@@ -479,7 +479,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
 
   public void testMissingPositions() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
@@ -498,7 +498,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
 
   public void testInvalidPayload() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
@@ -517,7 +517,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
 
   public void testMoreThanOneDocPerIDWithDeletesAcrossSegments() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
@@ -537,7 +537,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
   // non-deleted documents on flush, CheckIndex will see this as corruption:
   public void testCannotIndexTermVectors() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
@@ -565,7 +565,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
 
   public void testMoreThanOnceInSingleDoc() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
@@ -584,7 +584,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
 
   public void testInvalidVersions() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
@@ -615,7 +615,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
   // Simulates optimistic concurrency in a distributed indexing app and confirms the latest version always wins:
   public void testGlobalVersions() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
 

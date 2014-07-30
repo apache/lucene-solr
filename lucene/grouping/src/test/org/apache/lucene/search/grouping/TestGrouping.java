@@ -69,8 +69,7 @@ public class TestGrouping extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(
                                random(),
                                dir,
-                               newIndexWriterConfig(TEST_VERSION_CURRENT,
-                                                    new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+                               newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     // 0
     Document doc = new Document();
     addGroupField(doc, groupField, "author1");
@@ -550,8 +549,7 @@ public class TestGrouping extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(
                                                 random(),
                                                 dir,
-                                                newIndexWriterConfig(TEST_VERSION_CURRENT,
-                                                                     new MockAnalyzer(random())));
+                                                newIndexWriterConfig(new MockAnalyzer(random())));
 
     final List<List<Document>> updateDocs = new ArrayList<>();
 
@@ -671,8 +669,7 @@ public class TestGrouping extends LuceneTestCase {
       RandomIndexWriter w = new RandomIndexWriter(
                                                   random(),
                                                   dir,
-                                                  newIndexWriterConfig(TEST_VERSION_CURRENT,
-                                                                       new MockAnalyzer(random())));
+                                                  newIndexWriterConfig(new MockAnalyzer(random())));
       Document doc = new Document();
       Document docNoGroup = new Document();
       Field idvGroupField = new SortedDocValuesField("group", new BytesRef());

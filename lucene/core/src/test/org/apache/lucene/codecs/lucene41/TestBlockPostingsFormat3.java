@@ -82,7 +82,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
         }
       }
     };
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat()));
     // TODO we could actually add more fields implemented with different PFs
     // or, just put this test into the usual rotation?
@@ -137,7 +137,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
     iw.shutdown();
     verify(dir);
     TestUtil.checkIndex(dir); // for some extra coverage, checkIndex before we forceMerge
-    iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    iwc = newIndexWriterConfig(analyzer);
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat()));
     iwc.setOpenMode(OpenMode.APPEND);
     IndexWriter iw2 = new IndexWriter(dir, iwc);

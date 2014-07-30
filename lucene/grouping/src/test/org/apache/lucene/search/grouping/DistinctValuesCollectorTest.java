@@ -72,8 +72,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
     RandomIndexWriter w = new RandomIndexWriter(
         random,
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT,
-            new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+        newIndexWriterConfig(new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     Document doc = new Document();
     addField(doc, groupField, "1");
     addField(doc, countField, "1");
@@ -409,8 +408,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
     RandomIndexWriter w = new RandomIndexWriter(
         random,
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy())
+        newIndexWriterConfig(new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy())
       );
 
     int numDocs = 86 + random.nextInt(1087) * RANDOM_MULTIPLIER;

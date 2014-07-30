@@ -39,7 +39,7 @@ public class TestUninvertingReader extends LuceneTestCase {
   
   public void testSortedSetInteger() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
     
     Document doc = new Document();
     doc.add(new IntField("foo", 5, Field.Store.NO));
@@ -80,7 +80,7 @@ public class TestUninvertingReader extends LuceneTestCase {
   
   public void testSortedSetFloat() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
     
     Document doc = new Document();
     doc.add(new IntField("foo", Float.floatToRawIntBits(5f), Field.Store.NO));
@@ -122,7 +122,7 @@ public class TestUninvertingReader extends LuceneTestCase {
   
   public void testSortedSetLong() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
     
     Document doc = new Document();
     doc.add(new LongField("foo", 5, Field.Store.NO));
@@ -163,7 +163,7 @@ public class TestUninvertingReader extends LuceneTestCase {
   
   public void testSortedSetDouble() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
     
     Document doc = new Document();
     doc.add(new LongField("foo", Double.doubleToRawLongBits(5d), Field.Store.NO));

@@ -286,7 +286,7 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
   public void testStopWordSearching() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
     Directory ramDir = newDirectory();
-    IndexWriter iw =  new IndexWriter(ramDir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    IndexWriter iw =  new IndexWriter(ramDir, newIndexWriterConfig(analyzer));
     Document doc = new Document();
     doc.add(newTextField("body", "blah the footest blah", Field.Store.NO));
     iw.addDocument(doc);

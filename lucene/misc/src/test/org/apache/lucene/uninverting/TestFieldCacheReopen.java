@@ -39,7 +39,7 @@ public class TestFieldCacheReopen extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
+        newIndexWriterConfig(new MockAnalyzer(random())).
             setMergePolicy(newLogMergePolicy(10))
     );
     Document doc = new Document();

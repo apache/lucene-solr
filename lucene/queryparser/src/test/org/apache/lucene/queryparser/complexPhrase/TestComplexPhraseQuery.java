@@ -171,7 +171,7 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
     
     analyzer = new MockAnalyzer(random());
     rd = newDirectory();
-    IndexWriter w = new IndexWriter(rd, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    IndexWriter w = new IndexWriter(rd, newIndexWriterConfig(analyzer));
     for (int i = 0; i < docsContent.length; i++) {
       Document doc = new Document();
       doc.add(newTextField("name", docsContent[i].name, Field.Store.YES));

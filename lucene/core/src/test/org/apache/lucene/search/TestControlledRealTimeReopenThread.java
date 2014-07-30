@@ -303,7 +303,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
    * LUCENE-3528 - NRTManager hangs in certain situations 
    */
   public void testThreadStarvationNoDeleteNRTReader() throws IOException, InterruptedException {
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setMergePolicy(NoMergePolicy.INSTANCE);
     Directory d = newDirectory();
     final CountDownLatch latch = new CountDownLatch(1);

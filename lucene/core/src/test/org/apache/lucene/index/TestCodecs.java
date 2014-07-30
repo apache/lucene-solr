@@ -830,8 +830,7 @@ public class TestCodecs extends LuceneTestCase {
     // returns 1 in docsEnum.freq()
     Directory dir = newDirectory();
     Random random = random();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random)));
     // we don't need many documents to assert this, but don't use one document either
     int numDocs = atLeast(random, 50);
     for (int i = 0; i < numDocs; i++) {
@@ -857,7 +856,7 @@ public class TestCodecs extends LuceneTestCase {
   public void testDisableImpersonation() throws Exception {
     Codec[] oldCodecs = new Codec[] { new Lucene40RWCodec(), new Lucene41RWCodec(), new Lucene42RWCodec() };
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setCodec(oldCodecs[random().nextInt(oldCodecs.length)]);
     IndexWriter writer = new IndexWriter(dir, conf);
     

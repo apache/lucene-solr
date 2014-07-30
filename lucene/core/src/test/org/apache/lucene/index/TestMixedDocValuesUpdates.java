@@ -46,7 +46,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
   public void testManyReopensAndFields() throws Exception {
     Directory dir = newDirectory();
     final Random random = random();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random));
     LogMergePolicy lmp = newLogMergePolicy();
     lmp.setMergeFactor(3); // merge often
     conf.setMergePolicy(lmp);
@@ -155,7 +155,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
   
   public void testStressMultiThreading() throws Exception {
     final Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     final IndexWriter writer = new IndexWriter(dir, conf);
     
     // create index
@@ -291,7 +291,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
   public void testUpdateDifferentDocsInDifferentGens() throws Exception {
     // update same document multiple times across generations
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setMaxBufferedDocs(4);
     IndexWriter writer = new IndexWriter(dir, conf);
     final int numDocs = atLeast(10);
@@ -330,7 +330,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     // LUCENE-5248: make sure that when there are many updates, we don't use too much RAM
     Directory dir = newDirectory();
     final Random random = random();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random));
     conf.setRAMBufferSizeMB(IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB);
     conf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH); // don't flush by doc
     IndexWriter writer = new IndexWriter(dir, conf);

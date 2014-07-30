@@ -65,8 +65,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     RandomIndexWriter w = new RandomIndexWriter(
         random(),
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT,
-            new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     boolean useDv = true;
 
     // 0
@@ -290,8 +289,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     RandomIndexWriter w = new RandomIndexWriter(
         random(),
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT,
-            new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE));
+        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE));
     boolean useDv = true;
 
     // Cannot assert this since we use NoMergePolicy:
@@ -509,10 +507,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(
         random,
         dir,
-        newIndexWriterConfig(
-            TEST_VERSION_CURRENT,
-            new MockAnalyzer(random)
-        )
+        newIndexWriterConfig(new MockAnalyzer(random))
     );
     Document doc = new Document();
     Document docNoGroup = new Document();

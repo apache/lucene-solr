@@ -56,7 +56,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc = newIndexWriterConfig(new MockAnalyzer(random()));
   }
 
   public void testBasic() throws Exception {
@@ -129,7 +129,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
   public void doTestNumbers(boolean withPayloads) throws Exception {
     Directory dir = newDirectory();
     Analyzer analyzer = withPayloads ? new MockPayloadAnalyzer() : new MockAnalyzer(random());
-    iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy()); // will rely on docids a bit for skipping
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     
@@ -485,7 +485,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
 
   public void testLegalbutVeryLargeOffsets() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
     Document doc = new Document();
     Token t1 = new Token("foo", 0, Integer.MAX_VALUE-500);
     if (random().nextBoolean()) {

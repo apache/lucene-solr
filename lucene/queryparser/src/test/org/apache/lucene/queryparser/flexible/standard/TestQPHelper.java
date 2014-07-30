@@ -1310,7 +1310,7 @@ public class TestQPHelper extends LuceneTestCase {
 
   public void testMultiPhraseQuery() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new CannedAnalyzer()));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new CannedAnalyzer()));
     Document doc = new Document();
     doc.add(newTextField("field", "", Field.Store.NO));
     w.addDocument(doc);

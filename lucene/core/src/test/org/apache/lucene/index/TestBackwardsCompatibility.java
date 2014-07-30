@@ -276,7 +276,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       case 0: return new IndexUpgrader(dir, TEST_VERSION_CURRENT);
       case 1: return new IndexUpgrader(dir, TEST_VERSION_CURRENT, 
                                        streamType ? null : InfoStream.NO_OUTPUT, false);
-      case 2: return new IndexUpgrader(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null), false);
+      case 2: return new IndexUpgrader(dir, newIndexWriterConfig(null), false);
       default: fail("case statement didn't get updated when random bounds changed");
     }
     return null; // never get here
@@ -330,8 +330,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       }
 
       try {
-        writer = new IndexWriter(dir, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+        writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
         fail("IndexWriter creation should not pass for "+unsupportedNames[i]);
       } catch (IndexFormatTooOldException e) {
         // pass
@@ -386,8 +385,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         System.out.println("\nTEST: old index " + name);
       }
       Directory targetDir = newDirectory();
-      IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+      IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(new MockAnalyzer(random())));
       w.addIndexes(oldIndexDirs.get(name));
       if (VERBOSE) {
         System.out.println("\nTEST: done adding indices; now close");
@@ -403,8 +401,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       IndexReader reader = DirectoryReader.open(oldIndexDirs.get(name));
       
       Directory targetDir = newDirectory();
-      IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+      IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(new MockAnalyzer(random())));
       w.addIndexes(reader);
       w.shutdown();
       reader.close();
@@ -604,7 +601,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   public void changeIndexWithAdds(Random random, Directory dir, String origOldName) throws IOException {
     // open writer
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random))
+                                                 .setOpenMode(OpenMode.APPEND)
+                                                 .setMergePolicy(newLogMergePolicy()));
     // add 10 docs
     for(int i=0;i<10;i++) {
       addDoc(writer, 35+i);
@@ -630,7 +629,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     reader.close();
 
     // fully merge
-    writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
+    writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random))
+                                    .setOpenMode(OpenMode.APPEND)
+                                    .setMergePolicy(newLogMergePolicy()));
     writer.forceMerge(1);
     writer.shutdown();
 
@@ -655,7 +656,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     reader.close();
 
     // fully merge
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random))
+                                                .setOpenMode(OpenMode.APPEND));
     writer.forceMerge(1);
     writer.shutdown();
 

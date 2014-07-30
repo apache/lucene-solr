@@ -102,9 +102,10 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
   }
 
   private void doTestReopenWithCommit (Random random, Directory dir, boolean withReopen) throws IOException {
-    IndexWriter iwriter = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(
-                                                              OpenMode.CREATE).setMergeScheduler(new SerialMergeScheduler()).setMergePolicy(newLogMergePolicy()));
+    IndexWriter iwriter = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random))
+                                                 .setOpenMode(OpenMode.CREATE)
+                                                 .setMergeScheduler(new SerialMergeScheduler())
+                                                 .setMergePolicy(newLogMergePolicy()));
     iwriter.commit();
     DirectoryReader reader = DirectoryReader.open(dir);
     try {
@@ -202,8 +203,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     final Directory dir = newDirectory();
     // NOTE: this also controls the number of threads!
     final int n = TestUtil.nextInt(random(), 20, 40);
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     for (int i = 0; i < n; i++) {
       writer.addDocument(createDocument(i, 3));
     }
@@ -548,10 +548,10 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
-            setIndexDeletionPolicy(new KeepAllCommits()).
-            setMaxBufferedDocs(-1).
-            setMergePolicy(newLogMergePolicy(10))
+        newIndexWriterConfig(new MockAnalyzer(random()))
+            .setIndexDeletionPolicy(new KeepAllCommits())
+            .setMaxBufferedDocs(-1)
+            .setMergePolicy(newLogMergePolicy(10))
     );
     for(int i=0;i<4;i++) {
       Document doc = new Document();
@@ -604,7 +604,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     Directory dir = newDirectory();
 
     // Can't use RIW because it randomly commits:
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     Document doc = new Document();
     doc.add(newStringField("field", "value", Field.Store.NO));
     w.addDocument(doc);

@@ -44,7 +44,7 @@ public class TestTermVectors extends LuceneTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {                  
     directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.SIMPLE, true)).setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.SIMPLE, true)).setMergePolicy(newLogMergePolicy()));
     //writer.setNoCFSRatio(1.0);
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
@@ -83,7 +83,7 @@ public class TestTermVectors extends LuceneTestCase {
   }
 
   private IndexWriter createWriter(Directory dir) throws IOException {
-    return new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT,
+    return new IndexWriter(dir, newIndexWriterConfig(
         new MockAnalyzer(random())).setMaxBufferedDocs(2));
   }
 

@@ -145,7 +145,7 @@ public class TestQueryTemplateManager extends LuceneTestCase {
     analyzer = new MockAnalyzer(random());
     //Create an index
     dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(analyzer));
     for (String docFieldValue : docFieldValues) {
       w.addDocument(getDocumentFromString(docFieldValue));
     }

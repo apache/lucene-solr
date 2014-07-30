@@ -83,7 +83,7 @@ public class FuzzyTermOnShortTermsTest extends LuceneTestCase {
    public static Directory getDirectory(Analyzer analyzer, String[] vals) throws IOException{
       Directory directory = newDirectory();
       RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer)
+          newIndexWriterConfig(analyzer)
           .setMaxBufferedDocs(TestUtil.nextInt(random(), 100, 1000)).setMergePolicy(newLogMergePolicy()));
 
       for (String s : vals){

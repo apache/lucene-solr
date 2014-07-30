@@ -100,7 +100,8 @@ public class TestSegmentTermDocs extends LuceneTestCase {
   
   public void testSkipTo() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+                                                .setMergePolicy(newLogMergePolicy()));
     
     Term ta = new Term("content","aaa");
     for(int i = 0; i < 10; i++)

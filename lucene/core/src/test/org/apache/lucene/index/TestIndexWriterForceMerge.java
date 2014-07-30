@@ -40,10 +40,10 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
       LogDocMergePolicy ldmp = new LogDocMergePolicy();
       ldmp.setMinMergeDocs(1);
       ldmp.setMergeFactor(5);
-      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random()))
-        .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(2).setMergePolicy(
-            ldmp));
+      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+                                                  .setOpenMode(OpenMode.CREATE)
+                                                  .setMaxBufferedDocs(2)
+                                                  .setMergePolicy(ldmp));
       for(int j=0;j<numDocs;j++)
         writer.addDocument(doc);
       writer.shutdown();
@@ -54,8 +54,8 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
 
       ldmp = new LogDocMergePolicy();
       ldmp.setMergeFactor(5);
-      writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT,
-        new MockAnalyzer(random())).setMergePolicy(ldmp));
+      writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+                                      .setMergePolicy(ldmp));
       writer.forceMerge(3);
       writer.shutdown();
 
@@ -80,9 +80,10 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
     LogDocMergePolicy ldmp = new LogDocMergePolicy();
     ldmp.setMinMergeDocs(1);
     ldmp.setMergeFactor(4);
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-      TEST_VERSION_CURRENT, new MockAnalyzer(random()))
-      .setMaxBufferedDocs(2).setMergePolicy(ldmp).setMergeScheduler(new ConcurrentMergeScheduler()));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+                                                .setMaxBufferedDocs(2)
+                                                .setMergePolicy(ldmp)
+                                                .setMergeScheduler(new ConcurrentMergeScheduler()));
     
     for(int iter=0;iter<10;iter++) {
       for(int i=0;i<19;i++)
@@ -121,7 +122,9 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
   public void testForceMergeTempSpaceUsage() throws IOException {
 
     MockDirectoryWrapper dir = newMockDirectory();
-    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(10).setMergePolicy(newLogMergePolicy()));
+    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+                                                 .setMaxBufferedDocs(10)
+                                                 .setMergePolicy(newLogMergePolicy()));
     if (VERBOSE) {
       System.out.println("TEST: config1=" + writer.getConfig());
     }
@@ -150,7 +153,9 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
     dir.resetMaxUsedSizeInBytes();
     dir.setTrackDiskUsage(true);
 
-    writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
+    writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+                                    .setOpenMode(OpenMode.APPEND)
+                                    .setMergePolicy(newLogMergePolicy()));
     writer.forceMerge(1);
     writer.shutdown();
     long maxDiskUsage = dir.getMaxUsedSizeInBytes();
@@ -168,10 +173,10 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
     for(int pass=0;pass<2;pass++) {
       IndexWriter writer = new IndexWriter(
           dir,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
-              setOpenMode(OpenMode.CREATE).
-              setMaxBufferedDocs(2).
-              setMergePolicy(newLogMergePolicy(51))
+          newIndexWriterConfig(new MockAnalyzer(random()))
+              .setOpenMode(OpenMode.CREATE)
+              .setMaxBufferedDocs(2)
+              .setMergePolicy(newLogMergePolicy(51))
       );
       Document doc = new Document();
       doc.add(newStringField("field", "aaa", Field.Store.NO));

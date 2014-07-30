@@ -90,7 +90,7 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
     Codec inner = RANDOM_MULTIPLIER > 1 ? Codec.getDefault() : new AssertingCodec();
     Codec codec = new CrankyCodec(inner, new Random(random().nextLong()));
     
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    IndexWriterConfig conf = newIndexWriterConfig(analyzer);
     // just for now, try to keep this test reproducible
     conf.setMergeScheduler(new SerialMergeScheduler());
     conf.setCodec(codec);

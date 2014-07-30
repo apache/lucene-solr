@@ -60,7 +60,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     distance = (1L << 60) / noDocs;
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+        newIndexWriterConfig(new MockAnalyzer(random()))
         .setMaxBufferedDocs(TestUtil.nextInt(random(), 100, 1000))
         .setMergePolicy(newLogMergePolicy()));
 
@@ -327,7 +327,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
   public void testInfiniteValues() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
-      newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+      newIndexWriterConfig(new MockAnalyzer(random())));
     Document doc = new Document();
     doc.add(new DoubleField("double", Double.NEGATIVE_INFINITY, Field.Store.NO));
     doc.add(new LongField("long", Long.MIN_VALUE, Field.Store.NO));

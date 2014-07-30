@@ -252,7 +252,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     Directory taxoDir = newDirectory();
 
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
-    IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(new MockAnalyzer(random())));
 
     FacetsConfig config = new FacetsConfig();
 
@@ -288,7 +288,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     Directory taxoDir = newDirectory();
 
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
-    IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(new MockAnalyzer(random())));
     FacetsConfig config = new FacetsConfig();
     for (int i = 0; i < 4; i++) {
       Document doc = new Document();
@@ -314,7 +314,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     Directory taxoDir = newDirectory();
 
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
-    IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(new MockAnalyzer(random())));
 
     FacetsConfig config = new FacetsConfig();
     for (int i = 0; i < 4; i++) {
@@ -366,7 +366,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     Directory taxoDir = newDirectory();
 
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
-    IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(new MockAnalyzer(random())));
     FacetsConfig config = new FacetsConfig();
     config.setHierarchical("a", true);
     //config.setRequireDimCount("a", true);
@@ -397,7 +397,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     Directory taxoDir = newDirectory();
     
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
-    IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(new MockAnalyzer(random())));
     FacetsConfig config = new FacetsConfig();
     config.setIndexFieldName("b", "$b");
     

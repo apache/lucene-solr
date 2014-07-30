@@ -109,7 +109,7 @@ public class TestLongPostings extends LuceneTestCase {
     }
 
     final IndexReader r;
-    final IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+    final IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
       .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
       .setMergePolicy(newLogMergePolicy());
     iwc.setRAMBufferSizeMB(16.0 + 16.0 * random().nextDouble());
@@ -307,7 +307,7 @@ public class TestLongPostings extends LuceneTestCase {
 
     final IndexReader r;
     if (true) { 
-      final IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+      final IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
         .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
         .setMergePolicy(newLogMergePolicy());
       iwc.setRAMBufferSizeMB(16.0 + 16.0 * random().nextDouble());

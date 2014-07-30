@@ -68,8 +68,8 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     MockAnalyzer analyzer = new MockAnalyzer(random());
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
 
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        analyzer).setFlushPolicy(flushPolicy);
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer)
+                              .setFlushPolicy(flushPolicy);
     final int numDWPT = 1 + atLeast(2);
     DocumentsWriterPerThreadPool threadPool = new DocumentsWriterPerThreadPool(
         numDWPT);
@@ -124,8 +124,8 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       AtomicInteger numDocs = new AtomicInteger(numDocumentsToIndex);
       Directory dir = newDirectory();
       MockDefaultFlushPolicy flushPolicy = new MockDefaultFlushPolicy();
-      IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT,
-          new MockAnalyzer(random())).setFlushPolicy(flushPolicy);
+      IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
+                                .setFlushPolicy(flushPolicy);
 
       final int numDWPT = 1 + atLeast(2);
       DocumentsWriterPerThreadPool threadPool = new DocumentsWriterPerThreadPool(
@@ -173,8 +173,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     final int numDocumentsToIndex = 50 + atLeast(70);
     AtomicInteger numDocs = new AtomicInteger(numDocumentsToIndex);
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     MockDefaultFlushPolicy flushPolicy = new MockDefaultFlushPolicy();
     iwc.setFlushPolicy(flushPolicy);
 
@@ -238,8 +237,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       MockDirectoryWrapper dir = newMockDirectory();
       // mock a very slow harddisk sometimes here so that flushing is very slow
       dir.setThrottling(MockDirectoryWrapper.Throttling.SOMETIMES);
-      IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT,
-          new MockAnalyzer(random()));
+      IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
       iwc.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
       iwc.setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH);
       FlushPolicy flushPolicy = new FlushByRamOrCountsPolicy();

@@ -68,8 +68,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(
         random(),
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT,
-            new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     DocValuesType valueType = DocValuesType.SORTED;
 
     // 0
@@ -221,8 +220,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
       RandomIndexWriter w = new RandomIndexWriter(
           random(),
           dir,
-          newIndexWriterConfig(TEST_VERSION_CURRENT,
-              new MockAnalyzer(random())));
+          newIndexWriterConfig(new MockAnalyzer(random())));
       DocValuesType valueType = DocValuesType.SORTED;
 
       Document doc = new Document();

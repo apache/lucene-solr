@@ -209,7 +209,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
       Codec.setDefault(new RandomCodec(random(), avoidCodecs));
     }
     Directory dir = newDirectory();
-    IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig cfg = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, cfg);
     // we need to index enough documents so that constant overhead doesn't dominate
     final int numDocs = atLeast(10000);

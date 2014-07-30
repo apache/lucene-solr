@@ -75,7 +75,7 @@ public class TestOmitTf extends LuceneTestCase {
   public void testOmitTermFreqAndPositions() throws Exception {
     Directory ram = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
-    IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer));
+    IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(analyzer));
     Document d = new Document();
         
     // this field will have Tf
@@ -122,7 +122,7 @@ public class TestOmitTf extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriter writer = new IndexWriter(
         ram,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).
+        newIndexWriterConfig(analyzer).
             setMaxBufferedDocs(3).
             setMergePolicy(newLogMergePolicy(2))
     );
@@ -175,7 +175,7 @@ public class TestOmitTf extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriter writer = new IndexWriter(
         ram,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).
+        newIndexWriterConfig(analyzer).
             setMaxBufferedDocs(10).
             setMergePolicy(newLogMergePolicy(2))
     );
@@ -222,8 +222,9 @@ public class TestOmitTf extends LuceneTestCase {
   public void testNoPrxFile() throws Throwable {
     Directory ram = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
-    IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(
-                                                                   TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(3).setMergePolicy(newLogMergePolicy()));
+    IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(analyzer)
+                                                .setMaxBufferedDocs(3)
+                                                .setMergePolicy(newLogMergePolicy()));
     LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
     lmp.setMergeFactor(2);
     lmp.setNoCFSRatio(0.0);
@@ -263,10 +264,10 @@ public class TestOmitTf extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriter writer = new IndexWriter(
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).
-            setMaxBufferedDocs(2).
-            setSimilarity(new SimpleSimilarity()).
-            setMergePolicy(newLogMergePolicy(2))
+        newIndexWriterConfig(analyzer)
+            .setMaxBufferedDocs(2)
+            .setSimilarity(new SimpleSimilarity())
+            .setMergePolicy(newLogMergePolicy(2))
     );
         
     StringBuilder sb = new StringBuilder(265);
@@ -444,7 +445,7 @@ public class TestOmitTf extends LuceneTestCase {
   public void testStats() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+        newIndexWriterConfig(new MockAnalyzer(random())));
     Document doc = new Document();
     FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     ft.setIndexOptions(IndexOptions.DOCS_ONLY);

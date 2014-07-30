@@ -207,7 +207,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
     }
     
     PositionsTokenStream positions = new PositionsTokenStream();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random));
     conf.setMaxBufferedDocs(4); // create some segments
     conf.setSimilarity(new NormsSimilarity(conf.getSimilarity())); // for testing norms field
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, conf);

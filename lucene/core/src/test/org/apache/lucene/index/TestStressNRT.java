@@ -106,7 +106,7 @@ public class TestStressNRT extends LuceneTestCase {
 
     Directory dir = newDirectory();
 
-    final RandomIndexWriter writer = new RandomIndexWriter(random(), dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    final RandomIndexWriter writer = new RandomIndexWriter(random(), dir, newIndexWriterConfig(new MockAnalyzer(random())));
     writer.setDoRandomForceMergeAssert(false);
     writer.commit();
     reader = DirectoryReader.open(dir);

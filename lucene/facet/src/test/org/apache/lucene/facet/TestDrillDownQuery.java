@@ -66,7 +66,7 @@ public class TestDrillDownQuery extends FacetTestCase {
     dir = newDirectory();
     Random r = random();
     RandomIndexWriter writer = new RandomIndexWriter(r, dir, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(r, MockTokenizer.KEYWORD, false)));
+        newIndexWriterConfig(new MockAnalyzer(r, MockTokenizer.KEYWORD, false)));
     
     taxoDir = newDirectory();
     TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);

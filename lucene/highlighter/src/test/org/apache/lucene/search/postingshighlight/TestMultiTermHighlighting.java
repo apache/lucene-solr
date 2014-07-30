@@ -65,7 +65,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     Directory dir = newDirectory();
     // use simpleanalyzer for more natural tokenization (else "test." is a token)
     final Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     
@@ -117,7 +117,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     Directory dir = newDirectory();
     // use simpleanalyzer for more natural tokenization (else "test." is a token)
     final Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     
@@ -169,7 +169,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     Directory dir = newDirectory();
     // use simpleanalyzer for more natural tokenization (else "test." is a token)
     final Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     
@@ -221,7 +221,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     Directory dir = newDirectory();
     // use simpleanalyzer for more natural tokenization (else "test." is a token)
     final Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     
@@ -282,7 +282,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     Directory dir = newDirectory();
     // use simpleanalyzer for more natural tokenization (else "test." is a token)
     final Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     
@@ -392,7 +392,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     Directory dir = newDirectory();
     // use simpleanalyzer for more natural tokenization (else "test." is a token)
     final Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     
@@ -445,7 +445,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     Directory dir = newDirectory();
     // use simpleanalyzer for more natural tokenization (else "test." is a token)
     final Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
@@ -488,7 +488,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     Directory dir = newDirectory();
     // use simpleanalyzer for more natural tokenization (else "test." is a token)
     final Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
@@ -529,7 +529,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     Directory dir = newDirectory();
     // use simpleanalyzer for more natural tokenization (else "test." is a token)
     final Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     
@@ -571,7 +571,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     Directory dir = newDirectory();
     // use simpleanalyzer for more natural tokenization (else "test." is a token)
     final Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     
@@ -612,7 +612,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     Directory dir = newDirectory();
     // use simpleanalyzer for more natural tokenization (else "test." is a token)
     final Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     
@@ -654,7 +654,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     Directory dir = newDirectory();
     // use simpleanalyzer for more natural tokenization (else "test." is a token)
     final Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     
@@ -696,7 +696,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     Directory dir = newDirectory();
     // use simpleanalyzer for more natural tokenization (else "test." is a token)
     final Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     
@@ -739,7 +739,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     Directory dir = newDirectory();
     // use simpleanalyzer for more natural tokenization (else "test." is a token)
     final Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     
@@ -783,7 +783,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     Directory dir = newDirectory();
     // use simpleanalyzer for more natural tokenization (else "test." is a token)
     final Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     

@@ -1411,7 +1411,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
   
   public void testJustEmptyField() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(null);
     iwc.setCodec(getCodec());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
@@ -1436,7 +1436,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
   
   public void testEmptyFieldAndEmptyTerm() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(null);
     iwc.setCodec(getCodec());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
@@ -1463,7 +1463,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
   // TODO: can this be improved?
   public void testGhosts() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(null);
     iwc.setCodec(getCodec());
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
@@ -1505,7 +1505,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     Directory dir = newDirectory();
     MockAnalyzer analyzer = new MockAnalyzer(random());
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
 
     // Must be concurrent because thread(s) can be merging
     // while up to one thread flushes, and each of those

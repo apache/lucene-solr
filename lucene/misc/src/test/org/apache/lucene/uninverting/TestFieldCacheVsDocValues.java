@@ -134,7 +134,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     } else {
       numDocs = TestUtil.nextInt(random(), 100, 200);
     }
-    IndexWriter w = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    IndexWriter w = new IndexWriter(d, newIndexWriterConfig(analyzer));
     List<byte[]> docBytes = new ArrayList<>();
     long totalBytes = 0;
     for(int docID=0;docID<numDocs;docID++) {
@@ -231,7 +231,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     } else {
       numDocs = TestUtil.nextInt(random(), 100, 200);
     }
-    IndexWriter w = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    IndexWriter w = new IndexWriter(d, newIndexWriterConfig(analyzer));
     List<byte[]> docBytes = new ArrayList<>();
     long totalBytes = 0;
     for(int docID=0;docID<numDocs;docID++) {
@@ -283,7 +283,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
   
   private void doTestSortedVsFieldCache(int minLength, int maxLength) throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
     Document doc = new Document();
     Field idField = new StringField("id", "", Field.Store.NO);
@@ -410,7 +410,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
   private void doTestMissingVsFieldCache(LongProducer longs) throws Exception {
     assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField());
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
     Field idField = new StringField("id", "", Field.Store.NO);
     Field indexedField = newStringField("indexed", "", Field.Store.NO);

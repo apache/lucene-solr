@@ -66,9 +66,9 @@ public class TestTransactionRollback extends LuceneTestCase {
       throw new RuntimeException("Couldn't find commit point "+id);
     }
 
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random())).setIndexDeletionPolicy(
-        new RollbackDeletionPolicy(id)).setIndexCommit(last));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+                                           .setIndexDeletionPolicy(new RollbackDeletionPolicy(id))
+                                           .setIndexCommit(last));
     Map<String,String> data = new HashMap<>();
     data.put("index", "Rolled back to 1-"+id);
     w.setCommitData(data);
@@ -131,7 +131,8 @@ public class TestTransactionRollback extends LuceneTestCase {
 
     //Build index, of records 1 to 100, committing after each batch of 10
     IndexDeletionPolicy sdp=new KeepAllDeletionPolicy();
-    IndexWriter w=new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setIndexDeletionPolicy(sdp));
+    IndexWriter w=new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+                                          .setIndexDeletionPolicy(sdp));
 
     for(int currentRecordId=1;currentRecordId<=100;currentRecordId++) {
       Document doc=new Document();
@@ -212,7 +213,7 @@ public class TestTransactionRollback extends LuceneTestCase {
     for(int i=0;i<2;i++) {
       // Unless you specify a prior commit point, rollback
       // should not work:
-      new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+      new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
           .setIndexDeletionPolicy(new DeleteLastCommitPolicy())).shutdown();
       IndexReader r = DirectoryReader.open(dir);
       assertEquals(100, r.numDocs());

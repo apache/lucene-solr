@@ -992,8 +992,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
   
   public void testEmptyStringVsNullStringSort() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
-                        TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     Document doc = new Document();
     doc.add(newStringField("f", "", Field.Store.NO));
     doc.add(newStringField("t", "1", Field.Store.NO));
@@ -1020,8 +1019,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
   /** test that we throw exception on multi-valued field, creates corrupt reader, use SORTED_SET instead */
   public void testMultiValuedField() throws IOException {
     Directory indexStore = newDirectory();
-    IndexWriter writer = new IndexWriter(indexStore, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter writer = new IndexWriter(indexStore, newIndexWriterConfig(new MockAnalyzer(random())));
     for(int i=0; i<5; i++) {
         Document doc = new Document();
         doc.add(new StringField("string", "a"+i, Field.Store.NO));

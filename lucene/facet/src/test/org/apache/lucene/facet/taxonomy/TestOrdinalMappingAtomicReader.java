@@ -68,7 +68,7 @@ public class TestOrdinalMappingAtomicReader extends FacetTestCase {
     Directory targetTaxoDir = newDirectory();
     buildIndexWithFacets(targetIndexDir, targetTaxoDir, false);
     
-    IndexWriter destIndexWriter = new IndexWriter(targetIndexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
+    IndexWriter destIndexWriter = new IndexWriter(targetIndexDir, newIndexWriterConfig(null));
     DirectoryTaxonomyWriter destTaxoWriter = new DirectoryTaxonomyWriter(targetTaxoDir);
     try {
       TaxonomyMergeUtils.merge(srcIndexDir, srcTaxoDir, new MemoryOrdinalMap(), destIndexWriter, destTaxoWriter, facetConfig);
@@ -113,7 +113,7 @@ public class TestOrdinalMappingAtomicReader extends FacetTestCase {
   }
   
   private void buildIndexWithFacets(Directory indexDir, Directory taxoDir, boolean asc) throws IOException {
-    IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig config = newIndexWriterConfig(null);
     RandomIndexWriter writer = new RandomIndexWriter(random(), indexDir, config);
     
     DirectoryTaxonomyWriter taxonomyWriter = new DirectoryTaxonomyWriter(taxoDir);

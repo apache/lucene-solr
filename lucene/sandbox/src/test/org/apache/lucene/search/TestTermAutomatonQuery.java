@@ -474,7 +474,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
         }
       };
 
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
 
     for(int i=0;i<numDocs;i++) {

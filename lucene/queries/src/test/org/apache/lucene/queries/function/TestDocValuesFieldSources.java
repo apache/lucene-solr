@@ -46,7 +46,7 @@ public class TestDocValuesFieldSources extends LuceneTestCase {
 
   public void test(DocValuesType type) throws IOException {
     Directory d = newDirectory();
-    IndexWriterConfig iwConfig = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwConfig = newIndexWriterConfig(new MockAnalyzer(random()));
     final int nDocs = atLeast(50);
     final Field id = new NumericDocValuesField("id", 0);
     final Field f;

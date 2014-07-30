@@ -52,7 +52,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
     Directory dir = newDirectory();
     Codec cp = TestUtil.alwaysPostingsFormat(new Lucene40RWPostingsFormat());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(cp));
+        newIndexWriterConfig(new MockAnalyzer(random())).setCodec(cp));
     int numdocs = atLeast(20);
     createRandomIndex(numdocs, writer, random());
     writer.commit();
@@ -80,7 +80,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
     Directory dir = newDirectory();
     Codec cp = TestUtil.alwaysPostingsFormat(new Lucene40RWPostingsFormat());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(cp));
+        newIndexWriterConfig(new MockAnalyzer(random())).setCodec(cp));
     int numdocs = atLeast(20);
     createRandomIndex(numdocs, writer, random());
     writer.commit();
@@ -128,7 +128,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).setCodec(cp));
+        newIndexWriterConfig(analyzer).setCodec(cp));
     int numdocs = atLeast(20);
     createRandomIndex(numdocs, writer, random());
     writer.commit();
