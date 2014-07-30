@@ -63,8 +63,7 @@ public final class FixedBitSet extends DocIdSet implements Bits {
         return doc = NO_MORE_DOCS;
       }
       int i = doc >> 6;
-      final int subIndex = doc & 0x3f;      // index within the word
-      long word = bits[i] >> subIndex;  // skip all the bits to the right of index
+      long word = bits[i] >> doc;  // skip all the bits to the right of index
       
       if (word != 0) {
         return doc = doc + Long.numberOfTrailingZeros(word);
@@ -96,8 +95,7 @@ public final class FixedBitSet extends DocIdSet implements Bits {
         return doc = NO_MORE_DOCS;
       }
       int i = target >> 6;
-      final int subIndex = target & 0x3f; // index within the word
-      long word = bits[i] >> subIndex; // skip all the bits to the right of index
+      long word = bits[i] >> target; // skip all the bits to the right of index
       
       if (word != 0) {
         return doc = target + Long.numberOfTrailingZeros(word);
@@ -243,24 +241,21 @@ public final class FixedBitSet extends DocIdSet implements Bits {
     int i = index >> 6;               // div 64
     // signed shift will keep a negative index and force an
     // array-index-out-of-bounds-exception, removing the need for an explicit check.
-    int bit = index & 0x3f;           // mod 64
-    long bitmask = 1L << bit;
+    long bitmask = 1L << index;
     return (bits[i] & bitmask) != 0;
   }
 
   public void set(int index) {
     assert index >= 0 && index < numBits: "index=" + index + ", numBits=" + numBits;
     int wordNum = index >> 6;      // div 64
-    int bit = index & 0x3f;     // mod 64
-    long bitmask = 1L << bit;
+    long bitmask = 1L << index;
     bits[wordNum] |= bitmask;
   }
 
   public boolean getAndSet(int index) {
     assert index >= 0 && index < numBits;
     int wordNum = index >> 6;      // div 64
-    int bit = index & 0x3f;     // mod 64
-    long bitmask = 1L << bit;
+    long bitmask = 1L << index;
     boolean val = (bits[wordNum] & bitmask) != 0;
     bits[wordNum] |= bitmask;
     return val;
@@ -269,16 +264,14 @@ public final class FixedBitSet extends DocIdSet implements Bits {
   public void clear(int index) {
     assert index >= 0 && index < numBits;
     int wordNum = index >> 6;
-    int bit = index & 0x03f;
-    long bitmask = 1L << bit;
+    long bitmask = 1L << index;
     bits[wordNum] &= ~bitmask;
   }
 
   public boolean getAndClear(int index) {
     assert index >= 0 && index < numBits;
     int wordNum = index >> 6;      // div 64
-    int bit = index & 0x3f;     // mod 64
-    long bitmask = 1L << bit;
+    long bitmask = 1L << index;
     boolean val = (bits[wordNum] & bitmask) != 0;
     bits[wordNum] &= ~bitmask;
     return val;
@@ -290,8 +283,7 @@ public final class FixedBitSet extends DocIdSet implements Bits {
   public int nextSetBit(int index) {
     assert index >= 0 && index < numBits : "index=" + index + ", numBits=" + numBits;
     int i = index >> 6;
-    final int subIndex = index & 0x3f;      // index within the word
-    long word = bits[i] >> subIndex;  // skip all the bits to the right of index
+    long word = bits[i] >> index;  // skip all the bits to the right of index
 
     if (word!=0) {
       return index + Long.numberOfTrailingZeros(word);

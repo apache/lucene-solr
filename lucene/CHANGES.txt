@@ -188,6 +188,9 @@ Optimizations
 * LUCENE-5841: Improve performance of block tree terms dictionary when
   assigning terms to blocks.  (Mike McCandless)
 
+* LUCENE-5856: Optimize Fixed/Open/LongBitSet to remove unnecessary AND. 
+  (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-5796: Fixes the Scorer.getChildren() method for two combinations 
