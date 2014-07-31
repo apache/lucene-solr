@@ -33,22 +33,22 @@ public class TestBulgarianAnalyzer extends BaseTokenStreamTestCase {
    * This test fails with NPE when the stopwords file is missing in classpath
    */
   public void testResourcesAvailable() {
-    new BulgarianAnalyzer();
+    new BulgarianAnalyzer(TEST_VERSION_CURRENT);
   }
   
   public void testStopwords() throws IOException {
-    Analyzer a = new BulgarianAnalyzer();
+    Analyzer a = new BulgarianAnalyzer(TEST_VERSION_CURRENT);
     assertAnalyzesTo(a, "Как се казваш?", new String[] {"казваш"});
   }
   
   public void testCustomStopwords() throws IOException {
-    Analyzer a = new BulgarianAnalyzer(CharArraySet.EMPTY_SET);
+    Analyzer a = new BulgarianAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
     assertAnalyzesTo(a, "Как се казваш?", 
         new String[] {"как", "се", "казваш"});
   }
   
   public void testReusableTokenStream() throws IOException {
-    Analyzer a = new BulgarianAnalyzer();
+    Analyzer a = new BulgarianAnalyzer(TEST_VERSION_CURRENT);
     assertAnalyzesTo(a, "документи", new String[] {"документ"});
     assertAnalyzesTo(a, "документ", new String[] {"документ"});
   }
@@ -57,7 +57,7 @@ public class TestBulgarianAnalyzer extends BaseTokenStreamTestCase {
    * Test some examples from the paper
    */
   public void testBasicExamples() throws IOException {
-    Analyzer a = new BulgarianAnalyzer();
+    Analyzer a = new BulgarianAnalyzer(TEST_VERSION_CURRENT);
     assertAnalyzesTo(a, "енергийни кризи", new String[] {"енергийн", "криз"});
     assertAnalyzesTo(a, "Атомната енергия", new String[] {"атомн", "енерг"});
     
@@ -68,14 +68,14 @@ public class TestBulgarianAnalyzer extends BaseTokenStreamTestCase {
   }
   
   public void testWithStemExclusionSet() throws IOException {
-    CharArraySet set = new CharArraySet(1, true);
+    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
     set.add("строеве");
-    Analyzer a = new BulgarianAnalyzer(CharArraySet.EMPTY_SET, set);
+    Analyzer a = new BulgarianAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(a, "строевете строеве", new String[] { "строй", "строеве" });
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new BulgarianAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new BulgarianAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
   }
 }

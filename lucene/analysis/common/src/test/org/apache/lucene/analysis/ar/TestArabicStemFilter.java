@@ -118,7 +118,7 @@ public class TestArabicStemFilter extends BaseTokenStreamTestCase {
   }
   
   public void testWithKeywordAttribute() throws IOException {
-    CharArraySet set = new CharArraySet(1, true);
+    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
     set.add("ساهدهات");
     MockTokenizer tokenStream  = whitespaceMockTokenizer("ساهدهات");
 

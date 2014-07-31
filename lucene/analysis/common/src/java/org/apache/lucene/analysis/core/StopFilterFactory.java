@@ -81,6 +81,7 @@ public class StopFilterFactory extends TokenFilterFactory implements ResourceLoa
   /** Creates a new StopFilterFactory */
   public StopFilterFactory(Map<String,String> args) {
     super(args);
+    assureMatchVersion();
     stopWordFiles = get(args, "words");
     format = get(args, "format", (null == stopWordFiles ? null : FORMAT_WORDSET));
     ignoreCase = getBoolean(args, "ignoreCase", false);
@@ -103,7 +104,7 @@ public class StopFilterFactory extends TokenFilterFactory implements ResourceLoa
       if (null != format) {
         throw new IllegalArgumentException("'format' can not be specified w/o an explicit 'words' file: " + format);
       }
-      stopWords = new CharArraySet(StopAnalyzer.ENGLISH_STOP_WORDS_SET, ignoreCase);
+      stopWords = new CharArraySet(luceneMatchVersion, StopAnalyzer.ENGLISH_STOP_WORDS_SET, ignoreCase);
     }
   }
 
@@ -117,7 +118,7 @@ public class StopFilterFactory extends TokenFilterFactory implements ResourceLoa
 
   @Override
   public TokenStream create(TokenStream input) {
-    StopFilter stopFilter = new StopFilter(input,stopWords);
+    StopFilter stopFilter = new StopFilter(luceneMatchVersion,input,stopWords);
     return stopFilter;
   }
 }

@@ -23,7 +23,7 @@ import org.apache.solr.core.Config;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.FieldType;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.tr.TurkishAnalyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.util.Version;
 import org.junit.BeforeClass;
 
@@ -56,18 +56,18 @@ public class TestLuceneMatchVersion extends SolrTestCaseJ4 {
     assertEquals(Version.LUCENE_4_0, (ana.getTokenizerFactory()).getLuceneMatchVersion());
     assertEquals(Version.LUCENE_5_0, (ana.getTokenFilterFactories()[2]).getLuceneMatchVersion());
 
-    // this is a hack to get the private matchVersion field in TurkishAnalyzer's class, may break in later lucene versions - we have no getter :(
-    final Field matchVersionField = TurkishAnalyzer.class.getDeclaredField("matchVersion");
+    // this is a hack to get the private matchVersion field in StandardAnalyzer's superclass, may break in later lucene versions - we have no getter :(
+    final Field matchVersionField = StandardAnalyzer.class.getSuperclass().getDeclaredField("matchVersion");
     matchVersionField.setAccessible(true);
 
-    type = schema.getFieldType("textTurkishAnalyzerDefault");
+    type = schema.getFieldType("textStandardAnalyzerDefault");
     Analyzer ana1 = type.getIndexAnalyzer();
-    assertTrue(ana1 instanceof TurkishAnalyzer);
+    assertTrue(ana1 instanceof StandardAnalyzer);
     assertEquals(DEFAULT_VERSION, matchVersionField.get(ana1));
 
-    type = schema.getFieldType("textTurkishAnalyzer40");
+    type = schema.getFieldType("textStandardAnalyzer40");
     ana1 = type.getIndexAnalyzer();
-    assertTrue(ana1 instanceof TurkishAnalyzer);
+    assertTrue(ana1 instanceof StandardAnalyzer);
     assertEquals(Version.LUCENE_4_0, matchVersionField.get(ana1));
   }
 }

@@ -81,10 +81,10 @@ public final class NGramTokenFilter extends TokenFilter {
    * @param maxGram the largest n-gram to generate
    */
   public NGramTokenFilter(Version version, TokenStream input, int minGram, int maxGram) {
-    super(new CodepointCountFilter(input, minGram, Integer.MAX_VALUE));
+    super(new CodepointCountFilter(version, input, minGram, Integer.MAX_VALUE));
     this.version = version;
     this.charUtils = version.onOrAfter(Version.LUCENE_4_4)
-        ? CharacterUtils.getInstance()
+        ? CharacterUtils.getInstance(version)
         : CharacterUtils.getJava4Instance();
     if (minGram < 1) {
       throw new IllegalArgumentException("minGram must be greater than zero");

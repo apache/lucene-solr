@@ -46,7 +46,7 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
 
     File tempDir = createTempDir("BlendedInfixSuggesterTest");
 
-    Analyzer a = new StandardAnalyzer(CharArraySet.EMPTY_SET);
+    Analyzer a = new StandardAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
     BlendedInfixSuggester suggester = new BlendedInfixSuggester(TEST_VERSION_CURRENT, newFSDirectory(tempDir), a, a,
                                                                 AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS,
                                                                 BlendedInfixSuggester.BlenderType.POSITION_LINEAR,
@@ -84,7 +84,7 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
     };
 
     File tempDir = createTempDir("BlendedInfixSuggesterTest");
-    Analyzer a = new StandardAnalyzer(CharArraySet.EMPTY_SET);
+    Analyzer a = new StandardAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
 
     // BlenderType.LINEAR is used by default (remove position*10%)
     BlendedInfixSuggester suggester = new BlendedInfixSuggester(TEST_VERSION_CURRENT, newFSDirectory(tempDir), a);
@@ -125,7 +125,7 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
     };
 
     File tempDir = createTempDir("BlendedInfixSuggesterTest");
-    Analyzer a = new StandardAnalyzer(CharArraySet.EMPTY_SET);
+    Analyzer a = new StandardAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
 
     // if factor is small, we don't get the expected element
     BlendedInfixSuggester suggester = new BlendedInfixSuggester(TEST_VERSION_CURRENT, newFSDirectory(tempDir), a, a,
@@ -175,7 +175,7 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
     };
 
     File tempDir = createTempDir("BlendedInfixSuggesterTest");
-    Analyzer a = new StandardAnalyzer(CharArraySet.EMPTY_SET);
+    Analyzer a = new StandardAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
 
     // if factor is small, we don't get the expected element
     BlendedInfixSuggester suggester = new BlendedInfixSuggester(TEST_VERSION_CURRENT, newFSDirectory(tempDir), a, a,

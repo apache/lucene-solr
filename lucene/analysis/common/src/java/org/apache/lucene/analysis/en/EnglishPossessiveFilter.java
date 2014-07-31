@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.util.Version;
 
 /**
  * TokenFilter that removes possessives (trailing 's) from words.
@@ -29,7 +30,8 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 public final class EnglishPossessiveFilter extends TokenFilter {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
-  public EnglishPossessiveFilter(TokenStream input) {
+  // NOTE: version now unused
+  public EnglishPossessiveFilter(Version version, TokenStream input) {
     super(input);
   }
 

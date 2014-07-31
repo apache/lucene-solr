@@ -36,9 +36,9 @@ public class TestTypeTokenFilter extends BaseTokenStreamTestCase {
   public void testTypeFilter() throws IOException {
     StringReader reader = new StringReader("121 is palindrome, while 123 is not");
     Set<String> stopTypes = asSet("<NUM>");
-    final StandardTokenizer input = new StandardTokenizer(newAttributeFactory());
+    final StandardTokenizer input = new StandardTokenizer(TEST_VERSION_CURRENT, newAttributeFactory());
     input.setReader(reader);
-    TokenStream stream = new TypeTokenFilter(input, stopTypes);
+    TokenStream stream = new TypeTokenFilter(TEST_VERSION_CURRENT, input, stopTypes);
     assertTokenStreamContents(stream, new String[]{"is", "palindrome", "while", "is", "not"});
   }
 
@@ -61,9 +61,9 @@ public class TestTypeTokenFilter extends BaseTokenStreamTestCase {
 
     // with increments
     StringReader reader = new StringReader(sb.toString());
-    final StandardTokenizer input = new StandardTokenizer();
+    final StandardTokenizer input = new StandardTokenizer(TEST_VERSION_CURRENT);
     input.setReader(reader);
-    TypeTokenFilter typeTokenFilter = new TypeTokenFilter(input, stopSet);
+    TypeTokenFilter typeTokenFilter = new TypeTokenFilter(TEST_VERSION_CURRENT, input, stopSet);
     testPositons(typeTokenFilter);
 
   }
@@ -85,9 +85,9 @@ public class TestTypeTokenFilter extends BaseTokenStreamTestCase {
   public void testTypeFilterWhitelist() throws IOException {
     StringReader reader = new StringReader("121 is palindrome, while 123 is not");
     Set<String> stopTypes = Collections.singleton("<NUM>");
-    final StandardTokenizer input = new StandardTokenizer(newAttributeFactory());
+    final StandardTokenizer input = new StandardTokenizer(TEST_VERSION_CURRENT, newAttributeFactory());
     input.setReader(reader);
-    TokenStream stream = new TypeTokenFilter(input, stopTypes, true);
+    TokenStream stream = new TypeTokenFilter(TEST_VERSION_CURRENT, input, stopTypes, true);
     assertTokenStreamContents(stream, new String[]{"121", "123"});
   }
 

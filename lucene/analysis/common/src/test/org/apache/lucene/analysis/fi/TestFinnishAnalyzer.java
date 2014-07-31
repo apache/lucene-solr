@@ -27,12 +27,12 @@ public class TestFinnishAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new FinnishAnalyzer();
+    new FinnishAnalyzer(TEST_VERSION_CURRENT);
   }
   
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
-    Analyzer a = new FinnishAnalyzer();
+    Analyzer a = new FinnishAnalyzer(TEST_VERSION_CURRENT);
     // stemming
     checkOneTerm(a, "edeltäjiinsä", "edeltäj");
     checkOneTerm(a, "edeltäjistään", "edeltäj");
@@ -42,8 +42,8 @@ public class TestFinnishAnalyzer extends BaseTokenStreamTestCase {
   
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    CharArraySet exclusionSet = new CharArraySet( asSet("edeltäjistään"), false);
-    Analyzer a = new FinnishAnalyzer( 
+    CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("edeltäjistään"), false);
+    Analyzer a = new FinnishAnalyzer(TEST_VERSION_CURRENT, 
         FinnishAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "edeltäjiinsä", "edeltäj");
     checkOneTerm(a, "edeltäjistään", "edeltäjistään");
@@ -51,6 +51,6 @@ public class TestFinnishAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new FinnishAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new FinnishAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
   }
 }

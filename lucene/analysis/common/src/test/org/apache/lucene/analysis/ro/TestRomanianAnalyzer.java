@@ -27,12 +27,12 @@ public class TestRomanianAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new RomanianAnalyzer();
+    new RomanianAnalyzer(TEST_VERSION_CURRENT);
   }
   
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
-    Analyzer a = new RomanianAnalyzer();
+    Analyzer a = new RomanianAnalyzer(TEST_VERSION_CURRENT);
     // stemming
     checkOneTerm(a, "absenţa", "absenţ");
     checkOneTerm(a, "absenţi", "absenţ");
@@ -42,8 +42,8 @@ public class TestRomanianAnalyzer extends BaseTokenStreamTestCase {
   
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    CharArraySet exclusionSet = new CharArraySet( asSet("absenţa"), false);
-    Analyzer a = new RomanianAnalyzer( 
+    CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("absenţa"), false);
+    Analyzer a = new RomanianAnalyzer(TEST_VERSION_CURRENT, 
         RomanianAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "absenţa", "absenţa");
     checkOneTerm(a, "absenţi", "absenţ");
@@ -51,6 +51,6 @@ public class TestRomanianAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new RomanianAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new RomanianAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
   }
 }

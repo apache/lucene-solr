@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
+import org.apache.lucene.util.Version;
 
 /**
  * {@link Analyzer} for Persian.
@@ -86,18 +87,20 @@ public final class PersianAnalyzer extends StopwordAnalyzerBase {
    * Builds an analyzer with the default stop words:
    * {@link #DEFAULT_STOPWORD_FILE}.
    */
-  public PersianAnalyzer() {
-    this(DefaultSetHolder.DEFAULT_STOP_SET);
+  public PersianAnalyzer(Version matchVersion) {
+    this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
   }
   
   /**
    * Builds an analyzer with the given stop words 
    * 
+   * @param matchVersion
+   *          lucene compatibility version
    * @param stopwords
    *          a stopword set
    */
-  public PersianAnalyzer(CharArraySet stopwords){
-    super(stopwords);
+  public PersianAnalyzer(Version matchVersion, CharArraySet stopwords){
+    super(matchVersion, stopwords);
   }
 
   /**
@@ -112,8 +115,8 @@ public final class PersianAnalyzer extends StopwordAnalyzerBase {
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
-    final Tokenizer source = new StandardTokenizer();
-    TokenStream result = new LowerCaseFilter(source);
+    final Tokenizer source = new StandardTokenizer(matchVersion);
+    TokenStream result = new LowerCaseFilter(matchVersion, source);
     result = new ArabicNormalizationFilter(result);
     /* additional persian-specific normalization */
     result = new PersianNormalizationFilter(result);
@@ -121,7 +124,7 @@ public final class PersianAnalyzer extends StopwordAnalyzerBase {
      * the order here is important: the stopword list is normalized with the
      * above!
      */
-    return new TokenStreamComponents(source, new StopFilter(result, stopwords));
+    return new TokenStreamComponents(source, new StopFilter(matchVersion, result, stopwords));
   }
   
   /** 

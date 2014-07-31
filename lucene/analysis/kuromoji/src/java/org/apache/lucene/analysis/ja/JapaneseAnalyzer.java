@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.ja;
  */
 
 import java.io.IOException;
+import java.io.Reader;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -30,6 +31,7 @@ import org.apache.lucene.analysis.ja.JapaneseTokenizer.Mode;
 import org.apache.lucene.analysis.ja.dict.UserDictionary;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
+import org.apache.lucene.util.Version;
 
 /**
  * Analyzer for Japanese that uses morphological analysis.
@@ -40,12 +42,12 @@ public class JapaneseAnalyzer extends StopwordAnalyzerBase {
   private final Set<String> stoptags;
   private final UserDictionary userDict;
   
-  public JapaneseAnalyzer() {
-    this(null, JapaneseTokenizer.DEFAULT_MODE, DefaultSetHolder.DEFAULT_STOP_SET, DefaultSetHolder.DEFAULT_STOP_TAGS);
+  public JapaneseAnalyzer(Version matchVersion) {
+    this(matchVersion, null, JapaneseTokenizer.DEFAULT_MODE, DefaultSetHolder.DEFAULT_STOP_SET, DefaultSetHolder.DEFAULT_STOP_TAGS);
   }
   
-  public JapaneseAnalyzer(UserDictionary userDict, Mode mode, CharArraySet stopwords, Set<String> stoptags) {
-    super(stopwords);
+  public JapaneseAnalyzer(Version matchVersion, UserDictionary userDict, Mode mode, CharArraySet stopwords, Set<String> stoptags) {
+    super(matchVersion, stopwords);
     this.userDict = userDict;
     this.mode = mode;
     this.stoptags = stoptags;
@@ -87,11 +89,11 @@ public class JapaneseAnalyzer extends StopwordAnalyzerBase {
   protected TokenStreamComponents createComponents(String fieldName) {
     Tokenizer tokenizer = new JapaneseTokenizer(userDict, true, mode);
     TokenStream stream = new JapaneseBaseFormFilter(tokenizer);
-    stream = new JapanesePartOfSpeechStopFilter(stream, stoptags);
+    stream = new JapanesePartOfSpeechStopFilter(matchVersion, stream, stoptags);
     stream = new CJKWidthFilter(stream);
-    stream = new StopFilter(stream, stopwords);
+    stream = new StopFilter(matchVersion, stream, stopwords);
     stream = new JapaneseKatakanaStemFilter(stream);
-    stream = new LowerCaseFilter(stream);
+    stream = new LowerCaseFilter(matchVersion, stream);
     return new TokenStreamComponents(tokenizer, stream);
   }
 }

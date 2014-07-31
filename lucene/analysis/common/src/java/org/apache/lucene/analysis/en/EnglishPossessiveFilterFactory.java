@@ -39,6 +39,7 @@ public class EnglishPossessiveFilterFactory extends TokenFilterFactory {
   /** Creates a new EnglishPossessiveFilterFactory */
   public EnglishPossessiveFilterFactory(Map<String,String> args) {
     super(args);
+    assureMatchVersion();
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -46,6 +47,6 @@ public class EnglishPossessiveFilterFactory extends TokenFilterFactory {
   
   @Override
   public TokenStream create(TokenStream input) {
-    return new EnglishPossessiveFilter(input);
+    return new EnglishPossessiveFilter(luceneMatchVersion, input);
   }
 }

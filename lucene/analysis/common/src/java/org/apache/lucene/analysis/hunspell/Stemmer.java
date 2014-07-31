@@ -215,7 +215,7 @@ final class Stemmer {
     if (stems.size() < 2) {
       return stems;
     }
-    CharArraySet terms = new CharArraySet(8, dictionary.ignoreCase);
+    CharArraySet terms = new CharArraySet(Version.LUCENE_CURRENT, 8, dictionary.ignoreCase);
     List<CharsRef> deduped = new ArrayList<>();
     for (CharsRef s : stems) {
       if (!terms.contains(s)) {

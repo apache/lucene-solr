@@ -29,7 +29,7 @@ public class TestCJKBigramFilter extends BaseTokenStreamTestCase {
   Analyzer analyzer = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer t = new StandardTokenizer();
+      Tokenizer t = new StandardTokenizer(TEST_VERSION_CURRENT);
       return new TokenStreamComponents(t, new CJKBigramFilter(t));
     }
   };
@@ -37,7 +37,7 @@ public class TestCJKBigramFilter extends BaseTokenStreamTestCase {
   Analyzer unibiAnalyzer = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer t = new StandardTokenizer();
+      Tokenizer t = new StandardTokenizer(TEST_VERSION_CURRENT);
       return new TokenStreamComponents(t, 
           new CJKBigramFilter(t, 0xff, true));
     }
@@ -67,7 +67,7 @@ public class TestCJKBigramFilter extends BaseTokenStreamTestCase {
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer t = new StandardTokenizer();
+        Tokenizer t = new StandardTokenizer(TEST_VERSION_CURRENT);
         return new TokenStreamComponents(t, new CJKBigramFilter(t, CJKBigramFilter.HAN));
       }
     };
@@ -85,7 +85,7 @@ public class TestCJKBigramFilter extends BaseTokenStreamTestCase {
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer t = new StandardTokenizer();
+        Tokenizer t = new StandardTokenizer(TEST_VERSION_CURRENT);
         return new TokenStreamComponents(t, 
             new CJKBigramFilter(t, 0xff, false));
       }
@@ -119,7 +119,7 @@ public class TestCJKBigramFilter extends BaseTokenStreamTestCase {
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer t = new StandardTokenizer();
+        Tokenizer t = new StandardTokenizer(TEST_VERSION_CURRENT);
         return new TokenStreamComponents(t, new CJKBigramFilter(t, CJKBigramFilter.HAN, true));
       }
     };

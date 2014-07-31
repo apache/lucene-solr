@@ -27,12 +27,12 @@ public class TestPolishAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new PolishAnalyzer();
+    new PolishAnalyzer(TEST_VERSION_CURRENT);
   }
   
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
-    Analyzer a = new PolishAnalyzer();
+    Analyzer a = new PolishAnalyzer(TEST_VERSION_CURRENT);
     // stemming
     checkOneTerm(a, "studenta", "student");
     checkOneTerm(a, "studenci", "student");
@@ -42,14 +42,15 @@ public class TestPolishAnalyzer extends BaseTokenStreamTestCase {
   
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    CharArraySet exclusionSet = new CharArraySet(asSet("studenta"), false);;
-    Analyzer a = new PolishAnalyzer(PolishAnalyzer.getDefaultStopSet(), exclusionSet);
+    CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("studenta"), false);;
+    Analyzer a = new PolishAnalyzer(TEST_VERSION_CURRENT, 
+        PolishAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "studenta", "studenta");
     checkOneTerm(a, "studenci", "student");
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new PolishAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new PolishAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
   }
 }

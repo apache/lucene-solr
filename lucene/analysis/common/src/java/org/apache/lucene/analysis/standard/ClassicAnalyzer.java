@@ -17,14 +17,16 @@ package org.apache.lucene.analysis.standard;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopAnalyzer;
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
+import org.apache.lucene.util.Version;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 
@@ -32,6 +34,18 @@ import java.io.Reader;
  * Filters {@link ClassicTokenizer} with {@link ClassicFilter}, {@link
  * LowerCaseFilter} and {@link StopFilter}, using a list of
  * English stop words.
+ *
+ * <a name="version"/>
+ * <p>You must specify the required {@link Version}
+ * compatibility when creating ClassicAnalyzer:
+ * <ul>
+ *   <li> As of 3.1, StopFilter correctly handles Unicode 4.0
+ *         supplementary characters in stopwords
+ *   <li> As of 2.9, StopFilter preserves position
+ *        increments
+ *   <li> As of 2.4, Tokens incorrectly identified as acronyms
+ *        are corrected (see <a href="https://issues.apache.org/jira/browse/LUCENE-1068">LUCENE-1068</a>)
+ * </ul>
  * 
  * ClassicAnalyzer was named StandardAnalyzer in Lucene versions prior to 3.1. 
  * As of 3.1, {@link StandardAnalyzer} implements Unicode text segmentation,
@@ -49,23 +63,29 @@ public final class ClassicAnalyzer extends StopwordAnalyzerBase {
   public static final CharArraySet STOP_WORDS_SET = StopAnalyzer.ENGLISH_STOP_WORDS_SET; 
 
   /** Builds an analyzer with the given stop words.
+   * @param matchVersion Lucene version to match See {@link
+   * <a href="#version">above</a>}
    * @param stopWords stop words */
-  public ClassicAnalyzer(CharArraySet stopWords) {
-    super(stopWords);
+  public ClassicAnalyzer(Version matchVersion, CharArraySet stopWords) {
+    super(matchVersion, stopWords);
   }
 
   /** Builds an analyzer with the default stop words ({@link
    * #STOP_WORDS_SET}).
+   * @param matchVersion Lucene version to match See {@link
+   * <a href="#version">above</a>}
    */
-  public ClassicAnalyzer() {
-    this(STOP_WORDS_SET);
+  public ClassicAnalyzer(Version matchVersion) {
+    this(matchVersion, STOP_WORDS_SET);
   }
 
   /** Builds an analyzer with the stop words from the given reader.
-   * @see WordlistLoader#getWordSet(Reader)
+   * @see WordlistLoader#getWordSet(Reader, Version)
+   * @param matchVersion Lucene version to match See {@link
+   * <a href="#version">above</a>}
    * @param stopwords Reader to read stop words from */
-  public ClassicAnalyzer(Reader stopwords) throws IOException {
-    this(loadStopwordSet(stopwords));
+  public ClassicAnalyzer(Version matchVersion, Reader stopwords) throws IOException {
+    this(matchVersion, loadStopwordSet(stopwords, matchVersion));
   }
 
   /**
@@ -87,11 +107,11 @@ public final class ClassicAnalyzer extends StopwordAnalyzerBase {
 
   @Override
   protected TokenStreamComponents createComponents(final String fieldName) {
-    final ClassicTokenizer src = new ClassicTokenizer();
+    final ClassicTokenizer src = new ClassicTokenizer(matchVersion);
     src.setMaxTokenLength(maxTokenLength);
     TokenStream tok = new ClassicFilter(src);
-    tok = new LowerCaseFilter(tok);
-    tok = new StopFilter(tok, stopwords);
+    tok = new LowerCaseFilter(matchVersion, tok);
+    tok = new StopFilter(matchVersion, tok, stopwords);
     return new TokenStreamComponents(src, tok) {
       @Override
       protected void setReader(final Reader reader) throws IOException {

@@ -238,10 +238,12 @@ public abstract class AbstractAnalysisFactory {
     if (files.size() > 0) {
       // default stopwords list has 35 or so words, but maybe don't make it that
       // big to start
-      words = new CharArraySet(files.size() * 10, ignoreCase);
+      words = new CharArraySet(luceneMatchVersion,
+          files.size() * 10, ignoreCase);
       for (String file : files) {
         List<String> wlist = getLines(loader, file.trim());
-        words.addAll(StopFilter.makeStopSet(wlist, ignoreCase));
+        words.addAll(StopFilter.makeStopSet(luceneMatchVersion, wlist,
+            ignoreCase));
       }
     }
     return words;
@@ -264,7 +266,8 @@ public abstract class AbstractAnalysisFactory {
     if (files.size() > 0) {
       // default stopwords list has 35 or so words, but maybe don't make it that
       // big to start
-      words = new CharArraySet(files.size() * 10, ignoreCase);
+      words = new CharArraySet(luceneMatchVersion,
+          files.size() * 10, ignoreCase);
       for (String file : files) {
         InputStream stream = null;
         Reader reader = null;

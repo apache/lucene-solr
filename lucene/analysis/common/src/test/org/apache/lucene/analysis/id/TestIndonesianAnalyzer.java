@@ -27,12 +27,12 @@ public class TestIndonesianAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new IndonesianAnalyzer();
+    new IndonesianAnalyzer(TEST_VERSION_CURRENT);
   }
   
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
-    Analyzer a = new IndonesianAnalyzer();
+    Analyzer a = new IndonesianAnalyzer(TEST_VERSION_CURRENT);
     // stemming
     checkOneTerm(a, "peledakan", "ledak");
     checkOneTerm(a, "pembunuhan", "bunuh");
@@ -42,8 +42,8 @@ public class TestIndonesianAnalyzer extends BaseTokenStreamTestCase {
   
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    CharArraySet exclusionSet = new CharArraySet( asSet("peledakan"), false);
-    Analyzer a = new IndonesianAnalyzer( 
+    CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("peledakan"), false);
+    Analyzer a = new IndonesianAnalyzer(TEST_VERSION_CURRENT, 
         IndonesianAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "peledakan", "peledakan");
     checkOneTerm(a, "pembunuhan", "bunuh");
@@ -51,6 +51,6 @@ public class TestIndonesianAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new IndonesianAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new IndonesianAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
   }
 }

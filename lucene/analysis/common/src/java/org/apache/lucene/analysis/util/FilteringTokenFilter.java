@@ -32,15 +32,18 @@ import org.apache.lucene.util.Version;
  */
 public abstract class FilteringTokenFilter extends TokenFilter {
 
+  protected final Version version;
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
   private int skippedPositions;
 
   /**
    * Create a new {@link FilteringTokenFilter}.
+   * @param version the Lucene match version
    * @param in      the {@link TokenStream} to consume
    */
-  public FilteringTokenFilter(TokenStream in) {
+  public FilteringTokenFilter(Version version, TokenStream in) {
     super(in);
+    this.version = version;
   }
 
   /** Override this method and return if the current input token should be returned by {@link #incrementToken}. */

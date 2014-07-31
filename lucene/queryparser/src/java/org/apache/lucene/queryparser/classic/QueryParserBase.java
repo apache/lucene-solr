@@ -33,6 +33,7 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanQuery.TooManyClauses;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.QueryBuilder;
+import org.apache.lucene.util.Version;
 
 /** This class is overridden by QueryParser in QueryParser.jj
  * and acts to separate the majority of the Java code from the .jj grammar file. 
@@ -88,10 +89,11 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
   }
 
   /** Initializes a query parser.  Called by the QueryParser constructor
+   *  @param matchVersion  Lucene version to match.
    *  @param f  the default field for query terms.
    *  @param a   used to find terms in the query text.
    */
-  public void init(String f, Analyzer a) {
+  public void init(Version matchVersion, String f, Analyzer a) {
     setAnalyzer(a);
     field = f;
     setAutoGeneratePhraseQueries(false);

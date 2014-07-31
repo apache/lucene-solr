@@ -50,6 +50,6 @@ public class CodepointCountFilterFactory extends TokenFilterFactory {
   
   @Override
   public CodepointCountFilter create(TokenStream input) {
-    return new CodepointCountFilter(input, min, max);
+    return new CodepointCountFilter(luceneMatchVersion, input, min, max);
   }
 }

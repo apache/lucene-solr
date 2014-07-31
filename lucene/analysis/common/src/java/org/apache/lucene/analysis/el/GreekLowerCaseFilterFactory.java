@@ -40,6 +40,7 @@ public class GreekLowerCaseFilterFactory extends TokenFilterFactory implements M
   /** Creates a new GreekLowerCaseFilterFactory */
   public GreekLowerCaseFilterFactory(Map<String,String> args) {
     super(args);
+    assureMatchVersion();
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -47,7 +48,7 @@ public class GreekLowerCaseFilterFactory extends TokenFilterFactory implements M
 
   @Override
   public GreekLowerCaseFilter create(TokenStream in) {
-    return new GreekLowerCaseFilter(in);
+    return new GreekLowerCaseFilter(luceneMatchVersion, in);
   }
 
   @Override

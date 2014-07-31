@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.Version;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -60,7 +61,7 @@ public final class CzechAnalyzer extends StopwordAnalyzerBase {
     static {
       try {
         DEFAULT_SET = WordlistLoader.getWordSet(IOUtils.getDecodingReader(CzechAnalyzer.class, 
-            DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8), "#");
+            DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8), "#", Version.LUCENE_CURRENT);
       } catch (IOException ex) {
         // default set should always be present as it is part of the
         // distribution (JAR)
@@ -74,30 +75,34 @@ public final class CzechAnalyzer extends StopwordAnalyzerBase {
 
   /**
    * Builds an analyzer with the default stop words ({@link #getDefaultStopSet()}).
+   *
+   * @param matchVersion Lucene version to match
    */
-  public CzechAnalyzer() {
-    this(DefaultSetHolder.DEFAULT_SET);
+  public CzechAnalyzer(Version matchVersion) {
+    this(matchVersion, DefaultSetHolder.DEFAULT_SET);
   }
 
   /**
    * Builds an analyzer with the given stop words.
    *
+   * @param matchVersion Lucene version to match
    * @param stopwords a stopword set
    */
-  public CzechAnalyzer(CharArraySet stopwords) {
-    this(stopwords, CharArraySet.EMPTY_SET);
+  public CzechAnalyzer(Version matchVersion, CharArraySet stopwords) {
+    this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
   }
 
   /**
    * Builds an analyzer with the given stop words and a set of work to be
    * excluded from the {@link CzechStemFilter}.
    * 
+   * @param matchVersion Lucene version to match
    * @param stopwords a stopword set
    * @param stemExclusionTable a stemming exclusion set
    */
-  public CzechAnalyzer(CharArraySet stopwords, CharArraySet stemExclusionTable) {
-    super(stopwords);
-    this.stemExclusionTable = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionTable));
+  public CzechAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionTable) {
+    super(matchVersion, stopwords);
+    this.stemExclusionTable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stemExclusionTable));
   }
 
   /**
@@ -110,16 +115,16 @@ public final class CzechAnalyzer extends StopwordAnalyzerBase {
    *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link StopFilter}
    *         , and {@link CzechStemFilter} (only if version is >= LUCENE_31). If
    *         a stem exclusion set is provided via
-   *         {@link #CzechAnalyzer(CharArraySet, CharArraySet)} a
+   *         {@link #CzechAnalyzer(Version, CharArraySet, CharArraySet)} a
    *         {@link SetKeywordMarkerFilter} is added before
    *         {@link CzechStemFilter}.
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
-    final Tokenizer source = new StandardTokenizer();
-    TokenStream result = new StandardFilter(source);
-    result = new LowerCaseFilter(result);
-    result = new StopFilter(result, stopwords);
+    final Tokenizer source = new StandardTokenizer(matchVersion);
+    TokenStream result = new StandardFilter(matchVersion, source);
+    result = new LowerCaseFilter(matchVersion, result);
+    result = new StopFilter( matchVersion, result, stopwords);
     if(!this.stemExclusionTable.isEmpty())
       result = new SetKeywordMarkerFilter(result, stemExclusionTable);
     result = new CzechStemFilter(result);

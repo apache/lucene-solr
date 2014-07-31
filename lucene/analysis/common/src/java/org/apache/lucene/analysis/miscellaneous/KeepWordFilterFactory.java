@@ -44,6 +44,7 @@ public class KeepWordFilterFactory extends TokenFilterFactory implements Resourc
   /** Creates a new KeepWordFilterFactory */
   public KeepWordFilterFactory(Map<String,String> args) {
     super(args);
+    assureMatchVersion();
     wordFiles = get(args, "words");
     ignoreCase = getBoolean(args, "ignoreCase", false);
     if (!args.isEmpty()) {
@@ -72,7 +73,7 @@ public class KeepWordFilterFactory extends TokenFilterFactory implements Resourc
     if (words == null) {
       return input;
     } else {
-      final TokenStream filter = new KeepWordFilter(input, words);
+      final TokenStream filter = new KeepWordFilter(luceneMatchVersion, input, words);
       return filter;
     }
   }

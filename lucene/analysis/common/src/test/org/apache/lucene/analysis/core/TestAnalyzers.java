@@ -31,7 +31,7 @@ import org.apache.lucene.util.BytesRef;
 public class TestAnalyzers extends BaseTokenStreamTestCase {
 
   public void testSimple() throws Exception {
-    Analyzer a = new SimpleAnalyzer();
+    Analyzer a = new SimpleAnalyzer(TEST_VERSION_CURRENT);
     assertAnalyzesTo(a, "foo bar FOO BAR", 
                      new String[] { "foo", "bar", "foo", "bar" });
     assertAnalyzesTo(a, "foo      bar .  FOO <> BAR", 
@@ -51,7 +51,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   }
 
   public void testNull() throws Exception {
-    Analyzer a = new WhitespaceAnalyzer();
+    Analyzer a = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
     assertAnalyzesTo(a, "foo bar FOO BAR", 
                      new String[] { "foo", "bar", "FOO", "BAR" });
     assertAnalyzesTo(a, "foo      bar .  FOO <> BAR", 
@@ -71,7 +71,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   }
 
   public void testStop() throws Exception {
-    Analyzer a = new StopAnalyzer();
+    Analyzer a = new StopAnalyzer(TEST_VERSION_CURRENT);
     assertAnalyzesTo(a, "foo bar FOO BAR", 
                      new String[] { "foo", "bar", "foo", "bar" });
     assertAnalyzesTo(a, "foo a bar such FOO THESE BAR", 
@@ -94,12 +94,12 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   public void testPayloadCopy() throws IOException {
     String s = "how now brown cow";
     TokenStream ts;
-    ts = new WhitespaceTokenizer();
+    ts = new WhitespaceTokenizer(TEST_VERSION_CURRENT);
     ((Tokenizer)ts).setReader(new StringReader(s));
     ts = new PayloadSetter(ts);
     verifyPayload(ts);
 
-    ts = new WhitespaceTokenizer();
+    ts = new WhitespaceTokenizer(TEST_VERSION_CURRENT);
     ((Tokenizer)ts).setReader(new StringReader(s));
     ts = new PayloadSetter(ts);
     verifyPayload(ts);
@@ -124,8 +124,8 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
 
     @Override
     public TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new WhitespaceTokenizer();
-      return new TokenStreamComponents(tokenizer, new LowerCaseFilter(tokenizer));
+      Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT);
+      return new TokenStreamComponents(tokenizer, new LowerCaseFilter(TEST_VERSION_CURRENT, tokenizer));
     }
     
   }
@@ -134,8 +134,8 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
 
     @Override
     public TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new WhitespaceTokenizer();
-      return new TokenStreamComponents(tokenizer, new UpperCaseFilter(tokenizer));
+      Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT);
+      return new TokenStreamComponents(tokenizer, new UpperCaseFilter(TEST_VERSION_CURRENT, tokenizer));
     }
     
   }
@@ -190,9 +190,10 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   public void testLowerCaseFilterLowSurrogateLeftover() throws IOException {
     // test if the limit of the termbuffer is correctly used with supplementary
     // chars
-    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer();
+    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT);
     tokenizer.setReader(new StringReader("BogustermBogusterm\udc16"));
-    LowerCaseFilter filter = new LowerCaseFilter(tokenizer);
+    LowerCaseFilter filter = new LowerCaseFilter(TEST_VERSION_CURRENT,
+        tokenizer);
     assertTokenStreamContents(filter, new String[] {"bogustermbogusterm\udc16"});
     filter.reset();
     String highSurEndingUpper = "BogustermBoguster\ud801";
@@ -207,7 +208,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   
   public void testLowerCaseTokenizer() throws IOException {
     StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
-    LowerCaseTokenizer tokenizer = new LowerCaseTokenizer();
+    LowerCaseTokenizer tokenizer = new LowerCaseTokenizer(TEST_VERSION_CURRENT);
     tokenizer.setReader(reader);
     assertTokenStreamContents(tokenizer, new String[] { "tokenizer",
         "\ud801\udc44test" });
@@ -215,7 +216,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
 
   public void testWhitespaceTokenizer() throws IOException {
     StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
-    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer();
+    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT);
     tokenizer.setReader(reader);
     assertTokenStreamContents(tokenizer, new String[] { "Tokenizer",
         "\ud801\udc1ctest" });
@@ -223,17 +224,17 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new WhitespaceAnalyzer(), 1000*RANDOM_MULTIPLIER);
-    checkRandomData(random(), new SimpleAnalyzer(), 1000*RANDOM_MULTIPLIER);
-    checkRandomData(random(), new StopAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new WhitespaceAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new SimpleAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new StopAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
   }
   
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
-    checkRandomData(random, new WhitespaceAnalyzer(), 100*RANDOM_MULTIPLIER, 8192);
-    checkRandomData(random, new SimpleAnalyzer(), 100*RANDOM_MULTIPLIER, 8192);
-    checkRandomData(random, new StopAnalyzer(), 100*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), 100*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, new SimpleAnalyzer(TEST_VERSION_CURRENT), 100*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, new StopAnalyzer(TEST_VERSION_CURRENT), 100*RANDOM_MULTIPLIER, 8192);
   } 
 }
 

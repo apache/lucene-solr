@@ -48,8 +48,8 @@ public class TestExtendableQueryParser extends TestQueryParser {
     if (a == null)
       a = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
     QueryParser qp = extensions == null ? new ExtendableQueryParser(
-        getDefaultField(), a) : new ExtendableQueryParser(
-        getDefaultField(), a, extensions);
+        TEST_VERSION_CURRENT, getDefaultField(), a) : new ExtendableQueryParser(
+        TEST_VERSION_CURRENT, getDefaultField(), a, extensions);
     qp.setDefaultOperator(QueryParserBase.OR_OPERATOR);
     return qp;
   }

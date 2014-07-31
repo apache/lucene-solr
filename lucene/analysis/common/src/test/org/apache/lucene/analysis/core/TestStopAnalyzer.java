@@ -31,7 +31,7 @@ import java.util.HashSet;
 
 public class TestStopAnalyzer extends BaseTokenStreamTestCase {
   
-  private StopAnalyzer stop = new StopAnalyzer();
+  private StopAnalyzer stop = new StopAnalyzer(TEST_VERSION_CURRENT);
   private Set<Object> inValidTokens = new HashSet<>();
 
   @Override
@@ -59,8 +59,8 @@ public class TestStopAnalyzer extends BaseTokenStreamTestCase {
   }
 
   public void testStopList() throws IOException {
-    CharArraySet stopWordsSet = new CharArraySet(asSet("good", "test", "analyzer"), false);
-    StopAnalyzer newStop = new StopAnalyzer(stopWordsSet);
+    CharArraySet stopWordsSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("good", "test", "analyzer"), false);
+    StopAnalyzer newStop = new StopAnalyzer(TEST_VERSION_CURRENT, stopWordsSet);
     try (TokenStream stream = newStop.tokenStream("test", "This is a good test of the english stop analyzer")) {
       assertNotNull(stream);
       CharTermAttribute termAtt = stream.getAttribute(CharTermAttribute.class);
@@ -75,8 +75,8 @@ public class TestStopAnalyzer extends BaseTokenStreamTestCase {
   }
 
   public void testStopListPositions() throws IOException {
-    CharArraySet stopWordsSet = new CharArraySet(asSet("good", "test", "analyzer"), false);
-    StopAnalyzer newStop = new StopAnalyzer(stopWordsSet);
+    CharArraySet stopWordsSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("good", "test", "analyzer"), false);
+    StopAnalyzer newStop = new StopAnalyzer(TEST_VERSION_CURRENT, stopWordsSet);
     String s =             "This is a good test of the english stop analyzer with positions";
     int expectedIncr[] =  { 1,   1, 1,          3, 1,  1,      1,            2,   1};
     try (TokenStream stream = newStop.tokenStream("test", s)) {

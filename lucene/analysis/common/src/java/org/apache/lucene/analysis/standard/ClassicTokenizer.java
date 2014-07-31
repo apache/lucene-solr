@@ -18,6 +18,7 @@
 package org.apache.lucene.analysis.standard;
 
 import java.io.IOException;
+import java.io.Reader;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -25,6 +26,8 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.AttributeFactory;
+import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.Version;
 
 /** A grammar-based tokenizer constructed with JFlex
  *
@@ -99,19 +102,19 @@ public final class ClassicTokenizer extends Tokenizer {
    *
    * See http://issues.apache.org/jira/browse/LUCENE-1068
    */
-  public ClassicTokenizer() {
-    init();
+  public ClassicTokenizer(Version matchVersion) {
+    init(matchVersion);
   }
 
   /**
    * Creates a new ClassicTokenizer with a given {@link org.apache.lucene.util.AttributeFactory} 
    */
-  public ClassicTokenizer(AttributeFactory factory) {
+  public ClassicTokenizer(Version matchVersion, AttributeFactory factory) {
     super(factory);
-    init();
+    init(matchVersion);
   }
 
-  private void init() {
+  private void init(Version matchVersion) {
     this.scanner = new ClassicTokenizerImpl(input);
   }
 

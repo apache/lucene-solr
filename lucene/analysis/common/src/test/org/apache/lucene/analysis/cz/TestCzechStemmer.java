@@ -41,7 +41,7 @@ public class TestCzechStemmer extends BaseTokenStreamTestCase {
    * Test showing how masculine noun forms conflate
    */
   public void testMasculineNouns() throws IOException {
-    CzechAnalyzer cz = new CzechAnalyzer();
+    CzechAnalyzer cz = new CzechAnalyzer(TEST_VERSION_CURRENT);
     
     /* animate ending with a hard consonant */
     assertAnalyzesTo(cz, "pán", new String[] { "pán" });
@@ -109,7 +109,7 @@ public class TestCzechStemmer extends BaseTokenStreamTestCase {
    * Test showing how feminine noun forms conflate
    */
   public void testFeminineNouns() throws IOException {
-    CzechAnalyzer cz = new CzechAnalyzer();
+    CzechAnalyzer cz = new CzechAnalyzer(TEST_VERSION_CURRENT);
     
     /* ending with hard consonant */
     assertAnalyzesTo(cz, "kost", new String[] { "kost" });
@@ -153,7 +153,7 @@ public class TestCzechStemmer extends BaseTokenStreamTestCase {
    * Test showing how neuter noun forms conflate
    */
   public void testNeuterNouns() throws IOException {
-    CzechAnalyzer cz = new CzechAnalyzer();
+    CzechAnalyzer cz = new CzechAnalyzer(TEST_VERSION_CURRENT);
     
     /* ending with o */
     assertAnalyzesTo(cz, "město", new String[] { "měst" });
@@ -196,7 +196,7 @@ public class TestCzechStemmer extends BaseTokenStreamTestCase {
    * Test showing how adjectival forms conflate
    */
   public void testAdjectives() throws IOException {
-    CzechAnalyzer cz = new CzechAnalyzer();
+    CzechAnalyzer cz = new CzechAnalyzer(TEST_VERSION_CURRENT);
     
     /* ending with ý/á/é */
     assertAnalyzesTo(cz, "mladý", new String[] { "mlad" });
@@ -224,7 +224,7 @@ public class TestCzechStemmer extends BaseTokenStreamTestCase {
    * Test some possessive suffixes
    */
   public void testPossessive() throws IOException {
-    CzechAnalyzer cz = new CzechAnalyzer();
+    CzechAnalyzer cz = new CzechAnalyzer(TEST_VERSION_CURRENT);
     assertAnalyzesTo(cz, "Karlův", new String[] { "karl" });
     assertAnalyzesTo(cz, "jazykový", new String[] { "jazyk" });
   }
@@ -233,7 +233,7 @@ public class TestCzechStemmer extends BaseTokenStreamTestCase {
    * Test some exceptional rules, implemented as rewrites.
    */
   public void testExceptions() throws IOException {
-    CzechAnalyzer cz = new CzechAnalyzer();
+    CzechAnalyzer cz = new CzechAnalyzer(TEST_VERSION_CURRENT);
     
     /* rewrite of št -> sk */
     assertAnalyzesTo(cz, "český", new String[] { "česk" });
@@ -273,13 +273,13 @@ public class TestCzechStemmer extends BaseTokenStreamTestCase {
    * Test that very short words are not stemmed.
    */
   public void testDontStem() throws IOException {
-    CzechAnalyzer cz = new CzechAnalyzer();
+    CzechAnalyzer cz = new CzechAnalyzer(TEST_VERSION_CURRENT);
     assertAnalyzesTo(cz, "e", new String[] { "e" });
     assertAnalyzesTo(cz, "zi", new String[] { "zi" });
   }
   
   public void testWithKeywordAttribute() throws IOException {
-    CharArraySet set = new CharArraySet(1, true);
+    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
     set.add("hole");
     final MockTokenizer in = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     in.setReader(new StringReader("hole desek"));

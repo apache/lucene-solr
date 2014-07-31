@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.Version;
 
 /**
  * {@link Analyzer} for Galician.
@@ -61,7 +62,7 @@ public final class GalicianAnalyzer extends StopwordAnalyzerBase {
     static {
       try {
         DEFAULT_STOP_SET = WordlistLoader.getWordSet(IOUtils.getDecodingReader(GalicianAnalyzer.class, 
-            DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8));
+            DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8), Version.LUCENE_CURRENT);
       } catch (IOException ex) {
         // default set should always be present as it is part of the
         // distribution (JAR)
@@ -73,17 +74,18 @@ public final class GalicianAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer with the default stop words: {@link #DEFAULT_STOPWORD_FILE}.
    */
-  public GalicianAnalyzer() {
-    this(DefaultSetHolder.DEFAULT_STOP_SET);
+  public GalicianAnalyzer(Version matchVersion) {
+    this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
   }
   
   /**
    * Builds an analyzer with the given stop words.
    * 
+   * @param matchVersion lucene compatibility version
    * @param stopwords a stopword set
    */
-  public GalicianAnalyzer(CharArraySet stopwords) {
-    this(stopwords, CharArraySet.EMPTY_SET);
+  public GalicianAnalyzer(Version matchVersion, CharArraySet stopwords) {
+    this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
   }
 
   /**
@@ -91,12 +93,14 @@ public final class GalicianAnalyzer extends StopwordAnalyzerBase {
    * provided this analyzer will add a {@link SetKeywordMarkerFilter} before
    * stemming.
    * 
+   * @param matchVersion lucene compatibility version
    * @param stopwords a stopword set
    * @param stemExclusionSet a set of terms not to be stemmed
    */
-  public GalicianAnalyzer(CharArraySet stopwords, CharArraySet stemExclusionSet) {
-    super(stopwords);
-    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionSet));
+  public GalicianAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet) {
+    super(matchVersion, stopwords);
+    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(
+        matchVersion, stemExclusionSet));
   }
 
   /**
@@ -113,10 +117,10 @@ public final class GalicianAnalyzer extends StopwordAnalyzerBase {
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
-    final Tokenizer source = new StandardTokenizer();
-    TokenStream result = new StandardFilter(source);
-    result = new LowerCaseFilter(result);
-    result = new StopFilter(result, stopwords);
+    final Tokenizer source = new StandardTokenizer(matchVersion);
+    TokenStream result = new StandardFilter(matchVersion, source);
+    result = new LowerCaseFilter(matchVersion, result);
+    result = new StopFilter(matchVersion, result, stopwords);
     if(!stemExclusionSet.isEmpty())
       result = new SetKeywordMarkerFilter(result, stemExclusionSet);
     result = new GalicianStemFilter(result);

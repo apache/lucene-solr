@@ -31,7 +31,7 @@ public class GreekAnalyzerTest extends BaseTokenStreamTestCase {
    * @throws Exception in case an error occurs
    */
   public void testAnalyzer() throws Exception {
-    Analyzer a = new GreekAnalyzer();
+    Analyzer a = new GreekAnalyzer(TEST_VERSION_CURRENT);
     // Verify the correct analysis of capitals and small accented letters, and
     // stemming
     assertAnalyzesTo(a, "Μία εξαιρετικά καλή και πλούσια σειρά χαρακτήρων της Ελληνικής γλώσσας",
@@ -48,7 +48,7 @@ public class GreekAnalyzerTest extends BaseTokenStreamTestCase {
   }
 
   public void testReusableTokenStream() throws Exception {
-    Analyzer a = new GreekAnalyzer();
+    Analyzer a = new GreekAnalyzer(TEST_VERSION_CURRENT);
     // Verify the correct analysis of capitals and small accented letters, and
     // stemming
     assertAnalyzesTo(a, "Μία εξαιρετικά καλή και πλούσια σειρά χαρακτήρων της Ελληνικής γλώσσας",
@@ -66,6 +66,6 @@ public class GreekAnalyzerTest extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new GreekAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new GreekAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
   }
 }

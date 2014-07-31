@@ -78,7 +78,7 @@ public final class CommonGramsFilter extends TokenFilter {
    * @param input TokenStream input in filter chain
    * @param commonWords The set of common words.
    */
-  public CommonGramsFilter(TokenStream input, CharArraySet commonWords) {
+  public CommonGramsFilter(Version matchVersion, TokenStream input, CharArraySet commonWords) {
     super(input);
     this.commonWords = commonWords;
   }

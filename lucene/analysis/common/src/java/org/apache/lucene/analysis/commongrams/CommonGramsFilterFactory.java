@@ -76,7 +76,7 @@ public class CommonGramsFilterFactory extends TokenFilterFactory implements Reso
 
   @Override
   public TokenFilter create(TokenStream input) {
-    CommonGramsFilter commonGrams = new CommonGramsFilter(input, commonWords);
+    CommonGramsFilter commonGrams = new CommonGramsFilter(luceneMatchVersion, input, commonWords);
     return commonGrams;
   }
 }

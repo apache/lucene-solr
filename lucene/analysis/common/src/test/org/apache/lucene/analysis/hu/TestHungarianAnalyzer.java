@@ -27,12 +27,12 @@ public class TestHungarianAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new HungarianAnalyzer();
+    new HungarianAnalyzer(TEST_VERSION_CURRENT);
   }
   
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
-    Analyzer a = new HungarianAnalyzer();
+    Analyzer a = new HungarianAnalyzer(TEST_VERSION_CURRENT);
     // stemming
     checkOneTerm(a, "babakocsi", "babakocs");
     checkOneTerm(a, "babakocsijáért", "babakocs");
@@ -42,8 +42,8 @@ public class TestHungarianAnalyzer extends BaseTokenStreamTestCase {
   
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    CharArraySet exclusionSet = new CharArraySet( asSet("babakocsi"), false);
-    Analyzer a = new HungarianAnalyzer( 
+    CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("babakocsi"), false);
+    Analyzer a = new HungarianAnalyzer(TEST_VERSION_CURRENT, 
         HungarianAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "babakocsi", "babakocsi");
     checkOneTerm(a, "babakocsijáért", "babakocs");
@@ -51,6 +51,6 @@ public class TestHungarianAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new HungarianAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new HungarianAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
   }
 }

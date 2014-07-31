@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.core;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
 
+import java.io.Reader;
 import java.util.Map;
 
 /**

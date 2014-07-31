@@ -70,7 +70,7 @@ public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory im
   public TokenStream create(TokenStream stream) {
     // if stoptags is null, it means the file is empty
     if (stopTags != null) {
-      final TokenStream filter = new JapanesePartOfSpeechStopFilter(stream, stopTags);
+      final TokenStream filter = new JapanesePartOfSpeechStopFilter(luceneMatchVersion, stream, stopTags);
       return filter;
     } else {
       return stream;

@@ -1,6 +1,7 @@
 package org.apache.lucene.analysis.el;
 
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.util.Version;
 
 import java.util.Arrays;
 
@@ -204,7 +205,7 @@ public class GreekStemmer {
     return len;
   }
   
-  private static final CharArraySet exc4 = new CharArraySet(
+  private static final CharArraySet exc4 = new CharArraySet(Version.LUCENE_CURRENT,
       Arrays.asList("θ", "δ", "ελ", "γαλ", "ν", "π", "ιδ", "παρ"),
       false);
   
@@ -230,7 +231,7 @@ public class GreekStemmer {
     return len;
   }
 
-  private static final CharArraySet exc6 = new CharArraySet(
+  private static final CharArraySet exc6 = new CharArraySet(Version.LUCENE_CURRENT,
       Arrays.asList("αλ", "αδ", "ενδ", "αμαν", "αμμοχαλ", "ηθ", "ανηθ",
           "αντιδ", "φυσ", "βρωμ", "γερ", "εξωδ", "καλπ", "καλλιν", "καταδ",
           "μουλ", "μπαν", "μπαγιατ", "μπολ", "μποσ", "νιτ", "ξικ", "συνομηλ",
@@ -255,7 +256,7 @@ public class GreekStemmer {
     return len;
   }
   
-  private static final CharArraySet exc7 = new CharArraySet(
+  private static final CharArraySet exc7 = new CharArraySet(Version.LUCENE_CURRENT,
       Arrays.asList("αναπ", "αποθ", "αποκ", "αποστ", "βουβ", "ξεθ", "ουλ",
           "πεθ", "πικρ", "ποτ", "σιχ", "χ"), 
       false);
@@ -282,11 +283,11 @@ public class GreekStemmer {
     return len;
   }
 
-  private static final CharArraySet exc8a = new CharArraySet(
+  private static final CharArraySet exc8a = new CharArraySet(Version.LUCENE_CURRENT,
       Arrays.asList("τρ", "τσ"),
       false);
 
-  private static final CharArraySet exc8b = new CharArraySet(
+  private static final CharArraySet exc8b = new CharArraySet(Version.LUCENE_CURRENT,
       Arrays.asList("βετερ", "βουλκ", "βραχμ", "γ", "δραδουμ", "θ", "καλπουζ",
           "καστελ", "κορμορ", "λαοπλ", "μωαμεθ", "μ", "μουσουλμ", "ν", "ουλ",
           "π", "πελεκ", "πλ", "πολισ", "πορτολ", "σαρακατσ", "σουλτ",
@@ -345,7 +346,7 @@ public class GreekStemmer {
     return len;
   }
   
-  private static final CharArraySet exc9 = new CharArraySet(
+  private static final CharArraySet exc9 = new CharArraySet(Version.LUCENE_CURRENT,
       Arrays.asList("αβαρ", "βεν", "εναρ", "αβρ", "αδ", "αθ", "αν", "απλ",
           "βαρον", "ντρ", "σκ", "κοπ", "μπορ", "νιφ", "παγ", "παρακαλ", "σερπ",
           "σκελ", "συρφ", "τοκ", "υ", "δ", "εμ", "θαρρ", "θ"), 
@@ -433,11 +434,11 @@ public class GreekStemmer {
     return len;
   }
 
-  private static final CharArraySet exc12a = new CharArraySet(
+  private static final CharArraySet exc12a = new CharArraySet(Version.LUCENE_CURRENT,
       Arrays.asList("π", "απ", "συμπ", "ασυμπ", "ακαταπ", "αμεταμφ"),
       false);
 
-  private static final CharArraySet exc12b = new CharArraySet(
+  private static final CharArraySet exc12b = new CharArraySet(Version.LUCENE_CURRENT,
       Arrays.asList("αλ", "αρ", "εκτελ", "ζ", "μ", "ξ", "παρακαλ", "αρ", "προ", "νισ"),
       false);
   
@@ -457,7 +458,7 @@ public class GreekStemmer {
     return len;
   }
   
-  private static final CharArraySet exc13 = new CharArraySet(
+  private static final CharArraySet exc13 = new CharArraySet(Version.LUCENE_CURRENT,
       Arrays.asList("διαθ", "θ", "παρακαταθ", "προσθ", "συνθ"),
       false);
   
@@ -491,7 +492,7 @@ public class GreekStemmer {
     return len;
   }
   
-  private static final CharArraySet exc14 = new CharArraySet(
+  private static final CharArraySet exc14 = new CharArraySet(Version.LUCENE_CURRENT,
       Arrays.asList("φαρμακ", "χαδ", "αγκ", "αναρρ", "βρομ", "εκλιπ", "λαμπιδ",
           "λεχ", "μ", "πατ", "ρ", "λ", "μεδ", "μεσαζ", "υποτειν", "αμ", "αιθ",
           "ανηκ", "δεσποζ", "ενδιαφερ", "δε", "δευτερευ", "καθαρευ", "πλε",
@@ -529,7 +530,7 @@ public class GreekStemmer {
    return len;
   }
   
-  private static final CharArraySet exc15a = new CharArraySet(
+  private static final CharArraySet exc15a = new CharArraySet(Version.LUCENE_CURRENT,
       Arrays.asList("αβαστ", "πολυφ", "αδηφ", "παμφ", "ρ", "ασπ", "αφ", "αμαλ",
           "αμαλλι", "ανυστ", "απερ", "ασπαρ", "αχαρ", "δερβεν", "δροσοπ",
           "ξεφ", "νεοπ", "νομοτ", "ολοπ", "ομοτ", "προστ", "προσωποπ", "συμπ",
@@ -538,7 +539,7 @@ public class GreekStemmer {
           "ουλαμ", "ουρ", "π", "τρ", "μ"), 
       false);
   
-  private static final CharArraySet exc15b = new CharArraySet(
+  private static final CharArraySet exc15b = new CharArraySet(Version.LUCENE_CURRENT,
       Arrays.asList("ψοφ", "ναυλοχ"),
       false);
   
@@ -575,7 +576,7 @@ public class GreekStemmer {
     return len;
   }
   
-  private static final CharArraySet exc16 = new CharArraySet(
+  private static final CharArraySet exc16 = new CharArraySet(Version.LUCENE_CURRENT,
       Arrays.asList("ν", "χερσον", "δωδεκαν", "ερημον", "μεγαλον", "επταν"),
       false);
   
@@ -595,7 +596,7 @@ public class GreekStemmer {
     return len;
   }
   
-  private static final CharArraySet exc17 = new CharArraySet(
+  private static final CharArraySet exc17 = new CharArraySet(Version.LUCENE_CURRENT,
       Arrays.asList("ασβ", "σβ", "αχρ", "χρ", "απλ", "αειμν", "δυσχρ", "ευχρ", "κοινοχρ", "παλιμψ"),
       false);
   
@@ -609,7 +610,7 @@ public class GreekStemmer {
     return len;
   }
   
-  private static final CharArraySet exc18 = new CharArraySet(
+  private static final CharArraySet exc18 = new CharArraySet(Version.LUCENE_CURRENT,
       Arrays.asList("ν", "ρ", "σπι", "στραβομουτσ", "κακομουτσ", "εξων"),
       false);
   
@@ -633,7 +634,7 @@ public class GreekStemmer {
     return len;
   }
   
-  private static final CharArraySet exc19 = new CharArraySet(
+  private static final CharArraySet exc19 = new CharArraySet(Version.LUCENE_CURRENT,
       Arrays.asList("παρασουσ", "φ", "χ", "ωριοπλ", "αζ", "αλλοσουσ", "ασουσ"),
       false);
   

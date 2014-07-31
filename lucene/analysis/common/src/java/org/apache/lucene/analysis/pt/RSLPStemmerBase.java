@@ -31,6 +31,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.util.Version;
 
 import static org.apache.lucene.analysis.util.StemmerUtil.*;
 
@@ -134,7 +135,8 @@ public abstract class RSLPStemmerBase {
         if (!exceptions[i].endsWith(suffix))
           throw new RuntimeException("useless exception '" + exceptions[i] + "' does not end with '" + suffix + "'");
       }
-      this.exceptions = new CharArraySet(Arrays.asList(exceptions), false);
+      this.exceptions = new CharArraySet(Version.LUCENE_CURRENT,
+           Arrays.asList(exceptions), false);
     }
 
     @Override

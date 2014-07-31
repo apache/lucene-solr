@@ -54,7 +54,7 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase {
       static {
         try {
           DEFAULT_STOP_SET = WordlistLoader.getSnowballWordSet(IOUtils.getDecodingReader(SnowballFilter.class, 
-              DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8));
+              DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8), Version.LUCENE_CURRENT);
         } catch (IOException ex) {
           // default set should always be present as it is part of the
           // distribution (JAR)
@@ -74,30 +74,34 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase {
       return DefaultSetHolder.DEFAULT_STOP_SET;
     }
 
-    public RussianAnalyzer() {
-      this(DefaultSetHolder.DEFAULT_STOP_SET);
+    public RussianAnalyzer(Version matchVersion) {
+      this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
     }
   
     /**
      * Builds an analyzer with the given stop words
      * 
+     * @param matchVersion
+     *          lucene compatibility version
      * @param stopwords
      *          a stopword set
      */
-    public RussianAnalyzer(CharArraySet stopwords) {
-      this(stopwords, CharArraySet.EMPTY_SET);
+    public RussianAnalyzer(Version matchVersion, CharArraySet stopwords){
+      this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
     }
     
     /**
      * Builds an analyzer with the given stop words
      * 
+     * @param matchVersion
+     *          lucene compatibility version
      * @param stopwords
      *          a stopword set
      * @param stemExclusionSet a set of words not to be stemmed
      */
-    public RussianAnalyzer(CharArraySet stopwords, CharArraySet stemExclusionSet) {
-      super(stopwords);
-      this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionSet));
+    public RussianAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet){
+      super(matchVersion, stopwords);
+      this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stemExclusionSet));
     }
    
   /**
@@ -113,10 +117,10 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase {
    */
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
-      final Tokenizer source = new StandardTokenizer();
-      TokenStream result = new StandardFilter(source);
-      result = new LowerCaseFilter(result);
-      result = new StopFilter(result, stopwords);
+      final Tokenizer source = new StandardTokenizer(matchVersion);
+      TokenStream result = new StandardFilter(matchVersion, source);
+      result = new LowerCaseFilter(matchVersion, result);
+      result = new StopFilter(matchVersion, result, stopwords);
       if (!stemExclusionSet.isEmpty()) 
         result = new SetKeywordMarkerFilter(result, stemExclusionSet);
       result = new SnowballFilter(result, new org.tartarus.snowball.ext.RussianStemmer());

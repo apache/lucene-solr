@@ -93,7 +93,7 @@ public class EnwikiQueryMaker extends AbstractQueryMaker implements
    * @return array of Lucene queries
    */
   private static Query[] createQueries(List<Object> qs, Analyzer a) {
-    QueryParser qp = new QueryParser(DocMaker.BODY_FIELD, a);
+    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, DocMaker.BODY_FIELD, a);
     List<Object> queries = new ArrayList<>();
     for (int i = 0; i < qs.size(); i++) {
       try {

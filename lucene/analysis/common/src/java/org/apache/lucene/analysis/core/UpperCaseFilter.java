@@ -23,9 +23,13 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharacterUtils;
+import org.apache.lucene.util.Version;
 
 /**
  * Normalizes token text to UPPER CASE.
+ * <a name="version"/>
+ * <p>You must specify the required {@link Version}
+ * compatibility when creating UpperCaseFilter
  * 
  * <p><b>NOTE:</b> In Unicode, this transformation may lose information when the
  * upper case character represents more than one lower case character. Use this filter
@@ -33,16 +37,18 @@ import org.apache.lucene.analysis.util.CharacterUtils;
  * general search matching
  */
 public final class UpperCaseFilter extends TokenFilter {
-  private final CharacterUtils charUtils = CharacterUtils.getInstance();
+  private final CharacterUtils charUtils;
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   
   /**
    * Create a new UpperCaseFilter, that normalizes token text to upper case.
    * 
+   * @param matchVersion See <a href="#version">above</a>
    * @param in TokenStream to filter
    */
-  public UpperCaseFilter(TokenStream in) {
+  public UpperCaseFilter(Version matchVersion, TokenStream in) {
     super(in);
+    charUtils = CharacterUtils.getInstance(matchVersion);
   }
   
   @Override

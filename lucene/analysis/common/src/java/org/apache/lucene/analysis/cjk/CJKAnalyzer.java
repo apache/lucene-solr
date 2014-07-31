@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.cjk;
  */
 
 import java.io.IOException;
+import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -27,6 +28,7 @@ import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
+import org.apache.lucene.util.Version;
 
 /**
  * An {@link Analyzer} that tokenizes text with {@link StandardTokenizer},
@@ -35,7 +37,6 @@ import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
  * and filters stopwords with {@link StopFilter}
  */
 public final class CJKAnalyzer extends StopwordAnalyzerBase {
-
   /**
    * File containing default CJK stopwords.
    * <p/>
@@ -69,27 +70,29 @@ public final class CJKAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer which removes words in {@link #getDefaultStopSet()}.
    */
-  public CJKAnalyzer() {
-    this(DefaultSetHolder.DEFAULT_STOP_SET);
+  public CJKAnalyzer(Version matchVersion) {
+    this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
   }
   
   /**
    * Builds an analyzer with the given stop words
    * 
+   * @param matchVersion
+   *          lucene compatibility version
    * @param stopwords
    *          a stopword set
    */
-  public CJKAnalyzer(CharArraySet stopwords){
-    super(stopwords);
+  public CJKAnalyzer(Version matchVersion, CharArraySet stopwords){
+    super(matchVersion, stopwords);
   }
 
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
-    final Tokenizer source = new StandardTokenizer();
+    final Tokenizer source = new StandardTokenizer(matchVersion);
     // run the widthfilter first before bigramming, it sometimes combines characters.
     TokenStream result = new CJKWidthFilter(source);
-    result = new LowerCaseFilter(result);
+    result = new LowerCaseFilter(matchVersion, result);
     result = new CJKBigramFilter(result);
-    return new TokenStreamComponents(source, new StopFilter(result, stopwords));
+    return new TokenStreamComponents(source, new StopFilter(matchVersion, result, stopwords));
   }
 }

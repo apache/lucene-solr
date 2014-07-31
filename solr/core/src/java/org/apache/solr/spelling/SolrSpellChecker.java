@@ -74,7 +74,7 @@ public abstract class SolrSpellChecker {
       analyzer = fieldType.getQueryAnalyzer();
     }
     if (analyzer == null)   {
-      analyzer = new WhitespaceAnalyzer();
+      analyzer = new WhitespaceAnalyzer(core.getSolrConfig().luceneMatchVersion);
     }
     return name;
   }

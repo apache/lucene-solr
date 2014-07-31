@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.reverse;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 
@@ -35,6 +36,7 @@ public final class ReverseStringFilter extends TokenFilter {
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final char marker;
+  private final Version matchVersion;
   private static final char NOMARKER = '\uFFFF';
   
   /**
@@ -64,10 +66,11 @@ public final class ReverseStringFilter extends TokenFilter {
    * The reversed tokens will not be marked. 
    * </p>
    * 
+   * @param matchVersion Lucene compatibility version
    * @param in {@link TokenStream} to filter
    */
-  public ReverseStringFilter(TokenStream in) {
-    this(in, NOMARKER);
+  public ReverseStringFilter(Version matchVersion, TokenStream in) {
+    this(matchVersion, in, NOMARKER);
   }
 
   /**
@@ -78,11 +81,13 @@ public final class ReverseStringFilter extends TokenFilter {
    * character.
    * </p>
    * 
+   * @param matchVersion compatibility version
    * @param in {@link TokenStream} to filter
    * @param marker A character used to mark reversed tokens
    */
-  public ReverseStringFilter(TokenStream in, char marker) {
+  public ReverseStringFilter(Version matchVersion, TokenStream in, char marker) {
     super(in);
+    this.matchVersion = matchVersion;
     this.marker = marker;
   }
 
@@ -95,7 +100,7 @@ public final class ReverseStringFilter extends TokenFilter {
         termAtt.resizeBuffer(len);
         termAtt.buffer()[len - 1] = marker;
       }
-      reverse( termAtt.buffer(), 0, len );
+      reverse( matchVersion, termAtt.buffer(), 0, len );
       termAtt.setLength(len);
       return true;
     } else {
@@ -106,43 +111,48 @@ public final class ReverseStringFilter extends TokenFilter {
   /**
    * Reverses the given input string
    * 
+   * @param matchVersion compatibility version
    * @param input the string to reverse
    * @return the given input string in reversed order
    */
-  public static String reverse(final String input ){
+  public static String reverse( Version matchVersion, final String input ){
     final char[] charInput = input.toCharArray();
-    reverse( charInput, 0, charInput.length );
+    reverse( matchVersion, charInput, 0, charInput.length );
     return new String( charInput );
   }
   
   /**
    * Reverses the given input buffer in-place
+   * @param matchVersion compatibility version
    * @param buffer the input char array to reverse
    */
-  public static void reverse(final char[] buffer) {
-    reverse(buffer, 0, buffer.length);
+  public static void reverse(Version matchVersion, final char[] buffer) {
+    reverse(matchVersion, buffer, 0, buffer.length);
   }
   
   /**
    * Partially reverses the given input buffer in-place from offset 0
    * up to the given length.
+   * @param matchVersion compatibility version
    * @param buffer the input char array to reverse
    * @param len the length in the buffer up to where the
    *        buffer should be reversed
    */
-  public static void reverse(final char[] buffer, final int len) {
-    reverse( buffer, 0, len );
+  public static void reverse(Version matchVersion, final char[] buffer,
+      final int len) {
+    reverse( matchVersion, buffer, 0, len );
   }
   
   /**
    * Partially reverses the given input buffer in-place from the given offset
    * up to the given length.
+   * @param matchVersion compatibility version
    * @param buffer the input char array to reverse
    * @param start the offset from where to reverse the buffer
    * @param len the length in the buffer up to where the
    *        buffer should be reversed
    */
-  public static void reverse(final char[] buffer,
+  public static void reverse(Version matchVersion, final char[] buffer,
       final int start, final int len) {
     /* modified version of Apache Harmony AbstractStringBuilder reverse0() */
     if (len < 2)

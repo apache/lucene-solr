@@ -80,7 +80,7 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
     }
 
     this.charUtils = version.onOrAfter(Version.LUCENE_4_4)
-        ? CharacterUtils.getInstance()
+        ? CharacterUtils.getInstance(version)
         : CharacterUtils.getJava4Instance();
     this.minGram = minGram;
     this.maxGram = maxGram;

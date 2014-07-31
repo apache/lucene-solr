@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.util.CharArrayIterator;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.Version;
 
 /**
  * {@link TokenFilter} that use {@link java.text.BreakIterator} to break each 
@@ -60,7 +61,7 @@ public final class ThaiWordFilter extends TokenFilter {
   private boolean hasIllegalOffsets = false; // only if the length changed before this filter
 
   /** Creates a new ThaiWordFilter with the specified match version. */
-  public ThaiWordFilter(TokenStream input) {
+  public ThaiWordFilter(Version matchVersion, TokenStream input) {
     super(input);
     if (!DBBI_AVAILABLE)
       throw new UnsupportedOperationException("This JRE does not have support for Thai segmentation");

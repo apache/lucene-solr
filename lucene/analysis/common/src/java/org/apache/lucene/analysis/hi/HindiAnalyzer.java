@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.in.IndicNormalizationFilter;
+import org.apache.lucene.util.Version;
 
 /**
  * Analyzer for Hindi.
@@ -74,29 +75,32 @@ public final class HindiAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer with the given stop words
    * 
+   * @param version lucene compatibility version
    * @param stopwords a stopword set
    * @param stemExclusionSet a stemming exclusion set
    */
-  public HindiAnalyzer(CharArraySet stopwords, CharArraySet stemExclusionSet) {
-    super(stopwords);
-    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionSet));
+  public HindiAnalyzer(Version version, CharArraySet stopwords, CharArraySet stemExclusionSet) {
+    super(version, stopwords);
+    this.stemExclusionSet = CharArraySet.unmodifiableSet(
+        CharArraySet.copy(matchVersion, stemExclusionSet));
   }
   
   /**
    * Builds an analyzer with the given stop words 
    * 
+   * @param version lucene compatibility version
    * @param stopwords a stopword set
    */
-  public HindiAnalyzer(CharArraySet stopwords) {
-    this(stopwords, CharArraySet.EMPTY_SET);
+  public HindiAnalyzer(Version version, CharArraySet stopwords) {
+    this(version, stopwords, CharArraySet.EMPTY_SET);
   }
   
   /**
    * Builds an analyzer with the default stop words:
    * {@link #DEFAULT_STOPWORD_FILE}.
    */
-  public HindiAnalyzer() {
-    this(DefaultSetHolder.DEFAULT_STOP_SET);
+  public HindiAnalyzer(Version version) {
+    this(version, DefaultSetHolder.DEFAULT_STOP_SET);
   }
 
   /**
@@ -113,13 +117,13 @@ public final class HindiAnalyzer extends StopwordAnalyzerBase {
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
-    final Tokenizer source = new StandardTokenizer();
-    TokenStream result = new LowerCaseFilter(source);
+    final Tokenizer source = new StandardTokenizer(matchVersion);
+    TokenStream result = new LowerCaseFilter(matchVersion, source);
     if (!stemExclusionSet.isEmpty())
       result = new SetKeywordMarkerFilter(result, stemExclusionSet);
     result = new IndicNormalizationFilter(result);
     result = new HindiNormalizationFilter(result);
-    result = new StopFilter(result, stopwords);
+    result = new StopFilter(matchVersion, result, stopwords);
     result = new HindiStemFilter(result);
     return new TokenStreamComponents(source, result);
   }

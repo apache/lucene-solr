@@ -27,12 +27,12 @@ public class TestBasqueAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new BasqueAnalyzer();
+    new BasqueAnalyzer(TEST_VERSION_CURRENT);
   }
   
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
-    Analyzer a = new BasqueAnalyzer();
+    Analyzer a = new BasqueAnalyzer(TEST_VERSION_CURRENT);
     // stemming
     checkOneTerm(a, "zaldi", "zaldi");
     checkOneTerm(a, "zaldiak", "zaldi");
@@ -42,8 +42,8 @@ public class TestBasqueAnalyzer extends BaseTokenStreamTestCase {
   
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    CharArraySet exclusionSet = new CharArraySet( asSet("zaldiak"), false);
-    Analyzer a = new BasqueAnalyzer( 
+    CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("zaldiak"), false);
+    Analyzer a = new BasqueAnalyzer(TEST_VERSION_CURRENT, 
         BasqueAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "zaldiak", "zaldiak");
     checkOneTerm(a, "mendiari", "mendi");
@@ -51,6 +51,6 @@ public class TestBasqueAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new BasqueAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new BasqueAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
   }
 }

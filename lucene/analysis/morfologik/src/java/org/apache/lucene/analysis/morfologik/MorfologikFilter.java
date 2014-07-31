@@ -49,7 +49,7 @@ public class MorfologikFilter extends TokenFilter {
   private final KeywordAttribute keywordAttr = addAttribute(KeywordAttribute.class);
 
   private final CharsRef scratch = new CharsRef(0);
-  private final CharacterUtils charUtils = CharacterUtils.getInstance();
+  private final CharacterUtils charUtils;
 
   private State current;
   private final TokenStream input;
@@ -63,8 +63,8 @@ public class MorfologikFilter extends TokenFilter {
   /**
    * Creates a filter with the default (Polish) dictionary.
    */
-  public MorfologikFilter(final TokenStream in) {
-    this(in, MorfologikFilterFactory.DEFAULT_DICTIONARY_RESOURCE);
+  public MorfologikFilter(final TokenStream in, final Version version) {
+    this(in, MorfologikFilterFactory.DEFAULT_DICTIONARY_RESOURCE, version);
   }
 
   /**
@@ -72,8 +72,9 @@ public class MorfologikFilter extends TokenFilter {
    *
    * @param in input token stream.
    * @param dict Dictionary resource from classpath.
+   * @param version Lucene version compatibility for lowercasing.
    */
-  public MorfologikFilter(final TokenStream in, final String dict) {
+  public MorfologikFilter(final TokenStream in, final String dict, final Version version) {
     super(in);
     this.input = in;
 
@@ -83,6 +84,7 @@ public class MorfologikFilter extends TokenFilter {
     try {
       me.setContextClassLoader(morfologik.stemming.Dictionary.class.getClassLoader());
       this.stemmer = new DictionaryLookup(morfologik.stemming.Dictionary.getForLanguage(dict));
+      this.charUtils = CharacterUtils.getInstance(version);
       this.lemmaList = Collections.emptyList();
     } finally {
       me.setContextClassLoader(cl);

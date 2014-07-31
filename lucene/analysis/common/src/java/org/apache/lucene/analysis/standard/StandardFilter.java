@@ -21,13 +21,14 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.util.Version;
 
 /**
  * Normalizes tokens extracted with {@link StandardTokenizer}.
  */
 public class StandardFilter extends TokenFilter {
   
-  public StandardFilter(TokenStream in) {
+  public StandardFilter(Version matchVersion, TokenStream in) {
     super(in);
   }
   

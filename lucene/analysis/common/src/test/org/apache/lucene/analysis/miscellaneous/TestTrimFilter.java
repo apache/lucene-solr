@@ -51,7 +51,7 @@ public class TestTrimFilter extends BaseTokenStreamTestCase {
                     new Token(new String(ccc, 0, ccc.length), 11, 15),
                     new Token(new String(whitespace, 0, whitespace.length), 16, 20),
                     new Token(new String(empty, 0, empty.length), 21, 21));
-    ts = new TrimFilter(ts);
+    ts = new TrimFilter(TEST_VERSION_CURRENT, ts);
 
     assertTokenStreamContents(ts, new String[] { "a", "b", "cCc", "", ""});
   }
@@ -100,7 +100,7 @@ public class TestTrimFilter extends BaseTokenStreamTestCase {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
         Tokenizer tokenizer = new MockTokenizer(MockTokenizer.KEYWORD, false);
-        return new TokenStreamComponents(tokenizer, new TrimFilter(tokenizer));
+        return new TokenStreamComponents(tokenizer, new TrimFilter(TEST_VERSION_CURRENT, tokenizer));
       } 
     };
     checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
@@ -111,7 +111,8 @@ public class TestTrimFilter extends BaseTokenStreamTestCase {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
         Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new TrimFilter(tokenizer));
+        final Version version = TEST_VERSION_CURRENT;
+        return new TokenStreamComponents(tokenizer, new TrimFilter(version, tokenizer));
       }
     };
     checkOneTerm(a, "", "");

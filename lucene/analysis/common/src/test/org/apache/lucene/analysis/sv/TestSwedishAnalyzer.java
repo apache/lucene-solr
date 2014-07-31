@@ -27,12 +27,12 @@ public class TestSwedishAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new SwedishAnalyzer();
+    new SwedishAnalyzer(TEST_VERSION_CURRENT);
   }
   
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
-    Analyzer a = new SwedishAnalyzer();
+    Analyzer a = new SwedishAnalyzer(TEST_VERSION_CURRENT);
     // stemming
     checkOneTerm(a, "jaktkarlarne", "jaktkarl");
     checkOneTerm(a, "jaktkarlens", "jaktkarl");
@@ -42,8 +42,8 @@ public class TestSwedishAnalyzer extends BaseTokenStreamTestCase {
   
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    CharArraySet exclusionSet = new CharArraySet( asSet("jaktkarlarne"), false);
-    Analyzer a = new SwedishAnalyzer( 
+    CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("jaktkarlarne"), false);
+    Analyzer a = new SwedishAnalyzer(TEST_VERSION_CURRENT, 
         SwedishAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "jaktkarlarne", "jaktkarlarne");
     checkOneTerm(a, "jaktkarlens", "jaktkarl");
@@ -51,6 +51,6 @@ public class TestSwedishAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new SwedishAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new SwedishAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
   }
 }

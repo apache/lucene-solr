@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.shingle;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.AnalyzerWrapper;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.util.Version;
 
 /**
  * A ShingleAnalyzerWrapper wraps a {@link ShingleFilter} around another {@link Analyzer}.
@@ -100,15 +101,15 @@ public final class ShingleAnalyzerWrapper extends AnalyzerWrapper {
   /**
    * Wraps {@link StandardAnalyzer}. 
    */
-  public ShingleAnalyzerWrapper() {
-    this(ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE, ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE);
+  public ShingleAnalyzerWrapper(Version matchVersion) {
+    this(matchVersion, ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE, ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE);
   }
 
   /**
    * Wraps {@link StandardAnalyzer}. 
    */
-  public ShingleAnalyzerWrapper(int minShingleSize, int maxShingleSize) {
-    this(new StandardAnalyzer(), minShingleSize, maxShingleSize);
+  public ShingleAnalyzerWrapper(Version matchVersion, int minShingleSize, int maxShingleSize) {
+    this(new StandardAnalyzer(matchVersion), minShingleSize, maxShingleSize);
   }
 
   /**

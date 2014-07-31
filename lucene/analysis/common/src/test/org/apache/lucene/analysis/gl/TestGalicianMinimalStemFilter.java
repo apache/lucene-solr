@@ -54,7 +54,7 @@ public class TestGalicianMinimalStemFilter extends BaseTokenStreamTestCase {
   }
   
   public void testKeyword() throws IOException {
-    final CharArraySet exclusionSet = new CharArraySet( asSet("elefantes"), false);
+    final CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("elefantes"), false);
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {

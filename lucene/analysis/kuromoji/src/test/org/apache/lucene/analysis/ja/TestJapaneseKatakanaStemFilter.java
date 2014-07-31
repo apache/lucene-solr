@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
 
 import java.io.IOException;
+import java.io.Reader;
 
 /**
  * Tests for {@link JapaneseKatakanaStemFilter}
@@ -64,7 +65,7 @@ public class TestJapaneseKatakanaStemFilter extends BaseTokenStreamTestCase {
   }
   
   public void testKeyword() throws IOException {
-    final CharArraySet exclusionSet = new CharArraySet(asSet("コーヒー"), false);
+    final CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("コーヒー"), false);
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {

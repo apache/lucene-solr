@@ -31,7 +31,7 @@ import org.apache.lucene.analysis.core.KeywordTokenizer;
  * Test the Sorani Stemmer.
  */
 public class TestSoraniStemFilter extends BaseTokenStreamTestCase {
-  SoraniAnalyzer a = new SoraniAnalyzer();
+  SoraniAnalyzer a = new SoraniAnalyzer(TEST_VERSION_CURRENT);
   
   public void testIndefiniteSingular() throws Exception {
     checkOneTerm(a, "پیاوێک", "پیاو"); // -ek

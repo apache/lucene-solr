@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.util.ElisionFilter;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.Version;
 
 /**
  * {@link Analyzer} for Italian.
@@ -47,7 +48,7 @@ public final class ItalianAnalyzer extends StopwordAnalyzerBase {
   public final static String DEFAULT_STOPWORD_FILE = "italian_stop.txt";
   
   private static final CharArraySet DEFAULT_ARTICLES = CharArraySet.unmodifiableSet(
-      new CharArraySet(
+      new CharArraySet(Version.LUCENE_CURRENT, 
           Arrays.asList(
           "c", "l", "all", "dall", "dell", "nell", "sull", "coll", "pell", 
           "gl", "agl", "dagl", "degl", "negl", "sugl", "un", "m", "t", "s", "v", "d"
@@ -71,7 +72,7 @@ public final class ItalianAnalyzer extends StopwordAnalyzerBase {
     static {
       try {
         DEFAULT_STOP_SET = WordlistLoader.getSnowballWordSet(IOUtils.getDecodingReader(SnowballFilter.class, 
-            DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8));
+            DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8), Version.LUCENE_CURRENT);
       } catch (IOException ex) {
         // default set should always be present as it is part of the
         // distribution (JAR)
@@ -83,17 +84,18 @@ public final class ItalianAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer with the default stop words: {@link #DEFAULT_STOPWORD_FILE}.
    */
-  public ItalianAnalyzer() {
-    this(DefaultSetHolder.DEFAULT_STOP_SET);
+  public ItalianAnalyzer(Version matchVersion) {
+    this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
   }
   
   /**
    * Builds an analyzer with the given stop words.
    * 
+   * @param matchVersion lucene compatibility version
    * @param stopwords a stopword set
    */
-  public ItalianAnalyzer(CharArraySet stopwords) {
-    this(stopwords, CharArraySet.EMPTY_SET);
+  public ItalianAnalyzer(Version matchVersion, CharArraySet stopwords) {
+    this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
   }
 
   /**
@@ -101,12 +103,14 @@ public final class ItalianAnalyzer extends StopwordAnalyzerBase {
    * provided this analyzer will add a {@link SetKeywordMarkerFilter} before
    * stemming.
    * 
+   * @param matchVersion lucene compatibility version
    * @param stopwords a stopword set
    * @param stemExclusionSet a set of terms not to be stemmed
    */
-  public ItalianAnalyzer(CharArraySet stopwords, CharArraySet stemExclusionSet) {
-    super(stopwords);
-    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionSet));
+  public ItalianAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet) {
+    super(matchVersion, stopwords);
+    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(
+        matchVersion, stemExclusionSet));
   }
 
   /**
@@ -123,11 +127,11 @@ public final class ItalianAnalyzer extends StopwordAnalyzerBase {
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
-    final Tokenizer source = new StandardTokenizer();
-    TokenStream result = new StandardFilter(source);
+    final Tokenizer source = new StandardTokenizer(matchVersion);
+    TokenStream result = new StandardFilter(matchVersion, source);
     result = new ElisionFilter(result, DEFAULT_ARTICLES);
-    result = new LowerCaseFilter(result);
-    result = new StopFilter(result, stopwords);
+    result = new LowerCaseFilter(matchVersion, result);
+    result = new StopFilter(matchVersion, result, stopwords);
     if(!stemExclusionSet.isEmpty())
       result = new SetKeywordMarkerFilter(result, stemExclusionSet);
     result = new ItalianLightStemFilter(result);

@@ -27,12 +27,12 @@ public class TestNorwegianAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new NorwegianAnalyzer();
+    new NorwegianAnalyzer(TEST_VERSION_CURRENT);
   }
   
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
-    Analyzer a = new NorwegianAnalyzer();
+    Analyzer a = new NorwegianAnalyzer(TEST_VERSION_CURRENT);
     // stemming
     checkOneTerm(a, "havnedistriktene", "havnedistrikt");
     checkOneTerm(a, "havnedistrikter", "havnedistrikt");
@@ -42,8 +42,8 @@ public class TestNorwegianAnalyzer extends BaseTokenStreamTestCase {
   
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    CharArraySet exclusionSet = new CharArraySet( asSet("havnedistriktene"), false);
-    Analyzer a = new NorwegianAnalyzer( 
+    CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("havnedistriktene"), false);
+    Analyzer a = new NorwegianAnalyzer(TEST_VERSION_CURRENT, 
         NorwegianAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "havnedistriktene", "havnedistriktene");
     checkOneTerm(a, "havnedistrikter", "havnedistrikt");
@@ -51,6 +51,6 @@ public class TestNorwegianAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new NorwegianAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new NorwegianAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
   }
 }

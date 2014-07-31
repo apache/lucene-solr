@@ -100,7 +100,7 @@ public class TestSolrSynonymParser extends BaseTokenStreamTestCase {
   @Test(expected=ParseException.class)
   public void testInvalidPositionsInput() throws Exception {
     String testFile = "testola => the test";
-    SolrSynonymParser parser = new SolrSynonymParser(true, true, new EnglishAnalyzer());
+    SolrSynonymParser parser = new SolrSynonymParser(true, true, new EnglishAnalyzer(TEST_VERSION_CURRENT));
     parser.parse(new StringReader(testFile));
   }
   
@@ -108,7 +108,7 @@ public class TestSolrSynonymParser extends BaseTokenStreamTestCase {
   @Test(expected=ParseException.class)
   public void testInvalidPositionsOutput() throws Exception {
     String testFile = "the test => testola";
-    SolrSynonymParser parser = new SolrSynonymParser(true, true, new EnglishAnalyzer());
+    SolrSynonymParser parser = new SolrSynonymParser(true, true, new EnglishAnalyzer(TEST_VERSION_CURRENT));
     parser.parse(new StringReader(testFile));
   }
   

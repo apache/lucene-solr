@@ -66,7 +66,7 @@ public class TestNorwegianLightStemFilter extends BaseTokenStreamTestCase {
   }
   
   public void testKeyword() throws IOException {
-    final CharArraySet exclusionSet = new CharArraySet( asSet("sekretæren"), false);
+    final CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("sekretæren"), false);
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {

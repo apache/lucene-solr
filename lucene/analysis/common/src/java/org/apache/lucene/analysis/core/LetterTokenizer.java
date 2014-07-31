@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.core;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.CharTokenizer;
 import org.apache.lucene.util.AttributeFactory;
+import org.apache.lucene.util.Version;
 
 /**
  * A LetterTokenizer is a tokenizer that divides text at non-letters. That's to
@@ -29,25 +30,41 @@ import org.apache.lucene.util.AttributeFactory;
  * Note: this does a decent job for most European languages, but does a terrible
  * job for some Asian languages, where words are not separated by spaces.
  * </p>
+ * <p>
+ * <a name="version"/>
+ * You must specify the required {@link Version} compatibility when creating
+ * {@link LetterTokenizer}:
+ * <ul>
+ * <li>As of 3.1, {@link CharTokenizer} uses an int based API to normalize and
+ * detect token characters. See {@link CharTokenizer#isTokenChar(int)} and
+ * {@link CharTokenizer#normalize(int)} for details.</li>
+ * </ul>
+ * </p>
  */
 
 public class LetterTokenizer extends CharTokenizer {
   
   /**
    * Construct a new LetterTokenizer.
+   * 
+   * @param matchVersion
+   *          Lucene version to match See {@link <a href="#version">above</a>}
    */
-  public LetterTokenizer() {
+  public LetterTokenizer(Version matchVersion) {
+    super(matchVersion);
   }
   
   /**
    * Construct a new LetterTokenizer using a given
    * {@link org.apache.lucene.util.AttributeFactory}.
    * 
+   * @param matchVersion
+   *          Lucene version to match See {@link <a href="#version">above</a>}
    * @param factory
    *          the attribute factory to use for this {@link Tokenizer}
    */
-  public LetterTokenizer(AttributeFactory factory) {
-    super(factory);
+  public LetterTokenizer(Version matchVersion, AttributeFactory factory) {
+    super(matchVersion, factory);
   }
   
   /** Collects only characters which satisfy

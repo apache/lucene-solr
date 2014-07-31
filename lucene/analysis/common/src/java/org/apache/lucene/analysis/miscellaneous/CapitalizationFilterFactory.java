@@ -82,7 +82,7 @@ public class CapitalizationFilterFactory extends TokenFilterFactory {
     boolean ignoreCase = getBoolean(args, KEEP_IGNORE_CASE, false);
     Set<String> k = getSet(args, KEEP);
     if (k != null) {
-      keep = new CharArraySet(10, ignoreCase);
+      keep = new CharArraySet(luceneMatchVersion, 10, ignoreCase);
       keep.addAll(k);
     }
 

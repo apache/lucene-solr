@@ -31,6 +31,7 @@ import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
+import org.apache.lucene.util.Version;
 import org.tartarus.snowball.ext.ArmenianStemmer;
 
 /**
@@ -72,17 +73,18 @@ public final class ArmenianAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer with the default stop words: {@link #DEFAULT_STOPWORD_FILE}.
    */
-  public ArmenianAnalyzer() {
-    this(DefaultSetHolder.DEFAULT_STOP_SET);
+  public ArmenianAnalyzer(Version matchVersion) {
+    this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
   }
   
   /**
    * Builds an analyzer with the given stop words.
    * 
+   * @param matchVersion lucene compatibility version
    * @param stopwords a stopword set
    */
-  public ArmenianAnalyzer(CharArraySet stopwords) {
-    this(stopwords, CharArraySet.EMPTY_SET);
+  public ArmenianAnalyzer(Version matchVersion, CharArraySet stopwords) {
+    this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
   }
 
   /**
@@ -90,12 +92,14 @@ public final class ArmenianAnalyzer extends StopwordAnalyzerBase {
    * provided this analyzer will add a {@link SetKeywordMarkerFilter} before
    * stemming.
    * 
+   * @param matchVersion lucene compatibility version
    * @param stopwords a stopword set
    * @param stemExclusionSet a set of terms not to be stemmed
    */
-  public ArmenianAnalyzer(CharArraySet stopwords, CharArraySet stemExclusionSet) {
-    super(stopwords);
-    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionSet));
+  public ArmenianAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet) {
+    super(matchVersion, stopwords);
+    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(
+        matchVersion, stemExclusionSet));
   }
 
   /**
@@ -112,10 +116,10 @@ public final class ArmenianAnalyzer extends StopwordAnalyzerBase {
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
-    final Tokenizer source = new StandardTokenizer();
-    TokenStream result = new StandardFilter(source);
-    result = new LowerCaseFilter(result);
-    result = new StopFilter(result, stopwords);
+    final Tokenizer source = new StandardTokenizer(matchVersion);
+    TokenStream result = new StandardFilter(matchVersion, source);
+    result = new LowerCaseFilter(matchVersion, result);
+    result = new StopFilter(matchVersion, result, stopwords);
     if(!stemExclusionSet.isEmpty())
       result = new SetKeywordMarkerFilter(result, stemExclusionSet);
     result = new SnowballFilter(result, new ArmenianStemmer());

@@ -981,7 +981,7 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
   }
   
   public void testReset() throws Exception {
-    Tokenizer wsTokenizer = new WhitespaceTokenizer();
+    Tokenizer wsTokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT);
     wsTokenizer.setReader(new StringReader("please divide this sentence"));
     TokenStream filter = new ShingleFilter(wsTokenizer, 2);
     assertTokenStreamContents(filter,

@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.util.CharArraySet;
 public class TestSuggestStopFilter extends BaseTokenStreamTestCase {
 
   public void testEndNotStopWord() throws Exception {
-    CharArraySet stopWords = StopFilter.makeStopSet("to");
+    CharArraySet stopWords = StopFilter.makeStopSet(TEST_VERSION_CURRENT, "to");
     Tokenizer stream = new MockTokenizer();
     stream.setReader(new StringReader("go to"));
     TokenStream filter = new SuggestStopFilter(stream, stopWords);
@@ -47,7 +47,7 @@ public class TestSuggestStopFilter extends BaseTokenStreamTestCase {
 
   public void testEndIsStopWord() throws Exception {
                               
-    CharArraySet stopWords = StopFilter.makeStopSet("to");
+    CharArraySet stopWords = StopFilter.makeStopSet(TEST_VERSION_CURRENT, "to");
     Tokenizer stream = new MockTokenizer();
     stream.setReader(new StringReader("go to "));
     TokenStream filter = new SuggestStopFilter(stream, stopWords);
@@ -66,7 +66,7 @@ public class TestSuggestStopFilter extends BaseTokenStreamTestCase {
 
   public void testMidStopWord() throws Exception {
                               
-    CharArraySet stopWords = StopFilter.makeStopSet("to");
+    CharArraySet stopWords = StopFilter.makeStopSet(TEST_VERSION_CURRENT, "to");
     Tokenizer stream = new MockTokenizer();
     stream.setReader(new StringReader("go to school"));
     TokenStream filter = new SuggestStopFilter(stream, stopWords);
@@ -86,7 +86,7 @@ public class TestSuggestStopFilter extends BaseTokenStreamTestCase {
 
   public void testMultipleStopWords() throws Exception {
                               
-    CharArraySet stopWords = StopFilter.makeStopSet("to", "the", "a");
+    CharArraySet stopWords = StopFilter.makeStopSet(TEST_VERSION_CURRENT, "to", "the", "a");
     Tokenizer stream = new MockTokenizer();
     stream.setReader(new StringReader("go to a the school"));
     TokenStream filter = new SuggestStopFilter(stream, stopWords);
@@ -106,7 +106,7 @@ public class TestSuggestStopFilter extends BaseTokenStreamTestCase {
 
   public void testMultipleStopWordsEnd() throws Exception {
                               
-    CharArraySet stopWords = StopFilter.makeStopSet("to", "the", "a");
+    CharArraySet stopWords = StopFilter.makeStopSet(TEST_VERSION_CURRENT, "to", "the", "a");
     Tokenizer stream = new MockTokenizer();
     stream.setReader(new StringReader("go to a the"));
     TokenStream filter = new SuggestStopFilter(stream, stopWords);
@@ -126,7 +126,7 @@ public class TestSuggestStopFilter extends BaseTokenStreamTestCase {
 
   public void testMultipleStopWordsEnd2() throws Exception {
                               
-    CharArraySet stopWords = StopFilter.makeStopSet("to", "the", "a");
+    CharArraySet stopWords = StopFilter.makeStopSet(TEST_VERSION_CURRENT, "to", "the", "a");
     Tokenizer stream = new MockTokenizer();
     stream.setReader(new StringReader("go to a the "));
     TokenStream filter = new SuggestStopFilter(stream, stopWords);

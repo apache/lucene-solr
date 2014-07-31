@@ -30,6 +30,7 @@ import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
+import org.apache.lucene.util.Version;
 
 /**
  * {@link Analyzer} for English.
@@ -56,17 +57,18 @@ public final class EnglishAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer with the default stop words: {@link #getDefaultStopSet}.
    */
-  public EnglishAnalyzer() {
-    this(DefaultSetHolder.DEFAULT_STOP_SET);
+  public EnglishAnalyzer(Version matchVersion) {
+    this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
   }
   
   /**
    * Builds an analyzer with the given stop words.
    * 
+   * @param matchVersion lucene compatibility version
    * @param stopwords a stopword set
    */
-  public EnglishAnalyzer(CharArraySet stopwords) {
-    this(stopwords, CharArraySet.EMPTY_SET);
+  public EnglishAnalyzer(Version matchVersion, CharArraySet stopwords) {
+    this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
   }
 
   /**
@@ -74,12 +76,14 @@ public final class EnglishAnalyzer extends StopwordAnalyzerBase {
    * provided this analyzer will add a {@link SetKeywordMarkerFilter} before
    * stemming.
    * 
+   * @param matchVersion lucene compatibility version
    * @param stopwords a stopword set
    * @param stemExclusionSet a set of terms not to be stemmed
    */
-  public EnglishAnalyzer(CharArraySet stopwords, CharArraySet stemExclusionSet) {
-    super(stopwords);
-    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionSet));
+  public EnglishAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet) {
+    super(matchVersion, stopwords);
+    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(
+        matchVersion, stemExclusionSet));
   }
 
   /**
@@ -97,11 +101,11 @@ public final class EnglishAnalyzer extends StopwordAnalyzerBase {
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
-    final Tokenizer source = new StandardTokenizer();
-    TokenStream result = new StandardFilter(source);
-    result = new EnglishPossessiveFilter(result);
-    result = new LowerCaseFilter(result);
-    result = new StopFilter(result, stopwords);
+    final Tokenizer source = new StandardTokenizer(matchVersion);
+    TokenStream result = new StandardFilter(matchVersion, source);
+    result = new EnglishPossessiveFilter(matchVersion, result);
+    result = new LowerCaseFilter(matchVersion, result);
+    result = new StopFilter(matchVersion, result, stopwords);
     if(!stemExclusionSet.isEmpty())
       result = new SetKeywordMarkerFilter(result, stemExclusionSet);
     result = new PorterStemFilter(result);

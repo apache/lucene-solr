@@ -40,6 +40,7 @@ public class LowerCaseFilterFactory extends TokenFilterFactory implements MultiT
   /** Creates a new LowerCaseFilterFactory */
   public LowerCaseFilterFactory(Map<String,String> args) {
     super(args);
+    assureMatchVersion();
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -47,7 +48,7 @@ public class LowerCaseFilterFactory extends TokenFilterFactory implements MultiT
 
   @Override
   public LowerCaseFilter create(TokenStream input) {
-    return new LowerCaseFilter(input);
+    return new LowerCaseFilter(luceneMatchVersion,input);
   }
 
   @Override

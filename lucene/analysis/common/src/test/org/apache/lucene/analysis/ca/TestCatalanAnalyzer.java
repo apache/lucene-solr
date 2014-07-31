@@ -27,12 +27,12 @@ public class TestCatalanAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new CatalanAnalyzer();
+    new CatalanAnalyzer(TEST_VERSION_CURRENT);
   }
   
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
-    Analyzer a = new CatalanAnalyzer();
+    Analyzer a = new CatalanAnalyzer(TEST_VERSION_CURRENT);
     // stemming
     checkOneTerm(a, "llengües", "llengu");
     checkOneTerm(a, "llengua", "llengu");
@@ -42,21 +42,22 @@ public class TestCatalanAnalyzer extends BaseTokenStreamTestCase {
   
   /** test use of elisionfilter */
   public void testContractions() throws IOException {
-    Analyzer a = new CatalanAnalyzer();
+    Analyzer a = new CatalanAnalyzer(TEST_VERSION_CURRENT);
     assertAnalyzesTo(a, "Diccionari de l'Institut d'Estudis Catalans",
         new String[] { "diccion", "inst", "estud", "catalan" });
   }
   
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    CharArraySet exclusionSet = new CharArraySet(asSet("llengües"), false);
-    Analyzer a = new CatalanAnalyzer(CatalanAnalyzer.getDefaultStopSet(), exclusionSet);
+    CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("llengües"), false);
+    Analyzer a = new CatalanAnalyzer(TEST_VERSION_CURRENT, 
+        CatalanAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "llengües", "llengües");
     checkOneTerm(a, "llengua", "llengu");
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new CatalanAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new CatalanAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
   }
 }

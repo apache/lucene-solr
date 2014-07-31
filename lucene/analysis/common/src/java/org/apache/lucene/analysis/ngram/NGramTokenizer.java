@@ -121,7 +121,7 @@ public class NGramTokenizer extends Tokenizer {
       throw new IllegalArgumentException("This class only works with Lucene 4.4+. To emulate the old (broken) behavior of NGramTokenizer, use Lucene43NGramTokenizer");
     }
     charUtils = version.onOrAfter(Version.LUCENE_4_4)
-        ? CharacterUtils.getInstance()
+        ? CharacterUtils.getInstance(version)
         : CharacterUtils.getJava4Instance();
     if (minGram < 1) {
       throw new IllegalArgumentException("minGram must be greater than zero");

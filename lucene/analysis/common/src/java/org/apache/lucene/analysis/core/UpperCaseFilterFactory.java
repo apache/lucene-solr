@@ -45,6 +45,7 @@ public class UpperCaseFilterFactory extends TokenFilterFactory implements MultiT
   /** Creates a new UpperCaseFilterFactory */
   public UpperCaseFilterFactory(Map<String,String> args) {
     super(args);
+    assureMatchVersion();
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -52,7 +53,7 @@ public class UpperCaseFilterFactory extends TokenFilterFactory implements MultiT
 
   @Override
   public UpperCaseFilter create(TokenStream input) {
-    return new UpperCaseFilter(input);
+    return new UpperCaseFilter(luceneMatchVersion,input);
   }
 
   @Override

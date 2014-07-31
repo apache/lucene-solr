@@ -27,12 +27,12 @@ public class TestPortugueseAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new PortugueseAnalyzer();
+    new PortugueseAnalyzer(TEST_VERSION_CURRENT);
   }
   
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
-    Analyzer a = new PortugueseAnalyzer();
+    Analyzer a = new PortugueseAnalyzer(TEST_VERSION_CURRENT);
     // stemming
     checkOneTerm(a, "quilométricas", "quilometric");
     checkOneTerm(a, "quilométricos", "quilometric");
@@ -42,8 +42,8 @@ public class TestPortugueseAnalyzer extends BaseTokenStreamTestCase {
   
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    CharArraySet exclusionSet = new CharArraySet( asSet("quilométricas"), false);
-    Analyzer a = new PortugueseAnalyzer( 
+    CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("quilométricas"), false);
+    Analyzer a = new PortugueseAnalyzer(TEST_VERSION_CURRENT, 
         PortugueseAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "quilométricas", "quilométricas");
     checkOneTerm(a, "quilométricos", "quilometric");
@@ -51,6 +51,6 @@ public class TestPortugueseAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new PortugueseAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new PortugueseAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
   }
 }

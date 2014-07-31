@@ -21,6 +21,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.util.Version;
 
 /**
  * Test the CzechAnalyzer
@@ -32,25 +33,25 @@ import org.apache.lucene.analysis.util.CharArraySet;
 public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
   
   public void testStopWord() throws Exception {
-    assertAnalyzesTo(new CzechAnalyzer(), "Pokud mluvime o volnem", 
+    assertAnalyzesTo(new CzechAnalyzer(TEST_VERSION_CURRENT), "Pokud mluvime o volnem", 
         new String[] { "mluvim", "voln" });
   }
   
   public void testReusableTokenStream() throws Exception {
-    Analyzer analyzer = new CzechAnalyzer();
+    Analyzer analyzer = new CzechAnalyzer(TEST_VERSION_CURRENT);
     assertAnalyzesTo(analyzer, "Pokud mluvime o volnem", new String[] { "mluvim", "voln" });
     assertAnalyzesTo(analyzer, "Česká Republika", new String[] { "česk", "republik" });
   }
 
   public void testWithStemExclusionSet() throws IOException{
-    CharArraySet set = new CharArraySet(1, true);
+    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
     set.add("hole");
-    CzechAnalyzer cz = new CzechAnalyzer(CharArraySet.EMPTY_SET, set);
+    CzechAnalyzer cz = new CzechAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(cz, "hole desek", new String[] {"hole", "desk"});
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new CzechAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new CzechAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
   }
 }

@@ -48,7 +48,7 @@ public class SimpleQueryMaker extends AbstractQueryMaker implements QueryMaker {
     Analyzer anlzr= NewAnalyzerTask.createAnalyzer(config.get("analyzer",
         "org.apache.lucene.analysis.standard.StandardAnalyzer")); 
     
-    QueryParser qp = new QueryParser(DocMaker.BODY_FIELD,anlzr);
+    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, DocMaker.BODY_FIELD,anlzr);
     ArrayList<Query> qq = new ArrayList<>();
     Query q1 = new TermQuery(new Term(DocMaker.ID_FIELD,"doc2"));
     qq.add(q1);

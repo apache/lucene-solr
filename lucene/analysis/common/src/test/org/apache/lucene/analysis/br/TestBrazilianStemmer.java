@@ -130,7 +130,7 @@ public class TestBrazilianStemmer extends BaseTokenStreamTestCase {
   }
   
   public void testReusableTokenStream() throws Exception {
-    Analyzer a = new BrazilianAnalyzer();
+    Analyzer a = new BrazilianAnalyzer(TEST_VERSION_CURRENT);
     checkReuse(a, "boa", "boa");
     checkReuse(a, "boainain", "boainain");
     checkReuse(a, "boas", "boas");
@@ -138,15 +138,15 @@ public class TestBrazilianStemmer extends BaseTokenStreamTestCase {
   }
  
   public void testStemExclusionTable() throws Exception {
-    BrazilianAnalyzer a = new BrazilianAnalyzer(
-        CharArraySet.EMPTY_SET, new CharArraySet(asSet("quintessência"), false));
+    BrazilianAnalyzer a = new BrazilianAnalyzer(TEST_VERSION_CURRENT, 
+        CharArraySet.EMPTY_SET, new CharArraySet(TEST_VERSION_CURRENT, asSet("quintessência"), false));
     checkReuse(a, "quintessência", "quintessência"); // excluded words will be completely unchanged.
   }
   
   public void testWithKeywordAttribute() throws IOException {
-    CharArraySet set = new CharArraySet(1, true);
+    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
     set.add("Brasília");
-    Tokenizer tokenizer = new LowerCaseTokenizer();
+    Tokenizer tokenizer = new LowerCaseTokenizer(TEST_VERSION_CURRENT);
     tokenizer.setReader(new StringReader("Brasília Brasilia"));
     BrazilianStemFilter filter = new BrazilianStemFilter(new SetKeywordMarkerFilter(tokenizer, set));
 
@@ -154,7 +154,7 @@ public class TestBrazilianStemmer extends BaseTokenStreamTestCase {
   }
 
   private void check(final String input, final String expected) throws Exception {
-    checkOneTerm(new BrazilianAnalyzer(), input, expected);
+    checkOneTerm(new BrazilianAnalyzer(TEST_VERSION_CURRENT), input, expected);
   }
   
   private void checkReuse(Analyzer a, String input, String expected) throws Exception {
@@ -163,7 +163,7 @@ public class TestBrazilianStemmer extends BaseTokenStreamTestCase {
 
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new BrazilianAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new BrazilianAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
   }
   
   public void testEmptyTerm() throws IOException {

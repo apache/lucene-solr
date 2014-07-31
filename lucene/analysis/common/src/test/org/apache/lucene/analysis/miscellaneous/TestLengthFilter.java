@@ -33,7 +33,7 @@ public class TestLengthFilter extends BaseTokenStreamTestCase {
 
   public void testFilterWithPosIncr() throws Exception {
     TokenStream stream = whitespaceMockTokenizer("short toolong evenmuchlongertext a ab toolong foo");
-    LengthFilter filter = new LengthFilter(stream, 2, 6);
+    LengthFilter filter = new LengthFilter(TEST_VERSION_CURRENT, stream, 2, 6);
     assertTokenStreamContents(filter,
       new String[]{"short", "ab", "foo"},
       new int[]{1, 4, 2}
@@ -45,7 +45,7 @@ public class TestLengthFilter extends BaseTokenStreamTestCase {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
         Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new LengthFilter(tokenizer, 0, 5));
+        return new TokenStreamComponents(tokenizer, new LengthFilter(TEST_VERSION_CURRENT, tokenizer, 0, 5));
       }
     };
     checkOneTerm(a, "", "");
@@ -56,6 +56,6 @@ public class TestLengthFilter extends BaseTokenStreamTestCase {
    */
   @Test(expected = IllegalArgumentException.class)
   public void testIllegalArguments() throws Exception {
-    new LengthFilter(whitespaceMockTokenizer("accept only valid arguments"), -4, -1);
+    new LengthFilter(TEST_VERSION_CURRENT, whitespaceMockTokenizer("accept only valid arguments"), -4, -1);
   }
 }
