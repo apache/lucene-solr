@@ -72,7 +72,7 @@ public class MonotonicBlockPackedReader extends LongValues implements Accountabl
       if (packedIntsVersion < PackedInts.VERSION_MONOTONIC_WITHOUT_ZIGZAG) {
         minValues[i] = in.readVLong();
       } else {
-        minValues[i] = zigZagDecode(in.readVLong());
+        minValues[i] = in.readZLong();
       }
       averages[i] = Float.intBitsToFloat(in.readInt());
       final int bitsPerValue = in.readVInt();

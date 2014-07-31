@@ -90,7 +90,7 @@ public final class MonotonicBlockPackedWriter extends AbstractBlockPackedWriter 
       maxDelta = Math.max(maxDelta, values[i]);
     }
 
-    out.writeVLong(zigZagEncode(min));
+    out.writeZLong(min);
     out.writeInt(Float.floatToIntBits(avg));
     if (maxDelta == 0) {
       out.writeVInt(0);

@@ -65,7 +65,7 @@ public final class ConnectionCostsWriter {
         assert a.length == forwardSize;
         for (int i = 0; i < a.length; i++) {
           int delta = (int)a[i] - last;
-          out.writeVInt(BitUtil.zigZagEncode(delta));
+          out.writeZInt(delta);
           last = a[i];
         }
       }

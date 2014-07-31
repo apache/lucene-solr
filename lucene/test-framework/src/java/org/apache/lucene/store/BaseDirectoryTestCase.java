@@ -230,6 +230,72 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     dir.close();
   }
   
+  public void testZInt() throws Exception {
+    final int[] ints = new int[random().nextInt(10)];
+    for (int i = 0; i < ints.length; ++i) {
+      switch (random().nextInt(3)) {
+        case 0:
+          ints[i] = random().nextInt();
+          break;
+        case 1:
+          ints[i] = random().nextBoolean() ? Integer.MIN_VALUE : Integer.MAX_VALUE;
+          break;
+        case 2:
+          ints[i] = (random().nextBoolean() ? -1 : 1) * random().nextInt(1024);
+          break;
+        default:
+          throw new AssertionError();
+      }
+    }
+    Directory dir = getDirectory(createTempDir("testZInt"));
+    IndexOutput output = dir.createOutput("zint", newIOContext(random()));
+    for (int i : ints) {
+      output.writeZInt(i);
+    }
+    output.close();
+    
+    IndexInput input = dir.openInput("zint", newIOContext(random()));
+    for (int i : ints) {
+      assertEquals(i, input.readZInt());
+    }
+    assertEquals(input.length(), input.getFilePointer());
+    input.close();
+    dir.close();
+  }
+  
+  public void testZLong() throws Exception {
+    final long[] longs = new long[random().nextInt(10)];
+    for (int i = 0; i < longs.length; ++i) {
+      switch (random().nextInt(3)) {
+        case 0:
+          longs[i] = random().nextLong();
+          break;
+        case 1:
+          longs[i] = random().nextBoolean() ? Long.MIN_VALUE : Long.MAX_VALUE;
+          break;
+        case 2:
+          longs[i] = (random().nextBoolean() ? -1 : 1) * random().nextInt(1024);
+          break;
+        default:
+          throw new AssertionError();
+      }
+    }
+    Directory dir = getDirectory(createTempDir("testZLong"));
+    IndexOutput output = dir.createOutput("zlong", newIOContext(random()));
+    for (long l : longs) {
+      output.writeZLong(l);
+    }
+    output.close();
+    
+    IndexInput input = dir.openInput("zlong", newIOContext(random()));
+    for (long l : longs) {
+      assertEquals(l, input.readZLong());
+    }
+    assertEquals(input.length(), input.getFilePointer());
+    input.close();
+    dir.close();
+  }
+
   public void testStringSet() throws Exception {
     Directory dir = getDirectory(createTempDir("testStringSet"));
     IndexOutput output = dir.createOutput("stringset", newIOContext(random()));

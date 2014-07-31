@@ -47,6 +47,9 @@ New Features
   of footer, this can detect some forms of corruption such as truncation.
   (Robert Muir)
 
+* LUCENE-5739: Added DataInput.readZ(Int|Long) and DataOutput.writeZ(Int|Long)
+  to read and write small signed integers. (Adrien Grand)
+
 API Changes
 
 * LUCENE-5752: Simplified Automaton API to be immutable. (Mike McCandless)

@@ -58,7 +58,7 @@ final class IDVersionPostingsReader extends PostingsReaderBase {
     if (absolute) {
       termState.idVersion = in.readVLong();
     } else {
-      termState.idVersion += BitUtil.zigZagDecode(in.readVLong());
+      termState.idVersion += in.readZLong();
     }
   }
 
