@@ -54,7 +54,7 @@ public final class ConnectionCosts {
       for (int j = 0; j < costs.length; j++) {
         final short[] a = costs[j];
         for (int i = 0; i < a.length; i++) {
-          accum += BitUtil.zigZagDecode(in.readVInt());
+          accum += in.readZInt();
           a[i] = (short)accum;
         }
       }

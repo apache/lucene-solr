@@ -158,7 +158,7 @@ final class IDVersionPostingsWriter extends PushPostingsWriterBase {
       out.writeVLong(state.idVersion);
     } else {
       long delta = state.idVersion - lastEncodedVersion;
-      out.writeVLong(BitUtil.zigZagEncode(delta));
+      out.writeZLong(delta);
     }
     lastEncodedVersion = state.idVersion;
   }

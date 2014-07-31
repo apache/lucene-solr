@@ -24,6 +24,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.util.BitUtil;
+
 /**
  * Abstract base class for performing read operations of Lucene's low-level
  * data types.
@@ -136,6 +138,15 @@ public abstract class DataInput implements Cloneable {
     throw new IOException("Invalid vInt detected (too many bits)");
   }
 
+  /**
+   * Read a {@link BitUtil#zigZagDecode(int) zig-zag}-encoded
+   * {@link #readVInt() variable-length} integer.
+   * @see DataOutput#writeZInt(int)
+   */
+  public int readZInt() throws IOException {
+    return BitUtil.zigZagDecode(readVInt());
+  }
+
   /** Reads eight bytes and returns a long.
    * @see DataOutput#writeLong(long)
    */
@@ -152,6 +163,10 @@ public abstract class DataInput implements Cloneable {
    * @see DataOutput#writeVLong(long)
    */
   public long readVLong() throws IOException {
+    return readVLong(false);
+  }
+
+  private long readVLong(boolean allowNegative) throws IOException {
     /* This is the original code of this method,
      * but a Hotspot bug (see LUCENE-2975) corrupts the for-loop if
      * readByte() is inlined. So the loop was unwinded!
@@ -190,7 +205,24 @@ public abstract class DataInput implements Cloneable {
     b = readByte();
     i |= (b & 0x7FL) << 56;
     if (b >= 0) return i;
-    throw new IOException("Invalid vLong detected (negative values disallowed)");
+    if (allowNegative) {
+      b = readByte();
+      i |= (b & 0x7FL) << 63;
+      if (b == 0 || b == 1) return i;
+      throw new IOException("Invalid vLong detected (more than 64 bits)");
+    } else {
+      throw new IOException("Invalid vLong detected (negative values disallowed)");
+    }
+  }
+
+  /**
+   * Read a {@link BitUtil#zigZagDecode(long) zig-zag}-encoded
+   * {@link #readVLong() variable-length} integer. Reads between one and ten
+   * bytes.
+   * @see DataOutput#writeZLong(long)
+   */
+  public long readZLong() throws IOException {
+    return BitUtil.zigZagDecode(readVLong(true));
   }
 
   /** Reads a string.

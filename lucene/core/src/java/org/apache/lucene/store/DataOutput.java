@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
 
@@ -195,6 +196,17 @@ public abstract class DataOutput {
     writeByte((byte)i);
   }
 
+  /**
+   * Write a {@link BitUtil#zigZagEncode(int) zig-zag}-encoded
+   * {@link #writeVInt(int) variable-length} integer. This is typically useful
+   * to write small signed ints and is equivalent to calling
+   * <code>writeVInt(BitUtil.zigZagEncode(i))</code>.
+   * @see DataInput#readZInt()
+   */
+  public final void writeZInt(int i) throws IOException {
+    writeVInt(BitUtil.zigZagEncode(i));
+  }
+
   /** Writes a long as eight bytes.
    * <p>
    * 64-bit unsigned integer written as eight bytes, high-order bytes first.
@@ -215,11 +227,26 @@ public abstract class DataOutput {
    */
   public final void writeVLong(long i) throws IOException {
     assert i >= 0L;
+    writeNegativeVLong(i);
+  }
+
+  // write a pontentially negative vLong
+  private void writeNegativeVLong(long i) throws IOException {
     while ((i & ~0x7FL) != 0L) {
       writeByte((byte)((i & 0x7FL) | 0x80L));
       i >>>= 7;
     }
     writeByte((byte)i);
+  }
+
+  /**
+   * Write a {@link BitUtil#zigZagEncode(long) zig-zag}-encoded
+   * {@link #writeVLong(long) variable-length} long. Writes between one and ten
+   * bytes. This is typically useful to write small signed ints.
+   * @see DataInput#readZLong()
+   */
+  public final void writeZLong(long i) throws IOException {
+    writeNegativeVLong(BitUtil.zigZagEncode(i));
   }
 
   /** Writes a string.
