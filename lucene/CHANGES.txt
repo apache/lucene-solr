@@ -24,9 +24,6 @@ New Features
   implemented in the spatial module as DateRangePrefixTree used with
   NumberRangePrefixTreeStrategy. (David Smiley)
 
-* LUCENE-5739: Added DataInput.readZ(Int|Long) and DataOutput.writeZ(Int|Long)
-  to read and write small signed integers. (Adrien Grand)
-
 API Changes
 
 * LUCENE-4535: oal.util.FilterIterator is now an internal API.
@@ -136,6 +133,9 @@ New Features
   checksum against all the bytes), retrieve checksum to validate structure
   of footer, this can detect some forms of corruption such as truncation.
   (Robert Muir)
+
+* LUCENE-5739: Added DataInput.readZ(Int|Long) and DataOutput.writeZ(Int|Long)
+  to read and write small signed integers. (Adrien Grand)
 
 API Changes
 
