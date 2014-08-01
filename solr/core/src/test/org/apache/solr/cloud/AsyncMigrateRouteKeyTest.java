@@ -34,6 +34,8 @@ public class AsyncMigrateRouteKeyTest extends MigrateRouteKeyTest {
     schemaString = "schema15.xml";      // we need a string id
   }
 
+  private static final int MAX_WAIT_SECONDS = 2 * 60;
+
   @Override
   @Before
   public void setUp() throws Exception {
@@ -54,10 +56,10 @@ public class AsyncMigrateRouteKeyTest extends MigrateRouteKeyTest {
     params.set("action", CollectionParams.CollectionAction.REQUESTSTATUS.toString());
     params.set(OverseerCollectionProcessor.REQUESTID, asyncId);
     // This task takes long enough to run. Also check for the current state of the task to be running.
-    message = sendStatusRequestWithRetry(params, 2);
+    message = sendStatusRequestWithRetry(params, 5);
     assertEquals("found " + asyncId + " in running tasks", message);
     // Now wait until the task actually completes successfully/fails.
-    message = sendStatusRequestWithRetry(params, 20);
+    message = sendStatusRequestWithRetry(params, MAX_WAIT_SECONDS);
     assertEquals("Task " + asyncId + " not found in completed tasks.",
         "found " + asyncId + " in completed tasks", message);
   }
