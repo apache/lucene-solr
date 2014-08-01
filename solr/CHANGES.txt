@@ -316,6 +316,8 @@ Other Changes
 
 * SOLR-6281: Made PostingsSolrHighlighter more configurable via subclass extension. (David Smiley)
 
+* SOLR-6309: Increase timeouts for AsyncMigrateRouteKeyTest. (shalin)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
