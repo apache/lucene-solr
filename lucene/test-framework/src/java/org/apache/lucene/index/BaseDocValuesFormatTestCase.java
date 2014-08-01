@@ -1435,10 +1435,9 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       int id = random().nextInt(numDocs);
       writer.deleteDocuments(new Term("id", Integer.toString(id)));
     }
-    writer.close();
     
     // compare
-    DirectoryReader ir = DirectoryReader.open(dir);
+    DirectoryReader ir = writer.getReader();
     for (AtomicReaderContext context : ir.leaves()) {
       AtomicReader r = context.reader();
       BinaryDocValues docValues = r.getBinaryDocValues("dv");
@@ -1449,6 +1448,21 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       }
     }
     ir.close();
+    
+    // compare again
+    writer.forceMerge(1);
+    ir = writer.getReader();
+    for (AtomicReaderContext context : ir.leaves()) {
+      AtomicReader r = context.reader();
+      BinaryDocValues docValues = r.getBinaryDocValues("dv");
+      for (int i = 0; i < r.maxDoc(); i++) {
+        BytesRef binaryValue = r.document(i).getBinaryValue("stored");
+        BytesRef scratch = docValues.get(i);
+        assertEquals(binaryValue, scratch);
+      }
+    }
+    ir.close();
+    writer.close();
     dir.close();
   }
   
@@ -1505,10 +1519,9 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       int id = random().nextInt(numDocs);
       writer.deleteDocuments(new Term("id", Integer.toString(id)));
     }
-    writer.close();
     
     // compare
-    DirectoryReader ir = DirectoryReader.open(dir);
+    DirectoryReader ir = writer.getReader();
     for (AtomicReaderContext context : ir.leaves()) {
       AtomicReader r = context.reader();
       BinaryDocValues docValues = r.getSortedDocValues("dv");
@@ -1519,6 +1532,21 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       }
     }
     ir.close();
+    writer.forceMerge(1);
+    
+    // compare again
+    ir = writer.getReader();
+    for (AtomicReaderContext context : ir.leaves()) {
+      AtomicReader r = context.reader();
+      BinaryDocValues docValues = r.getSortedDocValues("dv");
+      for (int i = 0; i < r.maxDoc(); i++) {
+        BytesRef binaryValue = r.document(i).getBinaryValue("stored");
+        BytesRef scratch = docValues.get(i);
+        assertEquals(binaryValue, scratch);
+      }
+    }
+    ir.close();
+    writer.close();
     dir.close();
   }
   
@@ -2043,7 +2071,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
 
   private void doTestSortedSetVsStoredFields(int minLength, int maxLength, int maxValuesPerDoc) throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
     
     // index some docs
@@ -2089,10 +2117,9 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       int id = random().nextInt(numDocs);
       writer.deleteDocuments(new Term("id", Integer.toString(id)));
     }
-    writer.close();
     
     // compare
-    DirectoryReader ir = DirectoryReader.open(dir);
+    DirectoryReader ir = writer.getReader();
     for (AtomicReaderContext context : ir.leaves()) {
       AtomicReader r = context.reader();
       SortedSetDocValues docValues = r.getSortedSetDocValues("dv");
@@ -2112,6 +2139,30 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       }
     }
     ir.close();
+    writer.forceMerge(1);
+    
+    // compare again
+    ir = writer.getReader();
+    for (AtomicReaderContext context : ir.leaves()) {
+      AtomicReader r = context.reader();
+      SortedSetDocValues docValues = r.getSortedSetDocValues("dv");
+      for (int i = 0; i < r.maxDoc(); i++) {
+        String stringValues[] = r.document(i).getValues("stored");
+        if (docValues != null) {
+          docValues.setDocument(i);
+        }
+        for (int j = 0; j < stringValues.length; j++) {
+          assert docValues != null;
+          long ord = docValues.nextOrd();
+          assert ord != NO_MORE_ORDS;
+          BytesRef scratch = docValues.lookupOrd(ord);
+          assertEquals(stringValues[j], scratch.utf8ToString());
+        }
+        assert docValues == null || docValues.nextOrd() == NO_MORE_ORDS;
+      }
+    }
+    ir.close();
+    writer.close();
     dir.close();
   }
   
