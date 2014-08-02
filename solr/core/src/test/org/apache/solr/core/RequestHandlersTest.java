@@ -39,6 +39,14 @@ public class RequestHandlersTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testImplicitRequestHandlers(){
+    SolrCore core = h.getCore();
+    assertNotNull(core.getRequestHandler( "/update/json"));
+    assertNotNull(core.getRequestHandler( "/update/json/docs"));
+    assertNotNull(core.getRequestHandler( "/update/csv"));
+  }
+
+  @Test
   public void testLazyLoading() {
     SolrCore core = h.getCore();
     SolrRequestHandler handler = core.getRequestHandler( "lazy" );

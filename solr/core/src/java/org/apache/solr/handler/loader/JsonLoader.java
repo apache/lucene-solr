@@ -109,6 +109,10 @@ public class JsonLoader extends ContentStreamLoader {
     @SuppressWarnings("fallthrough")
     void processUpdate() throws IOException
     {
+      if("false".equals( req.getParams().get("json.command"))){
+        handleStreamingSingleDocs();
+        return;
+      }
       int ev = parser.nextEvent();
       while( ev != JSONParser.EOF ) {
         
@@ -175,6 +179,26 @@ public class JsonLoader extends ContentStreamLoader {
         }
         // read the next event
         ev = parser.nextEvent();
+      }
+    }
+
+    private void handleStreamingSingleDocs() throws IOException
+    {
+      while( true ) {
+        int ev = parser.nextEvent();
+        if(ev == JSONParser.EOF) return;
+        if(ev == JSONParser.OBJECT_START) {
+          assertEvent(ev, JSONParser.OBJECT_START);
+          AddUpdateCommand cmd = new AddUpdateCommand(req);
+          cmd.commitWithin = commitWithin;
+          cmd.overwrite = overwrite;
+          cmd.solrDoc = parseDoc(ev);
+          processor.processAdd(cmd);
+        } else if(ev == JSONParser.ARRAY_START){
+          handleAdds();
+        } else{
+          throw  new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unexpected event :"+ev);
+        }
       }
     }
 
@@ -384,10 +408,10 @@ public class JsonLoader extends ContentStreamLoader {
         AddUpdateCommand cmd = new AddUpdateCommand(req);
         cmd.commitWithin = commitWithin;
         cmd.overwrite = overwrite;
-  
+
         int ev = parser.nextEvent();
         if (ev == JSONParser.ARRAY_END) break;
-  
+
         assertEvent(ev, JSONParser.OBJECT_START);
         cmd.solrDoc = parseDoc(ev);
         processor.processAdd(cmd);
