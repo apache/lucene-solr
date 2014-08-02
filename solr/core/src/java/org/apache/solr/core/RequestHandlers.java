@@ -18,9 +18,12 @@
 package org.apache.solr.core;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -135,10 +138,12 @@ public final class RequestHandlers {
    * Handlers will be registered and initialized in the order they appear in solrconfig.xml
    */
 
-  void initHandlersFromConfig(SolrConfig config ){
+  void initHandlersFromConfig(SolrConfig config, List<PluginInfo> implicits){
     // use link map so we iterate in the same order
     Map<PluginInfo,SolrRequestHandler> handlers = new LinkedHashMap<>();
-    for (PluginInfo info : config.getPluginInfos(SolrRequestHandler.class.getName())) {
+    ArrayList<PluginInfo> infos = new ArrayList<>(implicits);
+    infos.addAll(config.getPluginInfos(SolrRequestHandler.class.getName()));
+    for (PluginInfo info : infos) {
       try {
         SolrRequestHandler requestHandler;
         String startup = info.attributes.get("startup") ;

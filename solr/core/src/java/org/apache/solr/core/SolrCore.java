@@ -39,6 +39,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.handler.SnapPuller;
+import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
 import org.apache.solr.handler.component.AnalyticsComponent;
 import org.apache.solr.handler.component.DebugComponent;
@@ -802,7 +803,9 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       // Processors initialized before the handlers
       updateProcessorChains = loadUpdateProcessorChains();
       reqHandlers = new RequestHandlers(this);
-      reqHandlers.initHandlersFromConfig(solrConfig);
+      List<PluginInfo> implicitReqHandlerInfo = new ArrayList<>();
+      UpdateRequestHandler.addImplicits(implicitReqHandlerInfo);
+      reqHandlers.initHandlersFromConfig(solrConfig, implicitReqHandlerInfo);
 
       // Handle things that should eventually go away
       initDeprecatedSupport();

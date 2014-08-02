@@ -166,6 +166,12 @@ New Features
   a UUID into the unique Key field.
   (Vitaliy Zhovtyuk, hossman, Steve Rowe, Erik Hatcher, shalin)
 
+* SOLR-6294: Remove the restriction of adding json by only wrapping it in an array in a
+  new path /update/json/docs (Noble Paul , hossman, Yonik Seeley, Steve Rowe)
+
+* SOLR-6302: UpdateRequestHandlers are registered implicitly /update ,
+  /update/json, /update/csv , /update/json/docs (Noble Paul)
+
 
 Bug Fixes
 ----------------------

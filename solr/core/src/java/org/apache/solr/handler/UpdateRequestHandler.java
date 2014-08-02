@@ -17,12 +17,15 @@
 
 package org.apache.solr.handler;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -30,6 +33,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.PluginInfo;
 import org.apache.solr.handler.loader.CSVLoader;
 import org.apache.solr.handler.loader.ContentStreamLoader;
 import org.apache.solr.handler.loader.JavabinLoader;
@@ -40,6 +44,9 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.util.Collections.singletonMap;
+import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 
 /**
  * UpdateHandler that uses content-type to pick the right Loader
@@ -57,9 +64,9 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
   public static final String SOFT_COMMIT = "softCommit";
 
   public static final String OVERWRITE = "overwrite";
-  
+
   public static final String VERSION = "version";
-  
+
   // NOTE: This constant is for use with the <add> XML tag, not the HTTP param with same name
   public static final String COMMIT_WITHIN = "commitWithin";
 
@@ -69,7 +76,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
     @Override
     public void load(SolrQueryRequest req, SolrQueryResponse rsp,
         ContentStream stream, UpdateRequestProcessor processor) throws Exception {
-      
+
       String type = req.getParams().get(UpdateParams.ASSUME_CONTENT_TYPE);
       if(type == null) {
         type = stream.getContentType();
@@ -91,7 +98,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
       }
       loader.load(req, rsp, stream, processor);
     }
-    
+
     private void setDefaultWT(SolrQueryRequest req, ContentStreamLoader loader) {
       SolrParams params = req.getParams();
       if( params.get(CommonParams.WT) == null ) {
@@ -100,21 +107,21 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
         if(req.getCore().getQueryResponseWriter(wt)!=null) {
           Map<String,String> map = new HashMap<>(1);
           map.put(CommonParams.WT, wt);
-          req.setParams(SolrParams.wrapDefaults(params, 
+          req.setParams(SolrParams.wrapDefaults(params,
               new MapSolrParams(map)));
         }
       }
     }
   };
-  
+
   @Override
   public void init(NamedList args) {
     super.init(args);
-    
+
     // Since backed by a non-thread safe Map, it should not be modifiable
     loaders = Collections.unmodifiableMap(createDefaultLoaders(args));
   }
-  
+
   protected void setAssumeContentType(String ct) {
     if(invariants==null) {
       Map<String,String> map = new HashMap<>();
@@ -127,7 +134,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
       invariants = params;
     }
   }
-  
+
   protected Map<String,ContentStreamLoader> createDefaultLoaders(NamedList args) {
     SolrParams p = null;
     if(args!=null) {
@@ -143,13 +150,13 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
     registry.put("text/json", registry.get("application/json") );
     return registry;
   }
-  
+
 
   @Override
   protected ContentStreamLoader newLoader(SolrQueryRequest req, final UpdateRequestProcessor processor) {
     return instance;
   }
-  
+
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
   @Override
@@ -161,6 +168,20 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
   public String getSource() {
     return "$URL$";
   }
+
+  public static void addImplicits(List<PluginInfo> implicits) {
+    implicits.add(getPluginInfo("/update",Collections.emptyMap()));
+    implicits.add(getPluginInfo("/update/json", singletonMap("update.contentType", "application/json")));
+    implicits.add(getPluginInfo("/update/csv", singletonMap("update.contentType", "application/csv")));
+    implicits.add(getPluginInfo("/update/json/docs", makeMap("update.contentType", "application/json", "json.command","false")));
+  }
+
+  static PluginInfo getPluginInfo(String name, Map defaults){
+    Map m = makeMap("name", name, "class", UpdateRequestHandler.class.getName());
+    return new PluginInfo("requestHandler", m, new NamedList<>( singletonMap("defaults", new NamedList(defaults))) ,null);
+
+  }
+
 }
 
 

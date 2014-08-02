@@ -967,49 +967,6 @@
      </arr>
   </requestHandler>
 
-
-  <!-- Update Request Handler.  
-       
-       http://wiki.apache.org/solr/UpdateXmlMessages
-
-       The canonical Request Handler for Modifying the Index through
-       commands specified using XML, JSON, CSV, or JAVABIN
-
-       Note: Since solr1.1 requestHandlers requires a valid content
-       type header if posted in the body. For example, curl now
-       requires: -H 'Content-type:text/xml; charset=utf-8'
-       
-       To override the request content type and force a specific 
-       Content-type, use the request parameter: 
-         ?update.contentType=text/csv
-       
-       This handler will pick a response format to match the input
-       if the 'wt' parameter is not explicit
-    -->
-  <requestHandler name="/update" class="solr.UpdateRequestHandler">
-    <!-- See below for information on defining 
-         updateRequestProcessorChains that can be used by name 
-         on each Update Request
-      -->
-    <!--
-       <lst name="defaults">
-         <str name="update.chain">dedupe</str>
-       </lst>
-       -->
-  </requestHandler>
-
-  <!-- for back compat with clients using /update/json and /update/csv -->  
-  <requestHandler name="/update/json" class="solr.JsonUpdateRequestHandler">
-        <lst name="defaults">
-         <str name="stream.contentType">application/json</str>
-       </lst>
-  </requestHandler>
-  <requestHandler name="/update/csv" class="solr.CSVRequestHandler">
-        <lst name="defaults">
-         <str name="stream.contentType">application/csv</str>
-       </lst>
-  </requestHandler>
-
   <!-- Field Analysis Request Handler
 
        RequestHandler that provides much the same functionality as

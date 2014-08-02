@@ -1043,18 +1043,6 @@
        -->
   </requestHandler>
 
-  <!-- for back compat with clients using /update/json and /update/csv -->  
-  <requestHandler name="/update/json" class="solr.UpdateRequestHandler">
-        <lst name="defaults">
-         <str name="stream.contentType">application/json</str>
-       </lst>
-  </requestHandler>
-  <requestHandler name="/update/csv" class="solr.UpdateRequestHandler">
-        <lst name="defaults">
-         <str name="stream.contentType">application/csv</str>
-       </lst>
-  </requestHandler>
-
   <!-- Solr Cell Update Request Handler
 
        http://wiki.apache.org/solr/ExtractingRequestHandler 
