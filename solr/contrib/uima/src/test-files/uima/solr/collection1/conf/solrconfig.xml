@@ -29,7 +29,7 @@
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
   </indexConfig>
   <!--
-    lib directives can be used to instruct Solr to load an Jars
+    lib directives can be used to instruct Solr to load any Jars
     identified and use them to resolve any "plugins" specified in your
     solrconfig.xml or schema.xml (ie: Analyzers, Request Handlers,
     etc...). All directories and paths are resolved relative the
