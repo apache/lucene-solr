@@ -89,8 +89,8 @@ public class FuzzyQuery extends MultiTermQuery {
     if (prefixLength < 0) {
       throw new IllegalArgumentException("prefixLength cannot be negative.");
     }
-    if (maxExpansions < 0) {
-      throw new IllegalArgumentException("maxExpansions cannot be negative.");
+    if (maxExpansions <= 0) {
+      throw new IllegalArgumentException("maxExpansions must be positive.");
     }
     
     this.term = term;

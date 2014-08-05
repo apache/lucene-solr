@@ -226,6 +226,9 @@ Bug Fixes
   documents will now throw IllegalStateException if the max count
   would be exceeded, instead of silently creating an unusable
   index.  (Mike McCandless)
+
+* LUCENE-5869: Added restriction to positive values for maxExpansions in FuzzyQuery.
+  (Ryan Ernst)
   
 Test Framework
 
