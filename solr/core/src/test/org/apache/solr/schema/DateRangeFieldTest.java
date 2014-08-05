@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class DateRangeFieldTest extends SolrTestCaseJ4 {
 
@@ -28,13 +29,14 @@ public class DateRangeFieldTest extends SolrTestCaseJ4 {
   }
 
   public void test() {
+    assertU(delQ("*:*"));
     assertU(adoc("id", "0", "dateRange", "[* TO *]"));
     assertU(adoc("id", "1", "dateRange", "2014-05-21T12:00:00.000Z"));
     assertU(adoc("id", "2", "dateRange", "[2000 TO 2014-05-21]"));
     assertU(commit());
 
     //ensure stored value is the same (not toString of Shape)
-    assertQ(req("q", "id:1", "fl", "dateRange"), "//result/doc/str[.='2014-05-21T12:00:00.000Z']");
+    assertQ(req("q", "id:1", "fl", "dateRange"), "//result/doc/arr[@name='dateRange']/str[.='2014-05-21T12:00:00.000Z']");
 
     String[] commonParams = {"q", "{!field f=dateRange op=$op v=$qq}", "sort", "id asc"};
     assertQ(req(commonParams, "qq", "[* TO *]"), xpathMatches(0, 1, 2));
@@ -47,6 +49,35 @@ public class DateRangeFieldTest extends SolrTestCaseJ4 {
     //show without local-params
     assertQ(req("q", "dateRange:\"2014-05-21T12:00:00.000Z\""), xpathMatches(0, 1, 2));
     assertQ(req("q", "dateRange:[1999 TO 2001]"), xpathMatches(0, 2));
+  }
+
+  @Test
+  public void testMultiValuedDateRanges() {
+    assertU(delQ("*:*"));
+    assertU(adoc("id", "0", "dateRange", "[2000 TO 2010]", "dateRange", "[2011 TO 2014]"));
+    assertU(adoc("id", "1", "dateRange", "[2000-01 TO 2010-10]", "dateRange", "[2010-11 TO 2014-12]"));
+    assertU(adoc("id", "2", "dateRange", "[2000-01-01 TO 2010-08-01]", "dateRange", "[2010-08-01 TO 2014-12-01]"));
+    assertU(adoc("id", "3", "dateRange", "[1990 TO 1995]", "dateRange", "[1997 TO 1999]"));
+    assertU(commit());
+
+    String[] commonParams = {"q", "{!field f=dateRange op=$op v=$qq}", "sort", "id asc"};
+
+    assertQ(req(commonParams, "qq", "[2000 TO 2014]", "op", "IsWithin"), xpathMatches(0, 1, 2));
+    assertQ(req(commonParams, "qq", "[2000 TO 2013]", "op", "IsWithin"), xpathMatches());
+    assertQ(req(commonParams, "qq", "[2000 TO 2014]", "op", "Contains"), xpathMatches(0, 1));
+    assertQ(req(commonParams, "qq", "[2000 TO 2015]", "op", "Contains"), xpathMatches());
+
+    assertQ(req(commonParams, "qq", "[2000-01 TO 2014-12]", "op", "IsWithin"), xpathMatches(0, 1, 2));
+    assertQ(req(commonParams, "qq", "[2000 TO 2014-11]", "op", "IsWithin"), xpathMatches());
+    assertQ(req(commonParams, "qq", "[2000-01 TO 2014-12]", "op", "Contains"), xpathMatches(0, 1));
+
+    assertQ(req(commonParams, "qq", "[2000-01-01 TO 2014-12-31]", "op", "IsWithin"), xpathMatches(0, 1, 2));
+    assertQ(req(commonParams, "qq", "[2000-01-01 TO 2014-12-01]", "op", "Contains"), xpathMatches(0, 1, 2));
+    assertQ(req(commonParams, "qq", "[2000 TO 2000]", "op", "Contains"), xpathMatches(0, 1, 2));
+
+    assertQ(req(commonParams, "qq", "[2000 TO 2000]", "op", "Contains"), xpathMatches(0, 1, 2));
+
+    assertQ(req(commonParams, "qq", "[1996-01-01 TO 1996-12-31]", "op", "Contains"), xpathMatches());
   }
 
   private String[] xpathMatches(int... docIds) {

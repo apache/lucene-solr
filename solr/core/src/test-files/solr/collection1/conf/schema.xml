@@ -499,7 +499,7 @@
 
    <field name="nullfirst" type="string" indexed="true" stored="true" sortMissingFirst="true" multiValued="false"/>
 
-   <field name="dateRange" type="dateRange" multiValued="false" />
+   <field name="dateRange" type="dateRange" multiValued="true" />
 
    <field name="cat" type="string" indexed="true" stored="true" multiValued="true"/>
    <field name="price"  type="float" indexed="true" stored="true" multiValued="false"/>
