@@ -59,7 +59,7 @@
       <resolver ref="releases.cloudera.com"/>
       <resolver ref="sonatype-releases" />
       <resolver ref="maven.restlet.org" />
-      <resolver ref="svnkit-releases" />
+      <!-- <resolver ref="svnkit-releases" /> -->
       <resolver ref="working-chinese-mirror" />
     </chain>
   </resolvers>
