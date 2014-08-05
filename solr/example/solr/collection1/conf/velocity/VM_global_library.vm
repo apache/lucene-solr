@@ -46,7 +46,7 @@
 #macro(url_for_nested_facet_query $field)#url_for_home#lens&fq=$esc.url($field)#end
 
 ## TODO: convert to use {!raw f=$field}$value (with escaping of course)
-#macro(url_for_facet_filter $field $value)#url_for_home#lens&fq=$esc.url($field):%22$esc.url($value)%22#end
+#macro(url_for_facet_filter $field $value)#url_for_home#lens&fq=#if($value!=$null)$esc.url($field):%22$esc.url($value)%22#else-$esc.url($field):[*+TO+*]#end#end
 
 #macro(url_for_facet_date_filter $field $value)#url_for_home#lens&fq=$esc.url($field):$esc.url($value)#end
 
@@ -126,10 +126,17 @@
     <ul>
       #foreach ($pivot in $pivots)
         #foreach ($entry in $pivot.value)
-          <a href="#url_for_facet_filter($entry.field, $entry.value)">$entry.field::$entry.value</a> ($entry.count)
+          <a href="#url_for_facet_filter($entry.field, $entry.value)">$entry.field::#if($entry.value!=$null)$entry.value#else<em>missing</em>#end</a> ($entry.count)
           <ul>
             #foreach($nest in $entry.pivot)
-              <a href="#url_for_facet_filter($entry.field, $entry.value)&fq=$esc.url($nest.field):%22$esc.url($nest.value)%22">$nest.field::$nest.value</a> ($nest.count)
+              <li>
+                #if($nest.value != $null)
+                  <a href="#url_for_facet_filter($entry.field, $entry.value)&fq=$esc.url($nest.field):%22$esc.url($nest.value)%22">$nest.field::$nest.value</a>
+                #else
+                  <a href="#url_for_facet_filter($entry.field, $entry.value)&fq=-$esc.url($nest.field):[*+TO+*]">$nest.field::<em>missing</em></a>
+                #end
+                ($nest.count)
+              </li>
             #end
           </ul>
         #end

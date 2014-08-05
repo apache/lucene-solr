@@ -324,6 +324,8 @@ Other Changes
 
 * SOLR-6309: Increase timeouts for AsyncMigrateRouteKeyTest. (shalin)
 
+* SOLR-2168: Added support for facet.missing in /browse field and pivot faceting. (ehatcher)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components

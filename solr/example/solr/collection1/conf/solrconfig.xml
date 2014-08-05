@@ -953,6 +953,7 @@
 
        <!-- Faceting defaults -->
        <str name="facet">on</str>
+       <str name="facet.missing">true</str>
        <str name="facet.field">cat</str>
        <str name="facet.field">manu_exact</str>
        <str name="facet.field">content_type</str>
