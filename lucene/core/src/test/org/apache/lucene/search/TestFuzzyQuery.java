@@ -31,6 +31,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
 /**
  * Tests {@link FuzzyQuery}.
@@ -371,6 +372,43 @@ public class TestFuzzyQuery extends LuceneTestCase {
       
     reader.close();
     index.close();
+  }
+
+  public void testValidation() {
+    try {
+      new FuzzyQuery(new Term("field", "foo"), -1, 0, 1, false);
+      fail("Expected error for illegal max edits value");
+    } catch (IllegalArgumentException e) {
+      assertTrue(e.getMessage().contains("maxEdits"));
+    }
+
+    try {
+      new FuzzyQuery(new Term("field", "foo"), LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE + 1, 0, 1, false);
+      fail("Expected error for illegal max edits value");
+    } catch (IllegalArgumentException e) {
+      assertTrue(e.getMessage().contains("maxEdits must be between"));
+    }
+
+    try {
+      new FuzzyQuery(new Term("field", "foo"), 1, -1, 1, false);
+      fail("Expected error for illegal prefix length value");
+    } catch (IllegalArgumentException e) {
+      assertTrue(e.getMessage().contains("prefixLength cannot be negative"));
+    }
+
+    try {
+      new FuzzyQuery(new Term("field", "foo"), 1, 0, -1, false);
+      fail("Expected error for illegal max expansions value");
+    } catch (IllegalArgumentException e) {
+      assertTrue(e.getMessage().contains("maxExpansions must be positive"));
+    }
+
+    try {
+      new FuzzyQuery(new Term("field", "foo"), 1, 0, -1, false);
+      fail("Expected error for illegal max expansions value");
+    } catch (IllegalArgumentException e) {
+      assertTrue(e.getMessage().contains("maxExpansions must be positive"));
+    }
   }
   
   private void addDoc(String text, RandomIndexWriter writer) throws IOException {
