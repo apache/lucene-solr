@@ -195,4 +195,41 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
     assertJQ(endpoint+"/MB", 
         "/MB==['Megabyte','MiB','megabyte']");    
   }
+
+  /**
+   * Can we add and remove stopwords with umlauts
+   */
+  @Test
+  public void testCanHandleDecodingAndEncodingForSynonyms() throws Exception  {
+    String endpoint = "/schema/analysis/synonyms/german";
+
+    assertJQ(endpoint,
+        "/synonymMappings/initArgs/ignoreCase==false",
+        "/synonymMappings/managedMap=={}");
+
+    // does not exist
+    assertJQ(endpoint+"/fröhlich",
+        "/error/code==404");
+
+    Map<String,List<String>> syns = new HashMap<>();
+
+    // now put a synonym
+    syns.put("fröhlich", Arrays.asList("glücklick"));
+    assertJPut(endpoint,
+        JSONUtil.toJSON(syns),
+        "/responseHeader/status==0");
+
+    // and check if it exists
+    assertJQ(endpoint,
+        "/synonymMappings/managedMap/fröhlich==['glücklick']");
+
+    // verify delete works
+    assertJDelete(endpoint+"/fröhlich",
+        "/responseHeader/status==0");
+
+
+    // was it really deleted?
+    assertJDelete(endpoint+"/fröhlich",
+        "/error/code==404");
+  }
 }

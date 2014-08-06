@@ -66,6 +66,8 @@ public class RestManager {
   // used for validating resourceIds provided during registration
   private static final Pattern resourceIdRegex = Pattern.compile("(/config|/schema)(/.*)");
 
+  private static final boolean DECODE = true;
+
   /**
    * Used internally to keep track of registrations during core initialization
    */
@@ -251,21 +253,23 @@ public class RestManager {
    * to. ManagedResource implementations are heavy-weight objects that live for the duration of
    * a SolrCore, so this class acts as the proxy between Restlet and a ManagedResource when
    * doing request processing.
+   *
    */
-  public static class ManagedEndpoint extends BaseSolrResource 
+  public static class ManagedEndpoint extends BaseSolrResource
       implements GETable, PUTable, POSTable, DELETEable
   {
     /**
      * Determines the ManagedResource resourceId from the Restlet request.
      */
-    public static String resolveResourceId(Request restletReq) {
+    public static String resolveResourceId(Request restletReq)  {
       String resourceId = restletReq.getResourceRef().
-          getRelativeRef(restletReq.getRootRef().getParentRef()).getPath();
+          getRelativeRef(restletReq.getRootRef().getParentRef()).getPath(DECODE);
       
       // all resources are registered with the leading slash
       if (!resourceId.startsWith("/"))
         resourceId = "/"+resourceId;
-      
+
+
       return resourceId;
     }
     
