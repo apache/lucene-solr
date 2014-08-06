@@ -467,7 +467,7 @@
       <tarfileset dir="."
                   filemode="755"
                   prefix="${fullnamever}"
-                  includes="example/**/*.sh example/**/bin/" />
+                  includes="bin/* example/**/*.sh example/**/bin/" />
       <tarfileset dir="."
                   prefix="${fullnamever}"
                   includes="dist/*.jar
