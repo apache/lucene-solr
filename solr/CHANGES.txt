@@ -328,6 +328,8 @@ Other Changes
 
 * SOLR-4702: Added support for multiple spellcheck collations to /browse UI. (ehatcher)
 
+* SOLR-5664: Added support for multi-valued field highlighting in /browse UI. (ehatcher)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
