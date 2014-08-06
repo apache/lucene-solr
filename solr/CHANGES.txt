@@ -326,6 +326,8 @@ Other Changes
 
 * SOLR-2168: Added support for facet.missing in /browse field and pivot faceting. (ehatcher)
 
+* SOLR-4702: Added support for multiple spellcheck collations to /browse UI. (ehatcher)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
