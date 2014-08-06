@@ -2,8 +2,10 @@
  *  Hyperlinked spelling suggestions in results list
  *#
 
-#set($dym = $response.response.spellcheck.suggestions.collation.collationQuery)
-#if($dym)
+#set($collations = $response.response.spellcheck.suggestions.getAll("collation"))
+#if($collations.size() > 0)
   Did you mean
-  <a href="#{url_for_home}#{lensNoQ}&q=$esc.url($dym)">$esc.html($dym)</a>?
+  #foreach($collation in $collations)
+    <a href="#{url_for_home}#{lensNoQ}&q=$esc.url($collation.collationQuery)">$esc.html($collation.collationQuery)</a> ($collation.hits)?
+  #end
 #end
