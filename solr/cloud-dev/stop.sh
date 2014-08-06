@@ -1,7 +1,8 @@
 #!/bin/bash
 
 numServers=$1
-baseStopPort=6572
+baseJettyPort=8900
+baseStopPort=9900
 
 die () {
     echo >&2 "$@"
@@ -12,13 +13,52 @@ die () {
 
 cd ../example
 
-java -DSTOP.PORT=7983 -DSTOP.KEY=key -jar start.jar --stop
-
-
-for (( i=2; i <= $numServers; i++ ))
+for (( i=1; i <= $numServers; i++ ))
 do
-  echo "stopping example$i"
-  cd ../example$i
   stopPort=`expr $baseStopPort + $i`
+  echo "stopping example$i, stop port is $stopPort"
+  cd ../example$i
   java -DSTOP.PORT=$stopPort -DSTOP.KEY=key -jar start.jar --stop
 done
+
+
+mkdir ../example-lastlogs
+
+for (( i=1; i <= $numServers; i++ ))
+do
+   cd ../example$i
+
+  jettyPort=`expr $baseJettyPort + $i`
+  echo "Make sure jetty stops and wait for it: $jettyPort"
+
+  pid=`lsof -i:$jettyPort -sTCP:LISTEN -t`
+  echo "pid:$pid"
+  #kill $pid
+  #wait $pid
+  if [ ! -z "$pid" ]
+  then
+    while [ -e /proc/$pid ]; do sleep 1; done
+  fi
+  
+  # save the last shutdown logs
+  echo "copy example$i.log to lastlogs"
+  cp -r -f example$i.log ../example-lastlogs/example-last$i.log
+done
+
+# stop zk runner
+java -DSTOP.PORT=1313 -DSTOP.KEY=key -jar start.jar --stop
+
+echo "wait for port to be available: $baseJettyPort"
+
+pid=`lsof -i:$baseJettyPort -sTCP:LISTEN -t`
+echo "pid:$pid"
+#kill $pid
+#wait $pid
+if [ ! -z "$pid" ]
+then
+  while [ -e /proc/$pid ]; do sleep 0.1; done
+fi
+nc -w 30 127.0.0.1 $baseJettyPort
+
+sleep 5
+ 

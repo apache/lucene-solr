@@ -1,19 +1,22 @@
 #!/bin/bash
 
+# To run on hdfs, try something along the lines of:
+# export JAVA_OPTS="-Dsolr.directoryFactory=solr.HdfsDirectoryFactory -Dsolr.lock.type=hdfs -Dsolr.hdfs.home=hdfs://localhost:8020/solr -Dsolr.hdfs.confdir=/etc/hadoop_conf/conf"
+
 numServers=$1
 numShards=$2
 
-baseJettyPort=7572
-baseStopPort=6572
+baseJettyPort=8900
+baseStopPort=9900
 
-zkaddress = localhost:2181/solr
+zkAddress=localhost:9900
 
 die () {
     echo >&2 "$@"
     exit 1
 }
 
-[ "$#" -eq 2 ] || die "2 arguments required, $# provided, usage: solrcloud-start.sh {numServers} {numShards}"
+[ "$#" -eq 2 ] || die "2 arguments required, $# provided, usage: solrcloud-start.sh [numServers] [numShards]"
 
 cd ..
 
@@ -29,6 +32,7 @@ rm -r -f example/solr/zoo_data
 rm -r -f example/solr/collection1/data
 rm -f example/example.log
 
+ant -f ../build.xml clean
 ant example dist
 
 rm -r example/solr-webapp/*
@@ -40,23 +44,28 @@ do
  cp -r -f example example$i
 done
 
+rm -r -f examplezk
+cp -r -f example examplezk
+cp core/src/test-files/solr/solr-no-core.xml examplezk/solr/solr.xml
+rm -r -f examplezk/solr/collection1/core.properties
+cd examplezk
+stopPort=1313
+jettyPort=8900
+exec -a jettyzk java -Xmx512m $JAVA_OPTS -Djetty.port=$jettyPort -DhostPort=$jettyPort -DzkRun -DzkRunOnly=true -DSTOP.PORT=$stopPort -DSTOP.KEY=key -jar start.jar 1>examplezk.log 2>&1 &
+cd ..
 
-java -classpath "example1/solr-webapp/webapp/WEB-INF/lib/*:example/lib/ext/*" org.apache.solr.cloud.ZkCLI -cmd bootstrap -zkhost 127.0.0.1:9983 -solrhome example1/solr -runzk 8983
+# upload config files
+java -classpath "example1/solr-webapp/webapp/WEB-INF/lib/*:example/lib/ext/*" org.apache.solr.cloud.ZkCLI -cmd bootstrap -zkhost $zkAddress -solrhome example1/solr
+  
+cd example
 
-echo "starting example1"
-
-cd example1
-java -Xmx1g -DzkRun -DnumShards=$numShards -DSTOP.PORT=7983 -DSTOP.KEY=key -jar start.jar 1>example1.log 2>&1 &
-
-
-
-for (( i=2; i <= $numServers; i++ ))
+for (( i=1; i <= $numServers; i++ ))
 do
   echo "starting example$i"
   cd ../example$i
   stopPort=`expr $baseStopPort + $i`
   jettyPort=`expr $baseJettyPort + $i`
-  java -Xmx1g -Djetty.port=$jettyPort -DzkHost=localhost:9983 -DnumShards=1 -DSTOP.PORT=$stopPort -DSTOP.KEY=key -jar start.jar 1>example$i.log 2>&1 &
+  exec -a jetty java -Xmx1g $JAVA_OPTS -DnumShards=$numShards -Djetty.port=$jettyPort -DzkHost=$zkAddress -DSTOP.PORT=$stopPort -DSTOP.KEY=key -jar start.jar 1>example$i.log 2>&1 &
 done
 
 
