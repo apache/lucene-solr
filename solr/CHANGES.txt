@@ -330,6 +330,8 @@ Other Changes
 
 * SOLR-5664: Added support for multi-valued field highlighting in /browse UI. (ehatcher)
 
+* SOLR-6313: Improve SolrCloud cloud-dev scripts. (Mark Miller, Vamsee Yarlagadda)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components

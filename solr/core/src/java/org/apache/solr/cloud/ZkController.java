@@ -178,6 +178,12 @@ public final class ZkController {
   // keeps track of replicas that have been asked to recover by leaders running on this node
   private Map<String,String> replicasInLeaderInitiatedRecovery = new HashMap<String,String>();  
   
+  // This is an expert and unsupported development mode that does not create
+  // an Overseer or register a /live node. This let's you monitor the cluster
+  // and interact with zookeeper via the Solr admin UI on a node outside the cluster,
+  // and so one that will not be killed or stopped when testing. See developer cloud-scripts.
+  private boolean zkRunOnly = Boolean.getBoolean("zkRunOnly"); // expert
+  
   public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, String localHost, String locaHostPort,
         String localHostContext, int leaderVoteWait, int leaderConflictResolveWait, boolean genericCoreNodeNames, final CurrentCoreDescriptorProvider registerOnReconnect) 
       throws InterruptedException, TimeoutException, IOException
@@ -228,16 +234,19 @@ public final class ZkController {
               
               registerAllCoresAsDown(registerOnReconnect, false);
               
-              ElectionContext context = new OverseerElectionContext(zkClient,
-                  overseer, getNodeName());
-              
-              ElectionContext prevContext = overseerElector.getContext();
-              if (prevContext != null) {
-                prevContext.cancelElection();
+              if (!zkRunOnly) {
+                ElectionContext context = new OverseerElectionContext(zkClient,
+                    overseer, getNodeName());
+                
+                ElectionContext prevContext = overseerElector.getContext();
+                if (prevContext != null) {
+                  prevContext.cancelElection();
+                }
+                
+                overseerElector.setup(context);
+                overseerElector.joinElection(context, true);
               }
-
-              overseerElector.setup(context);
-              overseerElector.joinElection(context, true);
+              
               zkStateReader.createClusterStateWatchersAndUpdate();
               
               // we have to register as live first to pick up docs in the buffer
@@ -686,6 +695,9 @@ public final class ZkController {
 
   private void createEphemeralLiveNode() throws KeeperException,
       InterruptedException {
+    if (zkRunOnly) {
+      return;
+    }
     String nodeName = getNodeName();
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
     log.info("Register node as live in ZooKeeper:" + nodePath);

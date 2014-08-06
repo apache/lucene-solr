@@ -4,7 +4,7 @@ source ./functions.sh
 
 case "$1" in
   start)
-        start $2 $3
+        start $2 $3 "$4"
         ;;
   stop)
         stop $2
