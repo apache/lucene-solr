@@ -238,6 +238,9 @@ Bug Fixes
 * SOLR-6264: Distributed commit and optimize are executed serially across all 
   replicas. (Mark Miller, Timothy Potter)
 
+* SOLR-6163: Correctly decode special characters in managed stopwords and synonym endpoints.
+  (Vitaliy Zhovtyuk, Timo Schmidt via Timothy Potter)
+
 Optimizations
 ---------------------
 

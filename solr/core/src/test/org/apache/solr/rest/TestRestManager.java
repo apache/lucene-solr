@@ -28,6 +28,8 @@ import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
 import org.apache.solr.rest.schema.analysis.ManagedWordSetResource;
 import org.junit.Test;
 import org.noggit.JSONUtil;
+import org.restlet.Request;
+import org.restlet.data.Reference;
 
 /**
  * Tests {@link RestManager} functionality, including resource registration,
@@ -247,5 +249,31 @@ public class TestRestManager extends SolrRestletTestBase {
     // verifies a RestManager can be reloaded from a previous RestManager's data
     RestManager restManager2 = new RestManager();
     restManager2.init(loader, initArgs, storageIO);    
+  }
+
+  @Test
+  public void testResolveResourceId () throws Exception {
+    Request testRequest = new Request();
+    Reference rootRef = new Reference("http://solr.apache.org/");
+    testRequest.setRootRef(rootRef);
+
+    Reference resourceRef = new Reference("http://solr.apache.org/schema/analysis/synonyms/de");
+    testRequest.setResourceRef(resourceRef);
+
+    String resourceId = RestManager.ManagedEndpoint.resolveResourceId(testRequest);
+    assertEquals(resourceId, "/schema/analysis/synonyms/de");
+  }
+
+  @Test
+  public void testResolveResourceIdDecodeUrlEntities () throws Exception {
+    Request testRequest = new Request();
+    Reference rootRef = new Reference("http://solr.apache.org/");
+    testRequest.setRootRef(rootRef);
+
+    Reference resourceRef = new Reference("http://solr.apache.org/schema/analysis/synonyms/de/%C3%84ndern");
+    testRequest.setResourceRef(resourceRef);
+
+    String resourceId = RestManager.ManagedEndpoint.resolveResourceId(testRequest);
+    assertEquals(resourceId, "/schema/analysis/synonyms/de/Ändern");
   }
 }

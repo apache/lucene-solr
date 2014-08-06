@@ -427,12 +427,21 @@
     <!-- A specialized field for geospatial search. If indexed, this fieldType must not be multivalued. -->
     <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
 
-    <!-- Field type where stopwords are managed by the REST API -->
+    <!-- Field type where english stopwords are managed by the REST API -->
     <fieldtype name="managed_en" class="solr.TextField">
        <analyzer>
         <tokenizer class="solr.StandardTokenizerFactory"/>
         <filter class="solr.ManagedStopFilterFactory" managed="english" />
         <filter class="solr.ManagedSynonymFilterFactory" managed="english" />
+      </analyzer>
+    </fieldtype>
+
+    <!-- Field type where german stopwords are managed by the REST API -->
+    <fieldtype name="managed_de" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.ManagedStopFilterFactory" managed="german" />
+        <filter class="solr.ManagedSynonymFilterFactory" managed="german" />
       </analyzer>
     </fieldtype>
 
