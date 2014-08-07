@@ -48,6 +48,7 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
     FieldQParserPlugin.NAME, FieldQParserPlugin.class,
     RawQParserPlugin.NAME, RawQParserPlugin.class,
     TermQParserPlugin.NAME, TermQParserPlugin.class,
+    TermsQParserPlugin.NAME, TermsQParserPlugin.class,
     NestedQParserPlugin.NAME, NestedQParserPlugin.class,
     FunctionRangeQParserPlugin.NAME, FunctionRangeQParserPlugin.class,
     SpatialFilterQParserPlugin.NAME, SpatialFilterQParserPlugin.class,

@@ -30,21 +30,6 @@ public class TestQueryTypes extends AbstractSolrTestCase {
   
   public String getCoreName() { return "basic"; }
 
-
-  @Override
-  public void setUp() throws Exception {
-    // if you override setUp or tearDown, you better call
-    // the super classes version
-    super.setUp();
-  }
-  @Override
-  public void tearDown() throws Exception {
-    // if you override setUp or tearDown, you better call
-    // the super classes version
-    super.tearDown();
-  }
-
-
   public void testQueryTypes() {
     assertU(adoc("id","0"));
     assertU(adoc("id","1", "v_t","Hello Dude"));
@@ -98,11 +83,35 @@ public class TestQueryTypes extends AbstractSolrTestCase {
               ,"//result[@numFound='1']"
               );
 
+      // term qparser
+      assertQ(req( "q", "{!term f="+f+"}"+v)
+              ,"//result[@numFound='1']"
+              );
+
+      // terms qparser
+      //wrap in spaces if space separated
+      final String separator = f == "v_s" ? "separator='|'" : "";//defaults to space separated
+      String vMod = separator == "" && random().nextBoolean() ? " " + v + " " : v;
+      assertQ(req( "q", "{!terms " + separator + " f=" +f+"}"+vMod)
+              ,"//result[@numFound='1']"
+              );
+
       // lucene range
       assertQ(req( "q", f + ":[\"" + v + "\" TO \"" + v + "\"]" )
               ,"//result[@numFound='1']"
               );
     }
+
+    // terms qparser, no values matches nothing
+    assertQ(req( "q", "*:*", "fq", "{!terms f=v_s}")
+        ,"//result[@numFound='0']"
+    );
+
+    String termsMethod = new String[]{"termsFilter", "booleanQuery", "automaton", "docValuesTermsFilter"}[random().nextInt(4)];
+    assertQ(req( "q", "{!terms f=v_s method=" + termsMethod + " separator=|}other stuff|wow dude")
+        ,"//result[@numFound='2']"
+    );
+
 
     // frange and function query only work on single valued field types
     Object[] fc_vals = new Object[] {

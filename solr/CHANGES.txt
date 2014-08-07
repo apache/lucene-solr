@@ -170,6 +170,9 @@ New Features
 * SOLR-6302: UpdateRequestHandlers are registered implicitly /update ,
   /update/json, /update/csv , /update/json/docs (Noble Paul)
 
+* SOLR-6318: New "terms" QParser for efficiently filtering documents by a list of values. For
+  many values, it's more appropriate than a boolean query. (David Smiley)
+
 
 Bug Fixes
 ----------------------
