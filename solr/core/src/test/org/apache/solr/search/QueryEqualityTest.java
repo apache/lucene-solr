@@ -16,10 +16,6 @@ package org.apache.solr.search;
  * limitations under the License.
  */
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.Map;
-
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -28,6 +24,10 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 
 
@@ -363,6 +363,10 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     } finally {
       req.close();
     }
+  }
+
+  public void testTerms() throws Exception {
+    assertQueryEquals("terms", "{!terms f=foo_i}10,20,30,-10,-20,-30", "{!terms f=foo_i}10,20,30,-10,-20,-30");
   }
 
   public void testBlockJoin() throws Exception {
