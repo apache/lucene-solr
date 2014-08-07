@@ -325,7 +325,7 @@ public class DataImportHandler extends RequestHandlerBase implements
 
   @Override
   public String getSource() {
-    return "$URL$";
+    return null;
   }
 
   public static final String ENABLE_DEBUG = "enableDebug";

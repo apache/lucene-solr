@@ -406,12 +406,12 @@ public class MoreLikeThisComponent extends SearchComponent {
   public String getDescription() {
     return "More Like This";
   }
-  
+
   @Override
   public String getSource() {
-    return "$URL$";
+    return null;
   }
-  
+
   @Override
   public URL[] getDocs() {
     return null;

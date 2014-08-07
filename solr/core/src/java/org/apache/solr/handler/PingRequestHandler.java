@@ -296,6 +296,6 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
   @Override
   public String getSource() {
-    return "$URL$";
+    return null;
   }
 }

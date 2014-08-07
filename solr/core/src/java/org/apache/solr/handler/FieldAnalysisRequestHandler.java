@@ -109,7 +109,7 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
 
   @Override
   public String getSource() {
-    return "$URL$";
+    return null;
   }
 
   // ================================================= Helper methods ================================================

@@ -355,7 +355,7 @@ public class FileFloatSource extends ValueSource {
 
     @Override
     public String getSource() {
-      return "$URL$";
+      return null;
     }
   }
 }

@@ -38,11 +38,6 @@ public class JsonUpdateRequestHandler extends UpdateRequestHandler {
   public String getDescription() {
     return "Add documents with JSON";
   }
-
-  @Override
-  public String getSource() {
-    return "$URL$";
-  }
 }
 
 

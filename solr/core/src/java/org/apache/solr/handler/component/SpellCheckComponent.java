@@ -765,7 +765,6 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
 
   @Override
   public String getSource() {
-    return "$URL$";
+    return null;
   }
-
 }

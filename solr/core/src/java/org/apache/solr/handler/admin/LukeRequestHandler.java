@@ -660,7 +660,7 @@ public class LukeRequestHandler extends RequestHandlerBase
 
   @Override
   public String getSource() {
-    return "$URL$";
+    return null;
   }
 
   @Override

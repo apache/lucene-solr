@@ -42,9 +42,4 @@ public class WeightedFragListBuilder extends HighlightingPluginBase implements
   public String getDescription() {
     return "WeightedFragListBuilder";
   }
-
-  @Override
-  public String getSource() {
-    return "$URL: http://svn.apache.org/repos/asf/lucene/dev/branches/branch_4x/solr/core/src/java/org/apache/solr/highlight/WeightedFragListBuilder.java $";
-  }
 }

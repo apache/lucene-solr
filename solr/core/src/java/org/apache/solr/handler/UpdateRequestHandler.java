@@ -166,7 +166,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
 
   @Override
   public String getSource() {
-    return "$URL$";
+    return null;
   }
 
   public static void addImplicits(List<PluginInfo> implicits) {

@@ -837,7 +837,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
   @Override
   public String getSource() {
-    return "$URL$";
+    return null;
   }
 
   @Override

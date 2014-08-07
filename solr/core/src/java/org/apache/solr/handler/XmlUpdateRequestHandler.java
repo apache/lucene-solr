@@ -40,11 +40,6 @@ public class XmlUpdateRequestHandler extends UpdateRequestHandler {
   public String getDescription() {
     return "Add documents with XML";
   }
-
-  @Override
-  public String getSource() {
-    return "$URL$";
-  }
 }
 
 

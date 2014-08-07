@@ -551,7 +551,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   @Override
   public String getSource() {
-    return "$URL$";
+    return null;
   }
 
   /** 

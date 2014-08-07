@@ -302,7 +302,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
   }
 
   @Override
-  public String getSource() {    
-    return "$URL$";
+  public String getSource() {
+    return null;
   }
 }

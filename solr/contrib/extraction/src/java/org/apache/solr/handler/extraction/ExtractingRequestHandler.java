@@ -125,7 +125,7 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
 
   @Override
   public String getSource() {
-    return "$URL$";
+    return null;
   }
 }
 

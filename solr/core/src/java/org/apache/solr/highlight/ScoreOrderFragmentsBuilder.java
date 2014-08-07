@@ -40,9 +40,4 @@ public class ScoreOrderFragmentsBuilder extends SolrFragmentsBuilder {
   public String getDescription() {
     return "ScoreOrderFragmentsBuilder";
   }
-
-  @Override
-  public String getSource() {
-    return "$URL$";
-  }
 }

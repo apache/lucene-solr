@@ -383,7 +383,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
 
   @Override
   public String getSource() {
-    return "$URL$";
+    return null;
   }
 }
 

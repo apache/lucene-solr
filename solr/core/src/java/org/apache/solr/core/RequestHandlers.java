@@ -295,13 +295,7 @@ public final class RequestHandlers {
     }
 
     @Override
-    public String getSource() {
-      String rev = "$URL$";
-      if( _handler != null ) {
-        rev += "\n" + _handler.getSource();
-      }
-      return rev;
-    }
+    public String getSource() { return null; }
       
     @Override
     public URL[] getDocs() {

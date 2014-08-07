@@ -219,7 +219,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
 
   @Override
   public String getSource() {
-    return "$URL$";
+    return null;
   }
 
   @Override

@@ -361,7 +361,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
   @Override
   public String getSource() {
-    return "$URL: https://svn.apache.org/repos/asf/lucene/dev/trunk/solr/core/src/java/org/apache/solr/handler/component/ExpandComponent.java $";
+    return null;
   }
 
   @Override

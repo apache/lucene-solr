@@ -132,6 +132,6 @@ public class ThreadDumpHandler extends RequestHandlerBase
 
   @Override
   public String getSource() {
-    return "$URL$";
+    return null;
   }
 }

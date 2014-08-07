@@ -267,8 +267,4 @@ public class PivotFacetHelper extends SimpleFacets
 //  public String getDescription() {
 //    return "Handle Pivot (multi-level) Faceting";
 //  }
-//
-//  public String getSource() {
-//    return "$URL$";
-//  }
 }

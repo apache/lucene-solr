@@ -56,6 +56,6 @@ public class PropertiesRequestHandler extends RequestHandlerBase
 
   @Override
   public String getSource() {
-    return "$URL$";
+    return null;
   }
 }

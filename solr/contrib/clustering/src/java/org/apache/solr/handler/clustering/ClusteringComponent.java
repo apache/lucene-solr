@@ -267,7 +267,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
 
   @Override
   public String getSource() {
-    return "$URL$";
+    return null;
   }
 
   /**

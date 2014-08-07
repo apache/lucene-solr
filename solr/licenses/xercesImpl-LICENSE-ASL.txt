@@ -1,4 +1,4 @@
-xml-commons/LICENSE.txt $Id: LICENSE.txt,v 1.1 2002/01/31 23:42:49 curcuru Exp $
+xml-commons/LICENSE.txt Id: LICENSE.txt,v 1.1 2002/01/31 23:42:49 curcuru Exp $
 See README.txt for additional licensing information.
 
 /* ====================================================================

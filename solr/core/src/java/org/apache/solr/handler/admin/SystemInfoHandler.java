@@ -346,9 +346,9 @@ public class SystemInfoHandler extends RequestHandlerBase
 
   @Override
   public String getSource() {
-    return "$URL$";
+    return null;
   }
-  
+
   private static final long ONE_KB = 1024;
   private static final long ONE_MB = ONE_KB * ONE_KB;
   private static final long ONE_GB = ONE_KB * ONE_MB;

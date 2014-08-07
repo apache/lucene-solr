@@ -124,7 +124,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
 
   @Override
   public String getSource() {
-    return "$URL$";
+    return null;
   }
 
 

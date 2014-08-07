@@ -1,6 +1,6 @@
 /*-- 
 
- $Id: LICENSE.txt,v 1.11 2004/02/06 09:32:57 jhunter Exp $
+ Id: LICENSE.txt,v 1.11 2004/02/06 09:32:57 jhunter Exp $
 
  Copyright (C) 2000-2004 Jason Hunter & Brett McLaughlin.
  All rights reserved.

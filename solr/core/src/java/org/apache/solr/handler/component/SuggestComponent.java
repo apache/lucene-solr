@@ -322,7 +322,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
 
   @Override
   public String getSource() {
-    return "$URL$";
+    return null;
   }
   
   @Override

@@ -37,11 +37,6 @@ public class CSVRequestHandler extends UpdateRequestHandler {
   public String getDescription() {
     return "Add/Update multiple documents with CSV formatted rows";
   }
-
-  @Override
-  public String getSource() {
-    return "$URL$";
-  }
 }
 
 

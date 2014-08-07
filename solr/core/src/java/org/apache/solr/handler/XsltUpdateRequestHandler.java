@@ -40,9 +40,4 @@ public class XsltUpdateRequestHandler extends UpdateRequestHandler {
   public String getDescription() {
     return "Add documents with XML, transforming with XSLT first";
   }
-
-  @Override
-  public String getSource() {
-    return "$URL$";
-  }
 }

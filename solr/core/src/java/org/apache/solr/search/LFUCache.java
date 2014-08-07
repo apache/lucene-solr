@@ -223,7 +223,7 @@ public class LFUCache<K, V> implements SolrCache<K, V> {
 
   @Override
   public String getSource() {
-    return "$URL$";
+    return null;
   }
 
   @Override
