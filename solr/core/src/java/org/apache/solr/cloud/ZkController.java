@@ -558,11 +558,13 @@ public final class ZkController {
       shardHandler = cc.getShardHandlerFactory().getShardHandler();
       adminPath = cc.getAdminPath();
       
-      overseerElector = new LeaderElector(zkClient);
-      this.overseer = new Overseer(shardHandler, adminPath, zkStateReader, this);
-      ElectionContext context = new OverseerElectionContext(zkClient, overseer, getNodeName());
-      overseerElector.setup(context);
-      overseerElector.joinElection(context, false);
+      if (!zkRunOnly) {
+        overseerElector = new LeaderElector(zkClient);
+        this.overseer = new Overseer(shardHandler, adminPath, zkStateReader, this);
+        ElectionContext context = new OverseerElectionContext(zkClient, overseer, getNodeName());
+        overseerElector.setup(context);
+        overseerElector.joinElection(context, false);
+      }
       
       if (!createdWatchesAndUpdated) {
         zkStateReader.createClusterStateWatchersAndUpdate();
