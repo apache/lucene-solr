@@ -173,6 +173,7 @@ New Features
 * SOLR-6318: New "terms" QParser for efficiently filtering documents by a list of values. For
   many values, it's more appropriate than a boolean query. (David Smiley)
 
+* SOLR-6283: Add support for Interval Faceting in SolrJ. (Tomás Fernández Löbbe)
 
 Bug Fixes
 ----------------------

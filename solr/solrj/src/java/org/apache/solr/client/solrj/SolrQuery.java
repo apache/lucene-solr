@@ -17,6 +17,13 @@
 
 package org.apache.solr.client.solrj;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.regex.Pattern;
+
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.HighlightParams;
@@ -24,13 +31,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.params.TermsParams;
 import org.apache.solr.common.util.DateUtil;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.regex.Pattern;
 
 
 /**
@@ -273,7 +273,40 @@ public class SolrQuery extends ModifiableSolrParams
     this.set(FacetParams.FACET, true);
     return this;
   }
-
+  
+  /**
+   * Add Interval Faceting on a field. All intervals for the same field should be included
+   * in the same call to this method.
+   * For syntax documentation see <a href="https://wiki.apache.org/solr/SimpleFacetParameters#Interval_Faceting">Solr wiki</a>
+   * 
+   * @param field the field to add facet intervals
+   * @param intervals Intervals to be used for faceting. It can be an empty array, but it can't 
+   * be <code>null</code>
+   * @return this
+   */
+  public SolrQuery addIntervalFacets(String field, String[] intervals) {
+    if (intervals == null) {
+      throw new IllegalArgumentException("Can't add null intervals");
+    }
+    set(FacetParams.FACET, true);
+    add(FacetParams.FACET_INTERVAL, field);
+    for (String interval:intervals) {
+      add(String.format(Locale.ROOT, "f.%s.facet.interval.set", field), interval);
+    }
+    return this;
+  }
+  
+  /**
+   * Remove all Interval Facets on a field
+   * 
+   * @param field the field to remove from facet intervals
+   * @return Array of current intervals for <code>field</code>
+   */
+  public String[] removeIntervalFacets(String field) {
+    while(remove(FacetParams.FACET_INTERVAL, field)){};
+    return remove(String.format(Locale.ROOT, "f.%s.facet.interval.set", field));
+  }
+  
   /** get the facet fields
    * 
    * @return string array of facet fields or null if not set/empty
@@ -317,6 +350,7 @@ public class SolrQuery extends ModifiableSolrParams
       this.remove(FacetParams.FACET_SORT);
       this.remove(FacetParams.FACET_ZEROS);
       this.remove(FacetParams.FACET_PREFIX); // does not include the individual fields...
+      this.remove(FacetParams.FACET_INTERVAL); // does not remove interval parameters
     }
     return this;
   }
