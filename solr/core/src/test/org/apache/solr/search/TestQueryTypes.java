@@ -89,9 +89,9 @@ public class TestQueryTypes extends AbstractSolrTestCase {
               );
 
       // terms qparser
-      //wrap in spaces if space separated
-      final String separator = f == "v_s" ? "separator='|'" : "";//defaults to space separated
-      String vMod = separator == "" && random().nextBoolean() ? " " + v + " " : v;
+      //wrap in spaces sometimes if space separated
+      final String separator = f == "v_s" ? "" : "separator=' '";//use space separated when field isn't v_s
+      String vMod = separator != "" && random().nextBoolean() ? " " + v + " " : v;
       assertQ(req( "q", "{!terms " + separator + " f=" +f+"}"+vMod)
               ,"//result[@numFound='1']"
               );
@@ -108,7 +108,7 @@ public class TestQueryTypes extends AbstractSolrTestCase {
     );
 
     String termsMethod = new String[]{"termsFilter", "booleanQuery", "automaton", "docValuesTermsFilter"}[random().nextInt(4)];
-    assertQ(req( "q", "{!terms f=v_s method=" + termsMethod + " separator=|}other stuff|wow dude")
+    assertQ(req( "q", "{!terms f=v_s method=" + termsMethod + " }other stuff,wow dude")
         ,"//result[@numFound='2']"
     );
 

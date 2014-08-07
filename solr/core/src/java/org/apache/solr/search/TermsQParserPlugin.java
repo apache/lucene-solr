@@ -44,8 +44,8 @@ import java.util.regex.Pattern;
  * {@link TermQParserPlugin} but multi-valued, and supports a variety of internal algorithms.
  * <br>Parameters:
  * <br><code>f</code>: The field name (mandatory)
- * <br><code>separator</code>: the separator delimiting the values in the query string. By
- * default it's a " " which is special in that it splits on any consecutive whitespace.
+ * <br><code>separator</code>: the separator delimiting the values in the query string, defaulting to a comma.
+ * If it's a " " then it splits on any consecutive whitespace.
  * <br><code>method</code>: Any of termsFilter (default), booleanQuery, automaton, docValuesTermsFilter.
  * <p>
  * Note that if no values are specified then the query matches no documents.
@@ -106,7 +106,7 @@ public class TermsQParserPlugin extends QParserPlugin {
       public Query parse() throws SyntaxError {
         String fname = localParams.get(QueryParsing.F);
         FieldType ft = req.getSchema().getFieldTypeNoEx(fname);
-        String separator = localParams.get(SEPARATOR, " ");
+        String separator = localParams.get(SEPARATOR, ",");
         String qstr = localParams.get(QueryParsing.V);//never null
         Method method = Method.valueOf(localParams.get(METHOD, Method.termsFilter.name()));
         //TODO pick the default method based on various heuristics from benchmarks
