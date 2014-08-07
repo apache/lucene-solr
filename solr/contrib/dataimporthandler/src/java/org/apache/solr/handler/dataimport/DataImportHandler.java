@@ -315,10 +315,5 @@ public class DataImportHandler extends RequestHandlerBase implements
     return DataImporter.MSG.JMX_DESC;
   }
 
-  @Override
-  public String getSource() {
-    return "$URL$";
-  }
-
   public static final String ENABLE_DEBUG = "enableDebug";
 }

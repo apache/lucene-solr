@@ -58,7 +58,6 @@ for (my $line_num = 0 ; $line_num <= $#lines ; ++$line_num) {
     $in_major_component_versions_section = 0;
     next;
   }
-  next if (/^\s*\$Id(?::.*)?\$/);      # Skip $Id$ lines
   next if (/^\s{0,4}-{5,}\s*$/);       # Skip Solr's section underlines
 
   unless ($title) {

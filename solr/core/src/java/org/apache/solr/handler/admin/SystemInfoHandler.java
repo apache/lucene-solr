@@ -343,11 +343,6 @@ public class SystemInfoHandler extends RequestHandlerBase
   public String getDescription() {
     return "Get System Info";
   }
-
-  @Override
-  public String getSource() {
-    return "$URL$";
-  }
   
   private static final long ONE_KB = 1024;
   private static final long ONE_MB = ONE_KB * ONE_KB;

@@ -105,11 +105,6 @@ public class InfoHandler extends RequestHandlerBase {
     return "System Information";
   }
 
-  @Override
-  public String getSource() {
-    return "$URL: https://svn.apache.org/repos/asf/lucene/dev/trunk/solr/core/src/java/org/apache/solr/handler/admin/InfoHandler.java $";
-  }
-
   protected PropertiesRequestHandler getPropertiesHandler() {
     return propertiesHandler;
   }

@@ -123,7 +123,7 @@ public class AdminHandlers implements SolrCoreAware, SolrRequestHandler
 
   @Override
   public String getSource() {
-    return "$URL$";
+    return null;
   }
 
   @Override

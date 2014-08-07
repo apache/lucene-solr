@@ -164,11 +164,6 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
     return "Add documents using XML (with XSLT), CSV, JSON, or javabin";
   }
 
-  @Override
-  public String getSource() {
-    return "$URL$";
-  }
-
   public static void addImplicits(List<PluginInfo> implicits) {
     implicits.add(getPluginInfo("/update",Collections.emptyMap()));
     implicits.add(getPluginInfo("/update/json", singletonMap("update.contentType", "application/json")));

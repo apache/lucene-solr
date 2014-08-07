@@ -220,12 +220,6 @@ public class ResponseHeaderTest extends SolrJettyTestBase {
     public String getDescription() {
       return null;
     }
-    
-    @Override
-    public String getSource() {
-      return null;
-    }
-    
   }
   
 }

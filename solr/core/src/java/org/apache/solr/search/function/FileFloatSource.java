@@ -352,10 +352,5 @@ public class FileFloatSource extends ValueSource {
     public String getDescription() {
       return "Reload readerCache request handler";
     }
-
-    @Override
-    public String getSource() {
-      return "$URL$";
-    }
   }
 }

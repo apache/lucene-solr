@@ -111,7 +111,7 @@ You can download this version of this file from http://www.w3.org/TR/2010/REC-xh
        PUBLIC "-//W3C//ENTITIES Latin 1 for XHTML//EN"
        SYSTEM "http://www.w3.org/MarkUp/DTD/xhtml-lat1.ent"
 
-     Revision:  $Id: xhtml-lat1.ent,v 4.1 2001/04/10 09:34:14 altheim Exp $ SMI
+     Revision:  Id: xhtml-lat1.ent,v 4.1 2001/04/10 09:34:14 altheim Exp $ SMI
 
      Portions (C) International Organization for Standardization 1986:
      Permission to copy in any form is granted for use with conforming
@@ -237,7 +237,7 @@ You can download this version of this file from http://www.w3.org/TR/2010/REC-xh
        PUBLIC "-//W3C//ENTITIES Special for XHTML//EN"
        SYSTEM "http://www.w3.org/MarkUp/DTD/xhtml-special.ent"
 
-     Revision:  $Id: xhtml-special.ent,v 4.1 2001/04/10 09:34:14 altheim Exp $ SMI
+     Revision:  Id: xhtml-special.ent,v 4.1 2001/04/10 09:34:14 altheim Exp $ SMI
 
      Portions (C) International Organization for Standardization 1986:
      Permission to copy in any form is granted for use with conforming
@@ -324,7 +324,7 @@ You can download this version of this file from http://www.w3.org/TR/2010/REC-xh
        PUBLIC "-//W3C//ENTITIES Symbols for XHTML//EN"
        SYSTEM "http://www.w3.org/MarkUp/DTD/xhtml-symbol.ent"
 
-     Revision:  $Id: xhtml-symbol.ent,v 4.1 2001/04/10 09:34:14 altheim Exp $ SMI
+     Revision:  Id: xhtml-symbol.ent,v 4.1 2001/04/10 09:34:14 altheim Exp $ SMI
 
      Portions (C) International Organization for Standardization 1986:
      Permission to copy in any form is granted for use with conforming

@@ -101,7 +101,7 @@ public abstract class SearchComponent implements SolrInfoMBean, NamedListInitial
   @Override
   public abstract String getDescription();
   @Override
-  public abstract String getSource();
+  public String getSource() { return null; }
   
   @Override
   public String getVersion() {

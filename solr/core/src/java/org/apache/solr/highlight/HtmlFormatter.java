@@ -45,9 +45,4 @@ public class HtmlFormatter extends HighlightingPluginBase implements SolrFormatt
   public String getDescription() {
     return "HtmlFormatter";
   }
-
-  @Override
-  public String getSource() {
-    return "$URL$";
-  }
 }

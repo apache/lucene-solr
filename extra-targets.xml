@@ -137,7 +137,7 @@
         file -> '.' + file.getAbsolutePath().substring(baseLen).replace(File.separatorChar, (char)'/');
       }
 
-      Set missingProps = new TreeSet(), unversioned = new TreeSet(), changed = new TreeSet();
+      Set missingProps = new TreeSet(), withKeywords = new TreeSet(), unversioned = new TreeSet(), changed = new TreeSet();
 
       task.log('Getting all versioned and unversioned files...');
       statusClient.doStatus(basedir, SVNRevision.WORKING, SVNDepth.fromRecurse(true), false, true, false, false, {
@@ -168,15 +168,23 @@
         }
       } as ISVNPropertyHandler);
       
+      task.log('Scanning for files with svn:keywords property...');
+      wcClient.doGetProperty(basedir, 'svn:keywords', SVNRevision.WORKING, SVNRevision.WORKING, true, {
+        file, prop -> withKeywords.add(convertRelative(file));
+      } as ISVNPropertyHandler);
+      
       def convertSet2String = {
         set -> set ? ('* ' + set.join(project.getProperty('line.separator') + '* ')) : null
       };
       project.setProperty('svn.checkprops.failed', convertSet2String(missingProps));
+      project.setProperty('svn.keywords.failed', convertSet2String(withKeywords));
       project.setProperty('svn.unversioned.failed', convertSet2String(unversioned));
       project.setProperty('svn.changed.failed', convertSet2String(changed));
     ]]></groovy>
     <fail if="svn.checkprops.failed"
       message="The following files are missing svn:eol-style (or binary svn:mime-type):${line.separator}${svn.checkprops.failed}"/>
+    <fail if="svn.keywords.failed"
+      message="The following files have the svn:keywords property set:${line.separator}${svn.keywords.failed}"/>
     <fail if="svn.unversioned.failed"
       message="Source checkout is dirty after running tests!!! Offending files:${line.separator}${svn.unversioned.failed}"/>
     <fail message="Source checkout is modified !!! Offending files:${line.separator}${svn.changed.failed}">

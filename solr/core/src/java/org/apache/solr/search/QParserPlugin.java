@@ -91,7 +91,7 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
 
   @Override
   public String getSource() {
-    return "$URL$";
+    return null;
   }
 
   @Override

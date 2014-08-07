@@ -682,11 +682,6 @@ public class FacetComponent extends SearchComponent
   }
 
   @Override
-  public String getSource() {
-    return "$URL$";
-  }
-
-  @Override
   public URL[] getDocs() {
     return null;
   }

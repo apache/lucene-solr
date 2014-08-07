@@ -2408,7 +2408,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
   @Override
   public String getSource() {
-    return "$URL$";
+    return null;
   }
 
   @Override

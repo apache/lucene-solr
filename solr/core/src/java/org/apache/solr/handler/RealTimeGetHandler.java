@@ -41,11 +41,6 @@ public class RealTimeGetHandler extends SearchHandler {
   }
 
   @Override
-  public String getSource() {
-    return "$URL$";
-  }
-
-  @Override
   public URL[] getDocs() {
     return null;
   }

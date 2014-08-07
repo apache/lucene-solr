@@ -46,7 +46,6 @@ import com.sun.mail.gimap.GmailRawSearchTerm;
  * >http://wiki.apache.org/solr/DataImportHandler</a> for more details. <b>This
  * API is experimental and subject to change</b>
  * 
- * @version $Id$
  * @since solr 1.4
  */
 public class MailEntityProcessor extends EntityProcessorBase {

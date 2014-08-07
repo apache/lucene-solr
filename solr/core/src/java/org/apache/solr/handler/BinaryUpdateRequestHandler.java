@@ -41,9 +41,4 @@ public class BinaryUpdateRequestHandler extends UpdateRequestHandler {
   public String getDescription() {
     return "Add/Update multiple documents with javabin format";
   }
-
-  @Override
-  public String getSource() {
-    return "$URL$";
-  }
 }

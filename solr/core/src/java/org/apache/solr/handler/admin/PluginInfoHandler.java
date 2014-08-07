@@ -89,9 +89,4 @@ public class PluginInfoHandler extends RequestHandlerBase
   public String getDescription() {
     return "Registry";
   }
-
-  @Override
-  public String getSource() {
-    return "$URL$";
-  }
 }

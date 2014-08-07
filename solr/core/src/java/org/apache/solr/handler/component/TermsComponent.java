@@ -475,11 +475,6 @@ public class TermsComponent extends SearchComponent {
   }
 
   @Override
-  public String getSource() {
-    return "$URL$";
-  }
-
-  @Override
   public String getDescription() {
     return "A Component for working with Term Enumerators";
   }

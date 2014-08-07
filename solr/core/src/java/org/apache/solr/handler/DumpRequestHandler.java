@@ -66,9 +66,4 @@ public class DumpRequestHandler extends RequestHandlerBase
   public String getDescription() {
     return "Dump handler (debug)";
   }
-
-  @Override
-  public String getSource() {
-    return "$URL$";
-  }
 }

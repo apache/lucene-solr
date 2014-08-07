@@ -40,9 +40,4 @@ public class HtmlEncoder extends HighlightingPluginBase implements SolrEncoder {
   public String getDescription() {
     return "HtmlEncoder";
   }
-
-  @Override
-  public String getSource() {
-    return "$URL$";
-  }
 }

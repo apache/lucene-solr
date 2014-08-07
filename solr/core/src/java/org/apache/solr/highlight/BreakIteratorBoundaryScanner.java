@@ -74,9 +74,4 @@ public class BreakIteratorBoundaryScanner extends SolrBoundaryScanner {
   public String getDescription() {
     return "BreakIteratorBoundaryScanner";
   }
-
-  @Override
-  public String getSource() {
-    return "$URL$";
-  }
 }

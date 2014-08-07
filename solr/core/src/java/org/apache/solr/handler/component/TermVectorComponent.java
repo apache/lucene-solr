@@ -469,11 +469,6 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
   }
 
   @Override
-  public String getSource() {
-    return "$URL$";
-  }
-
-  @Override
   public String getDescription() {
     return "A Component for working with Term Vectors";
   }

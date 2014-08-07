@@ -81,11 +81,6 @@ public class AnalyticsComponent extends SearchComponent {
   }
 
   @Override
-  public String getSource() {
-    return "$URL$";
-  }
-  
-  @Override
   public String getVersion() {
     return getClass().getPackage().getSpecificationVersion();
   }

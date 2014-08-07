@@ -42,9 +42,4 @@ public class SimpleFragListBuilder extends HighlightingPluginBase implements
   public String getDescription() {
     return "SimpleFragListBuilder";
   }
-
-  @Override
-  public String getSource() {
-    return "$URL$";
-  }
 }

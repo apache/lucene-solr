@@ -40,9 +40,4 @@ public class DefaultEncoder extends HighlightingPluginBase implements
   public String getDescription() {
     return "DefaultEncoder";
   }
-
-  @Override
-  public String getSource() {
-    return "$URL$";
-  }
 }

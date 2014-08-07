@@ -40,9 +40,4 @@ public class SimpleFragmentsBuilder extends SolrFragmentsBuilder {
   public String getDescription() {
     return "SimpleFragmentsBuilder";
   }
-
-  @Override
-  public String getSource() {
-    return "$URL$";
-  }
 }

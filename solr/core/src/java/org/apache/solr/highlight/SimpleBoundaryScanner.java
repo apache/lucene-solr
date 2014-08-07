@@ -43,9 +43,4 @@ public class SimpleBoundaryScanner extends SolrBoundaryScanner {
   public String getDescription() {
     return "SimpleBoundaryScanner";
   }
-
-  @Override
-  public String getSource() {
-    return "$URL$";
-  }
 }

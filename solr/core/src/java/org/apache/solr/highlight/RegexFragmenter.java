@@ -93,11 +93,6 @@ public class RegexFragmenter extends HighlightingPluginBase implements SolrFragm
   public String getDescription() {
     return "RegexFragmenter (" + defaultPatternRaw + ")";
   }
-
-  @Override
-  public String getSource() {
-    return "$URL$";
-  }
 }
 
 

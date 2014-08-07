@@ -1154,11 +1154,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
     return "Manage Multiple Solr Cores";
   }
 
-  @Override
-  public String getSource() {
-    return "$URL$";
-  }
-
   /**
    * Class to implement multi-threaded CoreAdminHandler behaviour.
    * This accepts all of the context from handleRequestBody.

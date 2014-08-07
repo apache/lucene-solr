@@ -293,9 +293,4 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
   public String getDescription() {
     return "Reports application health to a load-balancer";
   }
-
-  @Override
-  public String getSource() {
-    return "$URL$";
-  }
 }

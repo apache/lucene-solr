@@ -337,9 +337,4 @@ public class EditFileRequestHandler extends RequestHandlerBase {
   public String getDescription() {
     return "Admin Config File -- update config files directly";
   }
-
-  @Override
-  public String getSource() {
-    return "$URL: https://svn.apache.org/repos/asf/lucene/dev/trunk/solr/core/src/java/org/apache/solr/handler/admin/ShowFileRequestHandler.java $";
-  }
 }

@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<!-- $Id: hyphenation.dtd,v 1.3 2004/02/27 18:34:59 jeremias Exp $ -->
+<!-- Id: hyphenation.dtd,v 1.3 2004/02/27 18:34:59 jeremias Exp $ -->
 
 <!ELEMENT hyphenation-info (hyphen-char?, hyphen-min?,
                            classes, exceptions?, patterns)>

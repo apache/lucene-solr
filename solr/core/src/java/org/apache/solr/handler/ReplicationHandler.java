@@ -549,11 +549,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return "ReplicationHandler provides replication of index and configuration files from Master to Slaves";
   }
 
-  @Override
-  public String getSource() {
-    return "$URL$";
-  }
-
   /** 
    * returns the CommitVersionInfo for the current searcher, or null on error.
    */

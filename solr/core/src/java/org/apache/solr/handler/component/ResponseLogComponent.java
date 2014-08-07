@@ -115,10 +115,4 @@ public class ResponseLogComponent extends SearchComponent {
   public String getDescription() {
     return "A component that inserts the retrieved documents (and optionally scores) into the response log entry";
   }
-
-  @Override
-  public String getSource() {
-    return "$URL$";
-  }
-  
 }

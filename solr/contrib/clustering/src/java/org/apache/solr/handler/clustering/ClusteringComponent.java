@@ -265,11 +265,6 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
     return "A Clustering component";
   }
 
-  @Override
-  public String getSource() {
-    return "$URL$";
-  }
-
   /**
    * Setup the default clustering engine.
    * @see "https://issues.apache.org/jira/browse/SOLR-5219"

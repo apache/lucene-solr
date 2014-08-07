@@ -43,9 +43,7 @@ public class SolrFieldCacheMBean implements SolrInfoMBean {
   @Override
   public Category getCategory() { return Category.CACHE; } 
   @Override
-  public String getSource() { 
-    return "$URL$";
-  }
+  public String getSource() { return null; }
   @Override
   public URL[] getDocs() {
     return null;

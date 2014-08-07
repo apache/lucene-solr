@@ -170,12 +170,6 @@ public class StatsComponent extends SearchComponent {
   public String getDescription() {
     return "Calculate Statistics";
   }
-
-  @Override
-  public String getSource() {
-    return "$URL$";
-  }
-
 }
 
 class StatsInfo {
