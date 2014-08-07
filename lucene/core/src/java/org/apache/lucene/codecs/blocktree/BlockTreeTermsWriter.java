@@ -673,8 +673,6 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
 
       long startFP = out.getFilePointer();
 
-      // if (DEBUG) System.out.println("    writeBlock fp=" + startFP + " isFloor=" + isFloor + " floorLeadLabel=" + floorLeadLabel + " start=" + start + " end=" + end + " hasTerms=" + hasTerms + " hasSubBlocks=" + hasSubBlocks);
-
       boolean hasFloorLeadLabel = isFloor && floorLeadLabel != -1;
 
       final BytesRef prefix = new BytesRef(prefixLength + (hasFloorLeadLabel ? 1 : 0));
@@ -690,9 +688,11 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
       }
       out.writeVInt(code);
 
-      // if (DEBUG) {
-      //   System.out.println("  writeBlock " + (isFloor ? "(floor) " : "") + "seg=" + segment + " pending.size()=" + pending.size() + " prefixLength=" + prefixLength + " indexPrefix=" + brToString(prefix) + " entCount=" + length + " startFP=" + startFP + (isFloor ? (" floorLeadByte=" + Integer.toHexString(floorLeadByte&0xff)) : "") + " isLastInFloor=" + isLastInFloor);
-      // }
+      /*
+      if (DEBUG) {
+        System.out.println("  writeBlock " + (isFloor ? "(floor) " : "") + "seg=" + segment + " pending.size()=" + pending.size() + " prefixLength=" + prefixLength + " indexPrefix=" + brToString(prefix) + " entCount=" + (end-start+1) + " startFP=" + startFP + (isFloor ? (" floorLeadLabel=" + Integer.toHexString(floorLeadLabel)) : ""));
+      }
+      */
 
       // 1st pass: pack term suffix bytes into byte[] blob
       // TODO: cutover to bulk int codec... simple64?
@@ -719,9 +719,9 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
           /*
           if (DEBUG) {
             BytesRef suffixBytes = new BytesRef(suffix);
-            System.arraycopy(term.term.bytes, prefixLength, suffixBytes.bytes, 0, suffix);
+            System.arraycopy(term.termBytes, prefixLength, suffixBytes.bytes, 0, suffix);
             suffixBytes.length = suffix;
-            System.out.println("    write term suffix=" + suffixBytes);
+            System.out.println("    write term suffix=" + brToString(suffixBytes));
           }
           */
           // For leaf block we write suffix straight
@@ -759,9 +759,9 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
             /*
             if (DEBUG) {
               BytesRef suffixBytes = new BytesRef(suffix);
-              System.arraycopy(term.term.bytes, prefixLength, suffixBytes.bytes, 0, suffix);
+              System.arraycopy(term.termBytes, prefixLength, suffixBytes.bytes, 0, suffix);
               suffixBytes.length = suffix;
-              System.out.println("    write term suffix=" + suffixBytes);
+              System.out.println("    write term suffix=" + brToString(suffixBytes));
             }
             */
             // For non-leaf block we borrow 1 bit to record
@@ -959,6 +959,9 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
     public void finish(long sumTotalTermFreq, long sumDocFreq, int docCount) throws IOException {
       if (numTerms > 0) {
         // if (DEBUG) System.out.println("BTTW: finish prefixStarts=" + Arrays.toString(prefixStarts));
+
+        // Add empty term to force closing of all final blocks:
+        pushTerm(new BytesRef());
 
         // TODO: if pending.size() is already 1 with a non-zero prefix length
         // we can save writing a "degenerate" root block, but we have to
