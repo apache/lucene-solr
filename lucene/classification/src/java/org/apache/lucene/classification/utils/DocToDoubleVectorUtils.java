@@ -32,7 +32,7 @@ public class DocToDoubleVectorUtils {
    * @param docTerms term vectors for a given document
    * @param fieldTerms field term vectors
    * @return a sparse vector of <code>Double</code>s as an array
-   * @throws IOException
+   * @throws IOException in case accessing the underlying index fails
    */
   public static Double[] toSparseLocalFreqDoubleArray(Terms docTerms, Terms fieldTerms) throws IOException {
     TermsEnum fieldTermsEnum = fieldTerms.iterator(null);
@@ -64,7 +64,7 @@ public class DocToDoubleVectorUtils {
    * create a dense <code>Double</code> vector given doc and field term vectors using local frequency of the terms in the doc
    * @param docTerms term vectors for a given document
    * @return a dense vector of <code>Double</code>s as an array
-   * @throws IOException
+   * @throws IOException in case accessing the underlying index fails
    */
   public static Double[] toDenseLocalFreqDoubleArray(Terms docTerms) throws IOException {
     Double[] freqVector = null;
