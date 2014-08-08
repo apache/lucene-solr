@@ -243,6 +243,9 @@ Bug Fixes
 * SOLR-6163: Correctly decode special characters in managed stopwords and synonym endpoints.
   (Vitaliy Zhovtyuk, Timo Schmidt via Timothy Potter)
 
+* SOLR-6336: DistributedQueue can easily create too many ZooKeeper Watches.
+  (Ramkumar Aiyengar via Mark Miller)
+
 Optimizations
 ---------------------
 
