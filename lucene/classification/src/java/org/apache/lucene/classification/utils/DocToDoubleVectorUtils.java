@@ -27,6 +27,10 @@ import java.io.IOException;
  */
 public class DocToDoubleVectorUtils {
 
+  private DocToDoubleVectorUtils() {
+    // no public constructors
+  }
+
   /**
    * create a sparse <code>Double</code> vector given doc and field term vectors using local frequency of the terms in the doc
    * @param docTerms term vectors for a given document
