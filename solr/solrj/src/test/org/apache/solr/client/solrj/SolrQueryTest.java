@@ -417,4 +417,36 @@ public class SolrQueryTest extends LuceneTestCase {
     solrQuery.addFacetQuery("field:value");
     assertTrue("Adding a Facet Query should enable facets", solrQuery.getBool(FacetParams.FACET));
   }
+  
+  public void testFacetInterval() {
+    SolrQuery solrQuery = new SolrQuery();
+    solrQuery.addIntervalFacets("field1", new String[]{});
+    assertTrue(solrQuery.getBool(FacetParams.FACET));
+    assertEquals("field1", solrQuery.get(FacetParams.FACET_INTERVAL));
+    
+    solrQuery.addIntervalFacets("field2", new String[]{"[1,10]"});
+    assertArrayEquals(new String[]{"field1", "field2"}, solrQuery.getParams(FacetParams.FACET_INTERVAL));
+    assertEquals("[1,10]", solrQuery.get("f.field2.facet.interval.set"));
+    
+    solrQuery.addIntervalFacets("field3", new String[]{"[1,10]", "(10,100]", "(100,1000]", "(1000,*]"});
+    assertArrayEquals(new String[]{"field1", "field2", "field3"}, solrQuery.getParams(FacetParams.FACET_INTERVAL));
+    assertArrayEquals(new String[]{"[1,10]", "(10,100]", "(100,1000]", "(1000,*]"}, solrQuery.getParams("f.field3.facet.interval.set"));
+    
+    //Validate adding more intervals for an existing field
+    solrQuery.addIntervalFacets("field2", new String[]{"[10,100]"});
+    assertArrayEquals(new String[]{"[1,10]", "[10,100]"}, solrQuery.getParams("f.field2.facet.interval.set"));
+    
+    assertNull(solrQuery.removeIntervalFacets("field1"));
+    assertArrayEquals(new String[]{"field2", "field3", "field2"}, solrQuery.getParams(FacetParams.FACET_INTERVAL));
+    assertNull(solrQuery.getParams("f.field1.facet.interval.set"));
+    
+    assertArrayEquals(new String[]{"[1,10]", "[10,100]"}, solrQuery.removeIntervalFacets("field2"));
+    assertArrayEquals(new String[]{"field3"}, solrQuery.getParams(FacetParams.FACET_INTERVAL));
+    assertNull(solrQuery.getParams("f.field2.facet.interval.set"));
+    
+    assertArrayEquals(new String[]{"[1,10]", "(10,100]", "(100,1000]", "(1000,*]"}, solrQuery.removeIntervalFacets("field3"));
+    assertNull(solrQuery.getParams(FacetParams.FACET_INTERVAL));
+    assertNull(solrQuery.getParams("f.field3.facet.interval.set"));
+    
+  }
 }

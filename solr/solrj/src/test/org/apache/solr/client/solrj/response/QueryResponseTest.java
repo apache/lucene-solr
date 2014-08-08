@@ -262,5 +262,49 @@ public class QueryResponseTest extends LuceneTestCase {
     assertEquals("708_AR", documents.get(8).getFieldValue("acco_id"));
     assertEquals("708_HI", documents.get(9).getFieldValue("acco_id"));
   }
+  
+  
+  public void testIntervalFacetsResponse() throws Exception {
+    XMLResponseParser parser = new XMLResponseParser();
+    try(SolrResourceLoader loader = new SolrResourceLoader(null, null)) {
+      InputStream is = loader.openResource("solrj/sampleIntervalFacetsResponse.xml");
+      assertNotNull(is);
+      Reader in = new InputStreamReader(is, StandardCharsets.UTF_8);
+      NamedList<Object> response = parser.processResponse(in);
+      in.close();
+      
+      QueryResponse qr = new QueryResponse(response, null);
+      assertNotNull(qr);
+      assertNotNull(qr.getIntervalFacets());
+      assertEquals(2, qr.getIntervalFacets().size());
+      
+      IntervalFacet facet = qr.getIntervalFacets().get(0);
+      assertEquals("price", facet.getField());
+      assertEquals(3, facet.getIntervals().size());
+      
+      assertEquals("[0,10]", facet.getIntervals().get(0).getKey());
+      assertEquals("(10,100]", facet.getIntervals().get(1).getKey());
+      assertEquals("(100,*]", facet.getIntervals().get(2).getKey());
+      
+      assertEquals(3, facet.getIntervals().get(0).getCount());
+      assertEquals(4, facet.getIntervals().get(1).getCount());
+      assertEquals(9, facet.getIntervals().get(2).getCount());
+      
+      
+      facet = qr.getIntervalFacets().get(1);
+      assertEquals("popularity", facet.getField());
+      assertEquals(3, facet.getIntervals().size());
+      
+      assertEquals("bad", facet.getIntervals().get(0).getKey());
+      assertEquals("average", facet.getIntervals().get(1).getKey());
+      assertEquals("good", facet.getIntervals().get(2).getKey());
+      
+      assertEquals(3, facet.getIntervals().get(0).getCount());
+      assertEquals(10, facet.getIntervals().get(1).getCount());
+      assertEquals(2, facet.getIntervals().get(2).getCount());
+      
+    }
+    
+  }
 
 }

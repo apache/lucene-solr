@@ -17,14 +17,19 @@
 
 package org.apache.solr.client.solrj.response;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.params.CursorMarkParams;
-
-import java.util.*;
 
 /**
  * 
@@ -60,6 +65,7 @@ public class QueryResponse extends SolrResponseBase
   private List<FacetField> _facetDates = null;
   private List<RangeFacet> _facetRanges = null;
   private NamedList<List<PivotField>> _facetPivot = null;
+  private List<IntervalFacet> _intervalFacets = null;
 
   // Highlight Info
   private Map<String,Map<String,List<String>>> _highlighting = null;
@@ -363,6 +369,20 @@ public class QueryResponse extends SolrResponseBase
         _facetPivot.add( pf.getName(i), readPivots( (List<NamedList>)pf.getVal(i) ) );
       }
     }
+    
+    //Parse interval facets
+    NamedList<NamedList<Object>> intervalsNL = (NamedList<NamedList<Object>>) info.get("facet_intervals");
+    if (intervalsNL != null) {
+      _intervalFacets = new ArrayList<>(intervalsNL.size());
+      for (Map.Entry<String, NamedList<Object>> intervalField : intervalsNL) {
+        String field = intervalField.getKey();
+        List<IntervalFacet.Count> counts = new ArrayList<IntervalFacet.Count>(intervalField.getValue().size());
+        for (Map.Entry<String, Object> interval : intervalField.getValue()) {
+          counts.add(new IntervalFacet.Count(interval.getKey(), (Integer)interval.getValue()));
+        }
+        _intervalFacets.add(new IntervalFacet(field, counts));
+      }
+    }
   }
   
   protected List<PivotField> readPivots( List<NamedList> list )
@@ -464,6 +484,10 @@ public class QueryResponse extends SolrResponseBase
 
   public NamedList<List<PivotField>> getFacetPivot()   {
     return _facetPivot;
+  }
+  
+  public List<IntervalFacet> getIntervalFacets() {
+    return _intervalFacets;
   }
   
   /** get

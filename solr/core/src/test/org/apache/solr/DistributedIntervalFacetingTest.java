@@ -2,9 +2,13 @@ package org.apache.solr;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.response.IntervalFacet.Count;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.BeforeClass;
 
@@ -40,6 +44,61 @@ public class DistributedIntervalFacetingTest extends
     del("*:*");
     commit();
     testRandom();
+    del("*:*");
+    commit();
+    testSolrJ();
+  }
+
+  private void testSolrJ() throws Exception {
+    indexr("id", "0", "test_i_dv", "0", "test_s_dv", "AAA");
+    indexr("id", "1", "test_i_dv", "1", "test_s_dv", "BBB");
+    indexr("id", "2", "test_i_dv", "2", "test_s_dv", "AAA");
+    indexr("id", "3", "test_i_dv", "3", "test_s_dv", "CCC");
+    commit();
+    
+    QueryResponse response = controlClient.query(new SolrQuery("*:*"));
+    assertEquals(4, response.getResults().getNumFound());
+    
+    SolrQuery q = new SolrQuery("*:*");
+    String[] intervals =  new String[]{"[0,1)","[1,2)", "[2,3)", "[3,*)"};
+    q.addIntervalFacets("test_i_dv", intervals);
+    response = controlClient.query(q);
+    assertEquals(1, response.getIntervalFacets().size());
+    assertEquals("test_i_dv", response.getIntervalFacets().get(0).getField());
+    assertEquals(4, response.getIntervalFacets().get(0).getIntervals().size());
+    for (int i = 0; i < response.getIntervalFacets().get(0).getIntervals().size(); i++) {
+      Count count = response.getIntervalFacets().get(0).getIntervals().get(i);
+      assertEquals(intervals[i], count.getKey());
+      assertEquals(1, count.getCount());
+    }
+    
+    q = new SolrQuery("*:*");
+    q.addIntervalFacets("test_i_dv", intervals);
+    q.addIntervalFacets("test_s_dv", new String[]{"{!key='AAA'}[AAA,AAA]", "{!key='BBB'}[BBB,BBB]", "{!key='CCC'}[CCC,CCC]"});
+    response = controlClient.query(q);
+    assertEquals(2, response.getIntervalFacets().size());
+    
+    int stringIntervalIndex = "test_s_dv".equals(response.getIntervalFacets().get(0).getField())?0:1;
+        
+    assertEquals("test_i_dv", response.getIntervalFacets().get(1-stringIntervalIndex).getField());
+    assertEquals("test_s_dv", response.getIntervalFacets().get(stringIntervalIndex).getField());
+    
+    for (int i = 0; i < response.getIntervalFacets().get(1-stringIntervalIndex).getIntervals().size(); i++) {
+      Count count = response.getIntervalFacets().get(1-stringIntervalIndex).getIntervals().get(i);
+      assertEquals(intervals[i], count.getKey());
+      assertEquals(1, count.getCount());
+    }
+    
+    List<Count> stringIntervals = response.getIntervalFacets().get(stringIntervalIndex).getIntervals();
+    assertEquals(3, stringIntervals.size());
+    assertEquals("AAA", stringIntervals.get(0).getKey());
+    assertEquals(2, stringIntervals.get(0).getCount());
+    
+    assertEquals("BBB", stringIntervals.get(1).getKey());
+    assertEquals(1, stringIntervals.get(1).getCount());
+    
+    assertEquals("CCC", stringIntervals.get(2).getKey());
+    assertEquals(1, stringIntervals.get(2).getCount());
   }
 
   private void testRandom() throws Exception {
