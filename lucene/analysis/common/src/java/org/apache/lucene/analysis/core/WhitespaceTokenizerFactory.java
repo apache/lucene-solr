@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.core;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
 
-import java.io.Reader;
 import java.util.Map;
 
 /**
@@ -37,7 +36,6 @@ public class WhitespaceTokenizerFactory extends TokenizerFactory {
   /** Creates a new WhitespaceTokenizerFactory */
   public WhitespaceTokenizerFactory(Map<String,String> args) {
     super(args);
-    assureMatchVersion();
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -45,6 +43,6 @@ public class WhitespaceTokenizerFactory extends TokenizerFactory {
 
   @Override
   public WhitespaceTokenizer create(AttributeFactory factory) {
-    return new WhitespaceTokenizer(luceneMatchVersion, factory);
+    return new WhitespaceTokenizer(factory);
   }
 }

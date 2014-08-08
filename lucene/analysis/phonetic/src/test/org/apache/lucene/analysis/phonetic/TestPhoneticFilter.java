@@ -18,7 +18,6 @@
 package org.apache.lucene.analysis.phonetic;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 
 import org.apache.commons.codec.Encoder;
@@ -28,7 +27,6 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 /**
  * Tests {@link PhoneticFilter}
@@ -66,7 +64,7 @@ public class TestPhoneticFilter extends BaseTokenStreamTestCase {
   
   static void assertAlgorithm(Encoder encoder, boolean inject, String input,
       String[] expected) throws Exception {
-    Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT);
+    Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     tokenizer.setReader(new StringReader(input));
     PhoneticFilter filter = new PhoneticFilter(tokenizer, encoder, inject);
     assertTokenStreamContents(filter, expected);

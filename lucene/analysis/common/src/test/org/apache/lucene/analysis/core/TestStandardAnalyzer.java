@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.core;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 import java.util.Arrays;
 import java.util.Random;
@@ -30,7 +29,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
-import org.apache.lucene.util.Version;
 
 public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
   
@@ -41,7 +39,7 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
     sb.append(whitespace);
     sb.append("testing 1234");
     String input = sb.toString();
-    StandardTokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT);
+    StandardTokenizer tokenizer = new StandardTokenizer();
     tokenizer.setReader(new StringReader(input));
     BaseTokenStreamTestCase.assertTokenStreamContents(tokenizer, new String[] { "testing", "1234" });
   }
@@ -50,7 +48,7 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
 
-      Tokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT, newAttributeFactory());
+      Tokenizer tokenizer = new StandardTokenizer(newAttributeFactory());
       return new TokenStreamComponents(tokenizer);
     }
   };
@@ -282,13 +280,13 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
 
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new StandardAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new StandardAnalyzer(), 1000*RANDOM_MULTIPLIER);
   }
   
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
-    checkRandomData(random, new StandardAnalyzer(TEST_VERSION_CURRENT), 100*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, new StandardAnalyzer(), 100*RANDOM_MULTIPLIER, 8192);
   }
 
   // Adds random graph after:
@@ -298,7 +296,7 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
                     new Analyzer() {
                       @Override
                       protected TokenStreamComponents createComponents(String fieldName) {
-                        Tokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT, newAttributeFactory());
+                        Tokenizer tokenizer = new StandardTokenizer(newAttributeFactory());
                         TokenStream tokenStream = new MockGraphTokenFilter(random(), tokenizer);
                         return new TokenStreamComponents(tokenizer, tokenStream);
                       }

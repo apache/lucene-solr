@@ -31,7 +31,6 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util.Version;
 
 /**
  * An {@link Analyzer} used primarily at query time to wrap another analyzer and provide a layer of protection
@@ -50,23 +49,20 @@ public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
   //The default maximum percentage (40%) of index documents which
   //can contain a term, after which the term is considered to be a stop word.
   public static final float defaultMaxDocFreqPercent = 0.4f;
-  private final Version matchVersion;
 
   /**
    * Creates a new QueryAutoStopWordAnalyzer with stopwords calculated for all
    * indexed fields from terms with a document frequency percentage greater than
    * {@link #defaultMaxDocFreqPercent}
    *
-   * @param matchVersion Version to be used in {@link StopFilter}
    * @param delegate Analyzer whose TokenStream will be filtered
    * @param indexReader IndexReader to identify the stopwords from
    * @throws IOException Can be thrown while reading from the IndexReader
    */
   public QueryAutoStopWordAnalyzer(
-      Version matchVersion,
       Analyzer delegate,
       IndexReader indexReader) throws IOException {
-    this(matchVersion, delegate, indexReader, defaultMaxDocFreqPercent);
+    this(delegate, indexReader, defaultMaxDocFreqPercent);
   }
 
   /**
@@ -74,18 +70,16 @@ public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
    * indexed fields from terms with a document frequency greater than the given
    * maxDocFreq
    *
-   * @param matchVersion Version to be used in {@link StopFilter}
    * @param delegate Analyzer whose TokenStream will be filtered
    * @param indexReader IndexReader to identify the stopwords from
    * @param maxDocFreq Document frequency terms should be above in order to be stopwords
    * @throws IOException Can be thrown while reading from the IndexReader
    */
   public QueryAutoStopWordAnalyzer(
-      Version matchVersion,
       Analyzer delegate,
       IndexReader indexReader,
       int maxDocFreq) throws IOException {
-    this(matchVersion, delegate, indexReader, MultiFields.getIndexedFields(indexReader), maxDocFreq);
+    this(delegate, indexReader, MultiFields.getIndexedFields(indexReader), maxDocFreq);
   }
 
   /**
@@ -93,7 +87,6 @@ public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
    * indexed fields from terms with a document frequency percentage greater than
    * the given maxPercentDocs
    *
-   * @param matchVersion Version to be used in {@link StopFilter}
    * @param delegate Analyzer whose TokenStream will be filtered
    * @param indexReader IndexReader to identify the stopwords from
    * @param maxPercentDocs The maximum percentage (between 0.0 and 1.0) of index documents which
@@ -101,11 +94,10 @@ public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
    * @throws IOException Can be thrown while reading from the IndexReader
    */
   public QueryAutoStopWordAnalyzer(
-      Version matchVersion,
       Analyzer delegate,
       IndexReader indexReader,
       float maxPercentDocs) throws IOException {
-    this(matchVersion, delegate, indexReader, MultiFields.getIndexedFields(indexReader), maxPercentDocs);
+    this(delegate, indexReader, MultiFields.getIndexedFields(indexReader), maxPercentDocs);
   }
 
   /**
@@ -113,7 +105,6 @@ public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
    * given selection of fields from terms with a document frequency percentage
    * greater than the given maxPercentDocs
    *
-   * @param matchVersion Version to be used in {@link StopFilter}
    * @param delegate Analyzer whose TokenStream will be filtered
    * @param indexReader IndexReader to identify the stopwords from
    * @param fields Selection of fields to calculate stopwords for
@@ -122,12 +113,11 @@ public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
    * @throws IOException Can be thrown while reading from the IndexReader
    */
   public QueryAutoStopWordAnalyzer(
-      Version matchVersion,
       Analyzer delegate,
       IndexReader indexReader,
       Collection<String> fields,
       float maxPercentDocs) throws IOException {
-    this(matchVersion, delegate, indexReader, fields, (int) (indexReader.numDocs() * maxPercentDocs));
+    this(delegate, indexReader, fields, (int) (indexReader.numDocs() * maxPercentDocs));
   }
 
   /**
@@ -135,7 +125,6 @@ public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
    * given selection of fields from terms with a document frequency greater than
    * the given maxDocFreq
    *
-   * @param matchVersion Version to be used in {@link StopFilter}
    * @param delegate Analyzer whose TokenStream will be filtered
    * @param indexReader IndexReader to identify the stopwords from
    * @param fields Selection of fields to calculate stopwords for
@@ -143,13 +132,11 @@ public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
    * @throws IOException Can be thrown while reading from the IndexReader
    */
   public QueryAutoStopWordAnalyzer(
-      Version matchVersion,
       Analyzer delegate,
       IndexReader indexReader,
       Collection<String> fields,
       int maxDocFreq) throws IOException {
     super(delegate.getReuseStrategy());
-    this.matchVersion = matchVersion;
     this.delegate = delegate;
     
     for (String field : fields) {
@@ -181,8 +168,8 @@ public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
     if (stopWords == null) {
       return components;
     }
-    StopFilter stopFilter = new StopFilter(matchVersion, components.getTokenStream(), 
-        new CharArraySet(matchVersion, stopWords, false));
+    StopFilter stopFilter = new StopFilter(components.getTokenStream(), 
+        new CharArraySet(stopWords, false));
     return new TokenStreamComponents(components.getTokenizer(), stopFilter);
   }
 

@@ -29,7 +29,6 @@ import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.Version;
 
 /**
  * TODO: The tests below rely on the order of returned lemmas, which is probably not good. 
@@ -37,7 +36,7 @@ import org.apache.lucene.util.Version;
 public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
 
   private Analyzer getTestAnalyzer() {
-    return new MorfologikAnalyzer(TEST_VERSION_CURRENT);
+    return new MorfologikAnalyzer();
   }
 
   /** Test stemming of single tokens with Morfologik library. */
@@ -166,18 +165,16 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
 
   /** */
   public final void testKeywordAttrTokens() throws IOException {
-    final Version version = TEST_VERSION_CURRENT;
-
-    Analyzer a = new MorfologikAnalyzer(version) {
+    Analyzer a = new MorfologikAnalyzer() {
       @Override
       protected TokenStreamComponents createComponents(String field) {
-        final CharArraySet keywords = new CharArraySet(version, 1, false);
+        final CharArraySet keywords = new CharArraySet(1, false);
         keywords.add("liście");
 
-        final Tokenizer src = new StandardTokenizer(TEST_VERSION_CURRENT);
-        TokenStream result = new StandardFilter(TEST_VERSION_CURRENT, src);
+        final Tokenizer src = new StandardTokenizer();
+        TokenStream result = new StandardFilter(src);
         result = new SetKeywordMarkerFilter(result, keywords);
-        result = new MorfologikFilter(result, TEST_VERSION_CURRENT); 
+        result = new MorfologikFilter(result); 
 
         return new TokenStreamComponents(src, result);
       }

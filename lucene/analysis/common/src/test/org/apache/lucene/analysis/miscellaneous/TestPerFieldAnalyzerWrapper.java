@@ -39,10 +39,10 @@ public class TestPerFieldAnalyzerWrapper extends BaseTokenStreamTestCase {
     String text = "Qwerty";
 
     Map<String,Analyzer> analyzerPerField =
-        Collections.<String,Analyzer>singletonMap("special", new SimpleAnalyzer(TEST_VERSION_CURRENT));
+        Collections.<String,Analyzer>singletonMap("special", new SimpleAnalyzer());
 
     PerFieldAnalyzerWrapper analyzer =
-              new PerFieldAnalyzerWrapper(new WhitespaceAnalyzer(TEST_VERSION_CURRENT), analyzerPerField);
+              new PerFieldAnalyzerWrapper(new WhitespaceAnalyzer(), analyzerPerField);
 
     try (TokenStream tokenStream = analyzer.tokenStream("field", text)) {
       CharTermAttribute termAtt = tokenStream.getAttribute(CharTermAttribute.class);
@@ -72,8 +72,8 @@ public class TestPerFieldAnalyzerWrapper extends BaseTokenStreamTestCase {
   public void testReuseWrapped() throws Exception {
     final String text = "Qwerty";
 
-    final Analyzer specialAnalyzer = new SimpleAnalyzer(TEST_VERSION_CURRENT);
-    final Analyzer defaultAnalyzer = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
+    final Analyzer specialAnalyzer = new SimpleAnalyzer();
+    final Analyzer defaultAnalyzer = new WhitespaceAnalyzer();
 
     TokenStream ts1, ts2, ts3, ts4;
 

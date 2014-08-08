@@ -28,13 +28,11 @@ import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;  // for javadoc
 import org.apache.lucene.analysis.util.CharArrayMap;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -50,10 +48,8 @@ import java.nio.charset.StandardCharsets;
  * A default set of stopwords is used unless an alternative list is specified, but the
  * exclusion list is empty by default.
  * </p>
- * 
- * <p><b>NOTE</b>: This class uses the same {@link Version}
- * dependent settings as {@link StandardAnalyzer}.</p>
  */
+// TODO: extend StopwordAnalyzerBase
 public final class DutchAnalyzer extends Analyzer {
   
   /** File containing default Dutch stopwords. */
@@ -73,14 +69,14 @@ public final class DutchAnalyzer extends Analyzer {
     static {
       try {
         DEFAULT_STOP_SET = WordlistLoader.getSnowballWordSet(IOUtils.getDecodingReader(SnowballFilter.class, 
-            DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8), Version.LUCENE_CURRENT);
+            DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8));
       } catch (IOException ex) {
         // default set should always be present as it is part of the
         // distribution (JAR)
         throw new RuntimeException("Unable to load default stopword set");
       }
       
-      DEFAULT_STEM_DICT = new CharArrayMap<>(Version.LUCENE_CURRENT, 4, false);
+      DEFAULT_STEM_DICT = new CharArrayMap<>(4, false);
       DEFAULT_STEM_DICT.put("fiets", "fiets"); //otherwise fiet
       DEFAULT_STEM_DICT.put("bromfiets", "bromfiets"); //otherwise bromfiet
       DEFAULT_STEM_DICT.put("ei", "eier");
@@ -100,29 +96,27 @@ public final class DutchAnalyzer extends Analyzer {
   private CharArraySet excltable = CharArraySet.EMPTY_SET;
 
   private final StemmerOverrideMap stemdict;
-  private final Version matchVersion;
 
   /**
    * Builds an analyzer with the default stop words ({@link #getDefaultStopSet()}) 
    * and a few default entries for the stem exclusion table.
    * 
    */
-  public DutchAnalyzer(Version matchVersion) {
-    this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET, CharArraySet.EMPTY_SET, DefaultSetHolder.DEFAULT_STEM_DICT);
+  public DutchAnalyzer() {
+    this(DefaultSetHolder.DEFAULT_STOP_SET, CharArraySet.EMPTY_SET, DefaultSetHolder.DEFAULT_STEM_DICT);
   }
   
-  public DutchAnalyzer(Version matchVersion, CharArraySet stopwords){
-    this(matchVersion, stopwords, CharArraySet.EMPTY_SET, DefaultSetHolder.DEFAULT_STEM_DICT);
+  public DutchAnalyzer(CharArraySet stopwords){
+    this(stopwords, CharArraySet.EMPTY_SET, DefaultSetHolder.DEFAULT_STEM_DICT);
   }
   
-  public DutchAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionTable){
-    this(matchVersion, stopwords, stemExclusionTable, DefaultSetHolder.DEFAULT_STEM_DICT);
+  public DutchAnalyzer(CharArraySet stopwords, CharArraySet stemExclusionTable){
+    this(stopwords, stemExclusionTable, DefaultSetHolder.DEFAULT_STEM_DICT);
   }
   
-  public DutchAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionTable, CharArrayMap<String> stemOverrideDict) {
-    this.matchVersion = matchVersion;
-    this.stoptable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stopwords));
-    this.excltable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stemExclusionTable));
+  public DutchAnalyzer(CharArraySet stopwords, CharArraySet stemExclusionTable, CharArrayMap<String> stemOverrideDict) {
+    this.stoptable = CharArraySet.unmodifiableSet(CharArraySet.copy(stopwords));
+    this.excltable = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionTable));
     if (stemOverrideDict.isEmpty()) {
       this.stemdict = null;
     } else {
@@ -154,10 +148,10 @@ public final class DutchAnalyzer extends Analyzer {
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
-    final Tokenizer source = new StandardTokenizer(matchVersion);
-    TokenStream result = new StandardFilter(matchVersion, source);
-    result = new LowerCaseFilter(matchVersion, result);
-    result = new StopFilter(matchVersion, result, stoptable);
+    final Tokenizer source = new StandardTokenizer();
+    TokenStream result = new StandardFilter(source);
+    result = new LowerCaseFilter(result);
+    result = new StopFilter(result, stoptable);
     if (!excltable.isEmpty())
       result = new SetKeywordMarkerFilter(result, excltable);
     if (stemdict != null)

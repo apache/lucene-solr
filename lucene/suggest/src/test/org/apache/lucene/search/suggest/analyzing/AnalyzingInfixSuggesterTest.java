@@ -333,13 +333,13 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
   }
 
   public void testSuggestStopFilter() throws Exception {
-    final CharArraySet stopWords = StopFilter.makeStopSet(TEST_VERSION_CURRENT, "a");
+    final CharArraySet stopWords = StopFilter.makeStopSet("a");
     Analyzer indexAnalyzer = new Analyzer() {
         @Override
         protected TokenStreamComponents createComponents(String fieldName) {
           MockTokenizer tokens = new MockTokenizer();
           return new TokenStreamComponents(tokens,
-                                           new StopFilter(TEST_VERSION_CURRENT, tokens, stopWords));
+                                           new StopFilter(tokens, stopWords));
         }
       };
 

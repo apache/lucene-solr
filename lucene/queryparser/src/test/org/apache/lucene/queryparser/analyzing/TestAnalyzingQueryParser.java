@@ -120,7 +120,7 @@ public class TestAnalyzingQueryParser extends LuceneTestCase {
     assertEquals("Should have returned nothing", true, ex);
     ex = false;
      
-    AnalyzingQueryParser qp = new AnalyzingQueryParser(TEST_VERSION_CURRENT, FIELD, a);
+    AnalyzingQueryParser qp = new AnalyzingQueryParser(FIELD, a);
     try{
       qp.analyzeSingleChunk(FIELD, "", "not a single chunk");
     } catch (ParseException e){
@@ -212,7 +212,7 @@ public class TestAnalyzingQueryParser extends LuceneTestCase {
   }
 
   private Query getAnalyzedQuery(String s, Analyzer a, boolean allowLeadingWildcard) throws ParseException {
-    AnalyzingQueryParser qp = new AnalyzingQueryParser(TEST_VERSION_CURRENT, FIELD, a);
+    AnalyzingQueryParser qp = new AnalyzingQueryParser(FIELD, a);
     qp.setAllowLeadingWildcard(allowLeadingWildcard);
     org.apache.lucene.search.Query q = qp.parse(s);
     return q;
@@ -264,7 +264,7 @@ public class TestAnalyzingQueryParser extends LuceneTestCase {
   public void testByteTerms() throws Exception {
     String s = "เข";
     Analyzer analyzer = new MockBytesAnalyzer();
-    QueryParser qp = new AnalyzingQueryParser(TEST_VERSION_CURRENT, FIELD, analyzer);
+    QueryParser qp = new AnalyzingQueryParser(FIELD, analyzer);
     Query q = qp.parse("[เข TO เข]");
     assertEquals(true, isAHit(q, s, analyzer));
   }

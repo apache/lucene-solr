@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.util.Version;
 
 import java.text.Collator;
-import java.io.Reader;
 
 /**
  * <p>
@@ -78,11 +77,10 @@ public final class CollationKeyAnalyzer extends Analyzer {
   
   /**
    * Create a new CollationKeyAnalyzer, using the specified collator.
-   * 
-   * @param matchVersion compatibility version
+   *
    * @param collator CollationKey generator
    */
-  public CollationKeyAnalyzer(Version matchVersion, Collator collator) {
+  public CollationKeyAnalyzer(Collator collator) {
     this.factory = new CollationAttributeFactory(collator);
   }
 

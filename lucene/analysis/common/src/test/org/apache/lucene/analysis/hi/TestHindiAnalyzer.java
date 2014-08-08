@@ -28,25 +28,25 @@ public class TestHindiAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new HindiAnalyzer(TEST_VERSION_CURRENT);
+    new HindiAnalyzer();
   }
   
   public void testBasics() throws Exception {
-    Analyzer a = new HindiAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer a = new HindiAnalyzer();
     // two ways to write 'hindi' itself.
     checkOneTerm(a, "हिन्दी", "हिंद");
     checkOneTerm(a, "हिंदी", "हिंद");
   }
   
   public void testExclusionSet() throws Exception {
-    CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("हिंदी"), false);
-    Analyzer a = new HindiAnalyzer(TEST_VERSION_CURRENT, 
+    CharArraySet exclusionSet = new CharArraySet( asSet("हिंदी"), false);
+    Analyzer a = new HindiAnalyzer( 
         HindiAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "हिंदी", "हिंदी");
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new HindiAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new HindiAnalyzer(), 1000*RANDOM_MULTIPLIER);
   }
 }

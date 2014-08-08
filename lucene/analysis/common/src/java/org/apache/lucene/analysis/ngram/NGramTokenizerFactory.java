@@ -53,7 +53,7 @@ public class NGramTokenizerFactory extends TokenizerFactory {
   @Override
   public Tokenizer create(AttributeFactory factory) {
     if (luceneMatchVersion.onOrAfter(Version.LUCENE_4_4)) {
-      return new NGramTokenizer(luceneMatchVersion, factory, minGramSize, maxGramSize);
+      return new NGramTokenizer(factory, minGramSize, maxGramSize);
     } else {
       return new Lucene43NGramTokenizer(factory, minGramSize, maxGramSize);
     }

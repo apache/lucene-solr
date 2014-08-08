@@ -26,7 +26,6 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.util.CharacterUtils;
-import org.apache.lucene.util.Version;
 
 /**
  * Tokenizes the given token into n-grams of given size(s).
@@ -59,17 +58,12 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
   /**
    * Creates EdgeNGramTokenFilter that can generate n-grams in the sizes of the given range
    *
-   * @param version the Lucene match version
    * @param input {@link TokenStream} holding the input to be tokenized
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
    */
-  public EdgeNGramTokenFilter(Version version, TokenStream input, int minGram, int maxGram) {
+  public EdgeNGramTokenFilter(TokenStream input, int minGram, int maxGram) {
     super(input);
-
-    if (version == null) {
-      throw new IllegalArgumentException("version must not be null");
-    }
 
     if (minGram < 1) {
       throw new IllegalArgumentException("minGram must be greater than zero");
@@ -79,9 +73,7 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
       throw new IllegalArgumentException("minGram must not be greater than maxGram");
     }
 
-    this.charUtils = version.onOrAfter(Version.LUCENE_4_4)
-        ? CharacterUtils.getInstance(version)
-        : CharacterUtils.getJava4Instance();
+    this.charUtils = CharacterUtils.getInstance();
     this.minGram = minGram;
     this.maxGram = maxGram;
   }

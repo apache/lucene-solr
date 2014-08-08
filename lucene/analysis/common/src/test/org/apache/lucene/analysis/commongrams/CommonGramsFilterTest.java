@@ -29,15 +29,15 @@ import org.apache.lucene.analysis.util.CharArraySet;
  * Tests CommonGrams(Query)Filter
  */
 public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
-  private static final CharArraySet commonWords = new CharArraySet(TEST_VERSION_CURRENT, Arrays.asList(
+  private static final CharArraySet commonWords = new CharArraySet(Arrays.asList(
       "s", "a", "b", "c", "d", "the", "of"
   ), false);
   
   public void testReset() throws Exception {
     final String input = "How the s a brown s cow d like A B thing?";
-    WhitespaceTokenizer wt = new WhitespaceTokenizer(TEST_VERSION_CURRENT);
+    WhitespaceTokenizer wt = new WhitespaceTokenizer();
     wt.setReader(new StringReader(input));
-    CommonGramsFilter cgf = new CommonGramsFilter(TEST_VERSION_CURRENT, wt, commonWords);
+    CommonGramsFilter cgf = new CommonGramsFilter(wt, commonWords);
     
     CharTermAttribute term = cgf.addAttribute(CharTermAttribute.class);
     cgf.reset();
@@ -59,9 +59,9 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
   
   public void testQueryReset() throws Exception {
     final String input = "How the s a brown s cow d like A B thing?";
-    WhitespaceTokenizer wt = new WhitespaceTokenizer(TEST_VERSION_CURRENT);
+    WhitespaceTokenizer wt = new WhitespaceTokenizer();
     wt.setReader(new StringReader(input));
-    CommonGramsFilter cgf = new CommonGramsFilter(TEST_VERSION_CURRENT, wt, commonWords);
+    CommonGramsFilter cgf = new CommonGramsFilter(wt, commonWords);
     CommonGramsQueryFilter nsf = new CommonGramsQueryFilter(cgf);
     
     CharTermAttribute term = wt.addAttribute(CharTermAttribute.class);
@@ -93,7 +93,7 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
       @Override
       public TokenStreamComponents createComponents(String field) {
         Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(tokenizer, new CommonGramsQueryFilter(new CommonGramsFilter(TEST_VERSION_CURRENT,
+        return new TokenStreamComponents(tokenizer, new CommonGramsQueryFilter(new CommonGramsFilter(
             tokenizer, commonWords)));
       } 
     };
@@ -163,8 +163,7 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
       @Override
       public TokenStreamComponents createComponents(String field) {
         Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(tokenizer, new CommonGramsFilter(TEST_VERSION_CURRENT,
-            tokenizer, commonWords));
+        return new TokenStreamComponents(tokenizer, new CommonGramsFilter(tokenizer, commonWords));
       } 
     };
 
@@ -252,7 +251,7 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
     final String input = "How The s a brown s cow d like A B thing?";
     MockTokenizer wt = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     wt.setReader(new StringReader(input));
-    TokenFilter cgf = new CommonGramsFilter(TEST_VERSION_CURRENT, wt, commonWords);
+    TokenFilter cgf = new CommonGramsFilter(wt, commonWords);
     assertTokenStreamContents(cgf, new String[] {"How", "The", "The_s", "s",
         "s_a", "a", "a_brown", "brown", "brown_s", "s", "s_cow", "cow",
         "cow_d", "d", "d_like", "like", "A", "B", "thing?"});
@@ -265,7 +264,7 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
     final String input = "dog the";
     MockTokenizer wt = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     wt.setReader(new StringReader(input));
-    CommonGramsFilter cgf = new CommonGramsFilter(TEST_VERSION_CURRENT, wt, commonWords);
+    CommonGramsFilter cgf = new CommonGramsFilter(wt, commonWords);
     TokenFilter nsf = new CommonGramsQueryFilter(cgf);
     assertTokenStreamContents(nsf, new String[] { "dog_the" });
   }
@@ -277,7 +276,7 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
     final String input = "the dog";
     MockTokenizer wt = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     wt.setReader(new StringReader(input));
-    CommonGramsFilter cgf = new CommonGramsFilter(TEST_VERSION_CURRENT, wt, commonWords);
+    CommonGramsFilter cgf = new CommonGramsFilter(wt, commonWords);
     TokenFilter nsf = new CommonGramsQueryFilter(cgf);
     assertTokenStreamContents(nsf, new String[] { "the_dog" });
   }
@@ -289,7 +288,7 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
     final String input = "the";
     MockTokenizer wt = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     wt.setReader(new StringReader(input));
-    CommonGramsFilter cgf = new CommonGramsFilter(TEST_VERSION_CURRENT, wt, commonWords);
+    CommonGramsFilter cgf = new CommonGramsFilter(wt, commonWords);
     TokenFilter nsf = new CommonGramsQueryFilter(cgf);
     assertTokenStreamContents(nsf, new String[] { "the" });
   }
@@ -301,7 +300,7 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
     final String input = "monster";
     MockTokenizer wt = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     wt.setReader(new StringReader(input));
-    CommonGramsFilter cgf = new CommonGramsFilter(TEST_VERSION_CURRENT, wt, commonWords);
+    CommonGramsFilter cgf = new CommonGramsFilter(wt, commonWords);
     TokenFilter nsf = new CommonGramsQueryFilter(cgf);
     assertTokenStreamContents(nsf, new String[] { "monster" });
   }
@@ -313,7 +312,7 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
     final String input = "the of";
     MockTokenizer wt = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     wt.setReader(new StringReader(input));
-    CommonGramsFilter cgf = new CommonGramsFilter(TEST_VERSION_CURRENT, wt, commonWords);
+    CommonGramsFilter cgf = new CommonGramsFilter(wt, commonWords);
     TokenFilter nsf = new CommonGramsQueryFilter(cgf);
     assertTokenStreamContents(nsf, new String[] { "the_of" });
   }
@@ -325,7 +324,7 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
         Tokenizer t = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        CommonGramsFilter cgf = new CommonGramsFilter(TEST_VERSION_CURRENT, t, commonWords);
+        CommonGramsFilter cgf = new CommonGramsFilter(t, commonWords);
         return new TokenStreamComponents(t, cgf);
       }
     };
@@ -337,7 +336,7 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
         Tokenizer t = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        CommonGramsFilter cgf = new CommonGramsFilter(TEST_VERSION_CURRENT, t, commonWords);
+        CommonGramsFilter cgf = new CommonGramsFilter(t, commonWords);
         return new TokenStreamComponents(t, new CommonGramsQueryFilter(cgf));
       }
     };

@@ -30,7 +30,6 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -206,11 +205,8 @@ public final class WordDelimiterFilter extends TokenFilter {
    * @param configurationFlags Flags configuring the filter
    * @param protWords If not null is the set of tokens to protect from being delimited
    */
-  public WordDelimiterFilter(Version matchVersion, TokenStream in, byte[] charTypeTable, int configurationFlags, CharArraySet protWords) {
+  public WordDelimiterFilter(TokenStream in, byte[] charTypeTable, int configurationFlags, CharArraySet protWords) {
     super(in);
-    if (!matchVersion.onOrAfter(Version.LUCENE_4_8)) {
-      throw new IllegalArgumentException("This class only works with Lucene 4.8+. To emulate the old (broken) behavior of WordDelimiterFilter, use Lucene47WordDelimiterFilter");
-    }
     this.flags = configurationFlags;
     this.protWords = protWords;
     this.iterator = new WordDelimiterIterator(
@@ -225,8 +221,8 @@ public final class WordDelimiterFilter extends TokenFilter {
    * @param configurationFlags Flags configuring the filter
    * @param protWords If not null is the set of tokens to protect from being delimited
    */
-  public WordDelimiterFilter(Version matchVersion, TokenStream in, int configurationFlags, CharArraySet protWords) {
-    this(matchVersion, in, WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, configurationFlags, protWords);
+  public WordDelimiterFilter(TokenStream in, int configurationFlags, CharArraySet protWords) {
+    this(in, WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, configurationFlags, protWords);
   }
 
   @Override

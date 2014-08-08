@@ -57,7 +57,7 @@ public class SimpleNaiveBayesClassifierTest extends ClassificationTestBase<Bytes
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
       final Tokenizer tokenizer = new KeywordTokenizer();
-      return new TokenStreamComponents(tokenizer, new ReverseStringFilter(TEST_VERSION_CURRENT, new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, new ReverseStringFilter(TEST_VERSION_CURRENT, tokenizer), 10, 20)));
+      return new TokenStreamComponents(tokenizer, new ReverseStringFilter(new EdgeNGramTokenFilter(new ReverseStringFilter(tokenizer), 10, 20)));
     }
   }
 

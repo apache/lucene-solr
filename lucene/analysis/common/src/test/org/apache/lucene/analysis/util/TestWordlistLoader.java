@@ -29,15 +29,15 @@ public class TestWordlistLoader extends LuceneTestCase {
 
   public void testWordlistLoading() throws IOException {
     String s = "ONE\n  two \nthree";
-    CharArraySet wordSet1 = WordlistLoader.getWordSet(new StringReader(s), TEST_VERSION_CURRENT);
+    CharArraySet wordSet1 = WordlistLoader.getWordSet(new StringReader(s));
     checkSet(wordSet1);
-    CharArraySet wordSet2 = WordlistLoader.getWordSet(new BufferedReader(new StringReader(s)), TEST_VERSION_CURRENT);
+    CharArraySet wordSet2 = WordlistLoader.getWordSet(new BufferedReader(new StringReader(s)));
     checkSet(wordSet2);
   }
 
   public void testComments() throws Exception {
     String s = "ONE\n  two \nthree\n#comment";
-    CharArraySet wordSet1 = WordlistLoader.getWordSet(new StringReader(s), "#", TEST_VERSION_CURRENT);
+    CharArraySet wordSet1 = WordlistLoader.getWordSet(new StringReader(s), "#");
     checkSet(wordSet1);
     assertFalse(wordSet1.contains("#comment"));
     assertFalse(wordSet1.contains("comment"));
@@ -66,7 +66,7 @@ public class TestWordlistLoader extends LuceneTestCase {
       "   two   \n" + // stopword with leading/trailing space
       " three   four five \n" + // multiple stopwords
       "six seven | comment\n"; //multiple stopwords + comment
-    CharArraySet wordset = WordlistLoader.getSnowballWordSet(new StringReader(s), TEST_VERSION_CURRENT);
+    CharArraySet wordset = WordlistLoader.getSnowballWordSet(new StringReader(s));
     assertEquals(7, wordset.size());
     assertTrue(wordset.contains("ONE"));
     assertTrue(wordset.contains("two"));

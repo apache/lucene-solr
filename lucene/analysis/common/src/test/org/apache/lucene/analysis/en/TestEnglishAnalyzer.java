@@ -27,12 +27,12 @@ public class TestEnglishAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new EnglishAnalyzer(TEST_VERSION_CURRENT);
+    new EnglishAnalyzer();
   }
   
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
-    Analyzer a = new EnglishAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer a = new EnglishAnalyzer();
     // stemming
     checkOneTerm(a, "books", "book");
     checkOneTerm(a, "book", "book");
@@ -46,8 +46,8 @@ public class TestEnglishAnalyzer extends BaseTokenStreamTestCase {
   
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("books"), false);
-    Analyzer a = new EnglishAnalyzer(TEST_VERSION_CURRENT, 
+    CharArraySet exclusionSet = new CharArraySet( asSet("books"), false);
+    Analyzer a = new EnglishAnalyzer( 
         EnglishAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "books", "books");
     checkOneTerm(a, "book", "book");
@@ -55,6 +55,6 @@ public class TestEnglishAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new EnglishAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new EnglishAnalyzer(), 1000*RANDOM_MULTIPLIER);
   }
 }

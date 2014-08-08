@@ -33,7 +33,6 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.apache.lucene.util.Version;
 
 /**
  */
@@ -51,7 +50,7 @@ public class TestTrimFilter extends BaseTokenStreamTestCase {
                     new Token(new String(ccc, 0, ccc.length), 11, 15),
                     new Token(new String(whitespace, 0, whitespace.length), 16, 20),
                     new Token(new String(empty, 0, empty.length), 21, 21));
-    ts = new TrimFilter(TEST_VERSION_CURRENT, ts);
+    ts = new TrimFilter(ts);
 
     assertTokenStreamContents(ts, new String[] { "a", "b", "cCc", "", ""});
   }
@@ -100,7 +99,7 @@ public class TestTrimFilter extends BaseTokenStreamTestCase {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
         Tokenizer tokenizer = new MockTokenizer(MockTokenizer.KEYWORD, false);
-        return new TokenStreamComponents(tokenizer, new TrimFilter(TEST_VERSION_CURRENT, tokenizer));
+        return new TokenStreamComponents(tokenizer, new TrimFilter(tokenizer));
       } 
     };
     checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
@@ -111,8 +110,7 @@ public class TestTrimFilter extends BaseTokenStreamTestCase {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
         Tokenizer tokenizer = new KeywordTokenizer();
-        final Version version = TEST_VERSION_CURRENT;
-        return new TokenStreamComponents(tokenizer, new TrimFilter(version, tokenizer));
+        return new TokenStreamComponents(tokenizer, new TrimFilter(tokenizer));
       }
     };
     checkOneTerm(a, "", "");

@@ -50,7 +50,7 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
   public void testInvalidInput() throws Exception {
     boolean gotException = false;
     try {        
-      new NGramTokenFilter(TEST_VERSION_CURRENT, input, 2, 1);
+      new NGramTokenFilter(input, 2, 1);
     } catch (IllegalArgumentException e) {
       gotException = true;
     }
@@ -60,7 +60,7 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
   public void testInvalidInput2() throws Exception {
     boolean gotException = false;
     try {        
-      new NGramTokenFilter(TEST_VERSION_CURRENT, input, 0, 1);
+      new NGramTokenFilter(input, 0, 1);
     } catch (IllegalArgumentException e) {
       gotException = true;
     }
@@ -68,17 +68,17 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
   }
 
   public void testUnigrams() throws Exception {
-    NGramTokenFilter filter = new NGramTokenFilter(TEST_VERSION_CURRENT, input, 1, 1);
+    NGramTokenFilter filter = new NGramTokenFilter(input, 1, 1);
     assertTokenStreamContents(filter, new String[]{"a","b","c","d","e"}, new int[]{0,0,0,0,0}, new int[]{5,5,5,5,5}, new int[]{1,0,0,0,0});
   }
   
   public void testBigrams() throws Exception {
-    NGramTokenFilter filter = new NGramTokenFilter(TEST_VERSION_CURRENT, input, 2, 2);
+    NGramTokenFilter filter = new NGramTokenFilter(input, 2, 2);
     assertTokenStreamContents(filter, new String[]{"ab","bc","cd","de"}, new int[]{0,0,0,0}, new int[]{5,5,5,5}, new int[]{1,0,0,0});
   }
   
   public void testNgrams() throws Exception {
-    NGramTokenFilter filter = new NGramTokenFilter(TEST_VERSION_CURRENT, input, 1, 3);
+    NGramTokenFilter filter = new NGramTokenFilter(input, 1, 3);
     assertTokenStreamContents(filter,
         new String[]{"a","ab","abc","b","bc","bcd","c","cd","cde","d","de","e"},
         new int[]{0,0,0,0,0,0,0,0,0,0,0,0},
@@ -90,7 +90,7 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
   }
 
   public void testNgramsNoIncrement() throws Exception {
-    NGramTokenFilter filter = new NGramTokenFilter(TEST_VERSION_CURRENT, input, 1, 3);
+    NGramTokenFilter filter = new NGramTokenFilter(input, 1, 3);
     assertTokenStreamContents(filter,
         new String[]{"a","ab","abc","b","bc","bcd","c","cd","cde","d","de","e"},
         new int[]{0,0,0,0,0,0,0,0,0,0,0,0},
@@ -102,20 +102,20 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
   }
 
   public void testOversizedNgrams() throws Exception {
-    NGramTokenFilter filter = new NGramTokenFilter(TEST_VERSION_CURRENT, input, 6, 7);
+    NGramTokenFilter filter = new NGramTokenFilter(input, 6, 7);
     assertTokenStreamContents(filter, new String[0], new int[0], new int[0]);
   }
   
   public void testSmallTokenInStream() throws Exception {
     input = whitespaceMockTokenizer("abc de fgh");
-    NGramTokenFilter filter = new NGramTokenFilter(TEST_VERSION_CURRENT, input, 3, 3);
+    NGramTokenFilter filter = new NGramTokenFilter(input, 3, 3);
     assertTokenStreamContents(filter, new String[]{"abc","fgh"}, new int[]{0,7}, new int[]{3,10}, new int[] {1, 2});
   }
   
   public void testReset() throws Exception {
-    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT);
+    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer();
     tokenizer.setReader(new StringReader("abcde"));
-    NGramTokenFilter filter = new NGramTokenFilter(TEST_VERSION_CURRENT, tokenizer, 1, 1);
+    NGramTokenFilter filter = new NGramTokenFilter(tokenizer, 1, 1);
     assertTokenStreamContents(filter, new String[]{"a","b","c","d","e"}, new int[]{0,0,0,0,0}, new int[]{5,5,5,5,5}, new int[]{1,0,0,0,0});
     tokenizer.setReader(new StringReader("abcde"));
     assertTokenStreamContents(filter, new String[]{"a","b","c","d","e"}, new int[]{0,0,0,0,0}, new int[]{5,5,5,5,5}, new int[]{1,0,0,0,0});
@@ -131,7 +131,7 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
       protected TokenStreamComponents createComponents(String fieldName) {
         Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         TokenFilter filters = new ASCIIFoldingFilter(tokenizer);
-        filters = new NGramTokenFilter(TEST_VERSION_CURRENT, filters, 2, 2);
+        filters = new NGramTokenFilter(filters, 2, 2);
         return new TokenStreamComponents(tokenizer, filters);
       }
     };
@@ -152,7 +152,7 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
         protected TokenStreamComponents createComponents(String fieldName) {
           Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
           return new TokenStreamComponents(tokenizer, 
-              new NGramTokenFilter(TEST_VERSION_CURRENT, tokenizer, min, max));
+              new NGramTokenFilter(tokenizer, min, max));
         }    
       };
       checkRandomData(random(), a, 200*RANDOM_MULTIPLIER, 20);
@@ -166,14 +166,14 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
       protected TokenStreamComponents createComponents(String fieldName) {
         Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, 
-            new NGramTokenFilter(TEST_VERSION_CURRENT, tokenizer, 2, 15));
+            new NGramTokenFilter(tokenizer, 2, 15));
       }    
     };
     checkAnalysisConsistency(random, a, random.nextBoolean(), "");
   }
 
   public void testLucene43() throws IOException {
-    NGramTokenFilter filter = new NGramTokenFilter(Version.LUCENE_4_3, input, 2, 3);
+    TokenFilter filter = new Lucene43NGramTokenFilter(input, 2, 3);
     assertTokenStreamContents(filter,
         new String[]{"ab","bc","cd","de","abc","bcd","cde"},
         new int[]{0,1,2,3,0,1,2},
@@ -191,7 +191,7 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
     final int maxGram = TestUtil.nextInt(random(), minGram, 10);
     TokenStream tk = new KeywordTokenizer();
     ((Tokenizer)tk).setReader(new StringReader(s));
-    tk = new NGramTokenFilter(TEST_VERSION_CURRENT, tk, minGram, maxGram);
+    tk = new NGramTokenFilter(tk, minGram, maxGram);
     final CharTermAttribute termAtt = tk.addAttribute(CharTermAttribute.class);
     final OffsetAttribute offsetAtt = tk.addAttribute(OffsetAttribute.class);
     tk.reset();

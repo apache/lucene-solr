@@ -77,33 +77,30 @@ public final class TurkishAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer with the default stop words: {@link #DEFAULT_STOPWORD_FILE}.
    */
-  public TurkishAnalyzer(Version matchVersion) {
-    this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
+  public TurkishAnalyzer() {
+    this(DefaultSetHolder.DEFAULT_STOP_SET);
   }
   
   /**
    * Builds an analyzer with the given stop words.
-   * 
-   * @param matchVersion lucene compatibility version
+   *
    * @param stopwords a stopword set
    */
-  public TurkishAnalyzer(Version matchVersion, CharArraySet stopwords) {
-    this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
+  public TurkishAnalyzer(CharArraySet stopwords) {
+    this(stopwords, CharArraySet.EMPTY_SET);
   }
 
   /**
    * Builds an analyzer with the given stop words. If a non-empty stem exclusion set is
    * provided this analyzer will add a {@link SetKeywordMarkerFilter} before
    * stemming.
-   * 
-   * @param matchVersion lucene compatibility version
+   *
    * @param stopwords a stopword set
    * @param stemExclusionSet a set of terms not to be stemmed
    */
-  public TurkishAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet) {
-    super(matchVersion, stopwords);
-    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(
-        matchVersion, stemExclusionSet));
+  public TurkishAnalyzer(CharArraySet stopwords, CharArraySet stemExclusionSet) {
+    super(stopwords);
+    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionSet));
   }
 
   /**
@@ -120,14 +117,16 @@ public final class TurkishAnalyzer extends StopwordAnalyzerBase {
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
-    final Tokenizer source = new StandardTokenizer(matchVersion);
-    TokenStream result = new StandardFilter(matchVersion, source);
-    if(matchVersion.onOrAfter(Version.LUCENE_4_8))
+    final Tokenizer source = new StandardTokenizer();
+    TokenStream result = new StandardFilter(source);
+    if (getVersion().onOrAfter(Version.LUCENE_4_8)) {
       result = new ApostropheFilter(result);
+    }
     result = new TurkishLowerCaseFilter(result);
-    result = new StopFilter(matchVersion, result, stopwords);
-    if(!stemExclusionSet.isEmpty())
+    result = new StopFilter(result, stopwords);
+    if (!stemExclusionSet.isEmpty()) {
       result = new SetKeywordMarkerFilter(result, stemExclusionSet);
+    }
     result = new SnowballFilter(result, new TurkishStemmer());
     return new TokenStreamComponents(source, result);
   }

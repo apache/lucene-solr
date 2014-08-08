@@ -27,12 +27,12 @@ public class TestTurkishAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new TurkishAnalyzer(TEST_VERSION_CURRENT);
+    new TurkishAnalyzer();
   }
   
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
-    Analyzer a = new TurkishAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer a = new TurkishAnalyzer();
     // stemming
     checkOneTerm(a, "ağacı", "ağaç");
     checkOneTerm(a, "ağaç", "ağaç");
@@ -45,15 +45,14 @@ public class TestTurkishAnalyzer extends BaseTokenStreamTestCase {
   
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("ağacı"), false);
-    Analyzer a = new TurkishAnalyzer(TEST_VERSION_CURRENT, 
-        TurkishAnalyzer.getDefaultStopSet(), exclusionSet);
+    CharArraySet exclusionSet = new CharArraySet(asSet("ağacı"), false);
+    Analyzer a = new TurkishAnalyzer(TurkishAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "ağacı", "ağacı");
     checkOneTerm(a, "ağaç", "ağaç");
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new TurkishAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new TurkishAnalyzer(), 1000*RANDOM_MULTIPLIER);
   }
 }

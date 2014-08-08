@@ -36,7 +36,6 @@ public class LetterTokenizerFactory extends TokenizerFactory {
   /** Creates a new LetterTokenizerFactory */
   public LetterTokenizerFactory(Map<String,String> args) {
     super(args);
-    assureMatchVersion();
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -44,6 +43,6 @@ public class LetterTokenizerFactory extends TokenizerFactory {
 
   @Override
   public LetterTokenizer create(AttributeFactory factory) {
-    return new LetterTokenizer(luceneMatchVersion, factory);
+    return new LetterTokenizer(factory);
   }
 }

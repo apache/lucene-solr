@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.Version;
 
 /**
  * Loader for text files that represent a list of stopwords.
@@ -73,11 +72,10 @@ public class WordlistLoader {
    * Analyzer which uses LowerCaseFilter (like StandardAnalyzer).
    *
    * @param reader Reader containing the wordlist
-   * @param matchVersion the Lucene {@link Version}
    * @return A {@link CharArraySet} with the reader's words
    */
-  public static CharArraySet getWordSet(Reader reader, Version matchVersion) throws IOException {
-    return getWordSet(reader, new CharArraySet(matchVersion, INITIAL_CAPACITY, false));
+  public static CharArraySet getWordSet(Reader reader) throws IOException {
+    return getWordSet(reader, new CharArraySet(INITIAL_CAPACITY, false));
   }
 
   /**
@@ -88,11 +86,10 @@ public class WordlistLoader {
    *
    * @param reader Reader containing the wordlist
    * @param comment The string representing a comment.
-   * @param matchVersion the Lucene {@link Version}
    * @return A CharArraySet with the reader's words
    */
-  public static CharArraySet getWordSet(Reader reader, String comment, Version matchVersion) throws IOException {
-    return getWordSet(reader, comment, new CharArraySet(matchVersion, INITIAL_CAPACITY, false));
+  public static CharArraySet getWordSet(Reader reader, String comment) throws IOException {
+    return getWordSet(reader, comment, new CharArraySet(INITIAL_CAPACITY, false));
   }
 
   /**
@@ -170,11 +167,10 @@ public class WordlistLoader {
    * </p>
    * 
    * @param reader Reader containing a Snowball stopword list
-   * @param matchVersion the Lucene {@link Version}
    * @return A {@link CharArraySet} with the reader's words
    */
-  public static CharArraySet getSnowballWordSet(Reader reader, Version matchVersion) throws IOException {
-    return getSnowballWordSet(reader, new CharArraySet(matchVersion, INITIAL_CAPACITY, false));
+  public static CharArraySet getSnowballWordSet(Reader reader) throws IOException {
+    return getSnowballWordSet(reader, new CharArraySet(INITIAL_CAPACITY, false));
   }
 
 

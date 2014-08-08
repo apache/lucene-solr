@@ -37,7 +37,6 @@ public class StandardTokenizerFactory extends TokenizerFactory {
   /** Creates a new StandardTokenizerFactory */
   public StandardTokenizerFactory(Map<String,String> args) {
     super(args);
-    assureMatchVersion();
     maxTokenLength = getInt(args, "maxTokenLength", StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
@@ -46,7 +45,7 @@ public class StandardTokenizerFactory extends TokenizerFactory {
 
   @Override
   public StandardTokenizer create(AttributeFactory factory) {
-    StandardTokenizer tokenizer = new StandardTokenizer(luceneMatchVersion, factory);
+    StandardTokenizer tokenizer = new StandardTokenizer(factory);
     tokenizer.setMaxTokenLength(maxTokenLength);
     return tokenizer;
   }

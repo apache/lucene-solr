@@ -28,8 +28,10 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.AnalyzerWrapper;
+import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ngram.EdgeNGramTokenFilter;
+import org.apache.lucene.analysis.ngram.Lucene43EdgeNGramTokenFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.codecs.lucene49.Lucene49Codec;
@@ -257,10 +259,14 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       @Override
       protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
         if (fieldName.equals("textgrams") && minPrefixChars > 0) {
-          return new TokenStreamComponents(components.getTokenizer(),
-                                           new EdgeNGramTokenFilter(matchVersion,
-                                                                    components.getTokenStream(),
-                                                                    1, minPrefixChars));
+          // TODO: should use an EdgeNGramTokenFilterFactory here
+          TokenFilter filter;
+          if (matchVersion.onOrAfter(Version.LUCENE_4_4)) {
+            filter = new EdgeNGramTokenFilter(components.getTokenStream(), 1, minPrefixChars);
+          } else {
+            filter = new Lucene43EdgeNGramTokenFilter(components.getTokenStream(), 1, minPrefixChars);
+          }
+          return new TokenStreamComponents(components.getTokenizer(), filter);
         } else {
           return components;
         }

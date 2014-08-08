@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.util.CharArrayMap;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.Version;
 
 /**
  * Test the Dutch Stem Filter, which only modifies the term text.
@@ -114,14 +113,14 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
   }
   
   public void testSnowballCorrectness() throws Exception {
-    Analyzer a = new DutchAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer a = new DutchAnalyzer();
     checkOneTerm(a, "opheffen", "opheff");
     checkOneTerm(a, "opheffende", "opheff");
     checkOneTerm(a, "opheffing", "opheff");
   }
   
   public void testReusableTokenStream() throws Exception {
-    Analyzer a = new DutchAnalyzer(TEST_VERSION_CURRENT); 
+    Analyzer a = new DutchAnalyzer(); 
     checkOneTerm(a, "lichaamsziek", "lichaamsziek");
     checkOneTerm(a, "lichamelijk", "licham");
     checkOneTerm(a, "lichamelijke", "licham");
@@ -129,12 +128,12 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
   }
   
   public void testExclusionTableViaCtor() throws IOException {
-    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
+    CharArraySet set = new CharArraySet( 1, true);
     set.add("lichamelijk");
-    DutchAnalyzer a = new DutchAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, set);
+    DutchAnalyzer a = new DutchAnalyzer( CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(a, "lichamelijk lichamelijke", new String[] { "lichamelijk", "licham" });
     
-    a = new DutchAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, set);
+    a = new DutchAnalyzer( CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(a, "lichamelijk lichamelijke", new String[] { "lichamelijk", "licham" });
 
   }
@@ -144,12 +143,12 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
    * even if you use a non-default ctor.
    */
   public void testStemOverrides() throws IOException {
-    DutchAnalyzer a = new DutchAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
+    DutchAnalyzer a = new DutchAnalyzer( CharArraySet.EMPTY_SET);
     checkOneTerm(a, "fiets", "fiets");
   }
   
   public void testEmptyStemDictionary() throws IOException {
-    DutchAnalyzer a = new DutchAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, 
+    DutchAnalyzer a = new DutchAnalyzer( CharArraySet.EMPTY_SET, 
         CharArraySet.EMPTY_SET, CharArrayMap.<String>emptyMap());
     checkOneTerm(a, "fiets", "fiet");
   }
@@ -158,17 +157,17 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
    * Test that stopwords are not case sensitive
    */
   public void testStopwordsCasing() throws IOException {
-    DutchAnalyzer a = new DutchAnalyzer(TEST_VERSION_CURRENT);
+    DutchAnalyzer a = new DutchAnalyzer();
     assertAnalyzesTo(a, "Zelf", new String[] { });
   }
   
   private void check(final String input, final String expected) throws Exception {
-    checkOneTerm(new DutchAnalyzer(TEST_VERSION_CURRENT), input, expected); 
+    checkOneTerm(new DutchAnalyzer(), input, expected); 
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new DutchAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new DutchAnalyzer(), 1000*RANDOM_MULTIPLIER);
   }
   
 }

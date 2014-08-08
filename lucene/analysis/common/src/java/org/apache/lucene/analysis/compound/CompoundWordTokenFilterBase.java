@@ -17,31 +17,18 @@ package org.apache.lucene.analysis.compound;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.LinkedList;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.Version;
+
+import java.io.IOException;
+import java.util.LinkedList;
 
 /**
  * Base class for decomposition token filters.
- * <p>
- *
- * <a name="version"></a>
- * You must specify the required {@link Version} compatibility when creating
- * CompoundWordTokenFilterBase:
- * <ul>
- * <li>As of 3.1, CompoundWordTokenFilterBase correctly handles Unicode 4.0
- * supplementary characters in strings and char arrays provided as compound word
- * dictionaries.
- * <li>As of 4.4, {@link CompoundWordTokenFilterBase} doesn't update offsets.
- * </ul>
  */
 public abstract class CompoundWordTokenFilterBase extends TokenFilter {
   /**
@@ -59,31 +46,29 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
    */
   public static final int DEFAULT_MAX_SUBWORD_SIZE = 15;
 
-  protected final Version matchVersion;
   protected final CharArraySet dictionary;
   protected final LinkedList<CompoundToken> tokens;
   protected final int minWordSize;
   protected final int minSubwordSize;
   protected final int maxSubwordSize;
   protected final boolean onlyLongestMatch;
-  
+
   protected final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   protected final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
-  
-  private AttributeSource.State current;
 
-  protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, CharArraySet dictionary, boolean onlyLongestMatch) {
-    this(matchVersion, input,dictionary,DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, onlyLongestMatch);
+  private State current;
+
+  protected CompoundWordTokenFilterBase(TokenStream input, CharArraySet dictionary, boolean onlyLongestMatch) {
+    this(input,dictionary,DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, onlyLongestMatch);
   }
 
-  protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, CharArraySet dictionary) {
-    this(matchVersion, input,dictionary,DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, false);
+  protected CompoundWordTokenFilterBase(TokenStream input, CharArraySet dictionary) {
+    this(input,dictionary,DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, false);
   }
 
-  protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, CharArraySet dictionary, int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
+  protected CompoundWordTokenFilterBase(TokenStream input, CharArraySet dictionary, int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
     super(input);
-    this.matchVersion = matchVersion;
     this.tokens=new LinkedList<>();
     if (minWordSize < 0) {
       throw new IllegalArgumentException("minWordSize cannot be negative");
@@ -100,7 +85,7 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
     this.onlyLongestMatch=onlyLongestMatch;
     this.dictionary = dictionary;
   }
-  
+
   @Override
   public final boolean incrementToken() throws IOException {
     if (!tokens.isEmpty()) {
@@ -141,7 +126,7 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
     tokens.clear();
     current = null;
   }
-  
+
   /**
    * Helper class to hold decompounded token information
    */
@@ -154,20 +139,8 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
       this.txt = CompoundWordTokenFilterBase.this.termAtt.subSequence(offset, offset + length);
       
       // offsets of the original word
-      int startOff = CompoundWordTokenFilterBase.this.offsetAtt.startOffset();
-      int endOff = CompoundWordTokenFilterBase.this.offsetAtt.endOffset();
-      
-      if (matchVersion.onOrAfter(Version.LUCENE_4_4) ||
-          endOff - startOff != CompoundWordTokenFilterBase.this.termAtt.length()) {
-        // if length by start + end offsets doesn't match the term text then assume
-        // this is a synonym and don't adjust the offsets.
-        this.startOffset = startOff;
-        this.endOffset = endOff;
-      } else {
-        final int newStart = startOff + offset;
-        this.startOffset = newStart;
-        this.endOffset = newStart + length;
-      }
+      this.startOffset = CompoundWordTokenFilterBase.this.offsetAtt.startOffset();
+      this.endOffset = CompoundWordTokenFilterBase.this.offsetAtt.endOffset();
     }
 
   }  

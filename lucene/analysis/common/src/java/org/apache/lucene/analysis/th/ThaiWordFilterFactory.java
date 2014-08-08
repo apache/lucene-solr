@@ -41,7 +41,6 @@ public class ThaiWordFilterFactory extends TokenFilterFactory {
   /** Creates a new ThaiWordFilterFactory */
   public ThaiWordFilterFactory(Map<String,String> args) {
     super(args);
-    assureMatchVersion();
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -49,7 +48,7 @@ public class ThaiWordFilterFactory extends TokenFilterFactory {
   
   @Override
   public ThaiWordFilter create(TokenStream input) {
-    return new ThaiWordFilter(luceneMatchVersion, input);
+    return new ThaiWordFilter(input);
   }
 }
 

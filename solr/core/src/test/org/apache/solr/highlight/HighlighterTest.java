@@ -172,7 +172,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   @Test
   public void testTermOffsetsTokenStream() throws Exception {
     String[] multivalued = { "a b c d", "e f g", "h", "i j k l m n" };
-    Analyzer a1 = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer a1 = new WhitespaceAnalyzer();
     TokenStream tokenStream = a1.tokenStream("", "a b c d e f g h i j k l m n");
     tokenStream.reset();
 
@@ -180,7 +180,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
         tokenStream);
     for( String v : multivalued ){
       TokenStream ts1 = tots.getMultiValuedTokenStream( v.length() );
-      Analyzer a2 = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
+      Analyzer a2 = new WhitespaceAnalyzer();
       TokenStream ts2 = a2.tokenStream("", v);
       ts2.reset();
 

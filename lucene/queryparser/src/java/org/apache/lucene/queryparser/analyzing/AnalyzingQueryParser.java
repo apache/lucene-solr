@@ -26,7 +26,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.Version;
 
 /**
  * Overrides Lucene's default QueryParser so that Fuzzy-, Prefix-, Range-, and WildcardQuerys
@@ -42,8 +41,8 @@ import org.apache.lucene.util.Version;
 public class AnalyzingQueryParser extends org.apache.lucene.queryparser.classic.QueryParser {
   // gobble escaped chars or find a wildcard character 
   private final Pattern wildcardPattern = Pattern.compile("(\\.)|([?*]+)");
-  public AnalyzingQueryParser(Version matchVersion, String field, Analyzer analyzer) {
-    super(matchVersion, field, analyzer);
+  public AnalyzingQueryParser(String field, Analyzer analyzer) {
+    super(field, analyzer);
     setAnalyzeRangeTerms(true);
   }
 

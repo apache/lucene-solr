@@ -75,6 +75,6 @@ public class MorfologikFilterFactory extends TokenFilterFactory {
 
   @Override
   public TokenStream create(TokenStream ts) {
-    return new MorfologikFilter(ts, dictionaryResource, luceneMatchVersion);
+    return new MorfologikFilter(ts, dictionaryResource);
   }
 }

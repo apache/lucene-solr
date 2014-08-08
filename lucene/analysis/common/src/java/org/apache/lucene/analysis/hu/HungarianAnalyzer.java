@@ -34,7 +34,6 @@ import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.Version;
 import org.tartarus.snowball.ext.HungarianStemmer;
 
 /**
@@ -64,7 +63,7 @@ public final class HungarianAnalyzer extends StopwordAnalyzerBase {
     static {
       try {
         DEFAULT_STOP_SET = WordlistLoader.getSnowballWordSet(IOUtils.getDecodingReader(SnowballFilter.class, 
-            DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8), Version.LUCENE_CURRENT);
+            DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8));
       } catch (IOException ex) {
         // default set should always be present as it is part of the
         // distribution (JAR)
@@ -76,18 +75,17 @@ public final class HungarianAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer with the default stop words: {@link #DEFAULT_STOPWORD_FILE}.
    */
-  public HungarianAnalyzer(Version matchVersion) {
-    this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
+  public HungarianAnalyzer() {
+    this(DefaultSetHolder.DEFAULT_STOP_SET);
   }
   
   /**
    * Builds an analyzer with the given stop words.
    * 
-   * @param matchVersion lucene compatibility version
    * @param stopwords a stopword set
    */
-  public HungarianAnalyzer(Version matchVersion, CharArraySet stopwords) {
-    this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
+  public HungarianAnalyzer(CharArraySet stopwords) {
+    this(stopwords, CharArraySet.EMPTY_SET);
   }
 
   /**
@@ -95,14 +93,12 @@ public final class HungarianAnalyzer extends StopwordAnalyzerBase {
    * provided this analyzer will add a {@link SetKeywordMarkerFilter} before
    * stemming.
    * 
-   * @param matchVersion lucene compatibility version
    * @param stopwords a stopword set
    * @param stemExclusionSet a set of terms not to be stemmed
    */
-  public HungarianAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet) {
-    super(matchVersion, stopwords);
-    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(
-        matchVersion, stemExclusionSet));
+  public HungarianAnalyzer(CharArraySet stopwords, CharArraySet stemExclusionSet) {
+    super(stopwords);
+    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionSet));
   }
 
   /**
@@ -119,10 +115,10 @@ public final class HungarianAnalyzer extends StopwordAnalyzerBase {
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
-    final Tokenizer source = new StandardTokenizer(matchVersion);
-    TokenStream result = new StandardFilter(matchVersion, source);
-    result = new LowerCaseFilter(matchVersion, result);
-    result = new StopFilter(matchVersion, result, stopwords);
+    final Tokenizer source = new StandardTokenizer();
+    TokenStream result = new StandardFilter(source);
+    result = new LowerCaseFilter(result);
+    result = new StopFilter(result, stopwords);
     if(!stemExclusionSet.isEmpty())
       result = new SetKeywordMarkerFilter(result, stemExclusionSet);
     result = new SnowballFilter(result, new HungarianStemmer());

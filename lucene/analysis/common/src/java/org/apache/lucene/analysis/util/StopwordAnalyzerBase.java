@@ -24,7 +24,6 @@ import java.nio.charset.StandardCharsets;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.Version;
 
 /**
  * Base class for Analyzers that need to make use of stopword sets. 
@@ -36,8 +35,6 @@ public abstract class StopwordAnalyzerBase extends Analyzer {
    * An immutable stopword set
    */
   protected final CharArraySet stopwords;
-
-  protected final Version matchVersion;
 
   /**
    * Returns the analyzer's stopword set or an empty set if the analyzer has no
@@ -53,26 +50,20 @@ public abstract class StopwordAnalyzerBase extends Analyzer {
   /**
    * Creates a new instance initialized with the given stopword set
    * 
-   * @param version
-   *          the Lucene version for cross version compatibility
    * @param stopwords
    *          the analyzer's stopword set
    */
-  protected StopwordAnalyzerBase(final Version version, final CharArraySet stopwords) {
-    matchVersion = version;
+  protected StopwordAnalyzerBase(final CharArraySet stopwords) {
     // analyzers should use char array set for stopwords!
     this.stopwords = stopwords == null ? CharArraySet.EMPTY_SET : CharArraySet
-        .unmodifiableSet(CharArraySet.copy(version, stopwords));
+        .unmodifiableSet(CharArraySet.copy(stopwords));
   }
 
   /**
    * Creates a new Analyzer with an empty stopword set
-   * 
-   * @param version
-   *          the Lucene version for cross version compatibility
    */
-  protected StopwordAnalyzerBase(final Version version) {
-    this(version, null);
+  protected StopwordAnalyzerBase() {
+    this(null);
   }
 
   /**
@@ -99,7 +90,7 @@ public abstract class StopwordAnalyzerBase extends Analyzer {
     Reader reader = null;
     try {
       reader = IOUtils.getDecodingReader(aClass.getResourceAsStream(resource), StandardCharsets.UTF_8);
-      return WordlistLoader.getWordSet(reader, comment, new CharArraySet(Version.LUCENE_CURRENT, 16, ignoreCase));
+      return WordlistLoader.getWordSet(reader, comment, new CharArraySet(16, ignoreCase));
     } finally {
       IOUtils.close(reader);
     }
@@ -111,20 +102,16 @@ public abstract class StopwordAnalyzerBase extends Analyzer {
    * 
    * @param stopwords
    *          the stopwords file to load
-   * 
-   * @param matchVersion
-   *          the Lucene version for cross version compatibility
    * @return a CharArraySet containing the distinct stopwords from the given
    *         file
    * @throws IOException
    *           if loading the stopwords throws an {@link IOException}
    */
-  protected static CharArraySet loadStopwordSet(File stopwords,
-      Version matchVersion) throws IOException {
+  protected static CharArraySet loadStopwordSet(File stopwords) throws IOException {
     Reader reader = null;
     try {
       reader = IOUtils.getDecodingReader(stopwords, StandardCharsets.UTF_8);
-      return WordlistLoader.getWordSet(reader, matchVersion);
+      return WordlistLoader.getWordSet(reader);
     } finally {
       IOUtils.close(reader);
     }
@@ -136,17 +123,14 @@ public abstract class StopwordAnalyzerBase extends Analyzer {
    * @param stopwords
    *          the stopwords reader to load
    * 
-   * @param matchVersion
-   *          the Lucene version for cross version compatibility
    * @return a CharArraySet containing the distinct stopwords from the given
    *         reader
    * @throws IOException
    *           if loading the stopwords throws an {@link IOException}
    */
-  protected static CharArraySet loadStopwordSet(Reader stopwords,
-      Version matchVersion) throws IOException {
+  protected static CharArraySet loadStopwordSet(Reader stopwords) throws IOException {
     try {
-      return WordlistLoader.getWordSet(stopwords, matchVersion);
+      return WordlistLoader.getWordSet(stopwords);
     } finally {
       IOUtils.close(stopwords);
     }

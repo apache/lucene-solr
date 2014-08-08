@@ -18,15 +18,12 @@ package org.apache.lucene.analysis.util;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.AttributeFactory;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.analysis.util.CharacterUtils;
-import org.apache.lucene.util.Version;
 import org.apache.lucene.analysis.util.CharacterUtils.CharacterBuffer;
 
 /**
@@ -36,25 +33,18 @@ public abstract class CharTokenizer extends Tokenizer {
   
   /**
    * Creates a new {@link CharTokenizer} instance
-   * 
-   * @param matchVersion
-   *          Lucene version to match
    */
-  public CharTokenizer(Version matchVersion) {
-    charUtils = CharacterUtils.getInstance(matchVersion);
+  public CharTokenizer() {
   }
   
   /**
    * Creates a new {@link CharTokenizer} instance
    * 
-   * @param matchVersion
-   *          Lucene version to match
    * @param factory
    *          the attribute factory to use for this {@link Tokenizer}
    */
-  public CharTokenizer(Version matchVersion, AttributeFactory factory) {
+  public CharTokenizer(AttributeFactory factory) {
     super(factory);
-    charUtils = CharacterUtils.getInstance(matchVersion);
   }
   
   private int offset = 0, bufferIndex = 0, dataLen = 0, finalOffset = 0;
@@ -64,7 +54,7 @@ public abstract class CharTokenizer extends Tokenizer {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   
-  private final CharacterUtils charUtils;
+  private final CharacterUtils charUtils = CharacterUtils.getInstance();
   private final CharacterBuffer ioBuffer = CharacterUtils.newCharacterBuffer(IO_BUFFER_SIZE);
   
   /**

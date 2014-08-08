@@ -22,7 +22,6 @@ import java.util.Set;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.analysis.util.FilteringTokenFilter;
-import org.apache.lucene.util.Version;
 
 /**
  * Removes tokens whose types appear in a set of blocked types from a token stream.
@@ -35,14 +34,13 @@ public final class TypeTokenFilter extends FilteringTokenFilter {
 
   /**
    * Create a new {@link TypeTokenFilter}.
-   * @param version      the Lucene match version
    * @param input        the {@link TokenStream} to consume
    * @param stopTypes    the types to filter
    * @param useWhiteList if true, then tokens whose type is in stopTypes will
    *                     be kept, otherwise they will be filtered out
    */
-  public TypeTokenFilter(Version version, TokenStream input, Set<String> stopTypes, boolean useWhiteList) {
-    super(version, input);
+  public TypeTokenFilter(TokenStream input, Set<String> stopTypes, boolean useWhiteList) {
+    super(input);
     this.stopTypes = stopTypes;
     this.useWhiteList = useWhiteList;
   }
@@ -50,10 +48,9 @@ public final class TypeTokenFilter extends FilteringTokenFilter {
   /**
    * Create a new {@link TypeTokenFilter} that filters tokens out
    * (useWhiteList=false).
-   * @see #TypeTokenFilter(Version, TokenStream, Set, boolean)
    */
-  public TypeTokenFilter(Version version, TokenStream input, Set<String> stopTypes) {
-    this(version, input, stopTypes, false);
+  public TypeTokenFilter(TokenStream input, Set<String> stopTypes) {
+    this(input, stopTypes, false);
   }
 
   /**
