@@ -55,8 +55,7 @@ public class TestSpellChecker extends LuceneTestCase {
     
     //create a user index
     userindex = newDirectory();
-    IndexWriter writer = new IndexWriter(userindex, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter writer = new IndexWriter(userindex, new IndexWriterConfig(new MockAnalyzer(random())));
 
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
@@ -87,7 +86,7 @@ public class TestSpellChecker extends LuceneTestCase {
       writer.addDocument(doc);
     }
     
-    writer.shutdown();
+    writer.close();
     searchers = Collections.synchronizedList(new ArrayList<IndexSearcher>());
     // create the spellChecker
     spellindex = newDirectory();

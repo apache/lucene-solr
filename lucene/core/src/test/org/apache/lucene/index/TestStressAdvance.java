@@ -90,7 +90,7 @@ public class TestStressAdvance extends LuceneTestCase {
         testOne(de, bDocIDs);
       }
 
-      w.shutdown();
+      w.close();
       r.close();
       dir.close();
     }

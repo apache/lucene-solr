@@ -86,7 +86,7 @@ public class TestBlockJoinSorter extends LuceneTestCase {
     }
     writer.forceMerge(1);
     final DirectoryReader indexReader = writer.getReader();
-    writer.shutdown();
+    writer.close();
 
     final AtomicReader reader = getOnlySegmentReader(indexReader);
     final Filter parentsFilter = new FixedBitSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("parent", "true"))));

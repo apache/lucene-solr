@@ -44,7 +44,6 @@ import org.apache.lucene.document.Field;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import java.io.Reader;
 import java.io.IOException;
 
 
@@ -130,7 +129,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
       writer.addDocument(doc);
     }
     reader = writer.getReader();
-    writer.shutdown();
+    writer.close();
 
     searcher = newSearcher(reader);
     searcher.setSimilarity(similarity);

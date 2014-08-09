@@ -67,8 +67,7 @@ public class TestLimitTokenCountAnalyzer extends BaseTokenStreamTestCase {
       mock.setEnableChecks(consumeAll);
       Analyzer a = new LimitTokenCountAnalyzer(mock, limit, consumeAll);
 
-      IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig
-                                           (TEST_VERSION_CURRENT, a));
+      IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(a));
 
       Document doc = new Document();
       StringBuilder b = new StringBuilder();
@@ -78,7 +77,7 @@ public class TestLimitTokenCountAnalyzer extends BaseTokenStreamTestCase {
       b.append(" z");
       doc.add(newTextField("field", b.toString(), Field.Store.NO));
       writer.addDocument(doc);
-      writer.shutdown();
+      writer.close();
       
       IndexReader reader = DirectoryReader.open(dir);
       Term t = new Term("field", "x");

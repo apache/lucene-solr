@@ -52,7 +52,7 @@ public class TestMultiThreadTermVectors extends LuceneTestCase {
       doc.add(fld);
       writer.addDocument(doc);
     }
-    writer.shutdown();
+    writer.close();
     
   }
   

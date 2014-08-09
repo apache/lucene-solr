@@ -63,7 +63,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     writer.addDocument(doc("solr", "solr is a very popular search server and is using lucene"));
     writer.addDocument(doc("nutch", "nutch is an internet search engine with web crawler and is using lucene and hadoop"));
     reader = writer.getReader();
-    writer.shutdown();
+    writer.close();
     searcher = newSearcher(reader);
   }
   

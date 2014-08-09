@@ -221,7 +221,7 @@ public class TestDocument extends LuceneTestCase {
     assertEquals(1, hits.length);
     
     doAssert(searcher.doc(hits[0].doc));
-    writer.shutdown();
+    writer.close();
     reader.close();
     dir.close();
   }
@@ -253,7 +253,7 @@ public class TestDocument extends LuceneTestCase {
     assertEquals(1, hits.length);
     
     doAssert(searcher.doc(hits[0].doc));
-    writer.shutdown();
+    writer.close();
     reader.close();
     dir.close();    
   }
@@ -344,7 +344,7 @@ public class TestDocument extends LuceneTestCase {
       else if (f.stringValue().equals("id3")) result |= 4;
       else fail("unexpected id field");
     }
-    writer.shutdown();
+    writer.close();
     reader.close();
     dir.close();
     assertEquals("did not see all IDs", 7, result);
@@ -381,7 +381,7 @@ public class TestDocument extends LuceneTestCase {
     assertNull(sdoc.get("somethingElse"));
     assertArrayEquals(new String[] { "5", "4" }, sdoc.getValues("int"));
     ir.close();
-    iw.shutdown();
+    iw.close();
     dir.close();
   }
 }

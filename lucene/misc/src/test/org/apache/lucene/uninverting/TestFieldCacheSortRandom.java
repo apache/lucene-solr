@@ -132,7 +132,7 @@ public class TestFieldCacheSortRandom extends LuceneTestCase {
     mapping.put("stringdv", Type.SORTED);
     mapping.put("id", Type.INTEGER);
     final IndexReader r = UninvertingReader.wrap(writer.getReader(), mapping);
-    writer.shutdown();
+    writer.close();
     if (VERBOSE) {
       System.out.println("  reader=" + r);
     }

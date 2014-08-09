@@ -33,7 +33,7 @@ public class TestFlex extends LuceneTestCase {
 
     IndexWriter w = new IndexWriter(
         d,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
+        new IndexWriterConfig(new MockAnalyzer(random())).
             setMaxBufferedDocs(7).setMergePolicy(newLogMergePolicy())
     );
 
@@ -58,7 +58,7 @@ public class TestFlex extends LuceneTestCase {
       r.close();
     }
 
-    w.shutdown();
+    w.close();
     d.close();
   }
 
@@ -79,7 +79,7 @@ public class TestFlex extends LuceneTestCase {
       // ok -- codec is not required to support this op
     }
     r.close();
-    w.shutdown();
+    w.close();
     d.close();
   }
 }

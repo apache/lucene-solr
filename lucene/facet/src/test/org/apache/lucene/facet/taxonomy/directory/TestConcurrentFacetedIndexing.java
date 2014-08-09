@@ -153,7 +153,7 @@ public class TestConcurrentFacetedIndexing extends FacetTestCase {
       }
     }
 
-    iw.shutdown();
+    iw.close();
     IOUtils.close(tw, tr, taxoDir, indexDir);
   }
 

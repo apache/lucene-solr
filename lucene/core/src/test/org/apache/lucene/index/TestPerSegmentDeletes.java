@@ -38,8 +38,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
   public void testDeletes1() throws Exception {
     //IndexWriter.debug2 = System.out;
     Directory dir = new MockDirectoryWrapper(new Random(random().nextLong()), new RAMDirectory());
-    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     iwc.setMergeScheduler(new SerialMergeScheduler());
     iwc.setMaxBufferedDocs(5000);
     iwc.setRAMBufferSizeMB(100);
@@ -160,7 +159,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     **/
     // System.out.println("segdels2:"+writer.docWriter.segmentDeletes.toString());
     //System.out.println("close");
-    writer.shutdown();
+    writer.close();
     dir.close();
   }
 

@@ -34,7 +34,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
 public class TestLongPostings extends LuceneTestCase {
@@ -128,7 +127,7 @@ public class TestLongPostings extends LuceneTestCase {
     }
 
     r = riw.getReader();
-    riw.shutdown();
+    riw.close();
 
     /*
     if (VERBOSE) {
@@ -328,7 +327,7 @@ public class TestLongPostings extends LuceneTestCase {
       }
 
       r = riw.getReader();
-      riw.shutdown();
+      riw.close();
     } else {
       r = DirectoryReader.open(dir);
     }

@@ -71,7 +71,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
 
         r = w.getReader();
         s = newSearcher(r);
-        w.shutdown();
+        w.close();
 //System.out.println("Set up " + getName());
     }
     

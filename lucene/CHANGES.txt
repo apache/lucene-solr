@@ -85,6 +85,11 @@ API Changes
   release.
   (Ryan Ernst, Robert Muir)
 
+* LUCENE-5871: Remove Version from IndexWriterConfig. Use
+  IndexWriterConfig.setCommitOnClose to change the behavior of IndexWriter.close().
+  The default has been changed to match that of 4.x.
+  (Ryan Ernst, Mike McCandless)
+
 Documentation
 
 * LUCENE-5392: Add/improve analysis package documentation to reflect

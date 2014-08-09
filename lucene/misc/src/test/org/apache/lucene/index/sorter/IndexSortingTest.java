@@ -70,7 +70,7 @@ public class IndexSortingTest extends SorterTestBase {
     IndexWriter writer = new IndexWriter(target, newIndexWriterConfig(null));
     reader = SortingAtomicReader.wrap(reader, sorter);
     writer.addIndexes(reader);
-    writer.shutdown();
+    writer.close();
     reader.close();
     dir.close();
     

@@ -28,7 +28,6 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 
 public class TestForTooMuchCloning extends LuceneTestCase {
 
@@ -57,7 +56,7 @@ public class TestForTooMuchCloning extends LuceneTestCase {
       w.addDocument(doc);
     }
     final IndexReader r = w.getReader();
-    w.shutdown();
+    w.close();
 
     final int cloneCount = dir.getInputCloneCount();
     //System.out.println("merge clone count=" + cloneCount);

@@ -119,7 +119,7 @@ public class TestGrouping extends LuceneTestCase {
     w.addDocument(doc);
 
     IndexSearcher indexSearcher = newSearcher(w.getReader());
-    w.shutdown();
+    w.close();
 
     final Sort groupSort = Sort.RELEVANCE;
 
@@ -593,7 +593,7 @@ public class TestGrouping extends LuceneTestCase {
     }
 
     final DirectoryReader r = w.getReader();
-    w.shutdown();
+    w.close();
 
     return r;
   }
@@ -739,7 +739,7 @@ public class TestGrouping extends LuceneTestCase {
       System.arraycopy(groupDocs, 0, groupDocsByID, 0, groupDocs.length);
 
       final DirectoryReader r = w.getReader();
-      w.shutdown();
+      w.close();
 
       final NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
       DirectoryReader rBlocks = null;

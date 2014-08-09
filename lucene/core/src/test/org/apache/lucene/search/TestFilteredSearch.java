@@ -66,7 +66,7 @@ public class TestFilteredSearch extends LuceneTestCase {
     if (fullMerge) {
       writer.forceMerge(1);
     }
-    writer.shutdown();
+    writer.close();
 
     BooleanQuery booleanQuery = new BooleanQuery();
     booleanQuery.add(new TermQuery(new Term(FIELD, "36")), BooleanClause.Occur.SHOULD);

@@ -18,7 +18,6 @@ package org.apache.lucene.search.vectorhighlight;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -349,8 +348,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
   
   // make 1 doc with multi valued field
   protected void make1dmfIndex( Analyzer analyzer, String... values ) throws Exception {
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, analyzer).setOpenMode(OpenMode.CREATE));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzer).setOpenMode(OpenMode.CREATE));
     Document doc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setStoreTermVectors(true);
@@ -360,15 +358,14 @@ public abstract class AbstractTestCase extends LuceneTestCase {
       doc.add( new Field( F, value, customType) );
     }
     writer.addDocument( doc );
-    writer.shutdown();
+    writer.close();
     if (reader != null) reader.close();
     reader = DirectoryReader.open(dir);
   }
   
   // make 1 doc with multi valued & not analyzed field
   protected void make1dmfIndexNA( String... values ) throws Exception {
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, analyzerK).setOpenMode(OpenMode.CREATE));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzerK).setOpenMode(OpenMode.CREATE));
     Document doc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setStoreTermVectors(true);
@@ -379,7 +376,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
       //doc.add( new Field( F, value, Store.YES, Index.NOT_ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );
     }
     writer.addDocument( doc );
-    writer.shutdown();
+    writer.close();
     if (reader != null) reader.close();
     reader = DirectoryReader.open(dir);
   }

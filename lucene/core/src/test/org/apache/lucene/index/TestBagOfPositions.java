@@ -48,7 +48,7 @@ public class TestBagOfPositions extends LuceneTestCase {
     final int maxTermsPerDoc = TestUtil.nextInt(random(), 10, 20);
     boolean isSimpleText = "SimpleText".equals(TestUtil.getPostingsFormat("field"));
 
-    IndexWriterConfig iwc = newIndexWriterConfig(random(), TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), new MockAnalyzer(random()));
 
     if ((isSimpleText || iwc.getMergePolicy() instanceof MockRandomMergePolicy) && (TEST_NIGHTLY || RANDOM_MULTIPLIER > 1)) {
       // Otherwise test can take way too long (> 2 hours)
@@ -148,7 +148,7 @@ public class TestBagOfPositions extends LuceneTestCase {
       // from a docsAndPositionsEnum.
     }
     ir.close();
-    iw.shutdown();
+    iw.close();
     dir.close();
   }
 }

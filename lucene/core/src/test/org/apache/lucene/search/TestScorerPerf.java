@@ -51,7 +51,7 @@ public class TestScorerPerf extends LuceneTestCase {
     d = newDirectory();
     IndexWriter iw = new IndexWriter(d, newIndexWriterConfig(new MockAnalyzer(random())));
     iw.addDocument(new Document());
-    iw.shutdown();
+    iw.close();
     r = DirectoryReader.open(d);
     s = newSearcher(r);
   }
@@ -77,7 +77,7 @@ public class TestScorerPerf extends LuceneTestCase {
       iw.addDocument(d);
     }
     iw.forceMerge(1);
-    iw.shutdown();
+    iw.close();
   }
 
 

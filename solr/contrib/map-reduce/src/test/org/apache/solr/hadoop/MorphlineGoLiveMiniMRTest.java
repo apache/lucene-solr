@@ -225,7 +225,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     System.clearProperty("test.cache.data");
     
     if (mrCluster != null) {
-      //mrCluster.shutdown();
+      //mrCluster.close();
       mrCluster = null;
     }
     if (dfsCluster != null) {

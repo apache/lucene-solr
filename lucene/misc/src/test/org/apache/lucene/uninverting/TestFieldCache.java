@@ -119,7 +119,7 @@ public class TestFieldCache extends LuceneTestCase {
     }
     IndexReader r = writer.getReader();
     reader = SlowCompositeReaderWrapper.wrap(r);
-    writer.shutdown();
+    writer.close();
   }
 
   @AfterClass
@@ -290,7 +290,7 @@ public class TestFieldCache extends LuceneTestCase {
   public void testEmptyIndex() throws Exception {
     Directory dir = newDirectory();
     IndexWriter writer= new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())).setMaxBufferedDocs(500));
-    writer.shutdown();
+    writer.close();
     IndexReader r = DirectoryReader.open(dir);
     AtomicReader reader = SlowCompositeReaderWrapper.wrap(r);
     FieldCache.DEFAULT.getTerms(reader, "foobar", true);
@@ -436,7 +436,7 @@ public class TestFieldCache extends LuceneTestCase {
     }
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
-    iw.shutdown();
+    iw.close();
     AtomicReader ar = getOnlySegmentReader(ir);
     
     // Binary type: can be retrieved via getTerms()
@@ -567,7 +567,7 @@ public class TestFieldCache extends LuceneTestCase {
     Document doc = new Document();
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
-    iw.shutdown();
+    iw.close();
     
     AtomicReader ar = getOnlySegmentReader(ir);
     
@@ -625,7 +625,7 @@ public class TestFieldCache extends LuceneTestCase {
     doc.add(new StoredField("bogusbits", "bogus"));
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
-    iw.shutdown();
+    iw.close();
     
     AtomicReader ar = getOnlySegmentReader(ir);
     
@@ -709,7 +709,7 @@ public class TestFieldCache extends LuceneTestCase {
       assertEquals(values[i], longs.get(i));
     }
     reader.close();
-    iw.shutdown();
+    iw.close();
     dir.close();
   }
 
@@ -755,7 +755,7 @@ public class TestFieldCache extends LuceneTestCase {
       assertEquals(values[i], ints.get(i));
     }
     reader.close();
-    iw.shutdown();
+    iw.close();
     dir.close();
   }
 

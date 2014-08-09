@@ -69,7 +69,7 @@ public class TestFieldCacheWithThreads extends LuceneTestCase {
 
     w.forceMerge(1);
     final IndexReader r = DirectoryReader.open(w, true);
-    w.shutdown();
+    w.close();
 
     assertEquals(1, r.leaves().size());
     final AtomicReader ar = r.leaves().get(0).reader();
@@ -179,7 +179,7 @@ public class TestFieldCacheWithThreads extends LuceneTestCase {
 
     writer.forceMerge(1);
     final DirectoryReader r = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     final AtomicReader sr = getOnlySegmentReader(r);
 

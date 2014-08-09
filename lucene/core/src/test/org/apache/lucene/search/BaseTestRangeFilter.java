@@ -152,7 +152,7 @@ public class BaseTestRangeFilter extends LuceneTestCase {
     doc.add(bodyDVField);
 
     RandomIndexWriter writer = new RandomIndexWriter(random, index.index, 
-                                                     newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer(random))
+                                                     newIndexWriterConfig(random, new MockAnalyzer(random))
                                                      .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(TestUtil.nextInt(random, 50, 1000)).setMergePolicy(newLogMergePolicy()));
     TestUtil.reduceOpenFiles(writer.w);
 
@@ -200,7 +200,7 @@ public class BaseTestRangeFilter extends LuceneTestCase {
         // exceedingly rare (Yonik calculates 1 in ~429,000)
         // times) that this loop requires more than one try:
         IndexReader ir = writer.getReader();
-        writer.shutdown();
+        writer.close();
         return ir;
       }
 

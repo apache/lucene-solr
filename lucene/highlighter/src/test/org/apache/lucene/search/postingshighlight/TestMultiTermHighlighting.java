@@ -81,7 +81,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     iw.addDocument(doc);
     
     IndexReader ir = iw.getReader();
-    iw.shutdown();
+    iw.close();
     
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter() {
@@ -133,7 +133,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     iw.addDocument(doc);
     
     IndexReader ir = iw.getReader();
-    iw.shutdown();
+    iw.close();
     
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter() {
@@ -185,7 +185,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     iw.addDocument(doc);
     
     IndexReader ir = iw.getReader();
-    iw.shutdown();
+    iw.close();
     
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter() {
@@ -237,7 +237,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     iw.addDocument(doc);
     
     IndexReader ir = iw.getReader();
-    iw.shutdown();
+    iw.close();
     
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter() {
@@ -298,7 +298,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     iw.addDocument(doc);
     
     IndexReader ir = iw.getReader();
-    iw.shutdown();
+    iw.close();
     
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter() {
@@ -408,7 +408,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     iw.addDocument(doc);
     
     IndexReader ir = iw.getReader();
-    iw.shutdown();
+    iw.close();
     
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter() {
@@ -461,7 +461,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     iw.addDocument(doc);
 
     IndexReader ir = iw.getReader();
-    iw.shutdown();
+    iw.close();
 
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter() {
@@ -504,7 +504,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     iw.addDocument(doc);
 
     IndexReader ir = iw.getReader();
-    iw.shutdown();
+    iw.close();
 
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter() {
@@ -545,7 +545,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     iw.addDocument(doc);
     
     IndexReader ir = iw.getReader();
-    iw.shutdown();
+    iw.close();
     
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter() {
@@ -587,7 +587,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     iw.addDocument(doc);
     
     IndexReader ir = iw.getReader();
-    iw.shutdown();
+    iw.close();
     
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter() {
@@ -628,7 +628,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     iw.addDocument(doc);
     
     IndexReader ir = iw.getReader();
-    iw.shutdown();
+    iw.close();
     
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter() {
@@ -670,7 +670,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     iw.addDocument(doc);
     
     IndexReader ir = iw.getReader();
-    iw.shutdown();
+    iw.close();
     
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter() {
@@ -712,7 +712,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     iw.addDocument(doc);
     
     IndexReader ir = iw.getReader();
-    iw.shutdown();
+    iw.close();
     
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter() {
@@ -755,7 +755,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     iw.addDocument(doc);
     
     IndexReader ir = iw.getReader();
-    iw.shutdown();
+    iw.close();
     
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter() {
@@ -797,7 +797,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     iw.addDocument(doc);
     
     IndexReader ir = iw.getReader();
-    iw.shutdown();
+    iw.close();
     
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter() {

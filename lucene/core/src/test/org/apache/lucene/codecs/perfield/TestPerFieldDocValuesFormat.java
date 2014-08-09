@@ -47,7 +47,6 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 
 /**
  * Basic tests of PerFieldDocValuesFormat
@@ -100,7 +99,7 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
     doc.add(new NumericDocValuesField("dv1", 5));
     doc.add(new BinaryDocValuesField("dv2", new BytesRef("hello world")));
     iwriter.addDocument(doc);
-    iwriter.shutdown();
+    iwriter.close();
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true

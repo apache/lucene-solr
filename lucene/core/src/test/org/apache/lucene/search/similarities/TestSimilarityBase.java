@@ -119,7 +119,7 @@ public class TestSimilarityBase extends LuceneTestCase {
     
     reader = writer.getReader();
     searcher = newSearcher(reader);
-    writer.shutdown();
+    writer.close();
     
     sims = new ArrayList<>();
     for (BasicModel basicModel : BASIC_MODELS) {

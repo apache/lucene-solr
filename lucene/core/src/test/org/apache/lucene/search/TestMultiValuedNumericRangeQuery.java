@@ -30,7 +30,6 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 
 public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
 
@@ -58,7 +57,7 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
       writer.addDocument(doc);
     }
     IndexReader reader = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher=newSearcher(reader);
     num = atLeast(50);

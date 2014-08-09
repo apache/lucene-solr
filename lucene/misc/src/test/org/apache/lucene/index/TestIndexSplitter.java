@@ -24,7 +24,6 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 
 public class TestIndexSplitter extends LuceneTestCase {
   public void test() throws Exception {
@@ -42,7 +41,7 @@ public class TestIndexSplitter extends LuceneTestCase {
     mergePolicy.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
     IndexWriter iw = new IndexWriter(
         fsDir,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
+        new IndexWriterConfig(new MockAnalyzer(random())).
             setOpenMode(OpenMode.CREATE).
             setMergePolicy(mergePolicy)
     );
@@ -64,7 +63,7 @@ public class TestIndexSplitter extends LuceneTestCase {
     DirectoryReader iwReader = iw.getReader();
     assertEquals(3, iwReader.leaves().size());
     iwReader.close();
-    iw.shutdown();
+    iw.close();
     // we should have 2 segments now
     IndexSplitter is = new IndexSplitter(dir);
     String splitSegName = is.infos.info(1).info.name;

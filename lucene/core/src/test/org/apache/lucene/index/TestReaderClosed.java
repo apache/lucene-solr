@@ -52,7 +52,7 @@ public class TestReaderClosed extends LuceneTestCase {
       writer.addDocument(doc);
     }
     reader = writer.getReader();
-    writer.shutdown();
+    writer.close();
   }
   
   public void test() throws Exception {
@@ -87,7 +87,7 @@ public class TestReaderClosed extends LuceneTestCase {
         ace.getMessage()
       );
     } finally {
-      // shutdown executor: in case of wrap-wrap-wrapping
+      // close executor: in case of wrap-wrap-wrapping
       searcher.getIndexReader().close();
     }
   }

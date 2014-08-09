@@ -26,7 +26,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -148,7 +147,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     assertEquals("slop: "+slop+"  query: "+query+"  doc: "+doc+"  Wrong number of hits", expectedNumResults, c.totalHits);
 
     //QueryUtils.check(query,searcher);
-    writer.shutdown();
+    writer.close();
     reader.close();
     ramDir.close();
 
@@ -239,7 +238,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     f.setStringValue("drug druggy drug druggy drug");
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
-    iw.shutdown();
+    iw.close();
     IndexSearcher is = newSearcher(ir);
     
     PhraseQuery pq = new PhraseQuery();
@@ -266,7 +265,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     doc.add(newField("lyrics", document, new FieldType(TextField.TYPE_NOT_STORED)));
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
-    iw.shutdown();
+    iw.close();
     
     IndexSearcher is = newSearcher(ir);
     PhraseQuery pq = new PhraseQuery();
@@ -319,7 +318,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
      doc.add(newField("lyrics", document, new FieldType(TextField.TYPE_NOT_STORED)));
      iw.addDocument(doc);
      IndexReader ir = iw.getReader();
-     iw.shutdown();
+     iw.close();
         
      IndexSearcher is = newSearcher(ir);
      

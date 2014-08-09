@@ -450,7 +450,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     BytesRef term0 = new BytesRef();
     NumericUtils.intToPrefixCoded(0, 0, term0);
     writer.deleteDocuments(new Term("id_int", term0));
-    writer.shutdown();
+    writer.close();
 
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher search = newSearcher(reader);

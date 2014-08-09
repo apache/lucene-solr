@@ -66,7 +66,7 @@ public class TestLongNormValueSource extends LuceneTestCase {
 
     reader = iw.getReader();
     searcher = newSearcher(reader);
-    iw.shutdown();
+    iw.close();
   }
 
   @AfterClass

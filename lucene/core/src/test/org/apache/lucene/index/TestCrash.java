@@ -31,14 +31,14 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestCrash extends LuceneTestCase {
 
   private IndexWriter initIndex(Random random, boolean initialCommit) throws IOException {
-    return initIndex(random, newMockDirectory(random), initialCommit);
+    return initIndex(random, newMockDirectory(random), initialCommit, true);
   }
 
-  private IndexWriter initIndex(Random random, MockDirectoryWrapper dir, boolean initialCommit) throws IOException {
+  private IndexWriter initIndex(Random random, MockDirectoryWrapper dir, boolean initialCommit, boolean commitOnClose) throws IOException {
     dir.setLockFactory(NoLockFactory.getNoLockFactory());
 
     IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random))
-        .setMaxBufferedDocs(10).setMergeScheduler(new ConcurrentMergeScheduler()));
+        .setMaxBufferedDocs(10).setMergeScheduler(new ConcurrentMergeScheduler()).setCommitOnClose(commitOnClose));
     ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).setSuppressExceptions();
     if (initialCommit) {
       writer.commit();
@@ -85,7 +85,7 @@ public class TestCrash extends LuceneTestCase {
     Directory dir2 = newDirectory(dir);
     dir.close();
 
-    new RandomIndexWriter(random(), dir2).shutdown();
+    new RandomIndexWriter(random(), dir2).close();
     dir2.close();
   }
 
@@ -111,8 +111,8 @@ public class TestCrash extends LuceneTestCase {
       System.out.println("TEST: now crash");
     }
     crash(writer);
-    writer = initIndex(random(), dir, false);
-    writer.shutdown();
+    writer = initIndex(random(), dir, false, true);
+    writer.close();
 
     IndexReader reader = DirectoryReader.open(dir);
     assertTrue(reader.numDocs() < 314);
@@ -124,7 +124,7 @@ public class TestCrash extends LuceneTestCase {
     Directory dir2 = newDirectory(dir);
     dir.close();
 
-    new RandomIndexWriter(random(), dir2).shutdown();
+    new RandomIndexWriter(random(), dir2).close();
     dir2.close();
   }
 
@@ -136,8 +136,8 @@ public class TestCrash extends LuceneTestCase {
     // running when we crash:
     dir.setAssertNoUnrefencedFilesOnClose(false);
 
-    writer.shutdown();
-    writer = initIndex(random(), dir, false);
+    writer.close();
+    writer = initIndex(random(), dir, false, true);
     assertEquals(314, writer.maxDoc());
     crash(writer);
 
@@ -160,7 +160,7 @@ public class TestCrash extends LuceneTestCase {
     Directory dir2 = newDirectory(dir);
     dir.close();
 
-    new RandomIndexWriter(random(), dir2).shutdown();
+    new RandomIndexWriter(random(), dir2).close();
     dir2.close();
   }
 
@@ -169,7 +169,7 @@ public class TestCrash extends LuceneTestCase {
     IndexWriter writer = initIndex(random(), false);
     MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
 
-    writer.shutdown();
+    writer.close();
     dir.crash();
 
     /*
@@ -186,11 +186,15 @@ public class TestCrash extends LuceneTestCase {
   }
 
   public void testCrashAfterCloseNoWait() throws IOException {
-    
-    IndexWriter writer = initIndex(random(), false);
-    MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
+    Random random = random();
+    MockDirectoryWrapper dir = newMockDirectory(random);
+    IndexWriter writer = initIndex(random, dir, false, false);
 
-    writer.shutdown(false);
+    try {
+      writer.commit();
+    } finally {
+      writer.close();
+    }
 
     dir.crash();
 

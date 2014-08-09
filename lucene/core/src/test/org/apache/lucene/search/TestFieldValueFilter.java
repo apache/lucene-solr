@@ -115,7 +115,7 @@ public class TestFieldValueFilter extends LuceneTestCase {
       writer.deleteDocuments(new Term("id", "" + docID));
       docStates[docID] = 2;
     }
-    writer.shutdown();
+    writer.close();
     return docStates;
   }
 

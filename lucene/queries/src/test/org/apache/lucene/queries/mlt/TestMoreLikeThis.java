@@ -58,7 +58,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
     addDoc(writer, "apache lucene");
 
     reader = writer.getReader();
-    writer.shutdown();
+    writer.close();
     searcher = newSearcher(reader);
   }
   
@@ -186,7 +186,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
       addDoc(writer, generateStrSeq(0, i + 1));
     }
     IndexReader reader = writer.getReader();
-    writer.shutdown();
+    writer.close();
 
     // setup MLT query
     MoreLikeThis mlt = new MoreLikeThis(reader);

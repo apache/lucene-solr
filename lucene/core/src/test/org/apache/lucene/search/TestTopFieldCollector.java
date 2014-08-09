@@ -41,7 +41,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
       iw.addDocument(doc);
     }
     ir = iw.getReader();
-    iw.shutdown();
+    iw.close();
     is = newSearcher(ir);
   }
   

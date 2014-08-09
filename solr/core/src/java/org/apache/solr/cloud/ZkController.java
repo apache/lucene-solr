@@ -81,7 +81,7 @@ import org.slf4j.LoggerFactory;
  * notes: loads everything on init, creates what's not there - further updates
  * are prompted with Watches.
  * 
- * TODO: exceptions during shutdown on attempts to update cloud state
+ * TODO: exceptions during close on attempts to update cloud state
  * 
  */
 public final class ZkController {
@@ -708,7 +708,7 @@ public final class ZkController {
       boolean nodeDeleted = true;
       try {
         // we attempt a delete in the case of a quick server bounce -
-        // if there was not a graceful shutdown, the node may exist
+        // if there was not a graceful close, the node may exist
         // until expiration timeout - so a node won't be created here because
         // it exists, but eventually the node will be removed. So delete
         // in case it exists and create a new node.
@@ -935,7 +935,7 @@ public final class ZkController {
         Thread.sleep(1000);
       }
       if (cc.isShutDown()) {
-        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "CoreContainer is shutdown");
+        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "CoreContainer is close");
       }
     }
     throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Could not get leader props", exp);

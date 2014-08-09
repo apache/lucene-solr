@@ -81,7 +81,7 @@ public class TestCachedOrdinalsReader extends FacetTestCase {
       }
     }
 
-    writer.shutdown();
+    writer.close();
     IOUtils.close(taxoWriter, reader, indexDir, taxoDir);
   }
 }

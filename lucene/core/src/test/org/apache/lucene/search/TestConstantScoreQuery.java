@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -90,7 +89,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
       writer.addDocument(doc);
 
       reader = writer.getReader();
-      writer.shutdown();
+      writer.close();
       // we don't wrap with AssertingIndexSearcher in order to have the original scorer in setScorer.
       searcher = newSearcher(reader, true, false);
       
@@ -137,7 +136,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
     doc.add(newStringField("field", "b", Field.Store.NO));
     w.addDocument(doc);
     IndexReader r = w.getReader();
-    w.shutdown();
+    w.close();
 
     Filter filterB = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("field", "b"))));
     Query query = new ConstantScoreQuery(filterB);
@@ -163,7 +162,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
     doc.add(newStringField("field", "a", Field.Store.NO));
     w.addDocument(doc);
     IndexReader r = w.getReader();
-    w.shutdown();
+    w.close();
 
     Filter filter = new QueryWrapperFilter(AssertingQuery.wrap(random(), new TermQuery(new Term("field", "a"))));
     IndexSearcher s = newSearcher(r);

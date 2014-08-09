@@ -80,7 +80,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     w.addDocument(doc);
     
     final IndexReader r = w.getReader();
-    w.shutdown();
+    w.close();
 
     final AtomicReader ar = SlowCompositeReaderWrapper.wrap(r);
     final DocTermOrds dto = new DocTermOrds(ar, ar.getLiveDocs(), "field");
@@ -167,7 +167,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     }
     
     final DirectoryReader r = w.getReader();
-    w.shutdown();
+    w.close();
 
     if (VERBOSE) {
       System.out.println("TEST: reader=" + r);
@@ -264,7 +264,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     }
     
     final DirectoryReader r = w.getReader();
-    w.shutdown();
+    w.close();
 
     if (VERBOSE) {
       System.out.println("TEST: reader=" + r);
@@ -419,7 +419,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     v.setDocument(1);
     assertEquals(1, v.nextOrd());
     
-    iw.shutdown();
+    iw.close();
     r1.close();
     r2.close();
     dir.close();
@@ -439,7 +439,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     iw.addDocument(doc);
     
     iw.forceMerge(1);
-    iw.shutdown();
+    iw.close();
     
     DirectoryReader ir = DirectoryReader.open(dir);
     AtomicReader ar = getOnlySegmentReader(ir);
@@ -480,7 +480,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     iw.addDocument(doc);
     
     iw.forceMerge(1);
-    iw.shutdown();
+    iw.close();
     
     DirectoryReader ir = DirectoryReader.open(dir);
     AtomicReader ar = getOnlySegmentReader(ir);
@@ -530,7 +530,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     iwriter.forceMerge(1);
     
     DirectoryReader ireader = iwriter.getReader();
-    iwriter.shutdown();
+    iwriter.close();
 
     AtomicReader ar = getOnlySegmentReader(ireader);
     SortedSetDocValues dv = FieldCache.DEFAULT.getDocTermOrds(ar, "field", null);
@@ -614,7 +614,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     iw.addDocument(doc);
     
     iw.forceMerge(1);
-    iw.shutdown();
+    iw.close();
     
     DirectoryReader ir = DirectoryReader.open(dir);
     AtomicReader ar = getOnlySegmentReader(ir);

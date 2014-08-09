@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
@@ -69,7 +68,7 @@ public class TestDocInverterPerFieldErrorInfo extends LuceneTestCase {
   public void testInfoStreamGetsFieldName() throws Exception {
     Directory dir = newDirectory();
     IndexWriter writer;
-    IndexWriterConfig c = new IndexWriterConfig(TEST_VERSION_CURRENT, new ThrowingAnalyzer());
+    IndexWriterConfig c = new IndexWriterConfig(new ThrowingAnalyzer());
     final ByteArrayOutputStream infoBytes = new ByteArrayOutputStream();
     PrintStream infoPrintStream = new PrintStream(infoBytes, true, IOUtils.UTF_8);
     PrintStreamInfoStream printStreamInfoStream = new PrintStreamInfoStream(infoPrintStream);
@@ -86,7 +85,7 @@ public class TestDocInverterPerFieldErrorInfo extends LuceneTestCase {
       assertTrue(infoStream.contains("distinctiveFieldName"));
     }
 
-    writer.shutdown();
+    writer.close();
     dir.close();
   }
 
@@ -94,7 +93,7 @@ public class TestDocInverterPerFieldErrorInfo extends LuceneTestCase {
   public void testNoExtraNoise() throws Exception {
     Directory dir = newDirectory();
     IndexWriter writer;
-    IndexWriterConfig c = new IndexWriterConfig(TEST_VERSION_CURRENT, new ThrowingAnalyzer());
+    IndexWriterConfig c = new IndexWriterConfig(new ThrowingAnalyzer());
     final ByteArrayOutputStream infoBytes = new ByteArrayOutputStream();
     PrintStream infoPrintStream = new PrintStream(infoBytes, true, IOUtils.UTF_8);
     PrintStreamInfoStream printStreamInfoStream = new PrintStreamInfoStream(infoPrintStream);
@@ -111,7 +110,7 @@ public class TestDocInverterPerFieldErrorInfo extends LuceneTestCase {
     String infoStream = new String(infoBytes.toByteArray(), IOUtils.UTF_8);
     assertFalse(infoStream.contains("boringFieldName"));
 
-    writer.shutdown();
+    writer.close();
     dir.close();
   }
 

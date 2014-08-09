@@ -21,7 +21,6 @@ import java.io.File;
 
 import org.apache.lucene.document.Field;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -73,8 +72,7 @@ public class TestWindowsMMap extends LuceneTestCase {
     // interior filters.
     MockAnalyzer analyzer = new MockAnalyzer(random());
     // TODO: something about lock timeouts and leftover locks.
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, analyzer)
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzer)
         .setOpenMode(OpenMode.CREATE));
     writer.commit();
     IndexReader reader = DirectoryReader.open(dir);
@@ -89,7 +87,7 @@ public class TestWindowsMMap extends LuceneTestCase {
     }
     
     reader.close();
-    writer.shutdown();
+    writer.close();
     rmDir(dirPath);
   }
 

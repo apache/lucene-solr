@@ -147,7 +147,7 @@ public abstract class ReplicatorTestCase extends LuceneTestCase {
    * Returns a {@link HttpClientConnectionManager}.
    * <p>
    * <b>NOTE:</b> do not {@link HttpClientConnectionManager#shutdown()} this
-   * connection manager, it will be shutdown automatically after all tests have
+   * connection manager, it will be close automatically after all tests have
    * finished.
    */
   public static synchronized HttpClientConnectionManager getClientConnectionManager() {

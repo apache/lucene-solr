@@ -45,7 +45,7 @@ public class TestLucene41PostingsFormat extends BasePostingsFormatTestCase {
   /** Make sure the final sub-block(s) are not skipped. */
   public void testFinalBlock() throws Exception {
     Directory d = newDirectory();
-    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random())));
     for(int i=0;i<25;i++) {
       Document doc = new Document();
       doc.add(newStringField("field", Character.toString((char) (97+i)), Field.Store.NO));

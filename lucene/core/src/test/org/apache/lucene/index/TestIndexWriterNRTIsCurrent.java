@@ -63,7 +63,7 @@ public class TestIndexWriterNRTIsCurrent extends LuceneTestCase {
       }
     }
     assertFalse(failed);
-    writer.shutdown();
+    writer.close();
     dir.close();
 
   }

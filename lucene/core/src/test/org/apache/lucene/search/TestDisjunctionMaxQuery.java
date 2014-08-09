@@ -159,7 +159,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     }
     
     r = SlowCompositeReaderWrapper.wrap(writer.getReader());
-    writer.shutdown();
+    writer.close();
     s = newSearcher(r);
     s.setSimilarity(sim);
   }
@@ -482,13 +482,13 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     Directory directory = newDirectory();
     Analyzer indexerAnalyzer = new MockAnalyzer(random());
 
-    IndexWriterConfig config = new IndexWriterConfig(TEST_VERSION_CURRENT, indexerAnalyzer);
+    IndexWriterConfig config = new IndexWriterConfig(indexerAnalyzer);
     IndexWriter writer = new IndexWriter(directory, config);
     String FIELD = "content";
     Document d = new Document();
     d.add(new TextField(FIELD, "clockwork orange", Field.Store.YES));
     writer.addDocument(d);
-    writer.shutdown();
+    writer.close();
 
     IndexReader indexReader = DirectoryReader.open(directory);
     IndexSearcher searcher = newSearcher(indexReader);

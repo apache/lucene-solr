@@ -24,13 +24,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -86,7 +79,7 @@ public class TestSortedSetSortField extends LuceneTestCase {
     doc.add(newStringField("id", "1", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortedSetSortField("value", false));
@@ -115,7 +108,7 @@ public class TestSortedSetSortField extends LuceneTestCase {
     writer.addDocument(doc);
 
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortedSetSortField("value", true));
@@ -146,7 +139,7 @@ public class TestSortedSetSortField extends LuceneTestCase {
     doc.add(newStringField("id", "3", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     SortField sortField = new SortedSetSortField("value", false);
@@ -181,7 +174,7 @@ public class TestSortedSetSortField extends LuceneTestCase {
     doc.add(newStringField("id", "3", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     SortField sortField = new SortedSetSortField("value", false);
@@ -212,7 +205,7 @@ public class TestSortedSetSortField extends LuceneTestCase {
     doc.add(newStringField("id", "1", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortedSetSortField("value", false));

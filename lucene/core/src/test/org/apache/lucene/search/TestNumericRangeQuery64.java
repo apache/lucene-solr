@@ -132,7 +132,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     }
     reader = writer.getReader();
     searcher=newSearcher(reader);
-    writer.shutdown();
+    writer.close();
   }
   
   @AfterClass
@@ -349,7 +349,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
       writer.addDocument(doc);
     }
     
-    writer.shutdown();
+    writer.close();
     
     IndexReader r = DirectoryReader.open(dir);
     IndexSearcher s = newSearcher(r);

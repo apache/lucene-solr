@@ -42,7 +42,7 @@ public class TestHighFreqTerms extends LuceneTestCase {
   public static void setUpClass() throws Exception {
     dir = newDirectory();
     writer = new IndexWriter(dir, newIndexWriterConfig(random(),
-       TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false))
+       new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false))
        .setMaxBufferedDocs(2));
     indexDocs(writer);
     reader = DirectoryReader.open(dir);
@@ -227,7 +227,7 @@ public class TestHighFreqTerms extends LuceneTestCase {
     }
     doc.add(newTextField(rnd, "different_field", content, Field.Store.YES));
     writer.addDocument(doc);
-    writer.shutdown();
+    writer.close();
     
   }
   

@@ -89,7 +89,7 @@ public class IndexFiles {
       Directory dir = FSDirectory.open(new File(indexPath));
       // :Post-Release-Update-Version.LUCENE_XY:
       Analyzer analyzer = new StandardAnalyzer();
-      IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_5_0, analyzer);
+      IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
 
       if (create) {
         // Create a new index in the directory, removing any
@@ -118,7 +118,7 @@ public class IndexFiles {
       //
       // writer.forceMerge(1);
 
-      writer.shutdown();
+      writer.close();
 
       Date end = new Date();
       System.out.println(end.getTime() - start.getTime() + " total milliseconds");

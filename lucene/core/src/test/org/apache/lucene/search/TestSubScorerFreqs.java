@@ -54,7 +54,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     }
 
     s = newSearcher(w.getReader());
-    w.shutdown();
+    w.close();
   }
 
   @AfterClass

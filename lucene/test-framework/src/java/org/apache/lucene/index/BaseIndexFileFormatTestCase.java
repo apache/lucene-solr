@@ -170,7 +170,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     // do not use RIW which will change things up!
     MergePolicy mp = newTieredMergePolicy();
     mp.setNoCFSRatio(0);
-    IndexWriterConfig cfg = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setUseCompoundFile(false).setMergePolicy(mp);
+    IndexWriterConfig cfg = new IndexWriterConfig(new MockAnalyzer(random())).setUseCompoundFile(false).setMergePolicy(mp);
     IndexWriter w = new IndexWriter(dir, cfg);
     final int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; ++i) {
@@ -186,7 +186,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     Directory dir2 = newDirectory();
     mp = newTieredMergePolicy();
     mp.setNoCFSRatio(0);
-    cfg = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setUseCompoundFile(false).setMergePolicy(mp);
+    cfg = new IndexWriterConfig(new MockAnalyzer(random())).setUseCompoundFile(false).setMergePolicy(mp);
     w = new IndexWriter(dir2, cfg);
     w.addIndexes(reader);
     w.commit();

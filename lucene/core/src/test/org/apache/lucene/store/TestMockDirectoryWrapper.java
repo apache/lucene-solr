@@ -27,28 +27,28 @@ public class TestMockDirectoryWrapper extends LuceneTestCase {
   
   public void testFailIfIndexWriterNotClosed() throws IOException {
     MockDirectoryWrapper dir = newMockDirectory();
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(null));
     try {
       dir.close();
       fail();
     } catch (Exception expected) {
       assertTrue(expected.getMessage().contains("there are still open locks"));
     }
-    iw.shutdown();
+    iw.close();
     dir.close();
   }
   
   public void testFailIfIndexWriterNotClosedChangeLockFactory() throws IOException {
     MockDirectoryWrapper dir = newMockDirectory();
     dir.setLockFactory(new SingleInstanceLockFactory());
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(null));
     try {
       dir.close();
       fail();
     } catch (Exception expected) {
       assertTrue(expected.getMessage().contains("there are still open locks"));
     }
-    iw.shutdown();
+    iw.close();
     dir.close();
   }
   

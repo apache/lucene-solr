@@ -33,14 +33,11 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiReader;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
-
-import static org.apache.lucene.util.LuceneTestCase.TEST_VERSION_CURRENT;
 
 /**
  * Utility class for sanity-checking queries.
@@ -203,12 +200,12 @@ public class QueryUtils {
     if (LuceneTestCase.VERBOSE) {
       System.out.println("NOTE: QueryUtils: now create empty index");
     }
-    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random)));
     for (int i = 0; i < numDocs; i++) {
       w.addDocument(new Document());
     }
     w.forceMerge(1);
-    w.shutdown();
+    w.close();
     if (LuceneTestCase.VERBOSE) {
       System.out.println("NOTE: QueryUtils: done create empty index");
     }

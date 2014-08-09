@@ -42,7 +42,7 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
     super.setUp();
     dir = new RAMDirectory();
     appAnalyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, appAnalyzer));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(appAnalyzer));
     int numDocs = 200;
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
@@ -52,7 +52,7 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
       doc.add(new TextField("repetitiveField", repetitiveFieldValue, Field.Store.YES));
       writer.addDocument(doc);
     }
-    writer.shutdown();
+    writer.close();
     reader = DirectoryReader.open(dir);
   }
 

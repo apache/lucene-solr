@@ -49,14 +49,14 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer()));
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(new SimpleAnalyzer()));
 
     Document doc = new Document();
     doc.add(new StringField("partnum", "Q36", Field.Store.YES));
     doc.add(new TextField("description", "Illidium Space Modulator", Field.Store.YES));
     writer.addDocument(doc);
 
-    writer.shutdown();
+    writer.close();
 
     reader = DirectoryReader.open(directory);
     searcher = newSearcher(reader);
@@ -86,14 +86,14 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
 
   public void testMutipleDocument() throws Exception {
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new KeywordAnalyzer()));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new KeywordAnalyzer()));
     Document doc = new Document();
     doc.add(new TextField("partnum", "Q36", Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
     doc.add(new TextField("partnum", "Q37", Field.Store.YES));
     writer.addDocument(doc);
-    writer.shutdown();
+    writer.close();
 
     IndexReader reader = DirectoryReader.open(dir);
     DocsEnum td = TestUtil.docs(random(),

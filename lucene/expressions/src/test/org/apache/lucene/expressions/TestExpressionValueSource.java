@@ -70,7 +70,7 @@ public class TestExpressionValueSource extends LuceneTestCase {
     iw.forceMerge(1);
     
     reader = iw.getReader();
-    iw.shutdown();
+    iw.close();
   }
   
   @Override

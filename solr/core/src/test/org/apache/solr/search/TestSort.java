@@ -44,7 +44,6 @@ import org.apache.lucene.search.FilterCollector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortField.Type;
@@ -189,7 +188,7 @@ public class TestSort extends SolrTestCaseJ4 {
     for (int iterCnt = 0; iterCnt<iter; iterCnt++) {
       IndexWriter iw = new IndexWriter(
           dir,
-          new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer()).
+          new IndexWriterConfig(new SimpleAnalyzer()).
               setOpenMode(IndexWriterConfig.OpenMode.CREATE)
       );
       final MyDoc[] mydocs = new MyDoc[ndocs];
@@ -222,7 +221,7 @@ public class TestSort extends SolrTestCaseJ4 {
           iw.commit();
         }
       }
-      iw.shutdown();
+      iw.close();
 
       Map<String,UninvertingReader.Type> mapping = new HashMap<>();
       mapping.put("f", UninvertingReader.Type.SORTED);

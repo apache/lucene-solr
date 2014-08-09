@@ -24,7 +24,6 @@ import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -34,7 +33,6 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
@@ -135,7 +133,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
       // okay, all terms must belong to the same field
     }
     
-    writer.shutdown();
+    writer.close();
     reader.close();
     indexStore.close();
   }
@@ -147,7 +145,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     add("blueberry chocolate pie", writer);
     add("blueberry chocolate tart", writer);
     IndexReader r = writer.getReader();
-    writer.shutdown();
+    writer.close();
 
     IndexSearcher searcher = newSearcher(r);
     MultiPhraseQuery q = new MultiPhraseQuery();
@@ -165,7 +163,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore);
     add("a b c d e f g h i k", writer);
     IndexReader r = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(r);
     
@@ -185,7 +183,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore);
     add("a b c d e f g h i k", writer);
     IndexReader r = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(r);
     MultiPhraseQuery q = new MultiPhraseQuery();
@@ -233,7 +231,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     // just make sure no exc:
     searcher.explain(q, 0);
     
-    writer.shutdown();
+    writer.close();
     reader.close();
     indexStore.close();
   }
@@ -260,7 +258,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     // exception will be thrown here without fix for #35626:
     ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
     assertEquals("Wrong number of hits", 0, hits.length);
-    writer.shutdown();
+    writer.close();
     reader.close();
     indexStore.close();
   }
@@ -282,7 +280,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     // just make sure no exc:
     searcher.explain(q, 0);
     
-    writer.shutdown();
+    writer.close();
     reader.close();
     indexStore.close();
   }
@@ -349,7 +347,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     Weight weight = query.createWeight(searcher);
     assertEquals(10f * 10f, weight.getValueForNormalization(), 0.001f);
 
-    writer.shutdown();
+    writer.close();
     reader.close();
     indexStore.close();
   }
@@ -375,7 +373,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     doc.add(new TextField("field", new CannedTokenStream(tokens)));
     writer.addDocument(doc);
     IndexReader r = writer.getReader();
-    writer.shutdown();
+    writer.close();
     IndexSearcher s = newSearcher(r);
     MultiPhraseQuery mpq = new MultiPhraseQuery();
     //mpq.setSlop(1);
@@ -473,7 +471,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     doc.add(new TextField("field", new CannedTokenStream(INCR_0_DOC_TOKENS)));
     writer.addDocument(doc);
     IndexReader r = DirectoryReader.open(writer,false);
-    writer.shutdown();
+    writer.close();
     IndexSearcher s = newSearcher(r);
     
     if (VERBOSE) {

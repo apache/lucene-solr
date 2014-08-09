@@ -138,7 +138,7 @@ public class PeerSync  {
     
     uhandler = core.getUpdateHandler();
     ulog = uhandler.getUpdateLog();
-    // TODO: shutdown
+    // TODO: close
     shardHandlerFactory = (HttpShardHandlerFactory) core.getCoreDescriptor().getCoreContainer().getShardHandlerFactory();
     shardHandler = shardHandlerFactory.getShardHandler(client);
   }

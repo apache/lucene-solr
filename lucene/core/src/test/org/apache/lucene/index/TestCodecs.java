@@ -32,15 +32,12 @@ import org.apache.lucene.codecs.lucene41.Lucene41RWCodec;
 import org.apache.lucene.codecs.lucene42.Lucene42RWCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.store.Directory;
@@ -838,7 +835,7 @@ public class TestCodecs extends LuceneTestCase {
       doc.add(new StringField("f", "doc", Store.NO));
       writer.addDocument(doc);
     }
-    writer.shutdown();
+    writer.close();
     
     Term term = new Term("f", new BytesRef("doc"));
     DirectoryReader reader = DirectoryReader.open(dir);
@@ -867,7 +864,7 @@ public class TestCodecs extends LuceneTestCase {
     
     OLD_FORMAT_IMPERSONATION_IS_ACTIVE = false;
     try {
-      writer.shutdown();
+      writer.close();
       fail("should not have succeeded to impersonate an old format!");
     } catch (UnsupportedOperationException e) {
       writer.rollback();

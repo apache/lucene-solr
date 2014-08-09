@@ -120,7 +120,7 @@ public class TestBasics extends LuceneTestCase {
     }
     reader = writer.getReader();
     searcher = newSearcher(reader);
-    writer.shutdown();
+    writer.close();
   }
 
   @AfterClass

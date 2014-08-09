@@ -51,7 +51,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   
   /**
    * Indicates a Directory will no longer be used, and when it's ref count
-   * hits 0, it can be closed. On shutdown all directories will be closed
+   * hits 0, it can be closed. On close all directories will be closed
    * whether this has been called or not. This is simply to allow early cleanup.
    * 
    * @throws IOException If there is a low-level I/O error.

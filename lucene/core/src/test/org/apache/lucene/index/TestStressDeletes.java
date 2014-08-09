@@ -42,7 +42,7 @@ public class TestStressDeletes extends LuceneTestCase {
     }
 
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     final IndexWriter w = new IndexWriter(dir, iwc);
     final int iters = atLeast(2000);
     final Map<Integer,Boolean> exists = new ConcurrentHashMap<>();

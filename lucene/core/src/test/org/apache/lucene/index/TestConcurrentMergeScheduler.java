@@ -123,7 +123,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       assertEquals(20*(i+1)+extraCount, writer.numDocs());
     }
 
-    writer.shutdown();
+    writer.close();
     IndexReader reader = DirectoryReader.open(directory);
     assertEquals(200+extraCount, reader.numDocs());
     reader.close();
@@ -167,7 +167,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       writer.commit();
     }
 
-    writer.shutdown();
+    writer.close();
     IndexReader reader = DirectoryReader.open(directory);
     // Verify that we did not lose any deletes...
     assertEquals(450, reader.numDocs());
@@ -191,7 +191,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
         writer.addDocument(doc);
       }
         
-      writer.shutdown();
+      writer.close();
       TestIndexWriter.assertNoUnreferencedFiles(directory, "testNoExtraFiles");
 
       // Reopen
@@ -199,7 +199,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
                                             .setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(2));
     }
 
-    writer.shutdown();
+    writer.close();
 
     directory.close();
   }
@@ -215,7 +215,8 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
         newIndexWriterConfig(new MockAnalyzer(random())).
             // Force excessive merging:
             setMaxBufferedDocs(2).
-            setMergePolicy(newLogMergePolicy(100))
+            setMergePolicy(newLogMergePolicy(100)).
+            setCommitOnClose(false)
     );
 
     for(int iter=0;iter<10;iter++) {
@@ -237,7 +238,11 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       writer.addDocument(doc);
       writer.commit();
 
-      writer.shutdown(false);
+      try {
+        writer.commit();
+      } finally {
+        writer.close();
+      }
 
       IndexReader reader = DirectoryReader.open(directory);
       assertEquals((1+iter)*182, reader.numDocs());
@@ -253,7 +258,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
               setMaxBufferedDocs(2)
       );
     }
-    writer.shutdown();
+    writer.close();
 
     directory.close();
   }
@@ -261,7 +266,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
   // LUCENE-4544
   public void testMaxMergeCount() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random())).setCommitOnClose(false);
 
     final int maxMergeCount = TestUtil.nextInt(random(), 1, 5);
     final int maxMergeThreads = TestUtil.nextInt(random(), 1, maxMergeCount);
@@ -323,7 +328,11 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
         w.addDocument(doc);
       }
     }
-    w.shutdown(false);
+    try {
+      w.commit();
+    } finally {
+      w.close();
+    }
     dir.close();
   }
 
@@ -370,13 +379,13 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     }
     atLeastOneMerge.await();
     assertTrue(((TrackingCMS) w.getConfig().getMergeScheduler()).totMergedBytes != 0);
-    w.shutdown();
+    w.close();
     d.close();
   }
 
   public void testLiveMaxMergeCount() throws Exception {
     Directory d = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     TieredMergePolicy tmp = new TieredMergePolicy();
     tmp.setSegmentsPerTier(1000);
     tmp.setMaxMergeAtOnce(1000);

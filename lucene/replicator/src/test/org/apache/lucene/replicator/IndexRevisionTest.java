@@ -38,7 +38,7 @@ public class IndexRevisionTest extends ReplicatorTestCase {
   @Test
   public void testNoSnapshotDeletionPolicy() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
     IndexWriter writer = new IndexWriter(dir, conf);
     try {
@@ -47,7 +47,7 @@ public class IndexRevisionTest extends ReplicatorTestCase {
     } catch (IllegalArgumentException e) {
       // expected
     } finally {
-      writer.shutdown();
+      writer.close();
       IOUtils.close(dir);
     }
   }
@@ -55,7 +55,7 @@ public class IndexRevisionTest extends ReplicatorTestCase {
   @Test
   public void testNoCommit() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     IndexWriter writer = new IndexWriter(dir, conf);
     try {
@@ -64,7 +64,7 @@ public class IndexRevisionTest extends ReplicatorTestCase {
     } catch (IllegalStateException e) {
       // expected
     } finally {
-      writer.shutdown();
+      writer.close();
       IOUtils.close(dir);
     }
   }
@@ -72,7 +72,7 @@ public class IndexRevisionTest extends ReplicatorTestCase {
   @Test
   public void testRevisionRelease() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     IndexWriter writer = new IndexWriter(dir, conf);
     try {
@@ -89,7 +89,7 @@ public class IndexRevisionTest extends ReplicatorTestCase {
       assertNotNull(new IndexRevision(writer));
       rev1.release(); // this release should trigger the delete of segments_1
       assertFalse(slowFileExists(dir, IndexFileNames.SEGMENTS + "_1"));
-      writer.shutdown();
+      writer.close();
     } finally {
       IOUtils.close(dir);
     }
@@ -98,7 +98,7 @@ public class IndexRevisionTest extends ReplicatorTestCase {
   @Test
   public void testSegmentsFileLast() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     IndexWriter writer = new IndexWriter(dir, conf);
     try {
@@ -111,7 +111,7 @@ public class IndexRevisionTest extends ReplicatorTestCase {
       List<RevisionFile> files = sourceFiles.values().iterator().next();
       String lastFile = files.get(files.size() - 1).fileName;
       assertTrue(lastFile.startsWith(IndexFileNames.SEGMENTS) && !lastFile.equals(IndexFileNames.SEGMENTS_GEN));
-      writer.shutdown();
+      writer.close();
     } finally {
       IOUtils.close(dir);
     }
@@ -120,7 +120,7 @@ public class IndexRevisionTest extends ReplicatorTestCase {
   @Test
   public void testOpen() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     IndexWriter writer = new IndexWriter(dir, conf);
     try {
@@ -151,7 +151,7 @@ public class IndexRevisionTest extends ReplicatorTestCase {
         assertArrayEquals(srcBytes, inBytes);
         IOUtils.close(src, in);
       }
-      writer.shutdown();
+      writer.close();
     } finally {
       IOUtils.close(dir);
     }

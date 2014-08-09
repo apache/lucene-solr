@@ -64,7 +64,7 @@ public class TestDocValuesScoring extends LuceneTestCase {
     dvField.setFloatValue(4f); // boost x4
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
-    iw.shutdown();
+    iw.close();
     
     // no boosting
     IndexSearcher searcher1 = newSearcher(ir, false);

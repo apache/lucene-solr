@@ -35,7 +35,6 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -64,7 +63,7 @@ public class TestBoolean2 extends LuceneTestCase {
       doc.add(newTextField(field, docFields[i], Field.Store.NO));
       writer.addDocument(doc);
     }
-    writer.shutdown();
+    writer.close();
     littleReader = DirectoryReader.open(directory);
     searcher = newSearcher(littleReader);
     // this is intentionally using the baseline sim, because it compares against bigSearcher (which uses a random one)
@@ -87,7 +86,7 @@ public class TestBoolean2 extends LuceneTestCase {
       RandomIndexWriter w = new RandomIndexWriter(random(), dir2);
       w.addIndexes(copy);
       docCount = w.maxDoc();
-      w.shutdown();
+      w.close();
       mulFactor *= 2;
     } while(docCount < 3000);
 
@@ -106,7 +105,7 @@ public class TestBoolean2 extends LuceneTestCase {
     }
     reader = w.getReader();
     bigSearcher = newSearcher(reader);
-    w.shutdown();
+    w.close();
   }
 
   @AfterClass

@@ -118,7 +118,7 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
       }
       iw.forceMerge(1);
     }
-    iw.shutdown();
+    iw.close();
     if (VERBOSE) {
       System.out.println("TEST: setUp done close");
     }

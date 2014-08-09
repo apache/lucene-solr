@@ -20,14 +20,11 @@ package org.apache.lucene.index;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.FieldInfosFormat;
-import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
@@ -58,7 +55,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
 
   @Test
   public void testDefaults() throws Exception {
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = new IndexWriterConfig(new MockAnalyzer(random()));
     assertEquals(MockAnalyzer.class, conf.getAnalyzer().getClass());
     assertNull(conf.getIndexCommit());
     assertEquals(KeepOnlyLastCommitDeletionPolicy.class, conf.getIndexDeletionPolicy().getClass());
@@ -144,7 +141,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     Directory dir = newDirectory();
     // test that IWC cannot be reused across two IWs
     IndexWriterConfig conf = newIndexWriterConfig(null);
-    new RandomIndexWriter(random(), dir, conf).shutdown();
+    new RandomIndexWriter(random(), dir, conf).close();
 
     // this should fail
     try {
@@ -193,7 +190,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
 
   @Test
   public void testToString() throws Exception {
-    String str = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).toString();
+    String str = new IndexWriterConfig(new MockAnalyzer(random())).toString();
     for (Field f : IndexWriterConfig.class.getDeclaredFields()) {
       int modifiers = f.getModifiers();
       if (Modifier.isStatic(modifiers) && Modifier.isFinal(modifiers)) {
@@ -213,7 +210,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
 
   @Test
   public void testInvalidValues() throws Exception {
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = new IndexWriterConfig(new MockAnalyzer(random()));
 
     // Test IndexDeletionPolicy
     assertEquals(KeepOnlyLastCommitDeletionPolicy.class, conf.getIndexDeletionPolicy().getClass());
@@ -321,7 +318,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
 
   public void testLiveChangeToCFS() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     iwc.setMergePolicy(newLogMergePolicy(true));
     // Start false:
     iwc.setUseCompoundFile(false); 
@@ -353,7 +350,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     w.forceMerge(1);
     w.commit();
     assertTrue("Expected CFS after merge", w.newestSegment().info.getUseCompoundFile());
-    w.shutdown();
+    w.close();
     dir.close();
   }
 

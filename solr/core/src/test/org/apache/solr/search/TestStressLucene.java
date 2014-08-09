@@ -101,7 +101,7 @@ public class TestStressLucene extends TestRTGBase {
 
 
     // RAMDirectory dir = new RAMDirectory();
-    // final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    // final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
 
     Directory dir = newDirectory();
 
@@ -368,7 +368,7 @@ public class TestStressLucene extends TestRTGBase {
       thread.join();
     }
 
-    writer.shutdown();
+    writer.close();
     reader.close();
     dir.close();
   }

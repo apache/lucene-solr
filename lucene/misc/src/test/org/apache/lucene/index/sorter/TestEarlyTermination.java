@@ -107,7 +107,7 @@ public class TestEarlyTermination extends LuceneTestCase {
   
   private void closeIndex() throws IOException {
     reader.close();
-    iw.shutdown();
+    iw.close();
     dir.close();
   }
 

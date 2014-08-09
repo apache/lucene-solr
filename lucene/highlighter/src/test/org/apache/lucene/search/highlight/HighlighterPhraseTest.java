@@ -35,8 +35,6 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.LeafCollector;
-import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
@@ -65,7 +63,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
       document.add(new Field(FIELD, new TokenStreamConcurrent(), customType));
       indexWriter.addDocument(document);
     } finally {
-      indexWriter.shutdown();
+      indexWriter.close();
     }
     final IndexReader indexReader = DirectoryReader.open(directory);
     try {
@@ -107,7 +105,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
       document.add(new Field(FIELD, new TokenStreamConcurrent(), customType));
       indexWriter.addDocument(document);
     } finally {
-      indexWriter.shutdown();
+      indexWriter.close();
     }
     final IndexReader indexReader = DirectoryReader.open(directory);
     try {
@@ -175,7 +173,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
       document.add(new Field(FIELD, new TokenStreamSparse(), customType));
       indexWriter.addDocument(document);
     } finally {
-      indexWriter.shutdown();
+      indexWriter.close();
     }
     final IndexReader indexReader = DirectoryReader.open(directory);
     try {
@@ -216,7 +214,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
       document.add(new Field(FIELD, TEXT, customType));
       indexWriter.addDocument(document);
     } finally {
-      indexWriter.shutdown();
+      indexWriter.close();
     }
     final IndexReader indexReader = DirectoryReader.open(directory);
     try {
@@ -255,7 +253,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
       document.add(new Field(FIELD, new TokenStreamSparse(), customType));
       indexWriter.addDocument(document);
     } finally {
-      indexWriter.shutdown();
+      indexWriter.close();
     }
     final IndexReader indexReader = DirectoryReader.open(directory);
     try {

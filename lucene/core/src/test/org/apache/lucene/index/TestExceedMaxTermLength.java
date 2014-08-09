@@ -55,9 +55,7 @@ public class TestExceedMaxTermLength extends LuceneTestCase {
   public void test() throws Exception {
     
     IndexWriter w = new IndexWriter
-      (dir, newIndexWriterConfig(random(), 
-                                 TEST_VERSION_CURRENT,
-                                 new MockAnalyzer(random())));
+      (dir, newIndexWriterConfig(random(), new MockAnalyzer(random())));
     try {
       final FieldType ft = new FieldType();
       ft.setIndexed(true);
@@ -101,7 +99,7 @@ public class TestExceedMaxTermLength extends LuceneTestCase {
             msg.contains("bytes can be at most") && msg.contains("in length; got"));
       }
     } finally {
-      w.shutdown();
+      w.close();
     }
   }
 }

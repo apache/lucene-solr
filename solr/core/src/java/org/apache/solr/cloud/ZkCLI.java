@@ -194,7 +194,7 @@ public class ZkCLI {
 
           ZkController.bootstrapConf(zkClient, cc, solrHome);
 
-          // No need to shutdown the CoreContainer, as it wasn't started
+          // No need to close the CoreContainer, as it wasn't started
           // up in the first place...
           
         } else if (line.getOptionValue(CMD).equals(UPCONFIG)) {

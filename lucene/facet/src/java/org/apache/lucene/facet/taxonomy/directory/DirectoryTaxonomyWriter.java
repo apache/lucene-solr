@@ -49,7 +49,6 @@ import org.apache.lucene.store.LockObtainFailedException; // javadocs
 import org.apache.lucene.store.NativeFSLockFactory;
 import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Version;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -286,7 +285,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     // :Post-Release-Update-Version.LUCENE_XY:
     // Make sure we use a MergePolicy which always merges adjacent segments and thus
     // keeps the doc IDs ordered as well (this is crucial for the taxonomy index).
-    return new IndexWriterConfig(Version.LUCENE_5_0, null).setOpenMode(openMode).setMergePolicy(
+    return new IndexWriterConfig(null).setOpenMode(openMode).setMergePolicy(
         new LogByteSizeMergePolicy());
   }
   
@@ -340,7 +339,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   public synchronized void close() throws IOException {
     if (!isClosed) {
       commit();
-      indexWriter.shutdown();
+      indexWriter.close();
       doClose();
     }
   }

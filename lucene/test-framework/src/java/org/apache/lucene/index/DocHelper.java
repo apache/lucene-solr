@@ -37,8 +37,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 
-import static org.apache.lucene.util.LuceneTestCase.TEST_VERSION_CURRENT;
-
 class DocHelper {
   
   public static final FieldType customType;
@@ -271,12 +269,12 @@ class DocHelper {
    */ 
   public static SegmentCommitInfo writeDoc(Random random, Directory dir, Analyzer analyzer, Similarity similarity, Document doc) throws IOException {
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig( /* LuceneTestCase.newIndexWriterConfig(random, */ 
-        TEST_VERSION_CURRENT, analyzer).setSimilarity(similarity == null ? IndexSearcher.getDefaultSimilarity() : similarity));
+        analyzer).setSimilarity(similarity == null ? IndexSearcher.getDefaultSimilarity() : similarity));
     //writer.setNoCFSRatio(0.0);
     writer.addDocument(doc);
     writer.commit();
     SegmentCommitInfo info = writer.newestSegment();
-    writer.shutdown();
+    writer.close();
     return info;
   }
 

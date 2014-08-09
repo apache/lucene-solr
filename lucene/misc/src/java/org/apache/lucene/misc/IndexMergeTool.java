@@ -21,7 +21,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.Version;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,8 +37,7 @@ public class IndexMergeTool {
     }
     FSDirectory mergedIndex = FSDirectory.open(new File(args[0]));
 
-    IndexWriter writer = new IndexWriter(mergedIndex, new IndexWriterConfig(
-        Version.LUCENE_CURRENT, null)
+    IndexWriter writer = new IndexWriter(mergedIndex, new IndexWriterConfig(null)
         .setOpenMode(OpenMode.CREATE));
 
     Directory[] indexes = new Directory[args.length - 1];
@@ -52,7 +50,7 @@ public class IndexMergeTool {
 
     System.out.println("Full merge...");
     writer.forceMerge(1);
-    writer.shutdown();
+    writer.close();
     System.out.println("Done.");
   }
 }

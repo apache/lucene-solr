@@ -93,7 +93,7 @@ public class TestNRTCachingDirectory extends BaseDirectoryTestCase {
     }
 
     // Close should force cache to clear since all files are sync'd
-    w.shutdown();
+    w.close();
 
     final String[] cachedFiles = cachedDir.listCachedFiles();
     for(String file : cachedFiles) {
@@ -117,7 +117,7 @@ public class TestNRTCachingDirectory extends BaseDirectoryTestCase {
 
     Directory fsDir = FSDirectory.open(new File("/path/to/index"));
     NRTCachingDirectory cachedFSDir = new NRTCachingDirectory(fsDir, 2.0, 25.0);
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    IndexWriterConfig conf = new IndexWriterConfig(analyzer);
     IndexWriter writer = new IndexWriter(cachedFSDir, conf);
     writer.close();
     cachedFSDir.close();

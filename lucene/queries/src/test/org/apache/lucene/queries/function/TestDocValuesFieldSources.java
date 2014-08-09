@@ -36,7 +36,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.packed.PackedInts;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
@@ -91,7 +90,7 @@ public class TestDocValuesFieldSources extends LuceneTestCase {
         iw.commit();
       }
     }
-    iw.shutdown();
+    iw.close();
 
     DirectoryReader rd = DirectoryReader.open(d);
     for (AtomicReaderContext leave : rd.leaves()) {

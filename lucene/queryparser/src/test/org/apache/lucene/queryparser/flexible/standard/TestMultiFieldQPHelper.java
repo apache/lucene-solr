@@ -324,7 +324,7 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     Document doc = new Document();
     doc.add(newTextField("body", "blah the footest blah", Field.Store.NO));
     iw.addDocument(doc);
-    iw.shutdown();
+    iw.close();
 
     StandardQueryParser mfqp = new StandardQueryParser();
 

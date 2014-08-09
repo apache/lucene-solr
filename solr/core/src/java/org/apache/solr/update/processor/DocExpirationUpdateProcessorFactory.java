@@ -268,12 +268,12 @@ public final class DocExpirationUpdateProcessorFactory
         // update handler is gone, hard terminiate anything that's left.
 
         if (executor.isTerminating()) {
-          log.info("Triggering hard shutdown of DocExpiration Executor");
+          log.info("Triggering hard close of DocExpiration Executor");
           executor.shutdownNow();
         }
       }
       public void preClose(SolrCore core) {
-        log.info("Triggering Graceful shutdown of DocExpiration Executor");
+        log.info("Triggering Graceful close of DocExpiration Executor");
         executor.shutdown();
       }
     });

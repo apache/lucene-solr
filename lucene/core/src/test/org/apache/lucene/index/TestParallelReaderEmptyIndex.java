@@ -40,7 +40,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
   public void testEmptyIndex() throws IOException {
     Directory rd1 = newDirectory();
     IndexWriter iw = new IndexWriter(rd1, newIndexWriterConfig(new MockAnalyzer(random())));
-    iw.shutdown();
+    iw.close();
     // create a copy:
     Directory rd2 = newDirectory(rd1);
 
@@ -72,7 +72,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
     iwOut.addIndexes(new ParallelCompositeReader());
     iwOut.forceMerge(1);
     
-    iwOut.shutdown();
+    iwOut.close();
     rdOut.close();
     rd1.close();
     rd2.close();
@@ -101,9 +101,9 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
       doc.add(newField("test", "", customType));
       idField.setStringValue("2");
       iw.addDocument(doc);
-      iw.shutdown();
+      iw.close();
 
-      IndexWriterConfig dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+      IndexWriterConfig dontMergeConfig = new IndexWriterConfig(new MockAnalyzer(random()))
         .setMergePolicy(NoMergePolicy.INSTANCE);
       if (VERBOSE) {
         System.out.println("\nTEST: make 2nd writer");
@@ -111,7 +111,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
       IndexWriter writer = new IndexWriter(rd1, dontMergeConfig);
       
       writer.deleteDocuments(new Term("id", "1"));
-      writer.shutdown();
+      writer.close();
       IndexReader ir = DirectoryReader.open(rd1);
       assertEquals(2, ir.maxDoc());
       assertEquals(1, ir.numDocs());
@@ -120,7 +120,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
       iw = new IndexWriter(rd1, newIndexWriterConfig(new MockAnalyzer(random()))
                                   .setOpenMode(OpenMode.APPEND));
       iw.forceMerge(1);
-      iw.shutdown();
+      iw.close();
     }
 
     Directory rd2 = newDirectory();
@@ -128,7 +128,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
       IndexWriter iw = new IndexWriter(rd2, newIndexWriterConfig(new MockAnalyzer(random())));
       Document doc = new Document();
       iw.addDocument(doc);
-      iw.shutdown();
+      iw.close();
     }
 
     Directory rdOut = newDirectory();
@@ -153,7 +153,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
     rd2.close();
 
     iwOut.forceMerge(1);
-    iwOut.shutdown();
+    iwOut.close();
     
     rdOut.close();
   }

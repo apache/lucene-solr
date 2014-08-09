@@ -397,7 +397,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         try {
           tpe.awaitTermination(60, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-          log.warn("Thread interrupted while waiting for OCP threadpool shutdown.");
+          log.warn("Thread interrupted while waiting for OCP threadpool close.");
           Thread.currentThread().interrupt();
         } finally {
           if (!tpe.isShutdown())

@@ -536,7 +536,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         }
       }
       if (iw != null) {
-        iw.shutdown();
+        iw.close();
       }
       success = true;
     } finally {

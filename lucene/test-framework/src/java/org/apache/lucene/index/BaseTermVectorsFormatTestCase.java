@@ -40,7 +40,6 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
@@ -539,7 +538,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
       final Fields fields = reader.getTermVectors(docWithVectorsID);
       assertEquals(doc, fields);
       reader.close();
-      writer.shutdown();
+      writer.close();
       dir.close();
     }
   }
@@ -557,7 +556,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
       final IndexReader reader = writer.getReader();
       assertEquals(doc, reader.getTermVectors(0));
       reader.close();
-      writer.shutdown();
+      writer.close();
       dir.close();
     }
   }
@@ -572,7 +571,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
       final IndexReader reader = writer.getReader();
       assertEquals(doc, reader.getTermVectors(0));
       reader.close();
-      writer.shutdown();
+      writer.close();
       dir.close();
     }
   }
@@ -598,7 +597,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
         final int doc2ID = docID(reader, "2");
         assertEquals(doc2, reader.getTermVectors(doc2ID));
         reader.close();
-        writer.shutdown();
+        writer.close();
         dir.close();
       }
     }
@@ -622,7 +621,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
       assertEquals(docs[i], reader.getTermVectors(docID));
     }
     reader.close();
-    writer.shutdown();
+    writer.close();
     dir.close();
   }
 
@@ -660,7 +659,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
         }
       }
       reader.close();
-      writer.shutdown();
+      writer.close();
       dir.close();
     }
   }
@@ -711,7 +710,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
         thread.join();
       }
       reader.close();
-      writer.shutdown();
+      writer.close();
       dir.close();
       assertNull("One thread threw an exception", exception.get());
     }

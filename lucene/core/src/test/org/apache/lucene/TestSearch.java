@@ -50,7 +50,7 @@ public class TestSearch extends LuceneTestCase {
         d.add(newTextField("foo", "bar", Field.Store.YES));
         writer.addDocument(d);
       } finally {
-        writer.shutdown();
+        writer.close();
       }
       
       IndexReader reader = DirectoryReader.open(directory);
@@ -130,7 +130,7 @@ public class TestSearch extends LuceneTestCase {
         d.add(new IntField("id", j, Field.Store.NO));
         writer.addDocument(d);
       }
-      writer.shutdown();
+      writer.close();
 
       IndexReader reader = DirectoryReader.open(directory);
       IndexSearcher searcher = newSearcher(reader);

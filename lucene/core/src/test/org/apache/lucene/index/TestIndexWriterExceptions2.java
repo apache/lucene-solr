@@ -200,7 +200,7 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
       }
       
       try {
-        iw.shutdown();
+        iw.close();
       } catch (Exception e) {
         if (e.getMessage() != null && e.getMessage().startsWith("Fake IOException")) {
           exceptionStream.println("\nTEST: got expected fake exc:" + e.getMessage());

@@ -79,7 +79,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
     }
     writer.commit();
     writer.forceMerge(1);
-    writer.shutdown();
+    writer.close();
 
     AtomicReader reader = getOnlySegmentReader(DirectoryReader.open(dir));
     

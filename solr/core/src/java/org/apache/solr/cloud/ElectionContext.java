@@ -439,7 +439,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       throws InterruptedException, KeeperException, IOException {
     // remove our ephemeral and re join the election
     if (cc.isShutDown()) {
-      log.info("Not rejoining election because CoreContainer is shutdown");
+      log.info("Not rejoining election because CoreContainer is close");
       return;
     }
     

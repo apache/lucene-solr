@@ -86,7 +86,7 @@ public class DataSplitterTest extends LuceneTestCase {
   @After
   public void tearDown() throws Exception {
     originalIndex.close();
-    indexWriter.shutdown();
+    indexWriter.close();
     dir.close();
     super.tearDown();
   }

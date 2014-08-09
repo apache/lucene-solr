@@ -49,7 +49,7 @@ public class TestFieldCacheTermsFilter extends LuceneTestCase {
       w.addDocument(doc);
     }
     IndexReader reader = w.getReader();
-    w.shutdown();
+    w.close();
 
     IndexSearcher searcher = newSearcher(reader);
     int numDocs = reader.numDocs();

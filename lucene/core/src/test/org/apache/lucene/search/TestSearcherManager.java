@@ -285,7 +285,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     assertFalse(success.get());
     assertTrue(triedReopen.get());
     assertNull("" + exc[0], exc[0]);
-    writer.shutdown();
+    writer.close();
     dir.close();
     if (es != null) {
       es.shutdown();
@@ -296,7 +296,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
   public void testCloseTwice() throws Exception {
     // test that we can close SM twice (per Closeable's contract).
     Directory dir = newDirectory();
-    new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null)).shutdown();
+    new IndexWriter(dir, new IndexWriterConfig(null)).close();
     SearcherManager sm = new SearcherManager(dir, null);
     sm.close();
     sm.close();
@@ -329,14 +329,14 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     }
 
     // sm.close(); -- already closed
-    writer.shutdown();
+    writer.close();
     dir.close();
   }
 
 
   public void testEnsureOpen() throws Exception {
     Directory dir = newDirectory();
-    new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null)).shutdown();
+    new IndexWriter(dir, new IndexWriterConfig(null)).close();
     SearcherManager sm = new SearcherManager(dir, null);
     IndexSearcher s = sm.acquire();
     sm.close();
@@ -362,7 +362,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
 
   public void testListenerCalled() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(null));
     final AtomicBoolean afterRefreshCalled = new AtomicBoolean(false);
     SearcherManager sm = new SearcherManager(iw, false, new SearcherFactory());
     sm.addListener(new ReferenceManager.RefreshListener() {
@@ -382,7 +382,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     sm.maybeRefreshBlocking();
     assertTrue(afterRefreshCalled.get());
     sm.close();
-    iw.shutdown();
+    iw.close();
     dir.close();
   }
 
@@ -411,7 +411,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     } catch (IllegalStateException ise) {
       // expected
     }
-    w.shutdown();
+    w.close();
     other.close();
     dir.close();
   }
@@ -421,7 +421,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     // threads cannot obtain it.
     final Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    w.shutdown();
+    w.close();
     
     final SearcherManager sm = new SearcherManager(dir, null);
     

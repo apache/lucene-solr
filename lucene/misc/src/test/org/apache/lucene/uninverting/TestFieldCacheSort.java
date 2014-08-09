@@ -77,7 +77,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Type type = sortType == SortField.Type.STRING ? Type.SORTED : Type.BINARY;
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", type));
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", sortType));
@@ -116,7 +116,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Type type = sortType == SortField.Type.STRING ? Type.SORTED : Type.BINARY;
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", type));
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", sortType));
@@ -153,7 +153,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Type type = sortType == SortField.Type.STRING ? Type.SORTED : Type.BINARY;
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", type));
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", sortType, true));
@@ -192,7 +192,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Type type = sortType == SortField.Type.STRING ? Type.SORTED : Type.BINARY;
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", type));
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     SortField sf = new SortField("value", sortType);
@@ -233,7 +233,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Type type = sortType == SortField.Type.STRING ? Type.SORTED : Type.BINARY;
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", type));
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     SortField sf = new SortField("value", sortType, true);
@@ -274,7 +274,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Type type = sortType == SortField.Type.STRING ? Type.SORTED : Type.BINARY;
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", type));
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     SortField sf = new SortField("value", sortType);
@@ -316,7 +316,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Type type = sortType == SortField.Type.STRING ? Type.SORTED : Type.BINARY;
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", type));
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     SortField sf = new SortField("value", sortType, true);
@@ -345,7 +345,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     doc.add(newStringField("value", "bar", Field.Store.NO));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(SortField.FIELD_DOC);
@@ -371,7 +371,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     doc.add(newStringField("value", "bar", Field.Store.NO));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField(null, SortField.Type.DOC, true));
@@ -397,7 +397,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     doc.add(newTextField("value", "foo foo foo foo foo", Field.Store.NO));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort();
@@ -427,7 +427,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     doc.add(newTextField("value", "foo foo foo foo foo", Field.Store.NO));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField(null, SortField.Type.SCORE, true));
@@ -460,7 +460,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.INTEGER));
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.INT));
@@ -490,7 +490,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.INTEGER));
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.INT));
@@ -520,7 +520,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.INTEGER));
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     SortField sortField = new SortField("value", SortField.Type.INT);
@@ -553,7 +553,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.INTEGER));
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.INT, true));
@@ -584,7 +584,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.LONG));
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.LONG));
@@ -614,7 +614,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.LONG));
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.LONG));
@@ -644,7 +644,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.LONG));
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     SortField sortField = new SortField("value", SortField.Type.LONG);
@@ -677,7 +677,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.LONG));
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.LONG, true));
@@ -708,7 +708,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.FLOAT));
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.FLOAT));
@@ -738,7 +738,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.FLOAT));
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.FLOAT));
@@ -768,7 +768,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.FLOAT));
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     SortField sortField = new SortField("value", SortField.Type.FLOAT);
@@ -801,7 +801,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.FLOAT));
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.FLOAT, true));
@@ -835,7 +835,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.DOUBLE));
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
@@ -865,7 +865,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     doc = new Document();
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.DOUBLE));
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
@@ -902,7 +902,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.DOUBLE));
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
@@ -936,7 +936,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.DOUBLE));
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     SortField sortField = new SortField("value", SortField.Type.DOUBLE);
@@ -973,7 +973,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.DOUBLE));
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE, true));
@@ -1004,7 +1004,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
 
     IndexReader r = UninvertingReader.wrap(DirectoryReader.open(w, true), 
                     Collections.singletonMap("f", Type.SORTED));
-    w.shutdown();
+    w.close();
     IndexSearcher s = newSearcher(r);
     TopDocs hits = s.search(new TermQuery(new Term("t", "1")), null, 10, new Sort(new SortField("f", SortField.Type.STRING)));
     assertEquals(2, hits.totalHits);
@@ -1027,7 +1027,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
         writer.addDocument(doc);
     }
     writer.forceMerge(1); // enforce one segment to have a higher unique term count in all cases
-    writer.shutdown();
+    writer.close();
     Sort sort = new Sort(
         new SortField("string", SortField.Type.STRING),
         SortField.FIELD_DOC);
@@ -1045,7 +1045,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
   public void testMaxScore() throws Exception {
     Directory d = newDirectory();
     // Not RIW because we need exactly 2 segs:
-    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random())));
     int id = 0;
     for(int seg=0;seg<2;seg++) {
       for(int docIDX=0;docIDX<10;docIDX++) {
@@ -1065,7 +1065,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
 
     IndexReader r = UninvertingReader.wrap(DirectoryReader.open(w, true),
                     Collections.singletonMap("id", Type.INTEGER));
-    w.shutdown();
+    w.close();
     Query q = new TermQuery(new Term("body", "text"));
     IndexSearcher s = newSearcher(r);
     float maxScore = s.search(q , 10).getMaxScore();
@@ -1117,7 +1117,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(),
                      Collections.singletonMap("value", Type.SORTED));
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.STRING));
@@ -1139,7 +1139,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(),
                      Collections.singletonMap("value", Type.SORTED));
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.STRING));
@@ -1172,7 +1172,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     mappings.put("value", Type.SORTED);
     
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), mappings);
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     // tievalue, then value
@@ -1199,7 +1199,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     doc.add(newStringField("value", "foo", Field.Store.NO));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(SortField.FIELD_SCORE);

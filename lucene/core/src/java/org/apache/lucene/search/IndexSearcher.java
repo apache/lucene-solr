@@ -112,7 +112,7 @@ public class IndexSearcher {
 
   /** Runs searches for each segment separately, using the
    *  provided ExecutorService.  IndexSearcher will not
-   *  shutdown/awaitTermination this ExecutorService on
+   *  close/awaitTermination this ExecutorService on
    *  close; you must do so, eventually, on your own.  NOTE:
    *  if you are using {@link NIOFSDirectory}, do not use
    *  the shutdownNow method of ExecutorService as this uses
@@ -130,7 +130,7 @@ public class IndexSearcher {
    * <p>
    * Given a non-<code>null</code> {@link ExecutorService} this method runs
    * searches for each segment separately, using the provided ExecutorService.
-   * IndexSearcher will not shutdown/awaitTermination this ExecutorService on
+   * IndexSearcher will not close/awaitTermination this ExecutorService on
    * close; you must do so, eventually, on your own. NOTE: if you are using
    * {@link NIOFSDirectory}, do not use the shutdownNow method of
    * ExecutorService as this uses Thread.interrupt under-the-hood which can

@@ -115,14 +115,14 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
     Directory dir = newFSDirectory(newDir);
     IndexWriter iw = new IndexWriter(
         dir,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer())
+        new IndexWriterConfig(new StandardAnalyzer())
     );
     Document doc = new Document();
     doc.add(new TextField("id", "2", Field.Store.YES));
     doc.add(new TextField("name", "name2", Field.Store.YES));
     iw.addDocument(doc);
     iw.commit();
-    iw.shutdown();
+    iw.close();
 
     //commit will cause searcher to open with the new index dir
     assertU(commit());

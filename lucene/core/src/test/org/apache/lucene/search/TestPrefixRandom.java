@@ -35,7 +35,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 
 /**
  * Create an index with random unicode terms
@@ -65,7 +64,7 @@ public class TestPrefixRandom extends LuceneTestCase {
     }
     reader = writer.getReader();
     searcher = newSearcher(reader);
-    writer.shutdown();
+    writer.close();
   }
 
   @Override

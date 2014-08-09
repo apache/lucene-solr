@@ -53,7 +53,7 @@ public class TestMixedCodecs extends LuceneTestCase {
           iwc.setCodec(Codec.forName("SimpleText"));
         }
         if (w != null) {
-          w.shutdown();
+          w.close();
         }
         w = new RandomIndexWriter(random(), dir, iwc);
         docsLeftInThisSegment = TestUtil.nextInt(random(), 10, 100);
@@ -84,7 +84,7 @@ public class TestMixedCodecs extends LuceneTestCase {
       }
     }
 
-    w.shutdown();
+    w.close();
     dir.close();
   }
 }

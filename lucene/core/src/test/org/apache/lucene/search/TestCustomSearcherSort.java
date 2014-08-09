@@ -68,7 +68,7 @@ public class TestCustomSearcherSort extends LuceneTestCase {
       writer.addDocument(doc);
     }
     reader = writer.getReader();
-    writer.shutdown();
+    writer.close();
     query = new TermQuery(new Term("content", "test"));
   }
   

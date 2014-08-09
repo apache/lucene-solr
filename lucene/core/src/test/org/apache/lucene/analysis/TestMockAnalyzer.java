@@ -329,7 +329,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
     assertEquals(1 + endOffset + offsetGap, dpe.endOffset());
     assertEquals(null, te.next());
     reader.close();
-    writer.shutdown();
+    writer.close();
     writer.w.getDirectory().close();
   }
 

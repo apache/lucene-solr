@@ -138,7 +138,7 @@ public class SolrIndexSplitter {
           iwRef.decref();
         } else {
           if (success) {
-            iw.shutdown();
+            iw.close();
           } else {
             IOUtils.closeWhileHandlingException(iw);
           }

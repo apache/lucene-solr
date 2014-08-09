@@ -60,7 +60,7 @@ public class TestAllFilesHaveChecksumFooter extends LuceneTestCase {
         riw.deleteDocuments(new Term("id", Integer.toString(i)));
       }
     }
-    riw.shutdown();
+    riw.close();
     checkHeaders(dir);
     dir.close();
   }

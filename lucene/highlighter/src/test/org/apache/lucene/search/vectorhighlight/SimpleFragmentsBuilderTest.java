@@ -148,8 +148,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
   }
   
   protected void makeUnstoredIndex() throws Exception {
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, analyzerW).setOpenMode(OpenMode.CREATE));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzerW).setOpenMode(OpenMode.CREATE));
     Document doc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
     customType.setStoreTermVectors(true);
@@ -158,7 +157,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     doc.add( new Field( F, "aaa", customType) );
     //doc.add( new Field( F, "aaa", Store.NO, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );
     writer.addDocument( doc );
-    writer.shutdown();
+    writer.close();
     if (reader != null) reader.close();
     reader = DirectoryReader.open(dir);
   }
@@ -268,7 +267,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
       documents.add(document);
     }
     writer.addDocuments(documents);
-    writer.shutdown();
+    writer.close();
     IndexReader reader = DirectoryReader.open(dir);
 
     try {

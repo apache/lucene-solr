@@ -22,7 +22,6 @@ import java.util.Locale;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -104,7 +103,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
     doc.add(f1);
     doc.add(f2);
     w.addDocument(doc);
-    w.shutdown();
+    w.close();
 
     IndexReader r = DirectoryReader.open(dir);
     Terms vector = r.getTermVectors(0).terms("field");

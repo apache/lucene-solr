@@ -26,7 +26,6 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.CachingWrapperFilter;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FilteredQuery;
@@ -231,7 +230,7 @@ public class TestBlockJoinSorting extends LuceneTestCase {
     w.addDocument(document);
 
     IndexSearcher searcher = new IndexSearcher(DirectoryReader.open(w.w, false));
-    w.shutdown();
+    w.close();
     Filter parentFilter = new QueryWrapperFilter(new TermQuery(new Term("__type", "parent")));
     Filter childFilter = new QueryWrapperFilter(new PrefixQuery(new Term("field2")));
     ToParentBlockJoinQuery query = new ToParentBlockJoinQuery(

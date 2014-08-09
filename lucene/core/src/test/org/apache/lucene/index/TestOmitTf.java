@@ -26,11 +26,9 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CollectionStatistics;
-import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
@@ -104,7 +102,7 @@ public class TestOmitTf extends LuceneTestCase {
     // force merge
     writer.forceMerge(1);
     // flush
-    writer.shutdown();
+    writer.close();
 
     SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(ram));
     FieldInfos fi = reader.getFieldInfos();
@@ -156,7 +154,7 @@ public class TestOmitTf extends LuceneTestCase {
     // force merge
     writer.forceMerge(1);
     // flush
-    writer.shutdown();
+    writer.close();
 
     SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(ram));
     FieldInfos fi = reader.getFieldInfos();
@@ -199,7 +197,7 @@ public class TestOmitTf extends LuceneTestCase {
     writer.forceMerge(1);
 
     // flush
-    writer.shutdown();
+    writer.close();
 
     SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(ram));
     FieldInfos fi = reader.getFieldInfos();
@@ -252,7 +250,7 @@ public class TestOmitTf extends LuceneTestCase {
     // force merge
     writer.forceMerge(1);
     // flush
-    writer.shutdown();
+    writer.close();
 
     assertNoPrx(ram);
     ram.close();
@@ -288,7 +286,7 @@ public class TestOmitTf extends LuceneTestCase {
         
     writer.forceMerge(1);
     // flush
-    writer.shutdown();
+    writer.close();
 
     /*
      * Verify the index
@@ -454,7 +452,7 @@ public class TestOmitTf extends LuceneTestCase {
     doc.add(f);
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
-    iw.shutdown();
+    iw.close();
     assertEquals(-1, ir.totalTermFreq(new Term("foo", new BytesRef("bar"))));
     assertEquals(-1, ir.getSumTotalTermFreq("foo"));
     ir.close();

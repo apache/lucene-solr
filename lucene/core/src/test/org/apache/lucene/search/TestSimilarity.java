@@ -67,7 +67,7 @@ public class TestSimilarity extends LuceneTestCase {
     writer.addDocument(d1);
     writer.addDocument(d2);
     IndexReader reader = writer.getReader();
-    writer.shutdown();
+    writer.close();
 
     IndexSearcher searcher = newSearcher(reader);
     searcher.setSimilarity(new SimpleSimilarity());

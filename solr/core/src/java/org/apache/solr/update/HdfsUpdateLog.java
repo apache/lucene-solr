@@ -201,7 +201,7 @@ public class HdfsUpdateLog extends UpdateLog {
     
     // Record first two logs (oldest first) at startup for potential tlog
     // recovery.
-    // It's possible that at abnormal shutdown both "tlog" and "prevTlog" were
+    // It's possible that at abnormal close both "tlog" and "prevTlog" were
     // uncapped.
     for (TransactionLog ll : logs) {
       newestLogsOnStartup.addFirst(ll);

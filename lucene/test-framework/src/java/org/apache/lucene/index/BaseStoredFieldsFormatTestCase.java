@@ -170,7 +170,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
         w.forceMerge(1);
       }
     }
-    w.shutdown();
+    w.close();
     dir.close();
   }
   
@@ -205,7 +205,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     assertEquals(f.stringValue(), "1 2 3");
     assertFalse(it.hasNext());
     r.close();
-    w.shutdown();
+    w.close();
     d.close();
   }
   
@@ -226,7 +226,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     assertEquals(17, f.binaryValue().length);
     doc.add(f);
     w.addDocument(doc);
-    w.shutdown();
+    w.close();
 
     IndexReader ir = DirectoryReader.open(dir);
     StoredDocument doc2 = ir.document(0);
@@ -293,7 +293,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
       w.addDocument(doc);
     }
     final DirectoryReader r = w.getReader();
-    w.shutdown();
+    w.close();
     
     assertEquals(numDocs, r.numDocs());
 
@@ -321,7 +321,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     doc.add(new StringField("field2", "value", Field.Store.YES));
     w.addDocument(doc);
     IndexReader r = w.getReader();
-    w.shutdown();
+    w.close();
     assertFalse(r.document(0).getField("field").fieldType().indexed());
     assertTrue(r.document(0).getField("field2").fieldType().indexed());
     r.close();
@@ -377,7 +377,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
       }
     }
     reader.close();
-    iw.shutdown();
+    iw.close();
     dir.close();
   }
   
@@ -402,7 +402,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     }
     rd.close();
     
-    iw.shutdown();
+    iw.close();
     dir.close();
   }
   
@@ -475,7 +475,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
       throw ex.get();
     }
     
-    iw.shutdown();
+    iw.close();
     dir.close();
   }
   
@@ -530,7 +530,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
       }
       iw.w.addDocument(doc);
       if (random().nextBoolean() && (i % (data.length / 10) == 0)) {
-        iw.w.shutdown();
+        iw.w.close();
         IndexWriterConfig iwConfNew = newIndexWriterConfig(new MockAnalyzer(random()));
         // test merging against a non-compressing codec
         if (iwConf.getCodec() == otherCodec) {
@@ -578,7 +578,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     iw.commit();
     iw.forceMerge(1);
     
-    iw.shutdown();
+    iw.close();
     dir.close();
   }
   
@@ -647,7 +647,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
       }
     }
     rd.close();
-    iw.shutdown();
+    iw.close();
     dir.close();
   }
 

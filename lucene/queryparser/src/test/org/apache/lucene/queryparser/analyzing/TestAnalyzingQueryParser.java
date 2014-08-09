@@ -18,7 +18,6 @@ package org.apache.lucene.queryparser.analyzing;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -281,7 +280,7 @@ public class TestAnalyzingQueryParser extends LuceneTestCase {
     Field field = new Field(FIELD, content, fieldType);
     doc.add(field);
     writer.addDocument(doc);
-    writer.shutdown();
+    writer.close();
     DirectoryReader ir = DirectoryReader.open(ramDir);
     IndexSearcher is = new IndexSearcher(ir);
       

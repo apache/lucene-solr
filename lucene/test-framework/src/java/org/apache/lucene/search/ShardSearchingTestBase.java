@@ -451,7 +451,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
       // TODO: set warmer
       MockAnalyzer analyzer = new MockAnalyzer(random());
       analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
-      IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+      IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
       iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
       if (VERBOSE) {
         iwc.setInfoStream(new PrintStreamInfoStream(System.out));
@@ -537,7 +537,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
       }
       searchers.close();
       mgr.close();
-      writer.shutdown();
+      writer.close();
       dir.close();
     }
   }

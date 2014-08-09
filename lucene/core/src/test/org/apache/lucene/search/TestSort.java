@@ -64,7 +64,7 @@ public class TestSort extends LuceneTestCase {
     doc.add(newStringField("value", "bar", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.STRING));
@@ -92,7 +92,7 @@ public class TestSort extends LuceneTestCase {
     doc.add(newStringField("value", "foo", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.STRING, true));
@@ -120,7 +120,7 @@ public class TestSort extends LuceneTestCase {
     doc.add(newStringField("value", "bar", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.STRING_VAL));
@@ -148,7 +148,7 @@ public class TestSort extends LuceneTestCase {
     doc.add(newStringField("value", "foo", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.STRING_VAL, true));
@@ -176,7 +176,7 @@ public class TestSort extends LuceneTestCase {
     doc.add(newStringField("value", "bar", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.STRING_VAL));
@@ -204,7 +204,7 @@ public class TestSort extends LuceneTestCase {
     doc.add(newStringField("value", "foo", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.STRING_VAL, true));
@@ -236,7 +236,7 @@ public class TestSort extends LuceneTestCase {
     doc.add(newStringField("value", "4", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.INT));
@@ -269,7 +269,7 @@ public class TestSort extends LuceneTestCase {
     doc.add(newStringField("value", "4", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.INT, true));
@@ -300,7 +300,7 @@ public class TestSort extends LuceneTestCase {
     doc.add(newStringField("value", "4", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.INT));
@@ -331,7 +331,7 @@ public class TestSort extends LuceneTestCase {
     doc.add(newStringField("value", "4", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     SortField sortField = new SortField("value", SortField.Type.INT);
@@ -366,7 +366,7 @@ public class TestSort extends LuceneTestCase {
     doc.add(newStringField("value", "4", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.LONG));
@@ -399,7 +399,7 @@ public class TestSort extends LuceneTestCase {
     doc.add(newStringField("value", "4", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.LONG, true));
@@ -430,7 +430,7 @@ public class TestSort extends LuceneTestCase {
     doc.add(newStringField("value", "4", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.LONG));
@@ -461,7 +461,7 @@ public class TestSort extends LuceneTestCase {
     doc.add(newStringField("value", "4", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     SortField sortField = new SortField("value", SortField.Type.LONG);
@@ -496,7 +496,7 @@ public class TestSort extends LuceneTestCase {
     doc.add(newStringField("value", "4.2", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.FLOAT));
@@ -529,7 +529,7 @@ public class TestSort extends LuceneTestCase {
     doc.add(newStringField("value", "4.2", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.FLOAT, true));
@@ -560,7 +560,7 @@ public class TestSort extends LuceneTestCase {
     doc.add(newStringField("value", "4.2", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.FLOAT));
@@ -591,7 +591,7 @@ public class TestSort extends LuceneTestCase {
     doc.add(newStringField("value", "4.2", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     SortField sortField = new SortField("value", SortField.Type.FLOAT);
@@ -630,7 +630,7 @@ public class TestSort extends LuceneTestCase {
     doc.add(newStringField("value", "4.2333333333332", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
@@ -661,7 +661,7 @@ public class TestSort extends LuceneTestCase {
     writer.addDocument(doc);
     doc = new Document();
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
@@ -697,7 +697,7 @@ public class TestSort extends LuceneTestCase {
     doc.add(newStringField("value", "4.2333333333332", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE, true));
@@ -733,7 +733,7 @@ public class TestSort extends LuceneTestCase {
     doc.add(newStringField("value", "4.2333333333332", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
@@ -769,7 +769,7 @@ public class TestSort extends LuceneTestCase {
     doc.add(newStringField("value", "4.2333333333332", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
     SortField sortField = new SortField("value", SortField.Type.DOUBLE);

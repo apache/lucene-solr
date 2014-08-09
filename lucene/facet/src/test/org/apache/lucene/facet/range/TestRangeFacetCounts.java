@@ -88,7 +88,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
     w.addDocument(doc);
 
     IndexReader r = w.getReader();
-    w.shutdown();
+    w.close();
 
     FacetsCollector fc = new FacetsCollector();
     IndexSearcher s = newSearcher(r);
@@ -152,7 +152,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
     w.addDocument(doc);
 
     IndexReader r = w.getReader();
-    w.shutdown();
+    w.close();
 
     FacetsCollector fc = new FacetsCollector();
     IndexSearcher s = newSearcher(r);
@@ -188,7 +188,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
     w.addDocument(doc);
 
     IndexReader r = w.getReader();
-    w.shutdown();
+    w.close();
 
     FacetsCollector fc = new FacetsCollector();
     IndexSearcher s = newSearcher(r);
@@ -306,7 +306,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
     assertEquals("dim=dim path=[] value=11 childCount=2\n  b (8)\n  a (3)\n", dsr.facets.getTopChildren(10, "dim").toString());
     assertEquals("dim=field path=[] value=21 childCount=5\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (0)\n",
                  dsr.facets.getTopChildren(10, "field").toString());
-    w.shutdown();
+    w.close();
     IOUtils.close(tw, tr, td, r, d);
   }
 
@@ -336,7 +336,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
                                          
     assertEquals("dim=field path=[] value=21 childCount=5\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (0)\n",
                  facets.getTopChildren(10, "field").toString());
-    w.shutdown();
+    w.close();
     IOUtils.close(r, d);
   }
 
@@ -367,7 +367,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
     
     assertEquals("dim=field path=[] value=21 childCount=5\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (0)\n",
                  facets.getTopChildren(10, "field").toString());
-    w.shutdown();
+    w.close();
     IOUtils.close(r, d);
   }
 
@@ -515,7 +515,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
       }
     }
 
-    w.shutdown();
+    w.close();
     IOUtils.close(r, dir);
   }
 
@@ -674,7 +674,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
       }
     }
 
-    w.shutdown();
+    w.close();
     IOUtils.close(r, dir);
   }
 
@@ -818,7 +818,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
       }
     }
 
-    w.shutdown();
+    w.close();
     IOUtils.close(r, dir);
   }
 
@@ -856,7 +856,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
     assertEquals("dim=field path=[] value=16 childCount=5\n  less than 10 (8)\n  less than or equal to 10 (8)\n  over 90 (8)\n  90 or above (8)\n  over 1000 (0)\n",
                  facets.getTopChildren(10, "field").toString());
 
-    w.shutdown();
+    w.close();
     IOUtils.close(r, d);
   }
 
@@ -970,7 +970,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
     assertEquals("dim=field path=[] value=3 childCount=6\n  < 1 (0)\n  < 2 (1)\n  < 5 (3)\n  < 10 (3)\n  < 20 (3)\n  < 50 (3)\n",
                  dsr.facets.getTopChildren(10, "field").toString());
 
-    writer.shutdown();
+    writer.close();
     IOUtils.close(r, dir);
   }
 }

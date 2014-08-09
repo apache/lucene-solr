@@ -203,7 +203,7 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
       System.out.println("TEST: now stop");
     }
 
-    w.shutdown();
+    w.close();
     IOUtils.close(mgr, tw, taxoDir, dir);
   }
   
@@ -256,7 +256,7 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
       System.out.println("TEST: now stop");
     }
 
-    w.shutdown();
+    w.close();
     IOUtils.close(mgr, tw, taxoDir, indexDir);
   }
   
@@ -282,7 +282,7 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
       // expected
     }
 
-    w.shutdown();
+    w.close();
     IOUtils.close(mgr, tw, taxoDir, dir);
   }
   
@@ -321,7 +321,7 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
       mgr.release(pair);
     }
 
-    w.shutdown();
+    w.close();
     IOUtils.close(mgr, tw, taxoDir, indexDir);
   }
 

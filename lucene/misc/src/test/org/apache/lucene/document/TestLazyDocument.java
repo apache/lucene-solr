@@ -71,7 +71,7 @@ public class TestLazyDocument extends LuceneTestCase {
         writer.addDocument(d);
       }
     } finally {
-      writer.shutdown();
+      writer.close();
     }
   }
 

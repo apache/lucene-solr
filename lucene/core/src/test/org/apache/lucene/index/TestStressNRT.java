@@ -390,7 +390,7 @@ public class TestStressNRT extends LuceneTestCase {
       thread.join();
     }
 
-    writer.shutdown();
+    writer.close();
     if (VERBOSE) {
       System.out.println("TEST: close reader=" + reader);
     }

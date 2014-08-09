@@ -82,7 +82,7 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     hits = is.search(new MatchAllDocsQuery(), null, 1000).scoreDocs;
     assertEquals(2, hits.length);
 
-    iw.shutdown();
+    iw.close();
     ir.close();
     dir.close();
   }

@@ -92,7 +92,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     TopDocs hits = searcher.search(q, 1);
     assertEquals(1, hits.totalHits);
 
-    writer.shutdown();
+    writer.close();
     IOUtils.close(searcher.getIndexReader(), dir);
   }
 
@@ -135,7 +135,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     }
 
     r.close();
-    writer.shutdown();
+    writer.close();
     searcher.getIndexReader().close();
     dir.close();
   }
@@ -174,7 +174,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
 
     // NRT open
     IndexSearcher searcher = newSearcher(writer.getReader());
-    writer.shutdown();
+    writer.close();
 
     // Per-top-reader state:
     SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader());
@@ -219,7 +219,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
 
     // NRT open
     IndexSearcher searcher = newSearcher(writer.getReader());
-    writer.shutdown();
+    writer.close();
 
     // Per-top-reader state:
     SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader());
@@ -266,7 +266,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     // Ask for top 10 labels for any dims that have counts:
     assertEquals("dim=a path=[] value=2 childCount=2\n  foo1 (1)\n  foo2 (1)\n", facets.getTopChildren(10, "a").toString());
 
-    writer.shutdown();
+    writer.close();
     IOUtils.close(searcher.getIndexReader(), dir);
   }
 
@@ -355,7 +355,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
       assertEquals(expected, actual);
     }
 
-    w.shutdown();
+    w.close();
     IOUtils.close(searcher.getIndexReader(), indexDir, taxoDir);
   }
 }

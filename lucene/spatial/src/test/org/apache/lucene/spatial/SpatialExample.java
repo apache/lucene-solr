@@ -103,7 +103,7 @@ public class SpatialExample extends LuceneTestCase {
   }
 
   private void indexPoints() throws Exception {
-    IndexWriterConfig iwConfig = new IndexWriterConfig(TEST_VERSION_CURRENT,null);
+    IndexWriterConfig iwConfig = new IndexWriterConfig(null);
     IndexWriter indexWriter = new IndexWriter(directory, iwConfig);
 
     //Spatial4j is x-y order for arguments
@@ -117,7 +117,7 @@ public class SpatialExample extends LuceneTestCase {
     indexWriter.addDocument(newSampleDocument(
         20, ctx.makePoint(0.1,0.1), ctx.makePoint(0, 0)));
 
-    indexWriter.shutdown();
+    indexWriter.close();
   }
 
   private Document newSampleDocument(int id, Shape... shapes) {

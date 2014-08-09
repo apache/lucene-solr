@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.Set;
 
 import org.apache.lucene.analysis.*;
@@ -248,14 +247,14 @@ public class TestTermRangeQuery extends LuceneTestCase {
     for (int i = 0; i < values.length; i++) {
       insertDoc(writer, values[i]);
     }
-    writer.shutdown();
+    writer.close();
   }
 
   // shouldnt create an analyzer for every doc?
   private void addDoc(String content) throws IOException {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)).setOpenMode(OpenMode.APPEND));
     insertDoc(writer, content);
-    writer.shutdown();
+    writer.close();
   }
 
   private void insertDoc(IndexWriter writer, String content) throws IOException {

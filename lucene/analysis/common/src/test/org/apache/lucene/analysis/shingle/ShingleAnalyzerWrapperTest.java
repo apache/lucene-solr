@@ -58,7 +58,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
     super.setUp();
     analyzer = new ShingleAnalyzerWrapper(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false), 2);
     directory = newDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(analyzer));
 
     Document doc;
     doc = new Document();
@@ -73,7 +73,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
     doc.add(new TextField("content", "a sentence which contains no test", Field.Store.YES));
     writer.addDocument(doc);
 
-    writer.shutdown();
+    writer.close();
 
     reader = DirectoryReader.open(directory);
     searcher = newSearcher(reader);

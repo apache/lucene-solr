@@ -53,7 +53,7 @@ public class TestRAMDirectory extends BaseDirectoryTestCase {
     
     Directory dir = newFSDirectory(path);
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE));
+        new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE));
     // add some documents
     Document doc = null;
     for (int i = 0; i < docsToAdd; i++) {
@@ -62,7 +62,7 @@ public class TestRAMDirectory extends BaseDirectoryTestCase {
       writer.addDocument(doc);
     }
     assertEquals(docsToAdd, writer.maxDoc());
-    writer.shutdown();
+    writer.close();
     dir.close();
 
     return path;
@@ -124,7 +124,7 @@ public class TestRAMDirectory extends BaseDirectoryTestCase {
     dir.close();
     
     final IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
+        new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
     writer.forceMerge(1);
     
     assertEquals(ramDir.sizeInBytes(), ramDir.getRecomputedSizeInBytes());
@@ -155,6 +155,6 @@ public class TestRAMDirectory extends BaseDirectoryTestCase {
     writer.forceMerge(1);
     assertEquals(ramDir.sizeInBytes(), ramDir.getRecomputedSizeInBytes());
     
-    writer.shutdown();
+    writer.close();
   }
 }

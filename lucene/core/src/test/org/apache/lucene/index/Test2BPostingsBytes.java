@@ -30,7 +30,6 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
 import org.apache.lucene.util.LuceneTestCase.Monster;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
@@ -54,7 +53,7 @@ public class Test2BPostingsBytes extends LuceneTestCase {
     }
     
     IndexWriter w = new IndexWriter(dir,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+        new IndexWriterConfig(new MockAnalyzer(random()))
         .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
         .setRAMBufferSizeMB(256.0)
         .setMergeScheduler(new ConcurrentMergeScheduler())
@@ -85,7 +84,7 @@ public class Test2BPostingsBytes extends LuceneTestCase {
       w.addDocument(doc);
     }
     w.forceMerge(1);
-    w.shutdown();
+    w.close();
     
     DirectoryReader oneThousand = DirectoryReader.open(dir);
     IndexReader subReaders[] = new IndexReader[1000];
@@ -96,10 +95,10 @@ public class Test2BPostingsBytes extends LuceneTestCase {
       ((MockDirectoryWrapper)dir2).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }
     IndexWriter w2 = new IndexWriter(dir2,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+        new IndexWriterConfig(null));
     w2.addIndexes(mr);
     w2.forceMerge(1);
-    w2.shutdown();
+    w2.close();
     oneThousand.close();
     
     DirectoryReader oneMillion = DirectoryReader.open(dir2);
@@ -111,10 +110,10 @@ public class Test2BPostingsBytes extends LuceneTestCase {
       ((MockDirectoryWrapper)dir3).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }
     IndexWriter w3 = new IndexWriter(dir3,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+        new IndexWriterConfig(null));
     w3.addIndexes(mr);
     w3.forceMerge(1);
-    w3.shutdown();
+    w3.close();
     oneMillion.close();
     
     dir.close();

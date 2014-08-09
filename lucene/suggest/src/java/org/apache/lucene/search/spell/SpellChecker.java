@@ -27,13 +27,11 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.Terms;
@@ -48,7 +46,6 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
-import org.apache.lucene.util.Version;
 
 /**
  * <p>
@@ -171,9 +168,8 @@ public class SpellChecker implements java.io.Closeable {
       ensureOpen();
       if (!DirectoryReader.indexExists(spellIndexDir)) {
           IndexWriter writer = new IndexWriter(spellIndexDir,
-            new IndexWriterConfig(Version.LUCENE_CURRENT,
-                null));
-          writer.shutdown();
+            new IndexWriterConfig(null));
+          writer.close();
       }
       swapSearcher(spellIndexDir);
     }
@@ -456,11 +452,9 @@ public class SpellChecker implements java.io.Closeable {
     synchronized (modifyCurrentIndexLock) {
       ensureOpen();
       final Directory dir = this.spellIndex;
-      final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-          Version.LUCENE_CURRENT,
-          null)
+      final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(null)
           .setOpenMode(OpenMode.CREATE));
-      writer.shutdown();
+      writer.close();
       swapSearcher(dir);
     }
   }
@@ -542,7 +536,7 @@ public class SpellChecker implements java.io.Closeable {
         writer.forceMerge(1);
       }
       // close writer
-      writer.shutdown();
+      writer.close();
       // TODO: this isn't that great, maybe in the future SpellChecker should take
       // IWC in its ctor / keep its writer open?
       

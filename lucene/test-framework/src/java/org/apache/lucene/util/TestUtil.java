@@ -922,7 +922,7 @@ public final class TestUtil {
         ex.awaitTermination(1, TimeUnit.SECONDS);
       } catch (InterruptedException e) {
         // Just report it on the syserr.
-        System.err.println("Could not properly shutdown executor service.");
+        System.err.println("Could not properly close executor service.");
         e.printStackTrace(System.err);
       }
     }

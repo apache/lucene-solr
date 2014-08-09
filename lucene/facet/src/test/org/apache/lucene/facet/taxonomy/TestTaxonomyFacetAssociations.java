@@ -24,12 +24,6 @@ import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.Facets;
 import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsConfig;
-import org.apache.lucene.facet.taxonomy.FloatAssociationFacetField;
-import org.apache.lucene.facet.taxonomy.IntAssociationFacetField;
-import org.apache.lucene.facet.taxonomy.TaxonomyFacetSumFloatAssociations;
-import org.apache.lucene.facet.taxonomy.TaxonomyFacetSumIntAssociations;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.IndexReader;
@@ -86,7 +80,7 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
     
     taxoWriter.close();
     reader = writer.getReader();
-    writer.shutdown();
+    writer.close();
     taxoReader = new DirectoryTaxonomyReader(taxoDir);
   }
   
@@ -182,7 +176,7 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
     } catch (IllegalArgumentException exc) {
       // expected
     }
-    writer.shutdown();
+    writer.close();
     IOUtils.close(taxoWriter, dir, taxoDir);
   }
 
@@ -203,7 +197,7 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
     } catch (IllegalArgumentException exc) {
       // expected
     }
-    writer.shutdown();
+    writer.close();
     IOUtils.close(taxoWriter, dir, taxoDir);
   }
 
@@ -224,7 +218,7 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
     } catch (IllegalArgumentException exc) {
       // expected
     }
-    writer.shutdown();
+    writer.close();
     IOUtils.close(taxoWriter, dir, taxoDir);
   }
   

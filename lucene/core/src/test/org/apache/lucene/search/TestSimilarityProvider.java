@@ -60,7 +60,7 @@ public class TestSimilarityProvider extends LuceneTestCase {
     field2.setStringValue("jumps over lazy brown dog");
     iw.addDocument(doc);
     reader = iw.getReader();
-    iw.shutdown();
+    iw.close();
     searcher = newSearcher(reader);
     searcher.setSimilarity(sim);
   }

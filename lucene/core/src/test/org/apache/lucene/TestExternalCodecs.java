@@ -130,7 +130,7 @@ public class TestExternalCodecs extends LuceneTestCase {
     }
     r.close();
 
-    w.shutdown();
+    w.close();
 
     dir.close();
   }

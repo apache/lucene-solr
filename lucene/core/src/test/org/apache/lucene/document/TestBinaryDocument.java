@@ -3,7 +3,6 @@ package org.apache.lucene.document;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.store.Directory;
@@ -72,7 +71,7 @@ public class TestBinaryDocument extends LuceneTestCase {
     String stringFldStoredTest = docFromReader.get("stringStored");
     assertTrue(stringFldStoredTest.equals(binaryValStored));
     
-    writer.shutdown();    
+    writer.close();
     reader.close();
     dir.close();
   }
@@ -101,7 +100,7 @@ public class TestBinaryDocument extends LuceneTestCase {
     assertTrue(binaryFldCompressedTest.equals(binaryValCompressed));
     assertTrue(CompressionTools.decompressString(docFromReader.getBinaryValue("stringCompressed")).equals(binaryValCompressed));
 
-    writer.shutdown();
+    writer.close();
     reader.close();
     dir.close();
   }

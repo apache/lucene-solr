@@ -29,9 +29,7 @@ import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
-import org.apache.lucene.util.TestUtil;
 
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
@@ -50,7 +48,7 @@ public class Test2BPostings extends LuceneTestCase {
       ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }
 
-    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()))
         .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
         .setRAMBufferSizeMB(256.0)
         .setMergeScheduler(new ConcurrentMergeScheduler())
@@ -80,7 +78,7 @@ public class Test2BPostings extends LuceneTestCase {
       }
     }
     w.forceMerge(1);
-    w.shutdown();
+    w.close();
     dir.close();
   }
   

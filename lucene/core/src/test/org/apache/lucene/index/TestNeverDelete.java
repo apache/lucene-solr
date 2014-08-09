@@ -104,7 +104,7 @@ public class TestNeverDelete extends LuceneTestCase {
     for(Thread t : indexThreads) {
       t.join();
     }
-    w.shutdown();
+    w.close();
     d.close();
 
     TestUtil.rm(tmpDir);

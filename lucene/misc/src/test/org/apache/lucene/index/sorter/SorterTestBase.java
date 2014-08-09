@@ -225,7 +225,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
         writer.deleteDocuments(new Term(ID_FIELD, id.toString()));
       }
     }
-    writer.shutdown();
+    writer.close();
   }
   
   @BeforeClass

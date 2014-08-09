@@ -66,7 +66,7 @@ public class TestFieldCacheReopen extends LuceneTestCase {
     r2.close();
     assertTrue(ints == ints2);
   
-    writer.shutdown();
+    writer.close();
     dir.close();
   }
 }

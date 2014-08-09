@@ -90,9 +90,9 @@ public class TestDuelingCodecs extends LuceneTestCase {
     createRandomIndex(numdocs, rightWriter, seed);
 
     leftReader = maybeWrapReader(leftWriter.getReader());
-    leftWriter.shutdown();
+    leftWriter.close();
     rightReader = maybeWrapReader(rightWriter.getReader());
-    rightWriter.shutdown();
+    rightWriter.close();
     
     // check that our readers are valid
     TestUtil.checkReader(leftReader);

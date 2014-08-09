@@ -46,7 +46,7 @@ public class TestSortedSetFieldSource extends LuceneTestCase {
     doc.add(newStringField("id", "1", Field.Store.YES));
     writer.addDocument(doc);
     writer.forceMerge(1);
-    writer.shutdown();
+    writer.close();
 
     DirectoryReader ir = DirectoryReader.open(dir);
     AtomicReader ar = getOnlySegmentReader(ir);

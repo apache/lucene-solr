@@ -37,7 +37,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 
 public class TestLockFactory extends LuceneTestCase {
 
@@ -52,7 +51,7 @@ public class TestLockFactory extends LuceneTestCase {
         // Lock prefix should have been set:
         assertTrue("lock prefix was not set by the RAMDirectory", lf.lockPrefixSet);
 
-        IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+        IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
 
         // add 100 documents (so that commit lock is used)
         for (int i = 0; i < 100; i++) {
@@ -71,7 +70,7 @@ public class TestLockFactory extends LuceneTestCase {
                        lock.lockAttempts > 0);
         }
         
-        writer.shutdown();
+        writer.close();
     }
 
     // Verify: we can use the NoLockFactory with RAMDirectory w/ no
@@ -84,21 +83,21 @@ public class TestLockFactory extends LuceneTestCase {
         assertTrue("RAMDirectory.setLockFactory did not take",
                    NoLockFactory.class.isInstance(dir.getLockFactory()));
 
-        IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+        IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
         writer.commit(); // required so the second open succeed 
         // Create a 2nd IndexWriter.  This is normally not allowed but it should run through since we're not
         // using any locks:
         IndexWriter writer2 = null;
         try {
-            writer2 = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
+            writer2 = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
         } catch (Exception e) {
             e.printStackTrace(System.out);
             fail("Should not have hit an IOException with no locking");
         }
 
-        writer.shutdown();
+        writer.close();
         if (writer2 != null) {
-            writer2.shutdown();
+            writer2.close();
         }
     }
 
@@ -110,19 +109,19 @@ public class TestLockFactory extends LuceneTestCase {
         assertTrue("RAMDirectory did not use correct LockFactory: got " + dir.getLockFactory(),
                    SingleInstanceLockFactory.class.isInstance(dir.getLockFactory()));
 
-        IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+        IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
 
         // Create a 2nd IndexWriter.  This should fail:
         IndexWriter writer2 = null;
         try {
-            writer2 = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
+            writer2 = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
             fail("Should have hit an IOException with two IndexWriters on default SingleInstanceLockFactory");
         } catch (IOException e) {
         }
 
-        writer.shutdown();
+        writer.close();
         if (writer2 != null) {
-            writer2.shutdown();
+            writer2.close();
         }
     }
     
@@ -153,9 +152,9 @@ public class TestLockFactory extends LuceneTestCase {
         Directory dir = newFSDirectory(indexDir, lockFactory);
 
         // First create a 1 doc index:
-        IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE));
+        IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE));
         addDoc(w);
-        w.shutdown();
+        w.close();
 
         WriterThread writer = new WriterThread(100, dir);
         SearcherThread searcher = new SearcherThread(100, dir);
@@ -270,7 +269,7 @@ public class TestLockFactory extends LuceneTestCase {
             IndexWriter writer = null;
             for(int i=0;i<this.numIteration;i++) {
                 try {
-                    writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
+                    writer = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
                 } catch (IOException e) {
                     if (e.toString().indexOf(" timed out:") == -1) {
                         hitException = true;
@@ -300,7 +299,7 @@ public class TestLockFactory extends LuceneTestCase {
                         break;
                     }
                     try {
-                        writer.shutdown();
+                        writer.close();
                     } catch (IOException e) {
                         hitException = true;
                         System.out.println("Stress Test Index Writer: close hit unexpected exception: " + e.toString());

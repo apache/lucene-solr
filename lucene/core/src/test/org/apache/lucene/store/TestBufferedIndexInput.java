@@ -232,7 +232,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
       try {
         IndexWriter writer = new IndexWriter(
             dir,
-            new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
+            new IndexWriterConfig(new MockAnalyzer(random())).
                 setOpenMode(OpenMode.CREATE).
                 setMergePolicy(newLogMergePolicy(false))
         );
@@ -276,7 +276,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         hits = searcher.search(new TermQuery(aaa), null, 1000).scoreDocs;
         dir.tweakBufferSizes();
         assertEquals(35, hits.length);
-        writer.shutdown();
+        writer.close();
         reader.close();
       } finally {
         TestUtil.rm(indexDir);

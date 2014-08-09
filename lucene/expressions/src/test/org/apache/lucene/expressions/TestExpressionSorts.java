@@ -81,7 +81,7 @@ public class TestExpressionSorts extends LuceneTestCase {
       iw.addDocument(document);
     }
     reader = iw.getReader();
-    iw.shutdown();
+    iw.close();
     searcher = newSearcher(reader);
   }
 

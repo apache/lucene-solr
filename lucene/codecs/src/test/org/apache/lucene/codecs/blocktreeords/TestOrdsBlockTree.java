@@ -237,7 +237,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
 
   public void testFloorBlocks() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     for(int i=0;i<128;i++) {
       Document doc = new Document();
@@ -275,7 +275,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
 
   public void testNonRootFloorBlocks() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     List<String> terms = new ArrayList<>();
     for(int i=0;i<36;i++) {
@@ -321,7 +321,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
 
   public void testSeveralNonRootBlocks() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     List<String> terms = new ArrayList<>();
     for(int i=0;i<30;i++) {

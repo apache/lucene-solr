@@ -73,7 +73,6 @@ import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.RecyclingByteBlockAllocator;
 import org.apache.lucene.util.TestUtil;
 
@@ -149,14 +148,14 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     Directory ramdir = new RAMDirectory();
     Analyzer analyzer = randomAnalyzer();
     IndexWriter writer = new IndexWriter(ramdir,
-                                         new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer).setCodec(TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat())));
+                                         new IndexWriterConfig(analyzer).setCodec(TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat())));
     Document doc = new Document();
     Field field1 = newTextField("foo", fooField.toString(), Field.Store.NO);
     Field field2 = newTextField("term", termField.toString(), Field.Store.NO);
     doc.add(field1);
     doc.add(field2);
     writer.addDocument(doc);
-    writer.shutdown();
+    writer.close();
     
     memory.addField("foo", fooField.toString(), analyzer);
     memory.addField("term", termField.toString(), analyzer);
@@ -430,7 +429,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       Directory dir = newDirectory();
       MockAnalyzer mockAnalyzer = new MockAnalyzer(random());
       mockAnalyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
-      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), TEST_VERSION_CURRENT, mockAnalyzer));
+      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), mockAnalyzer));
       Document nextDoc = lineFileDocs.nextDoc();
       Document doc = new Document();
       for (Field field : nextDoc.getFields()) {
@@ -443,7 +442,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       }
       
       writer.addDocument(doc);
-      writer.shutdown();
+      writer.close();
       for (IndexableField field : doc.indexableFields()) {
           memory.addField(field.name(), ((Field)field).stringValue(), mockAnalyzer);  
       }
@@ -486,10 +485,10 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     doc.add(new Field(field_name, "foo bar foo bar foo", type));
 
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), TEST_VERSION_CURRENT, mockAnalyzer));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), mockAnalyzer));
     writer.updateDocument(new Term("id", "1"), doc);
     writer.commit();
-    writer.shutdown();
+    writer.close();
     DirectoryReader reader = DirectoryReader.open(dir);
 
     //Index document in Memory index

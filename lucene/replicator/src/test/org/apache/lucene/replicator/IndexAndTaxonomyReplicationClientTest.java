@@ -209,7 +209,7 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
   @After
   @Override
   public void tearDown() throws Exception {
-    publishIndexWriter.shutdown();
+    publishIndexWriter.close();
     IOUtils.close(client, callback, publishTaxoWriter, replicator, publishIndexDir, publishTaxoDir,
             handlerIndexDir, handlerTaxoDir);
     super.tearDown();

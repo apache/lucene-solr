@@ -36,7 +36,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.*;
 
 public class TestTermsEnum2 extends LuceneTestCase {
@@ -72,7 +71,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
     
     reader = writer.getReader();
     searcher = newSearcher(reader);
-    writer.shutdown();
+    writer.close();
   }
   
   @Override

@@ -64,7 +64,7 @@ public class TestOmitNorms extends LuceneTestCase {
     // force merge
     writer.forceMerge(1);
     // flush
-    writer.shutdown();
+    writer.close();
 
     SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(ram));
     FieldInfos fi = reader.getFieldInfos();
@@ -118,7 +118,7 @@ public class TestOmitNorms extends LuceneTestCase {
     // force merge
     writer.forceMerge(1);
     // flush
-    writer.shutdown();
+    writer.close();
 
     SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(ram));
     FieldInfos fi = reader.getFieldInfos();
@@ -166,7 +166,7 @@ public class TestOmitNorms extends LuceneTestCase {
     writer.forceMerge(1);
 
     // flush
-    writer.shutdown();
+    writer.close();
 
     SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(ram));
     FieldInfos fi = reader.getFieldInfos();
@@ -213,7 +213,7 @@ public class TestOmitNorms extends LuceneTestCase {
     // force merge
     writer.forceMerge(1);
     // flush
-    writer.shutdown();
+    writer.close();
 
     assertNoNrm(ram);
     ram.close();
@@ -308,7 +308,7 @@ public class TestOmitNorms extends LuceneTestCase {
     }
     ir1.close();
     ir2.close();
-    riw.shutdown();
+    riw.close();
     dir.close();
     return norms1;
   }

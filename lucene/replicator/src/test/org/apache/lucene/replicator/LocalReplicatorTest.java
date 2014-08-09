@@ -59,7 +59,7 @@ public class LocalReplicatorTest extends ReplicatorTestCase {
   @After
   @Override
   public void tearDown() throws Exception {
-    sourceWriter.shutdown();
+    sourceWriter.close();
     IOUtils.close(replicator, sourceDir);
     super.tearDown();
   }

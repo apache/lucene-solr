@@ -76,7 +76,7 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     assertEquals(0, de.nextDoc());
     assertEquals(0, de.nextPosition());
     assertEquals(new BytesRef("test"), de.getPayload());
-    writer.shutdown();
+    writer.close();
     reader.close();
     dir.close();
   }
@@ -118,7 +118,7 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     assertEquals(0, de.nextDoc());
     assertEquals(3, de.nextPosition());
     assertEquals(new BytesRef("test"), de.getPayload());
-    writer.shutdown();
+    writer.close();
     reader.close();
     dir.close();
   }
@@ -139,7 +139,7 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     } catch (IllegalArgumentException expected) {
       // expected
     }
-    writer.shutdown();
+    writer.close();
     dir.close();
   }
 

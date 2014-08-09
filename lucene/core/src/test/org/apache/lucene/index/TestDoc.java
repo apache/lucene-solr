@@ -134,7 +134,7 @@ public class TestDoc extends LuceneTestCase {
 
       SegmentCommitInfo si2 = indexDoc(writer, "test2.txt");
       printSegment(out, si2);
-      writer.shutdown();
+      writer.close();
 
       SegmentCommitInfo siMerge = merge(directory, si1, si2, "_merge", false);
       printSegment(out, siMerge);
@@ -176,7 +176,7 @@ public class TestDoc extends LuceneTestCase {
 
       si2 = indexDoc(writer, "test2.txt");
       printSegment(out, si2);
-      writer.shutdown();
+      writer.close();
 
       siMerge = merge(directory, si1, si2, "_merge", true);
       printSegment(out, siMerge);

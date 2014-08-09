@@ -56,7 +56,7 @@ public class MultiCategoryListsFacetsExample {
 
   /** Build the example index. */
   private void index() throws IOException {
-    IndexWriter indexWriter = new IndexWriter(indexDir, new IndexWriterConfig(FacetExamples.EXAMPLES_VER, 
+    IndexWriter indexWriter = new IndexWriter(indexDir, new IndexWriterConfig(
         new WhitespaceAnalyzer()));
 
     // Writes facet ords to a separate directory from the main index
@@ -87,7 +87,7 @@ public class MultiCategoryListsFacetsExample {
     doc.add(new FacetField("Publish Date", "1999", "5", "5"));
     indexWriter.addDocument(config.build(taxoWriter, doc));
     
-    indexWriter.shutdown();
+    indexWriter.close();
     taxoWriter.close();
   }
 

@@ -51,7 +51,7 @@ public class TestUninvertingReader extends LuceneTestCase {
     iw.addDocument(doc);
     
     iw.forceMerge(1);
-    iw.shutdown();
+    iw.close();
     
     DirectoryReader ir = UninvertingReader.wrap(DirectoryReader.open(dir), 
                          Collections.singletonMap("foo", Type.SORTED_SET_INTEGER));
@@ -92,7 +92,7 @@ public class TestUninvertingReader extends LuceneTestCase {
     iw.addDocument(doc);
     
     iw.forceMerge(1);
-    iw.shutdown();
+    iw.close();
     
     DirectoryReader ir = UninvertingReader.wrap(DirectoryReader.open(dir), 
                          Collections.singletonMap("foo", Type.SORTED_SET_FLOAT));
@@ -134,7 +134,7 @@ public class TestUninvertingReader extends LuceneTestCase {
     iw.addDocument(doc);
     
     iw.forceMerge(1);
-    iw.shutdown();
+    iw.close();
     
     DirectoryReader ir = UninvertingReader.wrap(DirectoryReader.open(dir), 
         Collections.singletonMap("foo", Type.SORTED_SET_LONG));
@@ -175,7 +175,7 @@ public class TestUninvertingReader extends LuceneTestCase {
     iw.addDocument(doc);
     
     iw.forceMerge(1);
-    iw.shutdown();
+    iw.close();
     
     DirectoryReader ir = UninvertingReader.wrap(DirectoryReader.open(dir), 
         Collections.singletonMap("foo", Type.SORTED_SET_DOUBLE));

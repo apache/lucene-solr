@@ -103,7 +103,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
       writer.addDocument(doc);
 
     ((MyMergeScheduler) writer.getConfig().getMergeScheduler()).sync();
-    writer.shutdown();
+    writer.close();
     
     assertTrue(mergeThreadCreated);
     assertTrue(mergeCalled);
@@ -134,7 +134,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     // compiles. But ensure that it can be used as well, e.g., no other hidden
     // dependencies or something. Therefore, don't use any random API !
     Directory dir = new RAMDirectory();
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setMergeScheduler(new ReportingMergeScheduler());
     IndexWriter writer = new IndexWriter(dir, conf);
     writer.addDocument(new Document());
@@ -142,7 +142,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     writer.addDocument(new Document());
     writer.commit(); // trigger flush
     writer.forceMerge(1);
-    writer.shutdown();
+    writer.close();
     dir.close();
   }
   

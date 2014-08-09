@@ -42,7 +42,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
       checkInvariants(writer);
     }
 
-    writer.shutdown();
+    writer.close();
     dir.close();
   }
 
@@ -64,7 +64,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     }
     assertTrue(noOverMerge);
 
-    writer.shutdown();
+    writer.close();
     dir.close();
   }
 
@@ -81,7 +81,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
 
     for (int i = 0; i < 100; i++) {
       addDoc(writer);
-      writer.shutdown();
+      writer.close();
 
       mp = new LogDocMergePolicy();
       mp.setMergeFactor(10);
@@ -93,7 +93,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
       checkInvariants(writer);
     }
 
-    writer.shutdown();
+    writer.close();
     dir.close();
   }
 
@@ -123,7 +123,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     }
     checkInvariants(writer);
 
-    writer.shutdown();
+    writer.close();
     dir.close();
   }
 
@@ -143,7 +143,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
         addDoc(writer);
         checkInvariants(writer);
       }
-      writer.shutdown();
+      writer.close();
 
       writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                       .setOpenMode(OpenMode.APPEND)
@@ -152,7 +152,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
                                       .setMergeScheduler(new SerialMergeScheduler()));
     }
 
-    writer.shutdown();
+    writer.close();
     LogDocMergePolicy ldmp = new LogDocMergePolicy();
     ldmp.setMergeFactor(10);
     writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
@@ -176,7 +176,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     writer.commit();
     checkInvariants(writer);
 
-    writer.shutdown();
+    writer.close();
     dir.close();
   }
 
@@ -194,7 +194,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
       addDoc(writer);
       checkInvariants(writer);
     }
-    writer.shutdown();
+    writer.close();
 
     // delete some docs without merging
     writer = new IndexWriter(
@@ -203,7 +203,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
           .setMergePolicy(NoMergePolicy.INSTANCE)
     );
     writer.deleteDocuments(new Term("content", "aaa"));
-    writer.shutdown();
+    writer.close();
 
     ldmp = new LogDocMergePolicy();
     ldmp.setMergeFactor(5);
@@ -223,7 +223,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     checkInvariants(writer);
     assertEquals(10, writer.maxDoc());
 
-    writer.shutdown();
+    writer.close();
     dir.close();
   }
 

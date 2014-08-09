@@ -33,7 +33,6 @@ import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NullInfoStream;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.Version;
 
 /** Silly class that randomizes the indexing experience.  EG
  *  it may swap in a different merge policy/scheduler; may
@@ -69,19 +68,14 @@ public class RandomIndexWriter implements Closeable {
     return new IndexWriter(dir, conf);
   }
 
-  /** create a RandomIndexWriter with a random config: Uses TEST_VERSION_CURRENT and MockAnalyzer */
+  /** create a RandomIndexWriter with a random config: Uses MockAnalyzer */
   public RandomIndexWriter(Random r, Directory dir) throws IOException {
-    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, LuceneTestCase.TEST_VERSION_CURRENT, new MockAnalyzer(r)));
-  }
-  
-  /** create a RandomIndexWriter with a random config: Uses TEST_VERSION_CURRENT */
-  public RandomIndexWriter(Random r, Directory dir, Analyzer a) throws IOException {
-    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, LuceneTestCase.TEST_VERSION_CURRENT, a));
+    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, new MockAnalyzer(r)));
   }
   
   /** create a RandomIndexWriter with a random config */
-  public RandomIndexWriter(Random r, Directory dir, Version v, Analyzer a) throws IOException {
-    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, v, a));
+  public RandomIndexWriter(Random r, Directory dir, Analyzer a) throws IOException {
+    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, a));
   }
   
   /** create a RandomIndexWriter with the provided config */
@@ -364,24 +358,12 @@ public class RandomIndexWriter implements Closeable {
     // forceMerge since presumably they might open a reader on the dir.
     if (getReaderCalled == false && r.nextInt(8) == 2) {
       doRandomForceMerge();
-      // index may have changed, must commit the changes, or otherwise they are discarded by the call to close()
-      w.commit();
+      if (w.getConfig().getCommitOnClose() == false) {
+        // index may have changed, must commit the changes, or otherwise they are discarded by the call to close()
+        w.commit();
+      }
     }
     w.close();
-  }
-
-  /**
-   * Shuts down this writer
-   * @see IndexWriter#shutdown()
-   */
-  public void shutdown() throws IOException {
-    LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
-    // if someone isn't using getReader() API, we want to be sure to
-    // forceMerge since presumably they might open a reader on the dir.
-    if (getReaderCalled == false && r.nextInt(8) == 2) {
-      doRandomForceMerge();
-    }
-    w.shutdown();
   }
 
   /**

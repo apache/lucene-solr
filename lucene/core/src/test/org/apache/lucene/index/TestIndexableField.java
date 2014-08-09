@@ -283,7 +283,7 @@ public class TestIndexableField extends LuceneTestCase {
     }
 
     final IndexReader r = w.getReader();
-    w.shutdown();
+    w.close();
 
     final IndexSearcher s = newSearcher(r);
     int counter = 0;

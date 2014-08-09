@@ -66,7 +66,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     for(;i<45;i++) {
       addDoc(writer, i);
     }
-    writer.shutdown();
+    writer.close();
 
     // Delete one doc so we get a .del file:
     writer = new IndexWriter(
@@ -77,7 +77,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     );
     Term searchTerm = new Term("id", "7");
     writer.deleteDocuments(searchTerm);
-    writer.shutdown();
+    writer.close();
 
     // Now, artificially create an extra .del file & extra
     // .s0 file:
@@ -127,7 +127,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     // files and nothing more:
     writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                     .setOpenMode(OpenMode.APPEND));
-    writer.shutdown();
+    writer.close();
 
     String[] files2 = dir.listAll();
     dir.close();

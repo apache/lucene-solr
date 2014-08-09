@@ -64,7 +64,6 @@ import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util.Version;
 
 /**
   An <code>IndexWriter</code> creates and maintains an index.
@@ -891,48 +890,22 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
   }
 
-  /** Gracefully shuts down this {@code IndexWriter} instance,
-   *  by writing any changes, waiting for any running
-   *  merges, committing, and closing.  If you don't want to
-   *  wait for merges, use {@link #shutdown(boolean)} instead.
-   *
-   *  <p>If you called prepareCommit but failed to call
-   *  commit, this method will throw {@code
-   *  IllegalStateException} and the {@code IndexWriter}
-   *  will not be closed.
-   *
-   *  <p>If this method throws any other
-   *  exception, the {@code IndexWriter} will be closed, but
-   *  changes may have been lost.
-   *
-   *  <p><b>NOTE</b>: You must ensure no
-   *  other threads are still making changes at the same
-   *  time that this method is invoked.  */
-  public void shutdown() throws IOException {
-    shutdown(true);
-  }
-
-  /** Gracefully shut down this {@code IndexWriter}
-   *  instance, with control over whether to wait for
-   *  merges.  See {@link #shutdown()}. */
-  public void shutdown(boolean waitForMerges) throws IOException {
+  /**
+   * Implementation for {@link #close()} when {@link IndexWriterConfig#commitOnClose} is true.
+   */
+  private void shutdown() throws IOException {
     if (pendingCommit != null) {
-      throw new IllegalStateException("cannot shutdown: prepareCommit was already called with no corresponding call to commit");
+      throw new IllegalStateException("cannot close: prepareCommit was already called with no corresponding call to commit");
     }
     if (infoStream.isEnabled("IW")) {
-      infoStream.message("IW", "now flush at shutdown");
+      infoStream.message("IW", "now flush at close");
     }
     boolean success = false;
     try {
-      flush(waitForMerges, true);
-      finishMerges(waitForMerges);
+      flush(true, true);
+      finishMerges(true);
       commit();
-      // TODO: we could just call rollback, but ... it's nice
-      // to catch IW bugs where after waitForMerges/commit we
-      // still have running merges / uncommitted changes, or
-      // tests that illegally leave threads indexing and then
-      // try to use shutdown:
-      close();
+      rollback(); // ie close, since we just committed
       success = true;
     } finally {
       if (success == false) {
@@ -945,58 +918,33 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
     }
   }
-  
+
   /**
    * Closes all open resources and releases the write lock.
-   * If there are running merges or uncommitted
-   * changes:
+   *
+   * If {@link IndexWriterConfig#commitOnClose} is <code>true</code>,
+   * this will attempt to gracefully shut down by writing any
+   * changes, waiting for any running merges, committing, and closing.
+   * In this case, note that:
    * <ul>
-   *   <li> If config.matchVersion >= LUCENE_5_0 then the
-   *        changes are silently discarded.
-   *   <li> Otherwise, a RuntimeException is thrown to
-   *        indicate what was lost, but the IndexWriter is
-   *        still closed.
+   *   <li>If you called prepareCommit but failed to call commit, this
+   *       method will throw {@code IllegalStateException} and the {@code IndexWriter}
+   *       will not be closed.</li>
+   *   <li>If this method throws any other exception, the {@code IndexWriter}
+   *       will be closed, but changes may have been lost.</li>
    * </ul>
    *
-   * Use {@link #shutdown} if you want to flush, commit, and
-   * wait for merges, before closing.
-   * 
-   * @throws IOException if there is a low-level IO error
-   *   (the IndexWriter will still be closed)
-   * @throws RuntimeException if config.matchVersion <
-   *   LUCENE_5_0 and there were pending changes that were
-   *   lost (the IndexWriter will still be closed)
+   * <p><b>NOTE</b>: You must ensure no other threads are still making
+   * changes at the same time that this method is invoked.</p>
    */
   @Override
   public void close() throws IOException {
-
-    // If there are uncommitted changes, or still running
-    // merges, we will in fact close, but we'll throw an
-    // exception notifying the caller that they lost
-    // changes, if IWC.matchVersion is < 5.0:
-    boolean lostChanges = false;
-
-    // Only check for lost changes if the version earlier than 5.0:
-    if (config.getMatchVersion().onOrAfter(Version.LUCENE_5_0) == false) {
-      lostChanges = hasUncommittedChanges();
-      if (lostChanges == false) {
-        synchronized(this) {
-          if (pendingMerges.isEmpty() == false) {
-            lostChanges = true;
-          }
-          if (runningMerges.isEmpty() == false) {
-            lostChanges = true;
-          }
-        }
+    if (config.getCommitOnClose()) {
+      if (closed == false) {
+        shutdown();
       }
-    }
-
-    // As long as there are no pending changes and no
-    // running merges, we just rollback to close:
-    rollback();
-
-    if (lostChanges) {
-      throw new RuntimeException("this writer is closed, but some pending changes or running merges were discarded; use shutdown to save pending changes and finish merges before closing");
+    } else {
+      rollback();
     }
   }
 

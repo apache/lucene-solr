@@ -50,7 +50,7 @@ public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
   @Test
   public void testNoCommit() throws Exception {
     Directory indexDir = newDirectory();
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     IndexWriter indexWriter = new IndexWriter(indexDir, conf);
     
@@ -62,7 +62,7 @@ public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
     } catch (IllegalStateException e) {
       // expected
     } finally {
-      indexWriter.shutdown();
+      indexWriter.close();
       IOUtils.close(taxoWriter, taxoDir, indexDir);
     }
   }
@@ -70,7 +70,7 @@ public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
   @Test
   public void testRevisionRelease() throws Exception {
     Directory indexDir = newDirectory();
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     IndexWriter indexWriter = new IndexWriter(indexDir, conf);
     
@@ -93,7 +93,7 @@ public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
       assertNotNull(new IndexAndTaxonomyRevision(indexWriter, taxoWriter));
       rev1.release(); // this release should trigger the delete of segments_1
       assertFalse(slowFileExists(indexDir, IndexFileNames.SEGMENTS + "_1"));
-      indexWriter.shutdown();
+      indexWriter.close();
     } finally {
       IOUtils.close(indexWriter, taxoWriter, taxoDir, indexDir);
     }
@@ -102,7 +102,7 @@ public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
   @Test
   public void testSegmentsFileLast() throws Exception {
     Directory indexDir = newDirectory();
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     IndexWriter indexWriter = new IndexWriter(indexDir, conf);
     
@@ -119,7 +119,7 @@ public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
         String lastFile = files.get(files.size() - 1).fileName;
         assertTrue(lastFile.startsWith(IndexFileNames.SEGMENTS) && !lastFile.equals(IndexFileNames.SEGMENTS_GEN));
       }
-      indexWriter.shutdown();
+      indexWriter.close();
     } finally {
       IOUtils.close(indexWriter, taxoWriter, taxoDir, indexDir);
     }
@@ -128,7 +128,7 @@ public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
   @Test
   public void testOpen() throws Exception {
     Directory indexDir = newDirectory();
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     IndexWriter indexWriter = new IndexWriter(indexDir, conf);
     
@@ -165,7 +165,7 @@ public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
           IOUtils.close(src, in);
         }
       }
-      indexWriter.shutdown();
+      indexWriter.close();
     } finally {
       IOUtils.close(indexWriter, taxoWriter, taxoDir, indexDir);
     }

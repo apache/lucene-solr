@@ -81,7 +81,7 @@ public abstract class SpatialTestCase extends LuceneTestCase {
   }
 
   protected IndexWriterConfig newIndexWriterConfig(Random random) {
-    final IndexWriterConfig indexWriterConfig = LuceneTestCase.newIndexWriterConfig(random, LuceneTestCase.TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    final IndexWriterConfig indexWriterConfig = LuceneTestCase.newIndexWriterConfig(random, new MockAnalyzer(random));
     //TODO can we randomly choose a doc-values supported format?
     if (needsDocValues())
       indexWriterConfig.setCodec( TestUtil.alwaysDocValuesFormat(new Lucene49DocValuesFormat()));;
@@ -95,7 +95,7 @@ public abstract class SpatialTestCase extends LuceneTestCase {
   @Override
   @After
   public void tearDown() throws Exception {
-    indexWriter.shutdown();
+    indexWriter.close();
     IOUtils.close(indexReader,directory);
     super.tearDown();
   }

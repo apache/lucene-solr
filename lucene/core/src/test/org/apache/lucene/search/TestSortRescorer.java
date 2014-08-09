@@ -63,7 +63,7 @@ public class TestSortRescorer extends LuceneTestCase {
     
     reader = iw.getReader();
     searcher = new IndexSearcher(reader);
-    iw.shutdown();
+    iw.close();
   }
   
   @Override
@@ -129,7 +129,7 @@ public class TestSortRescorer extends LuceneTestCase {
       w.addDocument(doc);
     }
     final IndexReader r = w.getReader();
-    w.shutdown();
+    w.close();
 
     IndexSearcher s = newSearcher(r);
     int numHits = TestUtil.nextInt(random(), 1, numDocs);

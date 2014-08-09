@@ -27,7 +27,6 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StoredField;
@@ -119,7 +118,7 @@ public class TestSortRandom extends LuceneTestCase {
     }
 
     final IndexReader r = writer.getReader();
-    writer.shutdown();
+    writer.close();
     if (VERBOSE) {
       System.out.println("  reader=" + r);
     }

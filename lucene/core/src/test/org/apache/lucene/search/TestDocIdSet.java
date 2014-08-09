@@ -115,7 +115,7 @@ public class TestDocIdSet extends LuceneTestCase {
     doc.add(newStringField("c", "val", Field.Store.NO));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     // First verify the document is searchable.
     IndexSearcher searcher = newSearcher(reader);
@@ -141,7 +141,7 @@ public class TestDocIdSet extends LuceneTestCase {
     doc.add(newStringField("c", "val", Field.Store.NO));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     // First verify the document is searchable.
     IndexSearcher searcher = newSearcher(reader);

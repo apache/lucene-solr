@@ -122,7 +122,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
       }
 
       reader = w.getReader();
-      w.shutdown();
+      w.close();
     }
 
     // NOTE: sometimes reader has just one segment, which is

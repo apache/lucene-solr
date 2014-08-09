@@ -35,7 +35,7 @@ public class TestNGramPhraseQuery extends LuceneTestCase {
   public static void beforeClass() throws Exception {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
-    writer.shutdown();
+    writer.close();
     reader = DirectoryReader.open(directory);
   }
 

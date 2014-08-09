@@ -67,7 +67,7 @@ public class TestICUCollationDocValuesField extends LuceneTestCase {
     iw.addDocument(doc);
     
     IndexReader ir = iw.getReader();
-    iw.shutdown();
+    iw.close();
     
     IndexSearcher is = newSearcher(ir);
     
@@ -102,7 +102,7 @@ public class TestICUCollationDocValuesField extends LuceneTestCase {
     }
     
     IndexReader ir = iw.getReader();
-    iw.shutdown();
+    iw.close();
     IndexSearcher is = newSearcher(ir);
     
     int numChecks = atLeast(100);

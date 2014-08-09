@@ -872,12 +872,12 @@ public abstract class LuceneTestCase extends Assert {
 
   /** create a new index writer config with random defaults */
   public static IndexWriterConfig newIndexWriterConfig(Analyzer a) {
-    return newIndexWriterConfig(random(), TEST_VERSION_CURRENT, a);
+    return newIndexWriterConfig(random(), a);
   }
   
   /** create a new index writer config with random defaults using the specified random */
-  public static IndexWriterConfig newIndexWriterConfig(Random r, Version v, Analyzer a) {
-    IndexWriterConfig c = new IndexWriterConfig(v, a);
+  public static IndexWriterConfig newIndexWriterConfig(Random r, Analyzer a) {
+    IndexWriterConfig c = new IndexWriterConfig(a);
     c.setSimilarity(classEnvRule.similarity);
     if (VERBOSE) {
       // Even though TestRuleSetupAndRestoreClassEnv calls

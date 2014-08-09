@@ -65,7 +65,7 @@ public class TestCustomNorms extends LuceneTestCase {
       }
     }
     writer.commit();
-    writer.shutdown();
+    writer.close();
     AtomicReader open = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
     NumericDocValues norms = open.getNormValues(floatTestField);
     assertNotNull(norms);

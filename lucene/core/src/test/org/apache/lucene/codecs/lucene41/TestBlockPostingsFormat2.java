@@ -52,14 +52,14 @@ public class TestBlockPostingsFormat2 extends LuceneTestCase {
   
   @Override
   public void tearDown() throws Exception {
-    iw.shutdown();
+    iw.close();
     TestUtil.checkIndex(dir); // for some extra coverage, checkIndex before we forceMerge
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat()));
     iwc.setOpenMode(OpenMode.APPEND);
     IndexWriter iw = new IndexWriter(dir, iwc);
     iw.forceMerge(1);
-    iw.shutdown();
+    iw.close();
     dir.close(); // just force a checkindex for now
     super.tearDown();
   }

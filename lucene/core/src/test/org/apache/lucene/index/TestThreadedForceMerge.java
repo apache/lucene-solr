@@ -124,7 +124,7 @@ public class TestThreadedForceMerge extends LuceneTestCase {
       assertEquals("index=" + writer.segString() + " numDocs=" + writer.numDocs() + " maxDoc=" + writer.maxDoc() + " config=" + writer.getConfig(), expectedDocCount, writer.numDocs());
       assertEquals("index=" + writer.segString() + " numDocs=" + writer.numDocs() + " maxDoc=" + writer.maxDoc() + " config=" + writer.getConfig(), expectedDocCount, writer.maxDoc());
 
-      writer.shutdown();
+      writer.close();
       writer = new IndexWriter(directory, newIndexWriterConfig(ANALYZER)
           .setOpenMode(OpenMode.APPEND)
           .setMaxBufferedDocs(2));
@@ -134,7 +134,7 @@ public class TestThreadedForceMerge extends LuceneTestCase {
       assertEquals(expectedDocCount, reader.numDocs());
       reader.close();
     }
-    writer.shutdown();
+    writer.close();
   }
 
   /*

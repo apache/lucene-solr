@@ -27,7 +27,6 @@ import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
@@ -53,7 +52,7 @@ public class TestTermsEnum extends LuceneTestCase {
       w.addDocument(docs.nextDoc());
     }
     final IndexReader r = w.getReader();
-    w.shutdown();
+    w.close();
 
     final List<BytesRef> terms = new ArrayList<>();
     final TermsEnum termsEnum = MultiFields.getTerms(r, "body").iterator(null);
@@ -226,7 +225,7 @@ public class TestTermsEnum extends LuceneTestCase {
     }
 
     final IndexReader r = w.getReader();
-    w.shutdown();
+    w.close();
 
     final NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
 
@@ -368,7 +367,7 @@ public class TestTermsEnum extends LuceneTestCase {
       close();
     }
     r = w.getReader();
-    w.shutdown();
+    w.close();
     return r;
   }
 
@@ -507,7 +506,7 @@ public class TestTermsEnum extends LuceneTestCase {
     w.deleteDocuments(new Term("field", "one"));
     w.forceMerge(1);
     IndexReader r = w.getReader();
-    w.shutdown();
+    w.close();
     assertEquals(1, r.numDocs());
     assertEquals(1, r.maxDoc());
     Terms terms = MultiFields.getTerms(r, "field");
@@ -735,7 +734,7 @@ public class TestTermsEnum extends LuceneTestCase {
 
     w.forceMerge(1);
     DirectoryReader r = w.getReader();
-    w.shutdown();
+    w.close();
     AtomicReader sub = getOnlySegmentReader(r);
     Terms terms = sub.fields().terms("field");
     Automaton automaton = new RegExp(".*", RegExp.NONE).toAutomaton();
@@ -789,7 +788,7 @@ public class TestTermsEnum extends LuceneTestCase {
 
     w.forceMerge(1);
     DirectoryReader r = w.getReader();
-    w.shutdown();
+    w.close();
     AtomicReader sub = getOnlySegmentReader(r);
     Terms terms = sub.fields().terms("field");
 
@@ -843,7 +842,7 @@ public class TestTermsEnum extends LuceneTestCase {
 
     w.forceMerge(1);
     DirectoryReader r = w.getReader();
-    w.shutdown();
+    w.close();
     AtomicReader sub = getOnlySegmentReader(r);
     Terms terms = sub.fields().terms("field");
 
@@ -993,7 +992,7 @@ public class TestTermsEnum extends LuceneTestCase {
         assertFalse("term '" + termsList.get(i) + "' shouldn't exist but does", te.seekExact(termsList.get(i)));
       }
       r.close();
-      w.shutdown();
+      w.close();
     }
     dir.close();
   }

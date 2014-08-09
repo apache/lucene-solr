@@ -25,7 +25,6 @@ import java.util.Map;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
@@ -39,14 +38,12 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TestUtil;
 
 /**
@@ -64,13 +61,12 @@ public abstract class CollationTestBase extends LuceneTestCase {
                                             BytesRef firstEnd, BytesRef secondBeg,
                                             BytesRef secondEnd) throws Exception {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, analyzer));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzer));
     Document doc = new Document();
     doc.add(new TextField("content", "\u0633\u0627\u0628", Field.Store.YES));
     doc.add(new StringField("body", "body", Field.Store.YES));
     writer.addDocument(doc);
-    writer.shutdown();
+    writer.close();
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = new IndexSearcher(reader);
     Query query = new TermQuery(new Term("body","body"));
@@ -96,8 +92,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
                                             BytesRef firstEnd, BytesRef secondBeg,
                                             BytesRef secondEnd) throws Exception {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, analyzer));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzer));
     Document doc = new Document();
 
     // Unicode order would include U+0633 in [ U+062F - U+0698 ], but Farsi
@@ -106,7 +101,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
     // Collator (or an Arabic one for the case when Farsi is not supported).
     doc.add(new TextField("content", "\u0633\u0627\u0628", Field.Store.YES));
     writer.addDocument(doc);
-    writer.shutdown();
+    writer.close();
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = new IndexSearcher(reader);
 
@@ -125,13 +120,12 @@ public abstract class CollationTestBase extends LuceneTestCase {
       BytesRef firstEnd, BytesRef secondBeg, BytesRef secondEnd) throws Exception {
 
     Directory farsiIndex = newDirectory();
-    IndexWriter writer = new IndexWriter(farsiIndex, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, analyzer));
+    IndexWriter writer = new IndexWriter(farsiIndex, new IndexWriterConfig(analyzer));
     Document doc = new Document();
     doc.add(new TextField("content", "\u0633\u0627\u0628", Field.Store.YES));
     doc.add(new StringField("body", "body", Field.Store.YES));
     writer.addDocument(doc);
-    writer.shutdown();
+    writer.close();
 
     IndexReader reader = DirectoryReader.open(farsiIndex);
     IndexSearcher search = newSearcher(reader);

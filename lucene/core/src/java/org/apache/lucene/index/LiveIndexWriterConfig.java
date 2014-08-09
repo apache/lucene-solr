@@ -25,7 +25,6 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.InfoStream;
-import org.apache.lucene.util.Version;
 
 /**
  * Holds all the configuration used by {@link IndexWriter} with few setters for
@@ -92,19 +91,18 @@ public class LiveIndexWriterConfig {
    *  segment, after which the segment is forced to flush. */
   protected volatile int perThreadHardLimitMB;
 
-  /** {@link Version} that {@link IndexWriter} should emulate. */
-  protected final Version matchVersion;
-
   /** True if segment flushes should use compound file format */
   protected volatile boolean useCompoundFile = IndexWriterConfig.DEFAULT_USE_COMPOUND_FILE_SYSTEM;
   
   /** True if merging should check integrity of segments before merge */
   protected volatile boolean checkIntegrityAtMerge = IndexWriterConfig.DEFAULT_CHECK_INTEGRITY_AT_MERGE;
 
+  /** True if calls to {@link IndexWriter#close()} should first do a commit. */
+  protected boolean commitOnClose = IndexWriterConfig.DEFAULT_COMMIT_ON_CLOSE;
+
   // used by IndexWriterConfig
-  LiveIndexWriterConfig(Analyzer analyzer, Version matchVersion) {
+  LiveIndexWriterConfig(Analyzer analyzer) {
     this.analyzer = analyzer;
-    this.matchVersion = matchVersion;
     ramBufferSizeMB = IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB;
     maxBufferedDocs = IndexWriterConfig.DEFAULT_MAX_BUFFERED_DOCS;
     maxBufferedDeleteTerms = IndexWriterConfig.DEFAULT_MAX_BUFFERED_DELETE_TERMS;
@@ -465,11 +463,17 @@ public class LiveIndexWriterConfig {
   public boolean getCheckIntegrityAtMerge() {
     return checkIntegrityAtMerge;
   }
-  
+
+  /**
+   * Returns <code>true</code> if {@link IndexWriter#close()} should first commit before closing.
+   */
+  public boolean getCommitOnClose() {
+    return commitOnClose;
+  }
+
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("matchVersion=").append(matchVersion).append("\n");
     sb.append("analyzer=").append(analyzer == null ? "null" : analyzer.getClass().getName()).append("\n");
     sb.append("ramBufferSizeMB=").append(getRAMBufferSizeMB()).append("\n");
     sb.append("maxBufferedDocs=").append(getMaxBufferedDocs()).append("\n");
@@ -491,12 +495,7 @@ public class LiveIndexWriterConfig {
     sb.append("perThreadHardLimitMB=").append(getRAMPerThreadHardLimitMB()).append("\n");
     sb.append("useCompoundFile=").append(getUseCompoundFile()).append("\n");
     sb.append("checkIntegrityAtMerge=").append(getCheckIntegrityAtMerge()).append("\n");
+    sb.append("commitOnClose=").append(getCommitOnClose()).append("\n");
     return sb.toString();
-  }
-
-  /** Returns the {@code matchVersion} that was provided to
-   *  the constructor. */
-  public Version getMatchVersion() {
-    return matchVersion;
   }
 }

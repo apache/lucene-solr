@@ -28,7 +28,6 @@ import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.PrintStreamInfoStream;
 import org.apache.lucene.util.SetOnce;
 import org.apache.lucene.util.SetOnce.AlreadySetException;
-import org.apache.lucene.util.Version;
 
 /**
  * Holds all the configuration that is used to create an {@link IndexWriter}.
@@ -115,6 +114,9 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
    *  merging segments (set to <code>false</code>). You can set this
    *  to <code>true</code> for additional safety. */
   public final static boolean DEFAULT_CHECK_INTEGRITY_AT_MERGE = false;
+
+  /** Default value for whether calls to {@link IndexWriter#close()} include a commit. */
+  public final static boolean DEFAULT_COMMIT_ON_CLOSE = true;
   
   /**
    * Sets the default (for any instance) maximum time to wait for a write lock
@@ -150,8 +152,7 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   }
   
   /**
-   * Creates a new config that with defaults that match the specified
-   * {@link Version} as well as the default {@link
+   * Creates a new config that with the default {@link
    * Analyzer}. By default, {@link TieredMergePolicy} is used
    * for merging;
    * Note that {@link TieredMergePolicy} is free to select
@@ -160,8 +161,8 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
    * should switch to {@link LogByteSizeMergePolicy} or
    * {@link LogDocMergePolicy}.
    */
-  public IndexWriterConfig(Version matchVersion, Analyzer analyzer) {
-    super(analyzer, matchVersion);
+  public IndexWriterConfig(Analyzer analyzer) {
+    super(analyzer);
   }
 
   /** Specifies {@link OpenMode} of the index.
@@ -518,6 +519,15 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   @Override
   public IndexWriterConfig setUseCompoundFile(boolean useCompoundFile) {
     return (IndexWriterConfig) super.setUseCompoundFile(useCompoundFile);
+  }
+
+  /**
+   * Sets if calls {@link IndexWriter#close()} should first commit
+   * before closing.  Use <code>true</code> to match behavior of Lucene 4.x.
+   */
+  public IndexWriterConfig setCommitOnClose(boolean commitOnClose) {
+    this.commitOnClose = commitOnClose;
+    return this;
   }
 
   @Override

@@ -145,8 +145,8 @@ public class TestSortingMergePolicy extends LuceneTestCase {
     
     iw1.forceMerge(1);
     iw2.forceMerge(1);
-    iw1.shutdown();
-    iw2.shutdown();
+    iw1.close();
+    iw2.close();
     reader = DirectoryReader.open(dir1);
     sortedReader = DirectoryReader.open(dir2);
   }

@@ -42,7 +42,7 @@ public class Test2BNumericDocValues extends LuceneTestCase {
     }
     
     IndexWriter w = new IndexWriter(dir,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+        new IndexWriterConfig(new MockAnalyzer(random()))
         .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
         .setRAMBufferSizeMB(256.0)
         .setMergeScheduler(new ConcurrentMergeScheduler())
@@ -63,7 +63,7 @@ public class Test2BNumericDocValues extends LuceneTestCase {
     }
     
     w.forceMerge(1);
-    w.shutdown();
+    w.close();
     
     System.out.println("verifying...");
     System.out.flush();

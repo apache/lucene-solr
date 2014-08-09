@@ -43,7 +43,7 @@ public class TestDocCount extends LuceneTestCase {
     ir = iw.getReader();
     verifyCount(ir);
     ir.close();
-    iw.shutdown();
+    iw.close();
     dir.close();
   }
   

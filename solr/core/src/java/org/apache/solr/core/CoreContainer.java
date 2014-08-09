@@ -320,7 +320,7 @@ public class CoreContainer {
     try {
       coreAdminHandler.shutdown();
     } catch (Exception e) {
-      log.warn("Error shutting down CoreAdminHandler. Continuing to shutdown CoreContainer.");
+      log.warn("Error shutting down CoreAdminHandler. Continuing to close CoreContainer.");
       e.printStackTrace();
     }
 
@@ -386,7 +386,7 @@ public class CoreContainer {
   protected void finalize() throws Throwable {
     try {
       if(!isShutDown){
-        log.error("CoreContainer was not shutdown prior to finalize(), indicates a bug -- POSSIBLE RESOURCE LEAK!!!  instance=" + System.identityHashCode(this));
+        log.error("CoreContainer was not close prior to finalize(), indicates a bug -- POSSIBLE RESOURCE LEAK!!!  instance=" + System.identityHashCode(this));
       }
     } finally {
       super.finalize();
@@ -420,7 +420,7 @@ public class CoreContainer {
 
     if (isShutDown) {
       core.close();
-      throw new IllegalStateException("This CoreContainer has been shutdown");
+      throw new IllegalStateException("This CoreContainer has been close");
     }
     if (cd.isTransient()) {
       old = solrCores.putTransientCore(cfg, name, core, loader);
@@ -473,7 +473,7 @@ public class CoreContainer {
   public SolrCore create(CoreDescriptor dcore, boolean publishState) {
 
     if (isShutDown) {
-      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Solr has shutdown.");
+      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Solr has close.");
     }
 
     try {

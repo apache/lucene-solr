@@ -18,7 +18,6 @@ package org.apache.lucene.queryparser.flexible.standard;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.text.DateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -1321,7 +1320,7 @@ public class TestQPHelper extends LuceneTestCase {
     assertTrue(q instanceof MultiPhraseQuery);
     assertEquals(1, s.search(q, 10).totalHits);
     r.close();
-    w.shutdown();
+    w.close();
     dir.close();
   }
 

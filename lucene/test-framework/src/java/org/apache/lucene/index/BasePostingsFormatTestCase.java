@@ -1430,7 +1430,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(termsEnum.term(), new BytesRef("something"));
     assertNull(termsEnum.next());
     ir.close();
-    iw.shutdown();
+    iw.close();
     dir.close();
   }
   
@@ -1455,7 +1455,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(termsEnum.term(), new BytesRef(""));
     assertNull(termsEnum.next());
     ir.close();
-    iw.shutdown();
+    iw.close();
     dir.close();
   }
   
@@ -1490,7 +1490,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
       }
     }
     ir.close();
-    iw.shutdown();
+    iw.close();
     dir.close();
   }
 
@@ -1702,7 +1702,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     }
 
     IndexReader r = w.getReader();
-    w.shutdown();
+    w.close();
 
     Terms terms = MultiFields.getTerms(r, "body");
     assertEquals(sumDocFreq.get(), terms.getSumDocFreq());

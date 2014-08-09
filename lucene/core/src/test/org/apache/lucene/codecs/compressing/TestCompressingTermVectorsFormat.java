@@ -69,7 +69,7 @@ public class TestCompressingTermVectorsFormat extends BaseTermVectorsFormatTestC
       // expected exception
     }
     ir.close();
-    iw.shutdown();
+    iw.close();
     dir.close();
   }
 }

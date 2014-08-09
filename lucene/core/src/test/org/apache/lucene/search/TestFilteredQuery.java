@@ -87,7 +87,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     writer.forceMerge(1);
 
     reader = writer.getReader();
-    writer.shutdown();
+    writer.close();
 
     searcher = newSearcher(reader);
 
@@ -415,7 +415,7 @@ public class TestFilteredQuery extends LuceneTestCase {
       writer.addDocument(doc);
     }
     IndexReader reader = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(reader);
     Query query = new FilteredQuery(new TermQuery(new Term("field", "0")),
@@ -499,7 +499,7 @@ public class TestFilteredQuery extends LuceneTestCase {
       writer.addDocument (doc);  
     }
     IndexReader reader = writer.getReader();
-    writer.shutdown();
+    writer.close();
     final boolean queryFirst = random().nextBoolean();
     IndexSearcher searcher = newSearcher(reader);
     Query query = new FilteredQuery(new TermQuery(new Term("field", "0")), new Filter() {

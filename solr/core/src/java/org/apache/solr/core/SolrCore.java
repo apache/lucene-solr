@@ -527,7 +527,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
         SolrIndexWriter writer = SolrIndexWriter.create("SolrCore.initIndex", indexDir, getDirectoryFactory(), true, 
                                                         getLatestSchema(), solrConfig.indexConfig, solrDelPolicy, codec);
-        writer.shutdown();
+        writer.close();
       }
 
  

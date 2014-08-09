@@ -17,7 +17,6 @@ package org.apache.lucene.search.spans;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -117,7 +116,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     doc.add(newTextField(PayloadHelper.FIELD, "one two three one four three", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
 
     checkSpans(MultiSpansWrapper.wrap(reader.getContext(), snq), 1,new int[]{2});
@@ -262,7 +261,7 @@ public class TestPayloadSpans extends LuceneTestCase {
 
     IndexReader reader = writer.getReader();
     IndexSearcher is = newSearcher(reader);
-    writer.shutdown();
+    writer.close();
 
     SpanTermQuery stq1 = new SpanTermQuery(new Term("content", "a"));
     SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));
@@ -298,7 +297,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     IndexSearcher is = newSearcher(reader);
-    writer.shutdown();
+    writer.close();
 
     SpanTermQuery stq1 = new SpanTermQuery(new Term("content", "a"));
     SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));
@@ -333,7 +332,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     IndexSearcher is = newSearcher(reader);
-    writer.shutdown();
+    writer.close();
 
     SpanTermQuery stq1 = new SpanTermQuery(new Term("content", "a"));
     SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));
@@ -374,7 +373,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     writer.addDocument(doc);
   
     IndexReader reader = writer.getReader();
-    writer.shutdown();
+    writer.close();
     IndexSearcher searcher = newSearcher(reader);
 
     PayloadSpanUtil psu = new PayloadSpanUtil(searcher.getTopReaderContext());
@@ -438,7 +437,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     }
 
     closeIndexReader = writer.getReader();
-    writer.shutdown();
+    writer.close();
 
     IndexSearcher searcher = newSearcher(closeIndexReader);
     return searcher;

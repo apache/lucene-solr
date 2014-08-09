@@ -34,20 +34,17 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -137,7 +134,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     IndexReader reader = w.getReader();
     IndexSearcher indexSearcher = newSearcher(reader);
 
-    w.shutdown();
+    w.close();
     int maxDoc = reader.maxDoc();
 
     Sort sortWithinGroup = new Sort(new SortField("id_1", SortField.Type.INT, true));
@@ -288,7 +285,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
       }
 
       final DirectoryReader r = w.getReader();
-      w.shutdown();
+      w.close();
 
       final NumericDocValues docIdToFieldId = MultiDocValues.getNumericValues(r, "id");
       final int[] fieldIdToDocID = new int[numDocs];

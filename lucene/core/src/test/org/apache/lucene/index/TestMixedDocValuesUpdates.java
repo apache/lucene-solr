@@ -149,7 +149,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
 //      System.out.println();
     }
     
-    writer.shutdown();
+    writer.close();
     IOUtils.close(reader, dir);
   }
   
@@ -257,7 +257,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     
     for (Thread t : threads) t.start();
     done.await();
-    writer.shutdown();
+    writer.close();
     
     DirectoryReader reader = DirectoryReader.open(dir);
     BytesRef scratch = new BytesRef();
@@ -322,7 +322,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       }
       reader.close();
     }
-    writer.shutdown();
+    writer.close();
     dir.close();
   }
 
@@ -376,7 +376,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
           new NumericDocValuesField("cf"+field, value*2));
     }
 
-    writer.shutdown();
+    writer.close();
     
     DirectoryReader reader = DirectoryReader.open(dir);
     for (AtomicReaderContext context : reader.leaves()) {

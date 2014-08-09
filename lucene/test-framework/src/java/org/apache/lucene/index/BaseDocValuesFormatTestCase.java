@@ -98,7 +98,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(newTextField("fieldname", text, Field.Store.YES));
     doc.add(new NumericDocValuesField("dv", 5));
     iwriter.addDocument(doc);
-    iwriter.shutdown();
+    iwriter.close();
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
@@ -130,7 +130,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(newTextField("fieldname", text, Field.Store.YES));
     doc.add(new FloatDocValuesField("dv", 5.7f));
     iwriter.addDocument(doc);
-    iwriter.shutdown();
+    iwriter.close();
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
@@ -163,7 +163,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(new NumericDocValuesField("dv1", 5));
     doc.add(new NumericDocValuesField("dv2", 17));
     iwriter.addDocument(doc);
-    iwriter.shutdown();
+    iwriter.close();
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
@@ -198,7 +198,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(new BinaryDocValuesField("dv1", new BytesRef(longTerm)));
     doc.add(new BinaryDocValuesField("dv2", new BytesRef(text)));
     iwriter.addDocument(doc);
-    iwriter.shutdown();
+    iwriter.close();
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
@@ -235,7 +235,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(new NumericDocValuesField("dv1", 5));
     doc.add(new BinaryDocValuesField("dv2", new BytesRef("hello world")));
     iwriter.addDocument(doc);
-    iwriter.shutdown();
+    iwriter.close();
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
@@ -272,7 +272,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(new NumericDocValuesField("dv2", 5));
     doc.add(new BinaryDocValuesField("dv3", new BytesRef("hello world")));
     iwriter.addDocument(doc);
-    iwriter.shutdown();
+    iwriter.close();
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
@@ -313,7 +313,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(new SortedDocValuesField("dv2", new BytesRef("hello hello")));
     doc.add(new NumericDocValuesField("dv3", 5));
     iwriter.addDocument(doc);
-    iwriter.shutdown();
+    iwriter.close();
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
@@ -358,7 +358,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(new NumericDocValuesField("dv", 2));
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
-    iwriter.shutdown();
+    iwriter.close();
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
@@ -388,7 +388,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(new NumericDocValuesField("dv", 99));
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
-    iwriter.shutdown();
+    iwriter.close();
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
@@ -423,7 +423,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(new NumericDocValuesField("dv", Long.MAX_VALUE));
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
-    iwriter.shutdown();
+    iwriter.close();
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
@@ -450,7 +450,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(new NumericDocValuesField("dv", 9062230939892376225L));
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
-    iwriter.shutdown();
+    iwriter.close();
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
@@ -475,7 +475,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(newTextField("fieldname", text, Field.Store.YES));
     doc.add(new BinaryDocValuesField("dv", new BytesRef("hello world")));
     iwriter.addDocument(doc);
-    iwriter.shutdown();
+    iwriter.close();
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
@@ -516,7 +516,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(new BinaryDocValuesField("dv", new BytesRef("hello 2")));
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
-    iwriter.shutdown();
+    iwriter.close();
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
@@ -551,7 +551,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(newTextField("fieldname", text, Field.Store.YES));
     doc.add(new SortedDocValuesField("dv", new BytesRef("hello world")));
     iwriter.addDocument(doc);
-    iwriter.shutdown();
+    iwriter.close();
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
@@ -590,7 +590,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(new SortedDocValuesField("dv", new BytesRef("hello world 2")));
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
-    iwriter.shutdown();
+    iwriter.close();
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
@@ -623,7 +623,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(new SortedDocValuesField("dv", new BytesRef("hello world 1")));
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
-    iwriter.shutdown();
+    iwriter.close();
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
@@ -659,7 +659,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(new SortedDocValuesField("dv", new BytesRef("hello world 2")));
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
-    iwriter.shutdown();
+    iwriter.close();
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
@@ -705,7 +705,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.forceMerge(1);
     
     DirectoryReader ireader = iwriter.getReader();
-    iwriter.shutdown();
+    iwriter.close();
     
     SortedDocValues dv = getOnlySegmentReader(ireader).getSortedDocValues("field");
     if (defaultCodecSupportsDocsWithField()) {
@@ -732,7 +732,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     Document doc = new Document();
     doc.add(new BinaryDocValuesField("dv", new BytesRef("hello\nworld\r1")));
     iwriter.addDocument(doc);
-    iwriter.shutdown();
+    iwriter.close();
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
@@ -757,7 +757,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.addDocument(doc);
     // 2nd doc missing the DV field
     iwriter.addDocument(new Document());
-    iwriter.shutdown();
+    iwriter.close();
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
@@ -795,7 +795,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.forceMerge(1);
     
     DirectoryReader ireader = iwriter.getReader();
-    iwriter.shutdown();
+    iwriter.close();
 
     SortedDocValues dv = getOnlySegmentReader(ireader).getSortedDocValues("field");
     assertEquals(3, dv.getValueCount());
@@ -859,7 +859,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(new SortedDocValuesField("dv", new BytesRef("")));
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
-    iwriter.shutdown();
+    iwriter.close();
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
@@ -888,7 +888,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(new BinaryDocValuesField("dv", new BytesRef("")));
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
-    iwriter.shutdown();
+    iwriter.close();
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
@@ -916,7 +916,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     random().nextBytes(bytes);
     doc.add(new BinaryDocValuesField("dv", b));
     iwriter.addDocument(doc);
-    iwriter.shutdown();
+    iwriter.close();
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
@@ -942,7 +942,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     random().nextBytes(bytes);
     doc.add(new SortedDocValuesField("dv", b));
     iwriter.addDocument(doc);
-    iwriter.shutdown();
+    iwriter.close();
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
@@ -964,7 +964,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     Document doc = new Document();
     doc.add(new BinaryDocValuesField("dv", new BytesRef("boo!")));
     iwriter.addDocument(doc);
-    iwriter.shutdown();
+    iwriter.close();
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
@@ -989,7 +989,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     Document doc = new Document();
     doc.add(new SortedDocValuesField("dv", new BytesRef("boo!")));
     iwriter.addDocument(doc);
-    iwriter.shutdown();
+    iwriter.close();
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
@@ -1022,7 +1022,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     writer.commit();
     writer.forceMerge(1, true);
 
-    writer.shutdown();
+    writer.close();
 
     DirectoryReader reader = DirectoryReader.open(dir);
     assertEquals(1, reader.leaves().size());
@@ -1129,7 +1129,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     }
 
     reader.close();
-    w.shutdown();
+    w.close();
     dir.close();
   }
 
@@ -1185,7 +1185,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     // 256 values
     writer.forceMerge(numDocs / 256);
 
-    writer.shutdown();
+    writer.close();
     
     // compare
     DirectoryReader ir = DirectoryReader.open(dir);
@@ -1243,7 +1243,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     // 256 values
     writer.forceMerge(numDocs / 256);
 
-    writer.shutdown();
+    writer.close();
     
     // compare
     DirectoryReader ir = DirectoryReader.open(dir);
@@ -1364,7 +1364,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       }
     }
     ir.close();
-    writer.shutdown();
+    writer.close();
     dir.close();
   }
   
@@ -1448,7 +1448,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       }
     }
     ir.close();
-    writer.shutdown();
+    writer.close();
     dir.close();
   }
   
@@ -1477,7 +1477,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.addDocument(doc);
     
     DirectoryReader ireader = iwriter.getReader();
-    iwriter.shutdown();
+    iwriter.close();
     
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
     
@@ -1503,7 +1503,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.addDocument(doc);
     
     DirectoryReader ireader = iwriter.getReader();
-    iwriter.shutdown();
+    iwriter.close();
     
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
     
@@ -1546,7 +1546,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.forceMerge(1);
     
     DirectoryReader ireader = iwriter.getReader();
-    iwriter.shutdown();
+    iwriter.close();
 
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
     assertEquals(2, dv.getValueCount());
@@ -1580,7 +1580,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.addDocument(doc);
     
     DirectoryReader ireader = iwriter.getReader();
-    iwriter.shutdown();
+    iwriter.close();
     
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
     
@@ -1610,7 +1610,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.addDocument(doc);
     
     DirectoryReader ireader = iwriter.getReader();
-    iwriter.shutdown();
+    iwriter.close();
     
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
     
@@ -1650,7 +1650,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.forceMerge(1);
     
     DirectoryReader ireader = iwriter.getReader();
-    iwriter.shutdown();
+    iwriter.close();
 
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
     assertEquals(3, dv.getValueCount());
@@ -1694,7 +1694,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
     DirectoryReader ireader = iwriter.getReader();
-    iwriter.shutdown();
+    iwriter.close();
     
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
     assertEquals(1, dv.getValueCount());
@@ -1728,7 +1728,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.forceMerge(1);
    
     DirectoryReader ireader = iwriter.getReader();
-    iwriter.shutdown();
+    iwriter.close();
     
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
     assertEquals(1, dv.getValueCount());
@@ -1761,7 +1761,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     
     iwriter.forceMerge(1);
     DirectoryReader ireader = iwriter.getReader();
-    iwriter.shutdown();
+    iwriter.close();
     
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
     assertEquals(1, dv.getValueCount());
@@ -1795,7 +1795,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.forceMerge(1);
     
     DirectoryReader ireader = iwriter.getReader();
-    iwriter.shutdown();
+    iwriter.close();
     
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
     assertEquals(1, dv.getValueCount());
@@ -1831,7 +1831,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.forceMerge(1);
     
     DirectoryReader ireader = iwriter.getReader();
-    iwriter.shutdown();
+    iwriter.close();
     
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
     assertEquals(0, dv.getValueCount());
@@ -1855,7 +1855,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.addDocument(doc);
     
     DirectoryReader ireader = iwriter.getReader();
-    iwriter.shutdown();
+    iwriter.close();
 
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
     assertEquals(3, dv.getValueCount());
@@ -1998,7 +1998,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       }
     }
     ir.close();
-    writer.shutdown();
+    writer.close();
     dir.close();
   }
   
@@ -2147,7 +2147,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(new StringField("id", "1", Field.Store.YES));
     iw.addDocument(doc);
     iw.forceMerge(1);
-    iw.shutdown();
+    iw.close();
     
     IndexReader ir = DirectoryReader.open(directory);
     assertEquals(1, ir.leaves().size());
@@ -2177,7 +2177,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(new StringField("id", "1", Field.Store.YES));
     iw.addDocument(doc);
     iw.forceMerge(1);
-    iw.shutdown();
+    iw.close();
     
     IndexReader ir = DirectoryReader.open(directory);
     assertEquals(1, ir.leaves().size());
@@ -2211,7 +2211,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(new NumericDocValuesField("dv1", 5));
     iw.addDocument(doc);
     iw.forceMerge(1);
-    iw.shutdown();
+    iw.close();
     
     IndexReader ir = DirectoryReader.open(directory);
     assertEquals(1, ir.leaves().size());
@@ -2242,7 +2242,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(new StringField("id", "1", Field.Store.YES));
     iw.addDocument(doc);
     iw.forceMerge(1);
-    iw.shutdown();
+    iw.close();
     
     IndexReader ir = DirectoryReader.open(directory);
     assertEquals(1, ir.leaves().size());
@@ -2274,7 +2274,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(new StringField("id", "1", Field.Store.YES));
     iw.addDocument(doc);
     iw.forceMerge(1);
-    iw.shutdown();
+    iw.close();
     
     IndexReader ir = DirectoryReader.open(directory);
     assertEquals(1, ir.leaves().size());
@@ -2310,7 +2310,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(new BinaryDocValuesField("dv1", new BytesRef("boo")));
     iw.addDocument(doc);
     iw.forceMerge(1);
-    iw.shutdown();
+    iw.close();
     
     IndexReader ir = DirectoryReader.open(directory);
     assertEquals(1, ir.leaves().size());
@@ -2374,7 +2374,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       int id = random().nextInt(numDocs);
       writer.deleteDocuments(new Term("id", Integer.toString(id)));
     }
-    writer.shutdown();
+    writer.close();
     
     // compare
     final DirectoryReader ir = DirectoryReader.open(dir);
@@ -2488,7 +2488,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       int id = random().nextInt(numDocs);
       writer.deleteDocuments(new Term("id", Integer.toString(id)));
     }
-    writer.shutdown();
+    writer.close();
     
     // compare
     final DirectoryReader ir = DirectoryReader.open(dir);
@@ -2615,7 +2615,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       doc.add(new BinaryDocValuesField("field", new BytesRef()));
       w.addDocument(doc);
       IndexReader r = w.getReader();
-      w.shutdown();
+      w.close();
 
       AtomicReader ar = SlowCompositeReaderWrapper.wrap(r);
       BinaryDocValues values = ar.getBinaryDocValues("field");
@@ -2635,7 +2635,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     Document doc = new Document();
     doc.add(new SortedNumericDocValuesField("dv", 5));
     writer.addDocument(doc);
-    writer.shutdown();
+    writer.close();
     
     // Now search the index:
     IndexReader reader = DirectoryReader.open(directory);
@@ -2652,12 +2652,12 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   public void testOneSortedNumberOneMissing() throws IOException {
     assumeTrue("Codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
     Directory directory = newDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(null));
     Document doc = new Document();
     doc.add(new SortedNumericDocValuesField("dv", 5));
     writer.addDocument(doc);
     writer.addDocument(new Document());
-    writer.shutdown();
+    writer.close();
     
     // Now search the index:
     IndexReader reader = DirectoryReader.open(directory);
@@ -2686,7 +2686,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(new SortedNumericDocValuesField("dv", 11));
     doc.add(new SortedNumericDocValuesField("dv", -5));
     writer.addDocument(doc);
-    writer.shutdown();
+    writer.close();
     
     // Now search the index:
     IndexReader reader = DirectoryReader.open(directory);
@@ -2704,13 +2704,13 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   public void testTwoSortedNumberOneMissing() throws IOException {
     assumeTrue("Codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
     Directory directory = newDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(null));
     Document doc = new Document();
     doc.add(new SortedNumericDocValuesField("dv", 11));
     doc.add(new SortedNumericDocValuesField("dv", -5));
     writer.addDocument(doc);
     writer.addDocument(new Document());
-    writer.shutdown();
+    writer.close();
     
     // Now search the index:
     IndexReader reader = DirectoryReader.open(directory);
@@ -2735,7 +2735,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   public void testSortedNumberMerge() throws IOException {
     assumeTrue("Codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
     Directory directory = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig iwc = new IndexWriterConfig(null);
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter writer = new IndexWriter(directory, iwc);
     Document doc = new Document();
@@ -2746,7 +2746,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(new SortedNumericDocValuesField("dv", -5));
     writer.addDocument(doc);
     writer.forceMerge(1);
-    writer.shutdown();
+    writer.close();
     
     // Now search the index:
     IndexReader reader = DirectoryReader.open(directory);
@@ -2783,7 +2783,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.forceMerge(1);
     
     DirectoryReader ireader = iwriter.getReader();
-    iwriter.shutdown();
+    iwriter.close();
     
     SortedNumericDocValues dv = getOnlySegmentReader(ireader).getSortedNumericDocValues("field");
     dv.setDocument(0);

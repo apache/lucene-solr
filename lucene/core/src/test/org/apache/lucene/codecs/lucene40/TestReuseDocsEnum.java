@@ -116,7 +116,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
       }
       assertEquals(1, enums.size());  
     }
-    writer.shutdown();
+    writer.close();
     IOUtils.close(open, dir);
   }
   
@@ -161,7 +161,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
       }
       assertEquals(terms.size(), enums.size());
     }
-    writer.shutdown();
+    writer.close();
     IOUtils.close(firstReader, secondReader, dir);
   }
   

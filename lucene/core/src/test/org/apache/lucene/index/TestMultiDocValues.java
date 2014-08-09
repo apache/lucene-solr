@@ -31,7 +31,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 
 /** Tests MultiDocValues versus ordinary segment merging */
 public class TestMultiDocValues extends LuceneTestCase {
@@ -42,7 +41,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     Field field = new NumericDocValuesField("numbers", 0);
     doc.add(field);
     
-    IndexWriterConfig iwc = newIndexWriterConfig(random(), TEST_VERSION_CURRENT, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
@@ -58,7 +57,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     iw.forceMerge(1);
     DirectoryReader ir2 = iw.getReader();
     AtomicReader merged = getOnlySegmentReader(ir2);
-    iw.shutdown();
+    iw.close();
     
     NumericDocValues multi = MultiDocValues.getNumericValues(ir, "numbers");
     NumericDocValues single = merged.getNumericDocValues("numbers");
@@ -77,7 +76,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     Field field = new BinaryDocValuesField("bytes", ref);
     doc.add(field);
     
-    IndexWriterConfig iwc = newIndexWriterConfig(random(), TEST_VERSION_CURRENT, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
@@ -93,7 +92,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     iw.forceMerge(1);
     DirectoryReader ir2 = iw.getReader();
     AtomicReader merged = getOnlySegmentReader(ir2);
-    iw.shutdown();
+    iw.close();
     
     BinaryDocValues multi = MultiDocValues.getBinaryValues(ir, "bytes");
     BinaryDocValues single = merged.getBinaryDocValues("bytes");
@@ -114,7 +113,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     Field field = new SortedDocValuesField("bytes", ref);
     doc.add(field);
     
-    IndexWriterConfig iwc = newIndexWriterConfig(random(), TEST_VERSION_CURRENT, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
@@ -133,7 +132,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     iw.forceMerge(1);
     DirectoryReader ir2 = iw.getReader();
     AtomicReader merged = getOnlySegmentReader(ir2);
-    iw.shutdown();
+    iw.close();
     
     SortedDocValues multi = MultiDocValues.getSortedValues(ir, "bytes");
     SortedDocValues single = merged.getSortedDocValues("bytes");
@@ -159,7 +158,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     Field field = new SortedDocValuesField("bytes", ref);
     doc.add(field);
     
-    IndexWriterConfig iwc = newIndexWriterConfig(random(), TEST_VERSION_CURRENT, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
@@ -175,7 +174,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     iw.forceMerge(1);
     DirectoryReader ir2 = iw.getReader();
     AtomicReader merged = getOnlySegmentReader(ir2);
-    iw.shutdown();
+    iw.close();
     
     SortedDocValues multi = MultiDocValues.getSortedValues(ir, "bytes");
     SortedDocValues single = merged.getSortedDocValues("bytes");
@@ -197,7 +196,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     assumeTrue("codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
     
-    IndexWriterConfig iwc = newIndexWriterConfig(random(), TEST_VERSION_CURRENT, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
@@ -217,7 +216,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     iw.forceMerge(1);
     DirectoryReader ir2 = iw.getReader();
     AtomicReader merged = getOnlySegmentReader(ir2);
-    iw.shutdown();
+    iw.close();
     
     SortedSetDocValues multi = MultiDocValues.getSortedSetValues(ir, "bytes");
     SortedSetDocValues single = merged.getSortedSetDocValues("bytes");
@@ -260,7 +259,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     assumeTrue("codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
     
-    IndexWriterConfig iwc = newIndexWriterConfig(random(), TEST_VERSION_CURRENT, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
@@ -280,7 +279,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     iw.forceMerge(1);
     DirectoryReader ir2 = iw.getReader();
     AtomicReader merged = getOnlySegmentReader(ir2);
-    iw.shutdown();
+    iw.close();
     
     SortedSetDocValues multi = MultiDocValues.getSortedSetValues(ir, "bytes");
     SortedSetDocValues single = merged.getSortedSetDocValues("bytes");
@@ -322,7 +321,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     assumeTrue("codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
     Directory dir = newDirectory();
     
-    IndexWriterConfig iwc = newIndexWriterConfig(random(), TEST_VERSION_CURRENT, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
@@ -342,7 +341,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     iw.forceMerge(1);
     DirectoryReader ir2 = iw.getReader();
     AtomicReader merged = getOnlySegmentReader(ir2);
-    iw.shutdown();
+    iw.close();
     
     SortedNumericDocValues multi = MultiDocValues.getSortedNumericValues(ir, "nums");
     SortedNumericDocValues single = merged.getSortedNumericDocValues("nums");
@@ -374,7 +373,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     assumeTrue("codec does not support docsWithField", defaultCodecSupportsDocsWithField());
     Directory dir = newDirectory();
     
-    IndexWriterConfig iwc = newIndexWriterConfig(random(), TEST_VERSION_CURRENT, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
@@ -394,7 +393,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     iw.forceMerge(1);
     DirectoryReader ir2 = iw.getReader();
     AtomicReader merged = getOnlySegmentReader(ir2);
-    iw.shutdown();
+    iw.close();
     
     Bits multi = MultiDocValues.getDocsWithField(ir, "numbers");
     Bits single = merged.getDocsWithField("numbers");

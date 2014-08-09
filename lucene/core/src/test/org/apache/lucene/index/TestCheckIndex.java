@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -53,7 +52,7 @@ public class TestCheckIndex extends LuceneTestCase {
     writer.forceMerge(1);
     writer.commit();
     writer.deleteDocuments(new Term("field","aaa5"));
-    writer.shutdown();
+    writer.close();
 
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     CheckIndex checker = new CheckIndex(dir);
@@ -113,7 +112,7 @@ public class TestCheckIndex extends LuceneTestCase {
     ));
     doc.add(field);
     iw.addDocument(doc);
-    iw.shutdown();
+    iw.close();
     dir.close(); // checkindex
   }
 }

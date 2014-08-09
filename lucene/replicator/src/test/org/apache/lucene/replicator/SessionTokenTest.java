@@ -37,7 +37,7 @@ public class SessionTokenTest extends ReplicatorTestCase {
   @Test
   public void testSerialization() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     IndexWriter writer = new IndexWriter(dir, conf);
     writer.addDocument(new Document());
@@ -58,7 +58,7 @@ public class SessionTokenTest extends ReplicatorTestCase {
     List<RevisionFile> files2 = session2.sourceFiles.values().iterator().next();
     assertEquals(files1, files2);
 
-    writer.shutdown();
+    writer.close();
     IOUtils.close(dir);
   }
   

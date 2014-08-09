@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -96,7 +95,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     d.add(newTextField("field", "bogus", Field.Store.YES));
     writer.addDocument(d);
     IndexReader reader = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
 
     IndexSearcher searcher = newSearcher(reader);
@@ -283,7 +282,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     }
     assertEquals(5, count);
     assertTrue(sawZero);
-    writer.shutdown();
+    writer.close();
     is.getIndexReader().close();
     dir.close();
   }

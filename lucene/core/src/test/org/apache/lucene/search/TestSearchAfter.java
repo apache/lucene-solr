@@ -179,7 +179,7 @@ public class TestSearchAfter extends LuceneTestCase {
       }
     }
     reader = iw.getReader();
-    iw.shutdown();
+    iw.close();
     searcher = newSearcher(reader);
     if (VERBOSE) {
       System.out.println("  searcher=" + searcher);

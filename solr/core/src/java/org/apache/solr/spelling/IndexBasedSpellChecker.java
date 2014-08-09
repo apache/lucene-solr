@@ -93,7 +93,7 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
     // TODO: you should be able to specify the IWC params?
     // TODO: if we enable this, codec gets angry since field won't exist in the schema
     // config.setCodec(core.getCodec());
-    spellChecker.indexDictionary(dictionary, new IndexWriterConfig(core.getSolrConfig().luceneMatchVersion, null), false);
+    spellChecker.indexDictionary(dictionary, new IndexWriterConfig(null), false);
   }
 
   @Override

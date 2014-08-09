@@ -56,7 +56,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     doc.add(f2);
     doc.add(f);
     w.addDocument(doc);
-    w.shutdown();
+    w.close();
 
     IndexReader r = DirectoryReader.open(dir);
     Terms vector = r.getTermVectors(0).terms("field");
@@ -112,7 +112,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     doc.add(f);
     doc.add(f);
     w.addDocument(doc);
-    w.shutdown();
+    w.close();
 
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
@@ -147,7 +147,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     doc.add(f);
     doc.add(f);
     w.addDocument(doc);
-    w.shutdown();
+    w.close();
 
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
@@ -187,7 +187,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
       doc.add(f);
       w.addDocument(doc);
     }
-    w.shutdown();
+    w.close();
 
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
@@ -222,7 +222,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     doc.add(f);
     doc.add(f);
     w.addDocument(doc);
-    w.shutdown();
+    w.close();
 
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
@@ -258,7 +258,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     doc.add(f);
     doc.add(f2);
     w.addDocument(doc);
-    w.shutdown();
+    w.close();
 
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
@@ -302,7 +302,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     doc.add(f);
     doc.add(f2);
     w.addDocument(doc);
-    w.shutdown();
+    w.close();
 
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
@@ -344,7 +344,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     doc.add(f2);
 
     w.addDocument(doc);
-    w.shutdown();
+    w.close();
 
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
@@ -400,7 +400,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
       document.add(termVectorField);
       writer.addDocument(document);
       writer.forceMerge(1);
-      writer.shutdown();
+      writer.close();
 
       IndexReader reader = DirectoryReader.open(dir);
       for(int i=0;i<reader.numDocs();i++) {
@@ -418,7 +418,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
       Directory[] indexDirs = {new MockDirectoryWrapper(random(), new RAMDirectory(dir, newIOContext(random())))};
       writer.addIndexes(indexDirs);
       writer.forceMerge(1);
-      writer.shutdown();
+      writer.close();
     }
     dir.close();
   }
@@ -453,7 +453,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
       document.add(termVectorField);
       writer.addDocument(document);
       writer.forceMerge(1);
-      writer.shutdown();
+      writer.close();
 
       IndexReader reader = DirectoryReader.open(dir);
       assertNull(reader.getTermVectors(0));
@@ -487,7 +487,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     document.add(termVectorField);
     for(int i=0;i<10;i++)
       writer.addDocument(document);
-    writer.shutdown();
+    writer.close();
 
     writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
         .setMaxBufferedDocs(2)
@@ -498,7 +498,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
       writer.addDocument(document);
 
     writer.forceMerge(1);
-    writer.shutdown();
+    writer.close();
 
     IndexReader reader = DirectoryReader.open(dir);
     for(int i=0;i<10;i++) {
@@ -535,7 +535,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     iw.commit();
 
     iw.forceMerge(1);
-    iw.shutdown();
+    iw.close();
     dir.close();
   }
 
@@ -567,7 +567,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     iw.commit();
     iw.forceMerge(1);
 
-    iw.shutdown();
+    iw.close();
     dir.close();
   }
   
@@ -658,7 +658,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
   public void testNoAbortOnBadTVSettings() throws Exception {
     Directory dir = newDirectory();
     // Don't use RandomIndexWriter because we want to be sure both docs go to 1 seg:
-    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter iw = new IndexWriter(dir, iwc);
 
     Document doc = new Document();

@@ -289,7 +289,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     Directory dir = newFSDirectory(altIndexDir);
     IndexWriter iw = new IndexWriter(
         dir,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer())
+        new IndexWriterConfig(new WhitespaceAnalyzer())
     );
     for (int i = 0; i < ALT_DOCS.length; i++) {
       Document doc = new Document();
@@ -297,7 +297,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
       iw.addDocument(doc);
     }
     iw.forceMerge(1);
-    iw.shutdown();
+    iw.close();
     dir.close();
     indexDir.mkdirs();
     spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());

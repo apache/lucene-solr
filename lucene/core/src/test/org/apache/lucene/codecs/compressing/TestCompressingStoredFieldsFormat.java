@@ -89,7 +89,7 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
       }
       // Only one .fdt and one .fdx files must have been found
       assertEquals(2, counter);
-      iw.shutdown();
+      iw.close();
       dir.close();
     }
   }

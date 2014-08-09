@@ -25,7 +25,6 @@ import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene42.Lucene42DocValuesFormat;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
@@ -193,7 +192,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
         return;
       }
     }
-    w.shutdown();
+    w.close();
 
     AtomicReader ar = SlowCompositeReaderWrapper.wrap(r);
 
@@ -264,7 +263,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     }
     
     DirectoryReader r = DirectoryReader.open(w, true);
-    w.shutdown();
+    w.close();
 
     AtomicReader ar = SlowCompositeReaderWrapper.wrap(r);
 
@@ -318,7 +317,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
       int id = random().nextInt(numDocs);
       writer.deleteDocuments(new Term("id", Integer.toString(id)));
     }
-    writer.shutdown();
+    writer.close();
     
     // compare
     DirectoryReader ir = DirectoryReader.open(dir);
@@ -334,7 +333,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
   
   private void doTestSortedSetVsUninvertedField(int minLength, int maxLength) throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = new IndexWriterConfig(new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
     
     // index some docs
@@ -403,7 +402,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     assertEquals(ir.maxDoc(), expected, actual);
     ir.close();
     
-    writer.shutdown();
+    writer.close();
     dir.close();
   }
   
@@ -451,7 +450,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     // 256 values
     writer.forceMerge(numDocs / 256);
 
-    writer.shutdown();
+    writer.close();
     
     // compare
     DirectoryReader ir = DirectoryReader.open(dir);

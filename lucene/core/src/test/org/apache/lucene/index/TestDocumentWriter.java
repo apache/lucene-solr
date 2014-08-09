@@ -26,7 +26,6 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -62,7 +61,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.addDocument(testDoc);
     writer.commit();
     SegmentCommitInfo info = writer.newestSegment();
-    writer.shutdown();
+    writer.close();
     //After adding the document, we should be able to read it back in
     SegmentReader reader = new SegmentReader(info, newIOContext(random()));
     assertTrue(reader != null);
@@ -124,7 +123,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.addDocument(doc);
     writer.commit();
     SegmentCommitInfo info = writer.newestSegment();
-    writer.shutdown();
+    writer.close();
     SegmentReader reader = new SegmentReader(info, newIOContext(random()));
 
     DocsAndPositionsEnum termPositions = MultiFields.getTermPositionsEnum(reader, MultiFields.getLiveDocs(reader),
@@ -196,7 +195,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.addDocument(doc);
     writer.commit();
     SegmentCommitInfo info = writer.newestSegment();
-    writer.shutdown();
+    writer.close();
     SegmentReader reader = new SegmentReader(info, newIOContext(random()));
 
     DocsAndPositionsEnum termPositions = MultiFields.getTermPositionsEnum(reader, reader.getLiveDocs(), "f1", new BytesRef("a"));
@@ -238,7 +237,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.addDocument(doc);
     writer.commit();
     SegmentCommitInfo info = writer.newestSegment();
-    writer.shutdown();
+    writer.close();
     SegmentReader reader = new SegmentReader(info, newIOContext(random()));
 
     DocsAndPositionsEnum termPositions = reader.termPositionsEnum(new Term("preanalyzed", "term1"));
@@ -283,7 +282,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     writer.addDocument(doc);
     writer.forceMerge(1); // be sure to have a single segment
-    writer.shutdown();
+    writer.close();
 
     TestUtil.checkIndex(dir);
 

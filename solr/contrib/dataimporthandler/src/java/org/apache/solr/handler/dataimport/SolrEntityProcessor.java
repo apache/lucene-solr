@@ -99,11 +99,11 @@ public class SolrEntityProcessor extends EntityProcessorBase {
       URL url = new URL(serverPath);
       // (wt="javabin|xml") default is javabin
       if ("xml".equals(context.getResolvedEntityAttribute(CommonParams.WT))) {
-        // TODO: it doesn't matter for this impl when passing a client currently, but we should shutdown this!
+        // TODO: it doesn't matter for this impl when passing a client currently, but we should close this!
         solrServer = new HttpSolrServer(url.toExternalForm(), client, new XMLResponseParser());
         LOG.info("using XMLResponseParser");
       } else {
-        // TODO: it doesn't matter for this impl when passing a client currently, but we should shutdown this!
+        // TODO: it doesn't matter for this impl when passing a client currently, but we should close this!
         solrServer = new HttpSolrServer(url.toExternalForm(), client);
         LOG.info("using BinaryResponseParser");
       }

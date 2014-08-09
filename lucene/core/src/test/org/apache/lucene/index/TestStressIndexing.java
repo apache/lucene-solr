@@ -149,7 +149,7 @@ public class TestStressIndexing extends LuceneTestCase {
     for(int i=0;i<numThread;i++)
       threads[i].join();
 
-    modifier.shutdown();
+    modifier.close();
 
     for(int i=0;i<numThread;i++)
       assertTrue(! threads[i].failed);

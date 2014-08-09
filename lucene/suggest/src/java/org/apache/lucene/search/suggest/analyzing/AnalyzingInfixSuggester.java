@@ -79,7 +79,6 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.Version;
 
@@ -177,15 +176,15 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     if (DirectoryReader.indexExists(dir)) {
       // Already built; open it:
       writer = new IndexWriter(dir,
-                               getIndexWriterConfig(matchVersion, getGramAnalyzer(), IndexWriterConfig.OpenMode.APPEND));
+                               getIndexWriterConfig(getGramAnalyzer(), IndexWriterConfig.OpenMode.APPEND));
       searcherMgr = new SearcherManager(writer, true, null);
     }
   }
 
   /** Override this to customize index settings, e.g. which
    *  codec to use. */
-  protected IndexWriterConfig getIndexWriterConfig(Version matchVersion, Analyzer indexAnalyzer, IndexWriterConfig.OpenMode openMode) {
-    IndexWriterConfig iwc = new IndexWriterConfig(matchVersion, indexAnalyzer);
+  protected IndexWriterConfig getIndexWriterConfig(Analyzer indexAnalyzer, IndexWriterConfig.OpenMode openMode) {
+    IndexWriterConfig iwc = new IndexWriterConfig(indexAnalyzer);
     iwc.setCodec(new Lucene49Codec());
     iwc.setOpenMode(openMode);
 
@@ -212,7 +211,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     }
 
     if (writer != null) {
-      writer.shutdown();
+      writer.close();
       writer = null;
     }
 
@@ -221,7 +220,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       // First pass: build a temporary normal Lucene index,
       // just indexing the suggestions as they iterate:
       writer = new IndexWriter(dir,
-                               getIndexWriterConfig(matchVersion, getGramAnalyzer(), IndexWriterConfig.OpenMode.CREATE));
+                               getIndexWriterConfig(getGramAnalyzer(), IndexWriterConfig.OpenMode.CREATE));
       //long t0 = System.nanoTime();
 
       // TODO: use threads?
@@ -643,7 +642,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       searcherMgr = null;
     }
     if (writer != null) {
-      writer.shutdown();
+      writer.close();
       dir.close();
       writer = null;
     }

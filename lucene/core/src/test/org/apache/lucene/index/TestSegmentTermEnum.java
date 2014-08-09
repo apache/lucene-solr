@@ -59,7 +59,7 @@ public class TestSegmentTermEnum extends LuceneTestCase {
       addDoc(writer, "aaa bbb");
     }
 
-    writer.shutdown();
+    writer.close();
 
     // verify document frequency of terms in an multi segment index
     verifyDocFreq();
@@ -68,7 +68,7 @@ public class TestSegmentTermEnum extends LuceneTestCase {
     writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                     .setOpenMode(OpenMode.APPEND));
     writer.forceMerge(1);
-    writer.shutdown();
+    writer.close();
 
     // verify document frequency of terms in a single segment index
     verifyDocFreq();
@@ -79,7 +79,7 @@ public class TestSegmentTermEnum extends LuceneTestCase {
     IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                 .setCodec(TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat())));
     addDoc(writer, "aaa bbb");
-    writer.shutdown();
+    writer.close();
     SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(dir));
     TermsEnum terms = reader.fields().terms("content").iterator(null);
     assertNotNull(terms.next());

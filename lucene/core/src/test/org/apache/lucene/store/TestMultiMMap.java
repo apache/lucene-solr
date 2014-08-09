@@ -355,7 +355,7 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
       writer.addDocument(doc);
     }
     IndexReader reader = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     int numAsserts = atLeast(100);
     for (int i = 0; i < numAsserts; i++) {
@@ -363,7 +363,6 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
       assertEquals("" + docID, reader.document(docID).get("docid"));
     }
     reader.close();
-    writer.close();
     dir.close();
   }
   

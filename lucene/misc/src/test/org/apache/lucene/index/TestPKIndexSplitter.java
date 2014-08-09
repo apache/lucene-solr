@@ -48,7 +48,7 @@ public class TestPKIndexSplitter extends LuceneTestCase {
       w.addDocument(doc);
       if (x%3==0) w.commit();
     }
-    w.shutdown();
+    w.close();
     
     final Term midTerm = new Term("id", format.format(11));
     
@@ -59,7 +59,7 @@ public class TestPKIndexSplitter extends LuceneTestCase {
         .setOpenMode(OpenMode.APPEND).setMergePolicy(NoMergePolicy.INSTANCE));
     w.deleteDocuments(midTerm);
     w.deleteDocuments(new Term("id", format.format(2)));
-    w.shutdown();
+    w.close();
     
     checkSplitting(dir, midTerm, 10, 8);
     

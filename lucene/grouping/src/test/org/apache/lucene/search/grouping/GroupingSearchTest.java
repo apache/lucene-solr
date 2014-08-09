@@ -118,7 +118,7 @@ public class GroupingSearchTest extends LuceneTestCase {
     w.addDocument(doc);
 
     IndexSearcher indexSearcher = newSearcher(w.getReader());
-    w.shutdown();
+    w.close();
 
     Sort groupSort = Sort.RELEVANCE;
     GroupingSearch groupingSearch = createRandomGroupingSearch(groupField, groupSort, 5, canUseIDV);
@@ -232,7 +232,7 @@ public class GroupingSearchTest extends LuceneTestCase {
     w.addDocument(doc);
 
     IndexSearcher indexSearcher = newSearcher(w.getReader());
-    w.shutdown();
+    w.close();
 
     GroupingSearch gs = new GroupingSearch("group");
     gs.setAllGroups(true);

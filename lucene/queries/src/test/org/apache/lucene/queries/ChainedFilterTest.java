@@ -73,7 +73,7 @@ public class ChainedFilterTest extends LuceneTestCase {
       cal.add(Calendar.DATE, 1);
     }
     reader = writer.getReader();
-    writer.shutdown();
+    writer.close();
 
     searcher = newSearcher(reader);
 
@@ -194,7 +194,7 @@ public class ChainedFilterTest extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     IndexReader reader = writer.getReader();
-    writer.shutdown();
+    writer.close();
   
     IndexSearcher searcher = newSearcher(reader);
   

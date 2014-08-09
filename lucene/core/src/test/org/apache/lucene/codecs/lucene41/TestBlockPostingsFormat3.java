@@ -53,7 +53,6 @@ import org.apache.lucene.util.English;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
@@ -134,7 +133,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
       field8.setStringValue(stringValue);
       iw.addDocument(doc);
     }
-    iw.shutdown();
+    iw.close();
     verify(dir);
     TestUtil.checkIndex(dir); // for some extra coverage, checkIndex before we forceMerge
     iwc = newIndexWriterConfig(analyzer);
@@ -142,7 +141,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
     iwc.setOpenMode(OpenMode.APPEND);
     IndexWriter iw2 = new IndexWriter(dir, iwc);
     iw2.forceMerge(1);
-    iw2.shutdown();
+    iw2.close();
     verify(dir);
     dir.close();
   }

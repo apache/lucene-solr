@@ -19,7 +19,6 @@ package org.apache.lucene.store;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -32,7 +31,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TestIndexWriterReader;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
@@ -56,7 +54,7 @@ public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
     OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true;
     IndexWriter writer = new IndexWriter(
         fsd,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
+        new IndexWriterConfig(new MockAnalyzer(random())).
             setMergePolicy(newLogMergePolicy(false)).setCodec(Codec.forName("Lucene40")).setUseCompoundFile(false)
     );
     TestIndexWriterReader.createIndexNoClose(true, "ram", writer);
@@ -78,7 +76,7 @@ public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
       assertFalse(fileExtensions.contains(ext));
     }
     reader.close();
-    writer.shutdown();
+    writer.close();
 
     files = fsd.listAll();
     for(int i=0;i<files.length;i++) {

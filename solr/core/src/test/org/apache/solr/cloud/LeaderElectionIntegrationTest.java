@@ -195,7 +195,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
       
       if (leaderPort == newLeaderPort) {
         zkClient.printLayoutToStdOut();
-        fail("We didn't find a new leader! " + leaderPort + " was shutdown, but it's still showing as the leader");
+        fail("We didn't find a new leader! " + leaderPort + " was close, but it's still showing as the leader");
       }
       
       assertTrue("Could not find leader " + newLeaderPort + " in " + shard1Ports, shard1Ports.contains(newLeaderPort));

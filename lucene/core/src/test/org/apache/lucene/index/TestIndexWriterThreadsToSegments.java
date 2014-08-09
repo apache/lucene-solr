@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -44,7 +45,7 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
   // doc NOT at the same time, and should have shared the same thread state / segment
   public void testSegmentCountOnFlushBasic() throws Exception {
     Directory dir = newDirectory();
-    final IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    final IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
     final CountDownLatch startingGun = new CountDownLatch(1);
     final CountDownLatch startDone = new CountDownLatch(2);
     final CountDownLatch middleGun = new CountDownLatch(1);
@@ -161,7 +162,7 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
   // iteration, and then verify that no more segments were flushed than number of threads:
   public void testSegmentCountOnFlushRandom() throws Exception {
     Directory dir = newFSDirectory(createTempDir());
-    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
 
     int maxThreadStates = TestUtil.nextInt(random(), 1, 12);
 
@@ -237,7 +238,10 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
 
   public void testManyThreadsClose() throws Exception {
     Directory dir = newDirectory();
-    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Random r = random();
+    IndexWriterConfig iwc = newIndexWriterConfig(r, new MockAnalyzer(r));
+    iwc.setCommitOnClose(false);
+    final RandomIndexWriter w = new RandomIndexWriter(r, dir, iwc);
     w.setDoRandomForceMerge(false);
     Thread[] threads = new Thread[TestUtil.nextInt(random(), 4, 30)];
     final CountDownLatch startingGun = new CountDownLatch(1);
@@ -274,7 +278,7 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
 
   public void testDocsStuckInRAMForever() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     iwc.setRAMBufferSizeMB(.2);
     Codec codec = Codec.forName("Lucene49");
     iwc.setCodec(codec);

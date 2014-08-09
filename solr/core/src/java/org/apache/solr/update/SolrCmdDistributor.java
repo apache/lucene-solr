@@ -112,7 +112,7 @@ public class SolrCmdDistributor {
         if (testing_errorHook != null) Diagnostics.call(testing_errorHook,
             err.e);
         
-        // this can happen in certain situations such as shutdown
+        // this can happen in certain situations such as close
         if (isRetry) {
           if (rspCode == 404 || rspCode == 403 || rspCode == 503) {
             doRetry = true;

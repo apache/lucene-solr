@@ -42,9 +42,9 @@ public class TestFailIfUnreferencedFiles extends WithNestedTests {
     public void testDummy() throws Exception {
       MockDirectoryWrapper dir = newMockDirectory();
       dir.setAssertNoUnrefencedFilesOnClose(true);
-      IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+      IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(null));
       iw.addDocument(new Document());
-      iw.shutdown();
+      iw.close();
       IndexOutput output = dir.createOutput("_hello.world", IOContext.DEFAULT);
       output.writeString("i am unreferenced!");
       output.close();

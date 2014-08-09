@@ -442,7 +442,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
     }
     MockAnalyzer analyzer = new MockAnalyzer(random());
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
-    final IndexWriterConfig conf = newIndexWriterConfig(analyzer);
+    final IndexWriterConfig conf = newIndexWriterConfig(analyzer).setCommitOnClose(false);
     conf.setInfoStream(new FailOnNonBulkMergesInfoStream());
     if (conf.getMergePolicy() instanceof MockRandomMergePolicy) {
       ((MockRandomMergePolicy)conf.getMergePolicy()).setDoNonBulkMerges(false);
@@ -637,9 +637,13 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
 
     doClose();
 
-    writer.shutdown(false);
+    try {
+      writer.commit();
+    } finally {
+      writer.close();
+    }
 
-    // Cannot shutdown until after writer is closed because
+    // Cannot close until after writer is closed because
     // writer has merged segment warmer that uses IS to run
     // searches, and that IS may be using this es!
     if (es != null) {

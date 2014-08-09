@@ -546,8 +546,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     SolrDocumentList out = rsp.getResults();
     assertEquals(2, out.getNumFound());
     if (!(server1 instanceof EmbeddedSolrServer)) {
-      /* Do not shutdown in case of using EmbeddedSolrServer, 
-       * as that would shutdown the CoreContainer */
+      /* Do not close in case of using EmbeddedSolrServer,
+       * as that would close the CoreContainer */
       server1.shutdown();
     }
   }

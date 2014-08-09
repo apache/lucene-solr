@@ -92,7 +92,7 @@ public class TestNorms extends LuceneTestCase {
     }
     
     IndexReader reader = writer.getReader();
-    writer.shutdown();
+    writer.close();
     
     NumericDocValues fooNorms = MultiDocValues.getNormValues(reader, "foo");
     for (int i = 0; i < reader.maxDoc(); i++) {
@@ -148,7 +148,7 @@ public class TestNorms extends LuceneTestCase {
       }
     }
     writer.commit();
-    writer.shutdown();
+    writer.close();
     docs.close();
   }
 

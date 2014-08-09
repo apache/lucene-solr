@@ -61,8 +61,7 @@ public class AssociationsFacetsExample {
   
   /** Build the example index. */
   private void index() throws IOException {
-    IndexWriterConfig iwc = new IndexWriterConfig(FacetExamples.EXAMPLES_VER, 
-                                                  new WhitespaceAnalyzer());
+    IndexWriterConfig iwc = new IndexWriterConfig(new WhitespaceAnalyzer());
     IndexWriter indexWriter = new IndexWriter(indexDir, iwc);
 
     // Writes facet ords to a separate directory from the main index
@@ -86,7 +85,7 @@ public class AssociationsFacetsExample {
     doc.add(new FloatAssociationFacetField(0.34f, "genre", "software"));
     indexWriter.addDocument(config.build(taxoWriter, doc));
 
-    indexWriter.shutdown();
+    indexWriter.close();
     taxoWriter.close();
   }
 

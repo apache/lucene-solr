@@ -24,7 +24,6 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 
 public class TestCodecHoldsOpenFiles extends LuceneTestCase {
   public void test() throws Exception {
@@ -38,7 +37,7 @@ public class TestCodecHoldsOpenFiles extends LuceneTestCase {
     }
 
     IndexReader r = w.getReader();
-    w.shutdown();
+    w.close();
 
     for(String fileName : d.listAll()) {
       try {

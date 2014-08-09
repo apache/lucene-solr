@@ -26,7 +26,7 @@ public class TestNewestSegment extends LuceneTestCase {
     Directory directory = newDirectory();
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(new MockAnalyzer(random())));
     assertNull(writer.newestSegment());
-    writer.shutdown();
+    writer.close();
     directory.close();
   }
 }

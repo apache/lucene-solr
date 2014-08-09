@@ -199,7 +199,7 @@ public class SolrIndexConfig {
     // for the default analyzer, and explicitly pass an analyzer on 
     // appropriate calls to IndexWriter
     
-    IndexWriterConfig iwc = new IndexWriterConfig(luceneVersion, null);
+    IndexWriterConfig iwc = new IndexWriterConfig(null);
     if (maxBufferedDocs != -1)
       iwc.setMaxBufferedDocs(maxBufferedDocs);
 

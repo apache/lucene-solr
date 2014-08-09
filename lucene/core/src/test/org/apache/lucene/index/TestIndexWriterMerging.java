@@ -67,7 +67,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     );
     writer.addIndexes(indexA, indexB);
     writer.forceMerge(1);
-    writer.shutdown();
+    writer.close();
 
     fail = verifyIndex(merged, 0);
 
@@ -115,7 +115,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
 
       writer.addDocument(temp);
     }
-    writer.shutdown();
+    writer.close();
   }
   
   // LUCENE-325: test forceMergeDeletes, when 2 singular merges
@@ -146,19 +146,19 @@ public class TestIndexWriterMerging extends LuceneTestCase
       idField.setStringValue("" + i);
       writer.addDocument(document);
     }
-    writer.shutdown();
+    writer.close();
 
     IndexReader ir = DirectoryReader.open(dir);
     assertEquals(10, ir.maxDoc());
     assertEquals(10, ir.numDocs());
     ir.close();
 
-    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(new MockAnalyzer(random()))
       .setMergePolicy(NoMergePolicy.INSTANCE);
     writer = new IndexWriter(dir, dontMergeConfig);
     writer.deleteDocuments(new Term("id", "0"));
     writer.deleteDocuments(new Term("id", "7"));
-    writer.shutdown();
+    writer.close();
     
     ir = DirectoryReader.open(dir);
     assertEquals(8, ir.numDocs());
@@ -170,7 +170,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     assertEquals(10, writer.maxDoc());
     writer.forceMergeDeletes();
     assertEquals(8, writer.numDocs());
-    writer.shutdown();
+    writer.close();
     ir = DirectoryReader.open(dir);
     assertEquals(8, ir.maxDoc());
     assertEquals(8, ir.numDocs());
@@ -210,20 +210,20 @@ public class TestIndexWriterMerging extends LuceneTestCase
       idField.setStringValue("" + i);
       writer.addDocument(document);
     }
-    writer.shutdown();
+    writer.close();
 
     IndexReader ir = DirectoryReader.open(dir);
     assertEquals(98, ir.maxDoc());
     assertEquals(98, ir.numDocs());
     ir.close();
     
-    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(new MockAnalyzer(random()))
       .setMergePolicy(NoMergePolicy.INSTANCE);
     writer = new IndexWriter(dir, dontMergeConfig);
     for(int i=0;i<98;i+=2) {
       writer.deleteDocuments(new Term("id", "" + i));
     }
-    writer.shutdown();
+    writer.close();
     
     ir = DirectoryReader.open(dir);
     assertEquals(49, ir.numDocs());
@@ -236,7 +236,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     );
     assertEquals(49, writer.numDocs());
     writer.forceMergeDeletes();
-    writer.shutdown();
+    writer.close();
     ir = DirectoryReader.open(dir);
     assertEquals(49, ir.maxDoc());
     assertEquals(49, ir.numDocs());
@@ -276,20 +276,20 @@ public class TestIndexWriterMerging extends LuceneTestCase
       idField.setStringValue("" + i);
       writer.addDocument(document);
     }
-    writer.shutdown();
+    writer.close();
 
     IndexReader ir = DirectoryReader.open(dir);
     assertEquals(98, ir.maxDoc());
     assertEquals(98, ir.numDocs());
     ir.close();
     
-    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(new MockAnalyzer(random()))
       .setMergePolicy(NoMergePolicy.INSTANCE);
     writer = new IndexWriter(dir, dontMergeConfig);
     for(int i=0;i<98;i+=2) {
       writer.deleteDocuments(new Term("id", "" + i));
     }
-    writer.shutdown();
+    writer.close();
     ir = DirectoryReader.open(dir);
     assertEquals(49, ir.numDocs());
     ir.close();
@@ -300,7 +300,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
            .setMergePolicy(newLogMergePolicy(3))
     );
     writer.forceMergeDeletes(false);
-    writer.shutdown();
+    writer.close();
     ir = DirectoryReader.open(dir);
     assertEquals(49, ir.maxDoc());
     assertEquals(49, ir.numDocs());
@@ -349,7 +349,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     document.add(newField("tvtest", "a b c", customType));
     for(int i=0;i<177;i++)
       iw.addDocument(document);
-    iw.shutdown();
+    iw.close();
     dir.close();
   }
   
@@ -375,7 +375,8 @@ public class TestIndexWriterMerging extends LuceneTestCase
       IndexWriterConfig conf =  newIndexWriterConfig(new MockAnalyzer(random())).
               setOpenMode(OpenMode.CREATE).
               setMaxBufferedDocs(2).
-              setMergePolicy(newLogMergePolicy());
+              setMergePolicy(newLogMergePolicy()).
+              setCommitOnClose(false);
       if (pass == 2) {
         conf.setMergeScheduler(new SerialMergeScheduler());
       }
@@ -449,9 +450,10 @@ public class TestIndexWriterMerging extends LuceneTestCase
         // Reopen
         writer = new IndexWriter(directory, newIndexWriterConfig(new MockAnalyzer(random()))
                                               .setOpenMode(OpenMode.APPEND)
-                                              .setMergePolicy(newLogMergePolicy()));
+                                              .setMergePolicy(newLogMergePolicy())
+                                              .setCommitOnClose(false));
       }
-      writer.shutdown();
+      writer.close();
     }
 
     directory.close();

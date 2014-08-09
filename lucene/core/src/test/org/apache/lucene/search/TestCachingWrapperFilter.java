@@ -35,7 +35,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 
 public class TestCachingWrapperFilter extends LuceneTestCase {
   Directory dir;
@@ -66,7 +65,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   
   @Override
   public void tearDown() throws Exception {
-    iw.shutdown();
+    iw.close();
     IOUtils.close(ir, dir);
     super.tearDown();
   }
@@ -144,7 +143,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   public void testCachingWorks() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    writer.shutdown();
+    writer.close();
 
     IndexReader reader = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
     AtomicReaderContext context = (AtomicReaderContext) reader.getContext();
@@ -170,7 +169,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   public void testNullDocIdSet() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    writer.shutdown();
+    writer.close();
 
     IndexReader reader = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
     AtomicReaderContext context = (AtomicReaderContext) reader.getContext();
@@ -193,7 +192,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   public void testNullDocIdSetIterator() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    writer.shutdown();
+    writer.close();
 
     IndexReader reader = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
     AtomicReaderContext context = (AtomicReaderContext) reader.getContext();
@@ -250,7 +249,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     writer.addDocument(new Document());
-    writer.shutdown();
+    writer.close();
 
     IndexReader reader = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
 
@@ -409,7 +408,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     assertTrue(oldReader != null);
 
     reader.close();
-    writer.shutdown();
+    writer.close();
     dir.close();
   }
 
