@@ -94,12 +94,14 @@ public class DocToDoubleVectorUtilsTest extends LuceneTestCase {
   @Test
   public void testSparseFreqDoubleArrayConversion() throws Exception {
     Terms fieldTerms = MultiFields.getTerms(index, "text");
-    IndexSearcher indexSearcher = new IndexSearcher(index);
-    for (ScoreDoc scoreDoc : indexSearcher.search(new MatchAllDocsQuery(), Integer.MAX_VALUE).scoreDocs) {
-      Terms docTerms = index.getTermVector(scoreDoc.doc, "text");
-      Double[] vector = DocToDoubleVectorUtils.toSparseLocalFreqDoubleArray(docTerms, fieldTerms);
-      assertNotNull(vector);
-      assertTrue(vector.length > 0);
+    if (fieldTerms != null && fieldTerms.size() != -1) {
+      IndexSearcher indexSearcher = new IndexSearcher(index);
+      for (ScoreDoc scoreDoc : indexSearcher.search(new MatchAllDocsQuery(), Integer.MAX_VALUE).scoreDocs) {
+        Terms docTerms = index.getTermVector(scoreDoc.doc, "text");
+        Double[] vector = DocToDoubleVectorUtils.toSparseLocalFreqDoubleArray(docTerms, fieldTerms);
+        assertNotNull(vector);
+        assertTrue(vector.length > 0);
+      }
     }
   }
 }
