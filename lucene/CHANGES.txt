@@ -252,6 +252,9 @@ Build
   to generate surrogate pairs to augment JFlex scanner specifications.
   (Steve Rowe)
 
+* SOLR-6358: Remove VcsDirectoryMappings from idea configuration 
+  vcs.xml (Ramkumar Aiyengar via Steve Rowe)
+
 ======================= Lucene 4.9.0 =======================
 
 Changes in Runtime Behavior
