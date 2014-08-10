@@ -237,13 +237,17 @@ Bug Fixes
   would be exceeded, instead of silently creating an unusable
   index.  (Mike McCandless)
 
-* LUCENE-5869: Added restriction to positive values for maxExpansions in FuzzyQuery.
-  (Ryan Ernst)
+* LUCENE-5869: Added restriction to positive values for maxExpansions in
+  FuzzyQuery.  (Ryan Ernst)
   
 Test Framework
 
 * LUCENE-5786: Unflushed/ truncated events file (hung testing subprocess).
   (Dawid Weiss)
+
+* LUCENE-5881: Add "beasting" of tests: repeats the whole "test" Ant target
+  N times with "ant beast -Dbeast.iters=N".  (Uwe Schindler, Robert Muir,
+  Ryan Ernst, Dawid Weiss)
 
 Build
  

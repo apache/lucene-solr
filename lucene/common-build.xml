@@ -1147,7 +1147,7 @@
   </target>
 
   <target name="test-help" description="Help on 'ant test' syntax.">
-      <echo>
+      <echo taskname="help">
 #
 # Test case filtering. --------------------------------------------
 #
@@ -1201,6 +1201,15 @@ ant test -Dtests.iters=N -Dtests.maxfailures=M -Dtestcase=...
 # Can be used for running a single class on multiple JVMs
 # in parallel.
 ant test -Dtests.dups=N ...
+
+# Test beasting: Repeats every suite with same seed per class
+# (N times in parallel) and each test inside (M times). The whole
+# run is repeated (beasting) P times in a loop, with a different
+# master seed. You can combine beasting with any other parameter,
+# just replace "test" with "beast" and give -Dbeast.iters=P
+# (P >> 1).
+ant test -Dtests.dups=N -Dtests.iters=M -Dbeast.iters=P \
+  -Dtestcase=ClassName beast
 
 #
 # Test groups. ----------------------------------------------------
@@ -1289,13 +1298,29 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
 
   <!-- note: order here is important, the taskdef depends on test-framework
        jars so we just order it after compile-test to ensure that -->
-  <target name="test" depends="clover,compile-test,install-junit4-taskdef,validate,-init-totals,-test,-check-totals" description="Runs unit tests">
-  </target>
+  <target name="test" depends="clover,compile-test,install-junit4-taskdef,validate,-init-totals,-test,-check-totals" description="Runs unit tests"/>
+  <target name="beast" depends="clover,compile-test,install-junit4-taskdef,validate,-init-totals,-beast,-check-totals" description="Runs unit tests in a loop (-Dbeast.iters=n)"/>
 
   <!-- Run the actual tests (must be wrapped with -init-totals, -check-totals) -->
   <target name="-test">
     <mkdir dir="${junit.output.dir}"/>
     <test-macro threadNum="${tests.jvms.override}" />
+  </target>
+
+  <!-- Beast the actual tests (must be wrapped with -init-totals, -check-totals) -->
+  <target name="-beast" depends="resolve-groovy">
+    <groovy taskname="beaster"><![CDATA[
+      int iters = (properties['beast.iters'] ?: '1') as int;
+      def antcall = project.createTask('antcall');
+      antcall.target = '-test';
+      antcall.inheritAll = true;
+      antcall.inheritRefs = true;
+      (1..iters).each { i ->
+        task.log('Beast round: ' + i);
+        antcall.execute();
+      };
+      task.log('Beasting finished.');
+    ]]></groovy>
   </target>
 
   <target name="-check-totals" if="tests.totals.toplevel" depends="resolve-groovy">
@@ -1315,7 +1340,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       }
 
       // Interesting but let's keep the build output quiet.
-      // project.log("Grand total of all executed tests (including sub-modules): " + total);
+      // task.log("Grand total of all executed tests (including sub-modules): " + total);
     ]]></groovy>
   </target>
 
