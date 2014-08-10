@@ -1310,7 +1310,12 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   <!-- Beast the actual tests (must be wrapped with -init-totals, -check-totals) -->
   <target name="-beast" depends="resolve-groovy">
     <groovy taskname="beaster"><![CDATA[
+      import org.apache.tools.ant.BuildException;
+      
       int iters = (properties['beast.iters'] ?: '1') as int;
+      if (iters <= 1) {
+        throw new BuildException("Please give -Dbeast.iters with an int value > 1.");
+      }
       def antcall = project.createTask('antcall');
       antcall.target = '-test';
       antcall.inheritAll = true;
@@ -1326,8 +1331,10 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   <target name="-check-totals" if="tests.totals.toplevel" depends="resolve-groovy">
     <!-- We are concluding a test pass at the outermost level. Sum up all executed tests. -->
     <groovy><![CDATA[
+      import org.apache.tools.ant.BuildException;
+      
       total = 0;
-      statsFile = new File(project.getProperty("tests.totals.tmpfile"));
+      statsFile = new File(properties["tests.totals.tmpfile"]);
       statsFile.eachLine("UTF-8", { line ->
         if (line ==~ /^[0-9]+/) {
           total += Integer.valueOf(line);
@@ -1336,7 +1343,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       statsFile.delete();
 
       if (total == 0) {
-        throw new org.apache.tools.ant.BuildException("Not even a single test was executed (a typo in the filter pattern maybe)?");
+        throw new BuildException("Not even a single test was executed (a typo in the filter pattern maybe)?");
       }
 
       // Interesting but let's keep the build output quiet.
