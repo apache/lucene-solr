@@ -320,16 +320,16 @@
 
   <target name="define-lucene-javadoc-url" depends="resolve-groovy" unless="lucene.javadoc.url">
     <groovy><![CDATA[
-      String url, version = project.getProperty('version');
+      String url, version = properties['version'];
       if (version.contains('-SNAPSHOT')) {
-        url = new File(project.getProperty('common.dir'), 'build' + File.separator + 'docs').toURI().toASCIIString();
+        url = new File(properties['common.dir'], 'build' + File.separator + 'docs').toURI().toASCIIString();
         if (!(url =~ /\/$/)) url += '/';
       } else {
         version = version.replace('.', '_');
         url = 'http://lucene.apache.org/core/' + version + '/';
       }
       task.log('Using the following URL to refer to Lucene Javadocs: ' + url);
-      project.setProperty('lucene.javadoc.url', url);
+      properties['lucene.javadoc.url'] = url;
     ]]></groovy>
   </target>
 
