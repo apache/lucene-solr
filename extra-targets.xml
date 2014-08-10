@@ -101,6 +101,7 @@
       inline="true" conf="default" transitive="true" pathid="svnkit.classpath"/>
     <local name="svn.checkprops.failed"/>
     <local name="svn.unversioned.failed"/>
+    <local name="svn.keywords.failed"/>
     <local name="svn.changed.failed"/>
     <groovy taskname="svn" classpathref="svnkit.classpath"><![CDATA[
       import org.tmatesoft.svn.core.*;
@@ -111,7 +112,7 @@
       SVNStatusClient statusClient = manager.getStatusClient();
       SVNWCClient wcClient = manager.getWCClient();
       
-      File basedir = new File(project.getProperty('basedir')).getAbsoluteFile();
+      File basedir = new File(properties['basedir']).getAbsoluteFile();
       int baseLen = basedir.toString().length();
 
       // do some fake check, to verify if this is valid SVN working copy. If this fails ignore checks but log some useful message.
@@ -173,13 +174,15 @@
         file, prop -> withKeywords.add(convertRelative(file));
       } as ISVNPropertyHandler);
       
-      def convertSet2String = {
-        set -> set ? ('* ' + set.join(project.getProperty('line.separator') + '* ')) : null
+      def setProjectPropertyFromSet(prop, set) {
+        if (set) {
+          properties[prop] = '* ' + set.join(properties['line.separator'] + '* ');
+        }
       };
-      project.setProperty('svn.checkprops.failed', convertSet2String(missingProps));
-      project.setProperty('svn.keywords.failed', convertSet2String(withKeywords));
-      project.setProperty('svn.unversioned.failed', convertSet2String(unversioned));
-      project.setProperty('svn.changed.failed', convertSet2String(changed));
+      setProjectPropertyFromSet('svn.checkprops.failed', missingProps);
+      setProjectPropertyFromSet('svn.keywords.failed', withKeywords);
+      setProjectPropertyFromSet('svn.unversioned.failed', unversioned);
+      setProjectPropertyFromSet('svn.changed.failed', changed);
     ]]></groovy>
     <fail if="svn.checkprops.failed"
       message="The following files are missing svn:eol-style (or binary svn:mime-type):${line.separator}${svn.checkprops.failed}"/>
