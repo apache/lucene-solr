@@ -340,6 +340,9 @@ Other Changes
 
 * SOLR-6313: Improve SolrCloud cloud-dev scripts. (Mark Miller, Vamsee Yarlagadda)
 
+* SOLR-6360: Remove bogus "Content-Charset" header in HttpSolrServer. (Michael Ryan,
+  Uwe Schindler)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
