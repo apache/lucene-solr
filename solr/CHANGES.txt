@@ -348,8 +348,6 @@ Other Changes
 
 * SOLR-6362: Fix bug in TestSqlEntityProcessorDelta. (James Dyer)
 
-* SOLR-6363: Fix DIH JDBC tests to properly shut down embedded Derby db. (James Dyer)
-
 ==================  4.9.0 ==================
 
 Versions of Major Components
