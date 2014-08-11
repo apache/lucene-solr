@@ -74,7 +74,7 @@ public abstract class AbstractDIHJdbcTestCase extends
   @AfterClass
   public static void afterClassDihJdbcTest() throws Exception {
     try {
-      DriverManager.getConnection("jdbc:derby:;close=true;territory=en_US");
+      DriverManager.getConnection("jdbc:derby:;shutdown=true");
     } catch (SQLException e) {
       // ignore...we might not even be using derby this time...
     }
