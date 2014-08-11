@@ -18,6 +18,7 @@ package org.apache.lucene.index;
 
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
@@ -190,7 +191,7 @@ final class DocumentsWriterPerThreadPool {
       }
       // we are closed: unlock since the threadstate is not active anymore
       assert assertUnreleasedThreadStatesInactive();
-      return null;
+      throw new AlreadyClosedException("this IndexWriter is closed");
     } finally {
       if (unlock) {
         // in any case make sure we unlock if we fail 
