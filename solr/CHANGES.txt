@@ -175,6 +175,9 @@ New Features
 
 * SOLR-6283: Add support for Interval Faceting in SolrJ. (Tomás Fernández Löbbe)
 
+* SOLR-6304 : JsonLoader should be able to flatten an input JSON to multiple docs (Noble Paul)
+
+
 Bug Fixes
 ----------------------
 
