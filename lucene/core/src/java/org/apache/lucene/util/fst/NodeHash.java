@@ -33,7 +33,7 @@ final class NodeHash<T> {
   private final FST.BytesReader in;
 
   public NodeHash(FST<T> fst, FST.BytesReader in) {
-    table = new PagedGrowableWriter(16, 1<<30, 8, PackedInts.COMPACT);
+    table = new PagedGrowableWriter(16, 1<<27, 8, PackedInts.COMPACT);
     mask = 15;
     this.fst = fst;
     this.in = in;
