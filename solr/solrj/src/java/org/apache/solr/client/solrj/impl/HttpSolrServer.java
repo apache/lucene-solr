@@ -322,7 +322,6 @@ public class HttpSolrServer extends SolrServer {
             LinkedList<NameValuePair> postParams = new LinkedList<>();
             if (streams == null || isMultipart) {
               HttpPost post = new HttpPost(url + ClientUtils.toQueryString( queryParams, false ));
-              post.setHeader("Content-Charset", "UTF-8");
               if (!isMultipart) {
                 post.addHeader("Content-Type",
                     "application/x-www-form-urlencoded; charset=UTF-8");

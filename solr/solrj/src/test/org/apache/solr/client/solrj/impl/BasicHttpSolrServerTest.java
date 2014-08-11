@@ -231,7 +231,6 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
     assertEquals("Solr[" + org.apache.solr.client.solrj.impl.HttpSolrServer.class.getName() + "] 1.0", DebugServlet.headers.get("User-Agent"));
     assertEquals("keep-alive", DebugServlet.headers.get("Connection"));
     assertEquals("application/x-www-form-urlencoded; charset=UTF-8", DebugServlet.headers.get("Content-Type"));
-    assertEquals("UTF-8", DebugServlet.headers.get("Content-Charset"));
 
     //XML/GET
     server.setParser(new XMLResponseParser());
@@ -267,7 +266,6 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
     assertEquals("Solr[" + org.apache.solr.client.solrj.impl.HttpSolrServer.class.getName() + "] 1.0", DebugServlet.headers.get("User-Agent"));
     assertEquals("keep-alive", DebugServlet.headers.get("Connection"));
     assertEquals("application/x-www-form-urlencoded; charset=UTF-8", DebugServlet.headers.get("Content-Type"));
-    assertEquals("UTF-8", DebugServlet.headers.get("Content-Charset"));
     server.shutdown();
   }
 
