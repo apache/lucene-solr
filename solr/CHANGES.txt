@@ -346,6 +346,8 @@ Other Changes
 * SOLR-6360: Remove bogus "Content-Charset" header in HttpSolrServer. (Michael Ryan,
   Uwe Schindler)
 
+* SOLR-6362: Fix bug in TestSqlEntityProcessorDelta. (James Dyer)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
