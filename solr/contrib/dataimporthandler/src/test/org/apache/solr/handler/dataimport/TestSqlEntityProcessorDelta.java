@@ -127,7 +127,7 @@ public class TestSqlEntityProcessorDelta extends AbstractSqlEntityProcessorTestC
     }
     if(countryChanges!=null) {      
       for(String code : countryChanges) {
-        assertQ(req("COUNTRY_CODE_s:" + code), "//*[@numFound='" + numberPeopleByCountryCode(code) + "']", "substring(//doc/str[@name='COUNTRY_NAME_s'], 1, 8)='MODIFIED'");
+        assertQ(req("COUNTRY_CODE_s:" + code), "//*[@numFound='" + numberPeopleByCountryCode(code) + "']", "substring((//doc/str[@name='COUNTRY_NAME_s'])[1], 1, 8)='MODIFIED'");
       }
     }
   }
