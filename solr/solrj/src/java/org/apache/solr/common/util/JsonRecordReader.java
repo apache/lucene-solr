@@ -98,7 +98,7 @@ public class JsonRecordReader {
     if ("".equals(paths.get(0).trim()))
       paths.remove(0);
     rootNode.build(paths, fieldName, multiValued, isRecord, path);
-//    rootNode.buildOptimise(null);
+    rootNode.buildOptimize();
   }
 
   /**
@@ -154,8 +154,6 @@ public class JsonRecordReader {
     String fieldName; // the fieldname in the emitted record (key of the map)
     String splitPath; // the full path from the forEach entity attribute
     final LinkedHashMap<String ,Node> childNodes = new LinkedHashMap<>(); // List of immediate child Nodes of this node
-    List<Node> wildCardNodes; // List of '//' style decendants of this Node
-    Node wildAncestor; // ancestor Node containing '//' style decendants
     Node parent; // parent Node in the tree
     boolean isLeaf = false; // flag: store/emit streamed text for this node
     boolean isRecord = false; //flag: this Node starts a new record
@@ -179,14 +177,13 @@ public class JsonRecordReader {
 
     /**
      * Walk the Node tree propagating any wildDescentant information to
-     * child nodes. This allows us to optimise the performance of the
-     * main getInst method.
+     * child nodes.
      */
-    private void buildOptimise(Node wa) {
-      wildAncestor = wa;
-      if (wildCardNodes != null) wa = this;
-      if (childNodes != null)
-        for (Node n : childNodes.values()) n.buildOptimise(wa);
+    private void buildOptimize() {
+      if(parent != null && parent.recursiveWildCardChild !=null && this.recursiveWildCardChild ==null){
+        this.recursiveWildCardChild = parent.recursiveWildCardChild;
+      }
+      for (Node n : childNodes.values()) n.buildOptimize();
     }
     static final String WILDCARD_PATH = "*";
     static final String RECURSIVE_WILDCARD_PATH = "**";
@@ -259,7 +256,7 @@ public class JsonRecordReader {
      * deep-copied for thread safety
      */
     private static Map<String, Object> getDeepCopy(Map<String, Object> values) {
-      Map<String, Object> result = new HashMap<>();
+      Map<String, Object> result = new LinkedHashMap<>();
       for (Map.Entry<String, Object> entry : values.entrySet()) {
         if (entry.getValue() instanceof List) {
           result.put(entry.getKey(), new ArrayList((List) entry.getValue()));
