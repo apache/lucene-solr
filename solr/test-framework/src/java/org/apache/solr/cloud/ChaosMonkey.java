@@ -567,19 +567,25 @@ public class ChaosMonkey {
       jetty.start();
     } catch (Exception e) {
       jetty.stop();
-      Thread.sleep(2000);
+      Thread.sleep(3000);
       try {
         jetty.start();
       } catch (Exception e2) {
         jetty.stop();
-        Thread.sleep(5000);
+        Thread.sleep(10000);
         try {
           jetty.start();
         } catch (Exception e3) {
-          log.error("Could not get the port to start jetty again", e3);
-          // we coud not get the port
           jetty.stop();
-          return false;
+          Thread.sleep(30000);
+          try {
+            jetty.start();
+          } catch (Exception e4) {
+            log.error("Could not get the port to start jetty again", e4);
+            // we coud not get the port
+            jetty.stop();
+            return false;
+          }
         }
       }
     }
