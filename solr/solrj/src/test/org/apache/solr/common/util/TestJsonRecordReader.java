@@ -156,4 +156,37 @@ public class TestJsonRecordReader  extends SolrTestCaseJ4 {
 
   }
 
+  public void testRecursiveWildcard2() throws Exception{
+    String json = "{\n" +
+        "  \"first\": \"John\",\n" +
+        "  \"last\": \"Doe\",\n" +
+        "  \"grade\": 8,\n" +
+        "  \"exams\": [\n" +
+        "      {\n" +
+        "        \"subject\": \"Maths\",\n" +
+        "        \"test\"   : \"term1\",\n" +
+        "        \"marks\":90},\n" +
+        "        {\n" +
+        "         \"subject\": \"Biology\",\n" +
+        "         \"test\"   : \"term1\",\n" +
+        "         \"marks\":86}\n" +
+        "      ]\n" +
+        "}";
+
+    JsonRecordReader streamer;
+    List<Map<String, Object>> records;
+
+    streamer = JsonRecordReader.getInst("/exams", Collections.singletonList("/**"));
+    records = streamer.getAllRecords(new StringReader(json));
+    assertEquals(2, records.size());
+    for (Map<String, Object> record : records) {
+      assertEquals(6,record.size());
+    }
+    streamer = JsonRecordReader.getInst("/", Collections.singletonList("txt:/**"));
+    records = streamer.getAllRecords(new StringReader(json));
+    assertEquals(1, records.size());
+    assertEquals(9, ((List)records.get(0).get("txt")).size() );
+
+  }
+
 }
