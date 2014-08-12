@@ -43,6 +43,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
 
 /** Records per-dimension configuration.  By default a
  *  dimension is flat, single valued and does
@@ -308,7 +309,7 @@ public class FacetsConfig {
       String indexFieldName = ent.getKey();
       //System.out.println("  indexFieldName=" + indexFieldName + " fields=" + ent.getValue());
 
-      IntsRef ordinals = new IntsRef(32);
+      IntsRefBuilder ordinals = new IntsRefBuilder();
       for(FacetField facetField : ent.getValue()) {
 
         FacetsConfig.DimConfig ft = getDimConfig(facetField.dim);
@@ -320,10 +321,7 @@ public class FacetsConfig {
 
         checkTaxoWriter(taxoWriter);
         int ordinal = taxoWriter.addCategory(cp);
-        if (ordinals.length == ordinals.ints.length) {
-          ordinals.grow(ordinals.length+1);
-        }
-        ordinals.ints[ordinals.length++] = ordinal;
+        ordinals.append(ordinal);
         //System.out.println("ords[" + (ordinals.length-1) + "]=" + ordinal);
         //System.out.println("  add cp=" + cp);
 
@@ -332,16 +330,13 @@ public class FacetsConfig {
           // Add all parents too:
           int parent = taxoWriter.getParent(ordinal);
           while (parent > 0) {
-            if (ordinals.ints.length == ordinals.length) {
-              ordinals.grow(ordinals.length+1);
-            }
-            ordinals.ints[ordinals.length++] = parent;
+            ordinals.append(parent);
             parent = taxoWriter.getParent(parent);
           }
 
           if (ft.requireDimCount == false) {
             // Remove last (dimension) ord:
-            ordinals.length--;
+            ordinals.setLength(ordinals.length() - 1);
           }
         }
 
@@ -353,7 +348,7 @@ public class FacetsConfig {
 
       // Facet counts:
       // DocValues are considered stored fields:
-      doc.add(new BinaryDocValuesField(indexFieldName, dedupAndEncode(ordinals)));
+      doc.add(new BinaryDocValuesField(indexFieldName, dedupAndEncode(ordinals.get())));
     }
   }
 

@@ -28,6 +28,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -58,7 +59,7 @@ public class SimpleTextStoredFieldsWriter extends StoredFieldsWriter {
   final static BytesRef TYPE     = new BytesRef("    type ");
   final static BytesRef VALUE    = new BytesRef("    value ");
   
-  private final BytesRef scratch = new BytesRef();
+  private final BytesRefBuilder scratch = new BytesRefBuilder();
   
   public SimpleTextStoredFieldsWriter(Directory directory, String segment, IOContext context) throws IOException {
     this.directory = directory;

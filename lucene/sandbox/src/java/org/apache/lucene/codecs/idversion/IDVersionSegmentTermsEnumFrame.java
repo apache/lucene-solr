@@ -266,11 +266,9 @@ final class IDVersionSegmentTermsEnumFrame {
     nextEnt++;
     suffix = suffixesReader.readVInt();
     startBytePos = suffixesReader.getPosition();
-    ste.term.length = prefix + suffix;
-    if (ste.term.bytes.length < ste.term.length) {
-      ste.term.grow(ste.term.length);
-    }
-    suffixesReader.readBytes(ste.term.bytes, prefix, suffix);
+    ste.term.setLength(prefix + suffix);
+    ste.term.grow(ste.term.length());
+    suffixesReader.readBytes(ste.term.bytes(), prefix, suffix);
     // A normal term
     ste.termExists = true;
     return false;
@@ -283,11 +281,9 @@ final class IDVersionSegmentTermsEnumFrame {
     final int code = suffixesReader.readVInt();
     suffix = code >>> 1;
     startBytePos = suffixesReader.getPosition();
-    ste.term.length = prefix + suffix;
-    if (ste.term.bytes.length < ste.term.length) {
-      ste.term.grow(ste.term.length);
-    }
-    suffixesReader.readBytes(ste.term.bytes, prefix, suffix);
+    ste.term.setLength(prefix + suffix);
+    ste.term.grow(ste.term.length());
+    suffixesReader.readBytes(ste.term.bytes(), prefix, suffix);
     if ((code & 1) == 0) {
       // A normal term
       ste.termExists = true;
@@ -417,7 +413,7 @@ final class IDVersionSegmentTermsEnumFrame {
   // Used only by assert
   private boolean prefixMatches(BytesRef target) {
     for(int bytePos=0;bytePos<prefix;bytePos++) {
-      if (target.bytes[target.offset + bytePos] != ste.term.bytes[bytePos]) {
+      if (target.bytes[target.offset + bytePos] != ste.term.byteAt(bytePos)) {
         return false;
       }
     }
@@ -552,7 +548,7 @@ final class IDVersionSegmentTermsEnumFrame {
             ste.currentFrame = ste.pushFrame(null, ste.currentFrame.lastSubFP, termLen);
             ste.currentFrame.loadBlock();
             while (ste.currentFrame.next()) {
-              ste.currentFrame = ste.pushFrame(null, ste.currentFrame.lastSubFP, ste.term.length);
+              ste.currentFrame = ste.pushFrame(null, ste.currentFrame.lastSubFP, ste.term.length());
               ste.currentFrame.loadBlock();
             }
           }
@@ -685,7 +681,7 @@ final class IDVersionSegmentTermsEnumFrame {
             ste.currentFrame = ste.pushFrame(null, ste.currentFrame.lastSubFP, termLen);
             ste.currentFrame.loadBlock();
             while (ste.currentFrame.next()) {
-              ste.currentFrame = ste.pushFrame(null, ste.currentFrame.lastSubFP, ste.term.length);
+              ste.currentFrame = ste.pushFrame(null, ste.currentFrame.lastSubFP, ste.term.length());
               ste.currentFrame.loadBlock();
             }
           }
@@ -729,10 +725,8 @@ final class IDVersionSegmentTermsEnumFrame {
 
   private void fillTerm() {
     final int termLength = prefix + suffix;
-    ste.term.length = prefix + suffix;
-    if (ste.term.bytes.length < termLength) {
-      ste.term.grow(termLength);
-    }
-    System.arraycopy(suffixBytes, startBytePos, ste.term.bytes, prefix, suffix);
+    ste.term.setLength(prefix + suffix);
+    ste.term.grow(termLength);
+    System.arraycopy(suffixBytes, startBytePos, ste.term.bytes(), prefix, suffix);
   }
 }

@@ -99,16 +99,15 @@ public final class BytesRefArray {
    * @param index the elements index to retrieve 
    * @return the <i>n'th</i> element of this {@link BytesRefArray}
    */
-  public BytesRef get(BytesRef spare, int index) {
+  public BytesRef get(BytesRefBuilder spare, int index) {
     if (lastElement > index) {
       int offset = offsets[index];
       int length = index == lastElement - 1 ? currentOffset - offset
           : offsets[index + 1] - offset;
-      assert spare.offset == 0;
       spare.grow(length);
-      spare.length = length;
-      pool.readBytes(offset, spare.bytes, spare.offset, spare.length);
-      return spare;
+      spare.setLength(length);
+      pool.readBytes(offset, spare.bytes(), 0, spare.length());
+      return spare.get();
     }
     throw new IndexOutOfBoundsException("index " + index
         + " must be less than the size: " + lastElement);
@@ -137,7 +136,7 @@ public final class BytesRefArray {
       @Override
       protected void setPivot(int i) {
         final int index = orderedEntries[i];
-        get(pivot, index);
+        pivot = get(pivotBuilder, index);
       }
       
       @Override
@@ -145,9 +144,11 @@ public final class BytesRefArray {
         final int index = orderedEntries[j];
         return comp.compare(pivot, get(scratch2, index));
       }
-      
-      private final BytesRef pivot = new BytesRef(), scratch1 = new BytesRef(),
-          scratch2 = new BytesRef();
+
+      private BytesRef pivot;
+      private final BytesRefBuilder pivotBuilder = new BytesRefBuilder(),
+          scratch1 = new BytesRefBuilder(),
+          scratch2 = new BytesRefBuilder();
     }.sort(0, size());
     return orderedEntries;
   }
@@ -174,7 +175,7 @@ public final class BytesRefArray {
    * </p>
    */
   public BytesRefIterator iterator(final Comparator<BytesRef> comp) {
-    final BytesRef spare = new BytesRef();
+    final BytesRefBuilder spare = new BytesRefBuilder();
     final int size = size();
     final int[] indices = comp == null ? null : sort(comp);
     return new BytesRefIterator() {

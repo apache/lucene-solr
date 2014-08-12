@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.SolrDocument;
@@ -68,11 +69,11 @@ public class PHPSerializedResponseWriter implements QueryResponseWriter {
 }
 
 class PHPSerializedWriter extends JSONWriter {
-  final BytesRef utf8;
+  byte[] utf8;
 
   public PHPSerializedWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
     super(writer, req, rsp);
-    this.utf8 = new BytesRef();
+    this.utf8 = BytesRef.EMPTY_BYTES;
     // never indent serialized PHP data
     doIndent = false;
   }
@@ -267,8 +268,8 @@ class PHPSerializedWriter extends JSONWriter {
   public void writeStr(String name, String val, boolean needsEscaping) throws IOException {
     // serialized PHP strings don't need to be escaped at all, however the 
     // string size reported needs be the number of bytes rather than chars.
-    UnicodeUtil.UTF16toUTF8(val, 0, val.length(), utf8);
-    int nBytes = utf8.length;
+    utf8 = ArrayUtil.grow(utf8, val.length() * UnicodeUtil.MAX_UTF8_BYTES_PER_CHAR);
+    final int nBytes = UnicodeUtil.UTF16toUTF8(val, 0, val.length(), utf8);
 
     writer.write("s:");
     writer.write(Integer.toString(nBytes));

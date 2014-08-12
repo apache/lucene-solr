@@ -603,14 +603,14 @@ public class TestBlockJoin extends LuceneTestCase {
       }
     }
 
+    BytesRefBuilder term = new BytesRefBuilder();
     for(int deleteID : toDelete) {
       if (VERBOSE) {
         System.out.println("DELETE parentID=" + deleteID);
       }
-      BytesRef term = new BytesRef();
       NumericUtils.intToPrefixCodedBytes(deleteID, 0, term);
-      w.deleteDocuments(new Term("blockID", term));
-      joinW.deleteDocuments(new Term("blockID", term));
+      w.deleteDocuments(new Term("blockID", term.toBytesRef()));
+      joinW.deleteDocuments(new Term("blockID", term.toBytesRef()));
     }
 
     final IndexReader r = w.getReader();

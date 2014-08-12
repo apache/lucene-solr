@@ -195,7 +195,7 @@ public class GroupingSearchTest extends LuceneTestCase {
       assertEquals(new BytesRef(expected), group.groupValue);
     } else if (group.groupValue.getClass().isAssignableFrom(MutableValueStr.class)) {
       MutableValueStr v = new MutableValueStr();
-      v.value = new BytesRef(expected);
+      v.value.copyChars(expected);
       assertEquals(v, group.groupValue);
     } else {
       fail();

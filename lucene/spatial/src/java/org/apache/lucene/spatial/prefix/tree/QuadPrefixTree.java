@@ -22,11 +22,13 @@ import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
+
 import org.apache.lucene.util.BytesRef;
 
 import java.io.PrintStream;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -231,21 +233,20 @@ public class QuadPrefixTree extends LegacyPrefixTree {
     @Override
     protected Collection<Cell> getSubCells() {
       BytesRef source = getTokenBytesNoLeaf(null);
-      BytesRef target = new BytesRef();
 
       List<Cell> cells = new ArrayList<>(4);
-      cells.add(new QuadCell(concat(source, (byte)'A', target), null));
-      cells.add(new QuadCell(concat(source, (byte)'B', target), null));
-      cells.add(new QuadCell(concat(source, (byte)'C', target), null));
-      cells.add(new QuadCell(concat(source, (byte)'D', target), null));
+      cells.add(new QuadCell(concat(source, (byte)'A'), null));
+      cells.add(new QuadCell(concat(source, (byte)'B'), null));
+      cells.add(new QuadCell(concat(source, (byte)'C'), null));
+      cells.add(new QuadCell(concat(source, (byte)'D'), null));
       return cells;
     }
 
-    private BytesRef concat(BytesRef source, byte b, BytesRef target) {
-      assert target.offset == 0;
-      target.bytes = new byte[source.length + 2];//+2 for new char + potential leaf
-      target.length = 0;
-      target.copyBytes(source);
+    private BytesRef concat(BytesRef source, byte b) {
+      //+2 for new char + potential leaf
+      final byte[] buffer = Arrays.copyOfRange(source.bytes, source.offset, source.offset + source.length + 2);
+      BytesRef target = new BytesRef(buffer);
+      target.length = source.length;
       target.bytes[target.length++] = b;
       return target;
     }

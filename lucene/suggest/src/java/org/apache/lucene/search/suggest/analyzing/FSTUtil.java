@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Transition;
 import org.apache.lucene.util.fst.FST;
@@ -51,10 +52,10 @@ public class FSTUtil {
     T output;
 
     /** Input of the path so far: */
-    public final IntsRef input;
+    public final IntsRefBuilder input;
 
     /** Sole constructor. */
-    public Path(int state, FST.Arc<T> fstNode, T output, IntsRef input) {
+    public Path(int state, FST.Arc<T> fstNode, T output, IntsRefBuilder input) {
       this.state = state;
       this.fstNode = fstNode;
       this.output = output;
@@ -77,7 +78,7 @@ public class FSTUtil {
 
     queue.add(new Path<>(0, fst
         .getFirstArc(new FST.Arc<T>()), fst.outputs.getNoOutput(),
-        new IntsRef()));
+        new IntsRefBuilder()));
     
     final FST.Arc<T> scratchArc = new FST.Arc<>();
     final FST.BytesReader fstReader = fst.getBytesReader();
@@ -93,7 +94,7 @@ public class FSTUtil {
         continue;
       }
       
-      IntsRef currentInput = path.input;
+      IntsRefBuilder currentInput = path.input;
       int count = a.initTransition(path.state, t);
       for (int i=0;i<count;i++) {
         a.getNextTransition(t);
@@ -103,10 +104,9 @@ public class FSTUtil {
           final FST.Arc<T> nextArc = fst.findTargetArc(t.min,
               path.fstNode, scratchArc, fstReader);
           if (nextArc != null) {
-            final IntsRef newInput = new IntsRef(currentInput.length + 1);
-            newInput.copyInts(currentInput);
-            newInput.ints[currentInput.length] = t.min;
-            newInput.length = currentInput.length + 1;
+            final IntsRefBuilder newInput = new IntsRefBuilder();
+            newInput.copyInts(currentInput.get());
+            newInput.append(t.min);
             queue.add(new Path<>(t.dest, new FST.Arc<T>()
                 .copyFrom(nextArc), fst.outputs
                 .add(path.output, nextArc.output), newInput));
@@ -125,10 +125,9 @@ public class FSTUtil {
             assert nextArc.label <=  max;
             assert nextArc.label >= min : nextArc.label + " "
                 + min;
-            final IntsRef newInput = new IntsRef(currentInput.length + 1);
-            newInput.copyInts(currentInput);
-            newInput.ints[currentInput.length] = nextArc.label;
-            newInput.length = currentInput.length + 1;
+            final IntsRefBuilder newInput = new IntsRefBuilder();
+            newInput.copyInts(currentInput.get());
+            newInput.append(nextArc.label);
             queue.add(new Path<>(t.dest, new FST.Arc<T>()
                 .copyFrom(nextArc), fst.outputs
                 .add(path.output, nextArc.output), newInput));

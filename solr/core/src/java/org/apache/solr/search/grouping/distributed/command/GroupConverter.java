@@ -26,6 +26,7 @@ import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueDate;
 import org.apache.lucene.util.mutable.MutableValueDouble;
@@ -53,9 +54,9 @@ class GroupConverter {
       SearchGroup<BytesRef> converted = new SearchGroup<BytesRef>();
       converted.sortValues = original.sortValues;
       if (original.groupValue.exists) {
-        BytesRef binary = new BytesRef();
+        BytesRefBuilder binary = new BytesRefBuilder();
         fieldType.readableToIndexed(original.groupValue.toString(), binary);
-        converted.groupValue = binary;
+        converted.groupValue = binary.get();
       } else {
         converted.groupValue = null;
       }
@@ -146,9 +147,9 @@ class GroupConverter {
       GroupDocs<MutableValue> original = values.groups[i];
       final BytesRef groupValue;
       if (original.groupValue.exists) {
-        BytesRef binary = new BytesRef();
+        BytesRefBuilder binary = new BytesRefBuilder();
         fieldType.readableToIndexed(original.groupValue.toString(), binary);
-        groupValue = binary;
+        groupValue = binary.get();
       } else {
         groupValue = null;
       }

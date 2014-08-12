@@ -34,7 +34,9 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
@@ -57,8 +59,8 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
 
   private long offsets[]; /* docid -> offset in .fld file */
   private IndexInput in;
-  private BytesRef scratch = new BytesRef();
-  private CharsRef scratchUTF16 = new CharsRef();
+  private BytesRefBuilder scratch = new BytesRefBuilder();
+  private CharsRefBuilder scratchUTF16 = new CharsRefBuilder();
   private final FieldInfos fieldInfos;
 
   public SimpleTextStoredFieldsReader(Directory directory, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
@@ -91,9 +93,9 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
     ChecksumIndexInput input = new BufferedChecksumIndexInput(in);
     offsets = new long[size];
     int upto = 0;
-    while (!scratch.equals(END)) {
+    while (!scratch.get().equals(END)) {
       SimpleTextUtil.readLine(input, scratch);
-      if (StringHelper.startsWith(scratch, DOC)) {
+      if (StringHelper.startsWith(scratch.get(), DOC)) {
         offsets[upto] = input.getFilePointer();
         upto++;
       }
@@ -108,28 +110,28 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
     
     while (true) {
       readLine();
-      if (StringHelper.startsWith(scratch, FIELD) == false) {
+      if (StringHelper.startsWith(scratch.get(), FIELD) == false) {
         break;
       }
       int fieldNumber = parseIntAt(FIELD.length);
       FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldNumber);
       readLine();
-      assert StringHelper.startsWith(scratch, NAME);
+      assert StringHelper.startsWith(scratch.get(), NAME);
       readLine();
-      assert StringHelper.startsWith(scratch, TYPE);
+      assert StringHelper.startsWith(scratch.get(), TYPE);
       
       final BytesRef type;
-      if (equalsAt(TYPE_STRING, scratch, TYPE.length)) {
+      if (equalsAt(TYPE_STRING, scratch.get(), TYPE.length)) {
         type = TYPE_STRING;
-      } else if (equalsAt(TYPE_BINARY, scratch, TYPE.length)) {
+      } else if (equalsAt(TYPE_BINARY, scratch.get(), TYPE.length)) {
         type = TYPE_BINARY;
-      } else if (equalsAt(TYPE_INT, scratch, TYPE.length)) {
+      } else if (equalsAt(TYPE_INT, scratch.get(), TYPE.length)) {
         type = TYPE_INT;
-      } else if (equalsAt(TYPE_LONG, scratch, TYPE.length)) {
+      } else if (equalsAt(TYPE_LONG, scratch.get(), TYPE.length)) {
         type = TYPE_LONG;
-      } else if (equalsAt(TYPE_FLOAT, scratch, TYPE.length)) {
+      } else if (equalsAt(TYPE_FLOAT, scratch.get(), TYPE.length)) {
         type = TYPE_FLOAT;
-      } else if (equalsAt(TYPE_DOUBLE, scratch, TYPE.length)) {
+      } else if (equalsAt(TYPE_DOUBLE, scratch.get(), TYPE.length)) {
         type = TYPE_DOUBLE;
       } else {
         throw new RuntimeException("unknown field type");
@@ -141,7 +143,7 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
           break;
         case NO:   
           readLine();
-          assert StringHelper.startsWith(scratch, VALUE);
+          assert StringHelper.startsWith(scratch.get(), VALUE);
           break;
         case STOP: return;
       }
@@ -150,24 +152,24 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
   
   private void readField(BytesRef type, FieldInfo fieldInfo, StoredFieldVisitor visitor) throws IOException {
     readLine();
-    assert StringHelper.startsWith(scratch, VALUE);
+    assert StringHelper.startsWith(scratch.get(), VALUE);
     if (type == TYPE_STRING) {
-      visitor.stringField(fieldInfo, new String(scratch.bytes, scratch.offset+VALUE.length, scratch.length-VALUE.length, StandardCharsets.UTF_8));
+      visitor.stringField(fieldInfo, new String(scratch.bytes(), VALUE.length, scratch.length()-VALUE.length, StandardCharsets.UTF_8));
     } else if (type == TYPE_BINARY) {
-      byte[] copy = new byte[scratch.length-VALUE.length];
-      System.arraycopy(scratch.bytes, scratch.offset+VALUE.length, copy, 0, copy.length);
+      byte[] copy = new byte[scratch.length()-VALUE.length];
+      System.arraycopy(scratch.bytes(), VALUE.length, copy, 0, copy.length);
       visitor.binaryField(fieldInfo, copy);
     } else if (type == TYPE_INT) {
-      UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+VALUE.length, scratch.length-VALUE.length, scratchUTF16);
+      scratchUTF16.copyUTF8Bytes(scratch.bytes(), VALUE.length, scratch.length()-VALUE.length);
       visitor.intField(fieldInfo, Integer.parseInt(scratchUTF16.toString()));
     } else if (type == TYPE_LONG) {
-      UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+VALUE.length, scratch.length-VALUE.length, scratchUTF16);
+      scratchUTF16.copyUTF8Bytes(scratch.bytes(), VALUE.length, scratch.length()-VALUE.length);
       visitor.longField(fieldInfo, Long.parseLong(scratchUTF16.toString()));
     } else if (type == TYPE_FLOAT) {
-      UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+VALUE.length, scratch.length-VALUE.length, scratchUTF16);
+      scratchUTF16.copyUTF8Bytes(scratch.bytes(), VALUE.length, scratch.length()-VALUE.length);
       visitor.floatField(fieldInfo, Float.parseFloat(scratchUTF16.toString()));
     } else if (type == TYPE_DOUBLE) {
-      UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+VALUE.length, scratch.length-VALUE.length, scratchUTF16);
+      scratchUTF16.copyUTF8Bytes(scratch.bytes(), VALUE.length, scratch.length()-VALUE.length);
       visitor.doubleField(fieldInfo, Double.parseDouble(scratchUTF16.toString()));
     }
   }
@@ -195,8 +197,8 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
   }
   
   private int parseIntAt(int offset) {
-    UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+offset, scratch.length-offset, scratchUTF16);
-    return ArrayUtil.parseInt(scratchUTF16.chars, 0, scratchUTF16.length);
+    scratchUTF16.copyUTF8Bytes(scratch.bytes(), offset, scratch.length()-offset);
+    return ArrayUtil.parseInt(scratchUTF16.chars(), 0, scratchUTF16.length());
   }
   
   private boolean equalsAt(BytesRef a, BytesRef b, int bOffset) {
@@ -207,7 +209,7 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
   @Override
   public long ramBytesUsed() {
     return BASE_RAM_BYTES_USED + RamUsageEstimator.sizeOf(offsets)
-        + RamUsageEstimator.sizeOf(scratch.bytes) + RamUsageEstimator.sizeOf(scratchUTF16.chars);
+        + RamUsageEstimator.sizeOf(scratch.bytes()) + RamUsageEstimator.sizeOf(scratchUTF16.chars());
   }
 
   @Override

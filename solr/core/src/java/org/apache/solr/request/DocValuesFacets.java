@@ -31,7 +31,9 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.params.FacetParams;
@@ -86,22 +88,23 @@ public class DocValuesFacets {
       throw new UnsupportedOperationException("Currently this faceting method is limited to " + Integer.MAX_VALUE + " unique terms");
     }
 
-    final BytesRef prefixRef;
+    final BytesRefBuilder prefixRef;
     if (prefix == null) {
       prefixRef = null;
     } else if (prefix.length()==0) {
       prefix = null;
       prefixRef = null;
     } else {
-      prefixRef = new BytesRef(prefix);
+      prefixRef = new BytesRefBuilder();
+      prefixRef.copyChars(prefix);
     }
 
     int startTermIndex, endTermIndex;
     if (prefix!=null) {
-      startTermIndex = (int) si.lookupTerm(prefixRef);
+      startTermIndex = (int) si.lookupTerm(prefixRef.get());
       if (startTermIndex<0) startTermIndex=-startTermIndex-1;
       prefixRef.append(UnicodeUtil.BIG_TERM);
-      endTermIndex = (int) si.lookupTerm(prefixRef);
+      endTermIndex = (int) si.lookupTerm(prefixRef.get());
       assert endTermIndex < 0;
       endTermIndex = -endTermIndex-1;
     } else {
@@ -111,7 +114,7 @@ public class DocValuesFacets {
 
     final int nTerms=endTermIndex-startTermIndex;
     int missingCount = -1; 
-    final CharsRef charsRef = new CharsRef(10);
+    final CharsRefBuilder charsRef = new CharsRefBuilder();
     if (nTerms>0 && docs.size() >= mincount) {
 
       // count collection array only needs to be as big as the number of terms we are

@@ -18,7 +18,9 @@ package org.apache.solr.handler.component;
 
 import org.apache.lucene.index.*;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.*;
@@ -29,7 +31,6 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.request.SimpleFacets.CountPair;
 import org.apache.solr.util.BoundedTreeSet;
-
 import org.apache.solr.client.solrj.response.TermsResponse;
 
 import java.io.IOException;
@@ -138,8 +139,9 @@ public class TermsComponent extends SearchComponent {
 
       BytesRef upperBytes = null;
       if (upperStr != null) {
-        upperBytes = new BytesRef();
-        ft.readableToIndexed(upperStr, upperBytes);
+        BytesRefBuilder b = new BytesRefBuilder();
+        ft.readableToIndexed(upperStr, b);
+        upperBytes = b.get();
       }
 
       BytesRef lowerBytes;
@@ -153,8 +155,9 @@ public class TermsComponent extends SearchComponent {
           // perhaps we detect if the FieldType is non-character and expect hex if so?
           lowerBytes = new BytesRef(lowerStr);
         } else {
-          lowerBytes = new BytesRef();
-          ft.readableToIndexed(lowerStr, lowerBytes);
+          BytesRefBuilder b = new BytesRefBuilder();
+          ft.readableToIndexed(lowerStr, b);
+          lowerBytes = b.get();
         }
       }
 
@@ -179,7 +182,7 @@ public class TermsComponent extends SearchComponent {
 
       int i = 0;
       BoundedTreeSet<CountPair<BytesRef, Integer>> queue = (sort ? new BoundedTreeSet<CountPair<BytesRef, Integer>>(limit) : null);
-      CharsRef external = new CharsRef();
+      CharsRefBuilder external = new CharsRefBuilder();
       while (term != null && (i<limit || sort)) {
         boolean externalized = false; // did we fill in "external" yet for this term?
 
@@ -191,7 +194,7 @@ public class TermsComponent extends SearchComponent {
           // TODO: support "raw" mode?
           ft.indexedToReadable(term, external);
           externalized = true;
-          if (!pattern.matcher(external).matches()) {
+          if (!pattern.matcher(external.get()).matches()) {
             term = termsEnum.next();
             continue;
           }

@@ -23,7 +23,7 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 
 import java.io.IOException;
 import java.util.List;
@@ -94,7 +94,7 @@ public class IfFunction extends BoolFunction {
       }
 
       @Override
-      public boolean bytesVal(int doc, BytesRef target) {
+      public boolean bytesVal(int doc, BytesRefBuilder target) {
         return ifVals.boolVal(doc) ? trueVals.bytesVal(doc, target) : falseVals.bytesVal(doc, target);
       }
 

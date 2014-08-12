@@ -30,6 +30,7 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 
 /**
  * Base rewrite method for collecting only the top terms
@@ -86,14 +87,15 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
       }
     
       // for assert:
-      private BytesRef lastTerm;
+      private BytesRefBuilder lastTerm;
       private boolean compareToLastTerm(BytesRef t) {
         if (lastTerm == null && t != null) {
-          lastTerm = BytesRef.deepCopyOf(t);
+          lastTerm = new BytesRefBuilder();
+          lastTerm.append(t);
         } else if (t == null) {
           lastTerm = null;
         } else {
-          assert lastTerm.compareTo(t) < 0: "lastTerm=" + lastTerm + " t=" + t;
+          assert lastTerm.get().compareTo(t) < 0: "lastTerm=" + lastTerm + " t=" + t;
           lastTerm.copyBytes(t);
         }
         return true;
@@ -113,7 +115,7 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
           final ScoreTerm t = stQueue.peek();
           if (boost < t.boost)
             return true;
-          if (boost == t.boost && bytes.compareTo(t.bytes) > 0)
+          if (boost == t.boost && bytes.compareTo(t.bytes.get()) > 0)
             return true;
         }
         ScoreTerm t = visitedTerms.get(bytes);
@@ -127,14 +129,14 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
           // add new entry in PQ, we must clone the term, else it may get overwritten!
           st.bytes.copyBytes(bytes);
           st.boost = boost;
-          visitedTerms.put(st.bytes, st);
+          visitedTerms.put(st.bytes.get(), st);
           assert st.termState.docFreq() == 0;
           st.termState.register(state, readerContext.ord, termsEnum.docFreq(), termsEnum.totalTermFreq());
           stQueue.offer(st);
           // possibly drop entries from queue
           if (stQueue.size() > maxSize) {
             st = stQueue.poll();
-            visitedTerms.remove(st.bytes);
+            visitedTerms.remove(st.bytes.get());
             st.termState.clear(); // reset the termstate! 
           } else {
             st = new ScoreTerm(new TermContext(topReaderContext));
@@ -144,7 +146,7 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
           if (stQueue.size() == maxSize) {
             t = stQueue.peek();
             maxBoostAtt.setMaxNonCompetitiveBoost(t.boost);
-            maxBoostAtt.setCompetitiveTerm(t.bytes);
+            maxBoostAtt.setCompetitiveTerm(t.bytes.get());
           }
         }
        
@@ -157,7 +159,7 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
     ArrayUtil.timSort(scoreTerms, scoreTermSortByTermComp);
     
     for (final ScoreTerm st : scoreTerms) {
-      final Term term = new Term(query.field, st.bytes);
+      final Term term = new Term(query.field, st.bytes.toBytesRef());
       assert reader.docFreq(term) == st.termState.docFreq() : "reader DF is " + reader.docFreq(term) + " vs " + st.termState.docFreq() + " term=" + term;
       addClause(q, term, st.termState.docFreq(), query.getBoost() * st.boost, st.termState); // add to query
     }
@@ -183,12 +185,12 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
     new Comparator<ScoreTerm>() {
       @Override
       public int compare(ScoreTerm st1, ScoreTerm st2) {
-        return st1.bytes.compareTo(st2.bytes);
+        return st1.bytes.get().compareTo(st2.bytes.get());
       }
     };
 
   static final class ScoreTerm implements Comparable<ScoreTerm> {
-    public final BytesRef bytes = new BytesRef();
+    public final BytesRefBuilder bytes = new BytesRefBuilder();
     public float boost;
     public final TermContext termState;
     public ScoreTerm(TermContext termState) {
@@ -198,7 +200,7 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
     @Override
     public int compareTo(ScoreTerm other) {
       if (this.boost == other.boost)
-        return other.bytes.compareTo(this.bytes);
+        return other.bytes.get().compareTo(this.bytes.get());
       else
         return Float.compare(this.boost, other.boost);
     }

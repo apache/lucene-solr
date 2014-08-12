@@ -53,6 +53,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
@@ -218,7 +219,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     private final BytesRef spare = new BytesRef();
     private byte[] finalBuffer = new byte[128];
 
-    private final IntsRef scratchIntsRef = new IntsRef();
+    private final IntsRefBuilder scratchIntsRef = new IntsRefBuilder();
 
     private void finishTerm(BytesRef text, TermStats stats) throws IOException {
 

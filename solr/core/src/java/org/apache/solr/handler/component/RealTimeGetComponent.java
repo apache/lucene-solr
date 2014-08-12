@@ -30,6 +30,7 @@ import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
@@ -139,11 +140,11 @@ public class RealTimeGetComponent extends SearchComponent
    try {
      SolrIndexSearcher searcher = null;
 
-     BytesRef idBytes = new BytesRef();
+     BytesRefBuilder idBytes = new BytesRefBuilder();
      for (String idStr : allIds) {
        fieldType.readableToIndexed(idStr, idBytes);
        if (ulog != null) {
-         Object o = ulog.lookup(idBytes);
+         Object o = ulog.lookup(idBytes.get());
          if (o != null) {
            // should currently be a List<Oper,Ver,Doc/Id>
            List entry = (List)o;
@@ -174,7 +175,7 @@ public class RealTimeGetComponent extends SearchComponent
 
        // SolrCore.verbose("RealTimeGet using searcher ", searcher);
 
-       int docid = searcher.getFirstMatch(new Term(idField.getName(), idBytes));
+       int docid = searcher.getFirstMatch(new Term(idField.getName(), idBytes.get()));
        if (docid < 0) continue;
        StoredDocument luceneDocument = searcher.doc(docid);
        SolrDocument doc = toSolrDoc(luceneDocument,  core.getLatestSchema());

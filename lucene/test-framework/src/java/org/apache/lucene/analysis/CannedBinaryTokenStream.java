@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 
 /**
  * TokenStream from a canned list of binary (BytesRef-based)
@@ -69,16 +70,16 @@ public final class CannedBinaryTokenStream extends TokenStream {
 
   /** Implementation for {@link BinaryTermAttribute}. */
   public final static class BinaryTermAttributeImpl extends AttributeImpl implements BinaryTermAttribute, TermToBytesRefAttribute {
-    private final BytesRef bytes = new BytesRef();
+    private final BytesRefBuilder bytes = new BytesRefBuilder();
 
     @Override
     public void fillBytesRef() {
-      // no-op: we already filled externally during owner's incrementToken
+      bytes.get(); // sets the length on the bytesref
     }
       
     @Override
     public BytesRef getBytesRef() {
-      return bytes;
+      return bytes.get();
     }
 
     @Override

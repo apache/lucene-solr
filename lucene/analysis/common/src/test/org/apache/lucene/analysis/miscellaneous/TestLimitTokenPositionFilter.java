@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.synonym.SynonymFilter;
 import org.apache.lucene.analysis.synonym.SynonymMap;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -68,11 +69,11 @@ public class TestLimitTokenPositionFilter extends BaseTokenStreamTestCase {
       builder.add(new CharsRef("one"), new CharsRef("first"), true);
       builder.add(new CharsRef("one"), new CharsRef("alpha"), true);
       builder.add(new CharsRef("one"), new CharsRef("beguine"), true);
-      CharsRef multiWordCharsRef = new CharsRef();
+      CharsRefBuilder multiWordCharsRef = new CharsRefBuilder();
       SynonymMap.Builder.join(new String[]{"and", "indubitably", "single", "only"}, multiWordCharsRef);
-      builder.add(new CharsRef("one"), multiWordCharsRef, true);
+      builder.add(new CharsRef("one"), multiWordCharsRef.get(), true);
       SynonymMap.Builder.join(new String[]{"dopple", "ganger"}, multiWordCharsRef);
-      builder.add(new CharsRef("two"), multiWordCharsRef, true);
+      builder.add(new CharsRef("two"), multiWordCharsRef.get(), true);
       SynonymMap synonymMap = builder.build();
       TokenStream stream = new SynonymFilter(tokenizer, synonymMap, true);
       stream = new LimitTokenPositionFilter(stream, 3, consumeAll);

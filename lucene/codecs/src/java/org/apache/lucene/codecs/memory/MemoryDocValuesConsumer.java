@@ -34,6 +34,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.MathUtil;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST.INPUT_TYPE;
@@ -359,7 +360,7 @@ class MemoryDocValuesConsumer extends DocValuesConsumer {
     meta.writeLong(data.getFilePointer());
     PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
     Builder<Long> builder = new Builder<>(INPUT_TYPE.BYTE1, outputs);
-    IntsRef scratch = new IntsRef();
+    IntsRefBuilder scratch = new IntsRefBuilder();
     long ord = 0;
     for (BytesRef v : values) {
       builder.add(Util.toIntsRef(v, scratch), ord);

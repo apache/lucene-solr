@@ -19,7 +19,7 @@ package org.apache.lucene.queries.function;
 
 import org.apache.lucene.search.*;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueFloat;
 
@@ -53,10 +53,10 @@ public abstract class FunctionValues {
   }
 
   /** returns the bytes representation of the string val - TODO: should this return the indexed raw bytes not? */
-  public boolean bytesVal(int doc, BytesRef target) {
+  public boolean bytesVal(int doc, BytesRefBuilder target) {
     String s = strVal(doc);
     if (s==null) {
-      target.length = 0;
+      target.clear();
       return false;
     }
     target.copyChars(s);

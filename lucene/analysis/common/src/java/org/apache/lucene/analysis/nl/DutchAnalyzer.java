@@ -32,6 +32,7 @@ import org.apache.lucene.analysis.util.CharArrayMap;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.IOUtils;
 
 import java.io.IOException;
@@ -123,11 +124,11 @@ public final class DutchAnalyzer extends Analyzer {
       // we don't need to ignore case here since we lowercase in this analyzer anyway
       StemmerOverrideFilter.Builder builder = new StemmerOverrideFilter.Builder(false);
       CharArrayMap<String>.EntryIterator iter = stemOverrideDict.entrySet().iterator();
-      CharsRef spare = new CharsRef();
+      CharsRefBuilder spare = new CharsRefBuilder();
       while (iter.hasNext()) {
         char[] nextKey = iter.nextKey();
         spare.copyChars(nextKey, 0, nextKey.length);
-        builder.add(spare, iter.currentValue());
+        builder.add(spare.get(), iter.currentValue());
       }
       try {
         this.stemdict = builder.build();

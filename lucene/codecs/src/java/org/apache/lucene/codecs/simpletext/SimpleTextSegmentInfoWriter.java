@@ -29,6 +29,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -58,7 +59,7 @@ public class SimpleTextSegmentInfoWriter extends SegmentInfoWriter {
     IndexOutput output = dir.createOutput(segFileName, ioContext);
 
     try {
-      BytesRef scratch = new BytesRef();
+      BytesRefBuilder scratch = new BytesRefBuilder();
     
       SimpleTextUtil.write(output, SI_VERSION);
       SimpleTextUtil.write(output, si.getVersion(), scratch);

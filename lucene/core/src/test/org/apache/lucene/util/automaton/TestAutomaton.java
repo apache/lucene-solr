@@ -27,7 +27,9 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;
@@ -481,7 +483,7 @@ public class TestAutomaton extends LuceneTestCase {
   private void assertMatches(Automaton a, String... strings) {
     Set<IntsRef> expected = new HashSet<>();
     for(String s : strings) {
-      IntsRef ints = new IntsRef();
+      IntsRefBuilder ints = new IntsRefBuilder();
       expected.add(Util.toUTF32(s, ints));
     }
 
@@ -679,10 +681,11 @@ public class TestAutomaton extends LuceneTestCase {
           }
           Set<BytesRef> newTerms = new HashSet<>();
           BytesRef prefix = new BytesRef(getRandomString());
+          BytesRefBuilder newTerm = new BytesRefBuilder();
           for(BytesRef term : terms) {
-            BytesRef newTerm = BytesRef.deepCopyOf(prefix);
+            newTerm.copyBytes(prefix);
             newTerm.append(term);
-            newTerms.add(newTerm);
+            newTerms.add(newTerm.toBytesRef());
           }
           terms = newTerms;
           boolean wasDeterministic1 = a.isDeterministic();
@@ -699,10 +702,11 @@ public class TestAutomaton extends LuceneTestCase {
             System.out.println("  op=concat suffix " + suffix);
           }
           Set<BytesRef> newTerms = new HashSet<>();
+          BytesRefBuilder newTerm = new BytesRefBuilder();
           for(BytesRef term : terms) {
-            BytesRef newTerm = BytesRef.deepCopyOf(term);
+            newTerm.copyBytes(term);
             newTerm.append(suffix);
-            newTerms.add(newTerm);
+            newTerms.add(newTerm.toBytesRef());
           }
           terms = newTerms;
           a = Operations.concatenate(a, Automata.makeString(suffix.utf8ToString()));
@@ -965,11 +969,12 @@ public class TestAutomaton extends LuceneTestCase {
               System.out.println("  do suffix");
             }
             a = Operations.concatenate(a, randomNoOp(a2));
+            BytesRefBuilder newTerm = new BytesRefBuilder();
             for(BytesRef term : terms) {
               for(BytesRef suffix : addTerms) {
-                BytesRef newTerm = BytesRef.deepCopyOf(term);
+                newTerm.copyBytes(term);
                 newTerm.append(suffix);
-                newTerms.add(newTerm);
+                newTerms.add(newTerm.toBytesRef());
               }
             }
           } else {
@@ -978,11 +983,12 @@ public class TestAutomaton extends LuceneTestCase {
               System.out.println("  do prefix");
             }
             a = Operations.concatenate(randomNoOp(a2), a);
+            BytesRefBuilder newTerm = new BytesRefBuilder();
             for(BytesRef term : terms) {
               for(BytesRef prefix : addTerms) {
-                BytesRef newTerm = BytesRef.deepCopyOf(prefix);
+                newTerm.copyBytes(prefix);
                 newTerm.append(term);
-                newTerms.add(newTerm);
+                newTerms.add(newTerm.toBytesRef());
               }
             }
           }
@@ -990,9 +996,11 @@ public class TestAutomaton extends LuceneTestCase {
           terms = newTerms;
         }
         break;
+      default:
+        throw new AssertionError();
       }
 
-      // assertSame(terms, a);
+      assertSame(terms, a);
       assertEquals(AutomatonTestUtil.isDeterministicSlow(a), a.isDeterministic());
     }
 
@@ -1008,7 +1016,7 @@ public class TestAutomaton extends LuceneTestCase {
       Automaton detA = Operations.determinize(a);
 
       // Make sure all terms are accepted:
-      IntsRef scratch = new IntsRef();
+      IntsRefBuilder scratch = new IntsRefBuilder();
       for(BytesRef term : terms) {
         Util.toIntsRef(term, scratch);
         assertTrue("failed to accept term=" + term.utf8ToString(), Operations.run(detA, term.utf8ToString()));
@@ -1017,9 +1025,9 @@ public class TestAutomaton extends LuceneTestCase {
       // Use getFiniteStrings:
       Set<IntsRef> expected = new HashSet<>();
       for(BytesRef term : terms) {
-        IntsRef intsRef = new IntsRef();
+        IntsRefBuilder intsRef = new IntsRefBuilder();
         Util.toUTF32(term.utf8ToString(), intsRef);
-        expected.add(intsRef);
+        expected.add(intsRef.toIntsRef());
       }
       Set<IntsRef> actual = Operations.getFiniteStrings(a, -1);
 
@@ -1047,9 +1055,9 @@ public class TestAutomaton extends LuceneTestCase {
     
       Set<IntsRef> expected2 = new HashSet<>();
       for(BytesRef term : terms) {
-        IntsRef intsRef = new IntsRef();
+        IntsRefBuilder intsRef = new IntsRefBuilder();
         Util.toIntsRef(term, intsRef);
-        expected2.add(intsRef);
+        expected2.add(intsRef.toIntsRef());
       }
       assertEquals(expected2, Operations.getFiniteStrings(utf8, -1));
     } catch (AssertionError ae) {

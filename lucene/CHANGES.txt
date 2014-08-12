@@ -164,6 +164,10 @@ API Changes
 * LUCENE-5850: CheckIndex now prints the Lucene version used to write
   each segment.  (Robert Muir, Mike McCandless)
 
+* LUCENE-5836: BytesRef has been splitted into BytesRef, whose intended usage is
+  to be just a reference to a section of a larger byte[] and BytesRefBuilder
+  which is a StringBuilder-like class for BytesRef instances. (Adrien Grand)
+
 Optimizations
 
 * LUCENE-5780: Make OrdinalMap more memory-efficient, especially in case the

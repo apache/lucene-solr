@@ -30,11 +30,12 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 
 class SimpleTextFieldsWriter extends FieldsConsumer {
   
   private IndexOutput out;
-  private final BytesRef scratch = new BytesRef(10);
+  private final BytesRefBuilder scratch = new BytesRefBuilder();
   private final SegmentWriteState writeState;
 
   final static BytesRef END          = new BytesRef("END");

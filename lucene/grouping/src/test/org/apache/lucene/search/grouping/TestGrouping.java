@@ -238,9 +238,8 @@ public class TestGrouping extends LuceneTestCase {
         SearchGroup<MutableValue> sg = new SearchGroup<>();
         MutableValueStr groupValue = new MutableValueStr();
         if (mergedTopGroup.groupValue != null) {
-          groupValue.value =  mergedTopGroup.groupValue;
+          groupValue.value.copyBytes(mergedTopGroup.groupValue);
         } else {
-          groupValue.value = new BytesRef();
           groupValue.exists = false;
         }
         sg.groupValue = groupValue;
@@ -278,7 +277,7 @@ public class TestGrouping extends LuceneTestCase {
       assertEquals(new BytesRef(expected), group.groupValue);
     } else if (group.groupValue.getClass().isAssignableFrom(MutableValueStr.class)) {
       MutableValueStr v = new MutableValueStr();
-      v.value = new BytesRef(expected);
+      v.value.copyChars(expected);
       assertEquals(v, group.groupValue);
     } else {
       fail();
@@ -297,7 +296,7 @@ public class TestGrouping extends LuceneTestCase {
       List<SearchGroup<BytesRef>> groups = new ArrayList<>(mutableValueGroups.size());
       for (SearchGroup<MutableValue> mutableValueGroup : mutableValueGroups) {
         SearchGroup<BytesRef> sg = new SearchGroup<>();
-        sg.groupValue = mutableValueGroup.groupValue.exists() ? ((MutableValueStr) mutableValueGroup.groupValue).value : null;
+        sg.groupValue = mutableValueGroup.groupValue.exists() ? ((MutableValueStr) mutableValueGroup.groupValue).value.get() : null;
         sg.sortValues = mutableValueGroup.sortValues;
         groups.add(sg);
       }
@@ -315,7 +314,7 @@ public class TestGrouping extends LuceneTestCase {
       TopGroups<MutableValue> mvalTopGroups = ((FunctionSecondPassGroupingCollector) c).getTopGroups(withinGroupOffset);
       List<GroupDocs<BytesRef>> groups = new ArrayList<>(mvalTopGroups.groups.length);
       for (GroupDocs<MutableValue> mvalGd : mvalTopGroups.groups) {
-        BytesRef groupValue = mvalGd.groupValue.exists() ? ((MutableValueStr) mvalGd.groupValue).value : null;
+        BytesRef groupValue = mvalGd.groupValue.exists() ? ((MutableValueStr) mvalGd.groupValue).value.get() : null;
         groups.add(new GroupDocs<>(Float.NaN, mvalGd.maxScore, mvalGd.totalHits, mvalGd.scoreDocs, groupValue, mvalGd.groupSortValues));
       }
       return new TopGroups<>(mvalTopGroups.groupSort, mvalTopGroups.withinGroupSort, mvalTopGroups.totalHitCount, mvalTopGroups.totalGroupedHitCount, groups.toArray(new GroupDocs[groups.size()]), Float.NaN);

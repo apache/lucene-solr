@@ -17,31 +17,31 @@
 
 package org.apache.solr.handler.component;
 
-import org.apache.lucene.util.BytesRef;
-import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.DocSet;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.FacetParams;
-import org.apache.solr.request.SimpleFacets;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.FieldType;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TermRangeQuery;
-import org.apache.lucene.index.Term;
-import org.apache.solr.search.SyntaxError;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.params.FacetParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.request.SimpleFacets;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.DocSet;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SyntaxError;
 
 /**
  * @since solr 4.0
@@ -116,16 +116,16 @@ public class PivotFacetHelper extends SimpleFacets
 
         // don't reuse the same BytesRef each time since we will be 
         // constructing Term objects used in TermQueries that may be cached.
-        BytesRef termval = null;
+        BytesRefBuilder termval = null;
 
         SimpleOrderedMap<Object> pivot = new SimpleOrderedMap<>();
         pivot.add( "field", field );
         if (null == fieldValue) {
           pivot.add( "value", null );
         } else {
-          termval = new BytesRef();
+          termval = new BytesRefBuilder();
           ftype.readableToIndexed(fieldValue, termval);
-          pivot.add( "value", ftype.toObject(sfield, termval) );
+          pivot.add( "value", ftype.toObject(sfield, termval.get()) );
         }
         pivot.add( "count", kv.getValue() );
         
@@ -139,7 +139,7 @@ public class PivotFacetHelper extends SimpleFacets
               (new TermRangeQuery(field, null, null, false, false));
             subset = docs.andNot(hasVal);
           } else {
-            Query query = new TermQuery(new Term(field, termval));
+            Query query = new TermQuery(new Term(field, termval.get()));
             subset = searcher.getDocSet(query, docs);
           }
           super.docs = subset;//used by getTermCounts()

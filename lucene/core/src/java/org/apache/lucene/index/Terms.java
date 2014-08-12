@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
@@ -156,9 +157,8 @@ public abstract class Terms {
       return v;
     }
 
-    BytesRef scratch = new BytesRef(1);
-
-    scratch.length = 1;
+    BytesRefBuilder scratch = new BytesRefBuilder();
+    scratch.append((byte) 0);
 
     // Iterates over digits:
     while (true) {
@@ -170,12 +170,12 @@ public abstract class Terms {
       // digit before END:
       while (low != high) {
         int mid = (low+high) >>> 1;
-        scratch.bytes[scratch.length-1] = (byte) mid;
-        if (iterator.seekCeil(scratch) == TermsEnum.SeekStatus.END) {
+        scratch.setByteAt(scratch.length()-1, (byte) mid);
+        if (iterator.seekCeil(scratch.get()) == TermsEnum.SeekStatus.END) {
           // Scratch was too high
           if (mid == 0) {
-            scratch.length--;
-            return scratch;
+            scratch.setLength(scratch.length() - 1);
+            return scratch.get();
           }
           high = mid;
         } else {
@@ -189,8 +189,8 @@ public abstract class Terms {
       }
 
       // Recurse to next digit:
-      scratch.length++;
-      scratch.grow(scratch.length);
+      scratch.setLength(scratch.length() + 1);
+      scratch.grow(scratch.length());
     }
   }
 }

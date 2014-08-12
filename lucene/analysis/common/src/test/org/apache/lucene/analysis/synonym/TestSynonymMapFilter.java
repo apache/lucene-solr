@@ -38,6 +38,7 @@ import org.apache.lucene.analysis.MockGraphTokenFilter;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.TestUtil;
 
 public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
@@ -54,13 +55,13 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     if (VERBOSE) {
       System.out.println("  add input=" + input + " output=" + output + " keepOrig=" + keepOrig);
     }
-    CharsRef inputCharsRef = new CharsRef();
+    CharsRefBuilder inputCharsRef = new CharsRefBuilder();
     SynonymMap.Builder.join(input.split(" +"), inputCharsRef);
 
-    CharsRef outputCharsRef = new CharsRef();
+    CharsRefBuilder outputCharsRef = new CharsRefBuilder();
     SynonymMap.Builder.join(output.split(" +"), outputCharsRef);
 
-    b.add(inputCharsRef, outputCharsRef, keepOrig);
+    b.add(inputCharsRef.get(), outputCharsRef.get(), keepOrig);
   }
 
   private void assertEquals(CharTermAttribute term, String expected) {

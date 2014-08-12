@@ -26,6 +26,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.OfflineSorter;
 
 /**
@@ -46,12 +47,12 @@ public class LargeInputFST {
         new InputStreamReader(
             new FileInputStream(input), StandardCharsets.UTF_8));
     
-    BytesRef scratch = new BytesRef();
+    BytesRefBuilder scratch = new BytesRefBuilder();
     String line;
     int count = 0;
     while ((line = reader.readLine()) != null) {
       scratch.copyChars(line);
-      builder.add(scratch, count % buckets);
+      builder.add(scratch.get(), count % buckets);
       if ((count++ % 100000) == 0) {
         System.err.println("Line: " + count);
       }

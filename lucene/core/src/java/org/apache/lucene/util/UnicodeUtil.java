@@ -1,6 +1,5 @@
 package org.apache.lucene.util;
 
-import java.nio.charset.StandardCharsets;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -123,21 +122,18 @@ public final class UnicodeUtil {
     Character.MIN_SUPPLEMENTARY_CODE_POINT - 
     (UNI_SUR_HIGH_START << HALF_SHIFT) - UNI_SUR_LOW_START;
 
+  /** Maximum number of UTF8 bytes per UTF16 character. */
+  public static final int MAX_UTF8_BYTES_PER_CHAR = 4;
+
   /** Encode characters from a char[] source, starting at
-   *  offset for length chars. After encoding, result.offset will always be 0.
+   *  offset for length chars. It is the responsibility of the
+   *  caller to make sure that the destination array is large enough.
    */
-  // TODO: broken if incoming result.offset != 0
-  public static void UTF16toUTF8(final char[] source, final int offset, final int length, BytesRef result) {
+  public static int UTF16toUTF8(final char[] source, final int offset, final int length, byte[] out) {
 
     int upto = 0;
     int i = offset;
     final int end = offset + length;
-    byte[] out = result.bytes;
-    // Pre-allocate for worst case 4-for-1
-    final int maxLen = length * 4;
-    if (out.length < maxLen)
-      out = result.bytes = new byte[maxLen];
-    result.offset = 0;
 
     while(i < end) {
       
@@ -176,22 +172,16 @@ public final class UnicodeUtil {
       }
     }
     //assert matches(source, offset, length, out, upto);
-    result.length = upto;
+    return upto;
   }
 
   /** Encode characters from this String, starting at offset
-   *  for length characters. After encoding, result.offset will always be 0.
+   *  for length characters. It is the responsibility of the
+   *  caller to make sure that the destination array is large enough.
    */
   // TODO: broken if incoming result.offset != 0
-  public static void UTF16toUTF8(final CharSequence s, final int offset, final int length, BytesRef result) {
+  public static int UTF16toUTF8(final CharSequence s, final int offset, final int length, byte[] out) {
     final int end = offset + length;
-
-    byte[] out = result.bytes;
-    result.offset = 0;
-    // Pre-allocate for worst case 4-for-1
-    final int maxLen = length * 4;
-    if (out.length < maxLen)
-      out = result.bytes = new byte[maxLen];
 
     int upto = 0;
     for(int i=offset;i<end;i++) {
@@ -230,7 +220,7 @@ public final class UnicodeUtil {
       }
     }
     //assert matches(s, offset, length, out, upto);
-    result.length = upto;
+    return upto;
   }
 
   // Only called from assert
@@ -405,21 +395,16 @@ public final class UnicodeUtil {
    * <p>This method assumes valid UTF8 input. This method 
    * <strong>does not perform</strong> full UTF8 validation, it will check only the 
    * first byte of each codepoint (for multi-byte sequences any bytes after 
-   * the head are skipped).  
+   * the head are skipped). It is the responsibility of the caller to make sure
+   * that the destination array is large enough.
    * 
    * @throws IllegalArgumentException If invalid codepoint header byte occurs or the 
    *    content is prematurely truncated.
    */
-  public static void UTF8toUTF32(final BytesRef utf8, final IntsRef utf32) {
-    // TODO: broken if incoming result.offset != 0
-    // pre-alloc for worst case
+  public static int UTF8toUTF32(final BytesRef utf8, final int[] ints) {
     // TODO: ints cannot be null, should be an assert
-    if (utf32.ints == null || utf32.ints.length < utf8.length) {
-      utf32.ints = new int[utf8.length];
-    }
     int utf32Count = 0;
     int utf8Upto = utf8.offset;
-    final int[] ints = utf32.ints;
     final byte[] bytes = utf8.bytes;
     final int utf8Limit = utf8.offset + utf8.length;
     while(utf8Upto < utf8Limit) {
@@ -453,8 +438,7 @@ public final class UnicodeUtil {
       ints[utf32Count++] = v;
     }
     
-    utf32.offset = 0;
-    utf32.length = utf32Count;
+    return utf32Count;
   }
 
   /** Shift value for lead surrogate to form a supplementary character. */
@@ -545,17 +529,16 @@ public final class UnicodeUtil {
   }
   
   /**
-   * Interprets the given byte array as UTF-8 and converts to UTF-16. The {@link CharsRef} will be extended if 
-   * it doesn't provide enough space to hold the worst case of each byte becoming a UTF-16 codepoint.
+   * Interprets the given byte array as UTF-8 and converts to UTF-16. It is the
+   * responsibility of the caller to make sure that the destination array is large enough.
    * <p>
    * NOTE: Full characters are read, even if this reads past the length passed (and
    * can result in an ArrayOutOfBoundsException if invalid UTF-8 is passed).
    * Explicit checks for valid UTF-8 are not performed. 
    */
   // TODO: broken if chars.offset != 0
-  public static void UTF8toUTF16(byte[] utf8, int offset, int length, CharsRef chars) {
-    int out_offset = chars.offset = 0;
-    final char[] out = chars.chars =  ArrayUtil.grow(chars.chars, length);
+  public static int UTF8toUTF16(byte[] utf8, int offset, int length, char[] out) {
+    int out_offset = 0;
     final int limit = offset + length;
     while (offset < limit) {
       int b = utf8[offset++]&0xff;
@@ -580,15 +563,15 @@ public final class UnicodeUtil {
         }
       }
     }
-    chars.length = out_offset - chars.offset;
+    return out_offset;
   }
   
   /**
-   * Utility method for {@link #UTF8toUTF16(byte[], int, int, CharsRef)}
-   * @see #UTF8toUTF16(byte[], int, int, CharsRef)
+   * Utility method for {@link #UTF8toUTF16(byte[], int, int, char[])}
+   * @see #UTF8toUTF16(byte[], int, int, char[])
    */
-  public static void UTF8toUTF16(BytesRef bytesRef, CharsRef chars) {
-    UTF8toUTF16(bytesRef.bytes, bytesRef.offset, bytesRef.length, chars);
+  public static int UTF8toUTF16(BytesRef bytesRef, char[] chars) {
+    return UTF8toUTF16(bytesRef.bytes, bytesRef.offset, bytesRef.length, chars);
   }
 
 }

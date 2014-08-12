@@ -48,20 +48,4 @@ public class TestBytesRef extends LuceneTestCase {
     // only for 4.x
     assertEquals("\uFFFF", new BytesRef("\uFFFF").utf8ToString());
   }
-  
-  // LUCENE-3590, AIOOBE if you append to a bytesref with offset != 0
-  public void testAppend() {
-    byte bytes[] = new byte[] { (byte)'a', (byte)'b', (byte)'c', (byte)'d' };
-    BytesRef b = new BytesRef(bytes, 1, 3); // bcd
-    b.append(new BytesRef("e"));
-    assertEquals("bcde", b.utf8ToString());
-  }
-  
-  // LUCENE-3590, AIOOBE if you copy to a bytesref with offset != 0
-  public void testCopyBytes() {
-    byte bytes[] = new byte[] { (byte)'a', (byte)'b', (byte)'c', (byte)'d' };
-    BytesRef b = new BytesRef(bytes, 1, 3); // bcd
-    b.copyBytes(new BytesRef("bcde"));
-    assertEquals("bcde", b.utf8ToString());
-  }
 }

@@ -28,6 +28,7 @@ import java.util.Set;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TestUtil;
@@ -168,7 +169,7 @@ public class TestFSTsMisc extends LuceneTestCase {
     ListOfOutputs<Long> outputs = new ListOfOutputs<>(_outputs);
     final Builder<Object> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
 
-    final IntsRef scratch = new IntsRef();
+    final IntsRefBuilder scratch = new IntsRefBuilder();
     // Add the same input more than once and the outputs
     // are merged:
     builder.add(Util.toIntsRef(new BytesRef("a"), scratch), 1L);
@@ -197,11 +198,11 @@ public class TestFSTsMisc extends LuceneTestCase {
     ListOfOutputs<Long> outputs = new ListOfOutputs<>(_outputs);
     final Builder<Object> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
 
-    final IntsRef scratch = new IntsRef();
-    builder.add(scratch, 0L);
-    builder.add(scratch, 1L);
-    builder.add(scratch, 17L);
-    builder.add(scratch, 1L);
+    final IntsRefBuilder scratch = new IntsRefBuilder();
+    builder.add(scratch.get(), 0L);
+    builder.add(scratch.get(), 1L);
+    builder.add(scratch.get(), 17L);
+    builder.add(scratch.get(), 1L);
 
     builder.add(Util.toIntsRef(new BytesRef("a"), scratch), 1L);
     builder.add(Util.toIntsRef(new BytesRef("a"), scratch), 3L);

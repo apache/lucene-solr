@@ -32,6 +32,7 @@ import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.NumericUtils;
 
 /**
@@ -146,7 +147,7 @@ public final class NumericTokenStream extends TokenStream {
   public static final class NumericTermAttributeImpl extends AttributeImpl implements NumericTermAttribute,TermToBytesRefAttribute {
     private long value = 0L;
     private int valueSize = 0, shift = 0, precisionStep = 0;
-    private BytesRef bytes = new BytesRef();
+    private BytesRefBuilder bytes = new BytesRefBuilder();
     
     /** 
      * Creates, but does not yet initialize this attribute instance
@@ -156,7 +157,7 @@ public final class NumericTokenStream extends TokenStream {
 
     @Override
     public BytesRef getBytesRef() {
-      return bytes;
+      return bytes.get();
     }
     
     @Override
@@ -167,6 +168,7 @@ public final class NumericTokenStream extends TokenStream {
       } else {
         NumericUtils.intToPrefixCoded((int) value, shift, bytes);
       }
+      bytes.get();
     }
 
     @Override
@@ -200,7 +202,7 @@ public final class NumericTokenStream extends TokenStream {
     @Override
     public void reflectWith(AttributeReflector reflector) {
       fillBytesRef();
-      reflector.reflect(TermToBytesRefAttribute.class, "bytes", BytesRef.deepCopyOf(bytes));
+      reflector.reflect(TermToBytesRefAttribute.class, "bytes", bytes.toBytesRef());
       reflector.reflect(NumericTermAttribute.class, "shift", shift);
       reflector.reflect(NumericTermAttribute.class, "rawValue", getRawValue());
       reflector.reflect(NumericTermAttribute.class, "valueSize", valueSize);

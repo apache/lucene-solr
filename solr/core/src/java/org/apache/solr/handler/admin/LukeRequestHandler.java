@@ -34,6 +34,7 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.analysis.TokenizerChain;
@@ -249,7 +250,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   private static SimpleOrderedMap<Object> getDocumentFieldsInfo( StoredDocument doc, int docId, IndexReader reader,
                                                                  IndexSchema schema ) throws IOException
   {
-    final CharsRef spare = new CharsRef();
+    final CharsRefBuilder spare = new CharsRefBuilder();
     SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<>();
     for( Object o : doc.getFields() ) {
       Field field = (Field)o;
@@ -286,7 +287,7 @@ public class LukeRequestHandler extends RequestHandlerBase
             BytesRef text;
             while((text = termsEnum.next()) != null) {
               final int freq = (int) termsEnum.totalTermFreq();
-              UnicodeUtil.UTF8toUTF16(text, spare);
+              spare.copyUTF8Bytes(text);
               tfv.add(spare.toString(), freq);
             }
             f.add( "termVector", tfv );
@@ -594,7 +595,7 @@ public class LukeRequestHandler extends RequestHandlerBase
 
     TopTermQueue tiq = new TopTermQueue(numTerms + 1);  // Something to collect the top N terms in.
 
-    final CharsRef spare = new CharsRef();
+    final CharsRefBuilder spare = new CharsRefBuilder();
 
     Fields fields = MultiFields.getFields(req.getSearcher().getIndexReader());
 
@@ -615,7 +616,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       int slot = 32 - Integer.numberOfLeadingZeros(Math.max(0, freq - 1));
       buckets[slot] = buckets[slot] + 1;
       if (numTerms > 0 && freq > tiq.minFreq) {
-        UnicodeUtil.UTF8toUTF16(text, spare);
+        spare.copyUTF8Bytes(text);
         String t = spare.toString();
 
         tiq.add(new TopTermQueue.TermInfo(new Term(field, t), termsEnum.docFreq()));

@@ -26,6 +26,7 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
 
@@ -34,9 +35,9 @@ class SimpleTextUtil {
   public final static byte ESCAPE = 92;
   final static BytesRef CHECKSUM = new BytesRef("checksum ");
   
-  public static void write(DataOutput out, String s, BytesRef scratch) throws IOException {
-    UnicodeUtil.UTF16toUTF8(s, 0, s.length(), scratch);
-    write(out, scratch);
+  public static void write(DataOutput out, String s, BytesRefBuilder scratch) throws IOException {
+    scratch.copyChars(s, 0, s.length());
+    write(out, scratch.get());
   }
 
   public static void write(DataOutput out, BytesRef b) throws IOException {
@@ -53,28 +54,25 @@ class SimpleTextUtil {
     out.writeByte(NEWLINE);
   }
   
-  public static void readLine(DataInput in, BytesRef scratch) throws IOException {
+  public static void readLine(DataInput in, BytesRefBuilder scratch) throws IOException {
     int upto = 0;
     while(true) {
       byte b = in.readByte();
-      if (scratch.bytes.length == upto) {
-        scratch.grow(1+upto);
-      }
+      scratch.grow(1+upto);
       if (b == ESCAPE) {
-        scratch.bytes[upto++] = in.readByte();
+        scratch.setByteAt(upto++, in.readByte());
       } else {
         if (b == NEWLINE) {
           break;
         } else {
-          scratch.bytes[upto++] = b;
+          scratch.setByteAt(upto++, b);
         }
       }
     }
-    scratch.offset = 0;
-    scratch.length = upto;
+    scratch.setLength(upto);
   }
 
-  public static void writeChecksum(IndexOutput out, BytesRef scratch) throws IOException {
+  public static void writeChecksum(IndexOutput out, BytesRefBuilder scratch) throws IOException {
     // Pad with zeros so different checksum values use the
     // same number of bytes
     // (BaseIndexFileFormatTestCase.testMergeStability cares):
@@ -85,13 +83,13 @@ class SimpleTextUtil {
   }
   
   public static void checkFooter(ChecksumIndexInput input) throws IOException {
-    BytesRef scratch = new BytesRef();
+    BytesRefBuilder scratch = new BytesRefBuilder();
     String expectedChecksum = String.format(Locale.ROOT, "%020d", input.getChecksum());
     SimpleTextUtil.readLine(input, scratch);
-    if (StringHelper.startsWith(scratch, CHECKSUM) == false) {
-      throw new CorruptIndexException("SimpleText failure: expected checksum line but got " + scratch.utf8ToString() + " (resource=" + input + ")");
+    if (StringHelper.startsWith(scratch.get(), CHECKSUM) == false) {
+      throw new CorruptIndexException("SimpleText failure: expected checksum line but got " + scratch.get().utf8ToString() + " (resource=" + input + ")");
     }
-    String actualChecksum = new BytesRef(scratch.bytes, CHECKSUM.length, scratch.length - CHECKSUM.length).utf8ToString();
+    String actualChecksum = new BytesRef(scratch.bytes(), CHECKSUM.length, scratch.length() - CHECKSUM.length).utf8ToString();
     if (!expectedChecksum.equals(actualChecksum)) {
       throw new CorruptIndexException("SimpleText checksum failure: " + actualChecksum + " != " + expectedChecksum + " (resource=" + input + ")");
     }

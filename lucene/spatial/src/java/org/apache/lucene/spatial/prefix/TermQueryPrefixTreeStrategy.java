@@ -19,6 +19,7 @@ package org.apache.lucene.spatial.prefix;
 
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
+
 import org.apache.lucene.queries.TermsFilter;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.spatial.prefix.tree.Cell;
@@ -28,6 +29,7 @@ import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,7 +70,7 @@ public class TermQueryPrefixTreeStrategy extends PrefixTreeStrategy {
     else
       GUESS_NUM_TERMS = 4096;//should this be a method on SpatialPrefixTree?
 
-    BytesRef masterBytes = new BytesRef(GUESS_NUM_TERMS*detailLevel);//shared byte array for all terms
+    BytesRefBuilder masterBytes = new BytesRefBuilder();//shared byte array for all terms
     List<BytesRef> terms = new ArrayList<>(GUESS_NUM_TERMS);
 
     CellIterator cells = grid.getTreeCellIterator(shape, detailLevel);
@@ -79,15 +81,15 @@ public class TermQueryPrefixTreeStrategy extends PrefixTreeStrategy {
       BytesRef term = cell.getTokenBytesNoLeaf(null);//null because we want a new BytesRef
       //We copy out the bytes because it may be re-used across the iteration. This also gives us the opportunity
       // to use one contiguous block of memory for the bytes of all terms we need.
-      masterBytes.grow(masterBytes.length + term.length);
+      masterBytes.grow(masterBytes.length() + term.length);
       masterBytes.append(term);
       term.bytes = null;//don't need; will reset later
-      term.offset = masterBytes.length - term.length;
+      term.offset = masterBytes.length() - term.length;
       terms.add(term);
     }
     //doing this now because if we did earlier, it's possible the bytes needed to grow()
     for (BytesRef byteRef : terms) {
-      byteRef.bytes = masterBytes.bytes;
+      byteRef.bytes = masterBytes.bytes();
     }
     //unfortunately TermsFilter will needlessly sort & dedupe
     return new TermsFilter(getFieldName(), terms);

@@ -1,5 +1,7 @@
 package org.apache.lucene.util;
 
+import java.util.Arrays;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -131,27 +133,6 @@ public final class LongsRef implements Comparable<LongsRef>, Cloneable {
     return this.length - other.length;
   }
 
-  public void copyLongs(LongsRef other) {
-    if (longs.length - offset < other.length) {
-      longs = new long[other.length];
-      offset = 0;
-    }
-    System.arraycopy(other.longs, other.offset, longs, offset, other.length);
-    length = other.length;
-  }
-
-  /** 
-   * Used to grow the reference array. 
-   * 
-   * In general this should not be used as it does not take the offset into account.
-   * @lucene.internal */
-  public void grow(int newLength) {
-    assert offset == 0;
-    if (longs.length < newLength) {
-      longs = ArrayUtil.grow(longs, newLength);
-    }
-  }
-
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
@@ -168,16 +149,14 @@ public final class LongsRef implements Comparable<LongsRef>, Cloneable {
   }
   
   /**
-   * Creates a new IntsRef that points to a copy of the longs from 
+   * Creates a new LongsRef that points to a copy of the longs from 
    * <code>other</code>
    * <p>
    * The returned IntsRef will have a length of other.length
    * and an offset of zero.
    */
   public static LongsRef deepCopyOf(LongsRef other) {
-    LongsRef clone = new LongsRef();
-    clone.copyLongs(other);
-    return clone;
+    return new LongsRef(Arrays.copyOfRange(other.longs, other.offset, other.offset + other.length), 0, other.length);
   }
   
   /** 

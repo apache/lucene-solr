@@ -31,7 +31,9 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.MutableBits;
 import org.apache.lucene.util.StringHelper;
@@ -65,8 +67,8 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
   @Override
   public Bits readLiveDocs(Directory dir, SegmentCommitInfo info, IOContext context) throws IOException {
     assert info.hasDeletions();
-    BytesRef scratch = new BytesRef();
-    CharsRef scratchUTF16 = new CharsRef();
+    BytesRefBuilder scratch = new BytesRefBuilder();
+    CharsRefBuilder scratchUTF16 = new CharsRefBuilder();
     
     String fileName = IndexFileNames.fileNameFromGeneration(info.info.name, LIVEDOCS_EXTENSION, info.getDelGen());
     ChecksumIndexInput in = null;
@@ -75,15 +77,15 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
       in = dir.openChecksumInput(fileName, context);
       
       SimpleTextUtil.readLine(in, scratch);
-      assert StringHelper.startsWith(scratch, SIZE);
-      int size = parseIntAt(scratch, SIZE.length, scratchUTF16);
+      assert StringHelper.startsWith(scratch.get(), SIZE);
+      int size = parseIntAt(scratch.get(), SIZE.length, scratchUTF16);
       
       BitSet bits = new BitSet(size);
       
       SimpleTextUtil.readLine(in, scratch);
-      while (!scratch.equals(END)) {
-        assert StringHelper.startsWith(scratch, DOC);
-        int docid = parseIntAt(scratch, DOC.length, scratchUTF16);
+      while (!scratch.get().equals(END)) {
+        assert StringHelper.startsWith(scratch.get(), DOC);
+        int docid = parseIntAt(scratch.get(), DOC.length, scratchUTF16);
         bits.set(docid);
         SimpleTextUtil.readLine(in, scratch);
       }
@@ -101,16 +103,16 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
     }
   }
   
-  private int parseIntAt(BytesRef bytes, int offset, CharsRef scratch) {
-    UnicodeUtil.UTF8toUTF16(bytes.bytes, bytes.offset+offset, bytes.length-offset, scratch);
-    return ArrayUtil.parseInt(scratch.chars, 0, scratch.length);
+  private int parseIntAt(BytesRef bytes, int offset, CharsRefBuilder scratch) {
+    scratch.copyUTF8Bytes(bytes.bytes, bytes.offset + offset, bytes.length-offset);
+    return ArrayUtil.parseInt(scratch.chars(), 0, scratch.length());
   }
 
   @Override
   public void writeLiveDocs(MutableBits bits, Directory dir, SegmentCommitInfo info, int newDelCount, IOContext context) throws IOException {
     BitSet set = ((SimpleTextBits) bits).bits;
     int size = bits.length();
-    BytesRef scratch = new BytesRef();
+    BytesRefBuilder scratch = new BytesRefBuilder();
     
     String fileName = IndexFileNames.fileNameFromGeneration(info.info.name, LIVEDOCS_EXTENSION, info.getNextDelGen());
     IndexOutput out = null;

@@ -50,9 +50,12 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.Version;
@@ -350,7 +353,7 @@ public class FreeTextSuggester extends Lookup {
       Outputs<Long> outputs = PositiveIntOutputs.getSingleton();
       Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
 
-      IntsRef scratchInts = new IntsRef();
+      IntsRefBuilder scratchInts = new IntsRefBuilder();
       while (true) {
         BytesRef term = termsEnum.next();
         if (term == null) {
@@ -487,7 +490,7 @@ public class FreeTextSuggester extends Lookup {
       PositionIncrementAttribute posIncAtt = ts.addAttribute(PositionIncrementAttribute.class);
       ts.reset();
       
-      BytesRef[] lastTokens = new BytesRef[grams];
+      BytesRefBuilder[] lastTokens = new BytesRefBuilder[grams];
       //System.out.println("lookup: key='" + key + "'");
       
       // Run full analysis, but save only the
@@ -510,7 +513,9 @@ public class FreeTextSuggester extends Lookup {
           throw new IllegalArgumentException("tokens must not contain separator byte; got token=" + tokenBytes + " but gramCount=" + gramCount + " does not match recalculated count=" + countGrams(tokenBytes));
         }
         maxEndOffset = Math.max(maxEndOffset, offsetAtt.endOffset());
-        lastTokens[gramCount-1] = BytesRef.deepCopyOf(tokenBytes);
+        BytesRefBuilder b = new BytesRefBuilder();
+        b.append(tokenBytes);
+        lastTokens[gramCount-1] = b;
       }
       ts.end();
       
@@ -538,16 +543,14 @@ public class FreeTextSuggester extends Lookup {
         // all bigrams starting w/ foo, and not any unigrams
         // starting with "foo":
         for(int i=grams-1;i>0;i--) {
-          BytesRef token = lastTokens[i-1];
+          BytesRefBuilder token = lastTokens[i-1];
           if (token == null) {
             continue;
           }
-          token.grow(token.length+1);
-          token.bytes[token.length] = separator;
-          token.length++;
+          token.append(separator);
           lastTokens[i] = token;
         }
-        lastTokens[0] = new BytesRef();
+        lastTokens[0] = new BytesRefBuilder();
       }
       
       Arc<Long> arc = new Arc<>();
@@ -566,9 +569,9 @@ public class FreeTextSuggester extends Lookup {
       final Set<BytesRef> seen = new HashSet<>();
       
       for(int gram=grams-1;gram>=0;gram--) {
-        BytesRef token = lastTokens[gram];
+        BytesRefBuilder token = lastTokens[gram];
         // Don't make unigram predictions from empty string:
-        if (token == null || (token.length == 0 && key.length() > 0)) {
+        if (token == null || (token.length() == 0 && key.length() > 0)) {
           // Input didn't have enough tokens:
           //System.out.println("  gram=" + gram + ": skip: not enough input");
           continue;
@@ -589,7 +592,7 @@ public class FreeTextSuggester extends Lookup {
         //Pair<Long,BytesRef> prefixOutput = null;
         Long prefixOutput = null;
         try {
-          prefixOutput = lookupPrefix(fst, bytesReader, token, arc);
+          prefixOutput = lookupPrefix(fst, bytesReader, token.get(), arc);
         } catch (IOException bogus) {
           throw new RuntimeException(bogus);
         }
@@ -611,27 +614,25 @@ public class FreeTextSuggester extends Lookup {
         
         BytesRef lastTokenFragment = null;
         
-        for(int i=token.length-1;i>=0;i--) {
-          if (token.bytes[token.offset+i] == separator) {
-            BytesRef context = new BytesRef(token.bytes, token.offset, i);
-            Long output = Util.get(fst, Util.toIntsRef(context, new IntsRef()));
+        for(int i=token.length()-1;i>=0;i--) {
+          if (token.byteAt(i) == separator) {
+            BytesRef context = new BytesRef(token.bytes(), 0, i);
+            Long output = Util.get(fst, Util.toIntsRef(context, new IntsRefBuilder()));
             assert output != null;
             contextCount = decodeWeight(output);
-            lastTokenFragment = new BytesRef(token.bytes, token.offset + i + 1, token.length - i - 1);
+            lastTokenFragment = new BytesRef(token.bytes(), i + 1, token.length() - i - 1);
             break;
           }
         }
         
-        final BytesRef finalLastToken;
-        
+        final BytesRefBuilder finalLastToken = new BytesRefBuilder();
         if (lastTokenFragment == null) {
-          finalLastToken = BytesRef.deepCopyOf(token);
+          finalLastToken.copyBytes(token.get());
         } else {
-          finalLastToken = BytesRef.deepCopyOf(lastTokenFragment);
+          finalLastToken.copyBytes(lastTokenFragment);
         }
-        assert finalLastToken.offset == 0;
         
-        CharsRef spare = new CharsRef();
+        CharsRefBuilder spare = new CharsRefBuilder();
         
         // complete top-N
         TopResults<Long> completions = null;
@@ -650,7 +651,7 @@ public class FreeTextSuggester extends Lookup {
           // reject up to seen.size() paths in acceptResult():
           Util.TopNSearcher<Long> searcher = new Util.TopNSearcher<Long>(fst, num, num+seen.size(), weightComparator) {
             
-            BytesRef scratchBytes = new BytesRef();
+            BytesRefBuilder scratchBytes = new BytesRefBuilder();
             
             @Override
             protected void addIfCompetitive(Util.FSTPath<Long> path) {
@@ -665,20 +666,20 @@ public class FreeTextSuggester extends Lookup {
             @Override
             protected boolean acceptResult(IntsRef input, Long output) {
               Util.toBytesRef(input, scratchBytes);
-              finalLastToken.grow(finalLastToken.length + scratchBytes.length);
-              int lenSav = finalLastToken.length;
+              finalLastToken.grow(finalLastToken.length() + scratchBytes.length());
+              int lenSav = finalLastToken.length();
               finalLastToken.append(scratchBytes);
               //System.out.println("    accept? input='" + scratchBytes.utf8ToString() + "'; lastToken='" + finalLastToken.utf8ToString() + "'; return " + (seen.contains(finalLastToken) == false));
-              boolean ret = seen.contains(finalLastToken) == false;
+              boolean ret = seen.contains(finalLastToken.get()) == false;
               
-              finalLastToken.length = lenSav;
+              finalLastToken.setLength(lenSav);
               return ret;
             }
           };
           
           // since this search is initialized with a single start node 
           // it is okay to start with an empty input path here
-          searcher.addStartPaths(arc, prefixOutput, true, new IntsRef());
+          searcher.addStartPaths(arc, prefixOutput, true, new IntsRefBuilder());
           
           completions = searcher.search();
           assert completions.isComplete;
@@ -686,14 +687,14 @@ public class FreeTextSuggester extends Lookup {
           throw new RuntimeException(bogus);
         }
         
-        int prefixLength = token.length;
+        int prefixLength = token.length();
         
-        BytesRef suffix = new BytesRef(8);
+        BytesRefBuilder suffix = new BytesRefBuilder();
         //System.out.println("    " + completions.length + " completions");
         
         nextCompletion:
           for (Result<Long> completion : completions) {
-            token.length = prefixLength;
+            token.setLength(prefixLength);
             // append suffix
             Util.toBytesRef(completion.input, suffix);
             token.append(suffix);
@@ -702,11 +703,11 @@ public class FreeTextSuggester extends Lookup {
             
             // Skip this path if a higher-order model already
             // saw/predicted its last token:
-            BytesRef lastToken = token;
-            for(int i=token.length-1;i>=0;i--) {
-              if (token.bytes[token.offset+i] == separator) {
-                assert token.length-i-1 > 0;
-                lastToken = new BytesRef(token.bytes, token.offset+i+1, token.length-i-1);
+            BytesRef lastToken = token.get();
+            for(int i=token.length()-1;i>=0;i--) {
+              if (token.byteAt(i) == separator) {
+                assert token.length()-i-1 > 0;
+                lastToken = new BytesRef(token.bytes(), i+1, token.length()-i-1);
                 break;
               }
             }
@@ -715,8 +716,7 @@ public class FreeTextSuggester extends Lookup {
               continue nextCompletion;
             }
             seen.add(BytesRef.deepCopyOf(lastToken));
-            spare.grow(token.length);
-            UnicodeUtil.UTF8toUTF16(token, spare);
+            spare.copyUTF8Bytes(token.get());
             LookupResult result = new LookupResult(spare.toString(), (long) (Long.MAX_VALUE * backoff * ((double) decodeWeight(completion.output)) / contextCount));
             results.add(result);
             assert results.size() == seen.size();

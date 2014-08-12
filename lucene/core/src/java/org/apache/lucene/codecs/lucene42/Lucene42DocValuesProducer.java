@@ -41,11 +41,12 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
@@ -345,12 +346,12 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
     final BytesReader in = fst.getBytesReader();
     final Arc<Long> firstArc = new Arc<>();
     final Arc<Long> scratchArc = new Arc<>();
-    final IntsRef scratchInts = new IntsRef();
+    final IntsRefBuilder scratchInts = new IntsRefBuilder();
     final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<>(fst);
     
     return new SortedDocValues() {
 
-      final BytesRef term = new BytesRef();
+      final BytesRefBuilder term = new BytesRefBuilder();
 
       @Override
       public int getOrd(int docID) {
@@ -363,9 +364,8 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
           in.setPosition(0);
           fst.getFirstArc(firstArc);
           IntsRef output = Util.getByOutput(fst, ord, in, firstArc, scratchArc, scratchInts);
-          term.bytes = ArrayUtil.grow(term.bytes, output.length);
-          term.offset = 0;
-          term.length = 0;
+          term.grow(output.length);
+          term.clear();
           return Util.toBytesRef(output, term);
         } catch (IOException bogus) {
           throw new RuntimeException(bogus);
@@ -423,11 +423,11 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
     final BytesReader in = fst.getBytesReader();
     final Arc<Long> firstArc = new Arc<>();
     final Arc<Long> scratchArc = new Arc<>();
-    final IntsRef scratchInts = new IntsRef();
+    final IntsRefBuilder scratchInts = new IntsRefBuilder();
     final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<>(fst);
     final ByteArrayDataInput input = new ByteArrayDataInput();
     return new SortedSetDocValues() {
-      final BytesRef term = new BytesRef();
+      final BytesRefBuilder term = new BytesRefBuilder();
       BytesRef ordsRef;
       long currentOrd;
 
@@ -454,9 +454,8 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
           in.setPosition(0);
           fst.getFirstArc(firstArc);
           IntsRef output = Util.getByOutput(fst, ord, in, firstArc, scratchArc, scratchInts);
-          term.bytes = ArrayUtil.grow(term.bytes, output.length);
-          term.offset = 0;
-          term.length = 0;
+          term.grow(output.length);
+          term.clear();
           return Util.toBytesRef(output, term);
         } catch (IOException bogus) {
           throw new RuntimeException(bogus);
@@ -540,8 +539,8 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
     final FST.BytesReader bytesReader;
     final Arc<Long> firstArc = new Arc<>();
     final Arc<Long> scratchArc = new Arc<>();
-    final IntsRef scratchInts = new IntsRef();
-    final BytesRef scratchBytes = new BytesRef();
+    final IntsRefBuilder scratchInts = new IntsRefBuilder();
+    final BytesRefBuilder scratchBytes = new BytesRefBuilder();
     
     FSTTermsEnum(FST<Long> fst) {
       this.fst = fst;
@@ -588,12 +587,11 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       bytesReader.setPosition(0);
       fst.getFirstArc(firstArc);
       IntsRef output = Util.getByOutput(fst, ord, bytesReader, firstArc, scratchArc, scratchInts);
-      scratchBytes.bytes = new byte[output.length];
-      scratchBytes.offset = 0;
-      scratchBytes.length = 0;
+      BytesRefBuilder scratchBytes = new BytesRefBuilder();
+      scratchBytes.clear();
       Util.toBytesRef(output, scratchBytes);
       // TODO: we could do this lazily, better to try to push into FSTEnum though?
-      in.seekExact(scratchBytes);
+      in.seekExact(scratchBytes.get());
     }
 
     @Override

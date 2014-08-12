@@ -31,14 +31,13 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 
 /** 
@@ -890,7 +889,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
 
     boolean skipped;
     Lucene40SkipListReader skipper;
-    private BytesRef payload;
+    private BytesRefBuilder payload;
     private long lazyProxPointer;
     
     boolean storePayloads;
@@ -911,8 +910,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
       assert fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
       assert storePayloads || storeOffsets;
       if (payload == null) {
-        payload = new BytesRef();
-        payload.bytes = new byte[1];
+        payload = new BytesRefBuilder();
       }
 
       this.liveDocs = liveDocs;
@@ -1142,16 +1140,14 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
         assert posPendingCount < freq;
         
         if (payloadPending) {
-          if (payloadLength > payload.bytes.length) {
-            payload.grow(payloadLength);
-          }
+          payload.grow(payloadLength);
 
-          proxIn.readBytes(payload.bytes, 0, payloadLength);
-          payload.length = payloadLength;
+          proxIn.readBytes(payload.bytes(), 0, payloadLength);
+          payload.setLength(payloadLength);
           payloadPending = false;
         }
 
-        return payload;
+        return payload.get();
       } else {
         return null;
       }

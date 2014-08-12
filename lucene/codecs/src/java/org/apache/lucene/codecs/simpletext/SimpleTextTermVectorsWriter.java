@@ -27,6 +27,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -59,7 +60,7 @@ public class SimpleTextTermVectorsWriter extends TermVectorsWriter {
   private final String segment;
   private IndexOutput out;
   private int numDocsWritten = 0;
-  private final BytesRef scratch = new BytesRef();
+  private final BytesRefBuilder scratch = new BytesRefBuilder();
   private boolean offsets;
   private boolean positions;
   private boolean payloads;

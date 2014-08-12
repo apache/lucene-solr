@@ -26,6 +26,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.SentinelIntSet;
 
 import java.io.IOException;
@@ -303,7 +304,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
             if (collectedGroup.sortValues[i] == null) {
               sortOrd = -1;
             } else {
-              sortOrd = sortsIndex[i].lookupTerm(collectedGroup.sortValues[i]);
+              sortOrd = sortsIndex[i].lookupTerm(collectedGroup.sortValues[i].get());
             }
             collectedGroup.sortOrds[i] = sortOrd;
           }
@@ -313,13 +314,13 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
 
     class GroupHead extends AbstractAllGroupHeadsCollector.GroupHead<BytesRef> {
 
-      BytesRef[] sortValues;
+      BytesRefBuilder[] sortValues;
       int[] sortOrds;
       float[] scores;
 
       private GroupHead(int doc, BytesRef groupValue) throws IOException {
         super(groupValue, doc + readerContext.docBase);
-        sortValues = new BytesRef[sortsIndex.length];
+        sortValues = new BytesRefBuilder[sortsIndex.length];
         sortOrds = new int[sortsIndex.length];
         scores = new float[sortsIndex.length];
         for (int i = 0; i < sortsIndex.length; i++) {
@@ -327,7 +328,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
             scores[i] = scorer.score();
           } else {
             sortOrds[i] = sortsIndex[i].getOrd(doc);
-            sortValues[i] = new BytesRef();
+            sortValues[i] = new BytesRefBuilder();
             if (sortOrds[i] != -1) {
               sortValues[i].copyBytes(sortsIndex[i].get(doc));
             }
@@ -349,7 +350,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
           if (sortOrds[compIDX] < 0) {
             // The current segment doesn't contain the sort value we encountered before. Therefore the ord is negative.
             final BytesRef term = sortsIndex[compIDX].get(doc);
-            return sortValues[compIDX].compareTo(term);
+            return sortValues[compIDX].get().compareTo(term);
           } else {
             return sortOrds[compIDX] - sortsIndex[compIDX].getOrd(doc);
           }
@@ -455,7 +456,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
             if (collectedGroup.sortOrds[i] == -1) {
               sortOrd = -1;
             } else {
-              sortOrd = sortsIndex[i].lookupTerm(collectedGroup.sortValues[i]);
+              sortOrd = sortsIndex[i].lookupTerm(collectedGroup.sortValues[i].get());
             }
             collectedGroup.sortOrds[i] = sortOrd;
           }
@@ -465,16 +466,16 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
 
     class GroupHead extends AbstractAllGroupHeadsCollector.GroupHead<BytesRef> {
 
-      BytesRef[] sortValues;
+      BytesRefBuilder[] sortValues;
       int[] sortOrds;
 
       private GroupHead(int doc, BytesRef groupValue) {
         super(groupValue, doc + readerContext.docBase);
-        sortValues = new BytesRef[sortsIndex.length];
+        sortValues = new BytesRefBuilder[sortsIndex.length];
         sortOrds = new int[sortsIndex.length];
         for (int i = 0; i < sortsIndex.length; i++) {
           sortOrds[i] = sortsIndex[i].getOrd(doc);
-          sortValues[i] = new BytesRef();
+          sortValues[i] = new BytesRefBuilder();
           sortValues[i].copyBytes(sortsIndex[i].get(doc));
         }
       }
@@ -484,7 +485,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
         if (sortOrds[compIDX] < 0) {
           // The current segment doesn't contain the sort value we encountered before. Therefore the ord is negative.
           final BytesRef term = sortsIndex[compIDX].get(doc);
-          return sortValues[compIDX].compareTo(term);
+          return sortValues[compIDX].get().compareTo(term);
         } else {
           return sortOrds[compIDX] - sortsIndex[compIDX].getOrd(doc);
         }

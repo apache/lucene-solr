@@ -24,6 +24,7 @@ import java.util.Set;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;
@@ -38,12 +39,11 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
 
   private static final int MAX_UNICODE = 0x10FFFF;
 
-  final BytesRef b = new BytesRef(4);
-
   private boolean matches(ByteRunAutomaton a, int code) {
     char[] chars = Character.toChars(code);
-    UnicodeUtil.UTF16toUTF8(chars, 0, chars.length, b);
-    return a.run(b.bytes, 0, b.length);
+    byte[] b = new byte[UnicodeUtil.MAX_UTF8_BYTES_PER_CHAR * chars.length];
+    final int len = UnicodeUtil.UTF16toUTF8(chars, 0, chars.length, b);
+    return a.run(b, 0, len);
   }
 
   private void testOne(Random r, ByteRunAutomaton a, int startCode, int endCode, int iters) {
@@ -214,10 +214,10 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
       String s = TestUtil.randomRealisticUnicodeString(random());
       Automaton a = Automata.makeString(s);
       Automaton utf8 = new UTF32ToUTF8().convert(a);
-      IntsRef ints = new IntsRef();
+      IntsRefBuilder ints = new IntsRefBuilder();
       Util.toIntsRef(new BytesRef(s), ints);
       Set<IntsRef> set = new HashSet<>();
-      set.add(ints);
+      set.add(ints.get());
       assertEquals(set, Operations.getFiniteStrings(utf8, -1));
     }
   }

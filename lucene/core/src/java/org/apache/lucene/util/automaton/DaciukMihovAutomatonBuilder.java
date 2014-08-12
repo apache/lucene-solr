@@ -19,8 +19,10 @@ package org.apache.lucene.util.automaton;
 
 import java.util.*;
 
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.UnicodeUtil;
 
 /**
@@ -277,10 +279,14 @@ final class DaciukMihovAutomatonBuilder {
   public static Automaton build(Collection<BytesRef> input) {
     final DaciukMihovAutomatonBuilder builder = new DaciukMihovAutomatonBuilder();
     
-    CharsRef scratch = new CharsRef();
+    char[] chars = new char[0];
+    CharsRef ref = new CharsRef();
     for (BytesRef b : input) {
-      UnicodeUtil.UTF8toUTF16(b, scratch);
-      builder.add(scratch);
+      chars = ArrayUtil.grow(chars, b.length);
+      final int len = UnicodeUtil.UTF8toUTF16(b, chars);
+      ref.chars = chars;
+      ref.length = len;
+      builder.add(ref);
     }
     
     Automaton.Builder a = new Automaton.Builder();

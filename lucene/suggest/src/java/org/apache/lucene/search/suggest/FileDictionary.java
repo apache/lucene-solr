@@ -24,6 +24,7 @@ import java.util.Set;
 
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 
 
@@ -118,8 +119,8 @@ public class FileDictionary implements Dictionary {
 
   final class FileIterator implements InputIterator {
     private long curWeight;
-    private final BytesRef spare = new BytesRef();
-    private BytesRef curPayload = new BytesRef();
+    private final BytesRefBuilder spare = new BytesRefBuilder();
+    private BytesRefBuilder curPayload = new BytesRefBuilder();
     private boolean isFirstLine = true;
     private boolean hasPayloads = false;
     
@@ -159,7 +160,7 @@ public class FileDictionary implements Dictionary {
       }
       if (isFirstLine) {
         isFirstLine = false;
-        return spare;
+        return spare.get();
       }
       line = in.readLine();
       if (line != null) {
@@ -176,16 +177,16 @@ public class FileDictionary implements Dictionary {
           spare.copyChars(fields[0]);
           readWeight(fields[1]);
           if (hasPayloads) { // have an empty payload
-            curPayload = new BytesRef();
+            curPayload = new BytesRefBuilder();
           }
         } else { // only term
           spare.copyChars(fields[0]);
           curWeight = 1;
           if (hasPayloads) {
-            curPayload = new BytesRef();
+            curPayload = new BytesRefBuilder();
           }
         }
-        return spare;
+        return spare.get();
       } else {
         done = true;
         IOUtils.close(in);
@@ -195,7 +196,7 @@ public class FileDictionary implements Dictionary {
 
     @Override
     public BytesRef payload() {
-      return (hasPayloads) ? curPayload : null;
+      return (hasPayloads) ? curPayload.get() : null;
     }
 
     @Override

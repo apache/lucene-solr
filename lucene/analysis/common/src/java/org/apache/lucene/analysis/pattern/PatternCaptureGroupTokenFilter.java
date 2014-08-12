@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 
 /**
  * CaptureGroup uses Java regexes to emit multiple tokens - one for each capture
@@ -74,7 +75,7 @@ public final class PatternCaptureGroupTokenFilter extends TokenFilter {
   private final PositionIncrementAttribute posAttr = addAttribute(PositionIncrementAttribute.class);
   private State state;
   private final Matcher[] matchers;
-  private final CharsRef spare = new CharsRef();
+  private final CharsRefBuilder spare = new CharsRefBuilder();
   private final int[] groupCounts;
   private final boolean preserveOriginal;
   private int[] currentGroup;
@@ -119,7 +120,7 @@ public final class PatternCaptureGroupTokenFilter extends TokenFilter {
           final int start = matcher.start(currentGroup[i]);
           final int end = matcher.end(currentGroup[i]);
           if (start == end || preserveOriginal && start == 0
-              && spare.length == end) {
+              && spare.length() == end) {
             currentGroup[i]++;
             continue;
           }
@@ -151,7 +152,7 @@ public final class PatternCaptureGroupTokenFilter extends TokenFilter {
           .end(currentGroup[currentMatcher]);
 
       posAttr.setPositionIncrement(0);
-      charTermAttr.copyBuffer(spare.chars, start, end - start);
+      charTermAttr.copyBuffer(spare.chars(), start, end - start);
       currentGroup[currentMatcher]++;
       return true;
     }
@@ -166,7 +167,7 @@ public final class PatternCaptureGroupTokenFilter extends TokenFilter {
     state = captureState();
 
     for (int i = 0; i < matchers.length; i++) {
-      matchers[i].reset(spare);
+      matchers[i].reset(spare.get());
       currentGroup[i] = -1;
     }
 
@@ -182,7 +183,7 @@ public final class PatternCaptureGroupTokenFilter extends TokenFilter {
       if (start == 0) {
         charTermAttr.setLength(end);
       } else {
-        charTermAttr.copyBuffer(spare.chars, start, end - start);
+        charTermAttr.copyBuffer(spare.chars(), start, end - start);
       }
       currentGroup[currentMatcher]++;
     }

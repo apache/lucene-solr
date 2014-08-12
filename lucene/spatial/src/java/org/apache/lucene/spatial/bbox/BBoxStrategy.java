@@ -21,6 +21,7 @@ import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
+
 import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -43,6 +44,7 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
 import org.apache.lucene.spatial.util.DistanceToShapeValueSource;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.NumericUtils;
 
 
@@ -586,9 +588,9 @@ public class BBoxStrategy extends SpatialStrategy {
   }
 
   private Query makeNumberTermQuery(String field, double number) {
-    BytesRef bytes = new BytesRef();
+    BytesRefBuilder bytes = new BytesRefBuilder();
     NumericUtils.longToPrefixCodedBytes(NumericUtils.doubleToSortableLong(number), 0, bytes);
-    return new TermQuery(new Term(field, bytes));
+    return new TermQuery(new Term(field, bytes.get()));
   }
 
 }

@@ -34,6 +34,7 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -42,6 +43,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+
 import java.io.IOException;
 import java.util.Collections;
 import java.util.ArrayList;
@@ -421,9 +423,9 @@ public class QueryParsing {
   static void writeFieldVal(BytesRef val, FieldType ft, Appendable out, int flags) throws IOException {
     if (ft != null) {
       try {
-        CharsRef readable = new CharsRef();
+        CharsRefBuilder readable = new CharsRefBuilder();
         ft.indexedToReadable(val, readable);
-        out.append(readable);
+        out.append(readable.get());
       } catch (Exception e) {
         out.append("EXCEPTION(val=");
         out.append(val.utf8ToString());

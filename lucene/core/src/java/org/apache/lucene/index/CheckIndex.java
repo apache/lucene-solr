@@ -41,6 +41,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CommandLineUtil;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
@@ -852,7 +853,7 @@ public class CheckIndex {
       boolean hasOrd = true;
       final long termCountStart = status.delTermCount + status.termCount;
       
-      BytesRef lastTerm = null;
+      BytesRefBuilder lastTerm = null;
       
       long sumTotalTermFreq = 0;
       long sumDocFreq = 0;
@@ -870,9 +871,10 @@ public class CheckIndex {
         // make sure terms arrive in order according to
         // the comp
         if (lastTerm == null) {
-          lastTerm = BytesRef.deepCopyOf(term);
+          lastTerm = new BytesRefBuilder();
+          lastTerm.copyBytes(term);
         } else {
-          if (lastTerm.compareTo(term) >= 0) {
+          if (lastTerm.get().compareTo(term) >= 0) {
             throw new RuntimeException("terms out of order: lastTerm=" + lastTerm + " term=" + term);
           }
           lastTerm.copyBytes(term);
@@ -1184,7 +1186,7 @@ public class CheckIndex {
         
         // Test seek to last term:
         if (lastTerm != null) {
-          if (termsEnum.seekCeil(lastTerm) != TermsEnum.SeekStatus.FOUND) { 
+          if (termsEnum.seekCeil(lastTerm.get()) != TermsEnum.SeekStatus.FOUND) { 
             throw new RuntimeException("seek to last term " + lastTerm + " failed");
           }
           

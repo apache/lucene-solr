@@ -33,7 +33,9 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
@@ -234,11 +236,11 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
   private void updateFST(SortedMap<String,Double> weights) throws IOException {
     PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
     Builder<Long> fstBuilder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
-    BytesRef scratchBytes = new BytesRef();
-    IntsRef scratchInts = new IntsRef();
+    BytesRefBuilder scratchBytes = new BytesRefBuilder();
+    IntsRefBuilder scratchInts = new IntsRefBuilder();
     for (Map.Entry<String,Double> entry : weights.entrySet()) {
       scratchBytes.copyChars(entry.getKey());
-      fstBuilder.add(Util.toIntsRef(scratchBytes, scratchInts), entry
+      fstBuilder.add(Util.toIntsRef(scratchBytes.get(), scratchInts), entry
           .getValue().longValue());
     }
     fst = fstBuilder.finish();

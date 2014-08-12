@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 
 /** Implements a {@link TermsEnum} wrapping a provided
  * {@link SortedSetDocValues}. */
@@ -29,12 +30,12 @@ class SortedSetDocValuesTermsEnum extends TermsEnum {
   private final SortedSetDocValues values;
   private long currentOrd = -1;
   private BytesRef term;
-  private final BytesRef scratch;
+  private final BytesRefBuilder scratch;
 
   /** Creates a new TermsEnum over the provided values */
   public SortedSetDocValuesTermsEnum(SortedSetDocValues values) {
     this.values = values;
-    scratch = new BytesRef();
+    scratch = new BytesRefBuilder();
   }
 
   @Override
@@ -43,7 +44,7 @@ class SortedSetDocValuesTermsEnum extends TermsEnum {
     if (ord >= 0) {
       currentOrd = ord;
       scratch.copyBytes(text);
-      term = scratch;
+      term = scratch.get();
       return SeekStatus.FOUND;
     } else {
       currentOrd = -ord-1;
@@ -63,7 +64,7 @@ class SortedSetDocValuesTermsEnum extends TermsEnum {
     if (ord >= 0) {
       currentOrd = ord;
       scratch.copyBytes(text);
-      term = scratch;
+      term = scratch.get();
       return true;
     } else {
       return false;

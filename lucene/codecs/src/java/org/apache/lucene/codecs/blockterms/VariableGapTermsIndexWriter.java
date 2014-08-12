@@ -29,8 +29,10 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
@@ -231,7 +233,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
     FST<Long> fst;
     final long indexStart;
 
-    private final BytesRef lastTerm = new BytesRef();
+    private final BytesRefBuilder lastTerm = new BytesRefBuilder();
     private boolean first = true;
 
     public FSTFieldWriter(FieldInfo fieldInfo, long termsFilePointer) throws IOException {
@@ -261,7 +263,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
       }
     }
 
-    private final IntsRef scratchIntsRef = new IntsRef();
+    private final IntsRefBuilder scratchIntsRef = new IntsRefBuilder();
 
     @Override
     public void add(BytesRef text, TermStats stats, long termsFilePointer) throws IOException {
@@ -271,7 +273,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
         return;
       }
       final int lengthSave = text.length;
-      text.length = indexedTermPrefixLength(lastTerm, text);
+      text.length = indexedTermPrefixLength(lastTerm.get(), text);
       try {
         fstBuilder.add(Util.toIntsRef(text, scratchIntsRef), termsFilePointer);
       } finally {

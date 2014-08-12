@@ -41,6 +41,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -386,8 +387,8 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
     private int numTerms;
     private int nextTerm;
     private int freq;
-    private BytesRef lastTerm = new BytesRef();
-    private BytesRef term = new BytesRef();
+    private BytesRefBuilder lastTerm = new BytesRefBuilder();
+    private BytesRefBuilder term = new BytesRefBuilder();
     private boolean storePositions;
     private boolean storeOffsets;
     private boolean storePayloads;
@@ -433,7 +434,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
     public SeekStatus seekCeil(BytesRef text)
       throws IOException {
       if (nextTerm != 0) {
-        final int cmp = text.compareTo(term);
+        final int cmp = text.compareTo(term.get());
         if (cmp < 0) {
           nextTerm = 0;
           tvf.seek(tvfFP);
@@ -443,7 +444,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
       }
 
       while (next() != null) {
-        final int cmp = text.compareTo(term);
+        final int cmp = text.compareTo(term.get());
         if (cmp < 0) {
           return SeekStatus.NOT_FOUND;
         } else if (cmp == 0) {
@@ -464,12 +465,12 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
       if (nextTerm >= numTerms) {
         return null;
       }
-      term.copyBytes(lastTerm);
+      term.copyBytes(lastTerm.get());
       final int start = tvf.readVInt();
       final int deltaLen = tvf.readVInt();
-      term.length = start + deltaLen;
-      term.grow(term.length);
-      tvf.readBytes(term.bytes, start, deltaLen);
+      term.setLength(start + deltaLen);
+      term.grow(term.length());
+      tvf.readBytes(term.bytes(), start, deltaLen);
       freq = tvf.readVInt();
 
       if (storePayloads) {
@@ -513,14 +514,14 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
         }
       }
 
-      lastTerm.copyBytes(term);
+      lastTerm.copyBytes(term.get());
       nextTerm++;
-      return term;
+      return term.get();
     }
 
     @Override
     public BytesRef term() {
-      return term;
+      return term.get();
     }
 
     @Override

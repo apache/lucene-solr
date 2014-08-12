@@ -34,6 +34,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestNumericUtils; // NaN arrays
@@ -377,9 +378,12 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
       if (lower>upper) {
         int a=lower; lower=upper; upper=a;
       }
-      final BytesRef lowerBytes = new BytesRef(NumericUtils.BUF_SIZE_INT), upperBytes = new BytesRef(NumericUtils.BUF_SIZE_INT);
-      NumericUtils.intToPrefixCodedBytes(lower, 0, lowerBytes);
-      NumericUtils.intToPrefixCodedBytes(upper, 0, upperBytes);
+      final BytesRef lowerBytes, upperBytes;
+      BytesRefBuilder b = new BytesRefBuilder();
+      NumericUtils.intToPrefixCodedBytes(lower, 0, b);
+      lowerBytes = b.toBytesRef();
+      NumericUtils.intToPrefixCodedBytes(upper, 0, b);
+      upperBytes = b.toBytesRef();
 
       // test inclusive range
       NumericRangeQuery<Integer> tq=NumericRangeQuery.newIntRange(field, precisionStep, lower, upper, true, true);

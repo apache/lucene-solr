@@ -40,6 +40,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
@@ -294,7 +295,7 @@ public class FSTOrdTermsWriter extends FieldsConsumer {
     private final int longsSize;
     private long numTerms;
 
-    private final IntsRef scratchTerm = new IntsRef();
+    private final IntsRefBuilder scratchTerm = new IntsRefBuilder();
     private final RAMOutputStream statsOut = new RAMOutputStream();
     private final RAMOutputStream metaLongsOut = new RAMOutputStream();
     private final RAMOutputStream metaBytesOut = new RAMOutputStream();

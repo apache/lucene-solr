@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 
 import com.carrotsearch.hppc.IntOpenHashSet;
 import com.carrotsearch.hppc.IntIntOpenHashMap;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -41,6 +42,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.SentinelIntSet;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -74,6 +76,7 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -681,17 +684,17 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         Terms terms = fields.terms(idField);
         if (terms == null) return this;
         termsEnum = terms.iterator(termsEnum);
-        BytesRef term = new BytesRef();
+        BytesRefBuilder term = new BytesRefBuilder();
         Bits liveDocs = context.reader().getLiveDocs();
 
         for (String id : elevations.ids) {
           term.copyChars(id);
-          if (seen.contains(id) == false  && termsEnum.seekExact(term)) {
+          if (seen.contains(id) == false  && termsEnum.seekExact(term.get())) {
             docsEnum = termsEnum.docs(liveDocs, docsEnum, DocsEnum.FLAG_NONE);
             if (docsEnum != null) {
               int docId = docsEnum.nextDoc();
               if (docId == DocIdSetIterator.NO_MORE_DOCS ) continue;  // must have been deleted
-              termValues[ordSet.put(docId)] = BytesRef.deepCopyOf(term);
+              termValues[ordSet.put(docId)] = term.toBytesRef();
               seen.add(id);
               assert docsEnum.nextDoc() == DocIdSetIterator.NO_MORE_DOCS;
             }

@@ -20,6 +20,7 @@ package org.apache.solr.update.processor;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
@@ -230,9 +231,9 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
         // in theory, the FieldType might still be CharSequence based,
         // but in that case trust it to do an identiy conversion...
         FieldType fieldType = userVersionField.getType();
-        BytesRef term = new BytesRef();
+        BytesRefBuilder term = new BytesRefBuilder();
         fieldType.readableToIndexed((CharSequence)rawValue, term);
-        return fieldType.toObject(userVersionField, term);
+        return fieldType.toObject(userVersionField, term.get());
       }
       // else...
       return rawValue;

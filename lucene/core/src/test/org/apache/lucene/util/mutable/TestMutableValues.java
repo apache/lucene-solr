@@ -26,7 +26,7 @@ public class TestMutableValues extends LuceneTestCase {
 
   public void testStr() {
     MutableValueStr xxx = new MutableValueStr();
-    assert xxx.value.equals(new BytesRef()) : "defaults have changed, test utility may not longer be as high";
+    assert xxx.value.get().equals(new BytesRef()) : "defaults have changed, test utility may not longer be as high";
     assert xxx.exists : "defaults have changed, test utility may not longer be as high";
     assertSanity(xxx);
     MutableValueStr yyy = new MutableValueStr();
@@ -42,14 +42,14 @@ public class TestMutableValues extends LuceneTestCase {
     yyy.exists = false;
     assertEquality(xxx, yyy);
 
-    xxx.value.length = 0;
+    xxx.value.clear();
     xxx.value.copyChars("zzz");
     xxx.exists = true;
     assertSanity(xxx);
 
     assertInEquality(xxx,yyy);
 
-    yyy.value.length = 0;
+    yyy.value.clear();
     yyy.value.copyChars("aaa");
     yyy.exists = true;
     assertSanity(yyy);
@@ -65,11 +65,11 @@ public class TestMutableValues extends LuceneTestCase {
     // special BytesRef considerations...
 
     xxx.exists = false;
-    xxx.value.length = 0; // but leave bytes alone
+    xxx.value.clear(); // but leave bytes alone
     assertInEquality(xxx,yyy);
 
     yyy.exists = false;
-    yyy.value.length = 0; // but leave bytes alone
+    yyy.value.clear(); // but leave bytes alone
     assertEquality(xxx, yyy);
 
   }

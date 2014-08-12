@@ -25,7 +25,7 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.StrDocValues;
-import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueStr;
 
@@ -84,15 +84,13 @@ public abstract class MultiStringFunction extends ValueSource {
       }
       
       @Override
-      public boolean bytesVal(int doc, BytesRef bytes) {
+      public boolean bytesVal(int doc, BytesRefBuilder bytes) {
+        bytes.clear();
         CharSequence cs = func(doc, valsArr);
         if( cs != null ){
           bytes.copyChars(func(doc,valsArr));
           return true;
         } else {
-          bytes.bytes = BytesRef.EMPTY_BYTES;
-          bytes.length = 0;
-          bytes.offset = 0;
           return false;
         }
       }

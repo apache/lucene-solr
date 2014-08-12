@@ -33,6 +33,7 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 
 class SimpleTextDocValuesWriter extends DocValuesConsumer {
@@ -50,7 +51,7 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
   final static BytesRef ORDPATTERN = new BytesRef("  ordpattern ");
   
   IndexOutput data;
-  final BytesRef scratch = new BytesRef();
+  final BytesRefBuilder scratch = new BytesRefBuilder();
   final int numDocs;
   private final Set<String> fieldsSeen = new HashSet<>(); // for asserting
   
@@ -279,7 +280,7 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
       @Override
       public Iterator<BytesRef> iterator() {
         final StringBuilder builder = new StringBuilder();
-        final BytesRef scratch = new BytesRef();
+        final BytesRefBuilder scratch = new BytesRefBuilder();
         final Iterator<Number> counts = docToValueCount.iterator();
         final Iterator<Number> numbers = values.iterator();
         
@@ -301,7 +302,7 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
               builder.append(Long.toString(numbers.next().longValue()));
             }
             scratch.copyChars(builder);
-            return scratch;
+            return scratch.get();
           }
 
           @Override

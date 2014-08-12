@@ -39,9 +39,11 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
@@ -340,7 +342,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
       return "BLOCK: " + brToString(prefix);
     }
 
-    public void compileIndex(List<PendingBlock> blocks, RAMOutputStream scratchBytes, IntsRef scratchIntsRef) throws IOException {
+    public void compileIndex(List<PendingBlock> blocks, RAMOutputStream scratchBytes, IntsRefBuilder scratchIntsRef) throws IOException {
 
       assert (isFloor && blocks.size() > 1) || (isFloor == false && blocks.size() == 1): "isFloor=" + isFloor + " blocks=" + blocks;
       assert this == blocks.get(0);
@@ -418,7 +420,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
     // TODO: maybe we could add bulk-add method to
     // Builder?  Takes FST and unions it w/ current
     // FST.
-    private void append(Builder<Output> builder, FST<Output> subIndex, long termOrdOffset, IntsRef scratchIntsRef) throws IOException {
+    private void append(Builder<Output> builder, FST<Output> subIndex, long termOrdOffset, IntsRefBuilder scratchIntsRef) throws IOException {
       final BytesRefFSTEnum<Output> subIndexEnum = new BytesRefFSTEnum<>(subIndex);
       BytesRefFSTEnum.InputOutput<Output> indexEnt;
       while ((indexEnt = subIndexEnum.next()) != null) {
@@ -435,7 +437,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
   }
 
   private final RAMOutputStream scratchBytes = new RAMOutputStream();
-  private final IntsRef scratchIntsRef = new IntsRef();
+  private final IntsRefBuilder scratchIntsRef = new IntsRefBuilder();
 
   class TermsWriter {
     private final FieldInfo fieldInfo;
@@ -451,7 +453,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
     // startsByPrefix[0] is the index into pending for the first
     // term/sub-block starting with 't'.  We use this to figure out when
     // to write a new block:
-    private final BytesRef lastTerm = new BytesRef();
+    private final BytesRefBuilder lastTerm = new BytesRefBuilder();
     private int[] prefixStarts = new int[8];
 
     private final long[] longs;
@@ -589,7 +591,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
       boolean hasFloorLeadLabel = isFloor && floorLeadLabel != -1;
 
       final BytesRef prefix = new BytesRef(prefixLength + (hasFloorLeadLabel ? 1 : 0));
-      System.arraycopy(lastTerm.bytes, 0, prefix.bytes, 0, prefixLength);
+      System.arraycopy(lastTerm.bytes(), 0, prefix.bytes, 0, prefixLength);
       prefix.length = prefixLength;
 
       // Write block header:
@@ -818,18 +820,18 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
 
     /** Pushes the new term to the top of the stack, and writes new blocks. */
     private void pushTerm(BytesRef text) throws IOException {
-      int limit = Math.min(lastTerm.length, text.length);
+      int limit = Math.min(lastTerm.length(), text.length);
 
       // Find common prefix between last term and current term:
       int pos = 0;
-      while (pos < limit && lastTerm.bytes[pos] == text.bytes[text.offset+pos]) {
+      while (pos < limit && lastTerm.byteAt(pos) == text.bytes[text.offset+pos]) {
         pos++;
       }
 
       // if (DEBUG) System.out.println("  shared=" + pos + "  lastTerm.length=" + lastTerm.length);
 
       // Close the "abandoned" suffix now:
-      for(int i=lastTerm.length-1;i>=pos;i--) {
+      for(int i=lastTerm.length()-1;i>=pos;i--) {
 
         // How many items on top of the stack share the current suffix
         // we are closing:

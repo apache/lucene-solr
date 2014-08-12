@@ -40,6 +40,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.params.FacetParams;
@@ -290,7 +291,7 @@ final class NumericFacets {
             default:
               throw new AssertionError();
           }
-          final CharsRef spare = new CharsRef();
+          final CharsRefBuilder spare = new CharsRefBuilder();
           for (int skipped = hashTable.size; skipped < offset && term != null && StringHelper.startsWith(term, prefix); ) {
             ft.indexedToReadable(term, spare);
             final String termStr = spare.toString();
@@ -343,7 +344,7 @@ final class NumericFacets {
           default:
             throw new AssertionError();
         }
-        final CharsRef spare = new CharsRef();
+        final CharsRefBuilder spare = new CharsRefBuilder();
         for (int i = 0; i < offset && term != null && StringHelper.startsWith(term, prefix); ++i) {
           term = termsEnum.next();
         }

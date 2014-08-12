@@ -31,6 +31,7 @@ import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.MathUtil;
 import org.apache.lucene.util.StringHelper;
@@ -309,17 +310,17 @@ class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
       // we could avoid this, but its not much and less overall RAM than the previous approach!
       RAMOutputStream addressBuffer = new RAMOutputStream();
       MonotonicBlockPackedWriter termAddresses = new MonotonicBlockPackedWriter(addressBuffer, BLOCK_SIZE);
-      BytesRef lastTerm = new BytesRef();
+      BytesRefBuilder lastTerm = new BytesRefBuilder();
       long count = 0;
       for (BytesRef v : values) {
         if (count % ADDRESS_INTERVAL == 0) {
           termAddresses.add(data.getFilePointer() - startFP);
           // force the first term in a block to be abs-encoded
-          lastTerm.length = 0;
+          lastTerm.clear();
         }
         
         // prefix-code
-        int sharedPrefix = StringHelper.bytesDifference(lastTerm, v);
+        int sharedPrefix = StringHelper.bytesDifference(lastTerm.get(), v);
         data.writeVInt(sharedPrefix);
         data.writeVInt(v.length - sharedPrefix);
         data.writeBytes(v.bytes, v.offset + sharedPrefix, v.length - sharedPrefix);

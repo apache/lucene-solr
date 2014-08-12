@@ -108,13 +108,13 @@ public class TestUnicodeUtil extends LuceneTestCase {
     assertEquals(2, UnicodeUtil.codePointCount(new BytesRef(asByteArray('z', 0xf0, 0xa4, 0xad, 0xa2))));
 
     // And do some random stuff.
-    BytesRef utf8 = new BytesRef(20);
     int num = atLeast(50000);
     for (int i = 0; i < num; i++) {
       final String s = TestUtil.randomUnicodeString(random());
-      UnicodeUtil.UTF16toUTF8(s, 0, s.length(), utf8);
+      final byte[] utf8 = new byte[s.length() * UnicodeUtil.MAX_UTF8_BYTES_PER_CHAR];
+      final int utf8Len = UnicodeUtil.UTF16toUTF8(s, 0, s.length(), utf8);
       assertEquals(s.codePointCount(0, s.length()),
-                   UnicodeUtil.codePointCount(utf8));
+                   UnicodeUtil.codePointCount(new BytesRef(utf8, 0, utf8Len)));
     }
   }
 
@@ -137,14 +137,15 @@ public class TestUnicodeUtil extends LuceneTestCase {
   }
 
   public void testUTF8toUTF32() {
-    BytesRef utf8 = new BytesRef(20);
-    IntsRef utf32 = new IntsRef(20);
+    int[] utf32 = new int[0];
     int[] codePoints = new int[20];
     int num = atLeast(50000);
     for (int i = 0; i < num; i++) {
       final String s = TestUtil.randomUnicodeString(random());
-      UnicodeUtil.UTF16toUTF8(s, 0, s.length(), utf8);
-      UnicodeUtil.UTF8toUTF32(utf8, utf32);
+      final byte[] utf8 = new byte[s.length() * UnicodeUtil.MAX_UTF8_BYTES_PER_CHAR];
+      final int utf8Len = UnicodeUtil.UTF16toUTF8(s, 0, s.length(), utf8);
+      utf32 = ArrayUtil.grow(utf32, utf8Len);
+      final int utf32Len = UnicodeUtil.UTF8toUTF32(new BytesRef(utf8, 0, utf8Len), utf32);
       
       int charUpto = 0;
       int intUpto = 0;
@@ -153,15 +154,15 @@ public class TestUnicodeUtil extends LuceneTestCase {
         codePoints[intUpto++] = cp;
         charUpto += Character.charCount(cp);
       }
-      if (!ArrayUtil.equals(codePoints, 0, utf32.ints, utf32.offset, intUpto)) {
+      if (!ArrayUtil.equals(codePoints, 0, utf32, 0, intUpto)) {
         System.out.println("FAILED");
         for(int j=0;j<s.length();j++) {
           System.out.println("  char[" + j + "]=" + Integer.toHexString(s.charAt(j)));
         }
         System.out.println();
-        assertEquals(intUpto, utf32.length);
+        assertEquals(intUpto, utf32Len);
         for(int j=0;j<intUpto;j++) {
-          System.out.println("  " + Integer.toHexString(utf32.ints[j]) + " vs " + Integer.toHexString(codePoints[j]));
+          System.out.println("  " + Integer.toHexString(utf32[j]) + " vs " + Integer.toHexString(codePoints[j]));
         }
         fail("mismatch");
       }
@@ -210,11 +211,8 @@ public class TestUnicodeUtil extends LuceneTestCase {
     for (int i = 0; i < num; i++) {
       String unicode = TestUtil.randomRealisticUnicodeString(random());
       BytesRef ref = new BytesRef(unicode);
-      char[] arr = new char[1 + random().nextInt(100)];
-      int offset = random().nextInt(arr.length);
-      int len = random().nextInt(arr.length - offset);
-      CharsRef cRef = new CharsRef(arr, offset, len);
-      UnicodeUtil.UTF8toUTF16(ref, cRef);
+      CharsRefBuilder cRef = new CharsRefBuilder();
+      cRef.copyUTF8Bytes(ref);
       assertEquals(cRef.toString(), unicode);
     }
   }

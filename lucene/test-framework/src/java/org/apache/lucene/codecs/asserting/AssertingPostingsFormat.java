@@ -34,6 +34,7 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 
 /**
  * Just like {@link Lucene41PostingsFormat} but with additional asserts.
@@ -131,7 +132,7 @@ public final class AssertingPostingsFormat extends PostingsFormat {
         assert terms != null;
 
         termsEnum = terms.iterator(termsEnum);
-        BytesRef lastTerm = null;
+        BytesRefBuilder lastTerm = null;
         DocsEnum docsEnum = null;
         DocsAndPositionsEnum posEnum = null;
 
@@ -148,9 +149,10 @@ public final class AssertingPostingsFormat extends PostingsFormat {
           if (term == null) {
             break;
           }
-          assert lastTerm == null || lastTerm.compareTo(term) < 0;
+          assert lastTerm == null || lastTerm.get().compareTo(term) < 0;
           if (lastTerm == null) {
-            lastTerm = BytesRef.deepCopyOf(term);
+            lastTerm = new BytesRefBuilder();
+            lastTerm.append(term);
           } else {
             lastTerm.copyBytes(term);
           }

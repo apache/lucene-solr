@@ -32,22 +32,22 @@ public class TestByteBlockPool extends LuceneTestCase {
       List<BytesRef> list = new ArrayList<>();
       int maxLength = atLeast(500);
       final int numValues = atLeast(100);
-      BytesRef ref = new BytesRef();
+      BytesRefBuilder ref = new BytesRefBuilder();
       for (int i = 0; i < numValues; i++) {
         final String value = TestUtil.randomRealisticUnicodeString(random(),
             maxLength);
         list.add(new BytesRef(value));
         ref.copyChars(value);
-        pool.append(ref);
+        pool.append(ref.get());
       }
       // verify
       long position = 0;
       for (BytesRef expected : list) {
         ref.grow(expected.length);
-        ref.length = expected.length;
-        pool.readBytes(position, ref.bytes, ref.offset, ref.length);
-        assertEquals(expected, ref);
-        position += ref.length;
+        ref.setLength(expected.length);
+        pool.readBytes(position, ref.bytes(), 0, ref.length());
+        assertEquals(expected, ref.get());
+        position += ref.length();
       }
       pool.reset(random().nextBoolean(), reuseFirst);
       if (reuseFirst) {

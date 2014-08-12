@@ -58,6 +58,7 @@ import org.apache.lucene.search.grouping.term.TermAllGroupsCollector;
 import org.apache.lucene.search.grouping.term.TermGroupFacetCollector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -480,7 +481,7 @@ public class SimpleFacets {
                                       (offset + limit), 
                                       mincount, orderByCount);
 
-    CharsRef charsRef = new CharsRef();
+    CharsRefBuilder charsRef = new CharsRefBuilder();
     FieldType facetFieldType = searcher.getSchema().getFieldType(field);
     NamedList<Integer> facetCounts = new NamedList<>();
     List<TermGroupFacetCollector.FacetEntry> scopedEntries 
@@ -699,7 +700,7 @@ public class SimpleFacets {
     }
 
     DocsEnum docsEnum = null;
-    CharsRef charsRef = new CharsRef(10);
+    CharsRefBuilder charsRef = new CharsRefBuilder();
 
     if (docs.size() >= mincount) {
       while (term != null) {

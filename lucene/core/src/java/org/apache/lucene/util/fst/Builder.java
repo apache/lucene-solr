@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.FST.INPUT_TYPE; // javadoc
 import org.apache.lucene.util.packed.PackedInts;
@@ -68,7 +69,7 @@ public class Builder<T> {
   private final boolean doShareNonSingletonNodes;
   private final int shareMaxTailLength;
 
-  private final IntsRef lastInput = new IntsRef();
+  private final IntsRefBuilder lastInput = new IntsRefBuilder();
   
   // for packing
   private final boolean doPackFST;
@@ -202,7 +203,7 @@ public class Builder<T> {
   private void freezeTail(int prefixLenPlus1) throws IOException {
     //System.out.println("  compileTail " + prefixLenPlus1);
     final int downTo = Math.max(1, prefixLenPlus1);
-    for(int idx=lastInput.length; idx >= downTo; idx--) {
+    for(int idx=lastInput.length(); idx >= downTo; idx--) {
 
       boolean doPrune = false;
       boolean doCompile = false;
@@ -254,11 +255,11 @@ public class Builder<T> {
       if (doPrune) {
         // this node doesn't make it -- deref it
         node.clear();
-        parent.deleteLast(lastInput.ints[lastInput.offset+idx-1], node);
+        parent.deleteLast(lastInput.intAt(idx-1), node);
       } else {
 
         if (minSuffixCount2 != 0) {
-          compileAllTargets(node, lastInput.length-idx);
+          compileAllTargets(node, lastInput.length()-idx);
         }
         final T nextFinalOutput = node.output;
 
@@ -273,14 +274,14 @@ public class Builder<T> {
           // this node makes it and we now compile it.  first,
           // compile any targets that were previously
           // undecided:
-          parent.replaceLast(lastInput.ints[lastInput.offset + idx-1],
-                             compileNode(node, 1+lastInput.length-idx),
+          parent.replaceLast(lastInput.intAt(idx-1),
+                             compileNode(node, 1+lastInput.length()-idx),
                              nextFinalOutput,
                              isFinal);
         } else {
           // replaceLast just to install
           // nextFinalOutput/isFinal onto the arc
-          parent.replaceLast(lastInput.ints[lastInput.offset + idx-1],
+          parent.replaceLast(lastInput.intAt(idx-1),
                              node,
                              nextFinalOutput,
                              isFinal);
@@ -334,7 +335,7 @@ public class Builder<T> {
       output = NO_OUTPUT;
     }
 
-    assert lastInput.length == 0 || input.compareTo(lastInput) >= 0: "inputs are added out of order lastInput=" + lastInput + " vs input=" + input;
+    assert lastInput.length() == 0 || input.compareTo(lastInput.get()) >= 0: "inputs are added out of order lastInput=" + lastInput.get() + " vs input=" + input;
     assert validOutput(output);
 
     //System.out.println("\nadd: " + input);
@@ -353,11 +354,11 @@ public class Builder<T> {
     // compare shared prefix length
     int pos1 = 0;
     int pos2 = input.offset;
-    final int pos1Stop = Math.min(lastInput.length, input.length);
+    final int pos1Stop = Math.min(lastInput.length(), input.length);
     while(true) {
       frontier[pos1].inputCount++;
       //System.out.println("  incr " + pos1 + " ct=" + frontier[pos1].inputCount + " n=" + frontier[pos1]);
-      if (pos1 >= pos1Stop || lastInput.ints[pos1] != input.ints[pos2]) {
+      if (pos1 >= pos1Stop || lastInput.intAt(pos1) != input.ints[pos2]) {
         break;
       }
       pos1++;
@@ -387,7 +388,7 @@ public class Builder<T> {
     }
 
     final UnCompiledNode<T> lastNode = frontier[input.length];
-    if (lastInput.length != input.length || prefixLenPlus1 != input.length + 1) {
+    if (lastInput.length() != input.length || prefixLenPlus1 != input.length + 1) {
       lastNode.isFinal = true;
       lastNode.output = NO_OUTPUT;
     }
@@ -419,7 +420,7 @@ public class Builder<T> {
       assert validOutput(output);
     }
 
-    if (lastInput.length == input.length && prefixLenPlus1 == 1+input.length) {
+    if (lastInput.length() == input.length && prefixLenPlus1 == 1+input.length) {
       // same input more than 1 time in a row, mapping to
       // multiple outputs
       lastNode.output = fst.outputs.merge(lastNode.output, output);
@@ -456,11 +457,11 @@ public class Builder<T> {
       }
     } else {
       if (minSuffixCount2 != 0) {
-        compileAllTargets(root, lastInput.length);
+        compileAllTargets(root, lastInput.length());
       }
     }
     //if (DEBUG) System.out.println("  builder.finish root.isFinal=" + root.isFinal + " root.output=" + root.output);
-    fst.finish(compileNode(root, lastInput.length).node);
+    fst.finish(compileNode(root, lastInput.length()).node);
 
     if (doPackFST) {
       return fst.pack(3, Math.max(10, (int) (fst.getNodeCount()/4)), acceptableOverheadRatio);

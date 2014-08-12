@@ -26,9 +26,12 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+
 import static org.apache.solr.common.params.CursorMarkParams.*;
+
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.schema.IndexSchema;
@@ -200,6 +203,16 @@ public final class CursorMark {
       ByteArrayInputStream in = new ByteArrayInputStream(rawData);
       try {
         pieces = (List<Object>) codec.unmarshal(in);
+        boolean b = false;
+        for (Object o : pieces) {
+          if (o instanceof BytesRefBuilder || o instanceof BytesRef || o instanceof String) {
+            b = true; break;
+          }
+        }
+        if (b) {
+          in.reset();
+          pieces = (List<Object>) codec.unmarshal(in);
+        }
       } finally {
         in.close();
       }

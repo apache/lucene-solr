@@ -38,19 +38,19 @@ public class TestBytesRefArray extends LuceneTestCase {
         stringList.clear();
       }
       int entries = atLeast(500);
-      BytesRef spare = new BytesRef();
+      BytesRefBuilder spare = new BytesRefBuilder();
       int initSize = list.size();
       for (int i = 0; i < entries; i++) {
         String randomRealisticUnicodeString = TestUtil
             .randomRealisticUnicodeString(random);
         spare.copyChars(randomRealisticUnicodeString);
-        assertEquals(i+initSize, list.append(spare));
+        assertEquals(i+initSize, list.append(spare.get()));
         stringList.add(randomRealisticUnicodeString);
       }
       for (int i = 0; i < entries; i++) {
         assertNotNull(list.get(spare, i));
         assertEquals("entry " + i + " doesn't match", stringList.get(i),
-            spare.utf8ToString());
+            spare.get().utf8ToString());
       }
       
       // check random
@@ -58,7 +58,7 @@ public class TestBytesRefArray extends LuceneTestCase {
         int e = random.nextInt(entries);
         assertNotNull(list.get(spare, e));
         assertEquals("entry " + i + " doesn't match", stringList.get(e),
-            spare.utf8ToString());
+            spare.get().utf8ToString());
       }
       for (int i = 0; i < 2; i++) {
         
@@ -81,13 +81,13 @@ public class TestBytesRefArray extends LuceneTestCase {
         stringList.clear();
       }
       int entries = atLeast(500);
-      BytesRef spare = new BytesRef();
+      BytesRefBuilder spare = new BytesRefBuilder();
       final int initSize = list.size();
       for (int i = 0; i < entries; i++) {
         String randomRealisticUnicodeString = TestUtil
             .randomRealisticUnicodeString(random);
         spare.copyChars(randomRealisticUnicodeString);
-        assertEquals(initSize + i, list.append(spare));
+        assertEquals(initSize + i, list.append(spare.get()));
         stringList.add(randomRealisticUnicodeString);
       }
       
@@ -95,9 +95,10 @@ public class TestBytesRefArray extends LuceneTestCase {
       BytesRefIterator iter = list.iterator(BytesRef
           .getUTF8SortedAsUTF16Comparator());
       int i = 0;
-      while ((spare = iter.next()) != null) {
+      BytesRef next;
+      while ((next = iter.next()) != null) {
         assertEquals("entry " + i + " doesn't match", stringList.get(i),
-            spare.utf8ToString());
+            next.utf8ToString());
         i++;
       }
       assertNull(iter.next());
