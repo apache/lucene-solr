@@ -40,13 +40,14 @@ public class TestBooleanUnevenly extends LuceneTestCase {
   public static final String field = "field";
   private static Directory directory;
 
-  private static int count1 = 0;
+  private static int count1;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
     directory = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), directory, new MockAnalyzer(random()));
     Document doc;
+    count1 = 0;
     for (int i=0;i<2;i++) {
       for (int j=0;j<2048;j++) {
         doc = new Document();
@@ -102,8 +103,8 @@ public class TestBooleanUnevenly extends LuceneTestCase {
     ScoreDoc[] hits2 = tops2.scoreDocs;
     int hitsNum2 = tops2.totalHits;
 
-    assertEquals(hitsNum1, count1);
-    assertEquals(hitsNum2, count1);
+    assertEquals(count1, hitsNum1);
+    assertEquals(count1, hitsNum2);
     CheckHits.checkEqual(query, hits1, hits2);
   }
 
@@ -125,8 +126,8 @@ public class TestBooleanUnevenly extends LuceneTestCase {
     ScoreDoc[] hits2 = tops2.scoreDocs;
     int hitsNum2 = tops2.totalHits;
 
-    assertEquals(hitsNum1, count1);
-    assertEquals(hitsNum2, count1);
+    assertEquals(count1, hitsNum1);
+    assertEquals(count1, hitsNum2);
     CheckHits.checkEqual(query, hits1, hits2);
   }
 }
