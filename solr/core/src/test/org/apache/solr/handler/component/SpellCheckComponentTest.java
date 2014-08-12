@@ -111,16 +111,16 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testCollate() throws Exception {
     assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","documemt", SpellingParams.SPELLCHECK_COLLATE, "true")
-       ,"/spellcheck/suggestions/collation=='document'"
+       ,"/spellcheck/collations/collation=='document'"
     );
     assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","documemt lowerfilt:broen^4", SpellingParams.SPELLCHECK_COLLATE, "true")
-       ,"/spellcheck/suggestions/collation=='document lowerfilt:brown^4'"
+       ,"/spellcheck/collations/collation=='document lowerfilt:brown^4'"
     );
     assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","documemtsss broens", SpellingParams.SPELLCHECK_COLLATE, "true")
-       ,"/spellcheck/suggestions/collation=='document brown'"
+       ,"/spellcheck/collations/collation=='document brown'"
     );
     assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","pixma", SpellingParams.SPELLCHECK_COLLATE, "true")
-       ,"/spellcheck/suggestions/collation=='pixmaa'"
+       ,"/spellcheck/collations/collation=='pixmaa'"
     );
   }
   
@@ -130,15 +130,15 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     // Make sure correct spellings are signaled in the response
     assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true",
         "q","lowerfilt:lazy lowerfilt:brown", SpellingParams.SPELLCHECK_EXTENDED_RESULTS, "true")
-       ,"/spellcheck/suggestions=={'correctlySpelled':true}"
+       ,"/spellcheck/correctlySpelled==true"
     );
     assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "spellcheck.dictionary", "direct_lowerfilt",
         "q","lowerfilt:lazy lowerfilt:brown", SpellingParams.SPELLCHECK_EXTENDED_RESULTS, "true")
-       ,"/spellcheck/suggestions=={'correctlySpelled':true}"
+       ,"/spellcheck/correctlySpelled==true"
     );
     assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "spellcheck.dictionary", "direct_lowerfilt",
         "q","lakkle", SpellingParams.SPELLCHECK_EXTENDED_RESULTS, "true")
-       ,"/spellcheck/suggestions/correctlySpelled==false"
+       ,"/spellcheck/correctlySpelled==false"
     );
   }
   
@@ -242,7 +242,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
         NamedList spellCheck = (NamedList) values.get("spellcheck");
         NamedList suggestions = (NamedList) spellCheck.get("suggestions");
         assertTrue(suggestions.get("suggestion")==null);
-        assertTrue((Boolean) suggestions.get("correctlySpelled")==false);
+        assertTrue((Boolean) spellCheck.get("correctlySpelled")==false);
 
         params.remove(SpellingParams.SPELLCHECK_DICT);
         params.add(SpellingParams.SPELLCHECK_DICT, "threshold_direct");
@@ -255,7 +255,6 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
         spellCheck = (NamedList) values.get("spellcheck");
         suggestions = (NamedList) spellCheck.get("suggestions");
         assertTrue(suggestions.get("suggestion")==null);
-
-        assertTrue((Boolean) suggestions.get("correctlySpelled")==false);
+        assertTrue((Boolean) spellCheck.get("correctlySpelled")==false);
     }
 }

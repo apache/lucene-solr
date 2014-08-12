@@ -48,6 +48,11 @@ Upgrading from Solr 4.x
 
 * getAnalyzer() in IndexSchema and FieldType that was deprecated in Solr 4.9 has
   been removed.  Use getIndexAnalyzer() instead. See SOLR-6022 for more information.
+  
+* The spellcheck response format has changed, affecting xml and json clients.  In 
+  particular, the "correctlySpelled" and "collations" subsections have been moved outside
+  the "suggestions" subsection, and now are directly under "spellcheck".
+  See SOLR-3029 for more information.
 
 Detailed Change List
 ----------------------
@@ -87,6 +92,8 @@ Other Changes
 
 * SOLR-6215: TrieDateField should directly extend TrieField instead of
   forwarding to a wrapped TrieField. (Steve Rowe)
+  
+* SOLR-3029: Changes to spellcheck response format (Nalini Kartha via James Dyer)
 
 ==================  4.10.0 =================
 

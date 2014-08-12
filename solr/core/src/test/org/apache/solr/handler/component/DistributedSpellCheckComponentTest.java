@@ -122,7 +122,8 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
     index(id, "22", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
     index(id, "23", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
     index(id, "24", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
-    index(id, "25", "lowerfilt", "rod fix");
+    index(id, "25", "lowerfilt", "The quicker red fox jumped over the lazy brown dogs.");
+    index(id, "26", "lowerfilt", "rod fix");
     commit();
 
     handle.clear();
@@ -173,7 +174,7 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
         collate, "true", maxCollationTries, "0", maxCollations, "1", collateExtended, "false"));
     
     //Test context-sensitive collate
-    query(buildRequest("lowerfilt:(\"quote red fox\")", 
+    query(buildRequest("lowerfilt:(\"quick red fox\")", 
         false, requestHandlerName, random().nextBoolean(), extended, "true", count, "10", 
         collate, "true", maxCollationTries, "10", maxCollations, "1", collateExtended, "false",
         altTermCount, "5", maxResults, "10"));
