@@ -214,8 +214,6 @@ public class DataImportHandler extends RequestHandlerBase implements
     rsp.add("status", importer.isBusy() ? "busy" : "idle");
     rsp.add("importResponse", message);
     rsp.add("statusMessages", importer.getStatusMessages());
-
-    RequestHandlerUtils.addExperimentalFormatWarning(rsp);
   }
 
   private Map<String, Object> getParamsMap(SolrParams params) {

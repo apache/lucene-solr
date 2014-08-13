@@ -261,7 +261,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       rsp.add(CMD_SHOW_COMMITS, getCommits());
     } else if (command.equals(CMD_DETAILS)) {
       rsp.add(CMD_DETAILS, getReplicationDetails(solrParams.getBool("slave", true)));
-      RequestHandlerUtils.addExperimentalFormatWarning(rsp);
     } else if (CMD_ENABLE_REPL.equalsIgnoreCase(command)) {
       replicationEnabled.set(true);
       rsp.add(STATUS, OK_STATUS);

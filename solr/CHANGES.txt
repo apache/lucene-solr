@@ -95,6 +95,10 @@ Other Changes
   
 * SOLR-3029: Changes to spellcheck response format (Nalini Kartha via James Dyer)
 
+* SOLR-3957: Removed RequestHandlerUtils#addExperimentalFormatWarning(), which
+  removes "experimental" warning from two places: replication handler details
+  command and DataImportHandler responses. (ehatcher)
+
 ==================  4.10.0 =================
 
 Versions of Major Components
