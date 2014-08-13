@@ -260,6 +260,8 @@ Bug Fixes
 * SOLR-6336: DistributedQueue can easily create too many ZooKeeper Watches.
   (Ramkumar Aiyengar via Mark Miller)
 
+* SOLR-6347: DELETEREPLICA throws a NPE while removing the last Replica in a Custom sharded collection.
+
 Optimizations
 ---------------------
 
