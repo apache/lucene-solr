@@ -27,6 +27,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 
 /**
  * HighFrequencyDictionary: terms taken from the given field
@@ -62,7 +63,7 @@ public class HighFrequencyDictionary implements Dictionary {
   }
 
   final class HighFrequencyIterator implements InputIterator {
-    private final BytesRef spare = new BytesRef();
+    private final BytesRefBuilder spare = new BytesRefBuilder();
     private final TermsEnum termsEnum;
     private int minNumDocs;
     private long freq;
@@ -94,7 +95,7 @@ public class HighFrequencyDictionary implements Dictionary {
           if (isFrequent(termsEnum.docFreq())) {
             freq = termsEnum.docFreq();
             spare.copyBytes(next);
-            return spare;
+            return spare.get();
           }
         }
       }

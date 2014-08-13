@@ -38,9 +38,12 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.Operations;
@@ -420,7 +423,7 @@ public class AnalyzingSuggester extends Lookup {
 
     OfflineSorter.ByteSequencesWriter writer = new OfflineSorter.ByteSequencesWriter(tempInput);
     OfflineSorter.ByteSequencesReader reader = null;
-    BytesRef scratch = new BytesRef();
+    BytesRefBuilder scratch = new BytesRefBuilder();
 
     TokenStreamToAutomaton ts2a = getTokenStreamToAutomaton();
 
@@ -441,10 +444,10 @@ public class AnalyzingSuggester extends Lookup {
           Util.toBytesRef(path, scratch);
           
           // length of the analyzed text (FST input)
-          if (scratch.length > Short.MAX_VALUE-2) {
-            throw new IllegalArgumentException("cannot handle analyzed forms > " + (Short.MAX_VALUE-2) + " in length (got " + scratch.length + ")");
+          if (scratch.length() > Short.MAX_VALUE-2) {
+            throw new IllegalArgumentException("cannot handle analyzed forms > " + (Short.MAX_VALUE-2) + " in length (got " + scratch.length() + ")");
           }
-          short analyzedLength = (short) scratch.length;
+          short analyzedLength = (short) scratch.length();
 
           // compute the required length:
           // analyzed sequence + weight (4) + surface + analyzedLength (short)
@@ -469,7 +472,7 @@ public class AnalyzingSuggester extends Lookup {
 
           output.writeShort(analyzedLength);
 
-          output.writeBytes(scratch.bytes, scratch.offset, scratch.length);
+          output.writeBytes(scratch.bytes(), 0, scratch.length());
 
           output.writeInt(encodeWeight(iterator.weight()));
 
@@ -505,10 +508,10 @@ public class AnalyzingSuggester extends Lookup {
       Builder<Pair<Long,BytesRef>> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
 
       // Build FST:
-      BytesRef previousAnalyzed = null;
-      BytesRef analyzed = new BytesRef();
+      BytesRefBuilder previousAnalyzed = null;
+      BytesRefBuilder analyzed = new BytesRefBuilder();
       BytesRef surface = new BytesRef();
-      IntsRef scratchInts = new IntsRef();
+      IntsRefBuilder scratchInts = new IntsRefBuilder();
       ByteArrayDataInput input = new ByteArrayDataInput();
 
       // Used to remove duplicate surface forms (but we
@@ -519,28 +522,28 @@ public class AnalyzingSuggester extends Lookup {
 
       int dedup = 0;
       while (reader.read(scratch)) {
-        input.reset(scratch.bytes, scratch.offset, scratch.length);
+        input.reset(scratch.bytes(), 0, scratch.length());
         short analyzedLength = input.readShort();
         analyzed.grow(analyzedLength+2);
-        input.readBytes(analyzed.bytes, 0, analyzedLength);
-        analyzed.length = analyzedLength;
+        input.readBytes(analyzed.bytes(), 0, analyzedLength);
+        analyzed.setLength(analyzedLength);
 
         long cost = input.readInt();
 
-        surface.bytes = scratch.bytes;
+        surface.bytes = scratch.bytes();
         if (hasPayloads) {
           surface.length = input.readShort();
           surface.offset = input.getPosition();
         } else {
           surface.offset = input.getPosition();
-          surface.length = scratch.length - surface.offset;
+          surface.length = scratch.length() - surface.offset;
         }
         
         if (previousAnalyzed == null) {
-          previousAnalyzed = new BytesRef();
-          previousAnalyzed.copyBytes(analyzed);
+          previousAnalyzed = new BytesRefBuilder();
+          previousAnalyzed.copyBytes(analyzed.get());
           seenSurfaceForms.add(BytesRef.deepCopyOf(surface));
-        } else if (analyzed.equals(previousAnalyzed)) {
+        } else if (analyzed.get().equals(previousAnalyzed.get())) {
           dedup++;
           if (dedup >= maxSurfaceFormsPerAnalyzedForm) {
             // More than maxSurfaceFormsPerAnalyzedForm
@@ -566,23 +569,22 @@ public class AnalyzingSuggester extends Lookup {
 
         // NOTE: must be byte 0 so we sort before whatever
         // is next
-        analyzed.bytes[analyzed.offset+analyzed.length] = 0;
-        analyzed.bytes[analyzed.offset+analyzed.length+1] = (byte) dedup;
-        analyzed.length += 2;
+        analyzed.append((byte) 0);
+        analyzed.append((byte) dedup);
 
-        Util.toIntsRef(analyzed, scratchInts);
+        Util.toIntsRef(analyzed.get(), scratchInts);
         //System.out.println("ADD: " + scratchInts + " -> " + cost + ": " + surface.utf8ToString());
         if (!hasPayloads) {
-          builder.add(scratchInts, outputs.newPair(cost, BytesRef.deepCopyOf(surface)));
+          builder.add(scratchInts.get(), outputs.newPair(cost, BytesRef.deepCopyOf(surface)));
         } else {
           int payloadOffset = input.getPosition() + surface.length;
-          int payloadLength = scratch.length - payloadOffset;
+          int payloadLength = scratch.length() - payloadOffset;
           BytesRef br = new BytesRef(surface.length + 1 + payloadLength);
           System.arraycopy(surface.bytes, surface.offset, br.bytes, 0, surface.length);
           br.bytes[surface.length] = PAYLOAD_SEP;
-          System.arraycopy(scratch.bytes, payloadOffset, br.bytes, surface.length+1, payloadLength);
+          System.arraycopy(scratch.bytes(), payloadOffset, br.bytes, surface.length+1, payloadLength);
           br.length = br.bytes.length;
-          builder.add(scratchInts, outputs.newPair(cost, br));
+          builder.add(scratchInts.get(), outputs.newPair(cost, br));
         }
       }
       fst = builder.finish();
@@ -624,7 +626,7 @@ public class AnalyzingSuggester extends Lookup {
     return true;
   }
 
-  private LookupResult getLookupResult(Long output1, BytesRef output2, CharsRef spare) {
+  private LookupResult getLookupResult(Long output1, BytesRef output2, CharsRefBuilder spare) {
     LookupResult result;
     if (hasPayloads) {
       int sepIndex = -1;
@@ -637,14 +639,14 @@ public class AnalyzingSuggester extends Lookup {
       assert sepIndex != -1;
       spare.grow(sepIndex);
       final int payloadLen = output2.length - sepIndex - 1;
-      UnicodeUtil.UTF8toUTF16(output2.bytes, output2.offset, sepIndex, spare);
+      spare.copyUTF8Bytes(output2.bytes, output2.offset, sepIndex);
       BytesRef payload = new BytesRef(payloadLen);
       System.arraycopy(output2.bytes, sepIndex+1, payload.bytes, 0, payloadLen);
       payload.length = payloadLen;
       result = new LookupResult(spare.toString(), decodeWeight(output1), payload);
     } else {
       spare.grow(output2.length);
-      UnicodeUtil.UTF8toUTF16(output2, spare);
+      spare.copyUTF8Bytes(output2);
       result = new LookupResult(spare.toString(), decodeWeight(output1));
     }
 
@@ -695,7 +697,7 @@ public class AnalyzingSuggester extends Lookup {
     try {
       Automaton lookupAutomaton = toLookupAutomaton(key);
 
-      final CharsRef spare = new CharsRef();
+      final CharsRefBuilder spare = new CharsRefBuilder();
 
       //System.out.println("  now intersect exactFirst=" + exactFirst);
     

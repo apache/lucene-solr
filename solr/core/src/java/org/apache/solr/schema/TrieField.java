@@ -45,7 +45,9 @@ import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.mutable.MutableValueDate;
 import org.apache.lucene.util.mutable.MutableValueLong;
@@ -374,13 +376,13 @@ public class TrieField extends PrimitiveFieldType {
   @Override
   public String readableToIndexed(String val) {
     // TODO: Numeric should never be handled as String, that may break in future lucene versions! Change to use BytesRef for term texts!
-    final BytesRef bytes = new BytesRef(NumericUtils.BUF_SIZE_LONG);
+    final BytesRefBuilder bytes = new BytesRefBuilder();
     readableToIndexed(val, bytes);
-    return bytes.utf8ToString();
+    return bytes.get().utf8ToString();
   }
 
   @Override
-  public void readableToIndexed(CharSequence val, BytesRef result) {
+  public void readableToIndexed(CharSequence val, BytesRefBuilder result) {
     String s = val.toString();
     try {
       switch (type) {
@@ -445,7 +447,7 @@ public class TrieField extends PrimitiveFieldType {
   }
 
   @Override
-  public CharsRef indexedToReadable(BytesRef indexedForm, CharsRef charsRef) {
+  public CharsRef indexedToReadable(BytesRef indexedForm, CharsRefBuilder charsRef) {
     final String value;
     switch (type) {
       case INTEGER:
@@ -467,9 +469,9 @@ public class TrieField extends PrimitiveFieldType {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
     }
     charsRef.grow(value.length());
-    charsRef.length = value.length();
-    value.getChars(0, charsRef.length, charsRef.chars, 0);
-    return charsRef;
+    charsRef.setLength(value.length());
+    value.getChars(0, charsRef.length(), charsRef.chars(), 0);
+    return charsRef.get();
   }
 
   @Override
@@ -492,7 +494,7 @@ public class TrieField extends PrimitiveFieldType {
 
   @Override
   public String storedToIndexed(IndexableField f) {
-    final BytesRef bytes = new BytesRef(NumericUtils.BUF_SIZE_LONG);
+    final BytesRefBuilder bytes = new BytesRefBuilder();
     final Number val = f.numericValue();
     if (val != null) {
       switch (type) {
@@ -547,7 +549,7 @@ public class TrieField extends PrimitiveFieldType {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
       }
     }
-    return bytes.utf8ToString();
+    return bytes.get().utf8ToString();
   }
   
   @Override
@@ -639,9 +641,9 @@ public class TrieField extends PrimitiveFieldType {
       fields.add(field);
       
       if (sf.multiValued()) {
-        BytesRef bytes = new BytesRef();
+        BytesRefBuilder bytes = new BytesRefBuilder();
         readableToIndexed(value.toString(), bytes);
-        fields.add(new SortedSetDocValuesField(sf.getName(), bytes));
+        fields.add(new SortedSetDocValuesField(sf.getName(), bytes.get()));
       } else {
         final long bits;
         if (field.numericValue() instanceof Integer || field.numericValue() instanceof Long) {

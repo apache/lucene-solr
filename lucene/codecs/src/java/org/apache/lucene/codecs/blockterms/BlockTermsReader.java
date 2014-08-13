@@ -46,6 +46,7 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.DoubleBarrelLRUCache;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -323,7 +324,7 @@ public class BlockTermsReader extends FieldsProducer {
       private final boolean doOrd;
       private final FieldAndTerm fieldTerm = new FieldAndTerm();
       private final TermsIndexReaderBase.FieldIndexEnum indexEnum;
-      private final BytesRef term = new BytesRef();
+      private final BytesRefBuilder term = new BytesRefBuilder();
 
       /* This is true if indexEnum is "still" seek'd to the index term
          for the current term. We set it to true on seeking, and then it
@@ -414,7 +415,7 @@ public class BlockTermsReader extends FieldsProducer {
         // is after current term but before next index term:
         if (indexIsCurrent) {
 
-          final int cmp = BytesRef.getUTF8SortedAsUnicodeComparator().compare(term, target);
+          final int cmp = BytesRef.getUTF8SortedAsUnicodeComparator().compare(term.get(), target);
 
           if (cmp == 0) {
             // Already at the requested term
@@ -490,7 +491,7 @@ public class BlockTermsReader extends FieldsProducer {
           // First, see if target term matches common prefix
           // in this block:
           if (common < termBlockPrefix) {
-            final int cmp = (term.bytes[common]&0xFF) - (target.bytes[target.offset + common]&0xFF);
+            final int cmp = (term.byteAt(common)&0xFF) - (target.bytes[target.offset + common]&0xFF);
             if (cmp < 0) {
 
               // TODO: maybe we should store common prefix
@@ -509,11 +510,9 @@ public class BlockTermsReader extends FieldsProducer {
                   termSuffixesReader.skipBytes(termSuffixesReader.readVInt());
                 }
                 final int suffix = termSuffixesReader.readVInt();
-                term.length = termBlockPrefix + suffix;
-                if (term.bytes.length < term.length) {
-                  term.grow(term.length);
-                }
-                termSuffixesReader.readBytes(term.bytes, termBlockPrefix, suffix);
+                term.setLength(termBlockPrefix + suffix);
+                term.grow(term.length());
+                termSuffixesReader.readBytes(term.bytes(), termBlockPrefix, suffix);
               }
               state.ord++;
               
@@ -530,11 +529,9 @@ public class BlockTermsReader extends FieldsProducer {
               assert state.termBlockOrd == 0;
 
               final int suffix = termSuffixesReader.readVInt();
-              term.length = termBlockPrefix + suffix;
-              if (term.bytes.length < term.length) {
-                term.grow(term.length);
-              }
-              termSuffixesReader.readBytes(term.bytes, termBlockPrefix, suffix);
+              term.setLength(termBlockPrefix + suffix);
+              term.grow(term.length());
+              termSuffixesReader.readBytes(term.bytes(), termBlockPrefix, suffix);
               return SeekStatus.NOT_FOUND;
             } else {
               common++;
@@ -567,22 +564,18 @@ public class BlockTermsReader extends FieldsProducer {
               } else if (cmp > 0) {
                 // Done!  Current term is after target. Stop
                 // here, fill in real term, return NOT_FOUND.
-                term.length = termBlockPrefix + suffix;
-                if (term.bytes.length < term.length) {
-                  term.grow(term.length);
-                }
-                termSuffixesReader.readBytes(term.bytes, termBlockPrefix, suffix);
+                term.setLength(termBlockPrefix + suffix);
+                term.grow(term.length());
+                termSuffixesReader.readBytes(term.bytes(), termBlockPrefix, suffix);
                 //System.out.println("  NOT_FOUND");
                 return SeekStatus.NOT_FOUND;
               }
             }
 
             if (!next && target.length <= termLen) {
-              term.length = termBlockPrefix + suffix;
-              if (term.bytes.length < term.length) {
-                term.grow(term.length);
-              }
-              termSuffixesReader.readBytes(term.bytes, termBlockPrefix, suffix);
+              term.setLength(termBlockPrefix + suffix);
+              term.grow(term.length());
+              termSuffixesReader.readBytes(term.bytes(), termBlockPrefix, suffix);
 
               if (target.length == termLen) {
                 // Done!  Exact match.  Stop here, fill in
@@ -597,11 +590,9 @@ public class BlockTermsReader extends FieldsProducer {
 
             if (state.termBlockOrd == blockTermCount) {
               // Must pre-fill term for next block's common prefix
-              term.length = termBlockPrefix + suffix;
-              if (term.bytes.length < term.length) {
-                term.grow(term.length);
-              }
-              termSuffixesReader.readBytes(term.bytes, termBlockPrefix, suffix);
+              term.setLength(termBlockPrefix + suffix);
+              term.grow(term.length());
+              termSuffixesReader.readBytes(term.bytes(), termBlockPrefix, suffix);
               break;
             } else {
               termSuffixesReader.skipBytes(suffix);
@@ -672,23 +663,21 @@ public class BlockTermsReader extends FieldsProducer {
         final int suffix = termSuffixesReader.readVInt();
         //System.out.println("  suffix=" + suffix);
 
-        term.length = termBlockPrefix + suffix;
-        if (term.bytes.length < term.length) {
-          term.grow(term.length);
-        }
-        termSuffixesReader.readBytes(term.bytes, termBlockPrefix, suffix);
+        term.setLength(termBlockPrefix + suffix);
+        term.grow(term.length());
+        termSuffixesReader.readBytes(term.bytes(), termBlockPrefix, suffix);
         state.termBlockOrd++;
 
         // NOTE: meaningless in the non-ord case
         state.ord++;
 
         //System.out.println("  return term=" + fieldInfo.name + ":" + term.utf8ToString() + " " + term + " tbOrd=" + state.termBlockOrd);
-        return term;
+        return term.get();
       }
 
       @Override
       public BytesRef term() {
-        return term;
+        return term.get();
       }
 
       @Override

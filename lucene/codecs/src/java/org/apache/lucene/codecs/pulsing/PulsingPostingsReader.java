@@ -41,6 +41,7 @@ import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 
 /** Concrete class that reads the current doc/freq/skip
@@ -405,7 +406,7 @@ public class PulsingPostingsReader extends PostingsReaderBase {
     private int posPending;
     private int position;
     private int payloadLength;
-    private BytesRef payload;
+    private BytesRefBuilder payload;
     private int startOffset;
     private int offsetLength;
 
@@ -552,17 +553,16 @@ public class PulsingPostingsReader extends PostingsReaderBase {
     public BytesRef getPayload() throws IOException {
       //System.out.println("PR  getPayload payloadLength=" + payloadLength + " this=" + this);
       if (payloadRetrieved) {
-        return payload;
+        return payload.get();
       } else if (storePayloads && payloadLength > 0) {
         payloadRetrieved = true;
         if (payload == null) {
-          payload = new BytesRef(payloadLength);
-        } else {
-          payload.grow(payloadLength);
+          payload = new BytesRefBuilder();
         }
-        postings.readBytes(payload.bytes, 0, payloadLength);
-        payload.length = payloadLength;
-        return payload;
+        payload.grow(payloadLength);
+        postings.readBytes(payload.bytes(), 0, payloadLength);
+        payload.setLength(payloadLength);
+        return payload.get();
       } else {
         return null;
       }

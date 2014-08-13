@@ -75,8 +75,7 @@ public class TestMultiDocValues extends LuceneTestCase {
   public void testBinary() throws Exception {
     Directory dir = newDirectory();
     Document doc = new Document();
-    BytesRef ref = new BytesRef();
-    Field field = new BinaryDocValuesField("bytes", ref);
+    Field field = new BinaryDocValuesField("bytes", new BytesRef());
     doc.add(field);
     
     IndexWriterConfig iwc = newIndexWriterConfig(random(), TEST_VERSION_CURRENT, null);
@@ -85,7 +84,8 @@ public class TestMultiDocValues extends LuceneTestCase {
 
     int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; i++) {
-      ref.copyChars(TestUtil.randomUnicodeString(random()));
+      BytesRef ref = new BytesRef(TestUtil.randomUnicodeString(random()));
+      field.setBytesValue(ref);
       iw.addDocument(doc);
       if (random().nextInt(17) == 0) {
         iw.commit();
@@ -112,8 +112,7 @@ public class TestMultiDocValues extends LuceneTestCase {
   public void testSorted() throws Exception {
     Directory dir = newDirectory();
     Document doc = new Document();
-    BytesRef ref = new BytesRef();
-    Field field = new SortedDocValuesField("bytes", ref);
+    Field field = new SortedDocValuesField("bytes", new BytesRef());
     doc.add(field);
     
     IndexWriterConfig iwc = newIndexWriterConfig(random(), TEST_VERSION_CURRENT, null);
@@ -122,7 +121,8 @@ public class TestMultiDocValues extends LuceneTestCase {
 
     int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; i++) {
-      ref.copyChars(TestUtil.randomUnicodeString(random()));
+      BytesRef ref = new BytesRef(TestUtil.randomUnicodeString(random()));
+      field.setBytesValue(ref);
       if (defaultCodecSupportsDocsWithField() && random().nextInt(7) == 0) {
         iw.addDocument(new Document());
       }
@@ -157,8 +157,7 @@ public class TestMultiDocValues extends LuceneTestCase {
   public void testSortedWithLotsOfDups() throws Exception {
     Directory dir = newDirectory();
     Document doc = new Document();
-    BytesRef ref = new BytesRef();
-    Field field = new SortedDocValuesField("bytes", ref);
+    Field field = new SortedDocValuesField("bytes", new BytesRef());
     doc.add(field);
     
     IndexWriterConfig iwc = newIndexWriterConfig(random(), TEST_VERSION_CURRENT, null);
@@ -167,7 +166,8 @@ public class TestMultiDocValues extends LuceneTestCase {
 
     int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; i++) {
-      ref.copyChars(TestUtil.randomSimpleString(random(), 2));
+      BytesRef ref = new BytesRef(TestUtil.randomSimpleString(random(), 2));
+      field.setBytesValue(ref);
       iw.addDocument(doc);
       if (random().nextInt(17) == 0) {
         iw.commit();

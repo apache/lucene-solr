@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.MathUtil;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.PagedBytes.PagedBytesDataInput;
@@ -164,7 +165,7 @@ class TermInfosReaderIndex {
     int lo = 0;
     int hi = indexSize - 1;
     PagedBytesDataInput input = dataInput.clone();
-    BytesRef scratch = new BytesRef();
+    BytesRefBuilder scratch = new BytesRefBuilder();
     while (hi >= lo) {
       int mid = (lo + hi) >>> 1;
       int delta = compareTo(term, mid, input, scratch);
@@ -217,7 +218,7 @@ class TermInfosReaderIndex {
    * @throws IOException If there is a low-level I/O error.
    */
   int compareTo(Term term, int termIndex) throws IOException {
-    return compareTo(term, termIndex, dataInput.clone(), new BytesRef());
+    return compareTo(term, termIndex, dataInput.clone(), new BytesRefBuilder());
   }
 
   /**
@@ -233,15 +234,15 @@ class TermInfosReaderIndex {
    * @return int.
    * @throws IOException If there is a low-level I/O error.
    */
-  private int compareTo(Term term, int termIndex, PagedBytesDataInput input, BytesRef reuse) throws IOException {
+  private int compareTo(Term term, int termIndex, PagedBytesDataInput input, BytesRefBuilder reuse) throws IOException {
     // if term field does not equal mid's field index, then compare fields
     // else if they are equal, compare term's string values...
     int c = compareField(term, termIndex, input);
     if (c == 0) {
-      reuse.length = input.readVInt();
-      reuse.grow(reuse.length);
-      input.readBytes(reuse.bytes, 0, reuse.length);
-      return comparator.compare(term.bytes(), reuse);
+      reuse.setLength(input.readVInt());
+      reuse.grow(reuse.length());
+      input.readBytes(reuse.bytes(), 0, reuse.length());
+      return comparator.compare(term.bytes(), reuse.get());
     }
     return c;
   }

@@ -30,6 +30,7 @@ import org.apache.lucene.search.FieldCache.LongParser;
 import org.apache.lucene.search.FieldCache.ShortParser;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 
 /**
  * Expert: a FieldComparator compares hits so as to determine their
@@ -906,7 +907,7 @@ public abstract class FieldComparator<T> {
     /* Values for each slot.
        @lucene.internal */
     final BytesRef[] values;
-    private final BytesRef[] tempBRs;
+    private final BytesRefBuilder[] tempBRs;
 
     /* Which reader last copied a value into the slot. When
        we compare two slots, we just compare-by-ord if the
@@ -967,7 +968,7 @@ public abstract class FieldComparator<T> {
     public TermOrdValComparator(int numHits, String field, boolean sortMissingLast) {
       ords = new int[numHits];
       values = new BytesRef[numHits];
-      tempBRs = new BytesRef[numHits];
+      tempBRs = new BytesRefBuilder[numHits];
       readerGen = new int[numHits];
       this.field = field;
       if (sortMissingLast) {
@@ -1027,10 +1028,10 @@ public abstract class FieldComparator<T> {
       } else {
         assert ord >= 0;
         if (tempBRs[slot] == null) {
-          tempBRs[slot] = new BytesRef();
+          tempBRs[slot] = new BytesRefBuilder();
         }
-        values[slot] = tempBRs[slot];
-        values[slot].copyBytes(termsIndex.lookupOrd(ord));
+        tempBRs[slot].copyBytes(termsIndex.lookupOrd(ord));
+        values[slot] = tempBRs[slot].get();
       }
       ords[slot] = ord;
       readerGen[slot] = currentReaderGen;
@@ -1157,7 +1158,7 @@ public abstract class FieldComparator<T> {
   public static class TermValComparator extends FieldComparator<BytesRef> {
     
     private final BytesRef[] values;
-    private final BytesRef[] tempBRs;
+    private final BytesRefBuilder[] tempBRs;
     private BinaryDocValues docTerms;
     private Bits docsWithField;
     private final String field;
@@ -1168,7 +1169,7 @@ public abstract class FieldComparator<T> {
     /** Sole constructor. */
     public TermValComparator(int numHits, String field, boolean sortMissingLast) {
       values = new BytesRef[numHits];
-      tempBRs = new BytesRef[numHits];
+      tempBRs = new BytesRefBuilder[numHits];
       this.field = field;
       missingSortCmp = sortMissingLast ? 1 : -1;
     }
@@ -1193,10 +1194,10 @@ public abstract class FieldComparator<T> {
         values[slot] = null;
       } else {
         if (tempBRs[slot] == null) {
-          tempBRs[slot] = new BytesRef();
+          tempBRs[slot] = new BytesRefBuilder();
         }
-        values[slot] = tempBRs[slot];
-        values[slot].copyBytes(comparableBytes);
+        tempBRs[slot].copyBytes(comparableBytes);
+        values[slot] = tempBRs[slot].get();
       }
     }
 

@@ -29,6 +29,7 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.UnicodeUtil;
 
@@ -69,10 +70,9 @@ public class TSTLookup extends Lookup {
     ArrayList<String> tokens = new ArrayList<>();
     ArrayList<Number> vals = new ArrayList<>();
     BytesRef spare;
-    CharsRef charsSpare = new CharsRef();
+    CharsRefBuilder charsSpare = new CharsRefBuilder();
     while ((spare = tfit.next()) != null) {
-      charsSpare.grow(spare.length);
-      UnicodeUtil.UTF8toUTF16(spare.bytes, spare.offset, spare.length, charsSpare);
+      charsSpare.copyUTF8Bytes(spare);
       tokens.add(charsSpare.toString());
       vals.add(Long.valueOf(tfit.weight()));
     }

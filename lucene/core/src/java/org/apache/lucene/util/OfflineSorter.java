@@ -359,7 +359,7 @@ public final class OfflineSorter {
     PriorityQueue<FileAndTop> queue = new PriorityQueue<FileAndTop>(merges.size()) {
       @Override
       protected boolean lessThan(FileAndTop a, FileAndTop b) {
-        return comparator.compare(a.current, b.current) < 0;
+        return comparator.compare(a.current.get(), b.current.get()) < 0;
       }
     };
 
@@ -380,7 +380,7 @@ public final class OfflineSorter {
       // so it shouldn't make much of a difference (didn't check).
       FileAndTop top;
       while ((top = queue.top()) != null) {
-        out.write(top.current);
+        out.write(top.current.bytes(), 0, top.current.length());
         if (!streams[top.fd].read(top.current)) {
           queue.pop();
         } else {
@@ -420,11 +420,12 @@ public final class OfflineSorter {
 
   static class FileAndTop {
     final int fd;
-    final BytesRef current;
+    final BytesRefBuilder current;
 
-    FileAndTop(int fd, byte [] firstLine) {
+    FileAndTop(int fd, byte[] firstLine) {
       this.fd = fd;
-      this.current = new BytesRef(firstLine);
+      this.current = new BytesRefBuilder();
+      this.current.copyBytes(firstLine, 0, firstLine.length);
     }
   }
 
@@ -519,7 +520,7 @@ public final class OfflineSorter {
      * the header of the next sequence. Returns <code>true</code> otherwise.
      * @throws EOFException if the file ends before the full sequence is read.
      */
-    public boolean read(BytesRef ref) throws IOException {
+    public boolean read(BytesRefBuilder ref) throws IOException {
       short length;
       try {
         length = is.readShort();
@@ -528,16 +529,15 @@ public final class OfflineSorter {
       }
 
       ref.grow(length);
-      ref.offset = 0;
-      ref.length = length;
-      is.readFully(ref.bytes, 0, length);
+      ref.setLength(length);
+      is.readFully(ref.bytes(), 0, length);
       return true;
     }
 
     /**
      * Reads the next entry and returns it if successful.
      * 
-     * @see #read(BytesRef)
+     * @see #read(BytesRefBuilder)
      * 
      * @return Returns <code>null</code> if EOF occurred before the next entry
      * could be read.

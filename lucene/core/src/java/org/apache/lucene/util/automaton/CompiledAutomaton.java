@@ -26,6 +26,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.PrefixTermsEnum;
 import org.apache.lucene.index.SingleTermsEnum;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 
 /**
  * Immutable class holding compiled details for a given
@@ -195,7 +196,7 @@ public class CompiledAutomaton {
   
   //private static final boolean DEBUG = BlockTreeTermsWriter.DEBUG;
 
-  private BytesRef addTail(int state, BytesRef term, int idx, int leadLabel) {
+  private BytesRef addTail(int state, BytesRefBuilder term, int idx, int leadLabel) {
     //System.out.println("addTail state=" + state + " term=" + term.utf8ToString() + " idx=" + idx + " leadLabel=" + (char) leadLabel);
     //System.out.println(automaton.toDot());
     // Find biggest transition that's < label
@@ -225,11 +226,9 @@ public class CompiledAutomaton {
       floorLabel = transition.max;
     }
     //System.out.println("  floorLabel=" + (char) floorLabel);
-    if (idx >= term.bytes.length) {
-      term.grow(1+idx);
-    }
+    term.grow(1+idx);
     //if (DEBUG) System.out.println("  add floorLabel=" + (char) floorLabel + " idx=" + idx);
-    term.bytes[idx] = (byte) floorLabel;
+    term.setByteAt(idx, (byte) floorLabel);
 
     state = transition.dest;
     //System.out.println("  dest: " + state);
@@ -241,20 +240,18 @@ public class CompiledAutomaton {
       if (numTransitions == 0) {
         //System.out.println("state=" + state + " 0 trans");
         assert runAutomaton.isAccept(state);
-        term.length = idx;
+        term.setLength(idx);
         //if (DEBUG) System.out.println("  return " + term.utf8ToString());
-        return term;
+        return term.get();
       } else {
         // We are pushing "top" -- so get last label of
         // last transition:
         //System.out.println("get state=" + state + " numTrans=" + numTransitions);
         automaton.getTransition(state, numTransitions-1, transition);
-        if (idx >= term.bytes.length) {
-          term.grow(1+idx);
-        }
+        term.grow(1+idx);
         //if (DEBUG) System.out.println("  push maxLabel=" + (char) lastTransition.max + " idx=" + idx);
         //System.out.println("  add trans dest=" + scratch.dest + " label=" + (char) scratch.max);
-        term.bytes[idx] = (byte) transition.max;
+        term.setByteAt(idx, (byte) transition.max);
         state = transition.dest;
         idx++;
       }
@@ -289,13 +286,12 @@ public class CompiledAutomaton {
   /** Finds largest term accepted by this Automaton, that's
    *  <= the provided input term.  The result is placed in
    *  output; it's fine for output and input to point to
-   *  the same BytesRef.  The returned result is either the
+   *  the same bytes.  The returned result is either the
    *  provided output, or null if there is no floor term
    *  (ie, the provided input term is before the first term
    *  accepted by this Automaton). */
-  public BytesRef floor(BytesRef input, BytesRef output) {
+  public BytesRef floor(BytesRef input, BytesRefBuilder output) {
 
-    output.offset = 0;
     //if (DEBUG) System.out.println("CA.floor input=" + input.utf8ToString());
 
     int state = runAutomaton.getInitialState();
@@ -303,8 +299,8 @@ public class CompiledAutomaton {
     // Special case empty string:
     if (input.length == 0) {
       if (runAutomaton.isAccept(state)) {
-        output.length = 0;
-        return output;
+        output.clear();
+        return output.get();
       } else {
         return null;
       }
@@ -321,13 +317,11 @@ public class CompiledAutomaton {
       if (idx == input.length-1) {
         if (nextState != -1 && runAutomaton.isAccept(nextState)) {
           // Input string is accepted
-          if (idx >= output.bytes.length) {
-            output.grow(1+idx);
-          }
-          output.bytes[idx] = (byte) label;
-          output.length = input.length;
+          output.grow(1+idx);
+          output.setByteAt(idx, (byte) label);
+          output.setLength(input.length);
           //if (DEBUG) System.out.println("  input is accepted; return term=" + output.utf8ToString());
-          return output;
+          return output.get();
         } else {
           nextState = -1;
         }
@@ -341,18 +335,18 @@ public class CompiledAutomaton {
           int numTransitions = automaton.getNumTransitions(state);
           if (numTransitions == 0) {
             assert runAutomaton.isAccept(state);
-            output.length = idx;
+            output.setLength(idx);
             //if (DEBUG) System.out.println("  return " + output.utf8ToString());
-            return output;
+            return output.get();
           } else {
             automaton.getTransition(state, 0, transition);
 
             if (label-1 < transition.min) {
 
               if (runAutomaton.isAccept(state)) {
-                output.length = idx;
+                output.setLength(idx);
                 //if (DEBUG) System.out.println("  return " + output.utf8ToString());
-                return output;
+                return output.get();
               }
               // pop
               if (stack.size() == 0) {
@@ -376,10 +370,8 @@ public class CompiledAutomaton {
         return addTail(state, output, idx, label);
         
       } else {
-        if (idx >= output.bytes.length) {
-          output.grow(1+idx);
-        }
-        output.bytes[idx] = (byte) label;
+        output.grow(1+idx);
+        output.setByteAt(idx, (byte) label);
         stack.add(state);
         state = nextState;
         idx++;

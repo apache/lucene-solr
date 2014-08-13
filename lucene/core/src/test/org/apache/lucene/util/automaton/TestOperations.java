@@ -21,6 +21,7 @@ import java.util.*;
 
 import org.apache.lucene.util.*;
 import org.apache.lucene.util.fst.Util;
+
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
 public class TestOperations extends LuceneTestCase {
@@ -139,12 +140,12 @@ public class TestOperations extends LuceneTestCase {
     a = MinimizationOperations.minimize(a);
     Set<IntsRef> strings = getFiniteStrings(a, -1, true);
     assertEquals(2, strings.size());
-    IntsRef dog = new IntsRef();
+    IntsRefBuilder dog = new IntsRefBuilder();
     Util.toIntsRef(new BytesRef("dog"), dog);
-    assertTrue(strings.contains(dog));
-    IntsRef duck = new IntsRef();
+    assertTrue(strings.contains(dog.get()));
+    IntsRefBuilder duck = new IntsRefBuilder();
     Util.toIntsRef(new BytesRef("duck"), duck);
-    assertTrue(strings.contains(duck));
+    assertTrue(strings.contains(duck.get()));
   }
 
   public void testFiniteStringsEatsStack() {
@@ -156,11 +157,11 @@ public class TestOperations extends LuceneTestCase {
     Automaton a = Operations.union(Automata.makeString(bigString1), Automata.makeString(bigString2));
     Set<IntsRef> strings = getFiniteStrings(a, -1, false);
     assertEquals(2, strings.size());
-    IntsRef scratch = new IntsRef();
+    IntsRefBuilder scratch = new IntsRefBuilder();
     Util.toUTF32(bigString1.toCharArray(), 0, bigString1.length(), scratch);
-    assertTrue(strings.contains(scratch));
+    assertTrue(strings.contains(scratch.get()));
     Util.toUTF32(bigString2.toCharArray(), 0, bigString2.length(), scratch);
-    assertTrue(strings.contains(scratch));
+    assertTrue(strings.contains(scratch.get()));
   }
 
   public void testRandomFiniteStrings1() {
@@ -172,12 +173,12 @@ public class TestOperations extends LuceneTestCase {
 
     Set<IntsRef> strings = new HashSet<IntsRef>();
     List<Automaton> automata = new ArrayList<>();
+    IntsRefBuilder scratch = new IntsRefBuilder();
     for(int i=0;i<numStrings;i++) {
       String s = TestUtil.randomSimpleString(random(), 1, 200);
       automata.add(Automata.makeString(s));
-      IntsRef scratch = new IntsRef();
       Util.toUTF32(s.toCharArray(), 0, s.length(), scratch);
-      strings.add(scratch);
+      strings.add(scratch.toIntsRef());
       if (VERBOSE) {
         System.out.println("  add string=" + s);
       }
@@ -281,16 +282,16 @@ public class TestOperations extends LuceneTestCase {
   public void testSingletonNoLimit() {
     Set<IntsRef> result = Operations.getFiniteStrings(Automata.makeString("foobar"), -1);
     assertEquals(1, result.size());
-    IntsRef scratch = new IntsRef();
+    IntsRefBuilder scratch = new IntsRefBuilder();
     Util.toUTF32("foobar".toCharArray(), 0, 6, scratch);
-    assertTrue(result.contains(scratch));
+    assertTrue(result.contains(scratch.get()));
   }
 
   public void testSingletonLimit1() {
     Set<IntsRef> result = Operations.getFiniteStrings(Automata.makeString("foobar"), 1);
     assertEquals(1, result.size());
-    IntsRef scratch = new IntsRef();
+    IntsRefBuilder scratch = new IntsRefBuilder();
     Util.toUTF32("foobar".toCharArray(), 0, 6, scratch);
-    assertTrue(result.contains(scratch));
+    assertTrue(result.contains(scratch.get()));
   }
 }

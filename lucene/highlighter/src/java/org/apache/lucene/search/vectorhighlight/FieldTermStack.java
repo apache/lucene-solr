@@ -29,8 +29,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.util.CharsRefBuilder;
 
 /**
  * <code>FieldTermStack</code> is a stack that keeps query terms in the specified field
@@ -92,7 +91,7 @@ public class FieldTermStack {
       return;
     }
 
-    final CharsRef spare = new CharsRef();
+    final CharsRefBuilder spare = new CharsRefBuilder();
     final TermsEnum termsEnum = vector.iterator(null);
     DocsAndPositionsEnum dpEnum = null;
     BytesRef text;
@@ -100,7 +99,7 @@ public class FieldTermStack {
     int numDocs = reader.maxDoc();
     
     while ((text = termsEnum.next()) != null) {
-      UnicodeUtil.UTF8toUTF16(text, spare);
+      spare.copyUTF8Bytes(text);
       final String term = spare.toString();
       if (!termSet.contains(term)) {
         continue;

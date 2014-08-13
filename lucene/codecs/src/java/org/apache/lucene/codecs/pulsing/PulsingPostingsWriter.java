@@ -33,6 +33,7 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 
 // TODO: we now inline based on total TF of the term,
@@ -97,7 +98,7 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
   private Position currentDoc;                    // first Position entry of current doc
 
   private static final class Position {
-    BytesRef payload;
+    BytesRefBuilder payload;
     int termFreq;                                 // only incremented on first position for a given doc
     int pos;
     int docID;
@@ -240,12 +241,11 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
       pos.docID = currentDoc.docID;
       if (payload != null && payload.length > 0) {
         if (pos.payload == null) {
-          pos.payload = BytesRef.deepCopyOf(payload);
-        } else {
-          pos.payload.copyBytes(payload);
+          pos.payload = new BytesRefBuilder();
         }
+        pos.payload.copyBytes(payload);
       } else if (pos.payload != null) {
-        pos.payload.length = 0;
+        pos.payload.clear();
       }
     }
   }
@@ -315,7 +315,7 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
             final int posDelta = pos.pos - lastPos;
             lastPos = pos.pos;
             // if (DEBUG) System.out.println("    write pos=" + pos.pos);
-            final int payloadLength = pos.payload == null ? 0 : pos.payload.length;
+            final int payloadLength = pos.payload == null ? 0 : pos.payload.length();
             if (storePayloads) {
               if (payloadLength != lastPayloadLength) {
                 buffer.writeVInt((posDelta << 1)|1);
@@ -344,7 +344,7 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
             
             if (payloadLength > 0) {
               assert storePayloads;
-              buffer.writeBytes(pos.payload.bytes, 0, pos.payload.length);
+              buffer.writeBytes(pos.payload.bytes(), 0, pos.payload.length());
             }
           }
         }
@@ -445,7 +445,8 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
           wrappedPostingsWriter.startDoc(doc.docID, doc.termFreq);
         }
         // if (DEBUG) System.out.println("PW:   wrapped.addPos pos=" + pos.pos);
-        wrappedPostingsWriter.addPosition(pos.pos, pos.payload, pos.startOffset, pos.endOffset);
+        final BytesRef payload = pos.payload == null ? null : pos.payload.get();
+        wrappedPostingsWriter.addPosition(pos.pos, payload, pos.startOffset, pos.endOffset);
       }
       //wrappedPostingsWriter.finishDoc();
     } else {

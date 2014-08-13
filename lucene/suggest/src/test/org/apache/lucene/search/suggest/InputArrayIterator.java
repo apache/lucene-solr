@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 
 /**
  * A {@link InputIterator} over a sequence of {@link Input}s.
@@ -33,7 +34,7 @@ public final class InputArrayIterator implements InputIterator {
   private final boolean hasContexts;
   private boolean first;
   private Input current;
-  private final BytesRef spare = new BytesRef();
+  private final BytesRefBuilder spare = new BytesRefBuilder();
 
   public InputArrayIterator(Iterator<Input> i) {
     this.i = i;
@@ -69,7 +70,7 @@ public final class InputArrayIterator implements InputIterator {
         current = i.next();
       }
       spare.copyBytes(current.term);
-      return spare;
+      return spare.get();
     }
     return null;
   }

@@ -36,6 +36,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -666,7 +667,7 @@ public class SepPostingsReader extends PostingsReaderBase {
       return -1;
     }
 
-    private BytesRef payload;
+    private BytesRefBuilder payload;
 
     @Override
     public BytesRef getPayload() throws IOException {
@@ -675,7 +676,7 @@ public class SepPostingsReader extends PostingsReaderBase {
       }
       
       if (pendingPayloadBytes == 0) {
-        return payload;
+        return payload.get();
       }
 
       assert pendingPayloadBytes >= payloadLength;
@@ -685,16 +686,14 @@ public class SepPostingsReader extends PostingsReaderBase {
       }
 
       if (payload == null) {
-        payload = new BytesRef();
-        payload.bytes = new byte[payloadLength];
-      } else if (payload.bytes.length < payloadLength) {
-        payload.grow(payloadLength);
+        payload = new BytesRefBuilder();
       }
+      payload.grow(payloadLength);
 
-      payloadIn.readBytes(payload.bytes, 0, payloadLength);
-      payload.length = payloadLength;
+      payloadIn.readBytes(payload.bytes(), 0, payloadLength);
+      payload.setLength(payloadLength);
       pendingPayloadBytes = 0;
-      return payload;
+      return payload.get();
     }
     
     @Override

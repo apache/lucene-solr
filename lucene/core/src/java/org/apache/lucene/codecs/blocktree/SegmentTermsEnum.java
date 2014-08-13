@@ -32,10 +32,9 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
-import org.apache.lucene.util.fst.Outputs;
 import org.apache.lucene.util.fst.Util;
 
 /** Iterates through terms in this field */
@@ -63,7 +62,7 @@ final class SegmentTermsEnum extends TermsEnum {
   // assert only:
   private boolean eof;
 
-  final BytesRef term = new BytesRef();
+  final BytesRefBuilder term = new BytesRefBuilder();
   private final FST.BytesReader fstReader;
 
   @SuppressWarnings({"rawtypes","unchecked"}) private FST.Arc<BytesRef>[] arcs = new FST.Arc[1];
@@ -174,7 +173,7 @@ final class SegmentTermsEnum extends TermsEnum {
       while(true) {
         if (currentFrame.next()) {
           // Push to new block:
-          currentFrame = pushFrame(null, currentFrame.lastSubFP, term.length);
+          currentFrame = pushFrame(null, currentFrame.lastSubFP, term.length());
           currentFrame.fpOrig = currentFrame.fp;
           // This is a "next" frame -- even if it's
           // floor'd we must pretend it isn't so we don't
@@ -184,7 +183,7 @@ final class SegmentTermsEnum extends TermsEnum {
           currentFrame.loadBlock();
           stats.startBlock(currentFrame, !currentFrame.isLastInFloor);
         } else {
-          stats.term(term);
+          stats.term(term.get());
           break;
         }
       }
@@ -205,7 +204,7 @@ final class SegmentTermsEnum extends TermsEnum {
     currentFrame.rewind();
     currentFrame.loadBlock();
     validIndexPrefix = 0;
-    term.length = 0;
+    term.clear();
 
     return stats;
   }
@@ -323,9 +322,7 @@ final class SegmentTermsEnum extends TermsEnum {
       throw new IllegalStateException("terms index was not loaded");
     }
 
-    if (term.bytes.length <= target.length) {
-      term.bytes = ArrayUtil.grow(term.bytes, 1+target.length);
-    }
+    term.grow(1 + target.length);
 
     assert clearEOF();
 
@@ -359,7 +356,7 @@ final class SegmentTermsEnum extends TermsEnum {
       targetUpto = 0;
           
       SegmentTermsEnumFrame lastFrame = stack[0];
-      assert validIndexPrefix <= term.length;
+      assert validIndexPrefix <= term.length();
 
       final int targetLimit = Math.min(target.length, validIndexPrefix);
 
@@ -370,7 +367,7 @@ final class SegmentTermsEnum extends TermsEnum {
 
       // First compare up to valid seek frames:
       while (targetUpto < targetLimit) {
-        cmp = (term.bytes[targetUpto]&0xFF) - (target.bytes[target.offset + targetUpto]&0xFF);
+        cmp = (term.byteAt(targetUpto)&0xFF) - (target.bytes[target.offset + targetUpto]&0xFF);
         // if (DEBUG) {
         //    System.out.println("    cycle targetUpto=" + targetUpto + " (vs limit=" + targetLimit + ") cmp=" + cmp + " (targetLabel=" + (char) (target.bytes[target.offset + targetUpto]) + " vs termLabel=" + (char) (term.bytes[targetUpto]) + ")"   + " arc.output=" + arc.output + " output=" + output);
         // }
@@ -395,9 +392,9 @@ final class SegmentTermsEnum extends TermsEnum {
         // don't save arc/output/frame; we only do this
         // to find out if the target term is before,
         // equal or after the current term
-        final int targetLimit2 = Math.min(target.length, term.length);
+        final int targetLimit2 = Math.min(target.length, term.length());
         while (targetUpto < targetLimit2) {
-          cmp = (term.bytes[targetUpto]&0xFF) - (target.bytes[target.offset + targetUpto]&0xFF);
+          cmp = (term.byteAt(targetUpto)&0xFF) - (target.bytes[target.offset + targetUpto]&0xFF);
           // if (DEBUG) {
           //    System.out.println("    cycle2 targetUpto=" + targetUpto + " (vs limit=" + targetLimit + ") cmp=" + cmp + " (targetLabel=" + (char) (target.bytes[target.offset + targetUpto]) + " vs termLabel=" + (char) (term.bytes[targetUpto]) + ")");
           // }
@@ -408,7 +405,7 @@ final class SegmentTermsEnum extends TermsEnum {
         }
 
         if (cmp == 0) {
-          cmp = term.length - target.length;
+          cmp = term.length() - target.length;
         }
         targetUpto = targetUptoMid;
       }
@@ -435,7 +432,7 @@ final class SegmentTermsEnum extends TermsEnum {
         currentFrame.rewind();
       } else {
         // Target is exactly the same as current term
-        assert term.length == target.length;
+        assert term.length() == target.length;
         if (termExists) {
           // if (DEBUG) {
           //   System.out.println("  target is same as current; return true");
@@ -498,8 +495,8 @@ final class SegmentTermsEnum extends TermsEnum {
 
         if (!currentFrame.hasTerms) {
           termExists = false;
-          term.bytes[targetUpto] = (byte) targetLabel;
-          term.length = 1+targetUpto;
+          term.setByteAt(targetUpto, (byte) targetLabel);
+          term.setLength(1+targetUpto);
           // if (DEBUG) {
           //   System.out.println("  FAST NOT_FOUND term=" + brToString(term));
           // }
@@ -523,7 +520,7 @@ final class SegmentTermsEnum extends TermsEnum {
       } else {
         // Follow this arc
         arc = nextArc;
-        term.bytes[targetUpto] = (byte) targetLabel;
+        term.setByteAt(targetUpto, (byte) targetLabel);
         // Aggregate output as we go:
         assert arc.output != null;
         if (arc.output != BlockTreeTermsWriter.NO_OUTPUT) {
@@ -551,7 +548,7 @@ final class SegmentTermsEnum extends TermsEnum {
     // Target term is entirely contained in the index:
     if (!currentFrame.hasTerms) {
       termExists = false;
-      term.length = targetUpto;
+      term.setLength(targetUpto);
       // if (DEBUG) {
       //   System.out.println("  FAST NOT_FOUND term=" + brToString(term));
       // }
@@ -580,10 +577,8 @@ final class SegmentTermsEnum extends TermsEnum {
     if (fr.index == null) {
       throw new IllegalStateException("terms index was not loaded");
     }
-   
-    if (term.bytes.length <= target.length) {
-      term.bytes = ArrayUtil.grow(term.bytes, 1+target.length);
-    }
+
+    term.grow(1 + target.length);
 
     assert clearEOF();
 
@@ -617,7 +612,7 @@ final class SegmentTermsEnum extends TermsEnum {
       targetUpto = 0;
           
       SegmentTermsEnumFrame lastFrame = stack[0];
-      assert validIndexPrefix <= term.length;
+      assert validIndexPrefix <= term.length();
 
       final int targetLimit = Math.min(target.length, validIndexPrefix);
 
@@ -628,7 +623,7 @@ final class SegmentTermsEnum extends TermsEnum {
 
       // First compare up to valid seek frames:
       while (targetUpto < targetLimit) {
-        cmp = (term.bytes[targetUpto]&0xFF) - (target.bytes[target.offset + targetUpto]&0xFF);
+        cmp = (term.byteAt(targetUpto)&0xFF) - (target.bytes[target.offset + targetUpto]&0xFF);
         //if (DEBUG) {
         //System.out.println("    cycle targetUpto=" + targetUpto + " (vs limit=" + targetLimit + ") cmp=" + cmp + " (targetLabel=" + (char) (target.bytes[target.offset + targetUpto]) + " vs termLabel=" + (char) (term.bytes[targetUpto]) + ")"   + " arc.output=" + arc.output + " output=" + output);
         //}
@@ -656,9 +651,9 @@ final class SegmentTermsEnum extends TermsEnum {
         final int targetUptoMid = targetUpto;
         // Second compare the rest of the term, but
         // don't save arc/output/frame:
-        final int targetLimit2 = Math.min(target.length, term.length);
+        final int targetLimit2 = Math.min(target.length, term.length());
         while (targetUpto < targetLimit2) {
-          cmp = (term.bytes[targetUpto]&0xFF) - (target.bytes[target.offset + targetUpto]&0xFF);
+          cmp = (term.byteAt(targetUpto)&0xFF) - (target.bytes[target.offset + targetUpto]&0xFF);
           //if (DEBUG) {
           //System.out.println("    cycle2 targetUpto=" + targetUpto + " (vs limit=" + targetLimit + ") cmp=" + cmp + " (targetLabel=" + (char) (target.bytes[target.offset + targetUpto]) + " vs termLabel=" + (char) (term.bytes[targetUpto]) + ")");
           //}
@@ -669,7 +664,7 @@ final class SegmentTermsEnum extends TermsEnum {
         }
 
         if (cmp == 0) {
-          cmp = term.length - target.length;
+          cmp = term.length() - target.length;
         }
         targetUpto = targetUptoMid;
       }
@@ -696,7 +691,7 @@ final class SegmentTermsEnum extends TermsEnum {
         currentFrame.rewind();
       } else {
         // Target is exactly the same as current term
-        assert term.length == target.length;
+        assert term.length() == target.length;
         if (termExists) {
           //if (DEBUG) {
           //System.out.println("  target is same as current; return FOUND");
@@ -780,7 +775,7 @@ final class SegmentTermsEnum extends TermsEnum {
         }
       } else {
         // Follow this arc
-        term.bytes[targetUpto] = (byte) targetLabel;
+        term.setByteAt(targetUpto, (byte) targetLabel);
         arc = nextArc;
         // Aggregate output as we go:
         assert arc.output != null;
@@ -840,7 +835,7 @@ final class SegmentTermsEnum extends TermsEnum {
       while(true) {
         SegmentTermsEnumFrame f = getFrame(ord);
         assert f != null;
-        final BytesRef prefix = new BytesRef(term.bytes, 0, f.prefix);
+        final BytesRef prefix = new BytesRef(term.get().bytes, 0, f.prefix);
         if (f.nextEnt == -1) {
           out.println("    frame " + (isSeekFrame ? "(seek)" : "(next)") + " ord=" + ord + " fp=" + f.fp + (f.isFloor ? (" (fpOrig=" + f.fpOrig + ")") : "") + " prefixLen=" + f.prefix + " prefix=" + prefix + (f.nextEnt == -1 ? "" : (" (of " + f.entCount + ")")) + " hasTerms=" + f.hasTerms + " isFloor=" + f.isFloor + " code=" + ((f.fp<<BlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS) + (f.hasTerms ? BlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS:0) + (f.isFloor ? BlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR:0)) + " isLastInFloor=" + f.isLastInFloor + " mdUpto=" + f.metaDataUpto + " tbOrd=" + f.getTermBlockOrd());
         } else {
@@ -848,8 +843,8 @@ final class SegmentTermsEnum extends TermsEnum {
         }
         if (fr.index != null) {
           assert !isSeekFrame || f.arc != null: "isSeekFrame=" + isSeekFrame + " f.arc=" + f.arc;
-          if (f.prefix > 0 && isSeekFrame && f.arc.label != (term.bytes[f.prefix-1]&0xFF)) {
-            out.println("      broken seek state: arc.label=" + (char) f.arc.label + " vs term byte=" + (char) (term.bytes[f.prefix-1]&0xFF));
+          if (f.prefix > 0 && isSeekFrame && f.arc.label != (term.byteAt(f.prefix-1)&0xFF)) {
+            out.println("      broken seek state: arc.label=" + (char) f.arc.label + " vs term byte=" + (char) (term.byteAt(f.prefix-1)&0xFF));
             throw new RuntimeException("seek state is broken");
           }
           BytesRef output = Util.get(fr.index, prefix);
@@ -912,7 +907,7 @@ final class SegmentTermsEnum extends TermsEnum {
       // this method catches up all internal state so next()
       // works properly:
       //if (DEBUG) System.out.println("  re-seek to pending term=" + term.utf8ToString() + " " + term);
-      final boolean result = seekExact(term);
+      final boolean result = seekExact(term.get());
       assert result;
     }
 
@@ -925,7 +920,7 @@ final class SegmentTermsEnum extends TermsEnum {
         if (currentFrame.ord == 0) {
           //if (DEBUG) System.out.println("  return null");
           assert setEOF();
-          term.length = 0;
+          term.clear();
           validIndexPrefix = 0;
           currentFrame.rewind();
           termExists = false;
@@ -937,7 +932,7 @@ final class SegmentTermsEnum extends TermsEnum {
         if (currentFrame.nextEnt == -1 || currentFrame.lastSubFP != lastFP) {
           // We popped into a frame that's not loaded
           // yet or not scan'd to the right entry
-          currentFrame.scanToFloorFrame(term);
+          currentFrame.scanToFloorFrame(term.get());
           currentFrame.loadBlock();
           currentFrame.scanToSubBlock(lastFP);
         }
@@ -955,7 +950,7 @@ final class SegmentTermsEnum extends TermsEnum {
       if (currentFrame.next()) {
         // Push to new block:
         //if (DEBUG) System.out.println("  push frame");
-        currentFrame = pushFrame(null, currentFrame.lastSubFP, term.length);
+        currentFrame = pushFrame(null, currentFrame.lastSubFP, term.length());
         // This is a "next" frame -- even if it's
         // floor'd we must pretend it isn't so we don't
         // try to scan to the right floor frame:
@@ -964,7 +959,7 @@ final class SegmentTermsEnum extends TermsEnum {
         currentFrame.loadBlock();
       } else {
         //if (DEBUG) System.out.println("  return term=" + term.utf8ToString() + " " + term + " currentFrame.ord=" + currentFrame.ord);
-        return term;
+        return term.get();
       }
     }
   }
@@ -972,7 +967,7 @@ final class SegmentTermsEnum extends TermsEnum {
   @Override
   public BytesRef term() {
     assert !eof;
-    return term;
+    return term.get();
   }
 
   @Override
@@ -1022,7 +1017,7 @@ final class SegmentTermsEnum extends TermsEnum {
     //   System.out.println("BTTR.seekExact termState seg=" + segment + " target=" + target.utf8ToString() + " " + target + " state=" + otherState);
     // }
     assert clearEOF();
-    if (target.compareTo(term) != 0 || !termExists) {
+    if (target.compareTo(term.get()) != 0 || !termExists) {
       assert otherState != null && otherState instanceof BlockTermState;
       currentFrame = staticFrame;
       currentFrame.state.copyFrom(otherState);

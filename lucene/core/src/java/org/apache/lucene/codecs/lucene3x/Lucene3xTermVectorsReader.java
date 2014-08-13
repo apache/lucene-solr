@@ -44,6 +44,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -417,17 +418,17 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
     
     private void readVectors() throws IOException {
       termAndPostings = new TermAndPostings[numTerms];
-      BytesRef lastTerm = new BytesRef();
+      BytesRefBuilder lastTerm = new BytesRefBuilder();
       for (int i = 0; i < numTerms; i++) {
         TermAndPostings t = new TermAndPostings();
-        BytesRef term = new BytesRef();
+        BytesRefBuilder term = new BytesRefBuilder();
         term.copyBytes(lastTerm);
         final int start = tvf.readVInt();
         final int deltaLen = tvf.readVInt();
-        term.length = start + deltaLen;
-        term.grow(term.length);
-        tvf.readBytes(term.bytes, start, deltaLen);
-        t.term = term;
+        term.setLength(start + deltaLen);
+        term.grow(term.length());
+        tvf.readBytes(term.bytes(), start, deltaLen);
+        t.term = term.get();
         int freq = tvf.readVInt();
         t.freq = freq;
         

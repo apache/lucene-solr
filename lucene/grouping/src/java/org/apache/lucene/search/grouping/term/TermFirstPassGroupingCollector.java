@@ -24,6 +24,7 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.grouping.AbstractFirstPassGroupingCollector;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -75,7 +76,10 @@ public class TermFirstPassGroupingCollector extends AbstractFirstPassGroupingCol
     if (groupValue == null) {
       return null;
     } else if (reuse != null) {
-      reuse.copyBytes(groupValue);
+      reuse.bytes = ArrayUtil.grow(reuse.bytes, groupValue.length);
+      reuse.offset = 0;
+      reuse.length = groupValue.length;
+      System.arraycopy(groupValue.bytes, groupValue.offset, reuse.bytes, 0, groupValue.length);
       return reuse;
     } else {
       return BytesRef.deepCopyOf(groupValue);

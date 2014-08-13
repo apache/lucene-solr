@@ -59,7 +59,7 @@ public class TestBytesRefHash extends LuceneTestCase {
    */
   @Test
   public void testSize() {
-    BytesRef ref = new BytesRef();
+    BytesRefBuilder ref = new BytesRefBuilder();
     int num = atLeast(2);
     for (int j = 0; j < num; j++) {
       final int mod = 1+random().nextInt(39);
@@ -70,7 +70,7 @@ public class TestBytesRefHash extends LuceneTestCase {
         } while (str.length() == 0);
         ref.copyChars(str);
         int count = hash.size();
-        int key = hash.add(ref);
+        int key = hash.add(ref.get());
         if (key < 0)
           assertEquals(hash.size(), count);
         else
@@ -91,7 +91,7 @@ public class TestBytesRefHash extends LuceneTestCase {
    */
   @Test
   public void testGet() {
-    BytesRef ref = new BytesRef();
+    BytesRefBuilder ref = new BytesRefBuilder();
     BytesRef scratch = new BytesRef();
     int num = atLeast(2);
     for (int j = 0; j < num; j++) {
@@ -104,7 +104,7 @@ public class TestBytesRefHash extends LuceneTestCase {
         } while (str.length() == 0);
         ref.copyChars(str);
         int count = hash.size();
-        int key = hash.add(ref);
+        int key = hash.add(ref.get());
         if (key >= 0) {
           assertNull(strings.put(str, Integer.valueOf(key)));
           assertEquals(uniqueCount, key);
@@ -117,7 +117,7 @@ public class TestBytesRefHash extends LuceneTestCase {
       }
       for (Entry<String, Integer> entry : strings.entrySet()) {
         ref.copyChars(entry.getKey());
-        assertEquals(ref, hash.get(entry.getValue().intValue(), scratch));
+        assertEquals(ref.get(), hash.get(entry.getValue().intValue(), scratch));
       }
       hash.clear();
       assertEquals(0, hash.size());
@@ -130,7 +130,7 @@ public class TestBytesRefHash extends LuceneTestCase {
    */
   @Test
   public void testCompact() {
-    BytesRef ref = new BytesRef();
+    BytesRefBuilder ref = new BytesRefBuilder();
     int num = atLeast(2);
     for (int j = 0; j < num; j++) {
       int numEntries = 0;
@@ -142,7 +142,7 @@ public class TestBytesRefHash extends LuceneTestCase {
           str = TestUtil.randomRealisticUnicodeString(random(), 1000);
         } while (str.length() == 0);
         ref.copyChars(str);
-        final int key = hash.add(ref);
+        final int key = hash.add(ref.get());
         if (key < 0) {
           assertTrue(bits.get((-key)-1));
         } else {
@@ -172,7 +172,7 @@ public class TestBytesRefHash extends LuceneTestCase {
    */
   @Test
   public void testSort() {
-    BytesRef ref = new BytesRef();
+    BytesRefBuilder ref = new BytesRefBuilder();
     int num = atLeast(2);
     for (int j = 0; j < num; j++) {
       SortedSet<String> strings = new TreeSet<>();
@@ -182,7 +182,7 @@ public class TestBytesRefHash extends LuceneTestCase {
           str = TestUtil.randomRealisticUnicodeString(random(), 1000);
         } while (str.length() == 0);
         ref.copyChars(str);
-        hash.add(ref);
+        hash.add(ref.get());
         strings.add(str);
       }
       // We use the UTF-16 comparator here, because we need to be able to
@@ -193,7 +193,7 @@ public class TestBytesRefHash extends LuceneTestCase {
       BytesRef scratch = new BytesRef();
       for (String string : strings) {
         ref.copyChars(string);
-        assertEquals(ref, hash.get(sort[i++], scratch));
+        assertEquals(ref.get(), hash.get(sort[i++], scratch));
       }
       hash.clear();
       assertEquals(0, hash.size());
@@ -209,7 +209,7 @@ public class TestBytesRefHash extends LuceneTestCase {
    */
   @Test
   public void testAdd() {
-    BytesRef ref = new BytesRef();
+    BytesRefBuilder ref = new BytesRefBuilder();
     BytesRef scratch = new BytesRef();
     int num = atLeast(2);
     for (int j = 0; j < num; j++) {
@@ -222,7 +222,7 @@ public class TestBytesRefHash extends LuceneTestCase {
         } while (str.length() == 0);
         ref.copyChars(str);
         int count = hash.size();
-        int key = hash.add(ref);
+        int key = hash.add(ref.get());
 
         if (key >=0) {
           assertTrue(strings.add(str));
@@ -246,7 +246,7 @@ public class TestBytesRefHash extends LuceneTestCase {
   
   @Test
   public void testFind() throws Exception {
-    BytesRef ref = new BytesRef();
+    BytesRefBuilder ref = new BytesRefBuilder();
     BytesRef scratch = new BytesRef();
     int num = atLeast(2);
     for (int j = 0; j < num; j++) {
@@ -259,14 +259,14 @@ public class TestBytesRefHash extends LuceneTestCase {
         } while (str.length() == 0);
         ref.copyChars(str);
         int count = hash.size();
-        int key = hash.find(ref); //hash.add(ref);
+        int key = hash.find(ref.get()); //hash.add(ref);
         if (key >= 0) { // string found in hash
           assertFalse(strings.add(str));
           assertTrue(key < count);
           assertEquals(str, hash.get(key, scratch).utf8ToString());
           assertEquals(count, hash.size());
         } else {
-          key = hash.add(ref);
+          key = hash.add(ref.get());
           assertTrue(strings.add(str));
           assertEquals(uniqueCount, key);
           assertEquals(hash.size(), count + 1);
@@ -308,7 +308,7 @@ public class TestBytesRefHash extends LuceneTestCase {
    */
   @Test
   public void testAddByPoolOffset() {
-    BytesRef ref = new BytesRef();
+    BytesRefBuilder ref = new BytesRefBuilder();
     BytesRef scratch = new BytesRef();
     BytesRefHash offsetHash = newHash(pool);
     int num = atLeast(2);
@@ -322,7 +322,7 @@ public class TestBytesRefHash extends LuceneTestCase {
         } while (str.length() == 0);
         ref.copyChars(str);
         int count = hash.size();
-        int key = hash.add(ref);
+        int key = hash.add(ref.get());
 
         if (key >= 0) {
           assertTrue(strings.add(str));
@@ -347,9 +347,9 @@ public class TestBytesRefHash extends LuceneTestCase {
       assertAllIn(strings, hash);
       for (String string : strings) {
         ref.copyChars(string);
-        int key = hash.add(ref);
+        int key = hash.add(ref.get());
         BytesRef bytesRef = offsetHash.get((-key)-1, scratch);
-        assertEquals(ref, bytesRef);
+        assertEquals(ref.get(), bytesRef);
       }
 
       hash.clear();
@@ -362,12 +362,12 @@ public class TestBytesRefHash extends LuceneTestCase {
   }
   
   private void assertAllIn(Set<String> strings, BytesRefHash hash) {
-    BytesRef ref = new BytesRef();
+    BytesRefBuilder ref = new BytesRefBuilder();
     BytesRef scratch = new BytesRef();
     int count = hash.size();
     for (String string : strings) {
       ref.copyChars(string);
-      int key  =  hash.add(ref); // add again to check duplicates
+      int key  =  hash.add(ref.get()); // add again to check duplicates
       assertEquals(string, hash.get((-key)-1, scratch).utf8ToString());
       assertEquals(count, hash.size());
       assertTrue("key: " + key + " count: " + count + " string: " + string,

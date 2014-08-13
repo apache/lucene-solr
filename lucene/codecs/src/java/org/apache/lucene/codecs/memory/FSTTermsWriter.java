@@ -34,6 +34,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Util;
@@ -224,7 +225,7 @@ public class FSTTermsWriter extends FieldsConsumer {
     private final int longsSize;
     private long numTerms;
 
-    private final IntsRef scratchTerm = new IntsRef();
+    private final IntsRefBuilder scratchTerm = new IntsRefBuilder();
     private final RAMOutputStream statsWriter = new RAMOutputStream();
     private final RAMOutputStream metaWriter = new RAMOutputStream();
 

@@ -34,6 +34,7 @@ import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
@@ -109,7 +110,7 @@ public class TestDocValuesFieldSources extends LuceneTestCase {
           throw new AssertionError();
       }
       final FunctionValues values = vs.getValues(null, leave);
-      BytesRef bytes = new BytesRef();
+      BytesRefBuilder bytes = new BytesRefBuilder();
       for (int i = 0; i < leave.reader().maxDoc(); ++i) {
         assertTrue(values.exists(i));
         if (vs instanceof BytesRefFieldSource) {
@@ -132,7 +133,7 @@ public class TestDocValuesFieldSources extends LuceneTestCase {
             assertEquals(expected, values.objectVal(i));
             assertEquals(expected, values.strVal(i));
             assertTrue(values.bytesVal(i, bytes));
-            assertEquals(new BytesRef((String) expected), bytes);
+            assertEquals(new BytesRef((String) expected), bytes.get());
             break;
           case NUMERIC:
             assertEquals(((Number) expected).longValue(), values.longVal(i));

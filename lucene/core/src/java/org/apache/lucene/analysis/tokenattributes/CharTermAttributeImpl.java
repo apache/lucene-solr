@@ -23,8 +23,8 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.UnicodeUtil;
 
 /** Default implementation of {@link CharTermAttribute}. */
 public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttribute, TermToBytesRefAttribute, Cloneable {
@@ -83,16 +83,17 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
   }
   
   // *** TermToBytesRefAttribute interface ***
-  private BytesRef bytes = new BytesRef(MIN_BUFFER_SIZE);
+  private BytesRefBuilder bytes = new BytesRefBuilder();
 
   @Override
   public void fillBytesRef() {
-    UnicodeUtil.UTF16toUTF8(termBuffer, 0, termLength, bytes);
+    bytes.copyChars(termBuffer, 0, termLength);
+    bytes.get();
   }
 
   @Override
   public BytesRef getBytesRef() {
-    return bytes;
+    return bytes.get();
   }
   
   // *** CharSequence interface ***
@@ -228,7 +229,8 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
     // Do a deep clone
     t.termBuffer = new char[this.termLength];
     System.arraycopy(this.termBuffer, 0, t.termBuffer, 0, this.termLength);
-    t.bytes = BytesRef.deepCopyOf(bytes);
+    t.bytes = new BytesRefBuilder();
+    t.bytes.copyBytes(bytes.get());
     return t;
   }
   
@@ -271,7 +273,7 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
   public void reflectWith(AttributeReflector reflector) {
     reflector.reflect(CharTermAttribute.class, "term", toString());
     fillBytesRef();
-    reflector.reflect(TermToBytesRefAttribute.class, "bytes", BytesRef.deepCopyOf(bytes));
+    reflector.reflect(TermToBytesRefAttribute.class, "bytes", bytes.toBytesRef());
   }
   
   @Override

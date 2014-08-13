@@ -32,10 +32,13 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
@@ -70,7 +73,7 @@ public class SynonymMap {
   public static class Builder {
     private final HashMap<CharsRef,MapEntry> workingSet = new HashMap<>();
     private final BytesRefHash words = new BytesRefHash();
-    private final BytesRef utf8Scratch = new BytesRef(8);
+    private final BytesRefBuilder utf8Scratch = new BytesRefBuilder();
     private int maxHorizontalContext;
     private final boolean dedup;
 
@@ -89,15 +92,15 @@ public class SynonymMap {
     /** Sugar: just joins the provided terms with {@link
      *  SynonymMap#WORD_SEPARATOR}.  reuse and its chars
      *  must not be null. */
-    public static CharsRef join(String[] words, CharsRef reuse) {
+    public static CharsRef join(String[] words, CharsRefBuilder reuse) {
       int upto = 0;
-      char[] buffer = reuse.chars;
+      char[] buffer = reuse.chars();
       for (String word : words) {
         final int wordLen = word.length();
         final int needed = (0 == upto ? wordLen : 1 + upto + wordLen); // Add 1 for WORD_SEPARATOR
         if (needed > buffer.length) {
           reuse.grow(needed);
-          buffer = reuse.chars;
+          buffer = reuse.chars();
         }
         if (upto > 0) {
           buffer[upto++] = SynonymMap.WORD_SEPARATOR;
@@ -106,8 +109,8 @@ public class SynonymMap {
         word.getChars(0, wordLen, buffer, upto);
         upto += wordLen;
       }
-      reuse.length = upto;
-      return reuse;
+      reuse.setLength(upto);
+      return reuse.get();
     }
     
 
@@ -154,9 +157,9 @@ public class SynonymMap {
       assert !hasHoles(output): "output has holes: " + output;
 
       //System.out.println("fmap.add input=" + input + " numInputWords=" + numInputWords + " output=" + output + " numOutputWords=" + numOutputWords);
-      UnicodeUtil.UTF16toUTF8(output.chars, output.offset, output.length, utf8Scratch);
+      utf8Scratch.copyChars(output.chars, output.offset, output.length);
       // lookup in hash
-      int ord = words.add(utf8Scratch);
+      int ord = words.add(utf8Scratch.get());
       if (ord < 0) {
         // already exists in our hash
         ord = (-ord)-1;
@@ -213,7 +216,7 @@ public class SynonymMap {
       org.apache.lucene.util.fst.Builder<BytesRef> builder = 
         new org.apache.lucene.util.fst.Builder<>(FST.INPUT_TYPE.BYTE4, outputs);
       
-      BytesRef scratch = new BytesRef(64);
+      BytesRefBuilder scratch = new BytesRefBuilder();
       ByteArrayDataOutput scratchOutput = new ByteArrayDataOutput();
 
       final Set<Integer> dedupSet;
@@ -230,7 +233,7 @@ public class SynonymMap {
       CharsRef sortedKeys[] = keys.toArray(new CharsRef[keys.size()]);
       Arrays.sort(sortedKeys, CharsRef.getUTF16SortedAsUTF8Comparator());
 
-      final IntsRef scratchIntsRef = new IntsRef();
+      final IntsRefBuilder scratchIntsRef = new IntsRefBuilder();
       
       //System.out.println("fmap.build");
       for (int keyIdx = 0; keyIdx < sortedKeys.length; keyIdx++) {
@@ -242,8 +245,7 @@ public class SynonymMap {
         int estimatedSize = 5 + numEntries * 5; // numEntries + one ord for each entry
         
         scratch.grow(estimatedSize);
-        scratchOutput.reset(scratch.bytes, scratch.offset, scratch.bytes.length);
-        assert scratch.offset == 0;
+        scratchOutput.reset(scratch.bytes());
 
         // now write our output data:
         int count = 0;
@@ -266,17 +268,17 @@ public class SynonymMap {
         final int vIntLen = pos2-pos;
 
         // Move the count + includeOrig to the front of the byte[]:
-        System.arraycopy(scratch.bytes, pos, spare, 0, vIntLen);
-        System.arraycopy(scratch.bytes, 0, scratch.bytes, vIntLen, pos);
-        System.arraycopy(spare, 0, scratch.bytes, 0, vIntLen);
+        System.arraycopy(scratch.bytes(), pos, spare, 0, vIntLen);
+        System.arraycopy(scratch.bytes(), 0, scratch.bytes(), vIntLen, pos);
+        System.arraycopy(spare, 0, scratch.bytes(), 0, vIntLen);
 
         if (dedupSet != null) {
           dedupSet.clear();
         }
         
-        scratch.length = scratchOutput.getPosition() - scratch.offset;
+        scratch.setLength(scratchOutput.getPosition());
         //System.out.println("  add input=" + input + " output=" + scratch + " offset=" + scratch.offset + " length=" + scratch.length + " count=" + count);
-        builder.add(Util.toUTF32(input, scratchIntsRef), BytesRef.deepCopyOf(scratch));
+        builder.add(Util.toUTF32(input, scratchIntsRef), scratch.toBytesRef());
       }
       
       FST<BytesRef> fst = builder.finish();
@@ -307,12 +309,12 @@ public class SynonymMap {
     /** Sugar: analyzes the text with the analyzer and
      *  separates by {@link SynonymMap#WORD_SEPARATOR}.
      *  reuse and its chars must not be null. */
-    public CharsRef analyze(String text, CharsRef reuse) throws IOException {
+    public CharsRef analyze(String text, CharsRefBuilder reuse) throws IOException {
       try (TokenStream ts = analyzer.tokenStream("", text)) {
         CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
         PositionIncrementAttribute posIncAtt = ts.addAttribute(PositionIncrementAttribute.class);
         ts.reset();
-        reuse.length = 0;
+        reuse.clear();
         while (ts.incrementToken()) {
           int length = termAtt.length();
           if (length == 0) {
@@ -321,21 +323,21 @@ public class SynonymMap {
           if (posIncAtt.getPositionIncrement() != 1) {
             throw new IllegalArgumentException("term: " + text + " analyzed to a token with posinc != 1");
           }
-          reuse.grow(reuse.length + length + 1); /* current + word + separator */
-          int end = reuse.offset + reuse.length;
-          if (reuse.length > 0) {
-            reuse.chars[end++] = SynonymMap.WORD_SEPARATOR;
-            reuse.length++;
+          reuse.grow(reuse.length() + length + 1); /* current + word + separator */
+          int end = reuse.length();
+          if (reuse.length() > 0) {
+            reuse.setCharAt(end++, SynonymMap.WORD_SEPARATOR);
+            reuse.setLength(reuse.length() + 1);
           }
-          System.arraycopy(termAtt.buffer(), 0, reuse.chars, end, length);
-          reuse.length += length;
+          System.arraycopy(termAtt.buffer(), 0, reuse.chars(), end, length);
+          reuse.setLength(reuse.length() + length);
         }
         ts.end();
       }
-      if (reuse.length == 0) {
+      if (reuse.length() == 0) {
         throw new IllegalArgumentException("term: " + text + " was completely eliminated by analyzer");
       }
-      return reuse;
+      return reuse.get();
     }
   }
 

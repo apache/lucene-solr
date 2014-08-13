@@ -19,10 +19,12 @@ package org.apache.lucene.sandbox.queries.regex;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.regexp.CharacterIterator;
 import org.apache.regexp.RE;
 import org.apache.regexp.REProgram;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
@@ -113,27 +115,27 @@ public class JakartaRegexpCapabilities implements RegexCapabilities {
   class JakartaRegexMatcher implements RegexCapabilities.RegexMatcher {
     
     private RE regexp;
-    private final CharsRef utf16 = new CharsRef(10);
+    private final CharsRefBuilder utf16 = new CharsRefBuilder();
     private final CharacterIterator utf16wrapper = new CharacterIterator() {
 
       @Override
       public char charAt(int pos) {
-        return utf16.chars[pos];
+        return utf16.charAt(pos);
       }
 
       @Override
       public boolean isEnd(int pos) {
-        return pos >= utf16.length;
+        return pos >= utf16.length();
       }
 
       @Override
       public String substring(int beginIndex) {
-        return substring(beginIndex, utf16.length);
+        return substring(beginIndex, utf16.length());
       }
 
       @Override
       public String substring(int beginIndex, int endIndex) {
-        return new String(utf16.chars, beginIndex, endIndex - beginIndex);
+        return new String(utf16.chars(), beginIndex, endIndex - beginIndex);
       }
       
     };
@@ -144,7 +146,7 @@ public class JakartaRegexpCapabilities implements RegexCapabilities {
     
     @Override
     public boolean match(BytesRef term) {
-      UnicodeUtil.UTF8toUTF16(term.bytes, term.offset, term.length, utf16);
+      utf16.copyUTF8Bytes(term);
       return regexp.match(utf16wrapper, 0);
     }
 

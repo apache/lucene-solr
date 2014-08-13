@@ -30,6 +30,7 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.util.NamedList;
@@ -43,6 +44,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.*;
+
 import org.apache.commons.lang.ArrayUtils;
 
 /**
@@ -247,7 +249,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       final TermToBytesRefAttribute termAtt = token.getAttribute(TermToBytesRefAttribute.class);
       BytesRef rawBytes = termAtt.getBytesRef();
       termAtt.fillBytesRef();
-      final String text = fieldType.indexedToReadable(rawBytes, new CharsRef(rawBytes.length)).toString();
+      final String text = fieldType.indexedToReadable(rawBytes, new CharsRefBuilder()).toString();
       tokenNamedList.add("text", text);
       
       if (token.hasAttribute(CharTermAttribute.class)) {

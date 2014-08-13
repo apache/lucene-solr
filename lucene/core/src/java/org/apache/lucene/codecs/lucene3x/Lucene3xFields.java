@@ -42,6 +42,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.UnicodeUtil;
@@ -274,19 +275,17 @@ class Lucene3xFields extends FieldsProducer {
     }
 
     private final byte[] scratch = new byte[4];
-    private final BytesRef prevTerm = new BytesRef();
-    private final BytesRef scratchTerm = new BytesRef();
+    private final BytesRefBuilder prevTerm = new BytesRefBuilder();
+    private final BytesRefBuilder scratchTerm = new BytesRefBuilder();
     private int newSuffixStart;
 
     // Swap in S, in place of E:
-    private boolean seekToNonBMP(SegmentTermEnum te, BytesRef term, int pos) throws IOException {
-      final int savLength = term.length;
-
-      assert term.offset == 0;
+    private boolean seekToNonBMP(SegmentTermEnum te, BytesRefBuilder term, int pos) throws IOException {
+      final int savLength = term.length();
 
       // The 3 bytes starting at downTo make up 1
       // unicode character:
-      assert isHighBMPChar(term.bytes, pos);
+      assert isHighBMPChar(term.bytes(), pos);
 
       // NOTE: we cannot make this assert, because
       // AutomatonQuery legitimately sends us malformed UTF8
@@ -296,26 +295,24 @@ class Lucene3xFields extends FieldsProducer {
       // Save the bytes && length, since we need to
       // restore this if seek "back" finds no matching
       // terms
-      if (term.bytes.length < 4+pos) {
-        term.grow(4+pos);
-      }
+      term.grow(4+pos);
 
-      scratch[0] = term.bytes[pos];
-      scratch[1] = term.bytes[pos+1];
-      scratch[2] = term.bytes[pos+2];
+      scratch[0] = term.byteAt(pos);
+      scratch[1] = term.byteAt(pos+1);
+      scratch[2] = term.byteAt(pos+2);
 
-      term.bytes[pos] = (byte) 0xf0;
-      term.bytes[pos+1] = (byte) 0x90;
-      term.bytes[pos+2] = (byte) 0x80;
-      term.bytes[pos+3] = (byte) 0x80;
-      term.length = 4+pos;
+      term.setByteAt(pos, (byte) 0xf0);
+      term.setByteAt(pos+1, (byte) 0x90);
+      term.setByteAt(pos+2, (byte) 0x80);
+      term.setByteAt(pos+3, (byte) 0x80);
+      term.setLength(4+pos);
 
       if (DEBUG_SURROGATES) {
-        System.out.println("      try seek term=" + UnicodeUtil.toHexString(term.utf8ToString()));
+        System.out.println("      try seek term=" + UnicodeUtil.toHexString(term.get().utf8ToString()));
       }
 
       // Seek "back":
-      getTermsDict().seekEnum(te, new Term(fieldInfo.name, term), true);
+      getTermsDict().seekEnum(te, new Term(fieldInfo.name, term.get()), true);
 
       // Test if the term we seek'd to in fact found a
       // surrogate pair at the same position as the E:
@@ -338,10 +335,10 @@ class Lucene3xFields extends FieldsProducer {
       assert b2.offset == 0;
 
       boolean matches;
-      if (b2.length >= term.length && isNonBMPChar(b2.bytes, pos)) {
+      if (b2.length >= term.length() && isNonBMPChar(b2.bytes, pos)) {
         matches = true;
         for(int i=0;i<pos;i++) {
-          if (term.bytes[i] != b2.bytes[i]) {
+          if (term.byteAt(i) != b2.bytes[i]) {
             matches = false;
             break;
           }
@@ -351,10 +348,10 @@ class Lucene3xFields extends FieldsProducer {
       }
 
       // Restore term:
-      term.length = savLength;
-      term.bytes[pos] = scratch[0];
-      term.bytes[pos+1] = scratch[1];
-      term.bytes[pos+2] = scratch[2];
+      term.setLength(savLength);
+      term.setByteAt(pos, scratch[0]);
+      term.setByteAt(pos+1, scratch[1]);
+      term.setByteAt(pos+2, scratch[2]);
 
       return matches;
     }
@@ -370,18 +367,18 @@ class Lucene3xFields extends FieldsProducer {
         System.out.println("  try cont");
       }
 
-      int downTo = prevTerm.length-1;
+      int downTo = prevTerm.length()-1;
 
       boolean didSeek = false;
       
-      final int limit = Math.min(newSuffixStart, scratchTerm.length-1);
+      final int limit = Math.min(newSuffixStart, scratchTerm.length()-1);
 
       while(downTo > limit) {
 
-        if (isHighBMPChar(prevTerm.bytes, downTo)) {
+        if (isHighBMPChar(prevTerm.bytes(), downTo)) {
 
           if (DEBUG_SURROGATES) {
-            System.out.println("    found E pos=" + downTo + " vs len=" + prevTerm.length);
+            System.out.println("    found E pos=" + downTo + " vs len=" + prevTerm.length());
           }
 
           if (seekToNonBMP(seekTermEnum, prevTerm, downTo)) {
@@ -404,8 +401,8 @@ class Lucene3xFields extends FieldsProducer {
 
         // Shorten prevTerm in place so that we don't redo
         // this loop if we come back here:
-        if ((prevTerm.bytes[downTo] & 0xc0) == 0xc0 || (prevTerm.bytes[downTo] & 0x80) == 0) {
-          prevTerm.length = downTo;
+        if ((prevTerm.byteAt(downTo) & 0xc0) == 0xc0 || (prevTerm.byteAt(downTo) & 0x80) == 0) {
+          prevTerm.setLength(downTo);
         }
         
         downTo--;
@@ -425,24 +422,24 @@ class Lucene3xFields extends FieldsProducer {
         System.out.println("  try pop");
       }
 
-      assert newSuffixStart <= prevTerm.length;
-      assert newSuffixStart < scratchTerm.length || newSuffixStart == 0;
+      assert newSuffixStart <= prevTerm.length();
+      assert newSuffixStart < scratchTerm.length() || newSuffixStart == 0;
 
-      if (prevTerm.length > newSuffixStart &&
-          isNonBMPChar(prevTerm.bytes, newSuffixStart) &&
-          isHighBMPChar(scratchTerm.bytes, newSuffixStart)) {
+      if (prevTerm.length() > newSuffixStart &&
+          isNonBMPChar(prevTerm.bytes(), newSuffixStart) &&
+          isHighBMPChar(scratchTerm.bytes(), newSuffixStart)) {
 
         // Seek type 2 -- put 0xFF at this position:
-        scratchTerm.bytes[newSuffixStart] = (byte) 0xff;
-        scratchTerm.length = newSuffixStart+1;
+        scratchTerm.setByteAt(newSuffixStart, (byte) 0xff);
+        scratchTerm.setLength(newSuffixStart+1);
 
         if (DEBUG_SURROGATES) {
-          System.out.println("    seek to term=" + UnicodeUtil.toHexString(scratchTerm.utf8ToString()) + " " + scratchTerm.toString());
+          System.out.println("    seek to term=" + UnicodeUtil.toHexString(scratchTerm.get().utf8ToString()) + " " + scratchTerm.toString());
         }
           
         // TODO: more efficient seek?  can we simply swap
         // the enums?
-        getTermsDict().seekEnum(termEnum, new Term(fieldInfo.name, scratchTerm), true);
+        getTermsDict().seekEnum(termEnum, new Term(fieldInfo.name, scratchTerm.get()), true);
 
         final Term t2 = termEnum.term();
 
@@ -464,15 +461,15 @@ class Lucene3xFields extends FieldsProducer {
           // and index term, or, was in the term seek
           // cache):
           scratchTerm.copyBytes(b2);
-          setNewSuffixStart(prevTerm, scratchTerm);
+          setNewSuffixStart(prevTerm.get(), scratchTerm.get());
 
           return true;
-        } else if (newSuffixStart != 0 || scratchTerm.length != 0) {
+        } else if (newSuffixStart != 0 || scratchTerm.length() != 0) {
           if (DEBUG_SURROGATES) {
             System.out.println("      got term=null (or next field)");
           }
           newSuffixStart = 0;
-          scratchTerm.length = 0;
+          scratchTerm.clear();
           return true;
         }
       }
@@ -534,23 +531,18 @@ class Lucene3xFields extends FieldsProducer {
 
       // TODO: can we avoid this copy?
       if (termEnum.term() == null || termEnum.term().field() != internedFieldName) {
-        scratchTerm.length = 0;
+        scratchTerm.clear();
       } else {
         scratchTerm.copyBytes(termEnum.term().bytes());
       }
       
       if (DEBUG_SURROGATES) {
         System.out.println("  dance");
-        System.out.println("    prev=" + UnicodeUtil.toHexString(prevTerm.utf8ToString()));
+        System.out.println("    prev=" + UnicodeUtil.toHexString(prevTerm.get().utf8ToString()));
         System.out.println("         " + prevTerm.toString());
-        System.out.println("    term=" + UnicodeUtil.toHexString(scratchTerm.utf8ToString()));
+        System.out.println("    term=" + UnicodeUtil.toHexString(scratchTerm.get().utf8ToString()));
         System.out.println("         " + scratchTerm.toString());
       }
-
-      // This code assumes TermInfosReader/SegmentTermEnum
-      // always use BytesRef.offset == 0
-      assert prevTerm.offset == 0;
-      assert scratchTerm.offset == 0;
 
       // Need to loop here because we may need to do multiple
       // pops, and possibly a continue in the end, ie:
@@ -589,41 +581,41 @@ class Lucene3xFields extends FieldsProducer {
 
       int upTo = newSuffixStart;
       if (DEBUG_SURROGATES) {
-        System.out.println("  try push newSuffixStart=" + newSuffixStart + " scratchLen=" + scratchTerm.length);
+        System.out.println("  try push newSuffixStart=" + newSuffixStart + " scratchLen=" + scratchTerm.length());
       }
 
-      while(upTo < scratchTerm.length) {
-        if (isNonBMPChar(scratchTerm.bytes, upTo) &&
+      while(upTo < scratchTerm.length()) {
+        if (isNonBMPChar(scratchTerm.bytes(), upTo) &&
             (upTo > newSuffixStart ||
-             (upTo >= prevTerm.length ||
-              (!isNonBMPChar(prevTerm.bytes, upTo) &&
-               !isHighBMPChar(prevTerm.bytes, upTo))))) {
+             (upTo >= prevTerm.length() ||
+              (!isNonBMPChar(prevTerm.bytes(), upTo) &&
+               !isHighBMPChar(prevTerm.bytes(), upTo))))) {
 
           // A non-BMP char (4 bytes UTF8) starts here:
-          assert scratchTerm.length >= upTo + 4;
+          assert scratchTerm.length() >= upTo + 4;
           
-          final int savLength = scratchTerm.length;
-          scratch[0] = scratchTerm.bytes[upTo];
-          scratch[1] = scratchTerm.bytes[upTo+1];
-          scratch[2] = scratchTerm.bytes[upTo+2];
+          final int savLength = scratchTerm.length();
+          scratch[0] = scratchTerm.byteAt(upTo);
+          scratch[1] = scratchTerm.byteAt(upTo+1);
+          scratch[2] = scratchTerm.byteAt(upTo+2);
 
-          scratchTerm.bytes[upTo] = UTF8_HIGH_BMP_LEAD;
-          scratchTerm.bytes[upTo+1] = (byte) 0x80;
-          scratchTerm.bytes[upTo+2] = (byte) 0x80;
-          scratchTerm.length = upTo+3;
+          scratchTerm.setByteAt(upTo, UTF8_HIGH_BMP_LEAD);
+          scratchTerm.setByteAt(upTo+1, (byte) 0x80);
+          scratchTerm.setByteAt(upTo+2, (byte) 0x80);
+          scratchTerm.setLength(upTo+3);
 
           if (DEBUG_SURROGATES) {
-            System.out.println("    try seek 1 pos=" + upTo + " term=" + UnicodeUtil.toHexString(scratchTerm.utf8ToString()) + " " + scratchTerm.toString() + " len=" + scratchTerm.length);
+            System.out.println("    try seek 1 pos=" + upTo + " term=" + UnicodeUtil.toHexString(scratchTerm.get().utf8ToString()) + " " + scratchTerm.toString() + " len=" + scratchTerm.length());
           }
 
           // Seek "forward":
           // TODO: more efficient seek?
-          getTermsDict().seekEnum(seekTermEnum, new Term(fieldInfo.name, scratchTerm), true);
+          getTermsDict().seekEnum(seekTermEnum, new Term(fieldInfo.name, scratchTerm.get()), true);
 
-          scratchTerm.bytes[upTo] = scratch[0];
-          scratchTerm.bytes[upTo+1] = scratch[1];
-          scratchTerm.bytes[upTo+2] = scratch[2];
-          scratchTerm.length = savLength;
+          scratchTerm.setByteAt(upTo, scratch[0]);
+          scratchTerm.setByteAt(upTo+1, scratch[1]);
+          scratchTerm.setByteAt(upTo+2, scratch[2]);
+          scratchTerm.setLength(savLength);
 
           // Did we find a match?
           final Term t2 = seekTermEnum.term();
@@ -646,7 +638,7 @@ class Lucene3xFields extends FieldsProducer {
             if (b2.length >= upTo+3 && isHighBMPChar(b2.bytes, upTo)) {
               matches = true;
               for(int i=0;i<upTo;i++) {
-                if (scratchTerm.bytes[i] != b2.bytes[i]) {
+                if (scratchTerm.byteAt(i) != b2.bytes[i]) {
                   matches = false;
                   break;
                 }
@@ -710,7 +702,7 @@ class Lucene3xFields extends FieldsProducer {
       final Term t = termEnum.term();
       if (t != null && t.field() == internedFieldName) {
         newSuffixStart = 0;
-        prevTerm.length = 0;
+        prevTerm.clear();
         surrogateDance();
       }
     }
@@ -772,10 +764,8 @@ class Lucene3xFields extends FieldsProducer {
         // find an E, try swapping in S, backwards:
         scratchTerm.copyBytes(term);
 
-        assert scratchTerm.offset == 0;
-
-        for(int i=scratchTerm.length-1;i>=0;i--) {
-          if (isHighBMPChar(scratchTerm.bytes, i)) {
+        for(int i=scratchTerm.length()-1;i>=0;i--) {
+          if (isHighBMPChar(scratchTerm.bytes(), i)) {
             if (DEBUG_SURROGATES) {
               System.out.println("    found E pos=" + i + "; try seek");
             }

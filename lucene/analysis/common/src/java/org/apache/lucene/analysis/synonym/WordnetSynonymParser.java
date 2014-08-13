@@ -21,9 +21,11 @@ import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.Reader;
 import java.text.ParseException;
+import java.util.Arrays;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 
 /**
  * Parser for wordnet prolog format
@@ -58,12 +60,10 @@ public class WordnetSynonymParser extends SynonymMap.Parser {
         }
 
         if (synset.length <= synsetSize+1) {
-          CharsRef larger[] = new CharsRef[synset.length * 2];
-          System.arraycopy(synset, 0, larger, 0, synsetSize);
-          synset = larger;
+          synset = Arrays.copyOf(synset, synset.length * 2);
         }
         
-        synset[synsetSize] = parseSynonym(line, synset[synsetSize]);
+        synset[synsetSize] = parseSynonym(line, new CharsRefBuilder());
         synsetSize++;
         lastSynSetID = synSetID;
       }
@@ -79,9 +79,9 @@ public class WordnetSynonymParser extends SynonymMap.Parser {
     }
   }
  
-  private CharsRef parseSynonym(String line, CharsRef reuse) throws IOException {
+  private CharsRef parseSynonym(String line, CharsRefBuilder reuse) throws IOException {
     if (reuse == null) {
-      reuse = new CharsRef(8);
+      reuse = new CharsRefBuilder();
     }
     
     int start = line.indexOf('\'')+1;

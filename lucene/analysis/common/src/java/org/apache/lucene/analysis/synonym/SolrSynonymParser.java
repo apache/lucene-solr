@@ -26,6 +26,7 @@ import java.util.ArrayList;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 
 /**
  * Parser for the Solr synonyms format.
@@ -95,19 +96,19 @@ public class SolrSynonymParser extends SynonymMap.Parser {
         String inputStrings[] = split(sides[0], ",");
         inputs = new CharsRef[inputStrings.length];
         for (int i = 0; i < inputs.length; i++) {
-          inputs[i] = analyze(unescape(inputStrings[i]).trim(), new CharsRef());
+          inputs[i] = analyze(unescape(inputStrings[i]).trim(), new CharsRefBuilder());
         }
         
         String outputStrings[] = split(sides[1], ",");
         outputs = new CharsRef[outputStrings.length];
         for (int i = 0; i < outputs.length; i++) {
-          outputs[i] = analyze(unescape(outputStrings[i]).trim(), new CharsRef());
+          outputs[i] = analyze(unescape(outputStrings[i]).trim(), new CharsRefBuilder());
         }
       } else {
         String inputStrings[] = split(line, ",");
         inputs = new CharsRef[inputStrings.length];
         for (int i = 0; i < inputs.length; i++) {
-          inputs[i] = analyze(unescape(inputStrings[i]).trim(), new CharsRef());
+          inputs[i] = analyze(unescape(inputStrings[i]).trim(), new CharsRefBuilder());
         }
         if (expand) {
           outputs = inputs;

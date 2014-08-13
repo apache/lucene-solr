@@ -24,6 +24,7 @@ import java.util.Comparator;
 
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.FieldInfos;
 
@@ -37,7 +38,7 @@ final class TermBuffer implements Cloneable {
   private String field;
   private Term term;                            // cached
 
-  private BytesRef bytes = new BytesRef(10);
+  private BytesRefBuilder bytes = new BytesRefBuilder();
 
   // Cannot be -1 since (strangely) we write that
   // fieldNumber into index for first indexed term:
@@ -50,7 +51,7 @@ final class TermBuffer implements Cloneable {
   public int compareTo(TermBuffer other) {
     if (field == other.field)     // fields are interned
                                   // (only by PreFlex codec)
-      return utf8AsUTF16Comparator.compare(bytes, other.bytes);
+      return utf8AsUTF16Comparator.compare(bytes.get(), other.bytes.get());
     else
       return field.compareTo(other.field);
   }
@@ -62,11 +63,9 @@ final class TermBuffer implements Cloneable {
     int length = input.readVInt();
     int totalLength = newSuffixStart + length;
     assert totalLength <= BYTE_BLOCK_SIZE-2 : "termLength=" + totalLength + ",resource=" + input;
-    if (bytes.bytes.length < totalLength) {
-      bytes.grow(totalLength);
-    }
-    bytes.length = totalLength;
-    input.readBytes(bytes.bytes, newSuffixStart, length);
+    bytes.grow(totalLength);
+    bytes.setLength(totalLength);
+    input.readBytes(bytes.bytes(), newSuffixStart, length);
     final int fieldNumber = input.readVInt();
     if (fieldNumber != currentFieldNumber) {
       currentFieldNumber = fieldNumber;
@@ -113,7 +112,7 @@ final class TermBuffer implements Cloneable {
       return null;
 
     if (term == null) {
-      term = new Term(field, BytesRef.deepCopyOf(bytes));
+      term = new Term(field, bytes.toBytesRef());
     }
 
     return term;
@@ -125,7 +124,8 @@ final class TermBuffer implements Cloneable {
     try {
       clone = (TermBuffer)super.clone();
     } catch (CloneNotSupportedException e) {}
-    clone.bytes = BytesRef.deepCopyOf(bytes);
+    clone.bytes = new BytesRefBuilder();
+    clone.bytes.copyBytes(this.bytes.get());
     return clone;
   }
 }

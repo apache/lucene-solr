@@ -34,6 +34,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 
 /**
  * Codec API for writing term vectors:
@@ -125,7 +126,7 @@ public abstract class TermVectorsWriter implements Closeable {
   public void addProx(int numProx, DataInput positions, DataInput offsets) throws IOException {
     int position = 0;
     int lastOffset = 0;
-    BytesRef payload = null;
+    BytesRefBuilder payload = null;
 
     for (int i = 0; i < numProx; i++) {
       final int startOffset;
@@ -143,15 +144,13 @@ public abstract class TermVectorsWriter implements Closeable {
           final int payloadLength = positions.readVInt();
 
           if (payload == null) {
-            payload = new BytesRef();
-            payload.bytes = new byte[payloadLength];
-          } else if (payload.bytes.length < payloadLength) {
-            payload.grow(payloadLength);
+            payload = new BytesRefBuilder();
           }
+          payload.grow(payloadLength);
 
-          positions.readBytes(payload.bytes, 0, payloadLength);
-          payload.length = payloadLength;
-          thisPayload = payload;
+          positions.readBytes(payload.bytes(), 0, payloadLength);
+          payload.setLength(payloadLength);
+          thisPayload = payload.get();
         } else {
           thisPayload = null;
         }

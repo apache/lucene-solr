@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -42,7 +43,7 @@ public class TestCompiledAutomaton extends LuceneTestCase {
 
   private void testFloor(CompiledAutomaton c, String input, String expected) {
     final BytesRef b = new BytesRef(input);
-    final BytesRef result = c.floor(b, b);
+    final BytesRef result = c.floor(b, new BytesRefBuilder());
     if (expected == null) {
       assertNull(result);
     } else {

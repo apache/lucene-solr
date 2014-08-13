@@ -26,37 +26,37 @@ public class TestNumericUtils extends LuceneTestCase {
 
   public void testLongConversionAndOrdering() throws Exception {
     // generate a series of encoded longs, each numerical one bigger than the one before
-    BytesRef last=null, act=new BytesRef(NumericUtils.BUF_SIZE_LONG);
+    BytesRefBuilder last = new BytesRefBuilder();
+    BytesRefBuilder act = new BytesRefBuilder();
     for (long l=-100000L; l<100000L; l++) {
       NumericUtils.longToPrefixCodedBytes(l, 0, act);
       if (last!=null) {
         // test if smaller
-        assertTrue("actual bigger than last (BytesRef)", last.compareTo(act) < 0 );
-        assertTrue("actual bigger than last (as String)", last.utf8ToString().compareTo(act.utf8ToString()) < 0 );
+        assertTrue("actual bigger than last (BytesRef)", last.get().compareTo(act.get()) < 0 );
+        assertTrue("actual bigger than last (as String)", last.get().utf8ToString().compareTo(act.get().utf8ToString()) < 0 );
       }
       // test is back and forward conversion works
-      assertEquals("forward and back conversion should generate same long", l, NumericUtils.prefixCodedToLong(act));
+      assertEquals("forward and back conversion should generate same long", l, NumericUtils.prefixCodedToLong(act.get()));
       // next step
-      last = act;
-      act = new BytesRef(NumericUtils.BUF_SIZE_LONG);
+      last.copyBytes(act);
     }
   }
 
   public void testIntConversionAndOrdering() throws Exception {
     // generate a series of encoded ints, each numerical one bigger than the one before
-    BytesRef last=null, act=new BytesRef(NumericUtils.BUF_SIZE_INT);
+    BytesRefBuilder act = new BytesRefBuilder();
+    BytesRefBuilder last = new BytesRefBuilder();
     for (int i=-100000; i<100000; i++) {
       NumericUtils.intToPrefixCodedBytes(i, 0, act);
       if (last!=null) {
         // test if smaller
-        assertTrue("actual bigger than last (BytesRef)", last.compareTo(act) < 0 );
-        assertTrue("actual bigger than last (as String)", last.utf8ToString().compareTo(act.utf8ToString()) < 0 );
+        assertTrue("actual bigger than last (BytesRef)", last.get().compareTo(act.get()) < 0 );
+        assertTrue("actual bigger than last (as String)", last.get().utf8ToString().compareTo(act.get().utf8ToString()) < 0 );
       }
       // test is back and forward conversion works
-      assertEquals("forward and back conversion should generate same int", i, NumericUtils.prefixCodedToInt(act));
+      assertEquals("forward and back conversion should generate same int", i, NumericUtils.prefixCodedToInt(act.get()));
       // next step
-      last=act;
-      act = new BytesRef(NumericUtils.BUF_SIZE_INT);
+      last.copyBytes(act.get());
     }
   }
 
@@ -65,18 +65,18 @@ public class TestNumericUtils extends LuceneTestCase {
       Long.MIN_VALUE, Long.MIN_VALUE+1, Long.MIN_VALUE+2, -5003400000000L,
       -4000L, -3000L, -2000L, -1000L, -1L, 0L, 1L, 10L, 300L, 50006789999999999L, Long.MAX_VALUE-2, Long.MAX_VALUE-1, Long.MAX_VALUE
     };
-    BytesRef[] prefixVals=new BytesRef[vals.length];
+    BytesRefBuilder[] prefixVals = new BytesRefBuilder[vals.length];
     
     for (int i=0; i<vals.length; i++) {
-      prefixVals[i] = new BytesRef(NumericUtils.BUF_SIZE_LONG);
+      prefixVals[i] = new BytesRefBuilder();
       NumericUtils.longToPrefixCodedBytes(vals[i], 0, prefixVals[i]);
       
       // check forward and back conversion
-      assertEquals( "forward and back conversion should generate same long", vals[i], NumericUtils.prefixCodedToLong(prefixVals[i]) );
+      assertEquals( "forward and back conversion should generate same long", vals[i], NumericUtils.prefixCodedToLong(prefixVals[i].get()) );
 
       // test if decoding values as int fails correctly
       try {
-        NumericUtils.prefixCodedToInt(prefixVals[i]);
+        NumericUtils.prefixCodedToInt(prefixVals[i].get());
         fail("decoding a prefix coded long value as int should fail");
       } catch (NumberFormatException e) {
         // worked
@@ -85,15 +85,15 @@ public class TestNumericUtils extends LuceneTestCase {
     
     // check sort order (prefixVals should be ascending)
     for (int i=1; i<prefixVals.length; i++) {
-      assertTrue( "check sort order", prefixVals[i-1].compareTo(prefixVals[i]) < 0 );
+      assertTrue( "check sort order", prefixVals[i-1].get().compareTo(prefixVals[i].get()) < 0 );
     }
         
     // check the prefix encoding, lower precision should have the difference to original value equal to the lower removed bits
-    final BytesRef ref = new BytesRef(NumericUtils.BUF_SIZE_LONG);
+    final BytesRefBuilder ref = new BytesRefBuilder();
     for (int i=0; i<vals.length; i++) {
       for (int j=0; j<64; j++) {
         NumericUtils.longToPrefixCodedBytes(vals[i], j, ref);
-        long prefixVal=NumericUtils.prefixCodedToLong(ref);
+        long prefixVal=NumericUtils.prefixCodedToLong(ref.get());
         long mask=(1L << j) - 1L;
         assertEquals( "difference between prefix val and original value for "+vals[i]+" with shift="+j, vals[i] & mask, vals[i]-prefixVal );
       }
@@ -105,18 +105,18 @@ public class TestNumericUtils extends LuceneTestCase {
       Integer.MIN_VALUE, Integer.MIN_VALUE+1, Integer.MIN_VALUE+2, -64765767,
       -4000, -3000, -2000, -1000, -1, 0, 1, 10, 300, 765878989, Integer.MAX_VALUE-2, Integer.MAX_VALUE-1, Integer.MAX_VALUE
     };
-    BytesRef[] prefixVals=new BytesRef[vals.length];
+    BytesRefBuilder[] prefixVals=new BytesRefBuilder[vals.length];
     
     for (int i=0; i<vals.length; i++) {
-      prefixVals[i] = new BytesRef(NumericUtils.BUF_SIZE_INT);
+      prefixVals[i] = new BytesRefBuilder();
       NumericUtils.intToPrefixCodedBytes(vals[i], 0, prefixVals[i]);
       
       // check forward and back conversion
-      assertEquals( "forward and back conversion should generate same int", vals[i], NumericUtils.prefixCodedToInt(prefixVals[i]) );
+      assertEquals( "forward and back conversion should generate same int", vals[i], NumericUtils.prefixCodedToInt(prefixVals[i].get()) );
       
       // test if decoding values as long fails correctly
       try {
-        NumericUtils.prefixCodedToLong(prefixVals[i]);
+        NumericUtils.prefixCodedToLong(prefixVals[i].get());
         fail("decoding a prefix coded int value as long should fail");
       } catch (NumberFormatException e) {
         // worked
@@ -125,15 +125,15 @@ public class TestNumericUtils extends LuceneTestCase {
     
     // check sort order (prefixVals should be ascending)
     for (int i=1; i<prefixVals.length; i++) {
-      assertTrue( "check sort order", prefixVals[i-1].compareTo(prefixVals[i]) < 0 );
+      assertTrue( "check sort order", prefixVals[i-1].get().compareTo(prefixVals[i].get()) < 0 );
     }
     
     // check the prefix encoding, lower precision should have the difference to original value equal to the lower removed bits
-    final BytesRef ref = new BytesRef(NumericUtils.BUF_SIZE_LONG);
+    final BytesRefBuilder ref = new BytesRefBuilder();
     for (int i=0; i<vals.length; i++) {
       for (int j=0; j<32; j++) {
         NumericUtils.intToPrefixCodedBytes(vals[i], j, ref);
-        int prefixVal=NumericUtils.prefixCodedToInt(ref);
+        int prefixVal=NumericUtils.prefixCodedToInt(ref.get());
         int mask=(1 << j) - 1;
         assertEquals( "difference between prefix val and original value for "+vals[i]+" with shift="+j, vals[i] & mask, vals[i]-prefixVal );
       }

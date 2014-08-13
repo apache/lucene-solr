@@ -29,7 +29,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.Version;
 
@@ -155,13 +155,13 @@ public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
     for (String field : fields) {
       Set<String> stopWords = new HashSet<>();
       Terms terms = MultiFields.getTerms(indexReader, field);
-      CharsRef spare = new CharsRef();
+      CharsRefBuilder spare = new CharsRefBuilder();
       if (terms != null) {
         TermsEnum te = terms.iterator(null);
         BytesRef text;
         while ((text = te.next()) != null) {
           if (te.docFreq() > maxDocFreq) {
-            UnicodeUtil.UTF8toUTF16(text, spare);
+            spare.copyUTF8Bytes(text);
             stopWords.add(spare.toString());
           }
         }

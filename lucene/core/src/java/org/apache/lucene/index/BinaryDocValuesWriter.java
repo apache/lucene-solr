@@ -26,6 +26,7 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.PagedBytes;
@@ -124,7 +125,7 @@ class BinaryDocValuesWriter extends DocValuesWriter {
 
   // iterates over the values we have in ram
   private class BytesIterator implements Iterator<BytesRef> {
-    final BytesRef value = new BytesRef();
+    final BytesRefBuilder value = new BytesRefBuilder();
     final PackedLongValues.Iterator lengthsIterator;
     final DataInput bytesIterator = bytes.getDataInput();
     final int size = (int) lengths.size();
@@ -150,15 +151,15 @@ class BinaryDocValuesWriter extends DocValuesWriter {
       if (upto < size) {
         int length = (int) lengthsIterator.next();
         value.grow(length);
-        value.length = length;
+        value.setLength(length);
         try {
-          bytesIterator.readBytes(value.bytes, value.offset, value.length);
+          bytesIterator.readBytes(value.bytes(), 0, value.length());
         } catch (IOException ioe) {
           // Should never happen!
           throw new RuntimeException(ioe);
         }
         if (docsWithField.get(upto)) {
-          v = value;
+          v = value.get();
         } else {
           v = null;
         }

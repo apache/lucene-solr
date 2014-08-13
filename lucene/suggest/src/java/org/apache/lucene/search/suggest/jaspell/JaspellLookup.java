@@ -31,6 +31,7 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.UnicodeUtil;
 
 /**
@@ -72,15 +73,14 @@ public class JaspellLookup extends Lookup implements Accountable {
     trie = new JaspellTernarySearchTrie();
     trie.setMatchAlmostDiff(editDistance);
     BytesRef spare;
-    final CharsRef charsSpare = new CharsRef();
+    final CharsRefBuilder charsSpare = new CharsRefBuilder();
 
     while ((spare = tfit.next()) != null) {
       final long weight = tfit.weight();
       if (spare.length == 0) {
         continue;
       }
-      charsSpare.grow(spare.length);
-      UnicodeUtil.UTF8toUTF16(spare.bytes, spare.offset, spare.length, charsSpare);
+      charsSpare.copyUTF8Bytes(spare);
       trie.put(charsSpare.toString(), Long.valueOf(weight));
     }
   }

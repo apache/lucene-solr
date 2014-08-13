@@ -36,7 +36,9 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Util;
@@ -65,7 +67,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
   // assert only:
   private boolean eof;
 
-  final BytesRef term = new BytesRef();
+  final BytesRefBuilder term = new BytesRefBuilder();
   private final FST.BytesReader fstReader;
 
   @SuppressWarnings({"rawtypes","unchecked"}) private FST.Arc<Output>[] arcs =
@@ -245,9 +247,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
       throw new IllegalStateException("terms index was not loaded");
     }
 
-    if (term.bytes.length <= target.length) {
-      term.bytes = ArrayUtil.grow(term.bytes, 1+target.length);
-    }
+    term.grow(1+target.length);
 
     assert clearEOF();
 
@@ -283,7 +283,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
       targetUpto = 0;
           
       OrdsSegmentTermsEnumFrame lastFrame = stack[0];
-      assert validIndexPrefix <= term.length;
+      assert validIndexPrefix <= term.length();
 
       final int targetLimit = Math.min(target.length, validIndexPrefix);
 
@@ -294,7 +294,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
 
       // First compare up to valid seek frames:
       while (targetUpto < targetLimit) {
-        cmp = (term.bytes[targetUpto]&0xFF) - (target.bytes[target.offset + targetUpto]&0xFF);
+        cmp = (term.byteAt(targetUpto)&0xFF) - (target.bytes[target.offset + targetUpto]&0xFF);
         // if (DEBUG) {
         //    System.out.println("    cycle targetUpto=" + targetUpto + " (vs limit=" + targetLimit + ") cmp=" + cmp + " (targetLabel=" + (char) (target.bytes[target.offset + targetUpto]) + " vs termLabel=" + (char) (term.bytes[targetUpto]) + ")"   + " arc.output=" + arc.output + " output=" + output);
         // }
@@ -319,9 +319,9 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
         // don't save arc/output/frame; we only do this
         // to find out if the target term is before,
         // equal or after the current term
-        final int targetLimit2 = Math.min(target.length, term.length);
+        final int targetLimit2 = Math.min(target.length, term.length());
         while (targetUpto < targetLimit2) {
-          cmp = (term.bytes[targetUpto]&0xFF) - (target.bytes[target.offset + targetUpto]&0xFF);
+          cmp = (term.byteAt(targetUpto)&0xFF) - (target.bytes[target.offset + targetUpto]&0xFF);
           // if (DEBUG) {
           //    System.out.println("    cycle2 targetUpto=" + targetUpto + " (vs limit=" + targetLimit + ") cmp=" + cmp + " (targetLabel=" + (char) (target.bytes[target.offset + targetUpto]) + " vs termLabel=" + (char) (term.bytes[targetUpto]) + ")");
           // }
@@ -332,7 +332,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
         }
 
         if (cmp == 0) {
-          cmp = term.length - target.length;
+          cmp = term.length() - target.length;
         }
         targetUpto = targetUptoMid;
       }
@@ -359,7 +359,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
         currentFrame.rewind();
       } else {
         // Target is exactly the same as current term
-        assert term.length == target.length;
+        assert term.length() == target.length;
         if (termExists) {
           // if (DEBUG) {
           //   System.out.println("  target is same as current; return true");
@@ -424,8 +424,8 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
 
         if (!currentFrame.hasTerms) {
           termExists = false;
-          term.bytes[targetUpto] = (byte) targetLabel;
-          term.length = 1+targetUpto;
+          term.setByteAt(targetUpto, (byte) targetLabel);
+          term.setLength(1+targetUpto);
           // if (DEBUG) {
           //   System.out.println("  FAST NOT_FOUND term=" + brToString(term));
           // }
@@ -449,7 +449,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
       } else {
         // Follow this arc
         arc = nextArc;
-        term.bytes[targetUpto] = (byte) targetLabel;
+        term.setByteAt(targetUpto, (byte) targetLabel);
         // Aggregate output as we go:
         assert arc.output != null;
         if (arc.output != OrdsBlockTreeTermsWriter.NO_OUTPUT) {
@@ -477,7 +477,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
     // Target term is entirely contained in the index:
     if (!currentFrame.hasTerms) {
       termExists = false;
-      term.length = targetUpto;
+      term.setLength(targetUpto);
       // if (DEBUG) {
       //   System.out.println("  FAST NOT_FOUND term=" + brToString(term));
       // }
@@ -507,9 +507,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
       throw new IllegalStateException("terms index was not loaded");
     }
    
-    if (term.bytes.length <= target.length) {
-      term.bytes = ArrayUtil.grow(term.bytes, 1+target.length);
-    }
+    term.grow(1+target.length);
 
     assert clearEOF();
 
@@ -543,7 +541,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
       targetUpto = 0;
           
       OrdsSegmentTermsEnumFrame lastFrame = stack[0];
-      assert validIndexPrefix <= term.length;
+      assert validIndexPrefix <= term.length();
 
       final int targetLimit = Math.min(target.length, validIndexPrefix);
 
@@ -554,7 +552,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
 
       // First compare up to valid seek frames:
       while (targetUpto < targetLimit) {
-        cmp = (term.bytes[targetUpto]&0xFF) - (target.bytes[target.offset + targetUpto]&0xFF);
+        cmp = (term.byteAt(targetUpto)&0xFF) - (target.bytes[target.offset + targetUpto]&0xFF);
         //if (DEBUG) {
         //System.out.println("    cycle targetUpto=" + targetUpto + " (vs limit=" + targetLimit + ") cmp=" + cmp + " (targetLabel=" + (char) (target.bytes[target.offset + targetUpto]) + " vs termLabel=" + (char) (term.bytes[targetUpto]) + ")"   + " arc.output=" + arc.output + " output=" + output);
         //}
@@ -582,9 +580,9 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
         final int targetUptoMid = targetUpto;
         // Second compare the rest of the term, but
         // don't save arc/output/frame:
-        final int targetLimit2 = Math.min(target.length, term.length);
+        final int targetLimit2 = Math.min(target.length, term.length());
         while (targetUpto < targetLimit2) {
-          cmp = (term.bytes[targetUpto]&0xFF) - (target.bytes[target.offset + targetUpto]&0xFF);
+          cmp = (term.byteAt(targetUpto)&0xFF) - (target.bytes[target.offset + targetUpto]&0xFF);
           //if (DEBUG) {
           //System.out.println("    cycle2 targetUpto=" + targetUpto + " (vs limit=" + targetLimit + ") cmp=" + cmp + " (targetLabel=" + (char) (target.bytes[target.offset + targetUpto]) + " vs termLabel=" + (char) (term.bytes[targetUpto]) + ")");
           //}
@@ -595,7 +593,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
         }
 
         if (cmp == 0) {
-          cmp = term.length - target.length;
+          cmp = term.length() - target.length;
         }
         targetUpto = targetUptoMid;
       }
@@ -622,7 +620,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
         currentFrame.rewind();
       } else {
         // Target is exactly the same as current term
-        assert term.length == target.length;
+        assert term.length() == target.length;
         if (termExists) {
           //if (DEBUG) {
           //System.out.println("  target is same as current; return FOUND");
@@ -708,7 +706,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
         }
       } else {
         // Follow this arc
-        term.bytes[targetUpto] = (byte) targetLabel;
+        term.setByteAt(targetUpto, (byte) targetLabel);
         arc = nextArc;
         // Aggregate output as we go:
         assert arc.output != null;
@@ -768,7 +766,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
       while(true) {
         OrdsSegmentTermsEnumFrame f = getFrame(ord);
         assert f != null;
-        final BytesRef prefix = new BytesRef(term.bytes, 0, f.prefix);
+        final BytesRef prefix = new BytesRef(term.bytes(), 0, f.prefix);
         if (f.nextEnt == -1) {
           out.println("    frame " + (isSeekFrame ? "(seek)" : "(next)") + " ord=" + ord + " fp=" + f.fp + (f.isFloor ? (" (fpOrig=" + f.fpOrig + ")") : "") + " prefixLen=" + f.prefix + " prefix=" + brToString(prefix) + (f.nextEnt == -1 ? "" : (" (of " + f.entCount + ")")) + " hasTerms=" + f.hasTerms + " isFloor=" + f.isFloor + " code=" + ((f.fp<<OrdsBlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS) + (f.hasTerms ? OrdsBlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS:0) + (f.isFloor ? OrdsBlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR:0)) + " isLastInFloor=" + f.isLastInFloor + " mdUpto=" + f.metaDataUpto + " tbOrd=" + f.getTermBlockOrd() + " termOrd=" + f.termOrd);
         } else {
@@ -776,8 +774,8 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
         }
         if (fr.index != null) {
           assert !isSeekFrame || f.arc != null: "isSeekFrame=" + isSeekFrame + " f.arc=" + f.arc;
-          if (f.prefix > 0 && isSeekFrame && f.arc.label != (term.bytes[f.prefix-1]&0xFF)) {
-            out.println("      broken seek state: arc.label=" + (char) f.arc.label + " vs term byte=" + (char) (term.bytes[f.prefix-1]&0xFF));
+          if (f.prefix > 0 && isSeekFrame && f.arc.label != (term.byteAt(f.prefix-1)&0xFF)) {
+            out.println("      broken seek state: arc.label=" + (char) f.arc.label + " vs term byte=" + (char) (term.byteAt(f.prefix-1)&0xFF));
             throw new RuntimeException("seek state is broken");
           }
           Output output = Util.get(fr.index, prefix);
@@ -842,7 +840,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
       // this method catches up all internal state so next()
       // works properly:
       // if (DEBUG) System.out.println("  re-seek to pending term=" + term.utf8ToString() + " " + term);
-      final boolean result = seekExact(term);
+      final boolean result = seekExact(term.get());
       assert result;
     }
 
@@ -855,7 +853,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
         if (currentFrame.ord == 0) {
           //if (DEBUG) System.out.println("  return null");
           assert setEOF();
-          term.length = 0;
+          term.setLength(0);
           validIndexPrefix = 0;
           currentFrame.rewind();
           termExists = false;
@@ -868,7 +866,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
         if (currentFrame.nextEnt == -1 || currentFrame.lastSubFP != lastFP) {
           // We popped into a frame that's not loaded
           // yet or not scan'd to the right entry
-          currentFrame.scanToFloorFrame(term);
+          currentFrame.scanToFloorFrame(term.get());
           currentFrame.loadBlock();
           currentFrame.scanToSubBlock(lastFP);
         }
@@ -887,7 +885,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
       if (currentFrame.next()) {
         // Push to new block:
         //if (DEBUG) System.out.println("  push frame");
-        currentFrame = pushFrame(null, currentFrame.lastSubFP, term.length, prevTermOrd);
+        currentFrame = pushFrame(null, currentFrame.lastSubFP, term.length(), prevTermOrd);
         // This is a "next" frame -- even if it's
         // floor'd we must pretend it isn't so we don't
         // try to scan to the right floor frame:
@@ -897,7 +895,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
       } else {
         //if (DEBUG) System.out.println("  return term=" + term.utf8ToString() + " " + term + " currentFrame.ord=" + currentFrame.ord);
         positioned = true;
-        return term;
+        return term.get();
       }
     }
   }
@@ -905,7 +903,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
   @Override
   public BytesRef term() {
     assert !eof;
-    return term;
+    return term.get();
   }
 
   @Override
@@ -962,7 +960,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
     //   System.out.println("BTTR.seekExact termState seg=" + segment + " target=" + target.utf8ToString() + " " + target + " state=" + otherState);
     // }
     assert clearEOF();
-    if (target.compareTo(term) != 0 || !termExists) {
+    if (target.compareTo(term.get()) != 0 || !termExists) {
       assert otherState != null && otherState instanceof BlockTermState;
       BlockTermState blockState = (BlockTermState) otherState;
       currentFrame = staticFrame;
@@ -1002,9 +1000,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
 
     // First do reverse lookup in the index to find the block that holds this term:
     InputOutput io = getByOutput(targetOrd);
-    if (term.bytes.length < io.input.length) {
-      term.bytes = ArrayUtil.grow(term.bytes, io.input.length);
-    }
+    term.grow(io.input.length);
 
     Util.toBytesRef(io.input, term);
     if (io.input.length == 0) {
@@ -1060,7 +1056,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
   /** Specialized getByOutput that can understand the ranges (startOrd to endOrd) we use here, not just startOrd. */
   private InputOutput getByOutput(long targetOrd) throws IOException {
 
-    final IntsRef result = new IntsRef();
+    final IntsRefBuilder result = new IntsRefBuilder();
 
     fr.index.getFirstArc(arc);
     Output output = arc.output;
@@ -1092,9 +1088,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
 
       if (FST.targetHasArcs(arc)) {
         // System.out.println("  targetHasArcs");
-        if (result.ints.length == upto) {
-          result.grow(1+upto);
-        }
+        result.grow(1+upto);
         
         fr.index.readFirstRealTargetArc(arc.target, arc, fstReader);
 
@@ -1134,9 +1128,9 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
             // Keep recursing
             arc.arcIdx = mid-1;
           } else {
-            result.length = bestUpto;
+            result.setLength(bestUpto);
             InputOutput io = new InputOutput();
-            io.input = result;
+            io.input = result.get();
             io.output = bestOutput;
             // System.out.println("  ret0=" + io);
             return io;
@@ -1145,7 +1139,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
           fr.index.readNextRealArc(arc, fstReader);
 
           // Recurse on this arc:
-          result.ints[upto++] = arc.label;
+          result.setIntAt(upto++, arc.label);
           output = OrdsBlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.output);
 
         } else {
@@ -1163,12 +1157,12 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
             if (targetOrd >= minArcOutput.startOrd && targetOrd <= endOrd) {
               // Recurse on this arc:
               output = minArcOutput;
-              result.ints[upto++] = arc.label;
+              result.setIntAt(upto++, arc.label);
               break;
             } else if (targetOrd < endOrd || arc.isLast()) {
-              result.length = bestUpto;
+              result.setLength(bestUpto);
               InputOutput io = new InputOutput();
-              io.input = result;
+              io.input = result.get();
               assert bestOutput != null;
               io.output = bestOutput;
               // System.out.println("  ret2=" + io);
@@ -1181,9 +1175,9 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
           }
         }
       } else {
-        result.length = bestUpto;
+        result.setLength(bestUpto);
         InputOutput io = new InputOutput();
-        io.input = result;
+        io.input = result.get();
         io.output = bestOutput;
         // System.out.println("  ret3=" + io);
         return io;

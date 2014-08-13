@@ -20,10 +20,12 @@ package org.apache.lucene.analysis.hunspell;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesReader;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
@@ -400,7 +402,7 @@ public class Dictionary {
   private FST<IntsRef> affixFST(TreeMap<String,List<Integer>> affixes) throws IOException {
     IntSequenceOutputs outputs = IntSequenceOutputs.getSingleton();
     Builder<IntsRef> builder = new Builder<>(FST.INPUT_TYPE.BYTE4, outputs);
-    IntsRef scratch = new IntsRef();
+    IntsRefBuilder scratch = new IntsRefBuilder();
     for (Map.Entry<String,List<Integer>> entry : affixes.entrySet()) {
       Util.toUTF32(entry.getKey(), scratch);
       List<Integer> entries = entry.getValue();
@@ -408,7 +410,7 @@ public class Dictionary {
       for (Integer c : entries) {
         output.ints[output.length++] = c;
       }
-      builder.add(scratch, output);
+      builder.add(scratch.get(), output);
     }
     return builder.finish();
   }
@@ -450,7 +452,7 @@ public class Dictionary {
                           Map<String,Integer> seenPatterns,
                           Map<String,Integer> seenStrips) throws IOException, ParseException {
     
-    BytesRef scratch = new BytesRef();
+    BytesRefBuilder scratch = new BytesRefBuilder();
     StringBuilder sb = new StringBuilder();
     String args[] = header.split("\\s+");
 
@@ -543,7 +545,7 @@ public class Dictionary {
       }
       
       encodeFlags(scratch, appendFlags);
-      int appendFlagsOrd = flagLookup.add(scratch);
+      int appendFlagsOrd = flagLookup.add(scratch.get());
       if (appendFlagsOrd < 0) {
         // already exists in our hash
         appendFlagsOrd = (-appendFlagsOrd)-1;
@@ -594,10 +596,10 @@ public class Dictionary {
     
     Outputs<CharsRef> outputs = CharSequenceOutputs.getSingleton();
     Builder<CharsRef> builder = new Builder<>(FST.INPUT_TYPE.BYTE2, outputs);
-    IntsRef scratchInts = new IntsRef();
+    IntsRefBuilder scratchInts = new IntsRefBuilder();
     for (Map.Entry<String,String> entry : mappings.entrySet()) {
       Util.toUTF16(entry.getKey(), scratchInts);
-      builder.add(scratchInts, new CharsRef(entry.getValue()));
+      builder.add(scratchInts.get(), new CharsRef(entry.getValue()));
     }
     
     return builder.finish();
@@ -768,8 +770,8 @@ public class Dictionary {
    * @throws IOException Can be thrown while reading from the file
    */
   private void readDictionaryFiles(List<InputStream> dictionaries, CharsetDecoder decoder, Builder<IntsRef> words) throws IOException {
-    BytesRef flagsScratch = new BytesRef();
-    IntsRef scratchInts = new IntsRef();
+    BytesRefBuilder flagsScratch = new BytesRefBuilder();
+    IntsRefBuilder scratchInts = new IntsRefBuilder();
     
     StringBuilder sb = new StringBuilder();
     
@@ -868,17 +870,17 @@ public class Dictionary {
     unsorted.delete();
     
     ByteSequencesReader reader = new ByteSequencesReader(sorted);
-    BytesRef scratchLine = new BytesRef();
+    BytesRefBuilder scratchLine = new BytesRefBuilder();
     
     // TODO: the flags themselves can be double-chars (long) or also numeric
     // either way the trick is to encode them as char... but they must be parsed differently
     
     String currentEntry = null;
-    IntsRef currentOrds = new IntsRef();
+    IntsRefBuilder currentOrds = new IntsRefBuilder();
     
     String line;
     while (reader.read(scratchLine)) {
-      line = scratchLine.utf8ToString();
+      line = scratchLine.get().utf8ToString();
       String entry;
       char wordForm[];
       int end;
@@ -918,7 +920,7 @@ public class Dictionary {
         throw new IllegalArgumentException("out of order: " + entry + " < " + currentEntry);
       } else {
         encodeFlags(flagsScratch, wordForm);
-        int ord = flagLookup.add(flagsScratch);
+        int ord = flagLookup.add(flagsScratch.get());
         if (ord < 0) {
           // already exists in our hash
           ord = (-ord)-1;
@@ -926,27 +928,25 @@ public class Dictionary {
         // finalize current entry, and switch "current" if necessary
         if (cmp > 0 && currentEntry != null) {
           Util.toUTF32(currentEntry, scratchInts);
-          words.add(scratchInts, currentOrds);
+          words.add(scratchInts.get(), currentOrds.get());
         }
         // swap current
         if (cmp > 0 || currentEntry == null) {
           currentEntry = entry;
-          currentOrds = new IntsRef(); // must be this way
+          currentOrds = new IntsRefBuilder(); // must be this way
         }
         if (hasStemExceptions) {
-          currentOrds.grow(currentOrds.length+2);
-          currentOrds.ints[currentOrds.length++] = ord;
-          currentOrds.ints[currentOrds.length++] = stemExceptionID;
+          currentOrds.append(ord);
+          currentOrds.append(stemExceptionID);
         } else {
-          currentOrds.grow(currentOrds.length+1);
-          currentOrds.ints[currentOrds.length++] = ord;
+          currentOrds.append(ord);
         }
       }
     }
     
     // finalize last entry
     Util.toUTF32(currentEntry, scratchInts);
-    words.add(scratchInts, currentOrds);
+    words.add(scratchInts.get(), currentOrds.get());
     
     reader.close();
     sorted.delete();
@@ -966,15 +966,14 @@ public class Dictionary {
     return flags;
   }
   
-  static void encodeFlags(BytesRef b, char flags[]) {
+  static void encodeFlags(BytesRefBuilder b, char flags[]) {
     int len = flags.length << 1;
     b.grow(len);
-    b.length = len;
-    int upto = b.offset;
+    b.clear();
     for (int i = 0; i < flags.length; i++) {
       int flag = flags[i];
-      b.bytes[upto++] = (byte) ((flag >> 8) & 0xff);
-      b.bytes[upto++] = (byte) (flag & 0xff);
+      b.append((byte) ((flag >> 8) & 0xff));
+      b.append((byte) (flag & 0xff));
     }
   }
 

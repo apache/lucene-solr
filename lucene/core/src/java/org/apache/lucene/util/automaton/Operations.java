@@ -42,7 +42,9 @@ import java.util.Set;
 
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
@@ -1073,7 +1075,7 @@ final public class Operations {
    * @return common prefix
    */
   public static BytesRef getCommonPrefixBytesRef(Automaton a) {
-    BytesRef ref = new BytesRef(10);
+    BytesRefBuilder builder = new BytesRefBuilder();
     HashSet<Integer> visited = new HashSet<>();
     int s = 0;
     boolean done;
@@ -1084,15 +1086,14 @@ final public class Operations {
       if (a.isAccept(s) == false && a.getNumTransitions(s) == 1) {
         a.getTransition(s, 0, t);
         if (t.min == t.max && !visited.contains(t.dest)) {
-          ref.grow(++ref.length);
-          ref.bytes[ref.length - 1] = (byte) t.min;
+          builder.append((byte) t.min);
           s = t.dest;
           done = false;
         }
       }
     } while (!done);
 
-    return ref;
+    return builder.get();
   }
 
   /**
@@ -1271,23 +1272,23 @@ final public class Operations {
       PathNode root = getNode(nodes, 0);
       root.resetState(a, 0);
 
-      IntsRef string = new IntsRef(1);
-      string.length = 1;
+      IntsRefBuilder string = new IntsRefBuilder();
+      string.append(0);
 
-      while (string.length > 0) {
+      while (string.length() > 0) {
 
-        PathNode node = nodes[string.length-1];
+        PathNode node = nodes[string.length()-1];
 
         // Get next label leaving the current node:
         int label = node.nextLabel(a);
 
         if (label != -1) {
-          string.ints[string.length-1] = label;
+          string.setIntAt(string.length()-1, label);
 
           if (a.isAccept(node.to)) {
             // This transition leads to an accept state,
             // so we save the current string:
-            results.add(IntsRef.deepCopyOf(string));
+            results.add(string.toIntsRef());
             if (results.size() == limit) {
               break;
             }
@@ -1302,21 +1303,21 @@ final public class Operations {
             pathStates.set(node.to);
 
             // Push node onto stack:
-            if (nodes.length == string.length) {
+            if (nodes.length == string.length()) {
               PathNode[] newNodes = new PathNode[ArrayUtil.oversize(nodes.length+1, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
               System.arraycopy(nodes, 0, newNodes, 0, nodes.length);
               nodes = newNodes;
             }
-            getNode(nodes, string.length).resetState(a, node.to);
-            string.length++;
-            string.grow(string.length);
+            getNode(nodes, string.length()).resetState(a, node.to);
+            string.setLength(string.length() + 1);
+            string.grow(string.length());
           }
         } else {
           // No more transitions leaving this state,
           // pop/return back to previous state:
           assert pathStates.get(node.state);
           pathStates.clear(node.state);
-          string.length--;
+          string.setLength(string.length() - 1);
         }
       }
     }

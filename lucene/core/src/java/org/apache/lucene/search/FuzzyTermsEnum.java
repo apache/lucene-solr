@@ -34,6 +34,7 @@ import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.ByteRunAutomaton;
@@ -152,7 +153,7 @@ public class FuzzyTermsEnum extends TermsEnum {
     if (editDistance < runAutomata.size()) {
       //System.out.println("FuzzyTE.getAEnum: ed=" + editDistance + " lastTerm=" + (lastTerm==null ? "null" : lastTerm.utf8ToString()));
       final CompiledAutomaton compiled = runAutomata.get(editDistance);
-      return new AutomatonFuzzyTermsEnum(terms.intersect(compiled, lastTerm == null ? null : compiled.floor(lastTerm, new BytesRef())),
+      return new AutomatonFuzzyTermsEnum(terms.intersect(compiled, lastTerm == null ? null : compiled.floor(lastTerm, new BytesRefBuilder())),
                                          runAutomata.subList(0, editDistance + 1).toArray(new CompiledAutomaton[editDistance + 1]));
     } else {
       return null;

@@ -26,6 +26,7 @@ import java.util.Set;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefArray;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.Counter;
 
 /**
@@ -44,8 +45,8 @@ public class BufferedInputIterator implements InputIterator {
   protected int curPos = -1;
   /** buffered weights, parallel with {@link #entries} */
   protected long[] freqs = new long[1];
-  private final BytesRef spare = new BytesRef();
-  private final BytesRef payloadSpare = new BytesRef();
+  private final BytesRefBuilder spare = new BytesRefBuilder();
+  private final BytesRefBuilder payloadSpare = new BytesRefBuilder();
   private final boolean hasPayloads;
   private final Comparator<BytesRef> comp;
 
@@ -82,7 +83,7 @@ public class BufferedInputIterator implements InputIterator {
   public BytesRef next() throws IOException {
     if (++curPos < entries.size()) {
       entries.get(spare, curPos);
-      return spare;
+      return spare.get();
     }
     return null;
   }

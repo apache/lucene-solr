@@ -47,6 +47,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.automaton.ByteRunAutomaton;
@@ -250,8 +251,6 @@ public class FSTTermsReader extends FieldsProducer {
 
     // Only wraps common operations for PBF interact
     abstract class BaseTermsEnum extends TermsEnum {
-      /* Current term, null when enum ends or unpositioned */
-      BytesRef term;
 
       /* Current term stats + decoded metadata (customized by PBF) */
       final BlockTermState state;
@@ -266,7 +265,6 @@ public class FSTTermsReader extends FieldsProducer {
       BaseTermsEnum() throws IOException {
         this.state = postingsReader.newTermState();
         this.bytesReader = new ByteArrayDataInput();
-        this.term = null;
         // NOTE: metadata will only be initialized in child class
       }
 
@@ -274,11 +272,6 @@ public class FSTTermsReader extends FieldsProducer {
       public TermState termState() throws IOException {
         decodeMetaData();
         return state.clone();
-      }
-
-      @Override
-      public BytesRef term() {
-        return term;
       }
 
       @Override
@@ -320,6 +313,8 @@ public class FSTTermsReader extends FieldsProducer {
 
     // Iterates through all terms in this field
     private final class SegmentTermsEnum extends BaseTermsEnum {
+      /* Current term, null when enum ends or unpositioned */
+      BytesRef term;
       final BytesRefFSTEnum<FSTTermOutputs.TermData> fstEnum;
 
       /* True when current term's metadata is decoded */
@@ -339,6 +334,11 @@ public class FSTTermsReader extends FieldsProducer {
       @Override
       public Comparator<BytesRef> getComparator() {
         return BytesRef.getUTF8SortedAsUnicodeComparator();
+      }
+
+      @Override
+      public BytesRef term() throws IOException {
+        return term;
       }
 
       // Let PBF decode metadata from long[] and byte[]
@@ -406,6 +406,8 @@ public class FSTTermsReader extends FieldsProducer {
 
     // Iterates intersect result with automaton (cannot seek!)
     private final class IntersectTermsEnum extends BaseTermsEnum {
+      /* Current term, null when enum ends or unpositioned */
+      BytesRefBuilder term;
       /* True when current term's metadata is decoded */
       boolean decoded;
 
@@ -476,13 +478,18 @@ public class FSTTermsReader extends FieldsProducer {
           pending = isAccept(topFrame());
         } else {
           doSeekCeil(startTerm);
-          pending = !startTerm.equals(term) && isValid(topFrame()) && isAccept(topFrame());
+          pending = (term == null || !startTerm.equals(term.get())) && isValid(topFrame()) && isAccept(topFrame());
         }
       }
 
       @Override
       public Comparator<BytesRef> getComparator() {
         return BytesRef.getUTF8SortedAsUnicodeComparator();
+      }
+
+      @Override
+      public BytesRef term() throws IOException {
+        return term == null ? null : term.get();
       }
 
       @Override
@@ -519,7 +526,7 @@ public class FSTTermsReader extends FieldsProducer {
       @Override
       public SeekStatus seekCeil(BytesRef target) throws IOException {
         decoded = false;
-        term = doSeekCeil(target);
+        doSeekCeil(target);
         loadMetaData();
         if (term == null) {
           return SeekStatus.END;
@@ -534,7 +541,7 @@ public class FSTTermsReader extends FieldsProducer {
         if (pending) {
           pending = false;
           loadMetaData();
-          return term;
+          return term();
         }
         decoded = false;
       DFS:
@@ -561,7 +568,7 @@ public class FSTTermsReader extends FieldsProducer {
           return null;
         }
         loadMetaData();
-        return term;
+        return term();
       }
 
       private BytesRef doSeekCeil(BytesRef target) throws IOException {
@@ -580,11 +587,11 @@ public class FSTTermsReader extends FieldsProducer {
           upto++;
         }
         if (upto == limit) {  // got target
-          return term;
+          return term();
         }
         if (frame != null) {  // got larger term('s prefix)
           pushFrame(frame);
-          return isAccept(frame) ? term : next();
+          return isAccept(frame) ? term() : next();
         }
         while (level > 0) {  // got target's prefix, advance to larger term
           frame = popFrame();
@@ -593,7 +600,7 @@ public class FSTTermsReader extends FieldsProducer {
           }
           if (loadNextFrame(topFrame(), frame) != null) {
             pushFrame(frame);
-            return isAccept(frame) ? term : next();
+            return isAccept(frame) ? term() : next();
           }
         }
         return null;
@@ -706,23 +713,20 @@ public class FSTTermsReader extends FieldsProducer {
         return stack[level];
       }
 
-      BytesRef grow(int label) {
+      BytesRefBuilder grow(int label) {
         if (term == null) {
-          term = new BytesRef(new byte[16], 0, 0);
+          term = new BytesRefBuilder();
         } else {
-          if (term.length == term.bytes.length) {
-            term.grow(term.length+1);
-          }
-          term.bytes[term.length++] = (byte)label;
+          term.append((byte)label);
         }
         return term;
       }
 
-      BytesRef shrink() {
-        if (term.length == 0) {
+      BytesRefBuilder shrink() {
+        if (term.length() == 0) {
           term = null;
         } else {
-          term.length--;
+          term.setLength(term.length() - 1);
         }
         return term;
       }

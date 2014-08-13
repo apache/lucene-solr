@@ -23,7 +23,6 @@ import java.util.zip.DataFormatException;
 import java.io.ByteArrayOutputStream;
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.UnicodeUtil;
 
 /** Simple utility class providing static methods to
@@ -87,9 +86,9 @@ public class CompressionTools {
    *  compressionLevel (constants are defined in
    *  java.util.zip.Deflater). */
   public static byte[] compressString(String value, int compressionLevel) {
-    BytesRef result = new BytesRef();
-    UnicodeUtil.UTF16toUTF8(value, 0, value.length(), result);
-    return compress(result.bytes, 0, result.length, compressionLevel);
+    byte[] b = new byte[UnicodeUtil.MAX_UTF8_BYTES_PER_CHAR * value.length()];
+    final int len = UnicodeUtil.UTF16toUTF8(value, 0, value.length(), b);
+    return compress(b, 0, len, compressionLevel);
   }
 
   /** Decompress the byte array previously returned by
@@ -138,9 +137,9 @@ public class CompressionTools {
    *  compressString back into a String */
   public static String decompressString(byte[] value, int offset, int length) throws DataFormatException {
     final byte[] bytes = decompress(value, offset, length);
-    CharsRef result = new CharsRef(bytes.length);
-    UnicodeUtil.UTF8toUTF16(bytes, 0, bytes.length, result);
-    return new String(result.chars, 0, result.length);
+    final char[] result = new char[bytes.length];
+    final int len = UnicodeUtil.UTF8toUTF16(bytes, 0, bytes.length, result);
+    return new String(result, 0, len);
   }
 
   /** Decompress the byte array (referenced by the provided BytesRef) 

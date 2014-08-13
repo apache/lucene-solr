@@ -30,7 +30,9 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.SolrException;
@@ -239,14 +241,15 @@ public class UnInvertedField extends DocTermOrds {
 
       TermsEnum te = getOrdTermsEnum(searcher.getAtomicReader());
       if (te != null && prefix != null && prefix.length() > 0) {
-        final BytesRef prefixBr = new BytesRef(prefix);
-        if (te.seekCeil(prefixBr) == TermsEnum.SeekStatus.END) {
+        final BytesRefBuilder prefixBr = new BytesRefBuilder();
+        prefixBr.copyChars(prefix);
+        if (te.seekCeil(prefixBr.get()) == TermsEnum.SeekStatus.END) {
           startTerm = numTermsInField;
         } else {
           startTerm = (int) te.ord();
         }
         prefixBr.append(UnicodeUtil.BIG_TERM);
-        if (te.seekCeil(prefixBr) == TermsEnum.SeekStatus.END) {
+        if (te.seekCeil(prefixBr.get()) == TermsEnum.SeekStatus.END) {
           endTerm = numTermsInField;
         } else {
           endTerm = (int) te.ord();
@@ -343,7 +346,7 @@ public class UnInvertedField extends DocTermOrds {
           }
         }
       }
-      final CharsRef charsRef = new CharsRef();
+      final CharsRefBuilder charsRef = new CharsRefBuilder();
 
       int off=offset;
       int lim=limit>=0 ? limit : Integer.MAX_VALUE;
@@ -623,7 +626,7 @@ public class UnInvertedField extends DocTermOrds {
 
   }
 
-  String getReadableValue(BytesRef termval, FieldType ft, CharsRef charsRef) {
+  String getReadableValue(BytesRef termval, FieldType ft, CharsRefBuilder charsRef) {
     return ft.indexedToReadable(termval, charsRef).toString();
   }
 

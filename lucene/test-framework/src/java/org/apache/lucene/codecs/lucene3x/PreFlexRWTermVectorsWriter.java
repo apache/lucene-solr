@@ -30,6 +30,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 
@@ -83,7 +84,7 @@ final class PreFlexRWTermVectorsWriter extends TermVectorsWriter {
     }
     this.positions = positions;
     this.offsets = offsets;
-    lastTerm.length = 0;
+    lastTerm.clear();
     fps[fieldCount++] = tvf.getFilePointer();
     tvd.writeVInt(info.number);
     tvf.writeVInt(numTerms);
@@ -104,7 +105,7 @@ final class PreFlexRWTermVectorsWriter extends TermVectorsWriter {
     }
   }
   
-  private final BytesRef lastTerm = new BytesRef(10);
+  private final BytesRefBuilder lastTerm = new BytesRefBuilder();
 
   // NOTE: we override addProx, so we don't need to buffer when indexing.
   // we also don't buffer during bulk merges.
@@ -117,7 +118,7 @@ final class PreFlexRWTermVectorsWriter extends TermVectorsWriter {
 
   @Override
   public void startTerm(BytesRef term, int freq) throws IOException {
-    final int prefix = StringHelper.bytesDifference(lastTerm, term);
+    final int prefix = StringHelper.bytesDifference(lastTerm.get(), term);
     final int suffix = term.length - prefix;
     tvf.writeVInt(prefix);
     tvf.writeVInt(suffix);

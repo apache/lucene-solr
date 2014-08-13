@@ -23,8 +23,9 @@ import org.apache.lucene.queries.function.docvalues.DocTermsIndexDocValues;
 import org.apache.lucene.queries.function.valuesource.FieldCacheSource;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueDouble;
 import org.apache.solr.search.QParser;
@@ -35,6 +36,7 @@ import org.apache.solr.response.TextResponseWriter;
 
 import java.util.Map;
 import java.io.IOException;
+
 /**
  * A legacy numeric field type that encodes "Double" values as Strings such 
  * that Term enumeration order matches the natural numeric order.  This class 
@@ -86,12 +88,12 @@ public class SortableDoubleField extends PrimitiveFieldType implements DoubleVal
   }
 
   @Override
-  public CharsRef indexedToReadable(BytesRef input, CharsRef charsRef) {
+  public CharsRef indexedToReadable(BytesRef input, CharsRefBuilder charsRef) {
     // TODO: this could be more efficient, but the sortable types should be deprecated instead
-    UnicodeUtil.UTF8toUTF16(input, charsRef);
+    charsRef.copyUTF8Bytes(input);
     final char[] indexedToReadable = indexedToReadable(charsRef.toString()).toCharArray();
     charsRef.copyChars(indexedToReadable, 0, indexedToReadable.length);
-    return charsRef;
+    return charsRef.get();
   }
 
   @Override
@@ -105,9 +107,9 @@ public class SortableDoubleField extends PrimitiveFieldType implements DoubleVal
     if (null == value) {
       return null;
     }
-    CharsRef chars = new CharsRef();
-    UnicodeUtil.UTF8toUTF16((BytesRef)value, chars);
-    return NumberUtils.SortableStr2double(chars.toString());
+    CharsRefBuilder chars = new CharsRefBuilder();
+    chars.copyUTF8Bytes((BytesRef) value);
+    return NumberUtils.SortableStr2double(chars.get().toString());
   }
 
   @Override
@@ -116,9 +118,9 @@ public class SortableDoubleField extends PrimitiveFieldType implements DoubleVal
       return null;
     }
     String sortableString = NumberUtils.double2sortableStr(value.toString());
-    BytesRef bytes = new BytesRef();
-    UnicodeUtil.UTF16toUTF8(sortableString, 0, sortableString.length(), bytes);
-    return bytes;
+    BytesRefBuilder bytes = new BytesRefBuilder();
+    bytes.copyChars(sortableString);
+    return bytes.get();
   }
 }
 

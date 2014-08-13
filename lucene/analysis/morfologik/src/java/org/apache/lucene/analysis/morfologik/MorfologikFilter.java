@@ -48,7 +48,7 @@ public class MorfologikFilter extends TokenFilter {
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
   private final KeywordAttribute keywordAttr = addAttribute(KeywordAttribute.class);
 
-  private final CharsRef scratch = new CharsRef(0);
+  private final CharsRefBuilder scratch = new CharsRefBuilder();
   private final CharacterUtils charUtils;
 
   private State current;
@@ -153,16 +153,17 @@ public class MorfologikFilter extends TokenFilter {
    * Convert to lowercase in-place.
    */
   private CharSequence toLowercase(CharSequence chs) {
-    final int length = scratch.length = chs.length();
+    final int length = chs.length();
+    scratch.setLength(length);
     scratch.grow(length);
 
-    char buffer[] = scratch.chars;
+    char buffer[] = scratch.chars();
     for (int i = 0; i < length;) {
       i += Character.toChars(
           Character.toLowerCase(charUtils.codePointAt(chs, i)), buffer, i);      
     }
 
-    return scratch;
+    return scratch.get();
   }
 
   /** Resets stems accumulator and hands over to superclass. */

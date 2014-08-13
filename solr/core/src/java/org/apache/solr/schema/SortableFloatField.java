@@ -23,7 +23,9 @@ import org.apache.lucene.queries.function.docvalues.DocTermsIndexDocValues;
 import org.apache.lucene.queries.function.valuesource.FieldCacheSource;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueFloat;
@@ -87,12 +89,12 @@ public class SortableFloatField extends PrimitiveFieldType implements FloatValue
   }
 
   @Override
-  public CharsRef indexedToReadable(BytesRef input, CharsRef charsRef) {
+  public CharsRef indexedToReadable(BytesRef input, CharsRefBuilder charsRef) {
     // TODO: this could be more efficient, but the sortable types should be deprecated instead
-    UnicodeUtil.UTF8toUTF16(input, charsRef);
+    charsRef.copyUTF8Bytes(input);
     final char[] indexedToReadable = indexedToReadable(charsRef.toString()).toCharArray();
     charsRef.copyChars(indexedToReadable, 0, indexedToReadable.length);
-    return charsRef;
+    return charsRef.get();
   }
 
   @Override
@@ -106,9 +108,9 @@ public class SortableFloatField extends PrimitiveFieldType implements FloatValue
     if (null == value) {
       return null;
     }
-    CharsRef chars = new CharsRef();
-    UnicodeUtil.UTF8toUTF16((BytesRef)value, chars);
-    return NumberUtils.SortableStr2float(chars.toString());
+    CharsRefBuilder chars = new CharsRefBuilder();
+    chars.copyUTF8Bytes((BytesRef)value);
+    return NumberUtils.SortableStr2float(chars.get().toString());
   }
 
   @Override
@@ -117,9 +119,9 @@ public class SortableFloatField extends PrimitiveFieldType implements FloatValue
       return null;
     }
     String sortableString = NumberUtils.float2sortableStr(value.toString());
-    BytesRef bytes = new BytesRef();
-    UnicodeUtil.UTF16toUTF8(sortableString, 0, sortableString.length(), bytes);
-    return bytes;
+    BytesRefBuilder bytes = new BytesRefBuilder();
+    bytes.copyChars(sortableString);
+    return bytes.get();
   }
 }
 

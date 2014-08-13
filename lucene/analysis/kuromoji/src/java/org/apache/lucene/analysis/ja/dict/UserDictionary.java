@@ -29,6 +29,7 @@ import java.util.TreeMap;
 
 import org.apache.lucene.analysis.ja.util.CSVUtil;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
@@ -90,7 +91,7 @@ public final class UserDictionary implements Dictionary {
     
     PositiveIntOutputs fstOutput = PositiveIntOutputs.getSingleton();
     Builder<Long> fstBuilder = new Builder<>(FST.INPUT_TYPE.BYTE2, fstOutput);
-    IntsRef scratch = new IntsRef();
+    IntsRefBuilder scratch = new IntsRefBuilder();
     long ord = 0;
     
     for (String[] values : featureEntries) {
@@ -114,11 +115,11 @@ public final class UserDictionary implements Dictionary {
       // add mapping to FST
       String token = values[0];
       scratch.grow(token.length());
-      scratch.length = token.length();
+      scratch.setLength(token.length());
       for (int i = 0; i < token.length(); i++) {
-        scratch.ints[i] = (int) token.charAt(i);
+        scratch.setIntAt(i, (int) token.charAt(i));
       }
-      fstBuilder.add(scratch, ord);
+      fstBuilder.add(scratch.get(), ord);
       segmentations.add(wordIdAndLength);
       ord++;
     }

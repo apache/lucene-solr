@@ -24,6 +24,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 
 /**
  * @lucene.experimental
@@ -37,7 +38,7 @@ extends SegmentTermDocs  {
   private int proxCount;
   private int position;
   
-  private BytesRef payload;
+  private BytesRefBuilder payload;
   // the current payload length
   private int payloadLength;
   // indicates whether the payload of the current position has
@@ -202,16 +203,15 @@ extends SegmentTermDocs  {
     if (needToLoadPayload) {
       // read payloads lazily
       if (payload == null) {
-        payload = new BytesRef(payloadLength);
-      } else {
-        payload.grow(payloadLength);
+        payload = new BytesRefBuilder();
       }
+      payload.grow(payloadLength);
       
-      proxStream.readBytes(payload.bytes, payload.offset, payloadLength);
-      payload.length = payloadLength;
+      proxStream.readBytes(payload.bytes(), 0, payloadLength);
+      payload.setLength(payloadLength);
       needToLoadPayload = false;
     }
-    return payload;
+    return payload.get();
   }
 
   public boolean isPayloadAvailable() {

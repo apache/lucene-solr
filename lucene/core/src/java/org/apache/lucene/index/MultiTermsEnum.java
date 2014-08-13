@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Bits;
@@ -42,7 +43,7 @@ public final class MultiTermsEnum extends TermsEnum {
 
   private BytesRef lastSeek;
   private boolean lastSeekExact;
-  private final BytesRef lastSeekScratch = new BytesRef();
+  private final BytesRefBuilder lastSeekScratch = new BytesRefBuilder();
 
   private int numTop;
   private int numSubs;
@@ -206,7 +207,7 @@ public final class MultiTermsEnum extends TermsEnum {
     }
 
     lastSeekScratch.copyBytes(term);
-    lastSeek = lastSeekScratch;
+    lastSeek = lastSeekScratch.get();
 
     for(int i=0;i<numSubs;i++) {
       final SeekStatus status;

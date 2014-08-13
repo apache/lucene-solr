@@ -902,9 +902,9 @@ public final class TestUtil {
   public static CharSequence bytesToCharSequence(BytesRef ref, Random random) {
     switch(random.nextInt(5)) {
     case 4:
-      CharsRef chars = new CharsRef(ref.length);
-      UnicodeUtil.UTF8toUTF16(ref.bytes, ref.offset, ref.length, chars);
-      return chars;
+      final char[] chars = new char[ref.length];
+      final int len = UnicodeUtil.UTF8toUTF16(ref.bytes, ref.offset, ref.length, chars);
+      return new CharsRef(chars, 0, len);
     case 3:
       return CharBuffer.wrap(ref.utf8ToString());
     default:

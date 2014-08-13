@@ -40,7 +40,7 @@ public class TestCharsRef extends LuceneTestCase {
   }
   
   public void testAppend() {
-    CharsRef ref = new CharsRef();
+    CharsRefBuilder ref = new CharsRefBuilder();
     StringBuilder builder = new StringBuilder();
     int numStrings = atLeast(10);
     for (int i = 0; i < numStrings; i++) {
@@ -51,13 +51,13 @@ public class TestCharsRef extends LuceneTestCase {
       ref.append(charArray, offset, length);  
     }
     
-    assertEquals(builder.toString(), ref.toString());
+    assertEquals(builder.toString(), ref.get().toString());
   }
   
   public void testCopy() {
     int numIters = atLeast(10);
     for (int i = 0; i < numIters; i++) {
-      CharsRef ref = new CharsRef();
+      CharsRefBuilder ref = new CharsRefBuilder();
       char[] charArray = TestUtil.randomRealisticUnicodeString(random(), 1, 100).toCharArray();
       int offset = random().nextInt(charArray.length);
       int length = charArray.length - offset;
@@ -66,32 +66,6 @@ public class TestCharsRef extends LuceneTestCase {
       assertEquals(str, ref.toString());  
     }
     
-  }
-  
-  // LUCENE-3590, AIOOBE if you append to a charsref with offset != 0
-  public void testAppendChars() {
-    char chars[] = new char[] { 'a', 'b', 'c', 'd' };
-    CharsRef c = new CharsRef(chars, 1, 3); // bcd
-    c.append(new char[] { 'e' }, 0, 1);
-    assertEquals("bcde", c.toString());
-  }
-  
-  // LUCENE-3590, AIOOBE if you copy to a charsref with offset != 0
-  public void testCopyChars() {
-    char chars[] = new char[] { 'a', 'b', 'c', 'd' };
-    CharsRef c = new CharsRef(chars, 1, 3); // bcd
-    char otherchars[] = new char[] { 'b', 'c', 'd', 'e' };
-    c.copyChars(otherchars, 0, 4);
-    assertEquals("bcde", c.toString());
-  }
-  
-  // LUCENE-3590, AIOOBE if you copy to a charsref with offset != 0
-  public void testCopyCharsRef() {
-    char chars[] = new char[] { 'a', 'b', 'c', 'd' };
-    CharsRef c = new CharsRef(chars, 1, 3); // bcd
-    char otherchars[] = new char[] { 'b', 'c', 'd', 'e' };
-    c.copyChars(new CharsRef(otherchars, 0, 4));
-    assertEquals("bcde", c.toString());
   }
   
   // LUCENE-3590: fix charsequence to fully obey interface

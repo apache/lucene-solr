@@ -26,6 +26,7 @@ import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesReader;
@@ -45,7 +46,7 @@ public class SortedTermFreqIteratorWrapper implements TermFreqIterator {
   private boolean done = false;
   
   private long weight;
-  private final BytesRef scratch = new BytesRef();
+  private final BytesRefBuilder scratch = new BytesRefBuilder();
   
   /**
    * Creates a new sorted wrapper, using {@link
@@ -79,9 +80,9 @@ public class SortedTermFreqIteratorWrapper implements TermFreqIterator {
     try {
       ByteArrayDataInput input = new ByteArrayDataInput();
       if (reader.read(scratch)) {
-        weight = decode(scratch, input);
+        weight = decode(scratch.get(), input);
         success = true;
-        return scratch;
+        return scratch.get();
       }
       close();
       success = done = true;

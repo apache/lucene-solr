@@ -34,7 +34,9 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.OfflineSorter.SortInfo;
@@ -197,10 +199,10 @@ public class FSTCompletionLookup extends Lookup implements Accountable {
       int previousBucket = 0;
       int previousScore = 0;
       ByteArrayDataInput input = new ByteArrayDataInput();
-      BytesRef tmp1 = new BytesRef();
+      BytesRefBuilder tmp1 = new BytesRefBuilder();
       BytesRef tmp2 = new BytesRef();
       while (reader.read(tmp1)) {
-        input.reset(tmp1.bytes);
+        input.reset(tmp1.bytes());
         int currentScore = input.readInt();
 
         int bucket;
@@ -213,9 +215,9 @@ public class FSTCompletionLookup extends Lookup implements Accountable {
         previousBucket = bucket;
 
         // Only append the input, discard the weight.
-        tmp2.bytes = tmp1.bytes;
+        tmp2.bytes = tmp1.bytes();
         tmp2.offset = input.getPosition();
-        tmp2.length = tmp1.length - input.getPosition();
+        tmp2.length = tmp1.length() - input.getPosition();
         builder.add(tmp2, bucket);
 
         line++;
@@ -260,10 +262,9 @@ public class FSTCompletionLookup extends Lookup implements Accountable {
     }
     
     final ArrayList<LookupResult> results = new ArrayList<>(completions.size());
-    CharsRef spare = new CharsRef();
+    CharsRefBuilder spare = new CharsRefBuilder();
     for (Completion c : completions) {
-      spare.grow(c.utf8.length);
-      UnicodeUtil.UTF8toUTF16(c.utf8, spare);
+      spare.copyUTF8Bytes(c.utf8);
       results.add(new LookupResult(spare.toString(), c.bucket));
     }
     return results;

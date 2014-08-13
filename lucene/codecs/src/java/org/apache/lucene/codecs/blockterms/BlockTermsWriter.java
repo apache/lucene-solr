@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.blockterms;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.codecs.CodecUtil;
@@ -38,6 +39,8 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -170,7 +173,7 @@ public class BlockTermsWriter extends FieldsConsumer {
   }
   
   private static class TermEntry {
-    public final BytesRef term = new BytesRef();
+    public final BytesRefBuilder term = new BytesRefBuilder();
     public BlockTermState state;
   }
 
@@ -217,7 +220,7 @@ public class BlockTermsWriter extends FieldsConsumer {
       return postingsWriter;
     }
 
-    private final BytesRef lastPrevTerm = new BytesRef();
+    private final BytesRefBuilder lastPrevTerm = new BytesRefBuilder();
 
     @Override
     public void finishTerm(BytesRef text, TermStats stats) throws IOException {
@@ -239,12 +242,10 @@ public class BlockTermsWriter extends FieldsConsumer {
       }
 
       if (pendingTerms.length == pendingCount) {
-        final TermEntry[] newArray = new TermEntry[ArrayUtil.oversize(pendingCount+1, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
-        System.arraycopy(pendingTerms, 0, newArray, 0, pendingCount);
-        for(int i=pendingCount;i<newArray.length;i++) {
-          newArray[i] = new TermEntry();
+        pendingTerms = Arrays.copyOf(pendingTerms, ArrayUtil.oversize(pendingCount+1, RamUsageEstimator.NUM_BYTES_OBJECT_REF));
+        for(int i=pendingCount;i<pendingTerms.length;i++) {
+          pendingTerms[i] = new TermEntry();
         }
-        pendingTerms = newArray;
       }
       final TermEntry te = pendingTerms[pendingCount];
       te.term.copyBytes(text);
@@ -306,11 +307,11 @@ public class BlockTermsWriter extends FieldsConsumer {
       // First pass: compute common prefix for all terms
       // in the block, against term before first term in
       // this block:
-      int commonPrefix = sharedPrefix(lastPrevTerm, pendingTerms[0].term);
+      int commonPrefix = sharedPrefix(lastPrevTerm.get(), pendingTerms[0].term.get());
       for(int termCount=1;termCount<pendingCount;termCount++) {
         commonPrefix = Math.min(commonPrefix,
-                                sharedPrefix(lastPrevTerm,
-                                             pendingTerms[termCount].term));
+                                sharedPrefix(lastPrevTerm.get(),
+                                             pendingTerms[termCount].term.get()));
       }        
 
       out.writeVInt(pendingCount);
@@ -318,11 +319,11 @@ public class BlockTermsWriter extends FieldsConsumer {
 
       // 2nd pass: write suffixes, as separate byte[] blob
       for(int termCount=0;termCount<pendingCount;termCount++) {
-        final int suffix = pendingTerms[termCount].term.length - commonPrefix;
+        final int suffix = pendingTerms[termCount].term.length() - commonPrefix;
         // TODO: cutover to better intblock codec, instead
         // of interleaving here:
         bytesWriter.writeVInt(suffix);
-        bytesWriter.writeBytes(pendingTerms[termCount].term.bytes, commonPrefix, suffix);
+        bytesWriter.writeBytes(pendingTerms[termCount].term.bytes(), commonPrefix, suffix);
       }
       out.writeVInt((int) bytesWriter.getFilePointer());
       bytesWriter.writeTo(out);

@@ -32,7 +32,7 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 
@@ -50,76 +50,76 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
   public FieldInfos read(Directory directory, String segmentName, String segmentSuffix, IOContext iocontext) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(segmentName, segmentSuffix, FIELD_INFOS_EXTENSION);
     ChecksumIndexInput input = directory.openChecksumInput(fileName, iocontext);
-    BytesRef scratch = new BytesRef();
+    BytesRefBuilder scratch = new BytesRefBuilder();
     
     boolean success = false;
     try {
       
       SimpleTextUtil.readLine(input, scratch);
-      assert StringHelper.startsWith(scratch, NUMFIELDS);
+      assert StringHelper.startsWith(scratch.get(), NUMFIELDS);
       final int size = Integer.parseInt(readString(NUMFIELDS.length, scratch));
       FieldInfo infos[] = new FieldInfo[size];
 
       for (int i = 0; i < size; i++) {
         SimpleTextUtil.readLine(input, scratch);
-        assert StringHelper.startsWith(scratch, NAME);
+        assert StringHelper.startsWith(scratch.get(), NAME);
         String name = readString(NAME.length, scratch);
         
         SimpleTextUtil.readLine(input, scratch);
-        assert StringHelper.startsWith(scratch, NUMBER);
+        assert StringHelper.startsWith(scratch.get(), NUMBER);
         int fieldNumber = Integer.parseInt(readString(NUMBER.length, scratch));
 
         SimpleTextUtil.readLine(input, scratch);
-        assert StringHelper.startsWith(scratch, ISINDEXED);
+        assert StringHelper.startsWith(scratch.get(), ISINDEXED);
         boolean isIndexed = Boolean.parseBoolean(readString(ISINDEXED.length, scratch));
         
         final IndexOptions indexOptions;
         if (isIndexed) {
           SimpleTextUtil.readLine(input, scratch);
-          assert StringHelper.startsWith(scratch, INDEXOPTIONS);
+          assert StringHelper.startsWith(scratch.get(), INDEXOPTIONS);
           indexOptions = IndexOptions.valueOf(readString(INDEXOPTIONS.length, scratch));          
         } else {
           indexOptions = null;
         }
         
         SimpleTextUtil.readLine(input, scratch);
-        assert StringHelper.startsWith(scratch, STORETV);
+        assert StringHelper.startsWith(scratch.get(), STORETV);
         boolean storeTermVector = Boolean.parseBoolean(readString(STORETV.length, scratch));
         
         SimpleTextUtil.readLine(input, scratch);
-        assert StringHelper.startsWith(scratch, PAYLOADS);
+        assert StringHelper.startsWith(scratch.get(), PAYLOADS);
         boolean storePayloads = Boolean.parseBoolean(readString(PAYLOADS.length, scratch));
         
         SimpleTextUtil.readLine(input, scratch);
-        assert StringHelper.startsWith(scratch, NORMS);
+        assert StringHelper.startsWith(scratch.get(), NORMS);
         boolean omitNorms = !Boolean.parseBoolean(readString(NORMS.length, scratch));
         
         SimpleTextUtil.readLine(input, scratch);
-        assert StringHelper.startsWith(scratch, NORMS_TYPE);
+        assert StringHelper.startsWith(scratch.get(), NORMS_TYPE);
         String nrmType = readString(NORMS_TYPE.length, scratch);
         final DocValuesType normsType = docValuesType(nrmType);
         
         SimpleTextUtil.readLine(input, scratch);
-        assert StringHelper.startsWith(scratch, DOCVALUES);
+        assert StringHelper.startsWith(scratch.get(), DOCVALUES);
         String dvType = readString(DOCVALUES.length, scratch);
         final DocValuesType docValuesType = docValuesType(dvType);
         
         SimpleTextUtil.readLine(input, scratch);
-        assert StringHelper.startsWith(scratch, DOCVALUES_GEN);
+        assert StringHelper.startsWith(scratch.get(), DOCVALUES_GEN);
         final long dvGen = Long.parseLong(readString(DOCVALUES_GEN.length, scratch));
         
         SimpleTextUtil.readLine(input, scratch);
-        assert StringHelper.startsWith(scratch, NUM_ATTS);
+        assert StringHelper.startsWith(scratch.get(), NUM_ATTS);
         int numAtts = Integer.parseInt(readString(NUM_ATTS.length, scratch));
         Map<String,String> atts = new HashMap<>();
 
         for (int j = 0; j < numAtts; j++) {
           SimpleTextUtil.readLine(input, scratch);
-          assert StringHelper.startsWith(scratch, ATT_KEY);
+          assert StringHelper.startsWith(scratch.get(), ATT_KEY);
           String key = readString(ATT_KEY.length, scratch);
         
           SimpleTextUtil.readLine(input, scratch);
-          assert StringHelper.startsWith(scratch, ATT_VALUE);
+          assert StringHelper.startsWith(scratch.get(), ATT_VALUE);
           String value = readString(ATT_VALUE.length, scratch);
           atts.put(key, value);
         }
@@ -150,7 +150,7 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
     }
   }
   
-  private String readString(int offset, BytesRef scratch) {
-    return new String(scratch.bytes, scratch.offset+offset, scratch.length-offset, StandardCharsets.UTF_8);
+  private String readString(int offset, BytesRefBuilder scratch) {
+    return new String(scratch.bytes(), offset, scratch.length()-offset, StandardCharsets.UTF_8);
   }
 }

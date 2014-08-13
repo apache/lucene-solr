@@ -17,6 +17,7 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.util.Arrays;
 import java.util.Comparator;
 
 /**
@@ -147,55 +148,6 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence, Clone
     // One is a prefix of the other, or, they are equal:
     return this.length - other.length;
   }
-  
-  /**
-   * Copies the given {@link CharsRef} referenced content into this instance.
-   * 
-   * @param other
-   *          the {@link CharsRef} to copy
-   */
-  public void copyChars(CharsRef other) {
-    copyChars(other.chars, other.offset, other.length);
-  }
-
-  /** 
-   * Used to grow the reference array. 
-   * 
-   * In general this should not be used as it does not take the offset into account.
-   * @lucene.internal */
-  public void grow(int newLength) {
-    assert offset == 0;
-    if (chars.length < newLength) {
-      chars = ArrayUtil.grow(chars, newLength);
-    }
-  }
-
-  /**
-   * Copies the given array into this CharsRef.
-   */
-  public void copyChars(char[] otherChars, int otherOffset, int otherLength) {
-    if (chars.length - offset < otherLength) {
-      chars = new char[otherLength];
-      offset = 0;
-    }
-    System.arraycopy(otherChars, otherOffset, chars, offset, otherLength);
-    length = otherLength;
-  }
-
-  /**
-   * Appends the given array to this CharsRef
-   */
-  public void append(char[] otherChars, int otherOffset, int otherLength) {
-    int newLen = length + otherLength;
-    if (chars.length - offset < newLen) {
-      char[] newChars = new char[newLen];
-      System.arraycopy(chars, offset, newChars, 0, length);
-      offset = 0;
-      chars = newChars;
-    }
-    System.arraycopy(otherChars, otherOffset, chars, length+offset, otherLength);
-    length = newLen;
-  }
 
   @Override
   public String toString() {
@@ -292,9 +244,7 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence, Clone
    * and an offset of zero.
    */
   public static CharsRef deepCopyOf(CharsRef other) {
-    CharsRef clone = new CharsRef();
-    clone.copyChars(other);
-    return clone;
+    return new CharsRef(Arrays.copyOfRange(other.chars, other.offset, other.offset + other.length), 0, other.length);
   }
   
   /** 

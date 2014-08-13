@@ -37,6 +37,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 
@@ -111,7 +112,7 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
     this.positions = positions;
     this.offsets = offsets;
     this.payloads = payloads;
-    lastTerm.length = 0;
+    lastTerm.clear();
     lastPayloadLength = -1; // force first payload to write its length
     fps[fieldCount++] = tvf.getFilePointer();
     tvd.writeVInt(info.number);
@@ -134,13 +135,13 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
     }
   }
 
-  private final BytesRef lastTerm = new BytesRef(10);
+  private final BytesRefBuilder lastTerm = new BytesRefBuilder();
 
   // NOTE: we override addProx, so we don't need to buffer when indexing.
   // we also don't buffer during bulk merges.
   private int offsetStartBuffer[] = new int[10];
   private int offsetEndBuffer[] = new int[10];
-  private BytesRef payloadData = new BytesRef(10);
+  private BytesRefBuilder payloadData = new BytesRefBuilder();
   private int bufferedIndex = 0;
   private int bufferedFreq = 0;
   private boolean positions = false;
@@ -149,7 +150,7 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
 
   @Override
   public void startTerm(BytesRef term, int freq) throws IOException {
-    final int prefix = StringHelper.bytesDifference(lastTerm, term);
+    final int prefix = StringHelper.bytesDifference(lastTerm.get(), term);
     final int suffix = term.length - prefix;
     tvf.writeVInt(prefix);
     tvf.writeVInt(suffix);
@@ -165,14 +166,14 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
     }
     bufferedIndex = 0;
     bufferedFreq = freq;
-    payloadData.length = 0;
+    payloadData.clear();
   }
 
   int lastPosition = 0;
   int lastOffset = 0;
   int lastPayloadLength = -1; // force first payload to write its length
 
-  BytesRef scratch = new BytesRef(); // used only by this optimized flush below
+  BytesRefBuilder scratch = new BytesRefBuilder(); // used only by this optimized flush below
 
   @Override
   public void addProx(int numProx, DataInput positions, DataInput offsets) throws IOException {
@@ -184,14 +185,14 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
         if ((code & 1) == 1) {
           int length = positions.readVInt();
           scratch.grow(length);
-          scratch.length = length;
-          positions.readBytes(scratch.bytes, scratch.offset, scratch.length);
-          writePosition(code >>> 1, scratch);
+          scratch.setLength(length);
+          positions.readBytes(scratch.bytes(), 0, scratch.length());
+          writePosition(code >>> 1, scratch.get());
         } else {
           writePosition(code >>> 1, null);
         }
       }
-      tvf.writeBytes(payloadData.bytes, payloadData.offset, payloadData.length);
+      tvf.writeBytes(payloadData.bytes(), 0, payloadData.length());
     } else if (positions != null) {
       // pure positions, no payloads
       for (int i = 0; i < numProx; i++) {
@@ -240,7 +241,7 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
       assert positions && (offsets || payloads);
       assert bufferedIndex == bufferedFreq;
       if (payloads) {
-        tvf.writeBytes(payloadData.bytes, payloadData.offset, payloadData.length);
+        tvf.writeBytes(payloadData.bytes(), 0, payloadData.length());
       }
       if (offsets) {
         for (int i = 0; i < bufferedIndex; i++) {
@@ -264,7 +265,7 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
         tvf.writeVInt(delta << 1);
       }
       if (payloadLength > 0) {
-        if (payloadLength + payloadData.length < 0) {
+        if (payloadLength + payloadData.length() < 0) {
           // we overflowed the payload buffer, just throw UOE
           // having > Integer.MAX_VALUE bytes of payload for a single term in a single doc is nuts.
           throw new UnsupportedOperationException("A term cannot have more than Integer.MAX_VALUE bytes of payload data in a single document");

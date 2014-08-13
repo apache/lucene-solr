@@ -28,6 +28,7 @@ import java.util.Set;
 
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;
 
@@ -401,7 +402,7 @@ public class AutomatonTestUtil {
    */
   public static Set<IntsRef> getFiniteStringsRecursive(Automaton a, int limit) {
     HashSet<IntsRef> strings = new HashSet<>();
-    if (!getFiniteStrings(a, 0, new HashSet<Integer>(), strings, new IntsRef(), limit)) {
+    if (!getFiniteStrings(a, 0, new HashSet<Integer>(), strings, new IntsRefBuilder(), limit)) {
       return strings;
     }
     return strings;
@@ -413,7 +414,7 @@ public class AutomatonTestUtil {
    * <code>limit</code>&lt;0 means "infinite".
    */
   private static boolean getFiniteStrings(Automaton a, int s, HashSet<Integer> pathstates, 
-      HashSet<IntsRef> strings, IntsRef path, int limit) {
+      HashSet<IntsRef> strings, IntsRefBuilder path, int limit) {
     pathstates.add(s);
     Transition t = new Transition();
     int count = a.initTransition(s, t);
@@ -423,11 +424,9 @@ public class AutomatonTestUtil {
         return false;
       }
       for (int n = t.min; n <= t.max; n++) {
-        path.grow(path.length+1);
-        path.ints[path.length] = n;
-        path.length++;
+        path.append(n);
         if (a.isAccept(t.dest)) {
-          strings.add(IntsRef.deepCopyOf(path));
+          strings.add(path.toIntsRef());
           if (limit >= 0 && strings.size() > limit) {
             return false;
           }
@@ -435,7 +434,7 @@ public class AutomatonTestUtil {
         if (!getFiniteStrings(a, t.dest, pathstates, strings, path, limit)) {
           return false;
         }
-        path.length--;
+        path.setLength(path.length() - 1);
       }
     }
     pathstates.remove(s);

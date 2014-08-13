@@ -316,7 +316,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
       assertEquals(Long.parseLong(expected), groupValue);
     } else if (MutableValue.class.isAssignableFrom(groupValue.getClass())) {
       MutableValueStr mutableValue = new MutableValueStr();
-      mutableValue.value = new BytesRef(expected);
+      mutableValue.value.copyChars(expected);
       assertEquals(mutableValue, groupValue);
     } else {
       fail();

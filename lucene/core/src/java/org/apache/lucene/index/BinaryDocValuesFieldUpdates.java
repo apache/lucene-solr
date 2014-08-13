@@ -4,6 +4,7 @@ import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PagedGrowableWriter;
@@ -96,7 +97,7 @@ class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
 
   private PagedMutable docs;
   private PagedGrowableWriter offsets, lengths;
-  private BytesRef values;
+  private BytesRefBuilder values;
   private int size;
   private final int bitsPerValue;
   
@@ -106,7 +107,7 @@ class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
     docs = new PagedMutable(1, PAGE_SIZE, bitsPerValue, PackedInts.COMPACT);
     offsets = new PagedGrowableWriter(1, PAGE_SIZE, 1, PackedInts.FAST);
     lengths = new PagedGrowableWriter(1, PAGE_SIZE, 1, PackedInts.FAST);
-    values = new BytesRef(16); // start small
+    values = new BytesRefBuilder();
     size = 0;
   }
   
@@ -127,7 +128,7 @@ class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
     }
     
     docs.set(size, doc);
-    offsets.set(size, values.length);
+    offsets.set(size, values.length());
     lengths.set(size, val.length);
     values.append(val);
     ++size;
@@ -138,7 +139,7 @@ class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
     final PagedMutable docs = this.docs;
     final PagedGrowableWriter offsets = this.offsets;
     final PagedGrowableWriter lengths = this.lengths;
-    final BytesRef values = this.values;
+    final BytesRef values = this.values.get();
     new InPlaceMergeSorter() {
       @Override
       protected void swap(int i, int j) {
@@ -181,16 +182,12 @@ class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
     for (int i = 0; i < otherUpdates.size; i++) {
       int doc = (int) otherUpdates.docs.get(i);
       docs.set(size, doc);
-      offsets.set(size, values.length + otherUpdates.offsets.get(i)); // correct relative offset
+      offsets.set(size, values.length() + otherUpdates.offsets.get(i)); // correct relative offset
       lengths.set(size, otherUpdates.lengths.get(i));
       ++size;
     }
-    int newLen = values.length + otherUpdates.values.length;
-    if (values.bytes.length < newLen) {
-      values.bytes = ArrayUtil.grow(values.bytes, newLen);
-    }
-    System.arraycopy(otherUpdates.values.bytes, otherUpdates.values.offset, values.bytes, values.length, otherUpdates.values.length);
-    values.length = newLen;
+
+    values.append(otherUpdates.values);
   }
 
   @Override
@@ -204,7 +201,7 @@ class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
     final int capacity = estimateCapacity(size);
     bytesPerDoc += (long) Math.ceil((double) offsets.ramBytesUsed() / capacity); // offsets
     bytesPerDoc += (long) Math.ceil((double) lengths.ramBytesUsed() / capacity); // lengths
-    bytesPerDoc += (long) Math.ceil((double) values.length / size); // values
+    bytesPerDoc += (long) Math.ceil((double) values.length() / size); // values
     return bytesPerDoc;
   }
 

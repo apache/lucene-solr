@@ -29,7 +29,9 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.UnicodeUtil;
 
@@ -81,7 +83,7 @@ final class TermInfosWriter implements Closeable {
 
   private long lastIndexPointer;
   private boolean isIndex;
-  private final BytesRef lastTerm = new BytesRef();
+  private final BytesRefBuilder lastTerm = new BytesRefBuilder();
   private int lastFieldNumber = -1;
 
   private TermInfosWriter other;
@@ -146,14 +148,14 @@ final class TermInfosWriter implements Closeable {
   }
 
   // Currently used only by assert statements
-  CharsRef utf16Result1;
-  CharsRef utf16Result2;
-  private final BytesRef scratchBytes = new BytesRef();
+  CharsRefBuilder utf16Result1;
+  CharsRefBuilder utf16Result2;
+  private final BytesRefBuilder scratchBytes = new BytesRefBuilder();
 
   // Currently used only by assert statements
   private boolean initUTF16Results() {
-    utf16Result1 = new CharsRef(10);
-    utf16Result2 = new CharsRef(10);
+    utf16Result1 = new CharsRefBuilder();
+    utf16Result2 = new CharsRefBuilder();
     return true;
   }
   
@@ -180,30 +182,28 @@ final class TermInfosWriter implements Closeable {
     }
 
     scratchBytes.copyBytes(term);
-    assert lastTerm.offset == 0;
-    UnicodeUtil.UTF8toUTF16(lastTerm.bytes, 0, lastTerm.length, utf16Result1);
+    utf16Result1.copyUTF8Bytes(lastTerm.get());
 
-    assert scratchBytes.offset == 0;
-    UnicodeUtil.UTF8toUTF16(scratchBytes.bytes, 0, scratchBytes.length, utf16Result2);
+    utf16Result2.copyUTF8Bytes(scratchBytes.get());
 
     final int len;
-    if (utf16Result1.length < utf16Result2.length)
-      len = utf16Result1.length;
+    if (utf16Result1.length() < utf16Result2.length())
+      len = utf16Result1.length();
     else
-      len = utf16Result2.length;
+      len = utf16Result2.length();
 
     for(int i=0;i<len;i++) {
-      final char ch1 = utf16Result1.chars[i];
-      final char ch2 = utf16Result2.chars[i];
+      final char ch1 = utf16Result1.charAt(i);
+      final char ch2 = utf16Result2.charAt(i);
       if (ch1 != ch2)
         return ch1-ch2;
     }
-    if (utf16Result1.length == 0 && lastFieldNumber == -1) {
+    if (utf16Result1.length() == 0 && lastFieldNumber == -1) {
       // If there is a field named "" (empty string) with a term text of "" (empty string) then we
       // will get 0 on this comparison, yet, it's "OK". 
       return -1;
     }
-    return utf16Result1.length - utf16Result2.length;
+    return utf16Result1.length() - utf16Result2.length();
   }
 
   /** Adds a new <<fieldNumber, termBytes>, TermInfo> pair to the set.
@@ -213,16 +213,16 @@ final class TermInfosWriter implements Closeable {
     throws IOException {
 
     assert compareToLastTerm(fieldNumber, term) < 0 ||
-      (isIndex && term.length == 0 && lastTerm.length == 0) :
+      (isIndex && term.length == 0 && lastTerm.length() == 0) :
       "Terms are out of order: field=" + fieldName(fieldInfos, fieldNumber) + " (number " + fieldNumber + ")" +
         " lastField=" + fieldName(fieldInfos, lastFieldNumber) + " (number " + lastFieldNumber + ")" +
-        " text=" + term.utf8ToString() + " lastText=" + lastTerm.utf8ToString();
+        " text=" + term.utf8ToString() + " lastText=" + lastTerm.get().utf8ToString();
 
     assert ti.freqPointer >= lastTi.freqPointer: "freqPointer out of order (" + ti.freqPointer + " < " + lastTi.freqPointer + ")";
     assert ti.proxPointer >= lastTi.proxPointer: "proxPointer out of order (" + ti.proxPointer + " < " + lastTi.proxPointer + ")";
 
     if (!isIndex && size % indexInterval == 0) {
-      other.add(lastFieldNumber, lastTerm, lastTi);                      // add an index term
+      other.add(lastFieldNumber, lastTerm.get(), lastTi);                      // add an index term
     }
     writeTerm(fieldNumber, term);                        // write term
 
@@ -252,9 +252,9 @@ final class TermInfosWriter implements Closeable {
     // TODO: UTF16toUTF8 could tell us this prefix
     // Compute prefix in common with last term:
     int start = 0;
-    final int limit = term.length < lastTerm.length ? term.length : lastTerm.length;
+    final int limit = term.length < lastTerm.length() ? term.length : lastTerm.length();
     while(start < limit) {
-      if (term.bytes[start+term.offset] != lastTerm.bytes[start+lastTerm.offset])
+      if (term.bytes[start+term.offset] != lastTerm.byteAt(start))
         break;
       start++;
     }

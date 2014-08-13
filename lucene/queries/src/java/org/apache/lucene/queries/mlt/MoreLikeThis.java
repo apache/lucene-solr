@@ -15,6 +15,15 @@
  */
 package org.apache.lucene.queries.mlt;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -33,19 +42,9 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.util.UnicodeUtil;
-
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 
 
 /**
@@ -761,10 +760,10 @@ public final class MoreLikeThis {
    */
   private void addTermFrequencies(Map<String, Int> termFreqMap, Terms vector) throws IOException {
     final TermsEnum termsEnum = vector.iterator(null);
-    final CharsRef spare = new CharsRef();
+    final CharsRefBuilder spare = new CharsRefBuilder();
     BytesRef text;
     while((text = termsEnum.next()) != null) {
-      UnicodeUtil.UTF8toUTF16(text, spare);
+      spare.copyUTF8Bytes(text);
       final String term = spare.toString();
       if (isNoiseWord(term)) {
         continue;

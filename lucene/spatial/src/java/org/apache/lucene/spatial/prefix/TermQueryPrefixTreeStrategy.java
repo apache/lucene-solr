@@ -18,6 +18,7 @@ package org.apache.lucene.spatial.prefix;
  */
 
 import com.spatial4j.core.shape.Shape;
+
 import org.apache.lucene.queries.TermsFilter;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.spatial.prefix.tree.Cell;

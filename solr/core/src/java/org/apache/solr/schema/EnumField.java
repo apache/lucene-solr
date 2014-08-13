@@ -24,7 +24,9 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.EnumFieldSource;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrException;
@@ -43,9 +45,9 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+
 import java.io.IOException;
 import java.io.InputStream;
-
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -263,16 +265,16 @@ public class EnumField extends PrimitiveFieldType {
     if (val == null)
       return null;
 
-    final BytesRef bytes = new BytesRef(NumericUtils.BUF_SIZE_LONG);
+    final BytesRefBuilder bytes = new BytesRefBuilder();
     readableToIndexed(val, bytes);
-    return bytes.utf8ToString();
+    return bytes.get().utf8ToString();
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public void readableToIndexed(CharSequence val, BytesRef result) {
+  public void readableToIndexed(CharSequence val, BytesRefBuilder result) {
     final String s = val.toString();
     if (s == null)
       return;
@@ -317,13 +319,13 @@ public class EnumField extends PrimitiveFieldType {
    * {@inheritDoc}
    */
   @Override
-  public CharsRef indexedToReadable(BytesRef input, CharsRef output) {
+  public CharsRef indexedToReadable(BytesRef input, CharsRefBuilder output) {
     final Integer intValue = NumericUtils.prefixCodedToInt(input);
     final String stringValue = intValueToStringValue(intValue);
     output.grow(stringValue.length());
-    output.length = stringValue.length();
-    stringValue.getChars(0, output.length, output.chars, 0);
-    return output;
+    output.setLength(stringValue.length());
+    stringValue.getChars(0, output.length(), output.chars(), 0);
+    return output.get();
   }
 
   /**
@@ -344,9 +346,9 @@ public class EnumField extends PrimitiveFieldType {
     final Number val = f.numericValue();
     if (val == null)
       return null;
-    final BytesRef bytes = new BytesRef(NumericUtils.BUF_SIZE_LONG);
+    final BytesRefBuilder bytes = new BytesRefBuilder();
     NumericUtils.intToPrefixCoded(val.intValue(), 0, bytes);
-    return bytes.utf8ToString();
+    return bytes.get().utf8ToString();
   }
 
   /**

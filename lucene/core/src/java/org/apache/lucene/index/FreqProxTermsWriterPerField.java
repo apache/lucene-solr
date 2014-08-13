@@ -29,6 +29,7 @@ import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -280,7 +281,7 @@ final class FreqProxTermsWriterPerField extends TermsHashPerField {
   void flush(String fieldName, FieldsConsumer consumer,  final SegmentWriteState state)
     throws IOException {
 
-    BytesRef payload = null;
+    BytesRefBuilder payload = null;
 
     if (!fieldInfo.isIndexed()) {
       return; // nothing to flush, don't bother the codec with the unindexed field
@@ -464,15 +465,13 @@ final class FreqProxTermsWriterPerField extends TermsHashPerField {
                 final int payloadLength = prox.readVInt();
 
                 if (payload == null) {
-                  payload = new BytesRef();
-                  payload.bytes = new byte[payloadLength];
-                } else if (payload.bytes.length < payloadLength) {
-                  payload.grow(payloadLength);
+                  payload = new BytesRefBuilder();
                 }
+                payload.grow(payloadLength);
 
-                prox.readBytes(payload.bytes, 0, payloadLength);
-                payload.length = payloadLength;
-                thisPayload = payload;
+                prox.readBytes(payload.bytes(), 0, payloadLength);
+                payload.setLength(payloadLength);
+                thisPayload = payload.get();
 
               } else {
                 thisPayload = null;

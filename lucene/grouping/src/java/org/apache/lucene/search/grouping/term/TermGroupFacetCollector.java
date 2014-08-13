@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocTermOrds;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.TermsEnum;
@@ -153,9 +152,10 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
           // Points to the ord one higher than facetPrefix
           startFacetOrd = -startFacetOrd - 1;
         }
-        BytesRef facetEndPrefix = BytesRef.deepCopyOf(facetPrefix);
+        BytesRefBuilder facetEndPrefix = new BytesRefBuilder();
+        facetEndPrefix.append(facetPrefix);
         facetEndPrefix.append(UnicodeUtil.BIG_TERM);
-        endFacetOrd = facetFieldTermsIndex.lookupTerm(facetEndPrefix);
+        endFacetOrd = facetFieldTermsIndex.lookupTerm(facetEndPrefix.get());
         assert endFacetOrd < 0;
         endFacetOrd = -endFacetOrd - 1; // Points to the ord one higher than facetEndPrefix
       } else {
@@ -197,7 +197,6 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
     private SortedSetDocValues facetFieldDocTermOrds;
     private TermsEnum facetOrdTermsEnum;
     private int facetFieldNumTerms;
-    private final BytesRef scratch = new BytesRef();
 
     MV(String groupField, String facetField, BytesRef facetPrefix, int initialSize) {
       super(groupField, facetField, facetPrefix, initialSize);
@@ -326,9 +325,10 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
           return;
         }
 
-        BytesRef facetEndPrefix = BytesRef.deepCopyOf(facetPrefix);
+        BytesRefBuilder facetEndPrefix = new BytesRefBuilder();
+        facetEndPrefix.append(facetPrefix);
         facetEndPrefix.append(UnicodeUtil.BIG_TERM);
-        seekStatus = facetOrdTermsEnum.seekCeil(facetEndPrefix);
+        seekStatus = facetOrdTermsEnum.seekCeil(facetEndPrefix.get());
         if (seekStatus != TermsEnum.SeekStatus.END) {
           endFacetOrd = (int) facetOrdTermsEnum.ord();
         } else {

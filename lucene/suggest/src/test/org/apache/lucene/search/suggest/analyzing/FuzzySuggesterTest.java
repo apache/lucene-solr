@@ -44,6 +44,7 @@ import org.apache.lucene.search.suggest.Input;
 import org.apache.lucene.search.suggest.InputArrayIterator;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -755,10 +756,10 @@ public class FuzzySuggesterTest extends LuceneTestCase {
       assertTrue(automaton.isDeterministic());
 
       // TODO: could be faster... but its slowCompletor for a reason
-      BytesRef spare = new BytesRef();
+      BytesRefBuilder spare = new BytesRefBuilder();
       for (TermFreqPayload2 e : slowCompletor) {
         spare.copyChars(e.analyzedForm);
-        Set<IntsRef> finiteStrings = suggester.toFiniteStrings(spare, tokenStreamToAutomaton);
+        Set<IntsRef> finiteStrings = suggester.toFiniteStrings(spare.get(), tokenStreamToAutomaton);
         for (IntsRef intsRef : finiteStrings) {
           int p = 0;
           BytesRef ref = Util.toBytesRef(intsRef, spare);

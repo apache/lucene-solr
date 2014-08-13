@@ -56,7 +56,9 @@ import org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.term.TermAllGroupsCollector;
 import org.apache.lucene.search.grouping.term.TermGroupFacetCollector;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.SolrException;
@@ -481,7 +483,7 @@ public class SimpleFacets {
                                       (offset + limit), 
                                       mincount, orderByCount);
 
-    CharsRef charsRef = new CharsRef();
+    CharsRefBuilder charsRef = new CharsRefBuilder();
     FieldType facetFieldType = searcher.getSchema().getFieldType(field);
     NamedList<Integer> facetCounts = new NamedList<>();
     List<TermGroupFacetCollector.FacetEntry> scopedEntries 
@@ -654,22 +656,23 @@ public class SimpleFacets {
 
     BytesRef br = new BytesRef();
 
-    final BytesRef prefixRef;
+    final BytesRefBuilder prefixRef;
     if (prefix == null) {
       prefixRef = null;
     } else if (prefix.length()==0) {
       prefix = null;
       prefixRef = null;
     } else {
-      prefixRef = new BytesRef(prefix);
+      prefixRef = new BytesRefBuilder();
+      prefixRef.copyChars(prefix);
     }
 
     int startTermIndex, endTermIndex;
     if (prefix!=null) {
-      startTermIndex = si.lookupTerm(prefixRef);
+      startTermIndex = si.lookupTerm(prefixRef.get());
       if (startTermIndex<0) startTermIndex=-startTermIndex-1;
       prefixRef.append(UnicodeUtil.BIG_TERM);
-      endTermIndex = si.lookupTerm(prefixRef);
+      endTermIndex = si.lookupTerm(prefixRef.get());
       assert endTermIndex < 0;
       endTermIndex = -endTermIndex-1;
     } else {
@@ -679,7 +682,7 @@ public class SimpleFacets {
 
     final int nTerms=endTermIndex-startTermIndex;
     int missingCount = -1; 
-    final CharsRef charsRef = new CharsRef(10);
+    final CharsRefBuilder charsRef = new CharsRefBuilder();
     if (nTerms>0 && docs.size() >= mincount) {
 
       // count collection array only needs to be as big as the number of terms we are
@@ -846,7 +849,7 @@ public class SimpleFacets {
     }
 
     DocsEnum docsEnum = null;
-    CharsRef charsRef = new CharsRef(10);
+    CharsRefBuilder charsRef = new CharsRefBuilder();
 
     if (docs.size() >= mincount) {
       while (term != null) {

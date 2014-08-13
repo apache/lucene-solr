@@ -17,22 +17,24 @@ package org.apache.lucene.analysis.miscellaneous;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefHash;
-import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.CharsRefBuilder;
+import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FST.Arc;
 import org.apache.lucene.util.fst.FST.BytesReader;
-
-import java.io.IOException;
-import java.util.ArrayList;
 
 /**
  * Provides the ability to override any {@link KeywordAttribute} aware stemmer
@@ -45,7 +47,7 @@ public final class StemmerOverrideFilter extends TokenFilter {
   private final KeywordAttribute keywordAtt = addAttribute(KeywordAttribute.class);
   private final BytesReader fstReader;
   private final Arc<BytesRef> scratchArc = new FST.Arc<>();
-  private final CharsRef spare = new CharsRef();
+  private char[] spare = new char[0];
   
   /**
    * Create a new StemmerOverrideFilter, performing dictionary-based stemming
@@ -71,12 +73,13 @@ public final class StemmerOverrideFilter extends TokenFilter {
       if (!keywordAtt.isKeyword()) { // don't muck with already-keyworded terms
         final BytesRef stem = stemmerOverrideMap.get(termAtt.buffer(), termAtt.length(), scratchArc, fstReader);
         if (stem != null) {
-          final char[] buffer = spare.chars = termAtt.buffer();
-          UnicodeUtil.UTF8toUTF16(stem.bytes, stem.offset, stem.length, spare);
-          if (spare.chars != buffer) {
-            termAtt.copyBuffer(spare.chars, spare.offset, spare.length);
+          spare = ArrayUtil.grow(termAtt.buffer(), stem.length);
+          final int length = UnicodeUtil.UTF8toUTF16(stem, spare);
+          if (spare != termAtt.buffer()) {
+            termAtt.copyBuffer(spare, 0, length);
+          } else {
+            termAtt.setLength(length);
           }
-          termAtt.setLength(spare.length);
           keywordAtt.setKeyword(true);
         }
       }
@@ -144,10 +147,10 @@ public final class StemmerOverrideFilter extends TokenFilter {
    */
   public static class Builder {
     private final BytesRefHash hash = new BytesRefHash();
-    private final BytesRef spare = new BytesRef();
+    private final BytesRefBuilder spare = new BytesRefBuilder();
     private final ArrayList<CharSequence> outputValues = new ArrayList<>();
     private final boolean ignoreCase;
-    private final CharsRef charsSpare = new CharsRef();
+    private final CharsRefBuilder charsSpare = new CharsRefBuilder();
     
     /**
      * Creates a new {@link Builder} with ignoreCase set to <code>false</code> 
@@ -176,17 +179,17 @@ public final class StemmerOverrideFilter extends TokenFilter {
       if (ignoreCase) {
         // convert on the fly to lowercase
         charsSpare.grow(length);
-        final char[] buffer = charsSpare.chars;
+        final char[] buffer = charsSpare.chars();
         for (int i = 0; i < length; ) {
             i += Character.toChars(
                     Character.toLowerCase(
                         Character.codePointAt(input, i)), buffer, i);
         }
-        UnicodeUtil.UTF16toUTF8(buffer, 0, length, spare);
+        spare.copyChars(buffer, 0, length);
       } else {
-        UnicodeUtil.UTF16toUTF8(input, 0, length, spare);
+        spare.copyChars(input, 0, length);
       }
-      if (hash.add(spare) >= 0) {
+      if (hash.add(spare.get()) >= 0) {
         outputValues.add(output);
         return true;
       }
@@ -203,13 +206,14 @@ public final class StemmerOverrideFilter extends TokenFilter {
       org.apache.lucene.util.fst.Builder<BytesRef> builder = new org.apache.lucene.util.fst.Builder<>(
           FST.INPUT_TYPE.BYTE4, outputs);
       final int[] sort = hash.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
-      IntsRef intsSpare = new IntsRef();
+      IntsRefBuilder intsSpare = new IntsRefBuilder();
       final int size = hash.size();
+      BytesRef spare = new BytesRef();
       for (int i = 0; i < size; i++) {
         int id = sort[i];
         BytesRef bytesRef = hash.get(id, spare);
-        UnicodeUtil.UTF8toUTF32(bytesRef, intsSpare);
-        builder.add(intsSpare, new BytesRef(outputValues.get(id)));
+        intsSpare.copyUTF8Bytes(bytesRef);
+        builder.add(intsSpare.get(), new BytesRef(outputValues.get(id)));
       }
       return new StemmerOverrideMap(builder.finish(), ignoreCase);
     }

@@ -24,6 +24,7 @@ import java.util.List;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -94,8 +95,9 @@ public class AddUpdateCommand extends UpdateCommand implements Iterable<Document
            } else if (count  > 1) {
              throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Document contains multiple values for uniqueKey field: " + field);
            } else {
-             indexedId = new BytesRef();
-             sf.getType().readableToIndexed(field.getFirstValue().toString(), indexedId);
+             BytesRefBuilder b = new BytesRefBuilder();
+             sf.getType().readableToIndexed(field.getFirstValue().toString(), b);
+             indexedId = b.get();
            }
          }
        }

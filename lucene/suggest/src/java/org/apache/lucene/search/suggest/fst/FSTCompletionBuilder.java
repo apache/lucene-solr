@@ -22,8 +22,10 @@ import java.io.IOException;
 
 import org.apache.lucene.search.suggest.InMemorySorter;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.fst.*;
 import org.apache.lucene.util.packed.PackedInts;
 
@@ -137,7 +139,7 @@ public class FSTCompletionBuilder {
   /**
    * Scratch buffer for {@link #add(BytesRef, int)}.
    */
-  private final BytesRef scratch = new BytesRef();
+  private final BytesRefBuilder scratch = new BytesRefBuilder();
 
   /**
    * Max tail sharing length.
@@ -206,14 +208,11 @@ public class FSTCompletionBuilder {
           "Bucket outside of the allowed range [0, " + buckets + "): " + bucket);
     }
     
-    if (scratch.bytes.length < utf8.length + 1) {
-      scratch.grow(utf8.length + 10);
-    }
-    
-    scratch.length = 1;
-    scratch.bytes[0] = (byte) bucket;
+    scratch.grow(utf8.length + 10);
+    scratch.clear();
+    scratch.append((byte) bucket);
     scratch.append(utf8);
-    sorter.add(scratch);
+    sorter.add(scratch.get());
   }
 
   /**
@@ -242,14 +241,14 @@ public class FSTCompletionBuilder {
         shareMaxTailLength, outputs, false, 
         PackedInts.DEFAULT, true, 15);
     
-    BytesRef scratch = new BytesRef();
+    BytesRefBuilder scratch = new BytesRefBuilder();
     BytesRef entry;
-    final IntsRef scratchIntsRef = new IntsRef();
+    final IntsRefBuilder scratchIntsRef = new IntsRefBuilder();
     int count = 0;
     BytesRefIterator iter = sorter.iterator();
     while((entry = iter.next()) != null) {
       count++;
-      if (scratch.compareTo(entry) != 0) {
+      if (scratch.get().compareTo(entry) != 0) {
         builder.add(Util.toIntsRef(entry, scratchIntsRef), empty);
         scratch.copyBytes(entry);
       }

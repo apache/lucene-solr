@@ -28,6 +28,7 @@ import org.apache.lucene.search.FuzzyTermsEnum;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
 
@@ -103,7 +104,7 @@ public final class SlowFuzzyTermsEnum extends FuzzyTermsEnum {
     
     private final BytesRef prefixBytesRef;
     // used for unicode conversion from BytesRef byte[] to int[]
-    private final IntsRef utf32 = new IntsRef(20);
+    private final IntsRefBuilder utf32 = new IntsRefBuilder();
     
     /**
      * <p>The termCompare method in FuzzyTermEnum uses Levenshtein distance to 
@@ -121,8 +122,8 @@ public final class SlowFuzzyTermsEnum extends FuzzyTermsEnum {
     @Override
     protected final AcceptStatus accept(BytesRef term) {
       if (StringHelper.startsWith(term, prefixBytesRef)) {
-        UnicodeUtil.UTF8toUTF32(term, utf32);
-        final int distance = calcDistance(utf32.ints, realPrefixLength, utf32.length - realPrefixLength);
+        utf32.copyUTF8Bytes(term);
+        final int distance = calcDistance(utf32.ints(), realPrefixLength, utf32.length() - realPrefixLength);
        
         //Integer.MIN_VALUE is the sentinel that Levenshtein stopped early
         if (distance == Integer.MIN_VALUE){
@@ -132,7 +133,7 @@ public final class SlowFuzzyTermsEnum extends FuzzyTermsEnum {
         if (raw == true && distance > maxEdits){
               return AcceptStatus.NO;
         } 
-        final float similarity = calcSimilarity(distance, (utf32.length - realPrefixLength), text.length);
+        final float similarity = calcSimilarity(distance, (utf32.length() - realPrefixLength), text.length);
         
         //if raw is true, then distance must also be <= maxEdits by now
         //given the previous if statement

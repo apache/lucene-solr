@@ -17,6 +17,7 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.util.Arrays;
 import java.util.Comparator;
 
 /** Represents byte[], as a slice (offset + length) into an
@@ -80,19 +81,8 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
    * unicode text, with no unpaired surrogates.
    */
   public BytesRef(CharSequence text) {
-    this();
-    copyChars(text);
-  }
-
-  /**
-   * Copies the UTF8 bytes for this string.
-   * 
-   * @param text Must be well-formed unicode text, with no
-   * unpaired surrogates or invalid UTF16 code units.
-   */
-  public void copyChars(CharSequence text) {
-    assert offset == 0;   // TODO broken if offset != 0
-    UnicodeUtil.UTF16toUTF8(text, 0, text.length(), this);
+    this(new byte[UnicodeUtil.MAX_UTF8_BYTES_PER_CHAR * text.length()]);
+    length = UnicodeUtil.UTF16toUTF8(text, 0, text.length(), bytes);
   }
   
   /**
@@ -155,9 +145,9 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
   /** Interprets stored bytes as UTF8 bytes, returning the
    *  resulting string */
   public String utf8ToString() {
-    final CharsRef ref = new CharsRef(length);
-    UnicodeUtil.UTF8toUTF16(bytes, offset, length, ref);
-    return ref.toString(); 
+    final char[] ref = new char[length];
+    final int len = UnicodeUtil.UTF8toUTF16(bytes, offset, length, ref);
+    return new String(ref, 0, len);
   }
 
   /** Returns hex encoded bytes, eg [0x6c 0x75 0x63 0x65 0x6e 0x65] */
@@ -174,49 +164,6 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
     }
     sb.append(']');
     return sb.toString();
-  }
-
-  /**
-   * Copies the bytes from the given {@link BytesRef}
-   * <p>
-   * NOTE: if this would exceed the array size, this method creates a 
-   * new reference array.
-   */
-  public void copyBytes(BytesRef other) {
-    if (bytes.length - offset < other.length) {
-      bytes = new byte[other.length];
-      offset = 0;
-    }
-    System.arraycopy(other.bytes, other.offset, bytes, offset, other.length);
-    length = other.length;
-  }
-
-  /**
-   * Appends the bytes from the given {@link BytesRef}
-   * <p>
-   * NOTE: if this would exceed the array size, this method creates a 
-   * new reference array.
-   */
-  public void append(BytesRef other) {
-    int newLen = length + other.length;
-    if (bytes.length - offset < newLen) {
-      byte[] newBytes = new byte[newLen];
-      System.arraycopy(bytes, offset, newBytes, 0, length);
-      offset = 0;
-      bytes = newBytes;
-    }
-    System.arraycopy(other.bytes, other.offset, bytes, length+offset, other.length);
-    length = newLen;
-  }
-
-  /** 
-   * Used to grow the reference array. 
-   * 
-   * In general this should not be used as it does not take the offset into account.
-   * @lucene.internal */
-  public void grow(int newLength) {
-    assert offset == 0; // NOTE: senseless if offset != 0
-    bytes = ArrayUtil.grow(bytes, newLength);
   }
 
   /** Unsigned byte order comparison */
@@ -331,7 +278,9 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
    */
   public static BytesRef deepCopyOf(BytesRef other) {
     BytesRef copy = new BytesRef();
-    copy.copyBytes(other);
+    copy.bytes = Arrays.copyOfRange(other.bytes, other.offset, other.offset + other.length);
+    copy.offset = 0;
+    copy.length = other.length;
     return copy;
   }
   

@@ -19,10 +19,12 @@ package org.apache.lucene.search.suggest;
 
 import java.io.IOException;
 import java.util.Comparator;
+
 import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefArray;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.Counter;
 
 /**
@@ -37,7 +39,7 @@ public class BufferingTermFreqIteratorWrapper implements TermFreqIterator {
   protected int curPos = -1;
   /** buffered weights, parallel with {@link #entries} */
   protected long[] freqs = new long[1];
-  private final BytesRef spare = new BytesRef();
+  private final BytesRefBuilder spare = new BytesRefBuilder();
   private final Comparator<BytesRef> comp;
   
   /** Creates a new iterator, buffering entries from the specified iterator */
@@ -64,7 +66,7 @@ public class BufferingTermFreqIteratorWrapper implements TermFreqIterator {
   public BytesRef next() throws IOException {
     if (++curPos < entries.size()) {
       entries.get(spare, curPos);
-      return spare;
+      return spare.get();
     }
     return null;
   }

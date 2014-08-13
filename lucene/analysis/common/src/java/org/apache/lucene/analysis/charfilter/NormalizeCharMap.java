@@ -24,6 +24,7 @@ import java.util.TreeMap;
 
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.CharSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
@@ -109,7 +110,7 @@ public class NormalizeCharMap {
       try {
         final Outputs<CharsRef> outputs = CharSequenceOutputs.getSingleton();
         final org.apache.lucene.util.fst.Builder<CharsRef> builder = new org.apache.lucene.util.fst.Builder<>(FST.INPUT_TYPE.BYTE2, outputs);
-        final IntsRef scratch = new IntsRef();
+        final IntsRefBuilder scratch = new IntsRefBuilder();
         for(Map.Entry<String,String> ent : pendingPairs.entrySet()) {
           builder.add(Util.toUTF16(ent.getKey(), scratch),
                       new CharsRef(ent.getValue()));

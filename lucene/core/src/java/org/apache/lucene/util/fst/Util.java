@@ -18,7 +18,9 @@ package org.apache.lucene.util.fst;
  */
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.fst.FST.Arc;
 import org.apache.lucene.util.fst.FST.BytesReader;
 
@@ -112,8 +114,7 @@ public final class Util {
     
     FST.Arc<Long> scratchArc = new FST.Arc<>();
 
-    final IntsRef result = new IntsRef();
-    
+    final IntsRefBuilder result = new IntsRefBuilder();
     return getByOutput(fst, targetOutput, in, arc, scratchArc, result);
   }
     
@@ -121,7 +122,7 @@ public final class Util {
    * Expert: like {@link Util#getByOutput(FST, long)} except reusing 
    * BytesReader, initial and scratch Arc, and result.
    */
-  public static IntsRef getByOutput(FST<Long> fst, long targetOutput, BytesReader in, Arc<Long> arc, Arc<Long> scratchArc, IntsRef result) throws IOException {
+  public static IntsRef getByOutput(FST<Long> fst, long targetOutput, BytesReader in, Arc<Long> arc, Arc<Long> scratchArc, IntsRefBuilder result) throws IOException {
     long output = arc.output;
     int upto = 0;
 
@@ -133,9 +134,9 @@ public final class Util {
         final long finalOutput = output + arc.nextFinalOutput;
         //System.out.println("  isFinal finalOutput=" + finalOutput);
         if (finalOutput == targetOutput) {
-          result.length = upto;
+          result.setLength(upto);
           //System.out.println("    found!");
-          return result;
+          return result.get();
         } else if (finalOutput > targetOutput) {
           //System.out.println("    not found!");
           return null;
@@ -144,9 +145,7 @@ public final class Util {
 
       if (FST.targetHasArcs(arc)) {
         //System.out.println("  targetHasArcs");
-        if (result.ints.length == upto) {
-          result.grow(1+upto);
-        }
+        result.grow(1+upto);
         
         fst.readFirstRealTargetArc(arc.target, arc, in);
 
@@ -190,7 +189,7 @@ public final class Util {
           }
 
           fst.readNextRealArc(arc, in);
-          result.ints[upto++] = arc.label;
+          result.setIntAt(upto++, arc.label);
           output += arc.output;
 
         } else {
@@ -208,7 +207,7 @@ public final class Util {
               // Recurse on this arc:
               //System.out.println("  match!  break");
               output = minArcOutput;
-              result.ints[upto++] = arc.label;
+              result.setIntAt(upto++, arc.label);
               break;
             } else if (minArcOutput > targetOutput) {
               if (prevArc == null) {
@@ -217,7 +216,7 @@ public final class Util {
               } else {
                 // Recurse on previous arc:
                 arc.copyFrom(prevArc);
-                result.ints[upto++] = arc.label;
+                result.setIntAt(upto++, arc.label);
                 output += arc.output;
                 //System.out.println("    recurse prev label=" + (char) arc.label + " output=" + output);
                 break;
@@ -226,7 +225,7 @@ public final class Util {
               // Recurse on this arc:
               output = minArcOutput;
               //System.out.println("    recurse last label=" + (char) arc.label + " output=" + output);
-              result.ints[upto++] = arc.label;
+              result.setIntAt(upto++, arc.label);
               break;
             } else {
               // Read next arc in this node:
@@ -251,10 +250,10 @@ public final class Util {
   public static class FSTPath<T> {
     public FST.Arc<T> arc;
     public T cost;
-    public final IntsRef input;
+    public final IntsRefBuilder input;
 
     /** Sole constructor */
-    public FSTPath(T cost, FST.Arc<T> arc, IntsRef input) {
+    public FSTPath(T cost, FST.Arc<T> arc, IntsRefBuilder input) {
       this.arc = new FST.Arc<T>().copyFrom(arc);
       this.cost = cost;
       this.input = input;
@@ -278,7 +277,7 @@ public final class Util {
     public int compare(FSTPath<T> a, FSTPath<T> b) {
       int cmp = comparator.compare(a.cost, b.cost);
       if (cmp == 0) {
-        return a.input.compareTo(b.input);
+        return a.input.get().compareTo(b.input.get());
       } else {
         return cmp;
       }
@@ -333,10 +332,9 @@ public final class Util {
           return;
         } else if (comp == 0) {
           // Tie break by alpha sort on the input:
-          path.input.grow(path.input.length+1);
-          path.input.ints[path.input.length++] = path.arc.label;
-          final int cmp = bottom.input.compareTo(path.input);
-          path.input.length--;
+          path.input.append(path.arc.label);
+          final int cmp = bottom.input.get().compareTo(path.input.get());
+          path.input.setLength(path.input.length() - 1);
 
           // We should never see dups:
           assert cmp != 0;
@@ -353,10 +351,9 @@ public final class Util {
 
       // copy over the current input to the new input
       // and add the arc.label to the end
-      IntsRef newInput = new IntsRef(path.input.length+1);     
-      System.arraycopy(path.input.ints, 0, newInput.ints, 0, path.input.length);
-      newInput.ints[path.input.length] = path.arc.label;
-      newInput.length = path.input.length+1;
+      IntsRefBuilder newInput = new IntsRefBuilder();
+      newInput.copyInts(path.input.get());
+      newInput.append(path.arc.label);
       final FSTPath<T> newPath = new FSTPath<>(cost, path.arc, newInput);
 
       queue.add(newPath);
@@ -368,7 +365,7 @@ public final class Util {
 
     /** Adds all leaving arcs, including 'finished' arc, if
      *  the node is final, from this node into the queue.  */
-    public void addStartPaths(FST.Arc<T> node, T startOutput, boolean allowEmptyString, IntsRef input) throws IOException {
+    public void addStartPaths(FST.Arc<T> node, T startOutput, boolean allowEmptyString, IntsRefBuilder input) throws IOException {
 
       // De-dup NO_OUTPUT since it must be a singleton:
       if (startOutput.equals(fst.outputs.getNoOutput())) {
@@ -434,8 +431,8 @@ public final class Util {
         if (path.arc.label == FST.END_LABEL) {
           //System.out.println("    empty string!  cost=" + path.cost);
           // Empty string!
-          path.input.length--;
-          results.add(new Result<>(path.input, path.cost));
+          path.input.setLength(path.input.length() - 1);
+          results.add(new Result<>(path.input.get(), path.cost));
           continue;
         }
 
@@ -497,17 +494,15 @@ public final class Util {
             // Add final output:
             //System.out.println("    done!: " + path);
             T finalOutput = fst.outputs.add(path.cost, path.arc.output);
-            if (acceptResult(path.input, finalOutput)) {
+            if (acceptResult(path.input.get(), finalOutput)) {
               //System.out.println("    add result: " + path);
-              results.add(new Result<>(path.input, finalOutput));
+              results.add(new Result<>(path.input.get(), finalOutput));
             } else {
               rejectCount++;
             }
             break;
           } else {
-            path.input.grow(1+path.input.length);
-            path.input.ints[path.input.length] = path.arc.label;
-            path.input.length++;
+            path.input.append(path.arc.label);
             path.cost = fst.outputs.add(path.cost, path.arc.output);
           }
         }
@@ -571,7 +566,7 @@ public final class Util {
 
     // since this search is initialized with a single start node 
     // it is okay to start with an empty input path here
-    searcher.addStartPaths(fromNode, startOutput, allowEmptyString, new IntsRef());
+    searcher.addStartPaths(fromNode, startOutput, allowEmptyString, new IntsRefBuilder());
     return searcher.search();
   } 
 
@@ -817,76 +812,74 @@ public final class Util {
 
   /** Just maps each UTF16 unit (char) to the ints in an
    *  IntsRef. */
-  public static IntsRef toUTF16(CharSequence s, IntsRef scratch) {
+  public static IntsRef toUTF16(CharSequence s, IntsRefBuilder scratch) {
     final int charLimit = s.length();
-    scratch.offset = 0;
-    scratch.length = charLimit;
+    scratch.setLength(charLimit);
     scratch.grow(charLimit);
     for (int idx = 0; idx < charLimit; idx++) {
-      scratch.ints[idx] = (int) s.charAt(idx);
+      scratch.setIntAt(idx, (int) s.charAt(idx));
     }
-    return scratch;
+    return scratch.get();
   }    
 
   /** Decodes the Unicode codepoints from the provided
    *  CharSequence and places them in the provided scratch
    *  IntsRef, which must not be null, returning it. */
-  public static IntsRef toUTF32(CharSequence s, IntsRef scratch) {
+  public static IntsRef toUTF32(CharSequence s, IntsRefBuilder scratch) {
     int charIdx = 0;
     int intIdx = 0;
     final int charLimit = s.length();
     while(charIdx < charLimit) {
       scratch.grow(intIdx+1);
       final int utf32 = Character.codePointAt(s, charIdx);
-      scratch.ints[intIdx] = utf32;
+      scratch.setIntAt(intIdx, utf32);
       charIdx += Character.charCount(utf32);
       intIdx++;
     }
-    scratch.length = intIdx;
-    return scratch;
+    scratch.setLength(intIdx);
+    return scratch.get();
   }
 
   /** Decodes the Unicode codepoints from the provided
    *  char[] and places them in the provided scratch
    *  IntsRef, which must not be null, returning it. */
-  public static IntsRef toUTF32(char[] s, int offset, int length, IntsRef scratch) {
+  public static IntsRef toUTF32(char[] s, int offset, int length, IntsRefBuilder scratch) {
     int charIdx = offset;
     int intIdx = 0;
     final int charLimit = offset + length;
     while(charIdx < charLimit) {
       scratch.grow(intIdx+1);
       final int utf32 = Character.codePointAt(s, charIdx, charLimit);
-      scratch.ints[intIdx] = utf32;
+      scratch.setIntAt(intIdx, utf32);
       charIdx += Character.charCount(utf32);
       intIdx++;
     }
-    scratch.length = intIdx;
-    return scratch;
+    scratch.setLength(intIdx);
+    return scratch.get();
   }
 
   /** Just takes unsigned byte values from the BytesRef and
    *  converts into an IntsRef. */
-  public static IntsRef toIntsRef(BytesRef input, IntsRef scratch) {
-    scratch.grow(input.length);
+  public static IntsRef toIntsRef(BytesRef input, IntsRefBuilder scratch) {
+    scratch.clear();
     for(int i=0;i<input.length;i++) {
-      scratch.ints[i] = input.bytes[i+input.offset] & 0xFF;
+      scratch.append(input.bytes[i+input.offset] & 0xFF);
     }
-    scratch.length = input.length;
-    return scratch;
+    return scratch.get();
   }
 
   /** Just converts IntsRef to BytesRef; you must ensure the
    *  int values fit into a byte. */
-  public static BytesRef toBytesRef(IntsRef input, BytesRef scratch) {
+  public static BytesRef toBytesRef(IntsRef input, BytesRefBuilder scratch) {
     scratch.grow(input.length);
     for(int i=0;i<input.length;i++) {
       int value = input.ints[i+input.offset];
       // NOTE: we allow -128 to 255
       assert value >= Byte.MIN_VALUE && value <= 255: "value " + value + " doesn't fit into byte";
-      scratch.bytes[i] = (byte) value;
+      scratch.setByteAt(i, (byte) value);
     }
-    scratch.length = input.length;
-    return scratch;
+    scratch.setLength(input.length);
+    return scratch.get();
   }
 
   // Uncomment for debugging:

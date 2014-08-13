@@ -21,6 +21,7 @@ import com.carrotsearch.hppc.IntObjectMap;
 import com.carrotsearch.hppc.IntObjectOpenHashMap;
 import com.carrotsearch.hppc.IntOpenHashSet;
 import com.carrotsearch.hppc.cursors.IntObjectCursor;
+
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.SortedDocValues;
@@ -37,6 +38,7 @@ import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ExpandParams;
@@ -216,7 +218,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     searcher.search(query, pfilter.filter, collector);
     IntObjectMap groups = groupExpandCollector.getGroups();
     Map<String, DocSlice> outMap = new HashMap();
-    CharsRef charsRef = new CharsRef();
+    CharsRefBuilder charsRef = new CharsRefBuilder();
     FieldType fieldType = searcher.getSchema().getField(field).getType();
     for (IntObjectCursor cursor : (Iterable<IntObjectCursor>) groups) {
       int ord = cursor.key;

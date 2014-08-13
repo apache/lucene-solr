@@ -31,6 +31,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
@@ -200,7 +201,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
 
         if (indexDivisor > 1) {
           // subsample
-          final IntsRef scratchIntsRef = new IntsRef();
+          final IntsRefBuilder scratchIntsRef = new IntsRefBuilder();
           final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
           final Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
           final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<>(fst);

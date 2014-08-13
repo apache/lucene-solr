@@ -111,7 +111,7 @@ public class TestSurrogates extends LuceneTestCase {
         assertNotNull(terms);
         TermsEnum termsEnum = terms.iterator(null);
         BytesRef text;
-        BytesRef lastText = null;
+        BytesRefBuilder lastText = null;
         while((text = termsEnum.next()) != null) {
           Term exp = fieldTerms.get(termCount);
           if (VERBOSE) {
@@ -120,9 +120,10 @@ public class TestSurrogates extends LuceneTestCase {
             System.out.println();
           }
           if (lastText == null) {
-            lastText = BytesRef.deepCopyOf(text);
+            lastText = new BytesRefBuilder();
+            lastText.copyBytes(text);
           } else {
-            assertTrue(lastText.compareTo(text) < 0);
+            assertTrue(lastText.get().compareTo(text) < 0);
             lastText.copyBytes(text);
           }
           assertEquals(exp.field(), field);
