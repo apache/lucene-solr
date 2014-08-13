@@ -908,8 +908,15 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     boolean deleted = false;
     while (System.nanoTime() < waitUntil) {
       Thread.sleep(100);
-      deleted = zkStateReader.getClusterState().getCollection(collectionName).getSlice(shard).getReplica(replicaName) == null;
-      if (deleted) break;
+      DocCollection docCollection = zkStateReader.getClusterState().getCollection(collectionName);
+      if(docCollection != null) {
+        Slice slice = docCollection.getSlice(shard);
+        if(slice == null || slice.getReplica(replicaName) == null) {
+          deleted =  true;
+        }
+      }
+      // Return true if either someone already deleted the collection/slice/replica.
+      if (docCollection == null || deleted) break;
     }
     return deleted;
   }
