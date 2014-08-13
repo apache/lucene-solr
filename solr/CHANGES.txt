@@ -267,6 +267,9 @@ Bug Fixes
 * SOLR-6062: Fix undesirable edismax query parser effect (introduced in SOLR-2058) in how phrase queries
   generated from pf, pf2, and pf3 are merged into the main query.  (Michael Dodsworth via ehatcher)
 
+* SOLR-6372: HdfsDirectoryFactory should use supplied Configuration for communicating with secure kerberos.
+  (Gregory Chanan via Mark Miller)
+
 Optimizations
 ---------------------
 
@@ -2021,7 +2024,7 @@ New Features
 * SOLR-4921: Admin UI now supports adding documents to Solr (gsingers, steffkes)
 
 * SOLR-4916: Add support to write and read Solr index files and transaction log
-  files to and from HDFS. (phunt, Mark Miller, Greg Chanan)
+  files to and from HDFS. (phunt, Mark Miller, Gregory Chanan)
   
 * SOLR-4892: Add FieldMutatingUpdateProcessorFactory subclasses 
   Parse{Date,Integer,Long,Float,Double,Boolean}UpdateProcessorFactory. These
