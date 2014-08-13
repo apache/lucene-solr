@@ -188,6 +188,8 @@ New Features
 
 * SOLR-6304 : JsonLoader should be able to flatten an input JSON to multiple docs (Noble Paul)
 
+* SOLR-2894: Distributed query support for facet.pivot (Dan Cooper, Erik Hatcher, Chris Russell,
+  Andrew Muldowney, Brett Lucey, Mark Miller, hossman)
 
 Bug Fixes
 ----------------------

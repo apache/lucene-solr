@@ -61,6 +61,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
   @Override
   public void doTest() throws Exception {
+    QueryResponse rsp = null;
     int backupStress = stress; // make a copy so we can restore
 
 
@@ -174,6 +175,13 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
     // a facet query to test out chars out of the ascii range
     query("q","*:*", "rows",0, "facet","true", "facet.query","{!term f=foo_s}international\u00ff\u01ff\u2222\u3333");
+    
+    // simple field facet on date fields
+    rsp = query("q","*:*", "rows",0, "facet","true", "facet.field", tdate_a);
+    assertEquals(1, rsp.getFacetFields().size());
+    rsp = query("q","*:*", "rows",0, "facet","true", 
+                "facet.field", tdate_b, "facet.field", tdate_a);
+    assertEquals(2, rsp.getFacetFields().size());
 
     // simple date facet on one field
     query("q","*:*", "rows",100, "facet","true", 
@@ -337,7 +345,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     q.set("q", "*:*");
     q.set(ShardParams.SHARDS_INFO, true);
     setDistributedParams(q);
-    QueryResponse rsp = queryServer(q);
+    rsp = queryServer(q);
     NamedList<?> sinfo = (NamedList<?>) rsp.getResponse().get(ShardParams.SHARDS_INFO);
     String shards = getShardsString();
     int cnt = StringUtils.countMatches(shards, ",")+1;

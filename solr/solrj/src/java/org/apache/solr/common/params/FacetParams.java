@@ -99,6 +99,24 @@ public interface FacetParams {
    */
   public static final String FACET_MISSING = FACET + ".missing";
 
+  
+  static final String FACET_OVERREQUEST = FACET + ".overrequest";
+  
+  /**
+   * The percentage to over-request by when performing initial distributed requests.
+   * 
+   * default value is 1.5
+   */
+  public static final String FACET_OVERREQUEST_RATIO = FACET_OVERREQUEST + ".ratio";
+
+  /**
+   * An additional amount to over-request by when performing initial distributed requests.  This
+   * value will be added after accounting for the over-request ratio.
+   * 
+   * default value is 10
+   */
+  public static final String FACET_OVERREQUEST_COUNT = FACET_OVERREQUEST + ".count";
+
 
   /**
    * Comma separated list of fields to pivot

@@ -17,254 +17,105 @@
 
 package org.apache.solr.handler.component;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TermRangeQuery;
-import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.solr.common.SolrException;
+import org.apache.solr.util.PivotListEntry;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.request.SimpleFacets;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.DocSet;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.SyntaxError;
+import org.apache.solr.common.util.StrUtils;
 
-/**
- * @since solr 4.0
- */
-public class PivotFacetHelper extends SimpleFacets
-{
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Collections;
 
-  protected int minMatch;
+public class PivotFacetHelper {
 
-  public PivotFacetHelper(SolrQueryRequest req, DocSet docs, SolrParams params, ResponseBuilder rb) {
-    super(req, docs, params, rb);
-    minMatch = params.getInt( FacetParams.FACET_PIVOT_MINCOUNT, 1 );
-  }
+  /**
+   * Encodes a value path as a string for the purposes of a refinement request
+   *
+   * @see PivotFacetValue#getValuePath
+   * @see #decodeRefinementValuePath
+   */
+  public static String encodeRefinementValuePath(List<String> values) {
+    // HACK: prefix flag every value to account for empty string vs null
+    // NOTE: even if we didn't have to worry about null's smartSplit is stupid about
+    // pruning empty strings from list
+    // "^" prefix = null
+    // "~" prefix = not null, may be empty string
 
-  public SimpleOrderedMap<List<NamedList<Object>>> process(String[] pivots) throws IOException {
-    if (!rb.doFacets || pivots == null) 
-      return null;
+    assert null != values;
 
-    SimpleOrderedMap<List<NamedList<Object>>> pivotResponse = new SimpleOrderedMap<>();
-    for (String pivot : pivots) {
-      //ex: pivot == "features,cat" or even "{!ex=mytag}features,cat"
-      try {
-        this.parseParams(FacetParams.FACET_PIVOT, pivot);
-      } catch (SyntaxError e) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, e);
+    // special case: empty list => empty string
+    if (values.isEmpty()) { return ""; }
+
+    
+    StringBuilder out = new StringBuilder();
+    for (String val : values) {
+      if (null == val) {
+        out.append('^');
+      } else {
+        out.append('~');
+        StrUtils.appendEscapedTextToBuilder(out, val, ',');
       }
-      pivot = facetValue;//facetValue potentially modified from parseParams()
-
-      String[] fields = pivot.split(",");
-
-      if( fields.length < 2 ) {
-        throw new SolrException( ErrorCode.BAD_REQUEST,
-            "Pivot Facet needs at least two fields: "+pivot );
-      }
-
-      String field = fields[0];
-      String subField = fields[1];
-      Deque<String> fnames = new LinkedList<>();
-      for( int i=fields.length-1; i>1; i-- ) {
-        fnames.push( fields[i] );
-      }
-
-      NamedList<Integer> superFacets = this.getTermCounts(field);
-
-      //super.key usually == pivot unless local-param 'key' used
-      pivotResponse.add(key, doPivots(superFacets, field, subField, fnames, docs));
+      out.append(',');
     }
-    return pivotResponse;
+    out.deleteCharAt(out.length()-1);  // prune the last seperator
+    return out.toString();
+    // return StrUtils.join(values, ',');
   }
 
   /**
-   * Recursive function to do all the pivots
+   * Decodes a value path string specified for refinement.
+   *
+   * @see #encodeRefinementValuePath
    */
-  protected List<NamedList<Object>> doPivots(NamedList<Integer> superFacets,
-                                             String field, String subField, Deque<String> fnames,
-                                             DocSet docs) throws IOException
-  {
-    SolrIndexSearcher searcher = rb.req.getSearcher();
-    // TODO: optimize to avoid converting to an external string and then having to convert back to internal below
-    SchemaField sfield = searcher.getSchema().getField(field);
-    FieldType ftype = sfield.getType();
+  public static List<String> decodeRefinementValuePath(String valuePath) {
+    List <String> rawvals = StrUtils.splitSmart(valuePath, ",", true);
+    // special case: empty list => empty string
+    if (rawvals.isEmpty()) return rawvals;
 
-    String nextField = fnames.poll();
-
-    List<NamedList<Object>> values = new ArrayList<>( superFacets.size() );
-    for (Map.Entry<String, Integer> kv : superFacets) {
-      // Only sub-facet if parent facet has positive count - still may not be any values for the sub-field though
-      if (kv.getValue() >= minMatch) {
-
-        // may be null when using facet.missing
-        final String fieldValue = kv.getKey(); 
-
-        // don't reuse the same BytesRef each time since we will be 
-        // constructing Term objects used in TermQueries that may be cached.
-        BytesRefBuilder termval = null;
-
-        SimpleOrderedMap<Object> pivot = new SimpleOrderedMap<>();
-        pivot.add( "field", field );
-        if (null == fieldValue) {
-          pivot.add( "value", null );
-        } else {
-          termval = new BytesRefBuilder();
-          ftype.readableToIndexed(fieldValue, termval);
-          pivot.add( "value", ftype.toObject(sfield, termval.get()) );
-        }
-        pivot.add( "count", kv.getValue() );
-        
-        if( subField == null ) {
-          values.add( pivot );
-        }
-        else {
-          DocSet subset = null;
-          if ( null == termval ) {
-            DocSet hasVal = searcher.getDocSet
-              (new TermRangeQuery(field, null, null, false, false));
-            subset = docs.andNot(hasVal);
-          } else {
-            Query query = new TermQuery(new Term(field, termval.get()));
-            subset = searcher.getDocSet(query, docs);
-          }
-          super.docs = subset;//used by getTermCounts()
-
-          NamedList<Integer> nl = this.getTermCounts(subField);
-          if (nl.size() >= minMatch) {
-            pivot.add( "pivot", doPivots( nl, subField, nextField, fnames, subset) );
-            values.add( pivot ); // only add response if there are some counts
-          }
-        }
+    List<String> out = new ArrayList<String>(rawvals.size());
+    for (String raw : rawvals) {
+      assert 0 < raw.length();
+      if ('^' == raw.charAt(0)) {
+        assert 1 == raw.length();
+        out.add(null);
+      } else {
+        assert '~' == raw.charAt(0);
+        out.add(raw.substring(1));
       }
     }
-    
-    // put the field back on the list
-    fnames.push( nextField );
-    return values;
+
+    return out;
   }
 
-// TODO: This is code from various patches to support distributed search.
-//  Some parts may be helpful for whoever implements distributed search.
-//
-//  @Override
-//  public int distributedProcess(ResponseBuilder rb) throws IOException {
-//    if (!rb.doFacets) {
-//      return ResponseBuilder.STAGE_DONE;
-//    }
-//
-//    if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
-//      SolrParams params = rb.req.getParams();
-//      String[] pivots = params.getParams(FacetParams.FACET_PIVOT);
-//      for ( ShardRequest sreq : rb.outgoing ) {
-//        if (( sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS ) != 0
-//            && sreq.shards != null && sreq.shards.length == 1 ) {
-//          sreq.params.set( FacetParams.FACET, "true" );
-//          sreq.params.set( FacetParams.FACET_PIVOT, pivots );
-//          sreq.params.set( FacetParams.FACET_PIVOT_MINCOUNT, 1 ); // keep this at 1 regardless so that it accumulates everything
-//            }
-//      }
-//    }
-//    return ResponseBuilder.STAGE_DONE;
-//  }
-//
-//  @Override
-//  public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
-//    if (!rb.doFacets) return;
-//
-//
-//    if ((sreq.purpose & ShardRequest.PURPOSE_GET_FACETS)!=0) {
-//      SimpleOrderedMap<List<NamedList<Object>>> tf = rb._pivots;
-//      if ( null == tf ) {
-//        tf = new SimpleOrderedMap<List<NamedList<Object>>>();
-//        rb._pivots = tf;
-//      }
-//      for (ShardResponse srsp: sreq.responses) {
-//        int shardNum = rb.getShardNum(srsp.getShard());
-//
-//        NamedList facet_counts = (NamedList)srsp.getSolrResponse().getResponse().get("facet_counts");
-//
-//        // handle facet trees from shards
-//        SimpleOrderedMap<List<NamedList<Object>>> shard_pivots = 
-//          (SimpleOrderedMap<List<NamedList<Object>>>)facet_counts.get( PIVOT_KEY );
-//        
-//        if ( shard_pivots != null ) {
-//          for (int j=0; j< shard_pivots.size(); j++) {
-//            // TODO -- accumulate the results from each shard
-//            // The following code worked to accumulate facets for an previous 
-//            // two level patch... it is here for reference till someone can upgrade
-//            /**
-//            String shard_tree_name = (String) shard_pivots.getName( j );
-//            SimpleOrderedMap<NamedList> shard_tree = (SimpleOrderedMap<NamedList>)shard_pivots.getVal( j );
-//            SimpleOrderedMap<NamedList> facet_tree = tf.get( shard_tree_name );
-//            if ( null == facet_tree) { 
-//              facet_tree = new SimpleOrderedMap<NamedList>(); 
-//              tf.add( shard_tree_name, facet_tree );
-//            }
-//
-//            for( int o = 0; o < shard_tree.size() ; o++ ) {
-//              String shard_outer = (String) shard_tree.getName( o );
-//              NamedList shard_innerList = (NamedList) shard_tree.getVal( o );
-//              NamedList tree_innerList  = (NamedList) facet_tree.get( shard_outer );
-//              if ( null == tree_innerList ) { 
-//                tree_innerList = new NamedList();
-//                facet_tree.add( shard_outer, tree_innerList );
-//              }
-//
-//              for ( int i = 0 ; i < shard_innerList.size() ; i++ ) {
-//                String shard_term = (String) shard_innerList.getName( i );
-//                long shard_count  = ((Number) shard_innerList.getVal(i)).longValue();
-//                int tree_idx      = tree_innerList.indexOf( shard_term, 0 );
-//
-//                if ( -1 == tree_idx ) {
-//                  tree_innerList.add( shard_term, shard_count );
-//                } else {
-//                  long tree_count = ((Number) tree_innerList.getVal( tree_idx )).longValue();
-//                  tree_innerList.setVal( tree_idx, shard_count + tree_count );
-//                }
-//              } // innerList loop
-//            } // outer loop
-//              **/
-//          } // each tree loop
-//        }
-//      }
-//    } 
-//    return ;
-//  }
-//
-//  @Override
-//  public void finishStage(ResponseBuilder rb) {
-//    if (!rb.doFacets || rb.stage != ResponseBuilder.STAGE_GET_FIELDS) return;
-//    // wait until STAGE_GET_FIELDS
-//    // so that "result" is already stored in the response (for aesthetics)
-//
-//    SimpleOrderedMap<List<NamedList<Object>>> tf = rb._pivots;
-//
-//    // get 'facet_counts' from the response
-//    NamedList facetCounts = (NamedList) rb.rsp.getValues().get("facet_counts");
-//    if (facetCounts == null) {
-//      facetCounts = new NamedList();
-//      rb.rsp.add("facet_counts", facetCounts);
-//    }
-//    facetCounts.add( PIVOT_KEY, tf );
-//    rb._pivots = null;
-//  }
-//
-//  public String getDescription() {
-//    return "Handle Pivot (multi-level) Faceting";
-//  }
+  /** @see PivotListEntry#VALUE */
+  public static Comparable getValue(NamedList<Object> pivotList) {
+    return (Comparable) PivotFacetHelper.retrieve(PivotListEntry.VALUE,
+                                                  pivotList);
+  }
+
+  /** @see PivotListEntry#FIELD */
+  public static String getField(NamedList<Object> pivotList) {
+    return (String) PivotFacetHelper.retrieve(PivotListEntry.FIELD, pivotList);
+  }
+  
+  /** @see PivotListEntry#COUNT */
+  public static Integer getCount(NamedList<Object> pivotList) {
+    return (Integer) PivotFacetHelper.retrieve(PivotListEntry.COUNT, pivotList);
+  }
+
+  /** @see PivotListEntry#PIVOT */
+  public static List<NamedList<Object>> getPivots(NamedList<Object> pivotList) {
+    int pivotIdx = pivotList.indexOf(PivotListEntry.PIVOT.getName(), 0);
+    if (pivotIdx > -1) {
+      return (List<NamedList<Object>>) pivotList.getVal(pivotIdx);
+    }
+    return null;
+  }
+  
+  private static Object retrieve(PivotListEntry entryToGet, NamedList<Object> pivotList) {
+    return pivotList.get(entryToGet.getName(), entryToGet.getIndex());
+  }
+
 }
