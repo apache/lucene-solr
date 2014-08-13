@@ -32,7 +32,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.SolrPluginUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -683,7 +682,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertU(adoc("id", "s0", "phrase_sw", "foo bar a b c", "boost_d", "1.0"));    
     assertU(adoc("id", "s1", "phrase_sw", "foo a bar b c", "boost_d", "2.0"));    
     assertU(adoc("id", "s2", "phrase_sw", "foo a b bar c", "boost_d", "3.0"));    
-    assertU(adoc("id", "s3", "phrase_sw", "foo a b c bar", "boost_d", "4.0"));    
+    assertU(adoc("id", "s3", "phrase_sw", "foo a b c bar", "boost_d", "4.0"));
     assertU(commit());
 
     assertQ("default order assumption wrong",
@@ -695,7 +694,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         "//doc[1]/str[@name='id'][.='s3']",
         "//doc[2]/str[@name='id'][.='s2']",
         "//doc[3]/str[@name='id'][.='s1']",
-        "//doc[4]/str[@name='id'][.='s0']"); 
+        "//doc[4]/str[@name='id'][.='s0']");
 
     assertQ("pf not working",
         req("q", "foo bar",
@@ -705,37 +704,37 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
             "fl", "score,*",
             "defType", "edismax"),
         "//doc[1]/str[@name='id'][.='s0']");
-    
+
     assertQ("pf2 not working",
-        req("q",   "foo bar", 
+        req("q",   "foo bar",
             "qf",  "phrase_sw",
             "pf2", "phrase_sw^10",
             "bf",  "boost_d",
             "fl",  "score,*",
             "defType", "edismax"),
-        "//doc[1]/str[@name='id'][.='s0']"); 
+        "//doc[1]/str[@name='id'][.='s0']");
 
     assertQ("pf3 not working",
-        req("q",   "a b bar", 
+        req("q",   "a b bar",
             "qf",  "phrase_sw",
             "pf3", "phrase_sw^10",
             "bf",  "boost_d",
             "fl",  "score,*",
             "defType", "edismax"),
-        "//doc[1]/str[@name='id'][.='s2']"); 
+        "//doc[1]/str[@name='id'][.='s2']");
 
     assertQ("ps not working for pf2",
-        req("q",   "bar foo", 
+        req("q",   "bar foo",
             "qf",  "phrase_sw",
             "pf2", "phrase_sw^10",
             "ps",  "2",
             "bf",  "boost_d",
             "fl",  "score,*",
             "defType", "edismax"),
-        "//doc[1]/str[@name='id'][.='s0']"); 
+        "//doc[1]/str[@name='id'][.='s0']");
 
     assertQ("ps not working for pf3",
-        req("q",   "a bar foo", 
+        req("q",   "a bar foo",
             "qf",  "phrase_sw",
             "pf3", "phrase_sw^10",
             "ps",  "3",
@@ -743,8 +742,8 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
             "fl",  "score,*",
             "debugQuery",  "true",
             "defType", "edismax"),
-        "//doc[1]/str[@name='id'][.='s1']"); 
-    
+        "//doc[1]/str[@name='id'][.='s1']");
+
     assertQ("ps/ps2/ps3 with default slop overrides not working",
         req("q", "zzzz xxxx cccc vvvv",
             "qf", "phrase_sw",
@@ -809,6 +808,17 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         "//str[@name='parsedquery'][contains(.,'phrase_sw:\"zzzz xxxx\"~2^22.0')]"
      );
 
+    assertQ("phrase field queries spanning multiple fields should be within their own dismax queries",
+        req("q", "aaaa bbbb cccc",
+            "qf", "phrase_sw phrase1_sw",
+            "pf2", "phrase_sw phrase1_sw",
+            "pf3", "phrase_sw phrase1_sw",
+            "defType", "edismax",
+            "debugQuery", "true"),
+        "//str[@name='parsedquery'][contains(.,'(phrase_sw:\"aaaa bbbb\" | phrase1_sw:\"aaaa bbbb\")')]",
+        "//str[@name='parsedquery'][contains(.,'(phrase_sw:\"bbbb cccc\" | phrase1_sw:\"bbbb cccc\")')]",
+        "//str[@name='parsedquery'][contains(.,'(phrase_sw:\"aaaa bbbb cccc\" | phrase1_sw:\"aaaa bbbb cccc\")')]"
+    );
   }
 
   /**

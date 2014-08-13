@@ -17,6 +17,9 @@
 
 package org.apache.solr.search;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.StopFilterFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -43,10 +46,12 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.util.SolrPluginUtils;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -57,15 +62,34 @@ import java.util.Set;
  * See Wiki page http://wiki.apache.org/solr/ExtendedDisMax
  */
 public class ExtendedDismaxQParser extends QParser {
-  
-  
+
   /**
    * A field we can't ever find in any schema, so we can safely tell
    * DisjunctionMaxQueryParser to use it as our defaultField, and
    * map aliases from it to any field in our schema.
    */
   private static String IMPOSSIBLE_FIELD_NAME = "\uFFFC\uFFFC\uFFFC";
-  
+
+  /**
+   * Helper function which returns the specified {@link FieldParams}' {@link FieldParams#getWordGrams()} value.
+   */
+  private static final Function<FieldParams, Integer> WORD_GRAM_EXTRACTOR = new Function<FieldParams, Integer>() {
+    @Override
+    public Integer apply(FieldParams input) {
+      return input.getWordGrams();
+    }
+  };
+
+  /**
+   * Helper function which returns the specified {@link FieldParams}' {@link FieldParams#getSlop()} value.
+   */
+  private static final Function<FieldParams, Integer> PHRASE_SLOP_EXTRACTOR = new Function<FieldParams, Integer>() {
+    @Override
+    public Integer apply(FieldParams input) {
+      return input.getSlop();
+    }
+  };
+
   /** shorten the class references for utilities */
   private static class U extends SolrPluginUtils {
     /* :NOOP */
@@ -212,21 +236,28 @@ public class ExtendedDismaxQParser extends QParser {
         if (clause.field != null || clause.isPhrase) continue;
         // check for keywords "AND,OR,TO"
         if (clause.isBareWord()) {
-          String s = clause.val.toString();
+          String s = clause.val;
           // avoid putting explicit operators in the phrase query
           if ("OR".equals(s) || "AND".equals(s) || "NOT".equals(s) || "TO".equals(s)) continue;
         }
         normalClauses.add(clause);
       }
-      
-      // full phrase and shingles
-      for (FieldParams phraseField: allPhraseFields) {
-        Map<String,Float> pf = new HashMap<>(1);
-        pf.put(phraseField.getField(),phraseField.getBoost());
-        addShingledPhraseQueries(query, normalClauses, pf,   
-            phraseField.getWordGrams(),config.tiebreaker, phraseField.getSlop());
+
+      // create a map of {wordGram, [phraseField]}
+      Multimap<Integer, FieldParams> phraseFieldsByWordGram = Multimaps.index(allPhraseFields, WORD_GRAM_EXTRACTOR);
+
+      // for each {wordGram, [phraseField]} entry, create and add shingled field queries to the main user query
+      for (Map.Entry<Integer, Collection<FieldParams>> phraseFieldsByWordGramEntry : phraseFieldsByWordGram.asMap().entrySet()) {
+
+        // group the fields within this wordGram collection by their associated slop (it's possible that the same
+        // field appears multiple times for the same wordGram count but with different slop values. In this case, we
+        // should take the *sum* of those phrase queries, rather than the max across them).
+        Multimap<Integer, FieldParams> phraseFieldsBySlop = Multimaps.index(phraseFieldsByWordGramEntry.getValue(), PHRASE_SLOP_EXTRACTOR);
+        for (Map.Entry<Integer, Collection<FieldParams>> phraseFieldsBySlopEntry : phraseFieldsBySlop.asMap().entrySet()) {
+          addShingledPhraseQueries(query, normalClauses, phraseFieldsBySlopEntry.getValue(),
+              phraseFieldsByWordGramEntry.getKey(), config.tiebreaker, phraseFieldsBySlopEntry.getKey());
+        }
       }
-      
     }
   }
 
@@ -493,14 +524,13 @@ public class ExtendedDismaxQParser extends QParser {
    * @param fields Field =&gt; boost mappings for the phrase queries
    * @param shingleSize how big the phrases should be, 0 means a single phrase
    * @param tiebreaker tie breaker value for the DisjunctionMaxQueries
-   * @param slop slop value for the constructed phrases
    */
   protected void addShingledPhraseQueries(final BooleanQuery mainQuery, 
       final List<Clause> clauses,
-      final Map<String,Float> fields,
+      final Collection<FieldParams> fields,
       int shingleSize,
       final float tiebreaker,
-      final int slop) 
+      final int slop)
           throws SyntaxError {
     
     if (null == fields || fields.isEmpty() || 
@@ -509,12 +539,12 @@ public class ExtendedDismaxQParser extends QParser {
     
     if (0 == shingleSize) shingleSize = clauses.size();
     
-    final int goat = shingleSize-1; // :TODO: better name for var?
+    final int lastClauseIndex = shingleSize-1;
     
     StringBuilder userPhraseQuery = new StringBuilder();
-    for (int i=0; i < clauses.size() - goat; i++) {
+    for (int i=0; i < clauses.size() - lastClauseIndex; i++) {
       userPhraseQuery.append('"');
-      for (int j=0; j <= goat; j++) {
+      for (int j=0; j <= lastClauseIndex; j++) {
         userPhraseQuery.append(clauses.get(i + j).val);
         userPhraseQuery.append(' ');
       }
@@ -524,8 +554,8 @@ public class ExtendedDismaxQParser extends QParser {
     
     /* for parsing sloppy phrases using DisjunctionMaxQueries */
     ExtendedSolrQueryParser pp = createEdismaxQueryParser(this, IMPOSSIBLE_FIELD_NAME);
-    
-    pp.addAlias(IMPOSSIBLE_FIELD_NAME, tiebreaker, fields);
+
+    pp.addAlias(IMPOSSIBLE_FIELD_NAME, tiebreaker, getFieldBoosts(fields));
     pp.setPhraseSlop(slop);
     pp.setRemoveStopFilter(true);  // remove stop filter and keep stopwords
     
@@ -559,8 +589,20 @@ public class ExtendedDismaxQParser extends QParser {
       mainQuery.add(phrase, BooleanClause.Occur.SHOULD);
     }
   }
-  
-  
+
+  /**
+   * @return a {fieldName, fieldBoost} map for the given fields.
+   */
+  private Map<String, Float> getFieldBoosts(Collection<FieldParams> fields) {
+    Map<String, Float> fieldBoostMap = new LinkedHashMap<>(fields.size());
+
+    for (FieldParams field : fields) {
+      fieldBoostMap.put(field.getField(), field.getBoost());
+    }
+
+    return fieldBoostMap;
+  }
+
   @Override
   public String[] getDefaultHighlightFields() {
     return config.queryFields.keySet().toArray(new String[0]);
@@ -1221,7 +1263,7 @@ public class ExtendedDismaxQParser extends QParser {
         return null;
       }
     }
-    
+
     private Analyzer noStopwordFilterAnalyzer(String fieldName) {
       FieldType ft = parser.getReq().getSchema().getFieldType(fieldName);
       Analyzer qa = ft.getQueryAnalyzer();

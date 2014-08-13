@@ -262,6 +262,9 @@ Bug Fixes
 
 * SOLR-6347: DELETEREPLICA throws a NPE while removing the last Replica in a Custom sharded collection.
 
+* SOLR-6062: Fix undesirable edismax query parser effect (introduced in SOLR-2058) in how phrase queries
+  generated from pf, pf2, and pf3 are merged into the main query.  (Michael Dodsworth via ehatcher)
+
 Optimizations
 ---------------------
 
