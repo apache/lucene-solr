@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * An FST {@link Outputs} implementation where each output
@@ -151,5 +152,12 @@ public final class IntSequenceOutputs extends Outputs<IntsRef> {
   @Override
   public String outputToString(IntsRef output) {
     return output.toString();
+  }
+
+  private static final long BASE_NUM_BYTES = RamUsageEstimator.shallowSizeOf(NO_OUTPUT);
+
+  @Override
+  public long ramBytesUsed(IntsRef output) {
+    return BASE_NUM_BYTES + RamUsageEstimator.sizeOf(output.ints);
   }
 }

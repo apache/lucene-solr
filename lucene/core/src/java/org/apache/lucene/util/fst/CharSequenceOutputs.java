@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * An FST {@link Outputs} implementation where each output
@@ -149,5 +150,12 @@ public final class CharSequenceOutputs extends Outputs<CharsRef> {
   @Override
   public String outputToString(CharsRef output) {
     return output.toString();
+  }
+
+  private static final long BASE_NUM_BYTES = RamUsageEstimator.shallowSizeOf(NO_OUTPUT);
+
+  @Override
+  public long ramBytesUsed(CharsRef output) {
+    return BASE_NUM_BYTES + RamUsageEstimator.sizeOf(output.chars);
   }
 }

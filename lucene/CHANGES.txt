@@ -214,6 +214,9 @@ Optimizations
 * LUCENE-5856: Optimize Fixed/Open/LongBitSet to remove unnecessary AND. 
   (Robert Muir)
 
+* LUCENE-5884: Optimize FST.ramBytesUsed.  (Adrien Grand, Robert Muir,
+  Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-5796: Fixes the Scorer.getChildren() method for two combinations 
