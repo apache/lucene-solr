@@ -92,6 +92,8 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
 
   @Override
   public void doTest() throws Exception {
+    waitForThingsToLevelOut(30000); // TODO: why whould we have to wait?
+    // 
     handle.clear();
     handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
