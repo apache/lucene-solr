@@ -1798,7 +1798,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <!-- ECJ Javadoc linting: -->
   
   <condition property="ecj-javadoc-lint.supported">
-    <not><equals arg1="${build.java.runtime}" arg2="1.8"/></not>
+    <not><equals arg1="${build.java.runtime}" arg2="1.9"/></not>
   </condition>
 
   <condition property="ecj-javadoc-lint-tests.supported">
