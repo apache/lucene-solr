@@ -160,6 +160,15 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testExportQuery() throws Exception {
+    SolrQueryRequest req = req("q", "*:*");
+    try {
+      assertQueryEquals("xport", req, "{!xport}");
+    } finally {
+      req.close();
+    }
+  }
+
   public void testQuerySwitch() throws Exception {
     SolrQueryRequest req = req("myXXX", "XXX", 
                                "myField", "foo_s",
