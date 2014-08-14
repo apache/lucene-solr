@@ -35,9 +35,6 @@ public final class NoMergePolicy extends MergePolicy {
   }
 
   @Override
-  public void close() {}
-
-  @Override
   public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, IndexWriter writer) { return null; }
 
   @Override

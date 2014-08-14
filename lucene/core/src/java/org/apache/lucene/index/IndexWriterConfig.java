@@ -287,21 +287,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   }
 
   /**
-   * Expert: {@link MergePolicy} is invoked whenever there are changes to the
-   * segments in the index. Its role is to select which merges to do, if any,
-   * and return a {@link MergePolicy.MergeSpecification} describing the merges.
-   * It also selects merges to do for forceMerge.
-   *
-   * <p>Only takes effect when IndexWriter is first created. */
-  public IndexWriterConfig setMergePolicy(MergePolicy mergePolicy) {
-    if (mergePolicy == null) {
-      throw new IllegalArgumentException("mergePolicy must not be null");
-    }
-    this.mergePolicy = mergePolicy;
-    return this;
-  }
-
-  /**
    * Set the {@link Codec}.
    * 
    * <p>
@@ -510,6 +495,11 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
       throw new IllegalArgumentException("printStream must not be null");
     }
     return setInfoStream(new PrintStreamInfoStream(printStream));
+  }
+  
+  @Override
+  public IndexWriterConfig setMergePolicy(MergePolicy mergePolicy) {
+    return (IndexWriterConfig) super.setMergePolicy(mergePolicy);
   }
   
   @Override
