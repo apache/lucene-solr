@@ -46,6 +46,23 @@ public abstract class StringHelper {
         return i;
     return len;
   }
+  
+  /** 
+   * Returns the length of {@code currentTerm} needed for use as a sort key.
+   * so that {@link BytesRef#compareTo(BytesRef)} still returns the same result.
+   * This method assumes currentTerm comes after priorTerm.
+   */
+  public static int sortKeyLength(final BytesRef priorTerm, final BytesRef currentTerm) {
+    final int currentTermOffset = currentTerm.offset;
+    final int priorTermOffset = priorTerm.offset;
+    final int limit = Math.min(priorTerm.length, currentTerm.length);
+    for (int i = 0; i < limit; i++) {
+      if (priorTerm.bytes[priorTermOffset+i] != currentTerm.bytes[currentTermOffset+i]) {
+        return i+1;
+      }
+    }
+    return Math.min(1+priorTerm.length, currentTerm.length);
+  }
 
   private StringHelper() {
   }

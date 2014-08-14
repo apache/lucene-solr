@@ -22,7 +22,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
-import org.apache.lucene.codecs.lucene49.Lucene49Codec;
+import org.apache.lucene.codecs.lucene410.Lucene410Codec;
 import org.apache.lucene.codecs.mocksep.MockSepPostingsFormat;
 import org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextPostingsFormat;
@@ -201,7 +201,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
 
   }
 
-  public static class MockCodec extends Lucene49Codec {
+  public static class MockCodec extends Lucene410Codec {
     final PostingsFormat lucene40 = new Lucene41PostingsFormat();
     final PostingsFormat simpleText = new SimpleTextPostingsFormat();
     final PostingsFormat mockSep = new MockSepPostingsFormat();
@@ -218,7 +218,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     }
   }
 
-  public static class MockCodec2 extends Lucene49Codec {
+  public static class MockCodec2 extends Lucene410Codec {
     final PostingsFormat lucene40 = new Lucene41PostingsFormat();
     final PostingsFormat simpleText = new SimpleTextPostingsFormat();
     
@@ -269,7 +269,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
   }
   
   public void testSameCodecDifferentInstance() throws Exception {
-    Codec codec = new Lucene49Codec() {
+    Codec codec = new Lucene410Codec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
         if ("id".equals(field)) {
@@ -285,7 +285,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
   }
   
   public void testSameCodecDifferentParams() throws Exception {
-    Codec codec = new Lucene49Codec() {
+    Codec codec = new Lucene410Codec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
         if ("id".equals(field)) {

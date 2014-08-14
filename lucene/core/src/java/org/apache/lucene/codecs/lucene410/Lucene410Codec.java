@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene49;
+package org.apache.lucene.codecs.lucene410;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,10 +17,7 @@ package org.apache.lucene.codecs.lucene49;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FilterCodec;
@@ -32,28 +29,27 @@ import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41StoredFieldsFormat;
-import org.apache.lucene.codecs.lucene42.Lucene42NormsFormat;
 import org.apache.lucene.codecs.lucene42.Lucene42TermVectorsFormat;
 import org.apache.lucene.codecs.lucene46.Lucene46FieldInfosFormat;
 import org.apache.lucene.codecs.lucene46.Lucene46SegmentInfoFormat;
+import org.apache.lucene.codecs.lucene49.Lucene49NormsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
-import org.apache.lucene.index.SegmentWriteState;
 
 /**
- * Implements the Lucene 4.9 index format, with configurable per-field postings
+ * Implements the Lucene 4.10 index format, with configurable per-field postings
  * and docvalues formats.
  * <p>
  * If you want to reuse functionality of this codec in another codec, extend
  * {@link FilterCodec}.
  *
- * @see org.apache.lucene.codecs.lucene49 package documentation for file format details.
+ * @see org.apache.lucene.codecs.lucene410 package documentation for file format details.
  * @lucene.experimental
  */
-// NOTE: if we make largish changes in a minor release, easier to just make Lucene410Codec or whatever
+// NOTE: if we make largish changes in a minor release, easier to just make Lucene411Codec or whatever
 // if they are backwards compatible or smallish we can probably do the backwards in the postingsreader
 // (it writes a minor version, etc).
-public class Lucene49Codec extends Codec {
+public class Lucene410Codec extends Codec {
   private final StoredFieldsFormat fieldsFormat = new Lucene41StoredFieldsFormat();
   private final TermVectorsFormat vectorsFormat = new Lucene42TermVectorsFormat();
   private final FieldInfosFormat fieldInfosFormat = new Lucene46FieldInfosFormat();
@@ -63,20 +59,20 @@ public class Lucene49Codec extends Codec {
   private final PostingsFormat postingsFormat = new PerFieldPostingsFormat() {
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {
-      return Lucene49Codec.this.getPostingsFormatForField(field);
+      return Lucene410Codec.this.getPostingsFormatForField(field);
     }
   };
   
   private final DocValuesFormat docValuesFormat = new PerFieldDocValuesFormat() {
     @Override
     public DocValuesFormat getDocValuesFormatForField(String field) {
-      return Lucene49Codec.this.getDocValuesFormatForField(field);
+      return Lucene410Codec.this.getDocValuesFormatForField(field);
     }
   };
 
   /** Sole constructor. */
-  public Lucene49Codec() {
-    super("Lucene49");
+  public Lucene410Codec() {
+    super("Lucene410");
   }
   
   @Override
@@ -121,7 +117,7 @@ public class Lucene49Codec extends Codec {
   /** Returns the docvalues format that should be used for writing 
    *  new segments of <code>field</code>.
    *  
-   *  The default implementation always returns "Lucene49"
+   *  The default implementation always returns "Lucene410"
    */
   public DocValuesFormat getDocValuesFormatForField(String field) {
     return defaultDVFormat;
@@ -133,17 +129,12 @@ public class Lucene49Codec extends Codec {
   }
 
   private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene41");
-  private final DocValuesFormat defaultDVFormat = DocValuesFormat.forName("Lucene49");
+  private final DocValuesFormat defaultDVFormat = DocValuesFormat.forName("Lucene410");
 
-  private final NormsFormat normsFormat = new Lucene49NormsFormat() {
-    @Override
-    public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
-      throw new UnsupportedOperationException("this codec can only be used for reading");
-    }
-  };
+  private final NormsFormat normsFormat = new Lucene49NormsFormat();
 
   @Override
-  public NormsFormat normsFormat() {
-   return normsFormat;
+  public final NormsFormat normsFormat() {
+    return normsFormat;
   }
 }

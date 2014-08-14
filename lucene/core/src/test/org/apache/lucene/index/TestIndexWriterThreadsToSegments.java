@@ -276,7 +276,7 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwc.setRAMBufferSizeMB(.2);
-    Codec codec = Codec.forName("Lucene49");
+    Codec codec = Codec.forName("Lucene410");
     iwc.setCodec(codec);
     iwc.setMergePolicy(NoMergePolicy.INSTANCE);
     final IndexWriter w = new IndexWriter(dir, iwc);

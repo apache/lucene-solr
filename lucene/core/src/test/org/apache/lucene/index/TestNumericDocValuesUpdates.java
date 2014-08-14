@@ -16,8 +16,8 @@ import org.apache.lucene.codecs.lucene40.Lucene40RWCodec;
 import org.apache.lucene.codecs.lucene41.Lucene41RWCodec;
 import org.apache.lucene.codecs.lucene42.Lucene42RWCodec;
 import org.apache.lucene.codecs.lucene45.Lucene45RWCodec;
-import org.apache.lucene.codecs.lucene49.Lucene49DocValuesFormat;
-import org.apache.lucene.codecs.lucene49.Lucene49Codec;
+import org.apache.lucene.codecs.lucene410.Lucene410DocValuesFormat;
+import org.apache.lucene.codecs.lucene410.Lucene410Codec;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
@@ -478,10 +478,10 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
   public void testDifferentDVFormatPerField() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
-    conf.setCodec(new Lucene49Codec() {
+    conf.setCodec(new Lucene410Codec() {
       @Override
       public DocValuesFormat getDocValuesFormatForField(String field) {
-        return new Lucene49DocValuesFormat();
+        return new Lucene410DocValuesFormat();
       }
     });
     IndexWriter writer = new IndexWriter(dir, conf);
@@ -1055,10 +1055,10 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setMergePolicy(NoMergePolicy.INSTANCE); // disable merges to simplify test assertions.
-    conf.setCodec(new Lucene49Codec() {
+    conf.setCodec(new Lucene410Codec() {
       @Override
       public DocValuesFormat getDocValuesFormatForField(String field) {
-        return new Lucene49DocValuesFormat();
+        return new Lucene410DocValuesFormat();
       }
     });
     IndexWriter writer = new IndexWriter(dir, conf);
@@ -1072,7 +1072,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     // change format
     conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setMergePolicy(NoMergePolicy.INSTANCE); // disable merges to simplify test assertions.
-    conf.setCodec(new Lucene49Codec() {
+    conf.setCodec(new Lucene410Codec() {
       @Override
       public DocValuesFormat getDocValuesFormatForField(String field) {
         return new AssertingDocValuesFormat();

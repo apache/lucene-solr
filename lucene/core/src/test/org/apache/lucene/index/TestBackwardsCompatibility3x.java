@@ -72,7 +72,7 @@ import org.junit.BeforeClass;
 // don't use 3.x codec, its unrealistic since it means
 // we won't even be running the actual code, only the impostor
 // Sep codec cannot yet handle the offsets we add when changing indexes!
-@SuppressCodecs({"Lucene3x", "MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom", "Lucene40", "Lucene41", "Appending", "Lucene42", "Lucene45", "Lucene46"})
+@SuppressCodecs({"Lucene3x", "MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom", "Lucene40", "Lucene41", "Appending", "Lucene42", "Lucene45", "Lucene46", "Lucene49"})
 public class TestBackwardsCompatibility3x extends LuceneTestCase {
 
   // Uncomment these cases & run them on an older Lucene

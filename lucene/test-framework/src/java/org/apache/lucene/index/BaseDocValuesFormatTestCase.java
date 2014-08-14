@@ -821,6 +821,8 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assertEquals("beer", termsEnum.term().utf8ToString());
     assertEquals(0, termsEnum.ord());
     assertEquals(SeekStatus.END, termsEnum.seekCeil(new BytesRef("zzz")));
+    assertEquals(SeekStatus.NOT_FOUND, termsEnum.seekCeil(new BytesRef("aba")));
+    assertEquals(0, termsEnum.ord());
     
     // seekExact()
     assertTrue(termsEnum.seekExact(new BytesRef("beer")));
@@ -1481,8 +1483,8 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     }
   }
   
-  private void doTestSortedVsStoredFields(int minLength, int maxLength) throws Exception {
-    Directory dir = newDirectory();
+  protected void doTestSortedVsStoredFields(int numDocs, int minLength, int maxLength) throws Exception {
+    Directory dir = newFSDirectory(createTempDir("dvduel"));
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
     Document doc = new Document();
@@ -1494,7 +1496,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(dvField);
     
     // index some docs
-    int numDocs = atLeast(300);
     for (int i = 0; i < numDocs; i++) {
       idField.setStringValue(Integer.toString(i));
       final int length;
@@ -1566,13 +1567,8 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     int numDocs = atLeast(300);
     for (int i = 0; i < numDocs; i++) {
       idField.setStringValue(Integer.toString(i));
-      final int length;
-      if (minLength == maxLength) {
-        length = minLength; // fixed length
-      } else {
-        length = TestUtil.nextInt(random(), minLength, maxLength);
-      }
-      String value = TestUtil.randomSimpleString(random(), length);
+      final int length = TestUtil.nextInt(random(), minLength, maxLength);
+      String value = TestUtil.randomSimpleString(random(), minLength, length);
       indexedField.setStringValue(value);
       dvField.setBytesValue(new BytesRef(value));
       writer.addDocument(doc);
@@ -1605,7 +1601,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       int fixedLength = TestUtil.nextInt(random(), 1, 10);
-      doTestSortedVsStoredFields(fixedLength, fixedLength);
+      doTestSortedVsStoredFields(atLeast(300), fixedLength, fixedLength);
     }
   }
   
@@ -1627,7 +1623,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   public void testSortedVariableLengthVsStoredFields() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      doTestSortedVsStoredFields(1, 10);
+      doTestSortedVsStoredFields(atLeast(300), 1, 10);
     }
   }
   
@@ -2069,13 +2065,12 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     directory.close();
   }
 
-  private void doTestSortedSetVsStoredFields(int minLength, int maxLength, int maxValuesPerDoc) throws Exception {
-    Directory dir = newDirectory();
+  protected void doTestSortedSetVsStoredFields(int numDocs, int minLength, int maxLength, int maxValuesPerDoc) throws Exception {
+    Directory dir = newFSDirectory(createTempDir("dvduel"));
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
     
     // index some docs
-    int numDocs = atLeast(300);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       Field idField = new StringField("id", Integer.toString(i), Field.Store.NO);
@@ -2171,7 +2166,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       int fixedLength = TestUtil.nextInt(random(), 1, 10);
-      doTestSortedSetVsStoredFields(fixedLength, fixedLength, 16);
+      doTestSortedSetVsStoredFields(atLeast(300), fixedLength, fixedLength, 16);
     }
   }
   
@@ -2242,7 +2237,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      doTestSortedSetVsStoredFields(1, 10, 16);
+      doTestSortedSetVsStoredFields(atLeast(300), 1, 10, 16);
     }
   }
 
@@ -2251,7 +2246,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       int fixedLength = TestUtil.nextInt(random(), 1, 10);
-      doTestSortedSetVsStoredFields(fixedLength, fixedLength, 1);
+      doTestSortedSetVsStoredFields(atLeast(300), fixedLength, fixedLength, 1);
     }
   }
   
@@ -2259,7 +2254,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      doTestSortedSetVsStoredFields(1, 10, 1);
+      doTestSortedSetVsStoredFields(atLeast(300), 1, 10, 1);
     }
   }
 
@@ -2382,17 +2377,12 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       Document doc = new Document();
       Field idField = new StringField("id", Integer.toString(i), Field.Store.NO);
       doc.add(idField);
-      final int length;
-      if (minLength == maxLength) {
-        length = minLength; // fixed length
-      } else {
-        length = TestUtil.nextInt(random(), minLength, maxLength);
-      }
+      final int length = TestUtil.nextInt(random(), minLength, maxLength);
       int numValues = random().nextInt(17);
       // create a random list of strings
       List<String> values = new ArrayList<>();
       for (int v = 0; v < numValues; v++) {
-        values.add(TestUtil.randomSimpleString(random(), length));
+        values.add(TestUtil.randomSimpleString(random(), minLength, length));
       }
       
       // add in any order to the indexed field

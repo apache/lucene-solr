@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene49;
+package org.apache.lucene.codecs.lucene410;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -33,7 +33,7 @@ import org.apache.lucene.util.packed.DirectWriter;
 import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
 
 /**
- * Lucene 4.9 DocValues format.
+ * Lucene 4.10 DocValues format.
  * <p>
  * Encodes the five per-document value types (Numeric,Binary,Sorted,SortedSet,SortedNumeric) with these strategies:
  * <p>
@@ -59,18 +59,18 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
  *        for each document. The addresses are written as Monotonic-compressed numerics.
  *    <li>Prefix-compressed Binary: values are written in chunks of 16, with the first value written
  *        completely and other values sharing prefixes. chunk addresses are written as Monotonic-compressed
- *        numerics.
+ *        numerics. A reverse lookup index is written from a portion of every 1024th term.
  * </ul>
  * <p>
  * {@link DocValuesType#SORTED SORTED}:
  * <ul>
- *    <li>Sorted: a mapping of ordinals to deduplicated terms is written as Prefix-Compressed Binary, 
+ *    <li>Sorted: a mapping of ordinals to deduplicated terms is written as Binary, 
  *        along with the per-document ordinals written using one of the numeric strategies above.
  * </ul>
  * <p>
  * {@link DocValuesType#SORTED_SET SORTED_SET}:
  * <ul>
- *    <li>SortedSet: a mapping of ordinals to deduplicated terms is written as Prefix-Compressed Binary, 
+ *    <li>SortedSet: a mapping of ordinals to deduplicated terms is written as Binary, 
  *        an ordinal list and per-document index into this list are written using the numeric strategies 
  *        above. 
  * </ul>
@@ -164,26 +164,26 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
  * </ol>
  * @lucene.experimental
  */
-public class Lucene49DocValuesFormat extends DocValuesFormat {
+public final class Lucene410DocValuesFormat extends DocValuesFormat {
 
   /** Sole Constructor */
-  public Lucene49DocValuesFormat() {
-    super("Lucene49");
+  public Lucene410DocValuesFormat() {
+    super("Lucene410");
   }
 
   @Override
   public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    return new Lucene49DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
+    return new Lucene410DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
   }
 
   @Override
   public DocValuesProducer fieldsProducer(SegmentReadState state) throws IOException {
-    return new Lucene49DocValuesProducer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
+    return new Lucene410DocValuesProducer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
   }
   
-  static final String DATA_CODEC = "Lucene49DocValuesData";
+  static final String DATA_CODEC = "Lucene410DocValuesData";
   static final String DATA_EXTENSION = "dvd";
-  static final String META_CODEC = "Lucene49ValuesMetadata";
+  static final String META_CODEC = "Lucene410ValuesMetadata";
   static final String META_EXTENSION = "dvm";
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;

@@ -21,7 +21,7 @@
   <fieldType name="string_simpletext" class="solr.StrField" postingsFormat="SimpleText"/>
   <fieldType name="string_standard" class="solr.StrField" postingsFormat="Lucene41"/>
 
-  <fieldType name="string_disk" class="solr.StrField" docValuesFormat="Lucene49" />
+  <fieldType name="string_disk" class="solr.StrField" docValuesFormat="Lucene410" />
   <fieldType name="string_memory" class="solr.StrField" docValuesFormat="Memory" />
 
   <fieldType name="string" class="solr.StrField" />
