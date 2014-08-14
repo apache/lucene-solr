@@ -1832,7 +1832,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   </target>
   
   <target name="-ecj-resolve" unless="ecj.loaded" depends="ivy-availability-check,ivy-configure" if="ecj-javadoc-lint.supported">
-    <ivy:cachepath organisation="org.eclipse.jdt.core.compiler" module="ecj" revision="3.7.2"
+    <ivy:cachepath organisation="org.eclipse.jdt.core.compiler" module="ecj" revision="4.4"
      inline="true" conf="master" type="jar" pathid="ecj.classpath" />
     <componentdef classname="org.eclipse.jdt.core.JDTCompilerAdapter"
      classpathref="ecj.classpath" name="ecj-component"/>
