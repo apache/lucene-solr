@@ -723,11 +723,15 @@ public class TestAutomaton extends LuceneTestCase {
         break;
 
       case 3:
-        if (VERBOSE) {
-          System.out.println("  op=minimize");
+        if (a.getNumStates() < 200) {
+          if (VERBOSE) {
+            System.out.println("  op=minimize");
+          }
+          // minimize
+          a = MinimizationOperations.minimize(a);
+        } else if (VERBOSE) {
+          System.out.println("  skip op=minimize: too many states (" + a.getNumStates() + ")");
         }
-        // minimize
-        a = MinimizationOperations.minimize(a);
         break;
 
       case 4:
