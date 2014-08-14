@@ -32,7 +32,6 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.SolrException;
@@ -346,7 +345,7 @@ public class UnInvertedField extends DocTermOrds {
           }
         }
       }
-      final CharsRefBuilder charsRef = new CharsRefBuilder();
+      final CharsRef charsRef = new CharsRef();
 
       int off=offset;
       int lim=limit>=0 ? limit : Integer.MAX_VALUE;
@@ -626,7 +625,7 @@ public class UnInvertedField extends DocTermOrds {
 
   }
 
-  String getReadableValue(BytesRef termval, FieldType ft, CharsRefBuilder charsRef) {
+  String getReadableValue(BytesRef termval, FieldType ft, CharsRef charsRef) {
     return ft.indexedToReadable(termval, charsRef).toString();
   }
 

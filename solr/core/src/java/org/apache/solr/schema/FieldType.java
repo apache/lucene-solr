@@ -42,9 +42,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.analysis.TokenizerChain;
@@ -360,7 +358,7 @@ public abstract class FieldType extends FieldProperties {
   }
 
   public Object toObject(SchemaField sf, BytesRef term) {
-    final CharsRefBuilder ref = new CharsRefBuilder();
+    final CharsRef ref = new CharsRef(term.length);
     indexedToReadable(term, ref);
     final IndexableField f = createField(sf, ref.toString(), 1.0f);
     return toObject(f);
@@ -372,9 +370,9 @@ public abstract class FieldType extends FieldProperties {
   }
 
   /** Given an indexed term, append the human readable representation*/
-  public CharsRef indexedToReadable(BytesRef input, CharsRefBuilder output) {
-    output.copyUTF8Bytes(input);
-    return output.get();
+  public CharsRef indexedToReadable(BytesRef input, CharsRef output) {
+    UnicodeUtil.UTF8toUTF16(input, output);
+    return output;
   }
 
   /** Given the stored field, return the human readable representation */
@@ -396,9 +394,9 @@ public abstract class FieldType extends FieldProperties {
   }
 
   /** Given the readable value, return the term value that will match it. */
-  public void readableToIndexed(CharSequence val, BytesRefBuilder result) {
+  public void readableToIndexed(CharSequence val, BytesRef result) {
     final String internal = readableToIndexed(val.toString());
-    result.copyChars(internal);
+    UnicodeUtil.UTF16toUTF8(internal, result);
   }
 
   public void setIsExplicitQueryAnalyzer(boolean isExplicitQueryAnalyzer) {
@@ -748,13 +746,13 @@ public abstract class FieldType extends FieldProperties {
    * 
    */
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
-    BytesRefBuilder br = new BytesRefBuilder();
+    BytesRef br = new BytesRef();
     readableToIndexed(externalVal, br);
     if (field.hasDocValues() && !field.indexed()) {
       // match-only
       return getRangeQuery(parser, field, externalVal, externalVal, true, true);
     } else {
-      return new TermQuery(new Term(field.getName(), br.toBytesRef()));
+      return new TermQuery(new Term(field.getName(), br));
     }
   }
   
@@ -1010,8 +1008,8 @@ public abstract class FieldType extends FieldProperties {
     if (null == value) {
       return null;
     }
-    CharsRefBuilder spare = new CharsRefBuilder();
-    spare.copyUTF8Bytes((BytesRef)value);
+    CharsRef spare = new CharsRef();
+    UnicodeUtil.UTF8toUTF16((BytesRef)value, spare);
     return spare.toString();
   }
 
@@ -1022,10 +1020,10 @@ public abstract class FieldType extends FieldProperties {
     if (null == value) {
       return null;
     }
-    BytesRefBuilder spare = new BytesRefBuilder();
+    BytesRef spare = new BytesRef();
     String stringVal = (String)value;
-    spare.copyChars(stringVal);
-    return spare.get();
+    UnicodeUtil.UTF16toUTF8(stringVal, spare);
+    return spare;
   }
 
   /**

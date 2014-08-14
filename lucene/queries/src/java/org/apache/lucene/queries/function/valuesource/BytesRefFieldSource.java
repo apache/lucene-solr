@@ -28,7 +28,7 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.DocTermsIndexDocValues;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueStr;
 
@@ -57,15 +57,15 @@ public class BytesRefFieldSource extends FieldCacheSource {
         }
 
         @Override
-        public boolean bytesVal(int doc, BytesRefBuilder target) {
+        public boolean bytesVal(int doc, BytesRef target) {
           target.copyBytes(binaryValues.get(doc));
-          return target.length() > 0;
+          return target.length > 0;
         }
 
         public String strVal(int doc) {
-          final BytesRefBuilder bytes = new BytesRefBuilder();
+          final BytesRef bytes = new BytesRef();
           return bytesVal(doc, bytes)
-              ? bytes.get().utf8ToString()
+              ? bytes.utf8ToString()
               : null;
         }
 
@@ -92,7 +92,6 @@ public class BytesRefFieldSource extends FieldCacheSource {
             @Override
             public void fillValue(int doc) {
               mval.exists = docsWithField.get(doc);
-              mval.value.clear();
               mval.value.copyBytes(binaryValues.get(doc));
             }
           };

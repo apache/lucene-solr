@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -55,13 +56,13 @@ public class TermQParserPlugin extends QParserPlugin {
         String fname = localParams.get(QueryParsing.F);
         FieldType ft = req.getSchema().getFieldTypeNoEx(fname);
         String val = localParams.get(QueryParsing.V);
-        BytesRefBuilder term = new BytesRefBuilder();
+        BytesRef term = new BytesRef();
         if (ft != null) {
           ft.readableToIndexed(val, term);
         } else {
           term.copyChars(val);
         }
-        return new TermQuery(new Term(fname, term.get()));
+        return new TermQuery(new Term(fname, term));
       }
     };
   }

@@ -62,9 +62,9 @@ public class DeleteUpdateCommand extends UpdateCommand {
       IndexSchema schema = req.getSchema();
       SchemaField sf = schema.getUniqueKeyField();
       if (sf != null && id != null) {
-        BytesRefBuilder b = new BytesRefBuilder();
+        BytesRef b = new BytesRef();
         sf.getType().readableToIndexed(id, b);
-        indexedId = b.get();
+        indexedId = b;
       }
     }
     return indexedId;
@@ -75,7 +75,7 @@ public class DeleteUpdateCommand extends UpdateCommand {
       IndexSchema schema = req.getSchema();
       SchemaField sf = schema.getUniqueKeyField();
       if (sf != null) {
-        CharsRefBuilder ref = new CharsRefBuilder();
+        CharsRef ref = new CharsRef();
         sf.getType().indexedToReadable(indexedId, ref);
         id = ref.toString();
       }

@@ -122,7 +122,7 @@ public class TermsQParserPlugin extends QParserPlugin {
         assert splitVals.length > 0;
 
         BytesRef[] bytesRefs = new BytesRef[splitVals.length];
-        BytesRefBuilder term = new BytesRefBuilder();
+        BytesRef term = new BytesRef();
         for (int i = 0; i < splitVals.length; i++) {
           String stringVal = splitVals[i];
           //logic same as TermQParserPlugin
@@ -131,7 +131,7 @@ public class TermsQParserPlugin extends QParserPlugin {
           } else {
             term.copyChars(stringVal);
           }
-          bytesRefs[i] = term.toBytesRef();
+          bytesRefs[i] = BytesRef.deepCopyOf(term);
         }
 
         return new SolrConstantScoreQuery(method.makeFilter(fname, bytesRefs));

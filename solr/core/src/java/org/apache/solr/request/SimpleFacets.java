@@ -483,7 +483,7 @@ public class SimpleFacets {
                                       (offset + limit), 
                                       mincount, orderByCount);
 
-    CharsRefBuilder charsRef = new CharsRefBuilder();
+    CharsRef charsRef = new CharsRef();
     FieldType facetFieldType = searcher.getSchema().getFieldType(field);
     NamedList<Integer> facetCounts = new NamedList<>();
     List<TermGroupFacetCollector.FacetEntry> scopedEntries 
@@ -682,7 +682,7 @@ public class SimpleFacets {
 
     final int nTerms=endTermIndex-startTermIndex;
     int missingCount = -1; 
-    final CharsRefBuilder charsRef = new CharsRefBuilder();
+    final CharsRef charsRef = new CharsRef();
     if (nTerms>0 && docs.size() >= mincount) {
 
       // count collection array only needs to be as big as the number of terms we are
@@ -849,7 +849,7 @@ public class SimpleFacets {
     }
 
     DocsEnum docsEnum = null;
-    CharsRefBuilder charsRef = new CharsRefBuilder();
+    CharsRef charsRef = new CharsRef();
 
     if (docs.size() >= mincount) {
       while (term != null) {

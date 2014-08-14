@@ -16,14 +16,14 @@ package org.apache.lucene.queries.function.valuesource;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.util.BytesRefBuilder;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.queries.function.FunctionValues;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * {@link ValueSource} implementation which only returns the values from the provided
@@ -100,7 +100,7 @@ public class DefFunction extends MultiFunction {
       }
 
       @Override
-      public boolean bytesVal(int doc, BytesRefBuilder target) {
+      public boolean bytesVal(int doc, BytesRef target) {
         return get(doc).bytesVal(doc, target);
       }
 

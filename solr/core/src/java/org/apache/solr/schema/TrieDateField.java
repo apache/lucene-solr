@@ -30,7 +30,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.update.processor.TimestampUpdateProcessorFactory; //jdoc
@@ -156,7 +155,7 @@ public class TrieDateField extends DateField implements DateValueFieldType {
     return wrappedField.indexedToReadable(_indexedForm);
   }
   @Override
-  public CharsRef indexedToReadable(BytesRef input, CharsRefBuilder charsRef) {
+  public CharsRef indexedToReadable(BytesRef input, CharsRef charsRef) {
     // TODO: this could be more efficient, but the sortable types should be deprecated instead
     return wrappedField.indexedToReadable(input, charsRef);
   }

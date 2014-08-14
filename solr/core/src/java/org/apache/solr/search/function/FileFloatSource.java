@@ -22,7 +22,6 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.RequestHandlerUtils;
@@ -268,7 +267,7 @@ public class FileFloatSource extends ValueSource {
 
     char delimiter='=';
 
-    BytesRefBuilder internalKey = new BytesRefBuilder();
+    BytesRef internalKey = new BytesRef();
 
     try {
       TermsEnum termsEnum = MultiFields.getTerms(reader, idName).iterator(null);
@@ -298,7 +297,7 @@ public class FileFloatSource extends ValueSource {
           continue;  // go to next line in file.. leave values as default.
         }
 
-        if (!termsEnum.seekExact(internalKey.get())) {
+        if (!termsEnum.seekExact(internalKey)) {
           if (notFoundCount<10) {  // collect first 10 not found for logging
             notFound.add(key);
           }

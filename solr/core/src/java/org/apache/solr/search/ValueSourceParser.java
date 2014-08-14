@@ -592,7 +592,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         TInfo tinfo = parseTerm(fp);
-        return new DocFreqValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes.get());
+        return new DocFreqValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes);
       }
     });
 
@@ -600,7 +600,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         TInfo tinfo = parseTerm(fp);
-        return new TotalTermFreqValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes.get());
+        return new TotalTermFreqValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes);
       }
     });
     alias("totaltermfreq","ttf");
@@ -618,7 +618,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         TInfo tinfo = parseTerm(fp);
-        return new IDFValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes.get());
+        return new IDFValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes);
       }
     });
 
@@ -626,7 +626,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         TInfo tinfo = parseTerm(fp);
-        return new TermFreqValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes.get());
+        return new TermFreqValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes);
       }
     });
 
@@ -634,7 +634,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         TInfo tinfo = parseTerm(fp);
-        return new TFValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes.get());
+        return new TFValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes);
       }
     });
 
@@ -794,7 +794,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     tinfo.indexedField = tinfo.field = fp.parseArg();
     tinfo.val = fp.parseArg();
-    tinfo.indexedBytes = new BytesRefBuilder();
+    tinfo.indexedBytes = new BytesRef();
 
     FieldType ft = fp.getReq().getSchema().getFieldTypeNoEx(tinfo.field);
     if (ft == null) ft = new StrField();
@@ -870,7 +870,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     String field;
     String val;
     String indexedField;
-    BytesRefBuilder indexedBytes;
+    BytesRef indexedBytes;
   }
 
 }

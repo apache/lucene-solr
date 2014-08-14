@@ -26,12 +26,12 @@ import org.apache.lucene.util.BytesRefBuilder;
  * have a <code>value</code> with a length set to 0.
  */
 public class MutableValueStr extends MutableValue {
-  public BytesRefBuilder value = new BytesRefBuilder();
+  public BytesRef value = new BytesRef();
 
   @Override
   public Object toObject() {
-    assert exists || 0 == value.length();
-    return exists ? value.get().utf8ToString() : null;
+    assert exists || 0 == value.length;
+    return exists ? value.utf8ToString() : null;
   }
 
   @Override
@@ -51,16 +51,16 @@ public class MutableValueStr extends MutableValue {
 
   @Override
   public boolean equalsSameType(Object other) {
-    assert exists || 0 == value.length();
+    assert exists || 0 == value.length;
     MutableValueStr b = (MutableValueStr)other;
-    return value.get().equals(b.value.get()) && exists == b.exists;
+    return value.equals(b.value) && exists == b.exists;
   }
 
   @Override
   public int compareSameType(Object other) {
-    assert exists || 0 == value.length();
+    assert exists || 0 == value.length;
     MutableValueStr b = (MutableValueStr)other;
-    int c = value.get().compareTo(b.value.get());
+    int c = value.compareTo(b.value);
     if (c != 0) return c;
     if (exists == b.exists) return 0;
     return exists ? 1 : -1;
@@ -69,7 +69,7 @@ public class MutableValueStr extends MutableValue {
 
   @Override
   public int hashCode() {
-    assert exists || 0 == value.length();
-    return value.get().hashCode();
+    assert exists || 0 == value.length;
+    return value.hashCode();
   }
 }

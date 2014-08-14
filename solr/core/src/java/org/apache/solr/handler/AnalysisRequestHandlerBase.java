@@ -249,7 +249,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       final TermToBytesRefAttribute termAtt = token.getAttribute(TermToBytesRefAttribute.class);
       BytesRef rawBytes = termAtt.getBytesRef();
       termAtt.fillBytesRef();
-      final String text = fieldType.indexedToReadable(rawBytes, new CharsRefBuilder()).toString();
+      final String text = fieldType.indexedToReadable(rawBytes, new CharsRef()).toString();
       tokenNamedList.add("text", text);
       
       if (token.hasAttribute(CharTermAttribute.class)) {

@@ -47,7 +47,6 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.mutable.MutableValueDate;
 import org.apache.lucene.util.mutable.MutableValueLong;
@@ -376,34 +375,36 @@ public class TrieField extends PrimitiveFieldType {
   @Override
   public String readableToIndexed(String val) {
     // TODO: Numeric should never be handled as String, that may break in future lucene versions! Change to use BytesRef for term texts!
-    final BytesRefBuilder bytes = new BytesRefBuilder();
+    final BytesRef bytes = new BytesRef(NumericUtils.BUF_SIZE_LONG);
     readableToIndexed(val, bytes);
-    return bytes.get().utf8ToString();
+    return bytes.utf8ToString();
   }
 
   @Override
-  public void readableToIndexed(CharSequence val, BytesRefBuilder result) {
+  public void readableToIndexed(CharSequence val, BytesRef result) {
     String s = val.toString();
+    BytesRefBuilder b = new BytesRefBuilder();
     try {
       switch (type) {
         case INTEGER:
-          NumericUtils.intToPrefixCodedBytes(Integer.parseInt(s), 0, result);
+          NumericUtils.intToPrefixCodedBytes(Integer.parseInt(s), 0, b);
           break;
         case FLOAT:
-          NumericUtils.intToPrefixCodedBytes(NumericUtils.floatToSortableInt(Float.parseFloat(s)), 0, result);
+          NumericUtils.intToPrefixCodedBytes(NumericUtils.floatToSortableInt(Float.parseFloat(s)), 0, b);
           break;
         case LONG:
-          NumericUtils.longToPrefixCodedBytes(Long.parseLong(s), 0, result);
+          NumericUtils.longToPrefixCodedBytes(Long.parseLong(s), 0, b);
           break;
         case DOUBLE:
-          NumericUtils.longToPrefixCodedBytes(NumericUtils.doubleToSortableLong(Double.parseDouble(s)), 0, result);
+          NumericUtils.longToPrefixCodedBytes(NumericUtils.doubleToSortableLong(Double.parseDouble(s)), 0, b);
           break;
         case DATE:
-          NumericUtils.longToPrefixCodedBytes(dateField.parseMath(null, s).getTime(), 0, result);
+          NumericUtils.longToPrefixCodedBytes(dateField.parseMath(null, s).getTime(), 0, b);
           break;
         default:
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
       }
+      result.copyBytes(b.get());
     } catch (NumberFormatException nfe) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
                               "Invalid Number: " + val);
@@ -447,7 +448,7 @@ public class TrieField extends PrimitiveFieldType {
   }
 
   @Override
-  public CharsRef indexedToReadable(BytesRef indexedForm, CharsRefBuilder charsRef) {
+  public CharsRef indexedToReadable(BytesRef indexedForm, CharsRef charsRef) {
     final String value;
     switch (type) {
       case INTEGER:
@@ -469,9 +470,9 @@ public class TrieField extends PrimitiveFieldType {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
     }
     charsRef.grow(value.length());
-    charsRef.setLength(value.length());
-    value.getChars(0, charsRef.length(), charsRef.chars(), 0);
-    return charsRef.get();
+    charsRef.length = value.length();
+    value.getChars(0, charsRef.length, charsRef.chars, 0);
+    return charsRef;
   }
 
   @Override
@@ -641,9 +642,9 @@ public class TrieField extends PrimitiveFieldType {
       fields.add(field);
       
       if (sf.multiValued()) {
-        BytesRefBuilder bytes = new BytesRefBuilder();
+        BytesRef bytes = new BytesRef();
         readableToIndexed(value.toString(), bytes);
-        fields.add(new SortedSetDocValuesField(sf.getName(), bytes.get()));
+        fields.add(new SortedSetDocValuesField(sf.getName(), bytes));
       } else {
         final long bits;
         if (field.numericValue() instanceof Integer || field.numericValue() instanceof Long) {

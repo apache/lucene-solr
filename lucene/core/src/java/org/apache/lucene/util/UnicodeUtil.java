@@ -574,4 +574,28 @@ public final class UnicodeUtil {
     return UTF8toUTF16(bytesRef.bytes, bytesRef.offset, bytesRef.length, chars);
   }
 
+  /**
+   * @deprecated Uses {@link CharsRef} as a buffer.
+   */
+  @Deprecated
+  public static void UTF8toUTF16(BytesRef bytes, CharsRef chars) {
+    assert chars.offset == 0;
+    if (chars.chars.length < bytes.length) {
+      chars.chars = new char[bytes.length];
+    }
+    chars.length = UTF8toUTF16(bytes, chars.chars);
+  }
+
+  /**
+   * @deprecated Uses {@link BytesRef} as a buffer.
+   */
+  @Deprecated
+  public static void UTF16toUTF8(CharSequence chars, BytesRef bytes) {
+    assert bytes.offset == 0;
+    if (bytes.length < MAX_UTF8_BYTES_PER_CHAR * chars.length()) {
+      bytes.bytes = new byte[MAX_UTF8_BYTES_PER_CHAR * chars.length()];
+    }
+    bytes.length = UTF16toUTF8(chars, 0, chars.length(), bytes.bytes);
+  }
+
 }

@@ -35,7 +35,6 @@ import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueBool;
 import org.apache.solr.analysis.SolrAnalyzer;
@@ -138,13 +137,13 @@ public class BoolField extends PrimitiveFieldType {
   private static final CharsRef FALSE = new CharsRef("false");
   
   @Override
-  public CharsRef indexedToReadable(BytesRef input, CharsRefBuilder charsRef) {
+  public CharsRef indexedToReadable(BytesRef input, CharsRef charsRef) {
     if (input.length > 0 && input.bytes[input.offset] == 'T') {
       charsRef.copyChars(TRUE);
     } else {
       charsRef.copyChars(FALSE);
     }
-    return charsRef.get();
+    return charsRef;
   }
 
   @Override

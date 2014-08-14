@@ -21,7 +21,6 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.StrDocValues;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
 
 import java.util.Map;
 import java.io.IOException;
@@ -55,7 +54,7 @@ public class LiteralValueSource extends ValueSource {
       }
 
       @Override
-      public boolean bytesVal(int doc, BytesRefBuilder target) {
+      public boolean bytesVal(int doc, BytesRef target) {
         target.copyBytes(bytesRef);
         return true;
       }

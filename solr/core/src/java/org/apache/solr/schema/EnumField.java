@@ -19,14 +19,12 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.IndexableField;
-
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.EnumFieldSource;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrException;
@@ -265,22 +263,24 @@ public class EnumField extends PrimitiveFieldType {
     if (val == null)
       return null;
 
-    final BytesRefBuilder bytes = new BytesRefBuilder();
+    final BytesRef bytes = new BytesRef(NumericUtils.BUF_SIZE_LONG);
     readableToIndexed(val, bytes);
-    return bytes.get().utf8ToString();
+    return bytes.utf8ToString();
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public void readableToIndexed(CharSequence val, BytesRefBuilder result) {
+  public void readableToIndexed(CharSequence val, BytesRef result) {
     final String s = val.toString();
     if (s == null)
       return;
 
     final Integer intValue = stringValueToIntValue(s);
-    NumericUtils.intToPrefixCoded(intValue, 0, result);
+    BytesRefBuilder b = new BytesRefBuilder();
+    NumericUtils.intToPrefixCoded(intValue, 0, b);
+    result.copyBytes(b.get());
   }
 
   /**
@@ -319,13 +319,13 @@ public class EnumField extends PrimitiveFieldType {
    * {@inheritDoc}
    */
   @Override
-  public CharsRef indexedToReadable(BytesRef input, CharsRefBuilder output) {
+  public CharsRef indexedToReadable(BytesRef input, CharsRef output) {
     final Integer intValue = NumericUtils.prefixCodedToInt(input);
     final String stringValue = intValueToStringValue(intValue);
     output.grow(stringValue.length());
-    output.setLength(stringValue.length());
-    stringValue.getChars(0, output.length(), output.chars(), 0);
-    return output.get();
+    output.length = stringValue.length();
+    stringValue.getChars(0, output.length, output.chars, 0);
+    return output;
   }
 
   /**

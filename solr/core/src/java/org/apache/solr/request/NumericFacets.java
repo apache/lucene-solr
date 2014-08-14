@@ -291,7 +291,7 @@ final class NumericFacets {
             default:
               throw new AssertionError();
           }
-          final CharsRefBuilder spare = new CharsRefBuilder();
+          final CharsRef spare = new CharsRef();
           for (int skipped = hashTable.size; skipped < offset && term != null && StringHelper.startsWith(term, prefix); ) {
             ft.indexedToReadable(term, spare);
             final String termStr = spare.toString();
@@ -344,7 +344,7 @@ final class NumericFacets {
           default:
             throw new AssertionError();
         }
-        final CharsRefBuilder spare = new CharsRefBuilder();
+        final CharsRef spare = new CharsRef();
         for (int i = 0; i < offset && term != null && StringHelper.startsWith(term, prefix); ++i) {
           term = termsEnum.next();
         }

@@ -27,7 +27,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.ValueSourceScorer;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueStr;
@@ -40,7 +40,8 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
   protected final SortedDocValues termsIndex;
   protected final ValueSource vs;
   protected final MutableValueStr val = new MutableValueStr();
-  protected final CharsRefBuilder spareChars = new CharsRefBuilder();
+  protected final CharsRefBuilder spareCharsBuilder = new CharsRefBuilder();
+  protected final CharsRef spareChars = new CharsRef();
 
   public DocTermsIndexDocValues(ValueSource vs, AtomicReaderContext context, String field) throws IOException {
     try {
@@ -69,10 +70,9 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
   }
 
   @Override
-  public boolean bytesVal(int doc, BytesRefBuilder target) {
-    target.clear();
+  public boolean bytesVal(int doc, BytesRef target) {
     target.copyBytes(termsIndex.get(doc));
-    return target.length() > 0;
+    return target.length > 0;
   }
 
   @Override
@@ -81,8 +81,8 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
     if (term.length == 0) {
       return null;
     }
-    spareChars.copyUTF8Bytes(term);
-    return spareChars.toString();
+    spareCharsBuilder.copyUTF8Bytes(term);
+    return spareCharsBuilder.toString();
   }
 
   @Override
@@ -149,7 +149,7 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
       @Override
       public void fillValue(int doc) {
         int ord = termsIndex.getOrd(doc);
-        mval.value.clear();
+        mval.value.length = 0;
         mval.exists = ord >= 0;
         if (mval.exists) {
           mval.value.copyBytes(termsIndex.lookupOrd(ord));
