@@ -228,4 +228,5 @@ public class CloudInspectUtil {
     
     return true;
   }
+
 }

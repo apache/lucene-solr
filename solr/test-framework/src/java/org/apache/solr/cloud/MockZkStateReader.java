@@ -1,4 +1,4 @@
-package org.apache.solr.common.cloud;
+package org.apache.solr.cloud;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,11 +17,24 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
-/**
- * @deprecated because this class is no longer used internally and will be removed
- */
-@Deprecated
-public interface ClosableThread {
-  public void close();
-  public boolean isClosed();
+import java.util.Set;
+
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.ZkStateReader;
+
+// does not yet mock zkclient at all
+public class MockZkStateReader extends ZkStateReader {
+
+  private Set<String> collections;
+
+  public MockZkStateReader(ClusterState clusterState, Set<String> collections) {
+    super(new MockSolrZkClient());
+    this.clusterState = clusterState;
+    this.collections = collections;
+  }
+  
+  public Set<String> getAllCollections(){
+    return collections;
+  }
+
 }

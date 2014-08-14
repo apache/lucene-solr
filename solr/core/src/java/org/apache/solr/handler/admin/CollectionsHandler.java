@@ -23,9 +23,7 @@ import static org.apache.solr.cloud.OverseerCollectionProcessor.COLL_CONF;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATESHARD;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.DELETEREPLICA;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.REQUESTID;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.ROUTER;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARDS_PROP;
@@ -36,6 +34,8 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.AD
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.OVERSEERSTATUS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
+import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
+import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -59,7 +59,6 @@ import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -469,15 +468,16 @@ public class CollectionsHandler extends RequestHandlerBase {
         Overseer.QUEUE_OPERATION,
         OverseerCollectionProcessor.CREATECOLLECTION,
         "fromApi","true");
-    copyIfNotNull(req.getParams(),props,
-        "name",
-        REPLICATION_FACTOR,
+    copyIfNotNull(req.getParams(), props,
+         "name",
+         ZkStateReader.REPLICATION_FACTOR,
          COLL_CONF,
          NUM_SLICES,
          MAX_SHARDS_PER_NODE,
-        CREATE_NODE_SET ,
-        SHARDS_PROP,
-        ASYNC,
+         CREATE_NODE_SET,
+         SHARDS_PROP,
+         ASYNC,
+         AUTO_ADD_REPLICAS,
         "router.");
 
     copyPropertiesIfNotNull(req.getParams(), props);
@@ -504,7 +504,7 @@ public class CollectionsHandler extends RequestHandlerBase {
       throw new SolrException(ErrorCode.BAD_REQUEST, "shards can be added only to 'implicit' collections" );
 
     Map<String, Object> map = makeMap(QUEUE_OPERATION, CREATESHARD);
-    copyIfNotNull(req.getParams(),map,COLLECTION_PROP, SHARD_ID_PROP, REPLICATION_FACTOR,CREATE_NODE_SET, ASYNC);
+    copyIfNotNull(req.getParams(),map,COLLECTION_PROP, SHARD_ID_PROP, ZkStateReader.REPLICATION_FACTOR, CREATE_NODE_SET, ASYNC);
     copyPropertiesIfNotNull(req.getParams(), map);
     ZkNodeProps m = new ZkNodeProps(map);
     handleResponse(CREATESHARD, m, rsp);

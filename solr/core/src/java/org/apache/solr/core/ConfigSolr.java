@@ -133,6 +133,11 @@ public abstract class ConfigSolr {
   private static final int DEFAULT_LEADER_VOTE_WAIT = 180000;  // 3 minutes
   private static final int DEFAULT_LEADER_CONFLICT_RESOLVE_WAIT = 180000;
   private static final int DEFAULT_CORE_LOAD_THREADS = 3;
+  
+  // TODO: tune defaults
+  private static final int DEFAULT_AUTO_REPLICA_FAILOVER_WAIT_AFTER_EXPIRATION = 30000;
+  private static final int DEFAULT_AUTO_REPLICA_FAILOVER_WORKLOOP_DELAY = 10000;
+  private static final int DEFAULT_AUTO_REPLICA_FAILOVER_BAD_NODE_EXPIRATION = 60000;
 
   protected static final String DEFAULT_CORE_ADMIN_PATH = "/admin/cores";
 
@@ -154,6 +159,18 @@ public abstract class ConfigSolr {
   
   public int getLeaderConflictResolveWait() {
     return get(CfgProp.SOLR_LEADERCONFLICTRESOLVEWAIT, DEFAULT_LEADER_CONFLICT_RESOLVE_WAIT);
+  }
+  
+  public int getAutoReplicaFailoverWaitAfterExpiration() {
+    return get(CfgProp.SOLR_AUTOREPLICAFAILOVERWAITAFTEREXPIRATION, DEFAULT_AUTO_REPLICA_FAILOVER_WAIT_AFTER_EXPIRATION);
+  }
+  
+  public int getAutoReplicaFailoverWorkLoopDelay() {
+    return get(CfgProp.SOLR_AUTOREPLICAFAILOVERWORKLOOPDELAY, DEFAULT_AUTO_REPLICA_FAILOVER_WORKLOOP_DELAY);
+  }
+  
+  public int getAutoReplicaFailoverBadNodeExpiration() {
+    return get(CfgProp.SOLR_AUTOREPLICAFAILOVERBADNODEEXPIRATION, DEFAULT_AUTO_REPLICA_FAILOVER_BAD_NODE_EXPIRATION);
   }
 
   public boolean getGenericCoreNodeNames() {
@@ -270,6 +287,10 @@ public abstract class ConfigSolr {
     SOLR_LEADERCONFLICTRESOLVEWAIT,
     SOLR_CONFIGSETBASEDIR,
 
+    SOLR_AUTOREPLICAFAILOVERWAITAFTEREXPIRATION,
+    SOLR_AUTOREPLICAFAILOVERWORKLOOPDELAY,
+    SOLR_AUTOREPLICAFAILOVERBADNODEEXPIRATION,
+    
     //TODO: Remove all of these elements for 5.0
     SOLR_PERSISTENT,
     SOLR_CORES_DEFAULT_CORE_NAME,

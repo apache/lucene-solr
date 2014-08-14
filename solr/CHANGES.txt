@@ -190,6 +190,8 @@ New Features
 
 * SOLR-2894: Distributed query support for facet.pivot (Dan Cooper, Erik Hatcher, Chris Russell,
   Andrew Muldowney, Brett Lucey, Mark Miller, hossman)
+  
+* SOLR-5656: Add autoAddReplicas feature for shared file systems. (Mark Miller, Gregory Chanan)
 
 Bug Fixes
 ----------------------

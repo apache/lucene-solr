@@ -28,6 +28,8 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
+import org.apache.solr.update.UpdateShardHandler;
+import org.apache.solr.util.MockConfigSolr;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
@@ -253,10 +255,10 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
     SolrZkClient zkClient = new SolrZkClient(address, TIMEOUT);
     ZkStateReader reader = new ZkStateReader(zkClient);
     LeaderElector overseerElector = new LeaderElector(zkClient);
-
+    UpdateShardHandler updateShardHandler = new UpdateShardHandler(null);
     // TODO: close Overseer
     Overseer overseer = new Overseer(
-        new HttpShardHandlerFactory().getShardHandler(), "/admin/cores", reader,null);
+        new HttpShardHandlerFactory().getShardHandler(), updateShardHandler, "/admin/cores", reader, null, new MockConfigSolr());
     overseer.close();
     ElectionContext ec = new OverseerElectionContext(zkClient, overseer,
         address.replaceAll("/", "_"));

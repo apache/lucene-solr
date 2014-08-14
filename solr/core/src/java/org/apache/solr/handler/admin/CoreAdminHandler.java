@@ -17,8 +17,25 @@
 
 package org.apache.solr.handler.admin;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
+import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -33,6 +50,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -68,23 +86,8 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
-import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 
 /**
  *
@@ -554,21 +557,25 @@ public class CoreAdminHandler extends RequestHandlerBase {
     }
 
     // TODO this should be moved into CoreContainer, really...
+    boolean preExisitingZkEntry = false;
     try {
       if (coreContainer.getZkController() != null) {
-        if(!Overseer.isLegacy(coreContainer.getZkController() .getZkStateReader().getClusterProps())){
-          if(dcore.getCloudDescriptor().getCoreNodeName() ==null) {
+        if (!Overseer.isLegacy(coreContainer.getZkController().getZkStateReader().getClusterProps())) {
+          if (dcore.getCloudDescriptor().getCoreNodeName() == null) {
             throw new SolrException(ErrorCode.SERVER_ERROR,
-                "non legacy mode coreNodeName missing "+ params);
-
+                "non legacy mode coreNodeName missing " + params);
+            
           }
         }
-      }
+        
+        preExisitingZkEntry = checkIfCoreNodeNameAlreadyExists(dcore);
 
-      // make sure we can write out the descriptor first
-      coreContainer.getCoresLocator().create(coreContainer, dcore);
+      }
       
       SolrCore core = coreContainer.create(dcore);
+      
+      // only write out the descriptor if the core is successfully created
+      coreContainer.getCoresLocator().create(coreContainer, dcore);
       
       if (coreContainer.getCoresLocator() instanceof SolrXMLCoresLocator) {
         // hack - in this case we persist once more because a core create race might
@@ -578,7 +585,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       rsp.add("core", core.getName());
     }
     catch (Exception ex) {
-      if (coreContainer.isZooKeeperAware() && dcore != null) {
+      if (coreContainer.isZooKeeperAware() && dcore != null && !preExisitingZkEntry) {
         try {
           coreContainer.getZkController().unregister(dcore.getName(), dcore);
         } catch (InterruptedException e) {
@@ -607,6 +614,27 @@ public class CoreAdminHandler extends RequestHandlerBase {
           "Error CREATEing SolrCore '" + dcore.getName() + "': " +
           ex.getMessage() + rootMsg, ex);
     }
+  }
+
+
+  private boolean checkIfCoreNodeNameAlreadyExists(CoreDescriptor dcore) {
+    ZkStateReader zkStateReader = coreContainer.getZkController()
+        .getZkStateReader();
+    DocCollection collection = zkStateReader.getClusterState().getCollectionOrNull(dcore.getCollectionName());
+    if (collection != null) {
+      Collection<Slice> slices = collection.getSlices();
+      
+      for (Slice slice : slices) {
+        Collection<Replica> replicas = slice.getReplicas();
+        for (Replica replica : replicas) {
+          if (replica.getName().equals(
+              dcore.getCloudDescriptor().getCoreNodeName())) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
   }
 
   /**

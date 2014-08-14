@@ -32,26 +32,25 @@ import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public class ZkStateReader {
+public class ZkStateReader implements Closeable {
   private static Logger log = LoggerFactory.getLogger(ZkStateReader.class);
   
   public static final String BASE_URL_PROP = "base_url";
@@ -75,6 +74,9 @@ public class ZkStateReader {
   public static final String CLUSTER_STATE = "/clusterstate.json";
   public static final String CLUSTER_PROPS = "/clusterprops.json";
 
+  public static final String REPLICATION_FACTOR = "replicationFactor";
+  public static final String MAX_SHARDS_PER_NODE = "maxShardsPerNode";
+  public static final String AUTO_ADD_REPLICAS = "autoAddReplicas";
 
   public static final String ROLES = "/roles.json";
 
@@ -90,15 +92,14 @@ public class ZkStateReader {
   public static final String LEGACY_CLOUD = "legacyCloud";
 
   public static final String URL_SCHEME = "urlScheme";
-
-  private volatile ClusterState clusterState;
+  
+  protected volatile ClusterState clusterState;
 
   private static final long SOLRCLOUD_UPDATE_DELAY = Long.parseLong(System.getProperty("solrcloud.update.delay", "5000"));
 
   public static final String LEADER_ELECT_ZKNODE = "/leader_elect";
 
   public static final String SHARD_LEADERS_ZKNODE = "leaders";
-
 
 
   
@@ -130,7 +131,7 @@ public class ZkStateReader {
       throw new RuntimeException(e); // should never happen w/o using real IO
     }
   }
-
+  
   /**
    * Returns config set name for collection.
    *
@@ -440,11 +441,11 @@ public class ZkStateReader {
         liveNodesSet.addAll(liveNodes);
         
         if (!onlyLiveNodes) {
-          log.info("Updating cloud state from ZooKeeper... ");
+          log.debug("Updating cloud state from ZooKeeper... ");
           
           clusterState = ClusterState.load(zkClient, liveNodesSet,this);
         } else {
-          log.info("Updating live nodes from ZooKeeper... ({})", liveNodesSet.size());
+          log.debug("Updating live nodes from ZooKeeper... ({})", liveNodesSet.size());
           clusterState = this.clusterState;
           clusterState.setLiveNodes(liveNodesSet);
         }
@@ -453,16 +454,16 @@ public class ZkStateReader {
 
     } else {
       if (clusterStateUpdateScheduled) {
-        log.info("Cloud state update for ZooKeeper already scheduled");
+        log.debug("Cloud state update for ZooKeeper already scheduled");
         return;
       }
-      log.info("Scheduling cloud state update from ZooKeeper...");
+      log.debug("Scheduling cloud state update from ZooKeeper...");
       clusterStateUpdateScheduled = true;
       updateCloudExecutor.schedule(new Runnable() {
         
         @Override
         public void run() {
-          log.info("Updating cluster state from ZooKeeper...");
+          log.debug("Updating cluster state from ZooKeeper...");
           synchronized (getUpdateLock()) {
             clusterStateUpdateScheduled = false;
             ClusterState clusterState;
@@ -473,11 +474,11 @@ public class ZkStateReader {
               liveNodesSet.addAll(liveNodes);
               
               if (!onlyLiveNodes) {
-                log.info("Updating cloud state from ZooKeeper... ");
+                log.debug("Updating cloud state from ZooKeeper... ");
                 
                 clusterState = ClusterState.load(zkClient, liveNodesSet,ZkStateReader.this);
               } else {
-                log.info("Updating live nodes from ZooKeeper... ");
+                log.debug("Updating live nodes from ZooKeeper... ");
                 clusterState = ZkStateReader.this.clusterState;
                 clusterState.setLiveNodes(liveNodesSet);
 
@@ -643,7 +644,7 @@ public class ZkStateReader {
   public Map getClusterProps(){
     Map result = null;
     try {
-      if(getZkClient().exists(ZkStateReader.CLUSTER_PROPS,true)){
+      if(getZkClient().exists(ZkStateReader.CLUSTER_PROPS, true)){
         result = (Map) ZkStateReader.fromJSON(getZkClient().getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true)) ;
       } else {
         result= new LinkedHashMap();

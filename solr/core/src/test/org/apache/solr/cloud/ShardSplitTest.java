@@ -52,9 +52,9 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 
 @Slow
 public class ShardSplitTest extends BasicDistributedZkTest {

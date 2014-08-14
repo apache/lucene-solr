@@ -1,4 +1,4 @@
-package org.apache.solr.common.cloud;
+package org.apache.solr.cloud;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,11 +17,30 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
-/**
- * @deprecated because this class is no longer used internally and will be removed
- */
-@Deprecated
-public interface ClosableThread {
-  public void close();
-  public boolean isClosed();
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.data.Stat;
+
+// does not yet mock zkclient at all
+public class MockSolrZkClient extends SolrZkClient {
+
+  public MockSolrZkClient() {
+    super();
+  }
+  
+  @Override
+  public Boolean exists(final String path, boolean retryOnConnLoss)
+      throws KeeperException, InterruptedException {
+    
+    return false;
+  }
+  
+  @Override
+  public byte[] getData(final String path, final Watcher watcher, final Stat stat, boolean retryOnConnLoss)
+      throws KeeperException, InterruptedException {
+    return null;
+  }
+
 }

@@ -86,6 +86,8 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory {
     this.hdfsDataDir = params.get(HDFS_HOME);
     if (this.hdfsDataDir != null && this.hdfsDataDir.length() == 0) {
       this.hdfsDataDir = null;
+    } else {
+      LOG.info(HDFS_HOME + "=" + this.hdfsDataDir);
     }
     boolean kerberosEnabled = params.getBool(KERBEROS_ENABLED, false);
     LOG.info("Solr Kerberos Authentication "
@@ -250,6 +252,11 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory {
   
   @Override
   public boolean isPersistent() {
+    return true;
+  }
+  
+  @Override
+  public boolean isSharedStorage() {
     return true;
   }
   

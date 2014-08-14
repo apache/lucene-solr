@@ -22,6 +22,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,9 +39,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
+import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 
 
 public class Assign {
@@ -167,7 +167,7 @@ public class Assign {
 
     if (repFactor > nodeNameVsShardCount.size()) {
       log.warn("Specified "
-          + REPLICATION_FACTOR
+          + ZkStateReader.REPLICATION_FACTOR
           + " of "
           + repFactor
           + " on collection "
@@ -186,7 +186,7 @@ public class Assign {
           + ", and the number of live nodes is " + nodeList.size()
           + ". This allows a maximum of " + maxCoresAllowedToCreate
           + " to be created. Value of " + NUM_SLICES + " is " + numSlices
-          + " and value of " + REPLICATION_FACTOR + " is " + repFactor
+          + " and value of " + ZkStateReader.REPLICATION_FACTOR + " is " + repFactor
           + ". This requires " + requestedCoresToCreate
           + " shards to be created (higher than the allowed number)");
     }

@@ -18,9 +18,8 @@ package org.apache.solr.cloud;
  */
 
 import static org.apache.solr.cloud.OverseerCollectionProcessor.DELETEREPLICA;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_NODE;
+import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 
 import java.io.File;
@@ -39,6 +38,7 @@ import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -162,7 +162,7 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
         .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
 
     Map<String, Object> props = makeMap(
-        REPLICATION_FACTOR, replicationFactor,
+        ZkStateReader.REPLICATION_FACTOR, replicationFactor,
         MAX_SHARDS_PER_NODE, maxShardsPerNode,
         NUM_SLICES, numShards);
     Map<String,List<Integer>> collectionInfos = new HashMap<>();
