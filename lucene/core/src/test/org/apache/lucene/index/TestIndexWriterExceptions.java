@@ -1030,6 +1030,55 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     dir.close();
   }
 
+  /** If IW hits OOME during indexing, it should refuse to commit any further changes. */
+  public void testOutOfMemoryErrorRollback() throws Exception {
+
+    final AtomicBoolean thrown = new AtomicBoolean(false);
+    final Directory dir = newDirectory();
+    final IndexWriter writer = new IndexWriter(dir,
+        newIndexWriterConfig(new MockAnalyzer(random()))
+          .setInfoStream(new InfoStream() {
+        @Override
+        public void message(String component, final String message) {
+          if (message.contains("startFullFlush") && thrown.compareAndSet(false, true)) {
+            throw new OutOfMemoryError("fake OOME at " + message);
+          }
+        }
+
+        @Override
+        public boolean isEnabled(String component) {
+          return true;
+        }
+        
+        @Override
+        public void close() {}
+      }));
+    writer.addDocument(new Document());
+
+    try {
+      writer.commit();
+      fail("OutOfMemoryError expected");
+    }
+    catch (final OutOfMemoryError expected) {}
+
+    try {
+      writer.close();
+    } catch (IllegalStateException ise) {
+      // expected
+    }
+
+    try {
+      writer.addDocument(new Document());
+    } catch (AlreadyClosedException ace) {
+      // expected
+    }
+
+    // IW should have done rollback() during close, since it hit OOME, and so no index should exist:
+    assertFalse(DirectoryReader.indexExists(dir));
+
+    dir.close();
+  }
+
   // LUCENE-1347
   private static final class TestPoint4 implements RandomIndexWriter.TestPoint {
 
@@ -2072,11 +2121,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("  now 2nd close writer");
         }
-        try {
-          w.close();
-        } catch (AlreadyClosedException ace) {
-          // OK
-        }
+        w.close();
         w = null;
       }
 

@@ -889,29 +889,36 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   }
 
   /**
-   * Implementation for {@link #close()} when {@link IndexWriterConfig#commitOnClose} is true.
+   * Gracefully closes (commits, waits for merges), but calls rollback
+   * if there's an exc so the IndexWriter is always closed.  This is called
+   * from {@link #close} when {@link IndexWriterConfig#commitOnClose} is
+   * {@code true}.
    */
   private void shutdown() throws IOException {
     if (pendingCommit != null) {
       throw new IllegalStateException("cannot close: prepareCommit was already called with no corresponding call to commit");
     }
-    if (infoStream.isEnabled("IW")) {
-      infoStream.message("IW", "now flush at close");
-    }
-    boolean success = false;
-    try {
-      flush(true, true);
-      finishMerges(true);
-      commit();
-      rollback(); // ie close, since we just committed
-      success = true;
-    } finally {
-      if (success == false) {
-        // Be certain to close the index on any exception
-        try {
-          rollback();
-        } catch (Throwable t) {
-          // Suppress so we keep throwing original exception
+    // Ensure that only one thread actually gets to do the
+    // closing
+    if (shouldClose()) {
+      boolean success = false;
+      try {
+        if (infoStream.isEnabled("IW")) {
+          infoStream.message("IW", "now flush at close");
+        }
+        flush(true, true);
+        finishMerges(true);
+        commitInternal(config.getMergePolicy());
+        rollbackInternal(); // ie close, since we just committed
+        success = true;
+      } finally {
+        if (success == false) {
+          // Be certain to close the index on any exception
+          try {
+            rollbackInternal();
+          } catch (Throwable t) {
+            // Suppress so we keep throwing original exception
+          }
         }
       }
     }
@@ -932,15 +939,19 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *       will be closed, but changes may have been lost.</li>
    * </ul>
    *
+   * <p>
+   * Note that this may be a costly
+   * operation, so, try to re-use a single writer instead of
+   * closing and opening a new one.  See {@link #commit()} for
+   * caveats about write caching done by some IO devices.
+   *
    * <p><b>NOTE</b>: You must ensure no other threads are still making
    * changes at the same time that this method is invoked.</p>
    */
   @Override
   public void close() throws IOException {
     if (config.getCommitOnClose()) {
-      if (closed == false) {
-        shutdown();
-      }
+      shutdown();
     } else {
       rollback();
     }

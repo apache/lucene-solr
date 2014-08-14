@@ -2610,7 +2610,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
     IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter iwriter = new IndexWriter(directory, iwc);
@@ -2761,6 +2761,63 @@ public class TestIndexWriter extends LuceneTestCase {
     w.addDocument(doc);
     w.close();
     r.close();
+    dir.close();
+  }
+
+  /** Make sure that close waits for any still-running commits. */
+  public void testCloseDuringCommit() throws Exception {
+
+    final CountDownLatch startCommit = new CountDownLatch(1);
+    final CountDownLatch finishCommit = new CountDownLatch(1);
+
+    // infostream that "takes a long time" to commit
+    InfoStream slowCommittingInfoStream = new InfoStream() {
+      @Override
+      public void message(String component, String message) {
+        if (message.equals("finishStartCommit")) {
+          startCommit.countDown();
+          try {
+            Thread.sleep(10);
+          } catch (InterruptedException ie) {
+            throw new ThreadInterruptedException(ie);
+          }
+        }
+      }
+
+      @Override
+      public boolean isEnabled(String component) {
+        return true;
+      }
+      
+      @Override
+      public void close() throws IOException {}
+    };
+    
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(null);
+    iwc.setInfoStream(slowCommittingInfoStream);
+    final IndexWriter iw = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    new Thread() {
+      @Override
+      public void run() {
+        try {
+          iw.commit();
+          finishCommit.countDown();
+        } catch (IOException ioe) {
+          throw new RuntimeException(ioe);
+        }
+      }
+    }.start();
+    startCommit.await();
+    try {
+      iw.close();
+      fail("didn't hit exception");
+    } catch (IllegalStateException ise) {
+      // expected
+    }
+    finishCommit.await();
+    iw.close();
     dir.close();
   }
 }
