@@ -151,8 +151,10 @@ public final class ByteSequenceOutputs extends Outputs<BytesRef> {
     return output.toString();
   }
 
+  private static final long BASE_NUM_BYTES = RamUsageEstimator.shallowSizeOf(NO_OUTPUT);
+
   @Override
   public long ramBytesUsed(BytesRef output) {
-    return super.ramBytesUsed(output) + RamUsageEstimator.sizeOf(output.bytes);
+    return BASE_NUM_BYTES + RamUsageEstimator.sizeOf(output.bytes);
   }
 }

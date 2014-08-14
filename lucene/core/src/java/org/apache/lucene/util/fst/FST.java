@@ -428,6 +428,8 @@ public final class FST<T> implements Accountable {
     return size;
   }
 
+  private int cachedArcsBytesUsed;
+
   @Override
   public long ramBytesUsed() {
     long size = BASE_RAM_BYTES_USED;
@@ -438,8 +440,7 @@ public final class FST<T> implements Accountable {
       size += nodeAddress.ramBytesUsed();
       size += inCounts.ramBytesUsed();
     }
-    size += ramBytesUsed(cachedRootArcs);
-    size += ramBytesUsed(assertingCachedRootArcs);
+    size += cachedArcsBytesUsed;
     size += RamUsageEstimator.sizeOf(bytesPerArc);
     return size;
   }
@@ -472,6 +473,7 @@ public final class FST<T> implements Accountable {
   private void cacheRootArcs() throws IOException {
     cachedRootArcs = (Arc<T>[]) new Arc[0x80];
     readRootArcs(cachedRootArcs);
+    cachedArcsBytesUsed += ramBytesUsed(cachedRootArcs);
     
     assert setAssertingRootArcs(cachedRootArcs);
     assert assertRootArcs();
@@ -502,6 +504,7 @@ public final class FST<T> implements Accountable {
   private boolean setAssertingRootArcs(Arc<T>[] arcs) throws IOException {
     assertingCachedRootArcs = (Arc<T>[]) new Arc[arcs.length];
     readRootArcs(assertingCachedRootArcs);
+    cachedArcsBytesUsed *= 2;
     return true;
   }
   

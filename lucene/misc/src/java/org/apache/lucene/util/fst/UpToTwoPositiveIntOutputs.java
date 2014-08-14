@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * An FST {@link Outputs} implementation where each output
@@ -231,5 +232,17 @@ public final class UpToTwoPositiveIntOutputs extends Outputs<Object> {
     assert valid(first, false);
     assert valid(second, false);
     return new TwoLongs((Long) first, (Long) second);
+  }
+
+  private static final long TWO_LONGS_NUM_BYTES = RamUsageEstimator.shallowSizeOf(new TwoLongs(0, 0));
+
+  @Override
+  public long ramBytesUsed(Object o) {
+    if (o instanceof Long) {
+      return RamUsageEstimator.sizeOf((Long) o);
+    } else {
+      assert o instanceof TwoLongs;
+      return TWO_LONGS_NUM_BYTES;
+    }
   }
 }

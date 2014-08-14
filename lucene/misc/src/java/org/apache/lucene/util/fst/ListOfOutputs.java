@@ -24,6 +24,7 @@ import java.util.List;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.IntsRef; // javadocs
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Wraps another Outputs implementation and encodes one or
@@ -207,5 +208,25 @@ public final class ListOfOutputs<T> extends Outputs<Object> {
     } else {
       return (List<T>) output;
     }
+  }
+
+  private static final long BASE_LIST_NUM_BYTES = RamUsageEstimator.shallowSizeOf(new ArrayList<Object>());
+
+  @Override
+  public long ramBytesUsed(Object output) {
+    long bytes = 0;
+    if (output instanceof List) {
+      bytes += BASE_LIST_NUM_BYTES;
+      List<T> outputList = (List<T>) output;
+      for(T _output : outputList) {
+        bytes += outputs.ramBytesUsed(_output);
+      }
+      // 2 * to allow for ArrayList's oversizing:
+      bytes += 2 * outputList.size() * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
+    } else {
+      bytes += outputs.ramBytesUsed((T) output);
+    }
+
+    return bytes;
   }
 }

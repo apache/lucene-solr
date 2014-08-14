@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Represents the outputs for an FST, providing the basic
@@ -100,7 +99,5 @@ public abstract class Outputs<T> {
 
   /** Return memory usage for the provided output.
    *  @see Accountable */
-  public long ramBytesUsed(T output) {
-    return RamUsageEstimator.shallowSizeOf(output);
-  }
+  public abstract long ramBytesUsed(T output);
 }
