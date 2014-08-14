@@ -253,9 +253,6 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     }
 
     @Override
-    public void close() {}
-
-    @Override
     public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, IndexWriter writer)
         throws IOException {
       MergeSpecification ms = new MergeSpecification();

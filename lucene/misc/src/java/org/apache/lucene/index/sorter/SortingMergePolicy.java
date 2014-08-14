@@ -30,8 +30,8 @@ import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.MergeTrigger;
 import org.apache.lucene.index.MultiReader;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentCommitInfo;
+import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
@@ -201,11 +201,6 @@ public final class SortingMergePolicy extends MergePolicy {
   public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, IndexWriter writer)
       throws IOException {
     return sortedMergeSpecification(in.findForcedDeletesMerges(segmentInfos, writer));
-  }
-
-  @Override
-  public void close() {
-    in.close();
   }
 
   @Override

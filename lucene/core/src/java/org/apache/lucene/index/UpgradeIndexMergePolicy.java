@@ -134,11 +134,6 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
   }
   
   @Override
-  public void close() {
-    base.close();
-  }
-  
-  @Override
   public String toString() {
     return "[" + getClass().getSimpleName() + "->" + base + "]";
   }

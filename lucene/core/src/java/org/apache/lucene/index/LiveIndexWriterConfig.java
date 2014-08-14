@@ -281,6 +281,25 @@ public class LiveIndexWriterConfig {
   }
 
   /**
+   * Expert: {@link MergePolicy} is invoked whenever there are changes to the
+   * segments in the index. Its role is to select which merges to do, if any,
+   * and return a {@link MergePolicy.MergeSpecification} describing the merges.
+   * It also selects merges to do for forceMerge.
+   * 
+   * <p>
+   * Takes effect on subsequent merge selections. Any merges in flight or any
+   * merges already registered by the previous {@link MergePolicy} are not
+   * affected.
+   */
+  public LiveIndexWriterConfig setMergePolicy(MergePolicy mergePolicy) {
+    if (mergePolicy == null) {
+      throw new IllegalArgumentException("mergePolicy must not be null");
+    }
+    this.mergePolicy = mergePolicy;
+    return this;
+  }
+
+  /**
    * Set the merged segment warmer. See {@link IndexReaderWarmer}.
    * 
    * <p>

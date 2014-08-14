@@ -168,6 +168,12 @@ API Changes
   to be just a reference to a section of a larger byte[] and BytesRefBuilder
   which is a StringBuilder-like class for BytesRef instances. (Adrien Grand)
 
+* LUCENE-5883: You can now change the MergePolicy instance on a live IndexWriter,
+  without first closing and reopening the writer. This allows to e.g. run a special
+  merge with UpgradeIndexMergePolicy without reopening the writer. Also, MergePolicy
+  no longer implements Closeable; if you need to release your custom MegePolicy's
+  resources, you need to implement close() and call it explicitly. (Shai Erera)
+  
 Optimizations
 
 * LUCENE-5780: Make OrdinalMap more memory-efficient, especially in case the

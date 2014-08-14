@@ -33,7 +33,6 @@ public class TestNoMergePolicy extends LuceneTestCase {
     assertNull(mp.findMerges(null, (SegmentInfos)null, null));
     assertNull(mp.findForcedMerges(null, 0, null, null));
     assertNull(mp.findForcedDeletesMerges(null, null));
-    mp.close();
   }
 
   @Test

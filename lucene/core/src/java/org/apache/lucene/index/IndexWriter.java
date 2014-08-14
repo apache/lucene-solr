@@ -279,7 +279,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   // merges
   private HashSet<SegmentCommitInfo> mergingSegments = new HashSet<>();
 
-  private MergePolicy mergePolicy;
   private final MergeScheduler mergeScheduler;
   private LinkedList<MergePolicy.OneMerge> pendingMerges = new LinkedList<>();
   private Set<MergePolicy.OneMerge> runningMerges = new HashSet<>();
@@ -443,7 +442,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         }
       }
       if (anySegmentFlushed) {
-        maybeMerge(MergeTrigger.FULL_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
+        maybeMerge(config.getMergePolicy(), MergeTrigger.FULL_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
       }
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "getReader took " + (System.currentTimeMillis() - tStart) + " msec");
@@ -743,7 +742,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     directory = d;
     analyzer = config.getAnalyzer();
     infoStream = config.getInfoStream();
-    mergePolicy = config.getMergePolicy();
     mergeScheduler = config.getMergeScheduler();
     codec = config.getCodec();
 
@@ -1686,7 +1684,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
     }
 
-    maybeMerge(MergeTrigger.EXPLICIT, maxNumSegments);
+    maybeMerge(config.getMergePolicy(), MergeTrigger.EXPLICIT, maxNumSegments);
 
     if (doWait) {
       synchronized(this) {
@@ -1766,6 +1764,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       infoStream.message("IW", "forceMergeDeletes: index now " + segString());
     }
 
+    final MergePolicy mergePolicy = config.getMergePolicy();
     MergePolicy.MergeSpecification spec;
     boolean newMergesFound = false;
     synchronized(this) {
@@ -1863,16 +1862,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * href="#OOME">above</a> for details.</p>
    */
   public final void maybeMerge() throws IOException {
-    maybeMerge(MergeTrigger.EXPLICIT, UNBOUNDED_MAX_MERGE_SEGMENTS);
+    maybeMerge(config.getMergePolicy(), MergeTrigger.EXPLICIT, UNBOUNDED_MAX_MERGE_SEGMENTS);
   }
 
-  private final void maybeMerge(MergeTrigger trigger, int maxNumSegments) throws IOException {
+  private final void maybeMerge(MergePolicy mergePolicy, MergeTrigger trigger, int maxNumSegments) throws IOException {
     ensureOpen(false);
-    boolean newMergesFound = updatePendingMerges(trigger, maxNumSegments);
+    boolean newMergesFound = updatePendingMerges(mergePolicy, trigger, maxNumSegments);
     mergeScheduler.merge(this, trigger, newMergesFound);
   }
 
-  private synchronized boolean updatePendingMerges(MergeTrigger trigger, int maxNumSegments)
+  private synchronized boolean updatePendingMerges(MergePolicy mergePolicy, MergeTrigger trigger, int maxNumSegments)
     throws IOException {
 
     // In case infoStream was disabled on init, but then enabled at some
@@ -1996,10 +1995,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         infoStream.message("IW", "rollback: done finish merges");
       }
 
-      // Must pre-close these two, in case they increment
-      // changeCount so that we can then set it to false
-      // before calling closeInternal
-      mergePolicy.close();
+      // Must pre-close in case it increments changeCount so that we can then
+      // set it to false before calling closeInternal
       mergeScheduler.close();
 
       bufferedUpdatesStream.clear();
@@ -2051,9 +2048,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     } finally {
       if (!success) {
         // Must not hold IW's lock while closing
-        // mergePolicy/Scheduler: this can lead to deadlock,
+        // mergeScheduler: this can lead to deadlock,
         // e.g. TestIW.testThreadInterruptDeadlock
-        IOUtils.closeWhileHandlingException(mergePolicy, mergeScheduler);
+        IOUtils.closeWhileHandlingException(mergeScheduler);
       }
       synchronized(this) {
         if (!success) {
@@ -2592,6 +2589,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
                                          
       setDiagnostics(info, SOURCE_ADDINDEXES_READERS);
 
+      final MergePolicy mergePolicy = config.getMergePolicy();
       boolean useCompoundFile;
       synchronized(this) { // Guard segmentInfos
         if (stopMerges) {
@@ -2752,10 +2750,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   @Override
   public final void prepareCommit() throws IOException {
     ensureOpen();
-    prepareCommitInternal();
+    prepareCommitInternal(config.getMergePolicy());
   }
 
-  private void prepareCommitInternal() throws IOException {
+  private void prepareCommitInternal(MergePolicy mergePolicy) throws IOException {
     startCommitTime = System.nanoTime();
     synchronized(commitLock) {
       ensureOpen(false);
@@ -2837,7 +2835,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       boolean success = false;
       try {
         if (anySegmentsFlushed) {
-          maybeMerge(MergeTrigger.FULL_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
+          maybeMerge(mergePolicy, MergeTrigger.FULL_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
         }
         startCommit(toCommit);
         success = true;
@@ -2913,7 +2911,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   @Override
   public final void commit() throws IOException {
     ensureOpen();
-    commitInternal();
+    commitInternal(config.getMergePolicy());
   }
 
   /** Returns true if there may be changes that have not been
@@ -2929,7 +2927,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     return changeCount != lastCommitChangeCount || docWriter.anyChanges() || bufferedUpdatesStream.any();
   }
 
-  private final void commitInternal() throws IOException {
+  private final void commitInternal(MergePolicy mergePolicy) throws IOException {
 
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "commit: start");
@@ -2946,7 +2944,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "commit: now prepare");
         }
-        prepareCommitInternal();
+        prepareCommitInternal(mergePolicy);
       } else {
         if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "commit: already prepared");
@@ -3025,7 +3023,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     // We can be called during close, when closing==true, so we must pass false to ensureOpen:
     ensureOpen(false);
     if (doFlush(applyAllDeletes) && triggerMerge) {
-      maybeMerge(MergeTrigger.FULL_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
+      maybeMerge(config.getMergePolicy(), MergeTrigger.FULL_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
     }
   }
 
@@ -3569,6 +3567,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
     final long t0 = System.currentTimeMillis();
 
+    final MergePolicy mergePolicy = config.getMergePolicy();
     try {
       try {
         try {
@@ -3581,7 +3580,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             infoStream.message("IW", "now merge\n  merge=" + segString(merge.segments) + "\n  index=" + segString());
           }
 
-          mergeMiddle(merge);
+          mergeMiddle(merge, mergePolicy);
           mergeSuccess(merge);
           success = true;
         } catch (Throwable t) {
@@ -3604,7 +3603,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           // segments) may now enable new merges, so we call
           // merge policy & update pending merges.
           if (success && !merge.isAborted() && (merge.maxNumSegments != -1 || (!closed && !closing))) {
-            updatePendingMerges(MergeTrigger.MERGE_FINISHED, merge.maxNumSegments);
+            updatePendingMerges(mergePolicy, MergeTrigger.MERGE_FINISHED, merge.maxNumSegments);
           }
         }
       }
@@ -3882,7 +3881,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   /** Does the actual (time-consuming) work of the merge,
    *  but without holding synchronized lock on IndexWriter
    *  instance */
-  private int mergeMiddle(MergePolicy.OneMerge merge) throws IOException {
+  private int mergeMiddle(MergePolicy.OneMerge merge, MergePolicy mergePolicy) throws IOException {
 
     merge.checkAborted(directory);
 
@@ -4569,12 +4568,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       flushCount.incrementAndGet();
     }
   }
+  
   final void doAfterSegmentFlushed(boolean triggerMerge, boolean forcePurge) throws IOException {
     try {
       purge(forcePurge);
     } finally {
       if (triggerMerge) {
-        maybeMerge(MergeTrigger.SEGMENT_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
+        maybeMerge(config.getMergePolicy(), MergeTrigger.SEGMENT_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
       }
     }
     

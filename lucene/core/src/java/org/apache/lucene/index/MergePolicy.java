@@ -55,7 +55,7 @@ import java.util.Map;
  *
  * @lucene.experimental
  */
-public abstract class MergePolicy implements java.io.Closeable {
+public abstract class MergePolicy {
 
   /** A map of doc IDs. */
   public static abstract class DocMap {
@@ -446,12 +446,6 @@ public abstract class MergePolicy implements java.io.Closeable {
   public abstract MergeSpecification findForcedDeletesMerges(
       SegmentInfos segmentInfos, IndexWriter writer) throws IOException;
 
-  /**
-   * Release all resources for the policy.
-   */
-  @Override
-  public abstract void close();
-  
   /**
    * Returns true if a new segment (regardless of its origin) should use the
    * compound file format. The default implementation returns <code>true</code>

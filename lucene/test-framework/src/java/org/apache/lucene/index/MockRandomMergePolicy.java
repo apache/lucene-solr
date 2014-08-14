@@ -131,10 +131,6 @@ public class MockRandomMergePolicy extends MergePolicy {
   }
 
   @Override
-  public void close() {
-  }
-
-  @Override
   public boolean useCompoundFile(SegmentInfos infos, SegmentCommitInfo mergedInfo, IndexWriter writer) throws IOException {
     // 80% of the time we create CFS:
     return random.nextInt(5) != 1;

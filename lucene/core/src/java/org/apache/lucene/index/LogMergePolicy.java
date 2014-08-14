@@ -145,10 +145,6 @@ public abstract class LogMergePolicy extends MergePolicy {
     return calibrateSizeByDeletes;
   }
 
-  @Override
-  public void close() {}
-
-
   /** Return the number of documents in the provided {@link
    *  SegmentCommitInfo}, pro-rated by percentage of
    *  non-deleted documents if {@link
