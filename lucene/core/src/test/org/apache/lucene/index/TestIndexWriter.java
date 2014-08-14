@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -80,13 +81,14 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SetOnce;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.automaton.Automata;
-import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.packed.PackedInts;
 import org.junit.Test;
 
@@ -1059,10 +1061,10 @@ public class TestIndexWriter extends LuceneTestCase {
       // LUCENE-2239: won't work with NIOFS/MMAP
       MockDirectoryWrapper dir = new MockDirectoryWrapper(random, new RAMDirectory());
 
-      // When interrupt arrives in w.close(), when it's
-      // writing liveDocs, this can lead to double-write of
-      // _X_N.del:
-      //dir.setPreventDoubleWrite(false);
+      // When interrupt arrives in w.close(), this can
+      // lead to double-write of files:
+      dir.setPreventDoubleWrite(false);
+
       IndexWriter w = null;
       while(!finish) {
         try {
@@ -2087,32 +2089,6 @@ public class TestIndexWriter extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
-  // here we do better, there is no current segments file, so we don't delete anything.
-  // however, if you actually go and make a commit, the next time you run indexwriter
-  // this file will be gone.
-  public void testOtherFiles2() throws Throwable {
-    Directory dir = newDirectory();
-    try {
-      // Create my own random file:
-      IndexOutput out = dir.createOutput("_a.frq", newIOContext(random()));
-      out.writeByte((byte) 42);
-      out.close();
-      
-      new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))).close();
-      
-      assertTrue(slowFileExists(dir, "_a.frq"));
-      
-      IndexWriter iw = new IndexWriter(dir, 
-          newIndexWriterConfig(new MockAnalyzer(random())));
-      iw.addDocument(new Document());
-      iw.close();
-      
-      assertFalse(slowFileExists(dir, "_a.frq"));
-    } finally {
-      dir.close();
-    }
-  }
 
   // LUCENE-4398
   public void testRotatingFieldNames() throws Exception {
@@ -2604,6 +2580,114 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.close();
   }
 
+  public void testHasUncommittedChangesAfterException() throws IOException {
+    Analyzer analyzer = new MockAnalyzer(random());
+    assumeTrue("requires doc values", defaultCodecSupportsDocValues());
+
+    Directory directory = newDirectory();
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
+    iwc.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    Document doc = new Document();
+    doc.add(new SortedDocValuesField("dv", new BytesRef("foo!")));
+    doc.add(new SortedDocValuesField("dv", new BytesRef("bar!")));
+    try {
+      iwriter.addDocument(doc);
+      fail("didn't hit expected exception");
+    } catch (IllegalArgumentException expected) {
+      // expected
+    }
+    iwriter.commit();
+    assertFalse(iwriter.hasUncommittedChanges());
+    iwriter.close();
+    directory.close();
+  }
+
+  public void testDoubleClose() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    w.addDocument(new Document());
+    w.close();
+    // Close again should have no effect
+    w.close();
+    dir.close();
+  }
+
+  public void testRollbackThenClose() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    w.addDocument(new Document());
+    w.rollback();
+    // Close after rollback should have no effect
+    w.close();
+    dir.close();
+  }
+
+  public void testCloseThenRollback() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    w.addDocument(new Document());
+    w.close();
+    // Rollback after close should have no effect
+    w.rollback();
+    dir.close();
+  }
+
+  public void testRollbackWhileMergeIsRunning() throws IOException {
+    Directory dir = newDirectory();
+
+    final CountDownLatch mergeStarted = new CountDownLatch(1);
+    final CountDownLatch closeStarted = new CountDownLatch(1);
+
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    LogDocMergePolicy mp = new LogDocMergePolicy();
+    mp.setMergeFactor(2);
+    iwc.setMergePolicy(mp);
+    iwc.setInfoStream(new InfoStream() {
+        @Override
+        public boolean isEnabled(String component) {
+          return true;
+        }
+
+        @Override
+        public void message(String component, String message) {
+          if (message.equals("rollback")) {
+            closeStarted.countDown();
+          }
+        }
+
+        @Override
+        public void close() {
+        }
+      });
+
+    iwc.setMergeScheduler(new ConcurrentMergeScheduler() {
+        @Override
+        public void doMerge(MergePolicy.OneMerge merge) throws IOException {
+          mergeStarted.countDown();
+          try {
+            closeStarted.await();
+          } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(ie);
+          }
+          super.doMerge(merge);
+        }
+
+        @Override
+        public void close() {
+        }
+      });
+    IndexWriter w = new IndexWriter(dir, iwc);
+    w.addDocument(new Document());
+    w.commit();
+    w.addDocument(new Document());
+    w.commit();
+    w.rollback();
+    dir.close();
+  }
+
   // LUCENE-5574
   public void testClosingNRTReaderDoesNotCorruptYourIndex() throws IOException {
 
@@ -2644,6 +2728,62 @@ public class TestIndexWriter extends LuceneTestCase {
     w.addDocument(doc);
     w.close();
     r.close();
+    dir.close();
+  }
+
+  /** Make sure that close waits for any still-running commits. */
+  public void testCloseDuringCommit() throws Exception {
+
+    final CountDownLatch startCommit = new CountDownLatch(1);
+    final CountDownLatch finishCommit = new CountDownLatch(1);
+
+    // infostream that "takes a long time" to commit
+    InfoStream slowCommittingInfoStream = new InfoStream() {
+      @Override
+      public void message(String component, String message) {
+        if (message.equals("finishStartCommit")) {
+          startCommit.countDown();
+          try {
+            Thread.sleep(10);
+          } catch (InterruptedException ie) {
+            throw new ThreadInterruptedException(ie);
+          }
+        }
+      }
+
+      @Override
+      public boolean isEnabled(String component) {
+        return true;
+      }
+      
+      @Override
+      public void close() throws IOException {}
+    };
+    
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
+    iwc.setInfoStream(slowCommittingInfoStream);
+    final IndexWriter iw = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    new Thread() {
+      @Override
+      public void run() {
+        try {
+          iw.commit();
+          finishCommit.countDown();
+        } catch (IOException ioe) {
+          throw new RuntimeException(ioe);
+        }
+      }
+    }.start();
+    startCommit.await();
+    try {
+      iw.close();
+    } catch (IllegalStateException ise) {
+      // OK, but not required (depends on thread scheduling)
+    }
+    finishCommit.await();
+    iw.close();
     dir.close();
   }
 }

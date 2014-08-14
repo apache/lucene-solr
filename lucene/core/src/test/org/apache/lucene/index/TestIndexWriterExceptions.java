@@ -51,13 +51,14 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -1036,6 +1037,55 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     // throws IllegalStateEx w/o bug fix
     writer.close();
+    dir.close();
+  }
+
+  /** If IW hits OOME during indexing, it should refuse to commit any further changes. */
+  public void testOutOfMemoryErrorRollback() throws Exception {
+
+    final AtomicBoolean thrown = new AtomicBoolean(false);
+    final Directory dir = newDirectory();
+    final IndexWriter writer = new IndexWriter(dir,
+        newIndexWriterConfig(new MockAnalyzer(random()))
+          .setInfoStream(new InfoStream() {
+        @Override
+        public void message(String component, final String message) {
+          if (message.contains("startFullFlush") && thrown.compareAndSet(false, true)) {
+            throw new OutOfMemoryError("fake OOME at " + message);
+          }
+        }
+
+        @Override
+        public boolean isEnabled(String component) {
+          return true;
+        }
+        
+        @Override
+        public void close() {}
+      }));
+    writer.addDocument(new Document());
+
+    try {
+      writer.commit();
+      fail("OutOfMemoryError expected");
+    }
+    catch (final OutOfMemoryError expected) {}
+
+    try {
+      writer.close();
+    } catch (IllegalStateException ise) {
+      // expected
+    }
+
+    try {
+      writer.addDocument(new Document());
+    } catch (AlreadyClosedException ace) {
+      // expected
+    }
+
+    // IW should have done rollback() during close, since it hit OOME, and so no index should exist:
+    assertFalse(DirectoryReader.indexExists(dir));
+
     dir.close();
   }
 
@@ -2059,6 +2109,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
             System.out.println("  now close writer");
           }
           doClose = true;
+          w.commit();
           w.close();
           w = null;
         }

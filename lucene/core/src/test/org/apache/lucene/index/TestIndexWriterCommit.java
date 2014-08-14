@@ -659,4 +659,23 @@ public class TestIndexWriterCommit extends LuceneTestCase {
 
     dir.close();
   }
+
+  public void testPrepareCommitThenClose() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    w.addDocument(new Document());
+    w.prepareCommit();
+    try {
+      w.close();
+      fail("didn't hit exception");
+    } catch (IllegalStateException ise) {
+      // expected
+    }
+    w.commit();
+    w.close();
+    DirectoryReader r = DirectoryReader.open(dir);
+    assertEquals(1, r.maxDoc());
+    r.close();
+    dir.close();
+  }
 }

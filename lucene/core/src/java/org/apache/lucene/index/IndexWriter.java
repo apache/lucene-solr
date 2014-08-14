@@ -890,52 +890,61 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   }
 
   /**
+   * Gracefully closes (commits, waits for merges), but calls rollback
+   * if there's an exc so the IndexWriter is always closed.
+   */
+  private void shutdown(boolean waitForMerges) throws IOException {
+    if (pendingCommit != null) {
+      throw new IllegalStateException("cannot close: prepareCommit was already called with no corresponding call to commit");
+    }
+    // Ensure that only one thread actually gets to do the
+    // closing
+    if (shouldClose()) {
+      boolean success = false;
+      try {
+        if (infoStream.isEnabled("IW")) {
+          infoStream.message("IW", "now flush at close");
+        }
+        flush(true, true);
+        finishMerges(waitForMerges);
+        commitInternal(config.getMergePolicy());
+        rollbackInternal(); // ie close, since we just committed
+        success = true;
+      } finally {
+        if (success == false) {
+          // Be certain to close the index on any exception
+          try {
+            rollbackInternal();
+          } catch (Throwable t) {
+            // Suppress so we keep throwing original exception
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Commits all changes to an index, waits for pending merges
-   * to complete, and closes all associated files.  
-   * <p>
-   * This is a "slow graceful shutdown" which may take a long time
-   * especially if a big merge is pending: If you only want to close
-   * resources use {@link #rollback()}. If you only want to commit
-   * pending changes and close resources see {@link #close(boolean)}.
+   * to complete, closes all associated files and releases the
+   * write lock.  
+   *
+   * <p>Note that:
+   * <ul>
+   *   <li>If you called prepareCommit but failed to call commit, this
+   *       method will throw {@code IllegalStateException} and the {@code IndexWriter}
+   *       will not be closed.</li>
+   *   <li>If this method throws any other exception, the {@code IndexWriter}
+   *       will be closed, but changes may have been lost.</li>
+   * </ul>
+   *
    * <p>
    * Note that this may be a costly
    * operation, so, try to re-use a single writer instead of
    * closing and opening a new one.  See {@link #commit()} for
    * caveats about write caching done by some IO devices.
    *
-   * <p> If an Exception is hit during close, eg due to disk
-   * full or some other reason, then both the on-disk index
-   * and the internal state of the IndexWriter instance will
-   * be consistent.  However, the close will not be complete
-   * even though part of it (flushing buffered documents)
-   * may have succeeded, so the write lock will still be
-   * held.</p>
-   *
-   * <p> If you can correct the underlying cause (eg free up
-   * some disk space) then you can call close() again.
-   * Failing that, if you want to force the write lock to be
-   * released (dangerous, because you may then lose buffered
-   * docs in the IndexWriter instance) then you can do
-   * something like this:</p>
-   *
-   * <pre class="prettyprint">
-   * try {
-   *   writer.close();
-   * } finally {
-   *   if (IndexWriter.isLocked(directory)) {
-   *     IndexWriter.unlock(directory);
-   *   }
-   * }
-   * </pre>
-   *
-   * after which, you must be certain not to use the writer
-   * instance anymore.</p>
-   *
-   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
-   * you should immediately close the writer, again.  See <a
-   * href="#OOME">above</a> for details.</p>
-   *
-   * @throws IOException if there is a low-level IO error
+   * <p><b>NOTE</b>: You must ensure no other threads are still making
+   * changes at the same time that this method is invoked.</p>
    */
   @Override
   public void close() throws IOException {
@@ -946,42 +955,30 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * Closes the index with or without waiting for currently
    * running merges to finish.  This is only meaningful when
    * using a MergeScheduler that runs merges in background
-   * threads.
-   *
-   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
-   * you should immediately close the writer, again.  See <a
-   * href="#OOME">above</a> for details.</p>
+   * threads.  See {@link #close()} for details on behavior
+   * when exceptions are thrown.
    *
    * <p><b>NOTE</b>: it is dangerous to always call
    * close(false), especially when IndexWriter is not open
    * for very long, because this can result in "merge
    * starvation" whereby long merges will never have a
    * chance to finish.  This will cause too many segments in
-   * your index over time.</p>
+   * your index over time, which leads to all sorts of
+   * problems like slow searches, too much RAM and too
+   * many file descriptors used by readers, etc. </p>
    *
    * @param waitForMerges if true, this call will block
    * until all merges complete; else, it will ask all
    * running merges to abort, wait until those merges have
    * finished (which should be at most a few seconds), and
    * then return.
+   *
+   * @deprecated To abort merges and then close, call
+   * {@link #commit} and then {@link #rollback} instead.
    */
+  @Deprecated
   public void close(boolean waitForMerges) throws IOException {
-
-    // Ensure that only one thread actually gets to do the
-    // closing, and make sure no commit is also in progress:
-    synchronized(commitLock) {
-      if (shouldClose()) {
-        // If any methods have hit OutOfMemoryError, then abort
-        // on close, in case the internal state of IndexWriter
-        // or DocumentsWriter is corrupt
-        if (hitOOM) {
-          rollbackInternal();
-        } else {
-          closeInternal(waitForMerges, true);
-          assert assertEventQueueAfterClose();
-        }
-      }
-    }
+    shutdown(waitForMerges);
   }
 
   private boolean assertEventQueueAfterClose() {

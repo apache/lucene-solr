@@ -410,9 +410,12 @@ final class DocumentsWriter implements Closeable, Accountable {
       final DocumentsWriterPerThread dwpt = perThread.dwpt;
       final int dwptNumDocs = dwpt.getNumDocsInRAM();
       try {
-        final int docCount = dwpt.updateDocuments(docs, analyzer, delTerm);
-        numDocsInRAM.addAndGet(docCount);
+        dwpt.updateDocuments(docs, analyzer, delTerm);
       } finally {
+        // We don't know how many documents were actually
+        // counted as indexed, so we must subtract here to
+        // accumulate our separate counter:
+        numDocsInRAM.addAndGet(dwpt.getNumDocsInRAM() - dwptNumDocs);
         if (dwpt.checkAndResetHasAborted()) {
           if (!dwpt.pendingFilesToDelete().isEmpty()) {
             putEvent(new DeleteNewFilesEvent(dwpt.pendingFilesToDelete()));
@@ -449,8 +452,11 @@ final class DocumentsWriter implements Closeable, Accountable {
       final int dwptNumDocs = dwpt.getNumDocsInRAM();
       try {
         dwpt.updateDocument(doc, analyzer, delTerm); 
-        numDocsInRAM.incrementAndGet();
       } finally {
+        // We don't know whether the document actually
+        // counted as being indexed, so we must subtract here to
+        // accumulate our separate counter:
+        numDocsInRAM.addAndGet(dwpt.getNumDocsInRAM() - dwptNumDocs);
         if (dwpt.checkAndResetHasAborted()) {
           if (!dwpt.pendingFilesToDelete().isEmpty()) {
             putEvent(new DeleteNewFilesEvent(dwpt.pendingFilesToDelete()));
@@ -571,6 +577,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     while (!numDocsInRAM.compareAndSet(oldValue, oldValue - numFlushed)) {
       oldValue = numDocsInRAM.get();
     }
+    assert numDocsInRAM.get() >= 0;
   }
   
   // for asserts
