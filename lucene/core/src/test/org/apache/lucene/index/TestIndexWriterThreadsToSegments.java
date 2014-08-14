@@ -253,7 +253,7 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
               startingGun.await();
               Document doc = new Document();
               doc.add(new TextField("field", "here is some text that is a bit longer than normal trivial text", Field.Store.NO));
-              while (true) {
+              for(int j=0;j<1000;j++) {
                 w.addDocument(doc);
               }
             } catch (AlreadyClosedException ace) {
@@ -269,10 +269,15 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
     startingGun.countDown();
 
     Thread.sleep(100);
-    w.close();
+    try {
+      w.close();
+    } catch (IllegalStateException ise) {
+      // OK but not required
+    }
     for(Thread t : threads) {
       t.join();
     }
+    w.close();
     dir.close();
   }
 
