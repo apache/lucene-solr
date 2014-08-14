@@ -1683,11 +1683,11 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     if (slice == null) {
       if(clusterState.hasCollection(collection)) {
         throw new SolrException(ErrorCode.BAD_REQUEST,
-            "No shard with the specified name exists: " + slice.getName());
+            "No shard with name " + sliceId + " exists for collection " + collection);
       } else {
         throw new SolrException(ErrorCode.BAD_REQUEST,
             "No collection with the specified name exists: " + collection);
-      }      
+      }
     }
     // For now, only allow for deletions of Inactive slices or custom hashes (range==null).
     // TODO: Add check for range gaps on Slice deletion
