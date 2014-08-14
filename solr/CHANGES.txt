@@ -272,6 +272,9 @@ Bug Fixes
 * SOLR-6372: HdfsDirectoryFactory should use supplied Configuration for communicating with secure kerberos.
   (Gregory Chanan via Mark Miller)
 
+* SOLR-6284: Fix NPE in OCP when non-existent sliceId is used for a
+  deleteShard request (Ramkumar Aiyengar via Anshum Gupta)
+
 Optimizations
 ---------------------
 
