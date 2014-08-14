@@ -19,14 +19,19 @@ package org.apache.lucene.codecs.lucene49;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BaseCompressingDocValuesFormatTestCase;
-import org.apache.lucene.util.TestUtil;
+import org.junit.BeforeClass;
 
 /**
  * Tests Lucene49DocValuesFormat
  */
 public class TestLucene49DocValuesFormat extends BaseCompressingDocValuesFormatTestCase {
-  private final Codec codec = TestUtil.alwaysDocValuesFormat(new Lucene49DocValuesFormat());
-
+  private final Codec codec = new Lucene49RWCodec();
+  
+  @BeforeClass
+  public static void beforeClass() {
+    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true; // explicitly instantiates ancient codec
+  }
+  
   @Override
   protected Codec getCodec() {
     return codec;

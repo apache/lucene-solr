@@ -18,7 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene49.Lucene49DocValuesFormat;
+import org.apache.lucene.codecs.lucene410.Lucene410DocValuesFormat;
 import org.apache.lucene.codecs.memory.DirectDocValuesFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -44,7 +44,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     int victim = random().nextInt(2);
     switch(victim) {
       case 0:  Codec.setDefault(TestUtil.alwaysDocValuesFormat(new DirectDocValuesFormat())); break;
-      default: Codec.setDefault(TestUtil.alwaysDocValuesFormat(new Lucene49DocValuesFormat()));
+      default: Codec.setDefault(TestUtil.alwaysDocValuesFormat(new Lucene410DocValuesFormat()));
     }
   }
   

@@ -53,12 +53,12 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     Map<String, SchemaField> fields = h.getCore().getLatestSchema().getFields();
     SchemaField schemaField = fields.get("string_disk_f");
     PerFieldDocValuesFormat format = (PerFieldDocValuesFormat) codec.docValuesFormat();
-    assertEquals("Lucene49", format.getDocValuesFormatForField(schemaField.getName()).getName());
+    assertEquals("Lucene410", format.getDocValuesFormatForField(schemaField.getName()).getName());
     schemaField = fields.get("string_memory_f");
     assertEquals("Memory",
         format.getDocValuesFormatForField(schemaField.getName()).getName());
     schemaField = fields.get("string_f");
-    assertEquals("Lucene49",
+    assertEquals("Lucene410",
         format.getDocValuesFormatForField(schemaField.getName()).getName());
   }
 
@@ -78,8 +78,8 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     Codec codec = h.getCore().getCodec();
     PerFieldDocValuesFormat format = (PerFieldDocValuesFormat) codec.docValuesFormat();
 
-    assertEquals("Lucene49", format.getDocValuesFormatForField("foo_disk").getName());
-    assertEquals("Lucene49", format.getDocValuesFormatForField("bar_disk").getName());
+    assertEquals("Lucene410", format.getDocValuesFormatForField("foo_disk").getName());
+    assertEquals("Lucene410", format.getDocValuesFormatForField("bar_disk").getName());
     assertEquals("Memory", format.getDocValuesFormatForField("foo_memory").getName());
     assertEquals("Memory", format.getDocValuesFormatForField("bar_memory").getName());
   }

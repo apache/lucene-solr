@@ -27,6 +27,7 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
@@ -105,15 +106,7 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
     // As long as codec sorts terms in unicode codepoint
     // order, we can safely strip off the non-distinguishing
     // suffix to save RAM in the loaded terms index.
-    final int idxTermOffset = indexedTerm.offset;
-    final int priorTermOffset = priorTerm.offset;
-    final int limit = Math.min(priorTerm.length, indexedTerm.length);
-    for(int byteIdx=0;byteIdx<limit;byteIdx++) {
-      if (priorTerm.bytes[priorTermOffset+byteIdx] != indexedTerm.bytes[idxTermOffset+byteIdx]) {
-        return byteIdx+1;
-      }
-    }
-    return Math.min(1+priorTerm.length, indexedTerm.length);
+    return StringHelper.sortKeyLength(priorTerm, indexedTerm);
   }
 
   private class SimpleFieldWriter extends FieldWriter {

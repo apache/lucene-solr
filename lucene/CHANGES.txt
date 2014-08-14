@@ -217,6 +217,9 @@ Optimizations
 * LUCENE-5884: Optimize FST.ramBytesUsed.  (Adrien Grand, Robert Muir,
   Mike McCandless)
 
+* LUCENE-5882: Add Lucene410DocValuesFormat, with faster term lookups
+  for SORTED/SORTED_SET fields.  (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-5796: Fixes the Scorer.getChildren() method for two combinations 

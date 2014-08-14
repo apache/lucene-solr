@@ -342,17 +342,12 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
       Document doc = new Document();
       Field idField = new StringField("id", Integer.toString(i), Field.Store.NO);
       doc.add(idField);
-      final int length;
-      if (minLength == maxLength) {
-        length = minLength; // fixed length
-      } else {
-        length = TestUtil.nextInt(random(), minLength, maxLength);
-      }
+      final int length = TestUtil.nextInt(random(), minLength, maxLength);
       int numValues = random().nextInt(17);
       // create a random list of strings
       List<String> values = new ArrayList<>();
       for (int v = 0; v < numValues; v++) {
-        values.add(TestUtil.randomSimpleString(random(), length));
+        values.add(TestUtil.randomSimpleString(random(), minLength, length));
       }
       
       // add in any order to the indexed field

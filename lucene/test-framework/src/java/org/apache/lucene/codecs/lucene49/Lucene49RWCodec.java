@@ -1,8 +1,4 @@
-package org.apache.lucene.util;
-
-import java.util.Set;
-
-import org.apache.lucene.codecs.Codec;
+package org.apache.lucene.codecs.lucene49;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,25 +17,26 @@ import org.apache.lucene.codecs.Codec;
  * limitations under the License.
  */
 
-// TODO: maybe we should test this with mocks, but its easy
-// enough to test the basics via Codec
-public class TestNamedSPILoader extends LuceneTestCase {
+import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.codecs.NormsFormat;
+
+/**
+ * Read-write version of {@link Lucene49Codec} for testing.
+ */
+@SuppressWarnings("deprecation")
+public class Lucene49RWCodec extends Lucene49Codec {
   
-  public void testLookup() {
-    Codec codec = Codec.forName("Lucene410");
-    assertEquals("Lucene410", codec.getName());
+  private static final DocValuesFormat docValues = new Lucene49RWDocValuesFormat();
+  
+  @Override
+  public DocValuesFormat getDocValuesFormatForField(String field) {
+    return docValues;
   }
   
-  // we want an exception if its not found.
-  public void testBogusLookup() {
-    try {
-      Codec.forName("dskfdskfsdfksdfdsf");
-      fail();
-    } catch (IllegalArgumentException expected) {}
-  }
-  
-  public void testAvailableServices() {
-    Set<String> codecs = Codec.availableCodecs();
-    assertTrue(codecs.contains("Lucene410"));
+  private static final NormsFormat norms = new Lucene49NormsFormat();
+
+  @Override
+  public NormsFormat normsFormat() {
+    return norms;
   }
 }

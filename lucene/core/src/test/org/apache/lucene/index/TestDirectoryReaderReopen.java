@@ -626,7 +626,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     MockDirectoryWrapper dir = newMockDirectory();
 
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(Codec.forName("Lucene49"));
+    iwc.setCodec(Codec.forName("Lucene410"));
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
     doc.add(newStringField("id", "id", Field.Store.NO));

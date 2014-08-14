@@ -26,4 +26,12 @@ public class TestStringHelper extends LuceneTestCase {
     assertEquals(0x111e7435, StringHelper.murmurhash3_x86_32(new BytesRef("You want weapons? We're in a library! Books! The best weapons in the world!"), 0));
     assertEquals(0x2c628cd0, StringHelper.murmurhash3_x86_32(new BytesRef("You want weapons? We're in a library! Books! The best weapons in the world!"), 3476));
   }
+  
+  public void testSortKeyLength() throws Exception {
+    assertEquals(3, StringHelper.sortKeyLength(new BytesRef("foo"), new BytesRef("for")));
+    assertEquals(3, StringHelper.sortKeyLength(new BytesRef("foo1234"), new BytesRef("for1234")));
+    assertEquals(2, StringHelper.sortKeyLength(new BytesRef("foo"), new BytesRef("fz")));
+    assertEquals(1, StringHelper.sortKeyLength(new BytesRef("foo"), new BytesRef("g")));
+    assertEquals(4, StringHelper.sortKeyLength(new BytesRef("foo"), new BytesRef("food")));
+  }
 }

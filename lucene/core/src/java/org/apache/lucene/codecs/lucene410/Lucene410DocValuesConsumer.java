@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene49;
+package org.apache.lucene.codecs.lucene410;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -28,23 +28,38 @@ import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.MathUtil;
+import org.apache.lucene.util.PagedBytes;
+import org.apache.lucene.util.PagedBytes.PagedBytesDataInput;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.packed.DirectWriter;
 import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
-/** writer for {@link Lucene49DocValuesFormat} */
-class Lucene49DocValuesConsumer extends DocValuesConsumer implements Closeable {
+/** writer for {@link Lucene410DocValuesFormat} */
+class Lucene410DocValuesConsumer extends DocValuesConsumer implements Closeable {
 
   static final int BLOCK_SIZE = 16384;
-  static final int ADDRESS_INTERVAL = 16;
+  
+  // address terms in blocks of 16 terms
+  static final int INTERVAL_SHIFT = 4;
+  static final int INTERVAL_COUNT = 1 << INTERVAL_SHIFT;
+  static final int INTERVAL_MASK = INTERVAL_COUNT - 1;
+  
+  // build reverse index from every 1024th term
+  static final int REVERSE_INTERVAL_SHIFT = 10;
+  static final int REVERSE_INTERVAL_COUNT = 1 << REVERSE_INTERVAL_SHIFT;
+  static final int REVERSE_INTERVAL_MASK = REVERSE_INTERVAL_COUNT - 1;
+  
+  // for conversion from reverse index to block
+  static final int BLOCK_INTERVAL_SHIFT = REVERSE_INTERVAL_SHIFT - INTERVAL_SHIFT;
+  static final int BLOCK_INTERVAL_COUNT = 1 << BLOCK_INTERVAL_SHIFT;
+  static final int BLOCK_INTERVAL_MASK = BLOCK_INTERVAL_COUNT - 1;
 
   /** Compressed using packed blocks of ints. */
   public static final int DELTA_COMPRESSED = 0;
@@ -73,15 +88,15 @@ class Lucene49DocValuesConsumer extends DocValuesConsumer implements Closeable {
   final int maxDoc;
   
   /** expert: Creates a new writer */
-  public Lucene49DocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
+  public Lucene410DocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     boolean success = false;
     try {
       String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
       data = state.directory.createOutput(dataName, state.context);
-      CodecUtil.writeHeader(data, dataCodec, Lucene49DocValuesFormat.VERSION_CURRENT);
+      CodecUtil.writeHeader(data, dataCodec, Lucene410DocValuesFormat.VERSION_CURRENT);
       String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
       meta = state.directory.createOutput(metaName, state.context);
-      CodecUtil.writeHeader(meta, metaCodec, Lucene49DocValuesFormat.VERSION_CURRENT);
+      CodecUtil.writeHeader(meta, metaCodec, Lucene410DocValuesFormat.VERSION_CURRENT);
       maxDoc = state.segmentInfo.getDocCount();
       success = true;
     } finally {
@@ -93,7 +108,6 @@ class Lucene49DocValuesConsumer extends DocValuesConsumer implements Closeable {
   
   @Override
   public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
-    checkCanWrite(field);
     addNumericField(field, values, true);
   }
 
@@ -167,7 +181,7 @@ class Lucene49DocValuesConsumer extends DocValuesConsumer implements Closeable {
       format = DELTA_COMPRESSED;
     }
     meta.writeVInt(field.number);
-    meta.writeByte(Lucene49DocValuesFormat.NUMERIC);
+    meta.writeByte(Lucene410DocValuesFormat.NUMERIC);
     meta.writeVInt(format);
     if (missing) {
       meta.writeLong(data.getFilePointer());
@@ -248,10 +262,9 @@ class Lucene49DocValuesConsumer extends DocValuesConsumer implements Closeable {
 
   @Override
   public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
-    checkCanWrite(field);
     // write the byte[] data
     meta.writeVInt(field.number);
-    meta.writeByte(Lucene49DocValuesFormat.BINARY);
+    meta.writeByte(Lucene410DocValuesFormat.BINARY);
     int minLength = Integer.MAX_VALUE;
     int maxLength = Integer.MIN_VALUE;
     final long startFP = data.getFilePointer();
@@ -309,17 +322,23 @@ class Lucene49DocValuesConsumer extends DocValuesConsumer implements Closeable {
     // first check if its a "fixed-length" terms dict
     int minLength = Integer.MAX_VALUE;
     int maxLength = Integer.MIN_VALUE;
+    long numValues = 0;
     for (BytesRef v : values) {
       minLength = Math.min(minLength, v.length);
       maxLength = Math.max(maxLength, v.length);
+      numValues++;
     }
     if (minLength == maxLength) {
       // no index needed: direct addressing by mult
       addBinaryField(field, values);
+    } else if (numValues < REVERSE_INTERVAL_COUNT) {
+      // low cardinality: waste a few KB of ram, but can't really use fancy index etc
+      addBinaryField(field, values);
     } else {
+      assert numValues > 0; // we don't have to handle the empty case
       // header
       meta.writeVInt(field.number);
-      meta.writeByte(Lucene49DocValuesFormat.BINARY);
+      meta.writeByte(Lucene410DocValuesFormat.BINARY);
       meta.writeVInt(BINARY_PREFIX_COMPRESSED);
       meta.writeLong(-1L);
       // now write the bytes: sharing prefixes within a block
@@ -328,23 +347,43 @@ class Lucene49DocValuesConsumer extends DocValuesConsumer implements Closeable {
       // we could avoid this, but its not much and less overall RAM than the previous approach!
       RAMOutputStream addressBuffer = new RAMOutputStream();
       MonotonicBlockPackedWriter termAddresses = new MonotonicBlockPackedWriter(addressBuffer, BLOCK_SIZE);
+      // buffers up 16 terms
+      RAMOutputStream bytesBuffer = new RAMOutputStream();
+      // buffers up block header
+      RAMOutputStream headerBuffer = new RAMOutputStream();
       BytesRefBuilder lastTerm = new BytesRefBuilder();
-      lastTerm.grow(Math.max(0, maxLength));
+      lastTerm.grow(maxLength);
       long count = 0;
+      int suffixDeltas[] = new int[INTERVAL_COUNT];
       for (BytesRef v : values) {
-        if (count % ADDRESS_INTERVAL == 0) {
+        int termPosition = (int) (count & INTERVAL_MASK);
+        if (termPosition == 0) {
           termAddresses.add(data.getFilePointer() - startFP);
-          // force the first term in a block to be abs-encoded
-          lastTerm.clear();
+          // abs-encode first term
+          headerBuffer.writeVInt(v.length);
+          headerBuffer.writeBytes(v.bytes, v.offset, v.length);
+          lastTerm.copyBytes(v);
+        } else {
+          // prefix-code: we only share at most 255 characters, to encode the length as a single
+          // byte and have random access. Larger terms just get less compression.
+          int sharedPrefix = Math.min(255, StringHelper.bytesDifference(lastTerm.get(), v));
+          bytesBuffer.writeByte((byte) sharedPrefix);
+          bytesBuffer.writeBytes(v.bytes, v.offset + sharedPrefix, v.length - sharedPrefix);
+          // we can encode one smaller, because terms are unique.
+          suffixDeltas[termPosition] = v.length - sharedPrefix - 1;
         }
         
-        // prefix-code
-        int sharedPrefix = StringHelper.bytesDifference(lastTerm.get(), v);
-        data.writeVInt(sharedPrefix);
-        data.writeVInt(v.length - sharedPrefix);
-        data.writeBytes(v.bytes, v.offset + sharedPrefix, v.length - sharedPrefix);
-        lastTerm.copyBytes(v);
         count++;
+        // flush block
+        if ((count & INTERVAL_MASK) == 0) {
+          flushTermsDictBlock(headerBuffer, bytesBuffer, suffixDeltas);
+        }
+      }
+      // flush trailing crap
+      int leftover = (int) (count & INTERVAL_MASK);
+      if (leftover > 0) {
+        Arrays.fill(suffixDeltas, leftover, suffixDeltas.length, 0);
+        flushTermsDictBlock(headerBuffer, bytesBuffer, suffixDeltas);
       }
       final long indexStartFP = data.getFilePointer();
       // write addresses of indexed terms
@@ -356,27 +395,87 @@ class Lucene49DocValuesConsumer extends DocValuesConsumer implements Closeable {
       meta.writeVInt(maxLength);
       meta.writeVLong(count);
       meta.writeLong(startFP);
-      meta.writeVInt(ADDRESS_INTERVAL);
       meta.writeLong(indexStartFP);
       meta.writeVInt(PackedInts.VERSION_CURRENT);
       meta.writeVInt(BLOCK_SIZE);
+      addReverseTermIndex(field, values, maxLength);
     }
+  }
+  
+  // writes term dictionary "block"
+  // first term is absolute encoded as vint length + bytes.
+  // lengths of subsequent N terms are encoded as either N bytes or N shorts.
+  // in the double-byte case, the first byte is indicated with -1.
+  // subsequent terms are encoded as byte suffixLength + bytes.
+  private void flushTermsDictBlock(RAMOutputStream headerBuffer, RAMOutputStream bytesBuffer, int suffixDeltas[]) throws IOException {
+    boolean twoByte = false;
+    for (int i = 1; i < suffixDeltas.length; i++) {
+      if (suffixDeltas[i] > 254) {
+        twoByte = true;
+      }
+    }
+    if (twoByte) {
+      headerBuffer.writeByte((byte)255);
+      for (int i = 1; i < suffixDeltas.length; i++) {
+        headerBuffer.writeShort((short) suffixDeltas[i]);
+      }
+    } else {
+      for (int i = 1; i < suffixDeltas.length; i++) {
+        headerBuffer.writeByte((byte) suffixDeltas[i]);
+      }
+    }
+    headerBuffer.writeTo(data);
+    headerBuffer.reset();
+    bytesBuffer.writeTo(data);
+    bytesBuffer.reset();
+  }
+  
+  // writes reverse term index: used for binary searching a term into a range of 64 blocks
+  // for every 64 blocks (1024 terms) we store a term, trimming any suffix unnecessary for comparison
+  // terms are written as a contiguous byte[], but never spanning 2^15 byte boundaries.
+  private void addReverseTermIndex(FieldInfo field, final Iterable<BytesRef> values, int maxLength) throws IOException {
+    long count = 0;
+    BytesRefBuilder priorTerm = new BytesRefBuilder();
+    priorTerm.grow(maxLength);
+    BytesRef indexTerm = new BytesRef();
+    long startFP = data.getFilePointer();
+    PagedBytes pagedBytes = new PagedBytes(15);
+    MonotonicBlockPackedWriter addresses = new MonotonicBlockPackedWriter(data, BLOCK_SIZE);
+    
+    for (BytesRef b : values) {
+      int termPosition = (int) (count & REVERSE_INTERVAL_MASK);
+      if (termPosition == 0) {
+        int len = StringHelper.sortKeyLength(priorTerm.get(), b);
+        indexTerm.bytes = b.bytes;
+        indexTerm.offset = b.offset;
+        indexTerm.length = len;
+        addresses.add(pagedBytes.copyUsingLengthPrefix(indexTerm));
+      } else if (termPosition == REVERSE_INTERVAL_MASK) {
+        priorTerm.copyBytes(b);
+      }
+      count++;
+    }
+    addresses.finish();
+    long numBytes = pagedBytes.getPointer();
+    pagedBytes.freeze(true);
+    PagedBytesDataInput in = pagedBytes.getDataInput();
+    meta.writeLong(startFP);
+    data.writeVLong(numBytes);
+    data.copyBytes(in, numBytes);
   }
 
   @Override
   public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
-    checkCanWrite(field);
     meta.writeVInt(field.number);
-    meta.writeByte(Lucene49DocValuesFormat.SORTED);
+    meta.writeByte(Lucene410DocValuesFormat.SORTED);
     addTermsDict(field, values);
     addNumericField(field, docToOrd, false);
   }
 
   @Override
   public void addSortedNumericField(FieldInfo field, final Iterable<Number> docToValueCount, final Iterable<Number> values) throws IOException {
-    checkCanWrite(field);
     meta.writeVInt(field.number);
-    meta.writeByte(Lucene49DocValuesFormat.SORTED_NUMERIC);
+    meta.writeByte(Lucene410DocValuesFormat.SORTED_NUMERIC);
     if (isSingleValued(docToValueCount)) {
       meta.writeVInt(SORTED_SINGLE_VALUED);
       // The field is single-valued, we can encode it as NUMERIC
@@ -392,9 +491,8 @@ class Lucene49DocValuesConsumer extends DocValuesConsumer implements Closeable {
 
   @Override
   public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, final Iterable<Number> docToOrdCount, final Iterable<Number> ords) throws IOException {
-    checkCanWrite(field);
     meta.writeVInt(field.number);
-    meta.writeByte(Lucene49DocValuesFormat.SORTED_SET);
+    meta.writeByte(Lucene410DocValuesFormat.SORTED_SET);
 
     if (isSingleValued(docToOrdCount)) {
       meta.writeVInt(SORTED_SINGLE_VALUED);
@@ -418,7 +516,7 @@ class Lucene49DocValuesConsumer extends DocValuesConsumer implements Closeable {
   // writes addressing information as MONOTONIC_COMPRESSED integer
   private void addAddresses(FieldInfo field, Iterable<Number> values) throws IOException {
     meta.writeVInt(field.number);
-    meta.writeByte(Lucene49DocValuesFormat.NUMERIC);
+    meta.writeByte(Lucene410DocValuesFormat.NUMERIC);
     meta.writeVInt(MONOTONIC_COMPRESSED);
     meta.writeLong(-1L);
     meta.writeLong(data.getFilePointer());
@@ -456,16 +554,6 @@ class Lucene49DocValuesConsumer extends DocValuesConsumer implements Closeable {
         IOUtils.closeWhileHandlingException(data, meta);
       }
       meta = data = null;
-    }
-  }
-  
-  void checkCanWrite(FieldInfo field) {
-    if ((field.getDocValuesType() == DocValuesType.NUMERIC || 
-        field.getDocValuesType() == DocValuesType.BINARY) && 
-        field.getDocValuesGen() != -1) {
-      // ok
-    } else {
-      throw new UnsupportedOperationException("this codec can only be used for reading");
     }
   }
 }

@@ -17,23 +17,28 @@ package org.apache.lucene.codecs.lucene49;
  * limitations under the License.
  */
 
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BaseNormsFormatTestCase;
-import org.junit.BeforeClass;
+import java.io.IOException;
 
-/**
- * Tests Lucene49NormsFormat
- */
-public class TestLucene49NormsFormat extends BaseNormsFormatTestCase {
-  private final Codec codec = new Lucene49RWCodec();
-  
-  @BeforeClass
-  public static void beforeClass() {
-    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true; // explicitly instantiates ancient codec
+import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.util.LuceneTestCase;
+
+/** Read-write version of {@link Lucene49DocValuesFormat} for testing */
+public class Lucene49RWDocValuesFormat extends Lucene49DocValuesFormat {
+
+  @Override
+  public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
+    if (LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
+      return new Lucene49DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION) {
+        @Override
+        void checkCanWrite(FieldInfo field) {
+          // allow writing all fields 
+        }
+      };
+    } else {
+      return super.fieldsConsumer(state);
+    }
   }
   
-  @Override
-  protected Codec getCodec() {
-    return codec;
-  } 
 }
