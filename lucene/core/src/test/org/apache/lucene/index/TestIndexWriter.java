@@ -2812,9 +2812,8 @@ public class TestIndexWriter extends LuceneTestCase {
     startCommit.await();
     try {
       iw.close();
-      fail("didn't hit exception");
     } catch (IllegalStateException ise) {
-      // expected
+      // OK, but not required (depends on thread scheduling)
     }
     finishCommit.await();
     iw.close();
