@@ -25,7 +25,10 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.blocktreeords.Ords41PostingsFormat;
 import org.apache.lucene.codecs.lucene41ords.Lucene41WithOrds;
+import org.apache.lucene.codecs.memory.FSTOrdPostingsFormat;
+import org.apache.lucene.codecs.memory.FSTOrdPulsing41PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedSetDocValuesField;
@@ -36,6 +39,7 @@ import org.apache.lucene.index.BaseCompressingDocValuesFormatTestCase;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -115,9 +119,22 @@ public class TestLucene410DocValuesFormat extends BaseCompressingDocValuesFormat
   // the postings format correctly.
   private void doTestTermsEnumRandom(int numDocs, int minLength, int maxLength) throws Exception {
     Directory dir = newFSDirectory(createTempDir());
-    IndexWriterConfig conf = new IndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
+    conf.setMergeScheduler(new SerialMergeScheduler());
     // set to duel against a codec which has ordinals:
-    final PostingsFormat pf = new Lucene41WithOrds();
+    final PostingsFormat pf;
+    switch (random().nextInt(2)) {
+      case 0: pf = new Lucene41WithOrds();
+              break;
+      case 1: pf = new Ords41PostingsFormat();
+              break;
+      // TODO: these don't actually support ords!
+      //case 2: pf = new FSTOrdPostingsFormat();
+      //        break;
+      //case 3: pf = new FSTOrdPulsing41PostingsFormat();
+      //        break;
+      default: throw new AssertionError();
+    }
     final DocValuesFormat dv = new Lucene410DocValuesFormat();
     conf.setCodec(new Lucene410Codec() {
       @Override
