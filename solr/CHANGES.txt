@@ -18,9 +18,6 @@ servlet container in the directory named "example".
 See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
 
-* SOLR-5868: HttpClient should be configured to use ALLOW_ALL_HOSTNAME hostname
-  verifier to simplify SSL setup. (Steve Davids via Mark Miller)
-
 ==================  4.10.0 =================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
@@ -468,6 +465,10 @@ Other Changes
 
 * SOLR-6128: Removed deprecated analysis factories and fieldTypes from the example
   schema.xml (hossman)
+
+* SOLR-5868: HttpClient should be configured to use ALLOW_ALL_HOSTNAME hostname
+  verifier to simplify SSL setup. (Steve Davids via Mark Miller)
+
 
 Optimizations
 ----------------------
