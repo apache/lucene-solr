@@ -30,7 +30,6 @@
   
   <!-- The base version of the next release (including bugfix number, e.g., x.y.z+): -->
   <property name="version.base" value="5.0.0"/>
-
   
   <!-- !!! RELEASE MANAGER: Don't change anything after this line! !!! -->
 
@@ -60,8 +59,6 @@
   
   <!--TODO: remove once Jenkins jobs are updated:--><property name="dev.version.suffix" value="SNAPSHOT"/>
 
-  <!-- The corresponding version as oal.util.Version used for matchVersion (x.y): -->
-  <property name="version.luceneMatchVersion" value="${version.base}"/>
   <!-- Suffix of the version, by default SNAPSHOT: -->
   <property name="version.suffix" value="${dev.version.suffix}"/>
   <property name="version" value="${version.base}-${version.suffix}"/>
@@ -70,15 +67,6 @@
   <fail message="If you pass -Dversion=... to set a release version, it must match &quot;${version.base}&quot;, optionally followed by a suffix (e.g., &quot;-SNAPSHOT&quot;).">
     <condition>
       <not><matches pattern="^\Q${version.base}\E(|\-.*)$" casesensitive="true" string="${version}"/></not>
-    </condition>
-  </fail>
-
-  <fail message="Invalid version.luceneMatchVersion property: ${version.luceneMatchVersion}">
-    <condition>
-      <not><and>
-        <matches pattern="^\d+\.\d+\.\d+$" casesensitive="true" string="${version.luceneMatchVersion}"/>
-        <matches pattern="^\Q${version.luceneMatchVersion}\E(\.|\-|\b).*$" casesensitive="true" string="${version}"/>
-      </and></not>
     </condition>
   </fail>
 
@@ -143,7 +131,7 @@
   <property name="tests.verbose" value="false"/>
   <property name="tests.infostream" value="${tests.verbose}"/>
   <property name="tests.filterstacks" value="true"/>
-  <property name="tests.luceneMatchVersion" value="${version.luceneMatchVersion}"/>
+  <property name="tests.luceneMatchVersion" value="${version.base}"/>
 
   <condition property="tests.heapsize" value="768M">
     <isset property="run.clover"/>
