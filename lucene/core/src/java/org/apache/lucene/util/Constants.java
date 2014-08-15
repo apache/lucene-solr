@@ -18,8 +18,9 @@ package org.apache.lucene.util;
  */
 
 import java.lang.reflect.Field;
-import java.util.Collections;
+import java.util.StringTokenizer;
 import org.apache.lucene.LucenePackage;
+
 
 /**
  * Some useful constants.
@@ -32,6 +33,7 @@ public final class Constants {
   public static final String JVM_VENDOR = System.getProperty("java.vm.vendor");
   public static final String JVM_VERSION = System.getProperty("java.vm.version");
   public static final String JVM_NAME = System.getProperty("java.vm.name");
+  public static final String JVM_SPEC_VERSION = System.getProperty("java.specification.version");
 
   /** The value of <tt>System.getProperty("java.version")</tt>. **/
   public static final String JAVA_VERSION = System.getProperty("java.version");
@@ -52,23 +54,21 @@ public final class Constants {
   public static final String OS_ARCH = System.getProperty("os.arch");
   public static final String OS_VERSION = System.getProperty("os.version");
   public static final String JAVA_VENDOR = System.getProperty("java.vendor");
-
-  /** @deprecated With Lucene 4.0, we are always on Java 6 */
-  @Deprecated
-  public static final boolean JRE_IS_MINIMUM_JAVA6 =
-    new Boolean(true).booleanValue(); // prevent inlining in foreign class files
-
-  /** @deprecated With Lucene 4.8, we are always on Java 7 */
-  @Deprecated
-  public static final boolean JRE_IS_MINIMUM_JAVA7 =
-    new Boolean(true).booleanValue(); // prevent inlining in foreign class files
-
-  public static final boolean JRE_IS_MINIMUM_JAVA8;
   
+  private static final int JVM_MAJOR_VERSION;
+  private static final int JVM_MINOR_VERSION;
+ 
   /** True iff running on a 64bit JVM */
   public static final boolean JRE_IS_64BIT;
   
   static {
+    final StringTokenizer st = new StringTokenizer(JVM_SPEC_VERSION, ".");
+    JVM_MAJOR_VERSION = Integer.parseInt(st.nextToken());
+    if (st.hasMoreTokens()) {
+      JVM_MINOR_VERSION = Integer.parseInt(st.nextToken());
+    } else {
+      JVM_MINOR_VERSION = 0;
+    }
     boolean is64Bit = false;
     try {
       final Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
@@ -92,16 +92,20 @@ public final class Constants {
       }
     }
     JRE_IS_64BIT = is64Bit;
-    
-    // this method only exists in Java 8:
-    boolean v8 = true;
-    try {
-      Collections.class.getMethod("emptySortedSet");
-    } catch (NoSuchMethodException nsme) {
-      v8 = false;
-    }
-    JRE_IS_MINIMUM_JAVA8 = v8;
   }
+
+  public static final boolean JRE_IS_MINIMUM_JAVA8 = JVM_MAJOR_VERSION > 1 || (JVM_MAJOR_VERSION == 1 && JVM_MINOR_VERSION >= 8);
+  public static final boolean JRE_IS_MINIMUM_JAVA9 = JVM_MAJOR_VERSION > 1 || (JVM_MAJOR_VERSION == 1 && JVM_MINOR_VERSION >= 9);
+  
+  /** @deprecated With Lucene 4.0, we are always on Java 6 */
+  @Deprecated
+  public static final boolean JRE_IS_MINIMUM_JAVA6 =
+    new Boolean(true).booleanValue(); // prevent inlining in foreign class files
+
+  /** @deprecated With Lucene 4.8, we are always on Java 7 */
+  @Deprecated
+  public static final boolean JRE_IS_MINIMUM_JAVA7 =
+    new Boolean(true).booleanValue(); // prevent inlining in foreign class files
 
   // this method prevents inlining the final version constant in compiled classes,
   // see: http://www.javaworld.com/community/node/3400
