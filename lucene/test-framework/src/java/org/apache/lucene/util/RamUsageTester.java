@@ -191,6 +191,10 @@ public final class RamUsageTester {
     long shallowInstanceSize = RamUsageEstimator.NUM_BYTES_OBJECT_HEADER;
     final ArrayList<Field> referenceFields = new ArrayList<>(32);
     for (Class<?> c = clazz; c != null; c = c.getSuperclass()) {
+      if (c == Class.class) {
+        // prevent inspection of Class' fields, throws SecurityException in Java 9!
+        continue; 
+      }
       final Field[] fields = c.getDeclaredFields();
       for (final Field f : fields) {
         if (!Modifier.isStatic(f.getModifiers())) {
