@@ -329,20 +329,45 @@
     </condition>
   </fail>
 
+  <fail message="Minimum supported Java version is 1.7.">
+    <condition>
+      <not><hasmethod classname="java.lang.Throwable" method="getSuppressed"/></not>
+    </condition>
+  </fail>
+
+  <!-- temporary for cleanup of java.specification.version, to be in format "x.y" -->
+  <loadresource property="-cleaned.specification.version">
+    <string value="${java.specification.version}"/>
+    <filterchain>
+      <tokenfilter>
+        <filetokenizer/>
+        <replaceregex pattern="^(\d+\.\d+)(|\..*)$" replace="\1" flags="s"/>
+      </tokenfilter>
+    </filterchain>
+  </loadresource>
+
   <!-- 
     the propery "ant.java.version" is not always correct, depending on used ANT version.
     E.g. Java 8 is only detected in ANT 1.8.3+.
-    Add newer Java version checks at beginning,
-    because ANT will nevert override existing properties!
+    
+    We want to detect here only a limited set of versions and placed in normalized form in ${build.java.runtime},
+    every other version is normalized to "unknown":
+    - To define a target to be only run on a specific version, add <equals/> condition to one of the supplied versions.
+    - To explicitely exclude specific versions (and unknown ones), add a condition to disallow "unknown" and some versions like "1.9"!
    -->
-  <condition property="build.java.runtime" value="1.8">
-    <hasmethod classname="java.util.Collections" method="emptySortedSet"/>
+  <condition property="build.java.runtime" value="${-cleaned.specification.version}" else="unknown">
+    <or>
+      <equals arg1="${-cleaned.specification.version}" arg2="1.7"/>
+      <equals arg1="${-cleaned.specification.version}" arg2="1.8"/>
+      <equals arg1="${-cleaned.specification.version}" arg2="1.9"/>
+    </or>
   </condition>
-  <condition property="build.java.runtime" value="1.7">
-    <hasmethod classname="java.lang.Throwable" method="getSuppressed"/>
-  </condition>
-  <fail message="Minimum supported Java version is 1.7." unless="build.java.runtime"/>
-
+  
+  <!--
+  <echo message="DEBUG: Cleaned java.specification.version=${-cleaned.specification.version}"/>
+  <echo message="DEBUG: Detected runtime: ${build.java.runtime}"/>
+  -->
+  
   <condition property="documentation-lint.supported">
     <and>
       <or>
@@ -362,7 +387,9 @@
   <!-- workaround for https://issues.apache.org/bugzilla/show_bug.cgi?id=53347 -->
   <condition property="build.compiler" value="javac1.7">
     <and>
-      <equals arg1="${build.java.runtime}" arg2="1.8"/>
+      <not>
+        <equals arg1="${build.java.runtime}" arg2="1.7"/>
+      </not>
       <or>
         <antversion exactly="1.8.3" />
         <antversion exactly="1.8.4" />
@@ -379,9 +406,11 @@
     <echo level="warning" message="WARN: Linting documentation HTML is not supported on this Java version (${build.java.runtime}) / JVM (${java.vm.name}). NOTHING DONE!"/>
   </target>
 
-  <!-- for now disable doclint on JDK 8: -->
+  <!-- for now disable doclint on JDK 8+: -->
   <condition property="javadoc.args" value="-Xdoclint:none" else="">
-    <equals arg1="${build.java.runtime}" arg2="1.8"/>
+    <not>
+      <equals arg1="${build.java.runtime}" arg2="1.7"/>
+    </not>
   </condition>
 
   <!-- Import custom ANT tasks. -->
@@ -1824,7 +1853,10 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <!-- ECJ Javadoc linting: -->
   
   <condition property="ecj-javadoc-lint.supported">
-    <not><equals arg1="${build.java.runtime}" arg2="1.9"/></not>
+    <or>
+      <equals arg1="${build.java.runtime}" arg2="1.7"/>
+      <equals arg1="${build.java.runtime}" arg2="1.8"/>
+    </or>
   </condition>
 
   <condition property="ecj-javadoc-lint-tests.supported">
