@@ -384,6 +384,9 @@
                    changes.product="SOLR"/>
 
     <tar destfile="${source.package.file}" compression="gzip" longfile="gnu">
+      <tarfileset dir="${svn.export.dir}/lucene"
+                  includes="CHANGES.txt"
+                  fullpath="${fullnamever}/solr/LUCENE_CHANGES.txt" />
       <tarfileset dir="${svn.export.dir}"
                   prefix="${fullnamever}"
                   excludes="solr/example/**/*.sh solr/example/**/bin/ solr/scripts/**"/>
@@ -452,6 +455,9 @@
     <contrib-crawl target="add-lucene-libs-to-package"/>
  
     <tar destfile="${package.dir}/${fullnamever}.tgz" compression="gzip" longfile="gnu">
+      <tarfileset dir="../lucene"
+                  includes="CHANGES.txt"
+                  fullpath="${fullnamever}/LUCENE_CHANGES.txt" />
       <tarfileset dir="."
                   prefix="${fullnamever}"
                   includes="LICENSE.txt NOTICE.txt CHANGES.txt README.txt SYSTEM_REQUIREMENTS.txt
@@ -513,7 +519,7 @@
     <make-checksums file="${package.dir}/${fullnamever}.zip"/>
   </target>
 
-  <target name="changes-to-html">
+  <target name="changes-to-html" depends="define-lucene-javadoc-url">
     <build-changes changes.product="SOLR"/>
   </target>
  

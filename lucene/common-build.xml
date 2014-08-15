@@ -2451,6 +2451,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
     <attribute name="changes.product"/>
     <attribute name="changes.src.file" default="CHANGES.txt"/>
     <attribute name="changes.target.dir" default="${changes.target.dir}"/>
+    <attribute name="lucene.javadoc.url" default="${lucene.javadoc.url}"/>
     <sequential>
       <mkdir dir="@{changes.target.dir}"/>
       <get src="https://issues.apache.org/jira/rest/api/2/project/@{changes.product}"
@@ -2461,6 +2462,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
         <arg value="${changes.src.dir}/changes2html.pl"/>
         <arg value="@{changes.product}"/>
         <arg value="@{changes.target.dir}/jiraVersionList.json"/>
+        <arg value="@{lucene.javadoc.url}"/>
       </exec>
       <delete file="@{changes.target.dir}/jiraVersionList.json"/>
       <copy todir="@{changes.target.dir}">

@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Transforms Lucene Java's CHANGES.txt into Changes.html
+# Transforms Lucene Core's or Solr's CHANGES.txt into Changes.html
 #
 # Input is on STDIN, output is to STDOUT
 #
@@ -44,8 +44,12 @@ my @releases = ();
 
 my @lines = <STDIN>;                        # Get all input at once
 
+#
+# Cmdline args:  <LUCENE|SOLR>  <JIRA-release-dates-json>  <lucene-javadoc-url>(only from Solr)
+#
 my $product = $ARGV[0];
 my %release_dates = &setup_release_dates($ARGV[1]);
+my $lucene_javadoc_url = ($product eq 'SOLR' ? $ARGV[2] : ''); # Only Solr supplies this on the cmdline
 my $in_major_component_versions_section = 0;
 
 
@@ -557,6 +561,11 @@ for my $rel (@releases) {
       # Link "[ github | gh ] pull request [ # ] X+" to Github pull request
       $item =~ s{((?:(?:(?:github|gh)\s+)?pull\s+request\s*(?:\#?\s*)?|gh-)(\d+))}
                 {<a href="${github_pull_request_prefix}$2">$1</a>}gi;
+      # Link "LUCENE_CHANGES.txt" to Lucene's same-release Changes.html
+      if ($product eq 'SOLR') {
+        $item =~ s[(LUCENE_CHANGES.txt)]
+                  [<a href="${lucene_javadoc_url}changes/Changes.html">$1</a>]g;
+      }
       if ($product eq 'LUCENE') {
         # Find single Bugzilla issues
         $item =~ s~((?i:bug|patch|issue)\s*\#?\s*(\d+))
