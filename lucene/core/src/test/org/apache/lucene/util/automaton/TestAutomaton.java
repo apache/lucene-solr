@@ -580,10 +580,16 @@ public class TestAutomaton extends LuceneTestCase {
       }
       return Operations.determinize(a);
     case 1:
-      if (VERBOSE) {
-        System.out.println("  randomNoOp: minimize");
+      if (a.getNumStates() < 100) {
+        if (VERBOSE) {
+          System.out.println("  randomNoOp: minimize");
+        }
+        return MinimizationOperations.minimize(a);
+      } else {
+        if (VERBOSE) {
+          System.out.println("  randomNoOp: skip op=minimize: too many states (" + a.getNumStates() + ")");
+        }
       }
-      return MinimizationOperations.minimize(a);
     case 2:
       if (VERBOSE) {
         System.out.println("  randomNoOp: removeDeadStates");
@@ -723,7 +729,7 @@ public class TestAutomaton extends LuceneTestCase {
         break;
 
       case 3:
-        if (a.getNumStates() < 200) {
+        if (a.getNumStates() < 100) {
           if (VERBOSE) {
             System.out.println("  op=minimize");
           }
