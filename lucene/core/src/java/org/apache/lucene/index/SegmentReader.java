@@ -200,8 +200,8 @@ public final class SegmentReader extends AtomicReader implements Accountable {
       return;
     }
 
-    String ver = si.info.getVersion();
-    if (ver != null && StringHelper.getVersionComparator().compare(ver, "4.9.0") >= 0) {
+    Version ver = si.info.getVersion();
+    if (ver != null && ver.onOrAfter(Version.LUCENE_4_9_0)) {
       DocValuesProducer baseProducer = null;
       for (FieldInfo fi : fieldInfos) {
         if (!fi.hasDocValues()) continue;

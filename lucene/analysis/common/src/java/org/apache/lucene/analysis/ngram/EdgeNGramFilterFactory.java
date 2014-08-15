@@ -50,7 +50,7 @@ public class EdgeNGramFilterFactory extends TokenFilterFactory {
 
   @Override
   public TokenFilter create(TokenStream input) {
-    if (luceneMatchVersion.onOrAfter(Version.LUCENE_4_4)) {
+    if (luceneMatchVersion.onOrAfter(Version.LUCENE_4_4_0)) {
       return new EdgeNGramTokenFilter(input, minGramSize, maxGramSize);
     }
     return new Lucene43EdgeNGramTokenFilter(input, minGramSize, maxGramSize);

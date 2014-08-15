@@ -99,7 +99,7 @@ public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactor
       final InputSource is = new InputSource(stream);
       is.setEncoding(encoding); // if it's null let xml parser decide
       is.setSystemId(hypFile);
-      if (luceneMatchVersion.onOrAfter(Version.LUCENE_4_4)) {
+      if (luceneMatchVersion.onOrAfter(Version.LUCENE_4_4_0)) {
         hyphenator = HyphenationCompoundWordTokenFilter.getHyphenationTree(is);
       } else {
         hyphenator = Lucene43HyphenationCompoundWordTokenFilter.getHyphenationTree(is);
@@ -111,7 +111,7 @@ public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactor
   
   @Override
   public TokenFilter create(TokenStream input) {
-    if (luceneMatchVersion.onOrAfter(Version.LUCENE_4_4)) {
+    if (luceneMatchVersion.onOrAfter(Version.LUCENE_4_4_0)) {
       return new HyphenationCompoundWordTokenFilter(input, hyphenator, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);
     }
     return new Lucene43HyphenationCompoundWordTokenFilter(input, hyphenator, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);

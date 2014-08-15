@@ -17,46 +17,173 @@
 
 package org.apache.lucene.util;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+
 public class TestVersion extends LuceneTestCase {
 
-  public void test() {
-    for (Version v : Version.values()) {
-      assertTrue("LUCENE_CURRENT must be always onOrAfter("+v+")", Version.LUCENE_CURRENT.onOrAfter(v));
+  public void testOnOrAfter() throws Exception {
+    for (Field field : Version.class.getDeclaredFields()) {
+      if (Modifier.isStatic(field.getModifiers()) && field.getType() == Version.class) {
+        Version v = (Version)field.get(Version.class);
+        assertTrue("LATEST must be always onOrAfter("+v+")", Version.LATEST.onOrAfter(v));
+      }
     }
-    assertTrue(Version.LUCENE_5_0.onOrAfter(Version.LUCENE_4_0));
-    assertFalse(Version.LUCENE_4_0.onOrAfter(Version.LUCENE_5_0));
+    assertTrue(Version.LUCENE_5_0_0.onOrAfter(Version.LUCENE_4_0_0));
+    assertFalse(Version.LUCENE_4_0_0.onOrAfter(Version.LUCENE_5_0_0));
+    assertTrue(Version.LUCENE_4_0_0_ALPHA.onOrAfter(Version.LUCENE_4_0_0_ALPHA));
+    assertTrue(Version.LUCENE_4_0_0_BETA.onOrAfter(Version.LUCENE_4_0_0_ALPHA));
+    assertTrue(Version.LUCENE_4_0_0.onOrAfter(Version.LUCENE_4_0_0_ALPHA));
+    assertTrue(Version.LUCENE_4_0_0.onOrAfter(Version.LUCENE_4_0_0_BETA));
+  }
+
+  public void testToString() {
+    assertEquals("4.2.0", Version.LUCENE_4_2_0.toString());
+    assertEquals("4.2.0", Version.LUCENE_4_2.toString());
+    assertEquals("4.2.1", Version.LUCENE_4_2_1.toString());
+    assertEquals("4.0.0.1", Version.LUCENE_4_0_0_ALPHA.toString());
+    assertEquals("4.0.0.2", Version.LUCENE_4_0_0_BETA.toString());
   }
 
   public void testParseLeniently() {
-    assertEquals(Version.LUCENE_4_0, Version.parseLeniently("4.0"));
-    assertEquals(Version.LUCENE_4_0, Version.parseLeniently("LUCENE_40"));
-    assertEquals(Version.LUCENE_4_0, Version.parseLeniently("LUCENE_4_0"));
-    assertEquals(Version.LUCENE_CURRENT, Version.parseLeniently("LUCENE_CURRENT"));
+    assertEquals(Version.LUCENE_4_0_0, Version.parseLeniently("4.0"));
+    assertEquals(Version.LUCENE_4_0_0, Version.parseLeniently("4.0.0"));
+    assertEquals(Version.LUCENE_4_0_0, Version.parseLeniently("LUCENE_40"));
+    assertEquals(Version.LUCENE_4_0_0, Version.parseLeniently("LUCENE_4_0"));
+    assertEquals(Version.LATEST, Version.parseLeniently("LATEST"));
+    assertEquals(Version.LATEST, Version.parseLeniently("LUCENE_CURRENT"));
   }
   
-  public void testDeprecations() throws Exception {
-    Version values[] = Version.values();
-    // all but the latest version should be deprecated
-    for (int i = 0; i < values.length; i++) {
-      if (i + 1 == values.length) {
-        assertSame("Last constant must be LUCENE_CURRENT", Version.LUCENE_CURRENT, values[i]);
-      }
-      final boolean dep = Version.class.getField(values[i].name()).isAnnotationPresent(Deprecated.class);
-      if (i + 2 != values.length) {
-        assertTrue(values[i].name() + " should be deprecated", dep);
-      } else {
-        assertFalse(values[i].name() + " should not be deprecated", dep);
-      }
+  public void testParseLenientlyExceptions() {
+    try {
+      Version.parseLeniently("LUCENE");
+      fail();
+    } catch (IllegalArgumentException iae) {
+      // pass
+    }
+  }
+
+  public void testParse() {
+    assertEquals(Version.LUCENE_5_0_0, Version.parse("5.0.0"));
+    assertEquals(Version.LUCENE_4_1_0, Version.parse("4.1"));
+    assertEquals(Version.LUCENE_4_1_0, Version.parseLeniently("4.1.0"));
+    assertEquals(Version.LUCENE_4_0_0_ALPHA, Version.parseLeniently("4.0.0.1"));
+    assertEquals(Version.LUCENE_4_0_0_BETA, Version.parseLeniently("4.0.0.2"));
+  }
+
+  public void testForwardsCompatibility() {
+    assertTrue(Version.parse("4.7.10").onOrAfter(Version.LUCENE_4_7_2));
+    assertTrue(Version.parse("4.20.0").onOrAfter(Version.LUCENE_4_8_1));
+    assertTrue(Version.parse("5.10.20").onOrAfter(Version.LUCENE_5_0_0));
+  }
+
+  public void testParseExceptions() {
+    try {
+      Version.parse("1.0");
+      fail();
+    } catch (IllegalArgumentException iae) {
+      // pass
+    }
+
+    try {
+      Version.parse("LUCENE_4_0_0");
+      fail();
+    } catch (IllegalArgumentException iae) {
+      // pass
+    }
+
+    try {
+      Version.parse("4.256");
+      fail();
+    } catch (IllegalArgumentException iae) {
+      // pass
+    }
+
+    try {
+      Version.parse("4.-1");
+      fail();
+    } catch (IllegalArgumentException iae) {
+      // pass
+    }
+
+    try {
+      Version.parse("4.1.256");
+      fail();
+    } catch (IllegalArgumentException iae) {
+      // pass
+    }
+
+    try {
+      Version.parse("4.1.-1");
+      fail();
+    } catch (IllegalArgumentException iae) {
+      // pass
+    }
+
+    try {
+      Version.parse("4.1.1.3");
+      fail();
+    } catch (IllegalArgumentException iae) {
+      // pass
+    }
+
+    try {
+      Version.parse("4.1.1.-1");
+      fail();
+    } catch (IllegalArgumentException iae) {
+      // pass
+    }
+
+    try {
+      Version.parse("4.1.1.1");
+      fail();
+    } catch (IllegalArgumentException iae) {
+      // pass
+    }
+
+    try {
+      Version.parse("4.1.1.2");
+      fail();
+    } catch (IllegalArgumentException iae) {
+      // pass
+    }
+
+    try {
+      Version.parse("4.0.0.0");
+      fail();
+    } catch (IllegalArgumentException iae) {
+      // pass
+    }
+
+    try {
+      Version.parse("6.0.0");
+      fail();
+    } catch (IllegalArgumentException iae) {
+      // pass
     }
   }
   
-  public void testAgainstMainVersionConstant() {
-    final Version values[] = Version.values();
-    assertTrue(values.length >= 2);
-    final String mainVersionWithoutAlphaBeta = Constants.mainVersionWithoutAlphaBeta();
-    final Version mainVersionParsed = Version.parseLeniently(mainVersionWithoutAlphaBeta); 
-    assertSame("Constant one before last must be the same as the parsed LUCENE_MAIN_VERSION (without alpha/beta) constant: " + 
-        mainVersionWithoutAlphaBeta,
-        mainVersionParsed, values[values.length - 2]);
+  public void testDeprecations() throws Exception {
+    // all but the latest version should be deprecated
+    for (Field field : Version.class.getDeclaredFields()) {
+      if (Modifier.isStatic(field.getModifiers()) && field.getType() == Version.class) {
+        Version v = (Version)field.get(Version.class);
+        final boolean dep = field.isAnnotationPresent(Deprecated.class);
+        if (v.equals(Version.LATEST) && field.getName().equals("LUCENE_CURRENT") == false) {
+          assertFalse(field.getName() + " should not be deprecated", dep);
+        } else {
+          assertTrue(field.getName() + " should be deprecated", dep);
+        }
+      }
+    }
+  }
+
+  public void testLatestVersionCommonBuild() {
+    // common-build.xml sets 'tests.LUCENE_VERSION', if not, we skip this test!
+    String commonBuildVersion = System.getProperty("tests.LUCENE_VERSION");
+    assumeTrue("Null 'tests.LUCENE_VERSION' test property. You should run the tests with the official Lucene build file",
+        commonBuildVersion != null);
+    assertEquals("Version.LATEST does not match the one given in common-build.xml",
+        Version.LATEST.toString(), commonBuildVersion);
   }
 }

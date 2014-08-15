@@ -260,7 +260,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
         if (fieldName.equals("textgrams") && minPrefixChars > 0) {
           // TODO: should use an EdgeNGramTokenFilterFactory here
           TokenFilter filter;
-          if (matchVersion.onOrAfter(Version.LUCENE_4_4)) {
+          if (matchVersion.onOrAfter(Version.LUCENE_4_4_0)) {
             filter = new EdgeNGramTokenFilter(components.getTokenStream(), 1, minPrefixChars);
           } else {
             filter = new Lucene43EdgeNGramTokenFilter(components.getTokenStream(), 1, minPrefixChars);

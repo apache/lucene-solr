@@ -35,7 +35,6 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import java.util.*;
-import java.lang.reflect.Constructor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -399,7 +398,7 @@ public final class FieldTypePluginLoader
     Version version = (configuredVersion != null) ?
             Config.parseLuceneVersionString(configuredVersion) : schema.getDefaultLuceneMatchVersion();
 
-    if (!version.onOrAfter(Version.LUCENE_4_0)) {
+    if (!version.onOrAfter(Version.LUCENE_4_0_0)) {
       log.warn(pluginClassName + " is using deprecated " + version +
         " emulation. You should at some point declare and reindex to at least 4.0, because " +
         "3.x emulation is deprecated and will be removed in 5.0");

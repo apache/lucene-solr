@@ -62,7 +62,7 @@ public class SimpleTextSegmentInfoWriter extends SegmentInfoWriter {
       BytesRefBuilder scratch = new BytesRefBuilder();
     
       SimpleTextUtil.write(output, SI_VERSION);
-      SimpleTextUtil.write(output, si.getVersion(), scratch);
+      SimpleTextUtil.write(output, si.getVersion().toString(), scratch);
       SimpleTextUtil.writeNewline(output);
     
       SimpleTextUtil.write(output, SI_DOCCOUNT);

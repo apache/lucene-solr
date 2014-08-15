@@ -59,7 +59,7 @@ import java.util.regex.Pattern;
  * </ol>
  *
  * Each component analysis factory map specify <tt>luceneMatchVersion</tt> (defaults to
- * {@link Version#LUCENE_CURRENT}) and any of the args understood by the specified
+ * {@link Version#LATEST}) and any of the args understood by the specified
  * *Factory class, in the above-describe param format.
  * <p/>
  * Example:
@@ -68,7 +68,7 @@ import java.util.regex.Pattern;
  *                      positionIncrementGap:100,
  *                      HTMLStripCharFilter,
  *                      MappingCharFilter(mapping:'mapping-FoldToASCII.txt'),
- *                      WhitespaceTokenizer(luceneMatchVersion:LUCENE_5_0),
+ *                      WhitespaceTokenizer(luceneMatchVersion:LUCENE_5_0_0),
  *                      TokenLimitFilter(maxTokenCount:10000, consumeAllTokens:false))
  *     [...]
  *     -NewAnalyzer('strip html, fold to ascii, whitespace tokenize, max 10k tokens')
@@ -355,7 +355,7 @@ public class AnalyzerFactoryTask extends PerfTask {
         }
       }
       if (!argMap.containsKey("luceneMatchVersion")) {
-        argMap.put("luceneMatchVersion", Version.LUCENE_CURRENT.toString());
+        argMap.put("luceneMatchVersion", Version.LATEST.toString());
       }
       final AbstractAnalysisFactory instance;
       try {

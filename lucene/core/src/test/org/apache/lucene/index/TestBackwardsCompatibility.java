@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,14 +58,13 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -846,12 +844,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     riw.close();
     DirectoryReader ir = DirectoryReader.open(currentDir);
     SegmentReader air = (SegmentReader)ir.leaves().get(0).reader();
-    String currentVersion = air.getSegmentInfo().info.getVersion();
+    Version currentVersion = air.getSegmentInfo().info.getVersion();
     assertNotNull(currentVersion); // only 3.0 segments can have a null version
     ir.close();
     currentDir.close();
-    
-    Comparator<String> comparator = StringHelper.getVersionComparator();
     
     // now check all the old indexes, their version should be < the current version
     for (String name : oldNames) {
@@ -859,10 +855,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       DirectoryReader r = DirectoryReader.open(dir);
       for (AtomicReaderContext context : r.leaves()) {
         air = (SegmentReader) context.reader();
-        String oldVersion = air.getSegmentInfo().info.getVersion();
+        Version oldVersion = air.getSegmentInfo().info.getVersion();
         assertNotNull(oldVersion); // only 3.0 segments can have a null version
-        assertTrue("current Constants.LUCENE_MAIN_VERSION is <= an old index: did you forget to bump it?!",
-            comparator.compare(oldVersion, currentVersion) < 0);
+        assertTrue("current Version.LATEST is <= an old index: did you forget to bump it?!",
+                   currentVersion.onOrAfter(oldVersion));
       }
       r.close();
     }
@@ -920,7 +916,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       System.out.println("checkAllSegmentsUpgraded: " + infos);
     }
     for (SegmentCommitInfo si : infos) {
-      assertEquals(Constants.LUCENE_MAIN_VERSION, si.info.getVersion());
+      assertEquals(Version.LATEST, si.info.getVersion());
     }
     return infos.size();
   }

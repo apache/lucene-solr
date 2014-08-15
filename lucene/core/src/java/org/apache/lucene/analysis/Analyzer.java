@@ -72,7 +72,7 @@ import java.util.Map;
 public abstract class Analyzer implements Closeable {
 
   private final ReuseStrategy reuseStrategy;
-  private Version version = Version.LUCENE_CURRENT;
+  private Version version = Version.LATEST;
 
   // non final as it gets nulled if closed; pkg private for access by ReuseStrategy's final helper methods:
   CloseableThreadLocal<Object> storedValue = new CloseableThreadLocal<>();

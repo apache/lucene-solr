@@ -71,7 +71,7 @@ public class DictionaryCompoundWordTokenFilterFactory extends TokenFilterFactory
     if (dictionary == null) {
       return input;
     }
-    if (luceneMatchVersion.onOrAfter(Version.LUCENE_4_4)) {
+    if (luceneMatchVersion.onOrAfter(Version.LUCENE_4_4_0)) {
       return new DictionaryCompoundWordTokenFilter(input, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);
     }
     return new Lucene43DictionaryCompoundWordTokenFilter(input, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);

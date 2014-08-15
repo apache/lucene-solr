@@ -187,7 +187,7 @@ public class ICUCollationField extends FieldType {
       rbc.setVariableTop(variableTop);
     }
 
-    analyzer = new ICUCollationKeyAnalyzer(Version.LUCENE_CURRENT, collator);
+    analyzer = new ICUCollationKeyAnalyzer(Version.LATEST, collator);
   }
   
   /**

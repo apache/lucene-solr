@@ -143,7 +143,7 @@
     </subant>
   </target>
 
-  <property name="version" value="5.0-SNAPSHOT"/>
+  <property name="version" value="5.0.0-SNAPSHOT"/>
   <property name="maven-build-dir" value="maven-build"/>
   <property name="maven-version" value="2.2.1"/>
 

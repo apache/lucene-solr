@@ -41,13 +41,13 @@ public class FieldTermStack {
   LinkedList<TermInfo> termList = new LinkedList<>();
   
   //public static void main( String[] args ) throws Exception {
-  //  Analyzer analyzer = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
-  //  QueryParser parser = new QueryParser(Version.LUCENE_CURRENT,  "f", analyzer );
+  //  Analyzer analyzer = new WhitespaceAnalyzer(Version.LATEST);
+  //  QueryParser parser = new QueryParser(Version.LATEST,  "f", analyzer );
   //  Query query = parser.parse( "a x:b" );
   //  FieldQuery fieldQuery = new FieldQuery( query, true, false );
     
   //  Directory dir = new RAMDirectory();
-  //  IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LUCENE_CURRENT, analyzer));
+  //  IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, analyzer));
   //  Document doc = new Document();
   //  FieldType ft = new FieldType(TextField.TYPE_STORED);
   //  ft.setStoreTermVectors(true);

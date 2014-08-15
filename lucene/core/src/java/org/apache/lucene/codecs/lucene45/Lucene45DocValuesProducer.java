@@ -91,8 +91,8 @@ class Lucene45DocValuesProducer extends DocValuesProducer implements Closeable {
   /** expert: instantiates a new reader */
   @SuppressWarnings("deprecation")
   protected Lucene45DocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
-    String ver = state.segmentInfo.getVersion();
-    lenientFieldInfoCheck = StringHelper.getVersionComparator().compare(ver, "4.9.0") < 0;
+    Version ver = state.segmentInfo.getVersion();
+    lenientFieldInfoCheck = Version.LUCENE_4_9_0.onOrAfter(ver);
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     // read in the entries from the metadata file.
     ChecksumIndexInput in = state.directory.openChecksumInput(metaName, state.context);

@@ -170,7 +170,7 @@ public class MultiPassIndexSplitter {
     } else {
       input = new MultiReader(indexes.toArray(new IndexReader[indexes.size()]));
     }
-    splitter.split(Version.LUCENE_CURRENT, input, dirs, seq);
+    splitter.split(Version.LATEST, input, dirs, seq);
   }
   
   /**

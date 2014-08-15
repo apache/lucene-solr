@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -46,7 +45,7 @@ import org.apache.lucene.util.CommandLineUtil;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LongBitSet;
-import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.Version;
 
 
 /**
@@ -409,21 +408,19 @@ public class CheckIndex {
     }
 
     // find the oldest and newest segment versions
-    String oldest = Integer.toString(Integer.MAX_VALUE), newest = Integer.toString(Integer.MIN_VALUE);
+    Version oldest = null;
+    Version newest = null;
     String oldSegs = null;
-    boolean foundNonNullVersion = false;
-    Comparator<String> versionComparator = StringHelper.getVersionComparator();
     for (SegmentCommitInfo si : sis) {
-      String version = si.info.getVersion();
+      Version version = si.info.getVersion();
       if (version == null) {
         // pre-3.1 segment
         oldSegs = "pre-3.1";
       } else {
-        foundNonNullVersion = true;
-        if (versionComparator.compare(version, oldest) < 0) {
+        if (oldest == null || version.onOrAfter(oldest) == false) {
           oldest = version;
         }
-        if (versionComparator.compare(version, newest) > 0) {
+        if (newest == null || version.onOrAfter(newest)) {
           newest = version;
         }
       }
@@ -475,14 +472,14 @@ public class CheckIndex {
       userDataString = "";
     }
 
-    String versionString = null;
+    String versionString = "";
     if (oldSegs != null) {
-      if (foundNonNullVersion) {
+      if (newest != null) {
         versionString = "versions=[" + oldSegs + " .. " + newest + "]";
       } else {
         versionString = "version=" + oldSegs;
       }
-    } else {
+    } else if (newest != null) { // implies oldest != null
       versionString = oldest.equals(newest) ? ( "version=" + oldest ) : ("versions=[" + oldest + " .. " + newest + "]");
     }
 
@@ -527,8 +524,8 @@ public class CheckIndex {
       segInfoStat.name = info.info.name;
       segInfoStat.docCount = info.info.getDocCount();
       
-      final String version = info.info.getVersion();
-      if (info.info.getDocCount() <= 0 && version != null && versionComparator.compare(version, "4.5") >= 0) {
+      final Version version = info.info.getVersion();
+      if (info.info.getDocCount() <= 0 && version != null && version.onOrAfter(Version.LUCENE_4_5_0)) {
         throw new RuntimeException("illegal number of documents: maxDoc=" + info.info.getDocCount());
       }
 
