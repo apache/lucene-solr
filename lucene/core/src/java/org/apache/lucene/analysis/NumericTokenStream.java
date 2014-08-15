@@ -168,7 +168,6 @@ public final class NumericTokenStream extends TokenStream {
       } else {
         NumericUtils.intToPrefixCoded((int) value, shift, bytes);
       }
-      bytes.get();
     }
 
     @Override
