@@ -178,9 +178,10 @@ public class TestLucene410DocValuesFormat extends BaseCompressingDocValuesFormat
       AtomicReader r = context.reader();
       Terms terms = r.terms("indexed");
       if (terms != null) {
+        assertEquals(terms.size(), r.getSortedSetDocValues("dv").getValueCount());
         TermsEnum expected = terms.iterator(null);
         TermsEnum actual = r.getSortedSetDocValues("dv").termsEnum();
-        assertEquals(r.maxDoc(), expected, actual);
+        assertEquals(terms.size(), expected, actual);
       }
     }
     ir.close();
@@ -192,9 +193,10 @@ public class TestLucene410DocValuesFormat extends BaseCompressingDocValuesFormat
     AtomicReader ar = getOnlySegmentReader(ir);
     Terms terms = ar.terms("indexed");
     if (terms != null) {
+      assertEquals(terms.size(), ar.getSortedSetDocValues("dv").getValueCount());
       TermsEnum expected = terms.iterator(null);
       TermsEnum actual = ar.getSortedSetDocValues("dv").termsEnum();
-      assertEquals(ar.maxDoc(), expected, actual);
+      assertEquals(terms.size(), expected, actual);
     }
     ir.close();
     
