@@ -48,6 +48,18 @@ public class TestSortingResponseWriter extends SolrTestCaseJ4 {
                  "stringdv_m", "liverpool",
                  "stringdv_m", "Everton"));
 
+    assertU(adoc("id","7",
+        "floatdv","2.1",
+        "intdv", "7",
+        "longdv", "323223232323",
+        "doubledv","2344.345",
+        "floatdv_m", "123.321",
+        "floatdv_m", "345.123",
+        "doubledv_m", "3444.222",
+        "doubledv_m", "23232.2",
+        "longdv_m", "43434343434",
+        "longdv_m", "343332"));
+
     assertU(commit());
     assertU(adoc("id","2", "floatdv","2.1", "intdv", "2", "stringdv", "hello world", "longdv", "323223232323","doubledv","2344.344"));
     assertU(commit());
@@ -80,17 +92,33 @@ public class TestSortingResponseWriter extends SolrTestCaseJ4 {
     String s =  h.query(req("q", "id:1", "qt", "/export", "fl", "floatdv,intdv,stringdv,longdv,doubledv", "sort", "intdv asc"));
     assertEquals(s, "{\"numFound\":1, \"docs\":[{\"floatdv\":2.1,\"intdv\":1,\"stringdv\":\"hello world\",\"longdv\":323223232323,\"doubledv\":2344.345}]}");
 
+    //Test null value string:
+    s =  h.query(req("q", "id:7", "qt", "/export", "fl", "floatdv,intdv,stringdv,longdv,doubledv", "sort", "intdv asc"));
+    assertEquals(s, "{\"numFound\":1, \"docs\":[{\"floatdv\":2.1,\"intdv\":7,\"stringdv\":\"\",\"longdv\":323223232323,\"doubledv\":2344.345}]}");
+
     //Test multiValue docValues output
     s =  h.query(req("q", "id:1", "qt", "/export", "fl", "intdv_m,floatdv_m,doubledv_m,longdv_m,stringdv_m", "sort", "intdv asc"));
-    System.out.println(s);
     assertEquals(s, "{\"numFound\":1, \"docs\":[{\"intdv_m\":[100,250],\"floatdv_m\":[123.321,345.123],\"doubledv_m\":[3444.222,23232.2],\"longdv_m\":[343332,43434343434],\"stringdv_m\":[\"Everton\",\"liverpool\",\"manchester city\"]}]}");
+
+    //Test multiValues docValues output with nulls
+    s =  h.query(req("q", "id:7", "qt", "/export", "fl", "intdv_m,floatdv_m,doubledv_m,longdv_m,stringdv_m", "sort", "intdv asc"));
+    assertEquals(s, "{\"numFound\":1, \"docs\":[{\"intdv_m\":[],\"floatdv_m\":[123.321,345.123],\"doubledv_m\":[3444.222,23232.2],\"longdv_m\":[343332,43434343434],\"stringdv_m\":[]}]}");
+
     //Test single sort param is working
     s =  h.query(req("q", "id:(1 2)", "qt", "/export", "fl", "intdv", "sort", "intdv desc"));
-    System.out.println("Output:"+s);
     assertEquals(s, "{\"numFound\":2, \"docs\":[{\"intdv\":2},{\"intdv\":1}]}");
 
     s =  h.query(req("q", "id:(1 2)", "qt", "/export", "fl", "intdv", "sort", "intdv asc"));
     assertEquals(s, "{\"numFound\":2, \"docs\":[{\"intdv\":1},{\"intdv\":2}]}");
+
+    // Test sort on String will null value. Null value should sort last on desc and first on asc.
+
+    s =  h.query(req("q", "id:(1 7)", "qt", "/export", "fl", "intdv", "sort", "stringdv desc"));
+    assertEquals(s, "{\"numFound\":2, \"docs\":[{\"intdv\":1},{\"intdv\":7}]}");
+
+    s =  h.query(req("q", "id:(1 7)", "qt", "/export", "fl", "intdv", "sort", "stringdv asc"));
+    assertEquals(s, "{\"numFound\":2, \"docs\":[{\"intdv\":7},{\"intdv\":1}]}");
+
 
     //Test multi-sort params
     s =  h.query(req("q", "id:(1 2)", "qt", "/export", "fl", "intdv", "sort", "floatdv asc,intdv desc"));
@@ -112,7 +140,6 @@ public class TestSortingResponseWriter extends SolrTestCaseJ4 {
     assertEquals(s, "{\"numFound\":3, \"docs\":[{\"intdv\":3},{\"intdv\":2},{\"intdv\":1}]}");
 
     s =  h.query(req("q", "id:(1 2 3)", "qt", "/export", "fl", "intdv", "sort", "doubledv desc"));
-    System.out.println("Results:"+s);
     assertEquals(s, "{\"numFound\":3, \"docs\":[{\"intdv\":3},{\"intdv\":1},{\"intdv\":2}]}");
 
   }

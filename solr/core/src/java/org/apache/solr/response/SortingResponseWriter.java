@@ -17,7 +17,6 @@
     
 package org.apache.solr.response;
 
-import com.carrotsearch.hppc.IntArrayList;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.MultiDocValues;
@@ -48,15 +47,19 @@ import org.apache.solr.schema.StrField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.SyntaxError;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.Writer;
 import java.io.PrintWriter;
+import java.net.SocketException;
 import java.util.List;
 
 
 public class SortingResponseWriter implements QueryResponseWriter {
 
+  private final static Logger logger = LoggerFactory.getLogger(SortingResponseWriter.class);
 
   public void init(NamedList args) {
     /* NOOP */
@@ -157,16 +160,33 @@ public class SortingResponseWriter implements QueryResponseWriter {
 
       count += (outDocsIndex+1);
 
-      for(int i=outDocsIndex; i>=0; --i) {
-        SortDoc s = outDocs[i];
-        if(commaNeeded){writer.write(',');}
-        writer.write('{');
-        writeDoc(s, leaves, fieldWriters, sets, writer);
-        writer.write('}');
-        commaNeeded = true;
-        s.reset();
+      try {
+        for(int i=outDocsIndex; i>=0; --i) {
+          SortDoc s = outDocs[i];
+          if(commaNeeded){writer.write(',');}
+          writer.write('{');
+          writeDoc(s, leaves, fieldWriters, sets, writer);
+          writer.write('}');
+          commaNeeded = true;
+          s.reset();
+        }
+      } catch(Throwable e) {
+        Throwable ex = e;
+        while(ex != null) {
+          String m = ex.getMessage();
+          if(m != null && m.contains("Broken pipe")) {
+            logger.info("Early client disconnect during export");
+            return;
+          }
+          ex = ex.getCause();
+        }
+
+        if(e instanceof IOException) {
+          throw ((IOException)e);
+        } else {
+          throw new IOException(e);
+        }
       }
-      //total+=end-begin;
     }
 
     //System.out.println("Sort Time 2:"+Long.toString(total/1000000));
@@ -240,6 +260,8 @@ public class SortingResponseWriter implements QueryResponseWriter {
         } else {
           writers[i] = new StringFieldWriter(field, fieldType);
         }
+      } else {
+        throw new IOException("Export fields must either be one of the following types: int,float,long,double,string");
       }
     }
     return writers;
@@ -252,7 +274,13 @@ public class SortingResponseWriter implements QueryResponseWriter {
       SortField sf = sortFields[i];
       String field = sf.getField();
       boolean reverse = sf.getReverse();
-      FieldType ft = schema.getField(field).getType();
+      SchemaField schemaField = schema.getField(field);
+      FieldType ft = schemaField.getType();
+
+      if(!schemaField.hasDocValues()) {
+        throw new IOException(field+" must have DocValues to use this feature.");
+      }
+
       if(ft instanceof TrieIntField) {
         if(reverse) {
           sortValues[i] = new IntValue(field, new IntDesc());
@@ -285,6 +313,8 @@ public class SortingResponseWriter implements QueryResponseWriter {
         } else {
           sortValues[i] = new StringValue(vals, field, new IntAsc());
         }
+      } else {
+        throw new IOException("Sort fields must be one of the following types: int,float,long,double,string");
       }
     }
 
@@ -1060,7 +1090,12 @@ public class SortingResponseWriter implements QueryResponseWriter {
     }
 
     public void setCurrentValue(int docId) {
-      currentOrd = (int)globalOrds.get(currentVals.getOrd(docId));
+      int ord = currentVals.getOrd(docId);
+      if(ord < 0) {
+        currentOrd = -1;
+      } else {
+        currentOrd = (int)globalOrds.get(ord);
+      }
     }
 
     public void setCurrentValue(SortValue sv) {
