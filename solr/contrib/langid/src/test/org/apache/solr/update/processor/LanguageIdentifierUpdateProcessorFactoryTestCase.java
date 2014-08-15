@@ -26,17 +26,14 @@ import org.apache.solr.core.SolrCore;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.SolrRequestParsers;
 
 public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends SolrTestCaseJ4 {
 
-  protected static SolrRequestParsers _parser;
-  protected static SolrQueryRequest req;
-  protected static SolrQueryResponse resp = new SolrQueryResponse();
-  protected static LanguageIdentifierUpdateProcessor liProcessor;
-  protected static ModifiableSolrParams parameters;
+  protected static final SolrRequestParsers _parser = new SolrRequestParsers(null);
+  protected static final SolrQueryResponse resp = new SolrQueryResponse();
+  protected LanguageIdentifierUpdateProcessor liProcessor;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -44,7 +41,6 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     SolrCore core = h.getCore();
     UpdateRequestProcessorChain chained = core.getUpdateProcessingChain("lang_id");
     assertNotNull(chained);
-    _parser = new SolrRequestParsers(null);
   }
 
   @Override
@@ -57,7 +53,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
 
   @Test
   public void testLangIdGlobal() throws Exception {
-    parameters = new ModifiableSolrParams();
+    ModifiableSolrParams parameters = new ModifiableSolrParams();
     parameters.add("langid.fl", "name,subject");
     parameters.add("langid.langField", "language_s");
     parameters.add("langid.fallback", "un");
@@ -88,7 +84,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     
   @Test
   public void testMapFieldName() throws Exception {
-    parameters = new ModifiableSolrParams();
+    ModifiableSolrParams parameters = new ModifiableSolrParams();
     parameters.add("langid.fl", "name");
     parameters.add("langid.map.lcmap", "jp:s zh:cjk ko:cjk");
     parameters.set("langid.enforceSchema", "false");
@@ -115,7 +111,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
 
   @Test
   public void testMapLangcode() throws Exception {
-    parameters = new ModifiableSolrParams();
+    ModifiableSolrParams parameters = new ModifiableSolrParams();
     parameters.add("langid.fl", "name");
     parameters.add("langid.lcmap", "zh_cn:zh zh_tw:zh");
     parameters.set("langid.enforceSchema", "false");
@@ -132,7 +128,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
   @Test
   public void testPreExisting() throws Exception {
     SolrInputDocument doc;
-    parameters = new ModifiableSolrParams();
+    ModifiableSolrParams parameters = new ModifiableSolrParams();
     parameters.add("langid.fl", "text");
     parameters.add("langid.langField", "language");
     parameters.add("langid.langsField", "languages");
@@ -158,7 +154,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
   @Test
   public void testPreExistingMultiValue() throws Exception {
     SolrInputDocument doc;
-    parameters = new ModifiableSolrParams();
+    ModifiableSolrParams parameters = new ModifiableSolrParams();
     parameters.add("langid.fl", "text_multivalue");
     parameters.add("langid.langField", "language");
     parameters.add("langid.langsField", "languages");
@@ -184,7 +180,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
   @Test
   public void testPreExistingMultiValueMixedLang() throws Exception {
     SolrInputDocument doc;
-    parameters = new ModifiableSolrParams();
+    ModifiableSolrParams parameters = new ModifiableSolrParams();
     parameters.add("langid.fl", "text_multivalue");
     parameters.add("langid.langField", "language");
     parameters.add("langid.langsField", "languages");
@@ -206,7 +202,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
   @Test
   public void testDefaultFallbackEmptyString() throws Exception {
     SolrInputDocument doc;
-    parameters = new ModifiableSolrParams();
+    ModifiableSolrParams parameters = new ModifiableSolrParams();
     parameters.add("langid.fl", "text");
     parameters.add("langid.langField", "language");
     parameters.add("langid.enforceSchema", "false");
@@ -219,7 +215,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
   @Test
   public void testFallback() throws Exception {
     SolrInputDocument doc;
-    parameters = new ModifiableSolrParams();
+    ModifiableSolrParams parameters = new ModifiableSolrParams();
     parameters.add("langid.fl", "text");
     parameters.add("langid.langField", "language");
     parameters.add("langid.fallbackFields", "noop,fb");
@@ -240,7 +236,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
   @Test
   public void testResolveLanguage() throws Exception {
     List<DetectedLanguage> langs;
-    parameters = new ModifiableSolrParams();
+    ModifiableSolrParams parameters = new ModifiableSolrParams();
     parameters.add("langid.fl", "text");
     parameters.add("langid.langField", "language");
     liProcessor = createLangIdProcessor(parameters);

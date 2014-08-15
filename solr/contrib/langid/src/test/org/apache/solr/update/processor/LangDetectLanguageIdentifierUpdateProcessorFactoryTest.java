@@ -40,7 +40,7 @@ public class LangDetectLanguageIdentifierUpdateProcessorFactoryTest extends Lang
    */
   @Test @Override
   public void testLangIdGlobal() throws Exception {
-    parameters = new ModifiableSolrParams();
+    ModifiableSolrParams parameters = new ModifiableSolrParams();
     parameters.add("langid.fl", "name,subject");
     parameters.add("langid.langField", "language_s");
     parameters.add("langid.fallback", "un");
