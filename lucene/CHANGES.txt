@@ -220,6 +220,11 @@ Optimizations
 * LUCENE-5882: Add Lucene410DocValuesFormat, with faster term lookups
   for SORTED/SORTED_SET fields.  (Robert Muir)
 
+* LUCENE-5887: Remove WeakIdentityMap caching in AttributeFactory,
+  AttributeSource, and VirtualMethod in favour of Java 7's ClassValue.
+  Always use MethodHandles to create AttributeImpl classes.
+  (Uwe Schindler)
+
 Bug Fixes
 
 * LUCENE-5796: Fixes the Scorer.getChildren() method for two combinations 

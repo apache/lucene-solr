@@ -17,16 +17,14 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import java.lang.ref.Reference;
-import java.lang.ref.WeakReference;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
+import java.util.Set;
 
 import org.apache.lucene.analysis.TokenStream; // for javadocs
 
@@ -150,30 +148,28 @@ public class AttributeSource {
   }
   
   /** a cache that stores all interfaces for known implementation classes for performance (slow reflection) */
-  private static final WeakIdentityMap<Class<? extends AttributeImpl>,Reference<Class<? extends Attribute>>[]> knownImplClasses =
-    WeakIdentityMap.newConcurrentHashMap(false);
-  
-  static Reference<Class<? extends Attribute>>[] getAttributeInterfaces(final Class<? extends AttributeImpl> clazz) {
-    Reference<Class<? extends Attribute>>[] foundInterfaces = knownImplClasses.get(clazz);
-    if (foundInterfaces == null) {
-      // we have the slight chance that another thread may do the same, but who cares?
-      final List<Reference<Class<? extends Attribute>>> intfList = new ArrayList<>();
+  private static final ClassValue<Class<? extends Attribute>[]> implInterfaces = new ClassValue<Class<? extends Attribute>[]>() {
+    @Override
+    protected Class<? extends Attribute>[] computeValue(Class<?> clazz) {
+      final Set<Class<? extends Attribute>> intfSet = new LinkedHashSet<>();
       // find all interfaces that this attribute instance implements
       // and that extend the Attribute interface
-      Class<?> actClazz = clazz;
       do {
-        for (Class<?> curInterface : actClazz.getInterfaces()) {
+        for (Class<?> curInterface : clazz.getInterfaces()) {
           if (curInterface != Attribute.class && Attribute.class.isAssignableFrom(curInterface)) {
-            intfList.add(new WeakReference<Class<? extends Attribute>>(curInterface.asSubclass(Attribute.class)));
+            intfSet.add(curInterface.asSubclass(Attribute.class));
           }
         }
-        actClazz = actClazz.getSuperclass();
-      } while (actClazz != null);
-      @SuppressWarnings({"unchecked", "rawtypes"}) final Reference<Class<? extends Attribute>>[] a =
-          intfList.toArray(new Reference[intfList.size()]);
-      knownImplClasses.put(clazz, foundInterfaces = a);
+        clazz = clazz.getSuperclass();
+      } while (clazz != null);
+      @SuppressWarnings({"unchecked", "rawtypes"}) final Class<? extends Attribute>[] a =
+          intfSet.toArray(new Class[intfSet.size()]);
+      return a;
     }
-    return foundInterfaces;
+  };
+  
+  static Class<? extends Attribute>[] getAttributeInterfaces(final Class<? extends AttributeImpl> clazz) {
+    return implInterfaces.get(clazz);
   }
   
   /** <b>Expert:</b> Adds a custom AttributeImpl instance with one or more Attribute interfaces.
@@ -189,10 +185,7 @@ public class AttributeSource {
     if (attributeImpls.containsKey(clazz)) return;
     
     // add all interfaces of this AttributeImpl to the maps
-    for (Reference<Class<? extends Attribute>> curInterfaceRef : getAttributeInterfaces(clazz)) {
-      final Class<? extends Attribute> curInterface = curInterfaceRef.get();
-      assert (curInterface != null) :
-        "We have a strong reference on the class holding the interfaces, so they should never get evicted";
+    for (final Class<? extends Attribute> curInterface : getAttributeInterfaces(clazz)) {
       // Attribute is a superclass of this interface
       if (!attributes.containsKey(curInterface)) {
         // invalidate state to force recomputation in captureState()
