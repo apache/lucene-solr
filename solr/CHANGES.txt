@@ -86,9 +86,6 @@ Other Changes
 * SOLR-5936: Removed deprecated non-Trie-based numeric & date field types.
   (Steve Rowe)
 
-* SOLR-5868: HttpClient should be configured to use ALLOW_ALL_HOSTNAME hostname
-  verifier to simplify SSL setup. (Steve Davids via Mark Miller)
-
 * SOLR-6169: Finish removal of CoreAdminHandler handleAlias action begun in 4.9 
   (Alan Woodward)
 
@@ -562,6 +559,10 @@ Other Changes
 
 * SOLR-6128: Removed deprecated analysis factories and fieldTypes from the example
   schema.xml (hossman)
+
+* SOLR-5868: HttpClient should be configured to use ALLOW_ALL_HOSTNAME hostname
+  verifier to simplify SSL setup. (Steve Davids via Mark Miller)
+
 
 Optimizations
 ----------------------
