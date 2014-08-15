@@ -19,7 +19,6 @@ package org.apache.lucene.util;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.lang.ref.Reference;
 
 /**
  * Base class for Attributes that can be added to a 
@@ -90,14 +89,12 @@ public abstract class AttributeImpl implements Cloneable, Attribute {
    */
   public void reflectWith(AttributeReflector reflector) {
     final Class<? extends AttributeImpl> clazz = this.getClass();
-    final Reference<Class<? extends Attribute>>[] interfaces = AttributeSource.getAttributeInterfaces(clazz);
+    final Class<? extends Attribute>[] interfaces = AttributeSource.getAttributeInterfaces(clazz);
     if (interfaces.length != 1) {
       throw new UnsupportedOperationException(clazz.getName() +
         " implements more than one Attribute interface, the default reflectWith() implementation cannot handle this.");
     }
-    final Class<? extends Attribute> interf = interfaces[0].get();
-    assert (interf != null) :
-      "We have a strong reference on the class holding the interfaces, so they should never get evicted";
+    final Class<? extends Attribute> interf = interfaces[0];
     final Field[] fields = clazz.getDeclaredFields();
     try {
       for (int i = 0; i < fields.length; i++) {

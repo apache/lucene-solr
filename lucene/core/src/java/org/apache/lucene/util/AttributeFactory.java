@@ -20,8 +20,6 @@ package org.apache.lucene.util;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.ref.Reference;
-import java.lang.ref.WeakReference;
 
 /**
  * An AttributeFactory creates instances of {@link AttributeImpl}s.
@@ -52,48 +50,25 @@ public abstract class AttributeFactory {
    * This is the default factory that creates {@link AttributeImpl}s using the
    * class name of the supplied {@link Attribute} interface class by appending <code>Impl</code> to it.
    */
-  public static final AttributeFactory DEFAULT_ATTRIBUTE_FACTORY = new DefaultAttributeFactory(true);
+  public static final AttributeFactory DEFAULT_ATTRIBUTE_FACTORY = new DefaultAttributeFactory();
   
-  static final class DefaultAttributeFactory extends AttributeFactory {
-    private final WeakIdentityMap<Class<? extends Attribute>, Object> attClassImplMap =
-      WeakIdentityMap.newConcurrentHashMap(false);
-    private final ClassLoader myClassLoader = getClass().getClassLoader();
-    private final boolean useMethodHandles;
-    
-    // this constructor is available for tests, to be able to test the pure-reflective case, too
-    DefaultAttributeFactory(boolean useMethodHandles) {
-      this.useMethodHandles = useMethodHandles;
-    }
+  private static final class DefaultAttributeFactory extends AttributeFactory {
+    private final ClassValue<MethodHandle> constructors = new ClassValue<MethodHandle>() {
+      @Override
+      protected MethodHandle computeValue(Class<?> attClass) {
+        return findAttributeImplCtor(findImplClass(attClass.asSubclass(Attribute.class)));
+      }
+    };
+
+    DefaultAttributeFactory() {}
   
     @Override
     public AttributeImpl createAttributeInstance(Class<? extends Attribute> attClass) {
-      // first lookup from cache:
-      Object cached = attClassImplMap.get(attClass);
-      if (cached instanceof MethodHandle) {
-        return invokeMethodHandle((MethodHandle) cached);
-      } else if (cached instanceof Reference) {
-        @SuppressWarnings("unchecked") final Class<? extends AttributeImpl> clazz = 
-            ((Reference<Class<? extends AttributeImpl>>) cached).get();
-        if (clazz != null) {
-          return invokeReflective(clazz);
-        }
-        cached = null;
-        // fall-through
-      }
-      // No cache hit!
-      // Please note: we have the slight chance that another thread may do the same, but who cares?
-      assert cached == null;
-      final Class<? extends AttributeImpl> implClazz = findImplClass(attClass);
-      // if the attribute impl is from our own ClassLoader, we optimize to use pre-allocated MethodHandle to instantiate the object
-      if (useMethodHandles && implClazz.getClassLoader() == myClassLoader) {
-        final MethodHandle constr = findAttributeImplCtor(implClazz);
-        attClassImplMap.put(attClass, constr);
-        return invokeMethodHandle(constr);
-      } else {
-        // otherwise, to not refer to the class forever (because the MethodHandle strongly
-        // references the class), so it can never be unloaded, we use slower reflection:
-        attClassImplMap.put(attClass, new WeakReference<>(implClazz));
-        return invokeReflective(implClazz);
+      try {
+        return (AttributeImpl) constructors.get(attClass).invokeExact();
+      } catch (Throwable t) {
+        rethrow(t);
+        throw new AssertionError();
       }
     }
     
@@ -103,23 +78,6 @@ public abstract class AttributeFactory {
       } catch (ClassNotFoundException cnfe) {
         throw new IllegalArgumentException("Cannot find implementing class for: " + attClass.getName());
       }      
-    }
-    
-    private AttributeImpl invokeMethodHandle(MethodHandle constr) {
-      try {
-        return (AttributeImpl) constr.invokeExact();
-      } catch (Throwable t) {
-        rethrow(t);
-        throw new AssertionError();
-      }
-    }
-    
-    private AttributeImpl invokeReflective(Class<? extends AttributeImpl> implClass) {
-      try {
-        return implClass.newInstance();
-      } catch (InstantiationException | IllegalAccessException e) {
-        throw new IllegalArgumentException("Cannot instantiate implementing class: " + implClass.getName(), e);
-      }
     }
   }
   
