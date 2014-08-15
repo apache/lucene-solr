@@ -794,7 +794,7 @@ public class UpdateLog implements PluginInfoInitialized {
           continue;
         }
       } catch (IOException e) {
-        log.error("Error inspecting tlog " + ll);
+        log.error("Error inspecting tlog " + ll, e);
         ll.decref();
         continue;
       }

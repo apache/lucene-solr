@@ -278,6 +278,9 @@ Bug Fixes
 * SOLR-6284: Fix NPE in OCP when non-existent sliceId is used for a
   deleteShard request (Ramkumar Aiyengar via Anshum Gupta)
 
+* SOLR-6380: Added missing context info to log message if IOException occurs in processing tlog
+  (Steven Bower via hossman)
+
 Optimizations
 ---------------------
 
