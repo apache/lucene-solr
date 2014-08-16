@@ -260,6 +260,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       @Override
       protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
         if (fieldName.equals("textgrams") && minPrefixChars > 0) {
+
           return new TokenStreamComponents(components.getTokenizer(),
                                            new EdgeNGramTokenFilter(matchVersion,
                                                                     components.getTokenStream(),

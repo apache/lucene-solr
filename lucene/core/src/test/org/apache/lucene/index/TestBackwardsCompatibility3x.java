@@ -62,6 +62,7 @@ import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -718,12 +719,10 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
     riw.close();
     DirectoryReader ir = DirectoryReader.open(currentDir);
     SegmentReader air = (SegmentReader)ir.leaves().get(0).reader();
-    String currentVersion = air.getSegmentInfo().info.getVersion();
+    Version currentVersion = air.getSegmentInfo().info.getVersion();
     assertNotNull(currentVersion); // only 3.0 segments can have a null version
     ir.close();
     currentDir.close();
-    
-    Comparator<String> comparator = StringHelper.getVersionComparator();
     
     // now check all the old indexes, their version should be < the current version
     for (String name : oldNames) {
@@ -731,11 +730,11 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
       DirectoryReader r = DirectoryReader.open(dir);
       for (AtomicReaderContext context : r.leaves()) {
         air = (SegmentReader) context.reader();
-        String oldVersion = air.getSegmentInfo().info.getVersion();
+        Version oldVersion = air.getSegmentInfo().info.getVersion();
         // TODO: does preflex codec actually set "3.0" here? This is safe to do I think.
         // assertNotNull(oldVersion);
         assertTrue("current Constants.LUCENE_MAIN_VERSION is <= an old index: did you forget to bump it?!",
-            oldVersion == null || comparator.compare(oldVersion, currentVersion) < 0);
+            oldVersion == null || currentVersion.onOrAfter(oldVersion));
       }
       r.close();
     }
@@ -792,7 +791,7 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
       System.out.println("checkAllSegmentsUpgraded: " + infos);
     }
     for (SegmentCommitInfo si : infos) {
-      assertEquals(Constants.LUCENE_MAIN_VERSION, si.info.getVersion());
+      assertEquals(Version.LATEST.toString(), si.info.getVersion().toString());
     }
     return infos.size();
   }

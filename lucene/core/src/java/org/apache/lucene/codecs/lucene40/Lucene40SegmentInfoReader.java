@@ -30,6 +30,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.Version;
 
 /**
  * Lucene 4.0 implementation of {@link SegmentInfoReader}.
@@ -54,7 +55,7 @@ public class Lucene40SegmentInfoReader extends SegmentInfoReader {
       CodecUtil.checkHeader(input, Lucene40SegmentInfoFormat.CODEC_NAME,
                                    Lucene40SegmentInfoFormat.VERSION_START,
                                    Lucene40SegmentInfoFormat.VERSION_CURRENT);
-      final String version = input.readString();
+      final Version version = Version.parse(input.readString());
       final int docCount = input.readInt();
       if (docCount < 0) {
         throw new CorruptIndexException("invalid docCount: " + docCount + " (resource=" + input + ")");

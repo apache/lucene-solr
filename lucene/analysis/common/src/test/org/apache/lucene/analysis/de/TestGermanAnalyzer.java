@@ -51,7 +51,7 @@ public class TestGermanAnalyzer extends BaseTokenStreamTestCase {
   }
   
   /** test some features of the new snowball filter
-   * these only pass with LUCENE_CURRENT, not if you use o.a.l.a.de.GermanStemmer
+   * these only pass with LATEST, not if you use o.a.l.a.de.GermanStemmer
    */
   public void testGermanSpecials() throws Exception {
     GermanAnalyzer a = new GermanAnalyzer(TEST_VERSION_CURRENT);

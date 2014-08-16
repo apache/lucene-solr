@@ -443,14 +443,12 @@ public class Config {
       version = Version.parseLeniently(matchVersion);
     } catch (IllegalArgumentException iae) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-        "Invalid luceneMatchVersion '" + matchVersion +
-        "', valid values are: " + Arrays.toString(Version.values()) +
-        " or a string in format 'V.V'", iae);
+        "Invalid luceneMatchVersion.  Should be of the form 'V.V.V' (e.g. 4.8.0)", iae);
     }
     
-    if (version == Version.LUCENE_CURRENT && !versionWarningAlreadyLogged.getAndSet(true)) {
+    if (version == Version.LATEST && !versionWarningAlreadyLogged.getAndSet(true)) {
       log.warn(
-        "You should not use LUCENE_CURRENT as luceneMatchVersion property: "+
+        "You should not use LATEST as luceneMatchVersion property: "+
         "if you use this setting, and then Solr upgrades to a newer release of Lucene, "+
         "sizable changes may happen. If precise back compatibility is important "+
         "then you should instead explicitly specify an actual Lucene version."

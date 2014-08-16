@@ -17,7 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -60,12 +60,12 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
   }
   
   /** Returns if the given segment should be upgraded. The default implementation
-   * will return {@code !Constants.LUCENE_MAIN_VERSION.equals(si.getVersion())},
+   * will return {@code !Version.LATEST.equals(si.getVersion())},
    * so all segments created with a different version number than this Lucene version will
    * get upgraded.
    */
   protected boolean shouldUpgradeSegment(SegmentCommitInfo si) {
-    return !Constants.LUCENE_MAIN_VERSION.equals(si.info.getVersion());
+    return !Version.LATEST.equals(si.info.getVersion());
   }
 
   @Override

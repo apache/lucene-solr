@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.CommandLineUtil;
-import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.PrintStreamInfoStream;
 import org.apache.lucene.util.Version;
@@ -161,11 +160,11 @@ public final class IndexUpgrader {
     try {
       InfoStream infoStream = iwc.getInfoStream();
       if (infoStream.isEnabled("IndexUpgrader")) {
-        infoStream.message("IndexUpgrader", "Upgrading all pre-" + Constants.LUCENE_MAIN_VERSION + " segments of index directory '" + dir + "' to version " + Constants.LUCENE_MAIN_VERSION + "...");
+        infoStream.message("IndexUpgrader", "Upgrading all pre-" + Version.LATEST + " segments of index directory '" + dir + "' to version " + Version.LATEST + "...");
       }
       w.forceMerge(1);
       if (infoStream.isEnabled("IndexUpgrader")) {
-        infoStream.message("IndexUpgrader", "All segments upgraded to version " + Constants.LUCENE_MAIN_VERSION);
+        infoStream.message("IndexUpgrader", "All segments upgraded to version " + Version.LATEST);
       }
     } finally {
       w.close();

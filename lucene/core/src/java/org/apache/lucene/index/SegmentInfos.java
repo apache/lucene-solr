@@ -48,6 +48,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.NoSuchDirectoryException;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.Version;
 
 /**
  * A collection of segmentInfo objects with methods for operating on those
@@ -512,8 +513,8 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
 
         // If this segment is pre-4.x, perform a one-time
         // "ugprade" to write the .si file for it:
-        String version = si.getVersion();
-        if (version == null || StringHelper.getVersionComparator().compare(version, "4.0") < 0) {
+        Version version = si.getVersion();
+        if (version == null || version.onOrAfter(Version.LUCENE_4_0_0) == false) {
 
           if (!segmentWasUpgraded(directory, si)) {
 
@@ -609,7 +610,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       CodecUtil.writeHeader(output, Lucene3xSegmentInfoFormat.UPGRADED_SI_CODEC_NAME, 
                                     Lucene3xSegmentInfoFormat.UPGRADED_SI_VERSION_CURRENT);
       // Write the Lucene version that created this segment, since 3.1
-      output.writeString(si.getVersion());
+      output.writeString(si.getVersion().toString());
       output.writeInt(si.getDocCount());
 
       output.writeStringStringMap(si.attributes());

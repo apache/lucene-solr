@@ -53,7 +53,7 @@ public class Lucene46SegmentInfoWriter extends SegmentInfoWriter {
     try {
       CodecUtil.writeHeader(output, Lucene46SegmentInfoFormat.CODEC_NAME, Lucene46SegmentInfoFormat.VERSION_CURRENT);
       // Write the Lucene version that created this segment, since 3.1
-      output.writeString(si.getVersion());
+      output.writeString(si.getVersion().toString());
       output.writeInt(si.getDocCount());
 
       output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));

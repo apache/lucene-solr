@@ -29,6 +29,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene3x.Lucene3xSegmentInfoFormat;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
+import org.apache.lucene.util.Version;
 
 /**
  * Information about a segment such as it's name, directory, and files related
@@ -68,9 +69,9 @@ public final class SegmentInfo {
   // Tracks the Lucene version this segment was created with, since 3.1. Null
   // indicates an older than 3.0 index, and it's used to detect a too old index.
   // The format expected is "x.y" - "2.x" for pre-3.0 indexes (or null), and
-  // specific versions afterwards ("3.0", "3.1" etc.).
-  // see Constants.LUCENE_MAIN_VERSION.
-  private String version;
+  // specific versions afterwards ("3.0.0", "3.1.0" etc.).
+  // see o.a.l.util.Version.
+  private Version version;
 
   void setDiagnostics(Map<String, String> diagnostics) {
     this.diagnostics = diagnostics;
@@ -87,9 +88,27 @@ public final class SegmentInfo {
    * <p>Note: this is public only to allow access from
    * the codecs package.</p>
    */
-  public SegmentInfo(Directory dir, String version, String name, int docCount, 
+  public SegmentInfo(Directory dir, Version version, String name, int docCount,
       boolean isCompoundFile, Codec codec, Map<String,String> diagnostics) {
     this(dir, version, name, docCount, isCompoundFile, codec, diagnostics, null);
+  }
+
+  /**
+   * @deprecated Use {@link #SegmentInfo(Directory, Version, String, int, boolean, Codec, Map)}
+   */
+  @Deprecated
+  public SegmentInfo(Directory dir, String version, String name, int docCount,
+                     boolean isCompoundFile, Codec codec, Map<String,String> diagnostics) {
+    this(dir, Version.parse(version), name, docCount, isCompoundFile, codec, diagnostics, null);
+  }
+
+  /**
+   * @deprecated Use {@link #SegmentInfo(Directory, Version, String, int, boolean, Codec, Map, Map)}
+   */
+  @Deprecated
+  public SegmentInfo(Directory dir, String version, String name, int docCount,
+                     boolean isCompoundFile, Codec codec, Map<String,String> diagnostics, Map<String,String> attributes) {
+    this(dir, Version.parse(version), name, docCount, isCompoundFile, codec, diagnostics, attributes);
   }
 
   /**
@@ -97,7 +116,7 @@ public final class SegmentInfo {
    * <p>Note: this is public only to allow access from
    * the codecs package.</p>
    */
-  public SegmentInfo(Directory dir, String version, String name, int docCount, 
+  public SegmentInfo(Directory dir, Version version, String name, int docCount,
                      boolean isCompoundFile, Codec codec, Map<String,String> diagnostics, Map<String,String> attributes) {
     assert !(dir instanceof TrackingDirectoryWrapper);
     this.dir = dir;
@@ -239,12 +258,12 @@ public final class SegmentInfo {
    *
    * @lucene.internal
    */
-  public void setVersion(String version) {
+  public void setVersion(Version version) {
     this.version = version;
   }
 
   /** Returns the version of the code which wrote the segment. */
-  public String getVersion() {
+  public Version getVersion() {
     return version;
   }
 

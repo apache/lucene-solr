@@ -66,45 +66,6 @@ public abstract class StringHelper {
 
   private StringHelper() {
   }
-  
-  /**
-   * @return a Comparator over versioned strings such as X.YY.Z
-   * @lucene.internal
-   */
-  public static Comparator<String> getVersionComparator() {
-    return versionComparator;
-  }
-  
-  private static Comparator<String> versionComparator = new Comparator<String>() {
-    @Override
-    public int compare(String a, String b) {
-      StringTokenizer aTokens = new StringTokenizer(a, ".");
-      StringTokenizer bTokens = new StringTokenizer(b, ".");
-      
-      while (aTokens.hasMoreTokens()) {
-        int aToken = Integer.parseInt(aTokens.nextToken());
-        if (bTokens.hasMoreTokens()) {
-          int bToken = Integer.parseInt(bTokens.nextToken());
-          if (aToken != bToken) {
-            return aToken < bToken ? -1 : 1;
-          }
-        } else {
-          // a has some extra trailing tokens. if these are all zeroes, thats ok.
-          if (aToken != 0) {
-            return 1; 
-          }
-        }
-      }
-      
-      // b has some extra trailing tokens. if these are all zeroes, thats ok.
-      while (bTokens.hasMoreTokens()) {
-        if (Integer.parseInt(bTokens.nextToken()) != 0)
-          return -1;
-      }
-      
-      return 0;
-    }
-  };
 
   public static boolean equals(String s1, String s2) {
     if (s1 == null) {

@@ -18,7 +18,6 @@ package org.apache.solr.search.similarities;
  */
 
 import org.apache.lucene.search.similarities.DefaultSimilarity;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Version;
 import org.junit.After;
 
@@ -36,21 +35,21 @@ public class TestNonDefinedSimilarityFactory extends BaseSimilarityTestCase {
   }
 
   public void testCurrent() throws Exception {
-    // no sys prop set, rely on LUCENE_CURRENT
+    // no sys prop set, rely on LATEST
     initCore("solrconfig-basic.xml","schema-tiny.xml");
     DefaultSimilarity sim = getSimilarity("text", DefaultSimilarity.class);
     assertEquals(true, sim.getDiscountOverlaps());
   }
 
   public void test47() throws Exception {
-    System.setProperty("tests.luceneMatchVersion", Version.LUCENE_4_7.toString());
+    System.setProperty("tests.luceneMatchVersion", Version.LUCENE_4_7_0.toString());
     initCore("solrconfig-basic.xml","schema-tiny.xml");
     DefaultSimilarity sim = getSimilarity("text", DefaultSimilarity.class);
     assertEquals(true, sim.getDiscountOverlaps());
   }
 
   public void test46() throws Exception {
-    System.setProperty("tests.luceneMatchVersion", Version.LUCENE_4_6.toString());
+    System.setProperty("tests.luceneMatchVersion", Version.LUCENE_4_6_0.toString());
     initCore("solrconfig-basic.xml","schema-tiny.xml");
     DefaultSimilarity sim = getSimilarity("text", DefaultSimilarity.class);
     assertEquals(false, sim.getDiscountOverlaps());

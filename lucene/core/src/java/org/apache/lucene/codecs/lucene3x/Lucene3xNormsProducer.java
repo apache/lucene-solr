@@ -42,6 +42,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.Version;
 
 /**
  * Reads Lucene 3.x norms format and exposes it via DocValues API
@@ -106,9 +107,9 @@ class Lucene3xNormsProducer extends DocValuesProducer {
             // and don't need to do the sketchy file size check. otherwise, we check 
             // if the size is exactly equal to maxDoc to detect a headerless file.
             // NOTE: remove this check in Lucene 5.0!
-            String version = info.getVersion();
+            Version version = info.getVersion();
             final boolean isUnversioned = 
-                (version == null || StringHelper.getVersionComparator().compare(version, "3.2") < 0)
+                (version == null || Version.LUCENE_3_2_0.onOrAfter(version))
                 && normInput.length() == maxdoc;
             if (isUnversioned) {
               normSeek = 0;

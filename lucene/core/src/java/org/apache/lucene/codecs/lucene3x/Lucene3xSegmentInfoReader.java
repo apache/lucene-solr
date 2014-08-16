@@ -37,6 +37,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.Version;
 
 /**
  * Lucene 3x implementation of {@link SegmentInfoReader}.
@@ -80,12 +81,12 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
         // Above call succeeded, so it's a 3.0 segment. Upgrade it so the next
         // time the segment is read, its version won't be null and we won't
         // need to open FieldsReader every time for each such segment.
-        si.setVersion("3.0");
+        si.setVersion(Version.LUCENE_3_0_0);
       } else if (si.getVersion().equals("2.x")) {
         // If it's a 3x index touched by 3.1+ code, then segments record their
         // version, whether they are 2.x ones or not. We detect that and throw
         // appropriate exception.
-        throw new IndexFormatTooOldException("segment " + si.name + " in resource " + input, si.getVersion());
+        throw new IndexFormatTooOldException("segment " + si.name + " in resource " + input, si.getVersion().toString());
       }
       infos.add(siPerCommit);
     }

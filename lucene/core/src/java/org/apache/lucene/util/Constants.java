@@ -19,7 +19,6 @@ package org.apache.lucene.util;
 
 import java.lang.reflect.Field;
 import java.util.StringTokenizer;
-import org.apache.lucene.LucenePackage;
 
 
 /**
@@ -107,45 +106,18 @@ public final class Constants {
   public static final boolean JRE_IS_MINIMUM_JAVA7 =
     new Boolean(true).booleanValue(); // prevent inlining in foreign class files
 
-  // this method prevents inlining the final version constant in compiled classes,
-  // see: http://www.javaworld.com/community/node/3400
-  private static String ident(final String s) {
-    return s.toString();
-  }
-  
-  // We should never change index format with minor versions, so it should always be x.y or x.y.0.z for alpha/beta versions!
   /**
-   * This is the internal Lucene version, recorded into each segment.
-   * NOTE: we track per-segment version as a String with the {@code "X.Y"} format
-   * (no minor version), e.g. {@code "4.0", "3.1", "3.0"}.
-   * <p>Alpha and Beta versions will have numbers like {@code "X.Y.0.Z"},
-   * anything else is not allowed. This is done to prevent people from
-   * using indexes created with ALPHA/BETA versions with the released version.
+   * This is the internal Lucene version, including bugfix versions, recorded into each segment.
+   * @deprecated Use {@link Version#LATEST}
    */
-  public static final String LUCENE_MAIN_VERSION = ident("4.10");
+  @Deprecated
+  public static final String LUCENE_MAIN_VERSION = Version.LATEST.toString();
 
   /**
-   * This is the Lucene version for display purposes.
+   * Don't use this constant because the name is not self-describing!
+   * @deprecated Use {@link Version#LATEST}
    */
-  public static final String LUCENE_VERSION;
-  static {
-    Package pkg = LucenePackage.get();
-    String v = (pkg == null) ? null : pkg.getImplementationVersion();
-    if (v == null) {
-      v = mainVersionWithoutAlphaBeta() + "-SNAPSHOT";
-    }
-    LUCENE_VERSION = ident(v);
-  }
+  @Deprecated
+  public static final String LUCENE_VERSION = Version.LATEST.toString();
   
-  /**
-   * Returns a LUCENE_MAIN_VERSION without any ALPHA/BETA qualifier
-   * Used by test only!
-   */
-  static String mainVersionWithoutAlphaBeta() {
-    final String parts[] = LUCENE_MAIN_VERSION.split("\\.");
-    if (parts.length == 4 && "0".equals(parts[2])) {
-      return parts[0] + "." + parts[1];
-    }
-    return LUCENE_MAIN_VERSION;
-  }
 }

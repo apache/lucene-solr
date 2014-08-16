@@ -90,7 +90,7 @@ public final class SmartChineseAnalyzer extends Analyzer {
       return CharArraySet.unmodifiableSet(WordlistLoader.getWordSet(IOUtils
           .getDecodingReader(SmartChineseAnalyzer.class, DEFAULT_STOPWORD_FILE,
               StandardCharsets.UTF_8), STOPWORD_FILE_COMMENT,
-          Version.LUCENE_CURRENT));
+          Version.LATEST));
     }
   }
 
@@ -138,7 +138,7 @@ public final class SmartChineseAnalyzer extends Analyzer {
   public TokenStreamComponents createComponents(String fieldName, Reader reader) {
     final Tokenizer tokenizer;
     TokenStream result;
-    if (matchVersion.onOrAfter(Version.LUCENE_4_8)) {
+    if (matchVersion.onOrAfter(Version.LUCENE_4_8_0)) {
       tokenizer = new HMMChineseTokenizer(reader);
       result = tokenizer;
     } else {

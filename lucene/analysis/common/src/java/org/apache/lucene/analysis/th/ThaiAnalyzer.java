@@ -108,9 +108,10 @@ public final class ThaiAnalyzer extends StopwordAnalyzerBase {
    *         {@link StopFilter}
    */
   @Override
+
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    if (matchVersion.onOrAfter(Version.LUCENE_4_8)) {
+    if (matchVersion.onOrAfter(Version.LUCENE_4_8_0)) {
       final Tokenizer source = new ThaiTokenizer(reader);
       TokenStream result = new LowerCaseFilter(matchVersion, source);
       result = new StopFilter(matchVersion, result, stopwords);
@@ -118,7 +119,7 @@ public final class ThaiAnalyzer extends StopwordAnalyzerBase {
     } else {
       final Tokenizer source = new StandardTokenizer(matchVersion, reader);
       TokenStream result = new StandardFilter(matchVersion, source);
-      if (matchVersion.onOrAfter(Version.LUCENE_3_1))
+      if (matchVersion.onOrAfter(Version.LUCENE_3_1_0))
         result = new LowerCaseFilter(matchVersion, result);
       result = new ThaiWordFilter(matchVersion, result);
       return new TokenStreamComponents(source, new StopFilter(matchVersion,

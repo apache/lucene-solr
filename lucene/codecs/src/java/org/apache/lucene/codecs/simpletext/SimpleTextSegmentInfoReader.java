@@ -42,6 +42,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.Version;
 
 /**
  * reads plaintext segments files
@@ -60,7 +61,7 @@ public class SimpleTextSegmentInfoReader extends SegmentInfoReader {
     try {
       SimpleTextUtil.readLine(input, scratch);
       assert StringHelper.startsWith(scratch.get(), SI_VERSION);
-      final String version = readString(SI_VERSION.length, scratch);
+      final Version version = Version.parse(readString(SI_VERSION.length, scratch));
     
       SimpleTextUtil.readLine(input, scratch);
       assert StringHelper.startsWith(scratch.get(), SI_DOCCOUNT);

@@ -88,8 +88,8 @@ public class IndexFiles {
 
       Directory dir = FSDirectory.open(new File(indexPath));
       // :Post-Release-Update-Version.LUCENE_XY:
-      Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_4_10);
-      IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_4_10, analyzer);
+      Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_4_10_0);
+      IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_4_10_0, analyzer);
 
       if (create) {
         // Create a new index in the directory, removing any
