@@ -98,6 +98,20 @@ public class TestRegexTransformer extends AbstractDataImportHandlerTestCase {
     Map<String, Object> result = new RegexTransformer().transformRow(src,
             context);
     assertEquals("D''souza", result.get("name"));
+
+    fld = getField("title_underscore", "string", "\\s+", "title", null);
+    fld.put(REPLACE_WITH, "_");
+    fields.clear();
+    fields.add(fld);
+    context = getContext(null, null, null, Context.FULL_DUMP, fields, null);
+    src.clear();
+    src.put("title", "value with spaces"); // a value which will match the regex
+    result = new RegexTransformer().transformRow(src, context);
+    assertEquals("value_with_spaces", result.get("title_underscore"));
+    src.clear();
+    src.put("title", "valueWithoutSpaces"); // value which will not match regex
+    result = new RegexTransformer().transformRow(src, context);
+    assertEquals("valueWithoutSpaces", result.get("title_underscore")); // value should be returned as-is
   }
 
   @Test
@@ -117,7 +131,7 @@ public class TestRegexTransformer extends AbstractDataImportHandlerTestCase {
     fld = getField("t1", "string","duff", "rowdata", null);
     fields.add(fld);
 
-    //  **ATTEMPTS** a match WITH a replaceWith
+    //  **ATTEMPTS** a match WITH a replaceWith (should return original data)
     // <field column="t2" sourceColName="rowdata" regexp="duff" replaceWith="60"/>
     fld = getField("t2", "string","duff", "rowdata", null);
     fld.put(REPLACE_WITH, "60");
@@ -140,7 +154,8 @@ public class TestRegexTransformer extends AbstractDataImportHandlerTestCase {
     Context context = getContext(null, resolver, null, Context.FULL_DUMP, fields, eAttrs);
 
     Map<String, Object> result = new RegexTransformer().transformRow(row, context);
-    assertEquals(5, result.size());
+    assertEquals(6, result.size());
+    assertEquals(s, result.get("t2"));
     assertEquals(s, result.get("rowdata"));
     assertEquals("26", result.get("highway_mileage"));
     assertEquals("19", result.get("city_mileage"));
