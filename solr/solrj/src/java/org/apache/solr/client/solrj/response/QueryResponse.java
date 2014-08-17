@@ -390,10 +390,19 @@ public class QueryResponse extends SolrResponseBase
     ArrayList<PivotField> values = new ArrayList<>( list.size() );
     for( NamedList nl : list ) {
       // NOTE, this is cheating, but we know the order they are written in, so no need to check
+      assert "field".equals(nl.getName(0));
       String f = (String)nl.getVal( 0 );
+      assert "value".equals(nl.getName(1));
       Object v = nl.getVal( 1 );
+      assert "count".equals(nl.getName(2));
       int cnt = ((Integer)nl.getVal( 2 )).intValue();
-      List<PivotField> p = (nl.size()<4)?null:readPivots((List<NamedList>)nl.getVal(3) );
+      List<PivotField> p = null;
+      if (4 <= nl.size()) {
+        assert "pivot".equals(nl.getName(3));
+        Object subPiv = nl.getVal(3);
+        assert null != subPiv : "Server sent back 'null' for sub pivots?";
+        p = readPivots( (List<NamedList>) subPiv );
+      }
       values.add( new PivotField( f, v, cnt, p ) );
     }
     return values;

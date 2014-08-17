@@ -39,6 +39,7 @@ public class ShardRequest {
   public final static int PURPOSE_GET_TERMS       =0x400;
   public final static int PURPOSE_GET_TOP_GROUPS  =0x800;
   public final static int PURPOSE_GET_MLT_RESULTS =0x1000;
+  public final static int PURPOSE_REFINE_PIVOT_FACETS =0x2000;
 
   public int purpose;  // the purpose of this request
 

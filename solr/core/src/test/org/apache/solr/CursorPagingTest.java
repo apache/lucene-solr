@@ -32,7 +32,6 @@ import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.DateField;
 import org.apache.solr.search.CursorMark; //jdoc
 
 import org.noggit.ObjectBuilder;
@@ -40,12 +39,10 @@ import org.noggit.ObjectBuilder;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -621,11 +618,6 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     return 0 != TestUtil.nextInt(random(), 0, 30);
   }
   
-  /** returns likely most (1/10) of the time, otherwise unlikely */
-  private static Object skewed(Object likely, Object unlikely) {
-    return (0 == TestUtil.nextInt(random(), 0, 9)) ? unlikely : likely;
-  }
-  
   /**
    * An immutable list of the fields in the schema that can be used for sorting,
    * deterministically random order.
@@ -900,7 +892,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
                                     1.0D / random().nextInt(37)));
     }
     if (useField()) {
-      doc.addField("str", skewed(randomUsableUnicodeString(),
+      doc.addField("str", skewed(randomXmlUsableUnicodeString(),
                                  TestUtil.randomSimpleString(random(),1,1)));
     }
     if (useField()) {
@@ -910,8 +902,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
       doc.addField("bin", ByteBuffer.wrap(randBytes));
     }
     if (useField()) {
-      doc.addField("date", skewed(randomDate(),
-                                  dateWithRandomSecondOn2010_10_31_at_10_31()));
+      doc.addField("date", skewed(randomDate(), randomSkewedDate()));
     }
     if (useField()) {
       doc.addField("uuid", UUID.randomUUID().toString());
@@ -949,28 +940,6 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
         numericFields.get(1) + ":[0 TO *] " +
         numericFields.get(2) + ":[" + low + " TO " + high + "]";
     }
-  }
-
-  /**
-   * We want "realistic" unicode strings beyond simple ascii, but because our
-   * updates use XML we need to ensure we don't get "special" code block.
-   */
-  private static String randomUsableUnicodeString() {
-    String result = TestUtil.randomRealisticUnicodeString(random());
-    if (result.matches(".*\\p{InSpecials}.*")) {
-      // oh well
-      result = TestUtil.randomSimpleString(random());
-    }
-    return result;
-  }
-
-  private static String randomDate() {
-    return DateField.formatExternal(new Date(random().nextLong()));
-  }
-
-  private static String dateWithRandomSecondOn2010_10_31_at_10_31() {
-    return String.format(Locale.ROOT, "2010-10-31T10:31:%02d.000Z",
-                         TestUtil.nextInt(random(), 0, 59));
   }
 
   private static final String[] currencies = { "USD", "EUR", "NOK" };

@@ -143,7 +143,10 @@ public class StrUtils {
     return result;
   }
 
-  /** Creates a backslash escaped string, joining all the items. */
+  /** 
+   * Creates a backslash escaped string, joining all the items. 
+   * @see #escapeTextWithSeparator
+   */
   public static String join(List<?> items, char separator) {
     StringBuilder sb = new StringBuilder(items.size() << 3);
     boolean first=true;
@@ -154,13 +157,7 @@ public class StrUtils {
       } else {
         sb.append(separator);
       }
-      for (int i=0; i<item.length(); i++) {
-        char ch = item.charAt(i);
-        if (ch=='\\' || ch == separator) {
-          sb.append('\\');
-        }
-        sb.append(ch);
-      }
+      appendEscapedTextToBuilder(sb, item, separator);
     }
     return sb.toString();
   }
@@ -282,5 +279,32 @@ public class StrUtils {
       }
     }
   }
+
+  /** 
+   * Creates a new copy of the string with the separator backslash escaped.
+   * @see #join
+   */
+  public static String escapeTextWithSeparator(String item, char separator) {
+    StringBuilder sb = new StringBuilder(item.length() * 2);
+    appendEscapedTextToBuilder(sb, item, separator);
+    return sb.toString();
+  }  
+
+  /**
+   * writes chars from item to out, backslash escaping as needed based on separator -- 
+   * but does not append the seperator itself
+   */
+  public static void appendEscapedTextToBuilder(StringBuilder out, 
+                                                 String item, 
+                                                 char separator) {
+    for (int i = 0; i < item.length(); i++) {
+      char ch = item.charAt(i);
+      if (ch == '\\' || ch == separator) { 
+        out.append('\\');
+      }
+      out.append(ch);
+    }
+  }
+
 
 }

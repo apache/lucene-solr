@@ -338,15 +338,45 @@ public class SimpleFacets {
     ENUM, FC, FCS;
   }
 
+  /**
+   * Term counts for use in pivot faceting that resepcts the appropriate mincount
+   * @see FacetParams#FACET_PIVOT_MINCOUNT
+   */
+  public NamedList<Integer> getTermCountsForPivots(String field, DocSet docs) throws IOException {
+    Integer mincount = params.getFieldInt(field, FacetParams.FACET_PIVOT_MINCOUNT, 1);
+    return getTermCounts(field, mincount, docs);
+  }
+
+  /**
+   * Term counts for use in field faceting that resepects the appropriate mincount
+   *
+   * @see FacetParams#FACET_MINCOUNT
+   */
   public NamedList<Integer> getTermCounts(String field) throws IOException {
     return getTermCounts(field, this.docs);
   }
 
+  /**
+   * Term counts for use in field faceting that resepects the appropriate mincount
+   *
+   * @see FacetParams#FACET_MINCOUNT
+   */
   public NamedList<Integer> getTermCounts(String field, DocSet base) throws IOException {
+    Integer mincount = params.getFieldInt(field, FacetParams.FACET_MINCOUNT);
+    return getTermCounts(field, mincount, base);
+  }
+
+  /**
+   * Term counts for use in field faceting that resepcts the specified mincount - 
+   * if mincount is null, the "zeros" param is consulted for the appropriate backcompat 
+   * default
+   *
+   * @see FacetParams#FACET_ZEROS
+   */
+  private NamedList<Integer> getTermCounts(String field, Integer mincount, DocSet base) throws IOException {
     int offset = params.getFieldInt(field, FacetParams.FACET_OFFSET, 0);
     int limit = params.getFieldInt(field, FacetParams.FACET_LIMIT, 100);
     if (limit == 0) return new NamedList<>();
-    Integer mincount = params.getFieldInt(field, FacetParams.FACET_MINCOUNT);
     if (mincount==null) {
       Boolean zeros = params.getFieldBool(field, FacetParams.FACET_ZEROS);
       // mincount = (zeros!=null && zeros) ? 0 : 1;
@@ -556,7 +586,8 @@ public class SimpleFacets {
             try {
               NamedList<Object> result = new SimpleOrderedMap<>();
               if(termList != null) {
-                result.add(workerKey, getListedTermCounts(workerFacetValue, termList, workerBase));
+                List<String> terms = StrUtils.splitSmart(termList, ",", true);
+                result.add(workerKey, getListedTermCounts(workerFacetValue, workerBase, terms));
               } else {
                 result.add(workerKey, getTermCounts(workerFacetValue, workerBase));
               }
@@ -599,13 +630,25 @@ public class SimpleFacets {
   }
 
 
+  /**
+   * Computes the term-&gt;count counts for the specified termList relative to the 
+   * @param field the name of the field to compute term counts against
+   * @param termList a comma seperated (and backslash escaped) list of term values (in the specified field) to compute the counts for
+   * @see StrUtils#splitSmart
+   */
   private NamedList<Integer> getListedTermCounts(String field, String termList) throws IOException {
-    return getListedTermCounts(field, termList, this.docs);
+    List<String> terms = StrUtils.splitSmart(termList, ",", true);
+    return getListedTermCounts(field, this.docs, terms);
   }
 
-  private NamedList getListedTermCounts(String field, String termList, DocSet base) throws IOException {
+  /**
+   * Computes the term-&gt;count counts for the specified term values relative to the 
+   * @param field the name of the field to compute term counts against
+   * @param base the docset to compute term counts relative to
+   * @param terms a list of term values (in the specified field) to compute the counts for 
+   */
+  protected NamedList<Integer> getListedTermCounts(String field, DocSet base, List<String> terms) throws IOException {
     FieldType ft = searcher.getSchema().getFieldType(field);
-    List<String> terms = StrUtils.splitSmart(termList, ",", true);
     NamedList<Integer> res = new NamedList<>();
     for (String term : terms) {
       String internal = ft.toInternal(term);

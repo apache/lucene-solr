@@ -17,6 +17,7 @@
 
 package org.apache.solr.util;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -31,6 +32,29 @@ import org.junit.Assert;
  *
  */
 public class TestUtils extends LuceneTestCase {
+  
+  public void testJoin() {
+    assertEquals("a|b|c",   StrUtils.join(Arrays.asList("a","b","c"), '|'));
+    assertEquals("a,b,c",   StrUtils.join(Arrays.asList("a","b","c"), ','));
+    assertEquals("a\\,b,c", StrUtils.join(Arrays.asList("a,b","c"), ','));
+    assertEquals("a,b|c",   StrUtils.join(Arrays.asList("a,b","c"), '|'));
+
+    assertEquals("a\\\\b|c",   StrUtils.join(Arrays.asList("a\\b","c"), '|'));
+  }
+
+  public void testEscapeTextWithSeparator() {
+    assertEquals("a",  StrUtils.escapeTextWithSeparator("a", '|'));
+    assertEquals("a",  StrUtils.escapeTextWithSeparator("a", ','));
+                              
+    assertEquals("a\\|b",  StrUtils.escapeTextWithSeparator("a|b", '|'));
+    assertEquals("a|b",    StrUtils.escapeTextWithSeparator("a|b", ','));
+    assertEquals("a,b",    StrUtils.escapeTextWithSeparator("a,b", '|'));
+    assertEquals("a\\,b",  StrUtils.escapeTextWithSeparator("a,b", ','));
+    assertEquals("a\\\\b", StrUtils.escapeTextWithSeparator("a\\b", ','));
+
+    assertEquals("a\\\\\\,b", StrUtils.escapeTextWithSeparator("a\\,b", ','));
+  }
+
   public void testSplitEscaping() {
     List<String> arr = StrUtils.splitSmart("\\r\\n:\\t\\f\\b", ":", true);
     assertEquals(2,arr.size());

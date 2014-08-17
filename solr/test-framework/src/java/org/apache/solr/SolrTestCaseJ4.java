@@ -57,6 +57,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.util.AbstractSolrTestCase;
@@ -92,11 +93,13 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.ConsoleHandler;
@@ -2036,5 +2039,44 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     return true;
   }
 
+  /** 
+   * Returns <code>likely</code> most (1/10) of the time, otherwise <code>unlikely</code>
+   */
+  public static Object skewed(Object likely, Object unlikely) {
+    return (0 == TestUtil.nextInt(random(), 0, 9)) ? unlikely : likely;
+  }
+
+  /** 
+   * Returns a randomly generated Date in the appropriate Solr external (input) format 
+   * @see #randomSkewedDate
+   */
+  public static String randomDate() {
+    return TrieDateField.formatExternal(new Date(random().nextLong()));
+  }
+
+  /** 
+   * Returns a Date such that all results from this method always have the same values for 
+   * year+month+day+hour+minute but the seconds are randomized.  This can be helpful for 
+   * indexing documents with random date values that are biased for a narrow window 
+   * (one day) to test collisions/overlaps
+   *
+   * @see #randomDate
+   */
+  public static String randomSkewedDate() {
+    return String.format(Locale.ROOT, "2010-10-31T10:31:%02d.000Z",
+                         TestUtil.nextInt(random(), 0, 59));
+  }
+
+  /**
+   * We want "realistic" unicode strings beyond simple ascii, but because our
+   * updates use XML we need to ensure we don't get "special" code block.
+   */
+  public static String randomXmlUsableUnicodeString() {
+    String result = TestUtil.randomRealisticUnicodeString(random());
+    if (result.matches(".*\\p{InSpecials}.*")) {
+      result = TestUtil.randomSimpleString(random());
+    }
+    return result;
+  }
 
 }
