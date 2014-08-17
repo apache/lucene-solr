@@ -122,7 +122,7 @@ public class RegexTransformer extends Transformer {
     } else if (replaceWith != null) {
       Pattern p = getPattern(reStr);
       Matcher m = p.matcher(value);
-      return m.find()? m.replaceAll(replaceWith): null;
+      return m.find() ? m.replaceAll(replaceWith) : value;
     } else {
       return readfromRegExp(reStr, value, col, groupNames);
     }

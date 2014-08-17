@@ -282,6 +282,9 @@ Bug Fixes
 * SOLR-6380: Added missing context info to log message if IOException occurs in processing tlog
   (Steven Bower via hossman)
 
+* SOLR-6383: RegexTransformer returns no results after replaceAll if regex does not match a value.
+  (Alexander Kingson, shalin)
+
 Optimizations
 ---------------------
 
