@@ -177,9 +177,12 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     query("q","*:*", "rows",0, "facet","true", "facet.query","{!term f=foo_s}international\u00ff\u01ff\u2222\u3333");
     
     // simple field facet on date fields
-    rsp = query("q","*:*", "rows",0, "facet","true", "facet.field", tdate_a);
+    rsp = query("q","*:*", "rows", 0, 
+                "facet","true", "facet.limit", 1, // TODO: limit shouldn't be needed: SOLR-6386
+                "facet.field", tdate_a);
     assertEquals(1, rsp.getFacetFields().size());
-    rsp = query("q","*:*", "rows",0, "facet","true", 
+    rsp = query("q","*:*", "rows", 0, 
+                "facet","true", "facet.limit", 1, // TODO: limit shouldn't be needed: SOLR-6386
                 "facet.field", tdate_b, "facet.field", tdate_a);
     assertEquals(2, rsp.getFacetFields().size());
 
