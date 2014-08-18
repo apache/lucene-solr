@@ -45,7 +45,7 @@
           depends="test, init-dist, dist-core, dist-solrj, lucene-jars-to-solr">
     <build-manifest title="Apache Solr Search Server"
                     implementation.title="org.apache.solr"
-                    spec.version="${spec.version}"/>
+                    spec.version="${version}"/>
     <ant dir="${common-solr.dir}" inheritall="false" target="contribs-add-to-war"/>
     <war destfile="${dist}/solr-${version}${solr.war.suffix}.war"
          webxml="web/WEB-INF/web.xml"
