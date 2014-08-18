@@ -140,6 +140,9 @@ public class ConfigSolrXmlOld extends ConfigSolr {
     storeConfigPropertyAsString(CfgProp.SOLR_HOSTPORT, "solr/cores/@hostPort");
     storeConfigPropertyAsInt(CfgProp.SOLR_LEADERVOTEWAIT, "solr/cores/@leaderVoteWait");
     storeConfigPropertyAsBoolean(CfgProp.SOLR_GENERICCORENODENAMES, "solr/cores/@genericCoreNodeNames");
+    storeConfigPropertyAsBoolean(CfgProp.SOLR_AUTOREPLICAFAILOVERBADNODEEXPIRATION, "solr/cores/@autoReplicaFailoverBadNodeExpiration");
+    storeConfigPropertyAsBoolean(CfgProp.SOLR_AUTOREPLICAFAILOVERWAITAFTEREXPIRATION, "solr/cores/@autoReplicaFailoverWaitAfterExpiration");
+    storeConfigPropertyAsBoolean(CfgProp.SOLR_AUTOREPLICAFAILOVERWORKLOOPDELAY, "solr/cores/@autoReplicaFailoverWorkLoopDelay");
     storeConfigPropertyAsString(CfgProp.SOLR_MANAGEMENTPATH, "solr/cores/@managementPath");
     storeConfigPropertyAsBoolean(CfgProp.SOLR_SHARESCHEMA, "solr/cores/@shareSchema");
     storeConfigPropertyAsInt(CfgProp.SOLR_TRANSIENTCACHESIZE, "solr/cores/@transientCacheSize");

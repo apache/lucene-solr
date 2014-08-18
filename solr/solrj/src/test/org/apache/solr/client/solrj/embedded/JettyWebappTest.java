@@ -88,6 +88,7 @@ public class JettyWebappTest extends SolrTestCaseJ4
       server.stop();
     } catch( Exception ex ) {}
     System.clearProperty("tests.shardhandler.randomSeed");
+    System.clearProperty("solr.data.dir");
     super.tearDown();
   }
   

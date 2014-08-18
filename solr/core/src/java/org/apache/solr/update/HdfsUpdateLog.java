@@ -305,7 +305,7 @@ public class HdfsUpdateLog extends UpdateLog {
     if (ulogPluginInfo == null) return;
     Path tlogDir = new Path(getTlogDir(core, ulogPluginInfo));
     try {
-      if (fs.exists(tlogDir)) {
+      if (fs != null && fs.exists(tlogDir)) {
         String[] files = getLogList(tlogDir);
         for (String file : files) {
           Path f = new Path(tlogDir, file);

@@ -61,12 +61,14 @@ public class HdfsTestUtil {
     System.setProperty("test.cache.data", dir + File.separator + "hdfs" + File.separator + "cache");
     System.setProperty("solr.lock.type", "hdfs");
     
-    System.setProperty("solr.hdfs.home", "/solr_hdfs_home");
     
     System.setProperty("solr.hdfs.blockcache.global", Boolean.toString(LuceneTestCase.random().nextBoolean()));
     
     final MiniDFSCluster dfsCluster = new MiniDFSCluster(conf, dataNodes, true, null);
     dfsCluster.waitActive();
+
+    System.setProperty("solr.hdfs.home", getDataDir(dfsCluster, "solr_hdfs_home"));
+    
     
     NameNodeAdapter.enterSafeMode(dfsCluster.getNameNode(), false);
     

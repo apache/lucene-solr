@@ -22,6 +22,8 @@ import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERPROP;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,7 +40,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ClosableThread;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
@@ -50,7 +51,10 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.core.ConfigSolr;
 import org.apache.solr.handler.component.ShardHandler;
+import org.apache.solr.update.UpdateShardHandler;
+import org.apache.solr.util.IOUtils;
 import org.apache.solr.util.stats.Clock;
 import org.apache.solr.util.stats.Timer;
 import org.apache.solr.util.stats.TimerContext;
@@ -62,7 +66,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Cluster leader. Responsible node assignments, cluster state file?
  */
-public class Overseer {
+public class Overseer implements Closeable {
   public static final String QUEUE_OPERATION = "operation";
   public static final String DELETECORE = "deletecore";
   public static final String REMOVECOLLECTION = "removecollection";
@@ -82,7 +86,7 @@ public class Overseer {
 
   private long lastUpdatedTime = 0;
 
-  private class ClusterStateUpdater implements Runnable, ClosableThread {
+  private class ClusterStateUpdater implements Runnable, Closeable {
     
     private final ZkStateReader reader;
     private final SolrZkClient zkClient;
@@ -1123,11 +1127,6 @@ public class Overseer {
         this.isClosed = true;
       }
 
-      @Override
-      public boolean isClosed() {
-        return this.isClosed;
-      }
-
   }
 
   static void getShardNames(Integer numShards, List<String> shardNames) {
@@ -1152,104 +1151,135 @@ public class Overseer {
 
   }
 
-  class OverseerThread extends Thread implements ClosableThread {
+  class OverseerThread extends Thread implements Closeable {
 
     protected volatile boolean isClosed;
-    private ClosableThread thread;
+    private Closeable thread;
 
-    public OverseerThread(ThreadGroup tg, ClosableThread thread) {
+    public OverseerThread(ThreadGroup tg, Closeable thread) {
       super(tg, (Runnable) thread);
       this.thread = thread;
     }
 
-    public OverseerThread(ThreadGroup ccTg, ClosableThread thread, String name) {
+    public OverseerThread(ThreadGroup ccTg, Closeable thread, String name) {
       super(ccTg, (Runnable) thread, name);
       this.thread = thread;
     }
 
     @Override
-    public void close() {
+    public void close() throws IOException {
       thread.close();
       this.isClosed = true;
     }
 
-    @Override
     public boolean isClosed() {
       return this.isClosed;
     }
     
   }
   
-  private volatile OverseerThread ccThread;
+  private OverseerThread ccThread;
 
-  private volatile OverseerThread updaterThread;
+  private OverseerThread updaterThread;
+  
+  private OverseerThread arfoThread;
 
-  private ZkStateReader reader;
+  private final ZkStateReader reader;
 
-  private ShardHandler shardHandler;
+  private final ShardHandler shardHandler;
+  
+  private final UpdateShardHandler updateShardHandler;
 
-  private String adminPath;
+  private final String adminPath;
 
   private OverseerCollectionProcessor overseerCollectionProcessor;
 
   private ZkController zkController;
 
   private Stats stats;
+  private String id;
+  private boolean closed;
+  private ConfigSolr config;
 
   // overseer not responsible for closing reader
-  public Overseer(ShardHandler shardHandler, String adminPath, final ZkStateReader reader, ZkController zkController) throws KeeperException, InterruptedException {
+  public Overseer(ShardHandler shardHandler,
+      UpdateShardHandler updateShardHandler, String adminPath,
+      final ZkStateReader reader, ZkController zkController, ConfigSolr config)
+      throws KeeperException, InterruptedException {
     this.reader = reader;
     this.shardHandler = shardHandler;
+    this.updateShardHandler = updateShardHandler;
     this.adminPath = adminPath;
     this.zkController = zkController;
     this.stats = new Stats();
+    this.config = config;
   }
   
-  public void start(String id) {
-    close();
+  public synchronized void start(String id) {
+    this.id = id;
+    closed = false;
+    doClose();
     log.info("Overseer (id=" + id + ") starting");
     createOverseerNode(reader.getZkClient());
     //launch cluster state updater thread
     ThreadGroup tg = new ThreadGroup("Overseer state updater.");
-    updaterThread = new OverseerThread(tg, new ClusterStateUpdater(reader, id, stats));
+    updaterThread = new OverseerThread(tg, new ClusterStateUpdater(reader, id, stats), "OverseerStateUpdate-" + id);
     updaterThread.setDaemon(true);
 
     ThreadGroup ccTg = new ThreadGroup("Overseer collection creation process.");
 
     overseerCollectionProcessor = new OverseerCollectionProcessor(reader, id, shardHandler, adminPath, stats);
-    ccThread = new OverseerThread(ccTg, overseerCollectionProcessor, "Overseer-" + id);
+    ccThread = new OverseerThread(ccTg, overseerCollectionProcessor, "OverseerCollectionProcessor-" + id);
     ccThread.setDaemon(true);
+    
+    ThreadGroup ohcfTg = new ThreadGroup("Overseer Hdfs SolrCore Failover Thread.");
+
+    OverseerAutoReplicaFailoverThread autoReplicaFailoverThread = new OverseerAutoReplicaFailoverThread(config, reader, updateShardHandler);
+    arfoThread = new OverseerThread(ohcfTg, autoReplicaFailoverThread, "OverseerHdfsCoreFailoverThread-" + id);
+    arfoThread.setDaemon(true);
     
     updaterThread.start();
     ccThread.start();
+    arfoThread.start();
   }
   
-  public OverseerThread getUpdaterThread() {
+  
+  /**
+   * For tests.
+   * 
+   * @lucene.internal
+   * @return state updater thread
+   */
+  public synchronized OverseerThread getUpdaterThread() {
     return updaterThread;
   }
   
-  public void close() {
-    try {
-      if (updaterThread != null) {
-        try {
-          updaterThread.close();
-          updaterThread.interrupt();
-        } catch (Exception e) {
-          log.error("Error closing updaterThread", e);
-        }
-      }
-    } finally {
-      if (ccThread != null) {
-        try {
-          ccThread.close();
-          ccThread.interrupt();
-        } catch (Exception e) {
-          log.error("Error closing ccThread", e);
-        }
-      }
+  public synchronized void close() {
+    if (closed) return;
+    log.info("Overseer (id=" + id + ") closing");
+    
+    doClose();
+    this.closed = true;
+  }
+
+  private void doClose() {
+    
+    if (updaterThread != null) {
+      IOUtils.closeQuietly(updaterThread);
+      updaterThread.interrupt();
     }
+    if (ccThread != null) {
+      IOUtils.closeQuietly(ccThread);
+      ccThread.interrupt();
+    }
+    if (arfoThread != null) {
+      IOUtils.closeQuietly(arfoThread);
+      arfoThread.interrupt();
+    }
+    
     updaterThread = null;
     ccThread = null;
+    arfoThread = null;
   }
 
   /**

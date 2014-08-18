@@ -63,6 +63,7 @@ public class LocalSolrQueryRequest extends SolrQueryRequestBase {
   public LocalSolrQueryRequest(SolrCore core, Map<String,String[]> args) {
     super(core, new MultiMapSolrParams(args));
   }
+  
   public LocalSolrQueryRequest(SolrCore core, SolrParams args) {
     super(core, args);
   }

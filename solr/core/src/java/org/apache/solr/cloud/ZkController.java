@@ -47,6 +47,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.BeforeReconnect;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.ClusterStateUtil;
 import org.apache.solr.common.cloud.DefaultConnectionStrategy;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.OnReconnect;
@@ -66,6 +67,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.update.UpdateLog;
+import org.apache.solr.update.UpdateShardHandler;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.ConnectionLossException;
@@ -176,7 +178,7 @@ public final class ZkController {
   private volatile boolean isClosed;
   
   // keeps track of replicas that have been asked to recover by leaders running on this node
-  private Map<String,String> replicasInLeaderInitiatedRecovery = new HashMap<String,String>();  
+  private Map<String,String> replicasInLeaderInitiatedRecovery = new HashMap<String,String>();
   
   // This is an expert and unsupported development mode that does not create
   // an Overseer or register a /live node. This let's you monitor the cluster
@@ -263,6 +265,9 @@ public final class ZkController {
                   // leaders/overseers
                   // with connection loss
                   try {
+                    // unload solrcores that have been 'failed over'
+                    throwErrorIfReplicaReplaced(descriptor);
+
                     register(descriptor.getName(), descriptor, true, true);
                   } catch (Exception e) {
                     SolrException.log(log, "Error registering SolrCore", e);
@@ -554,14 +559,18 @@ public final class ZkController {
       cmdExecutor.ensureExists(ZkStateReader.COLLECTIONS_ZKNODE, zkClient);
 
       ShardHandler shardHandler;
+      UpdateShardHandler updateShardHandler;
       String adminPath;
       shardHandler = cc.getShardHandlerFactory().getShardHandler();
+      updateShardHandler = cc.getUpdateShardHandler();
       adminPath = cc.getAdminPath();
       
       if (!zkRunOnly) {
         overseerElector = new LeaderElector(zkClient);
-        this.overseer = new Overseer(shardHandler, adminPath, zkStateReader, this);
-        ElectionContext context = new OverseerElectionContext(zkClient, overseer, getNodeName());
+        this.overseer = new Overseer(shardHandler, updateShardHandler,
+            adminPath, zkStateReader, this, cc.getConfig());
+        ElectionContext context = new OverseerElectionContext(zkClient,
+            overseer, getNodeName());
         overseerElector.setup(context);
         overseerElector.joinElection(context, false);
       }
@@ -1075,17 +1084,36 @@ public final class ZkController {
       }
     }
     
-    //assert cd.getCloudDescriptor().getShardId() != null;
-    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, "state", 
-        ZkStateReader.STATE_PROP, state, 
-        ZkStateReader.BASE_URL_PROP, getBaseUrl(), 
-        ZkStateReader.CORE_NAME_PROP, cd.getName(),
-        ZkStateReader.ROLES_PROP, cd.getCloudDescriptor().getRoles(),
-        ZkStateReader.NODE_NAME_PROP, getNodeName(),
-        ZkStateReader.SHARD_ID_PROP, cd.getCloudDescriptor().getShardId(),
-        ZkStateReader.COLLECTION_PROP, collection,
-        ZkStateReader.NUM_SHARDS_PROP, numShards != null ? numShards.toString() : null,
-        ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName != null ? coreNodeName : null);
+    Map<String, Object> props = new HashMap<String, Object>();
+    props.put(Overseer.QUEUE_OPERATION, "state");
+    props.put(ZkStateReader.STATE_PROP, state);
+    props.put(ZkStateReader.BASE_URL_PROP, getBaseUrl());
+    props.put(ZkStateReader.CORE_NAME_PROP, cd.getName());
+    props.put(ZkStateReader.ROLES_PROP, cd.getCloudDescriptor().getRoles());
+    props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
+    props.put(ZkStateReader.SHARD_ID_PROP, cd.getCloudDescriptor().getShardId());
+    props.put(ZkStateReader.COLLECTION_PROP, collection);
+    if (numShards != null) {
+      props.put(ZkStateReader.NUM_SHARDS_PROP, numShards.toString());
+    }
+    if (coreNodeName != null) {
+      props.put(ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
+    }
+    
+    if (ClusterStateUtil.isAutoAddReplicas(getZkStateReader(), collection)) { 
+      try (SolrCore core = cc.getCore(cd.getName())) {
+        if (core != null && core.getDirectoryFactory().isSharedStorage()) {
+          props.put("dataDir", core.getDataDir());
+          UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+          if (ulog != null) {
+            props.put("ulogDir", ulog.getLogDir());
+          }
+        }
+      }
+    }
+    
+    ZkNodeProps m = new ZkNodeProps(props);
+    
     if (updateLastState) {
       cd.getCloudDescriptor().lastPublished = state;
     }
@@ -1940,5 +1968,19 @@ public final class ZkController {
   
   public String getLeaderInitiatedRecoveryZnodePath(String collection, String shardId, String coreNodeName) {
     return getLeaderInitiatedRecoveryZnodePath(collection, shardId)+"/"+coreNodeName;
+  }
+  
+  public void throwErrorIfReplicaReplaced(CoreDescriptor desc) {
+      ClusterState clusterState = getZkStateReader().getClusterState();
+      if (clusterState != null) {
+        DocCollection collection = clusterState.getCollectionOrNull(desc
+            .getCloudDescriptor().getCollectionName());
+        if (collection != null) {
+          boolean autoAddReplicas = ClusterStateUtil.isAutoAddReplicas( getZkStateReader(), collection.getName());   
+          if (autoAddReplicas) {
+            CloudUtil.checkSharedFSFailoverReplaced(cc, desc);
+          }
+        }
+      }
   }
 }

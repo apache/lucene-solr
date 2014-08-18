@@ -63,10 +63,9 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   String backupKeepParamName = ReplicationHandler.NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM;
 
   private static JettySolrRunner createJetty(TestReplicationHandler.SolrInstance instance) throws Exception {
-    System.setProperty("solr.data.dir", instance.getDataDir());
     FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(instance.getHomeDir(), "solr.xml"));
     JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), "/solr", 0);
-
+    jetty.setDataDir(instance.getDataDir());
     jetty.start();
     return jetty;
   }

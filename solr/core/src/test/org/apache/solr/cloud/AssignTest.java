@@ -86,7 +86,7 @@ public class AssignTest extends SolrTestCaseJ4 {
     collectionStates.put(cname, docCollection);
     
     Set<String> liveNodes = new HashSet<>();
-    ClusterState state = new ClusterState(-1,liveNodes, collectionStates,ClusterStateTest.getMockZkStateReader(collectionStates.keySet()));
+    ClusterState state = new ClusterState(-1,liveNodes, collectionStates);
     String nodeName = Assign.assignNode("collection1", state);
     
     assertEquals("core_node2", nodeName);

@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.Filter;
+
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -230,8 +231,15 @@ public class ChaosMonkey {
     }
   }
   
-  public static void kill(CloudJettyRunner cjetty) throws Exception {
-    FilterHolder filterHolder = cjetty.jetty.getDispatchFilter();
+
+  public static void kill(List<JettySolrRunner> jettys) throws Exception {
+    for (JettySolrRunner jetty : jettys) {
+      kill(jetty);
+    }
+  }
+  
+  public static void kill(JettySolrRunner jetty) throws Exception {
+    FilterHolder filterHolder = jetty.getDispatchFilter();
     if (filterHolder != null) {
       Filter filter = filterHolder.getFilter();
       if (filter != null) {
@@ -244,9 +252,8 @@ public class ChaosMonkey {
       }
     }
 
-    IpTables.blockPort(cjetty.jetty.getLocalPort());
+    IpTables.blockPort(jetty.getLocalPort());
     
-    JettySolrRunner jetty = cjetty.jetty;
     monkeyLog("kill shard! " + jetty.getLocalPort());
     
     jetty.stop();
@@ -256,6 +263,10 @@ public class ChaosMonkey {
     if (!jetty.isStopped()) {
       throw new RuntimeException("could not kill jetty");
     }
+  }
+  
+  public static void kill(CloudJettyRunner cjetty) throws Exception {
+    kill(cjetty.jetty);
   }
   
   public void stopShard(String slice) throws Exception {
@@ -556,8 +567,20 @@ public class ChaosMonkey {
     return starts.get();
   }
 
+  public static void stop(List<JettySolrRunner> jettys) throws Exception {
+    for (JettySolrRunner jetty : jettys) {
+      stop(jetty);
+    }
+  }
+  
   public static void stop(JettySolrRunner jetty) throws Exception {
     stopJettySolrRunner(jetty);
+  }
+  
+  public static void start(List<JettySolrRunner> jettys) throws Exception {
+    for (JettySolrRunner jetty : jettys) {
+      start(jetty);
+    }
   }
   
   public static boolean start(JettySolrRunner jetty) throws Exception {

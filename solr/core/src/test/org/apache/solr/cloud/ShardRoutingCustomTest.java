@@ -17,17 +17,7 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.common.util.StrUtils;
 import org.junit.BeforeClass;
-
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 
 public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {

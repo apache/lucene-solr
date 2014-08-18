@@ -47,13 +47,19 @@ public class UpdateShardHandler {
   public UpdateShardHandler(ConfigSolr cfg) {
     
     clientConnectionManager = new PoolingClientConnectionManager(SchemeRegistryFactory.createSystemDefault());
-    clientConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());
-    clientConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnectionsPerHost());
+    if (cfg != null ) {
+      clientConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());
+      clientConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnectionsPerHost());
+    }
     
     
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(HttpClientUtil.PROP_SO_TIMEOUT, cfg.getDistributedSocketTimeout());
-    params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, cfg.getDistributedConnectionTimeout());
+    if (cfg != null) {
+      params.set(HttpClientUtil.PROP_SO_TIMEOUT,
+          cfg.getDistributedSocketTimeout());
+      params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT,
+          cfg.getDistributedConnectionTimeout());
+    }
     params.set(HttpClientUtil.PROP_USE_RETRY, false);
     log.info("Creating UpdateShardHandler HTTP client with params: {}", params);
     client = HttpClientUtil.createClient(params, clientConnectionManager);

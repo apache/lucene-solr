@@ -17,8 +17,20 @@
 
 package org.apache.solr.core;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -35,19 +47,8 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import static com.google.common.base.Preconditions.checkNotNull;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 
 
 /**
@@ -248,6 +249,9 @@ public class CoreContainer {
           creators.add(new Callable<SolrCore>() {
             @Override
             public SolrCore call() throws Exception {
+              if (zkSys.getZkController() != null) {
+                zkSys.getZkController().throwErrorIfReplicaReplaced(cd);
+              }
               return create(cd, false);   
             }
           });
@@ -753,6 +757,9 @@ public class CoreContainer {
                                  // the wait as a consequence of shutting down.
     try {
       if (core == null) {
+        if (zkSys.getZkController() != null) {
+          zkSys.getZkController().throwErrorIfReplicaReplaced(desc);
+        }
         core = create(desc); // This should throw an error if it fails.
       }
       core.open();
@@ -854,6 +861,10 @@ public class CoreContainer {
   
   public ZkController getZkController() {
     return zkSys.getZkController();
+  }
+  
+  public ConfigSolr getConfig() {
+    return cfg;
   }
 
   /** The default ShardHandlerFactory used to communicate with other solr instances */

@@ -37,7 +37,6 @@ import junit.framework.Assert;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServer;
@@ -288,8 +287,13 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     super.tearDown();
   }
 
+  protected JettySolrRunner createControlJetty() throws Exception {
+    JettySolrRunner jetty = createJetty(new File(getSolrHome()), testDir + "/control/data", null, getSolrConfigFile(), getSchemaFile());
+    return jetty;
+  }
+  
   protected void createServers(int numShards) throws Exception {
-    controlJetty = createJetty(new File(getSolrHome()), testDir + "/control/data", null, getSolrConfigFile(), getSchemaFile());
+    controlJetty = createControlJetty();
 
     controlClient = createNewSolrServer(controlJetty.getLocalPort());
 

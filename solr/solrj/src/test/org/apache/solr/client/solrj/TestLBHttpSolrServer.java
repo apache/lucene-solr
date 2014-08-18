@@ -313,7 +313,7 @@ public class TestLBHttpSolrServer extends SolrTestCaseJ4 {
 
     public void startJetty() throws Exception {
       jetty = new JettySolrRunner(getHomeDir(), "/solr", port, "bad_solrconfig.xml", null, true, null, sslConfig);
-      System.setProperty("solr.data.dir", getDataDir());
+      jetty.setDataDir(getDataDir());
       jetty.start();
       int newPort = jetty.getLocalPort();
       if (port != 0 && newPort != port) {
