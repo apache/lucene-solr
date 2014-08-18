@@ -17,9 +17,9 @@
 
 package org.apache.solr.handler.admin;
 
-import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
@@ -213,20 +213,24 @@ public class SystemInfoHandler extends RequestHandlerBase
    */
   private static String execute( String cmd )
   {
-    DataInputStream in = null;
+    InputStream in = null;
     Process process = null;
     
     try {
       process = Runtime.getRuntime().exec(cmd);
-      in = new DataInputStream( process.getInputStream() );
+      in = process.getInputStream();
       // use default charset from locale here, because the command invoked also uses the default locale:
       return IOUtils.toString(new InputStreamReader(in, Charset.defaultCharset()));
-    }
-    catch( Exception ex ) {
+    } catch( Exception ex ) {
       // ignore - log.warn("Error executing command", ex);
       return "(error executing: " + cmd + ")";
-    }
-    finally {
+    } catch (Error err) {
+      if (err.getMessage() != null && err.getMessage().contains("posix_spawn")) {
+        log.warn("Error forking command due to JVM locale bug (see https://issues.apache.org/jira/browse/SOLR-6387): " + err.getMessage());
+        return "(error executing: " + cmd + ")";
+      }
+      throw err;
+    } finally {
       if (process != null) {
         IOUtils.closeQuietly( process.getOutputStream() );
         IOUtils.closeQuietly( process.getInputStream() );

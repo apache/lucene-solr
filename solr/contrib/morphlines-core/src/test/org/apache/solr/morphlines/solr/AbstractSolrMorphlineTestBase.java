@@ -84,6 +84,8 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    assumeFalse("This test fails on UNIX with Turkish default locale (https://issues.apache.org/jira/browse/SOLR-6387)",
+        new Locale("tr").getLanguage().equals(Locale.getDefault().getLanguage()));
     myInitCore(DEFAULT_BASE_DIR);
   }
 

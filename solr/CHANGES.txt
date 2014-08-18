@@ -285,6 +285,10 @@ Bug Fixes
 * SOLR-6383: RegexTransformer returns no results after replaceAll if regex does not match a value.
   (Alexander Kingson, shalin)
 
+* SOLR-6387: Add better error messages throughout Solr and supply a work around for
+  Java bug #8047340 to SystemInfoHandler: On Turkish default locale, some JVMs fail
+  to fork on MacOSX, BSD, AIX, and Solaris platforms.  (hossman, Uwe Schindler)
+
 Optimizations
 ---------------------
 

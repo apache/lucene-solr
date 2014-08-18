@@ -18,6 +18,7 @@ package org.apache.solr.hadoop;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Locale;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -35,13 +36,15 @@ public abstract class MRUnitBase extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void setupClass() throws Exception {
+    assumeFalse("This test fails on UNIX with Turkish default locale (https://issues.apache.org/jira/browse/SOLR-6387)",
+        new Locale("tr").getLanguage().equals(Locale.getDefault().getLanguage()));
     solrHomeZip = SolrOutputFormat.createSolrHomeZip(new File(RESOURCES_DIR + "/solr/mrunit"));
     assertNotNull(solrHomeZip);
   }
 
   @AfterClass
   public static void teardownClass() throws Exception {
-    solrHomeZip.delete();
+    if (solrHomeZip != null) solrHomeZip.delete();
   }
   
   protected void setupHadoopConfig(Configuration config) throws IOException {
