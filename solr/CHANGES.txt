@@ -292,6 +292,8 @@ Bug Fixes
 * SOLR-6338: coreRootDirectory requires trailing slash, or SolrCloud cores are created in wrong location.
     (Primož Skale via Erick Erickson)
 
+* SOLR-6314: Multi-threaded facet counts differ when SolrCloud has >1 shard (Erick Erickson)
+
 Optimizations
 ---------------------
 
