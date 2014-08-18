@@ -1062,12 +1062,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           synchronized(this) {
             for (;;) {
               try {
-                finishMerges(waitForMerges && !interrupted);
+                if (waitForMerges && !interrupted) {
+                  waitForMerges();
+                } else {
+                  abortMerges();
+                }
                 break;
               } catch (ThreadInterruptedException tie) {
-                // by setting the interrupted status, the
-                // next call to finishMerges will pass false,
-                // so it will not wait
+                // by setting the interrupted status, the next iteration will abort merges
                 interrupted = true;
                 if (infoStream.isEnabled("IW")) {
                   infoStream.message("IW", "interrupted while waiting for merges to finish");
