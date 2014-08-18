@@ -69,7 +69,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertEquals("collection handler class", "testCollectionsHandler", cfg.getCollectionsHandlerClass());
     assertEquals("info handler class", "testInfoHandler", cfg.getInfoHandlerClass());
     assertEquals("core load threads", 11, cfg.getCoreLoadThreadCount());
-    assertEquals("core root dir", "testCoreRootDirectory", cfg.getCoreRootDirectory());
+    assertEquals("core root dir", "testCoreRootDirectory" + File.separator, cfg.getCoreRootDirectory());
     assertEquals("distrib conn timeout", 22, cfg.getDistributedConnectionTimeout());
     assertEquals("distrib socket timeout", 33, cfg.getDistributedSocketTimeout());
     assertEquals("max update conn", 3, cfg.getMaxUpdateConnections());
@@ -95,7 +95,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
   // Test  a few property substitutions that happen to be in solr-50-all.xml.
   public void testPropertySub() throws IOException {
 
-    System.setProperty("coreRootDirectory", "myCoreRoot");
+    System.setProperty("coreRootDirectory", "myCoreRoot" + File.separator);
     System.setProperty("hostPort", "8888");
     System.setProperty("shareSchema", "false");
     System.setProperty("socketTimeout", "220");
@@ -105,7 +105,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     FileUtils.copyFile(new File(testSrcRoot, "solr-50-all.xml"), new File(solrHome, "solr.xml"));
 
     ConfigSolr cfg = ConfigSolr.fromSolrHome(loader, solrHome.getAbsolutePath());
-    assertEquals("core root dir", "myCoreRoot", cfg.getCoreRootDirectory());
+    assertEquals("core root dir", "myCoreRoot" + File.separator, cfg.getCoreRootDirectory());
     assertEquals("zk host port", "8888", cfg.getZkHostPort());
     assertEquals("schema cache", false, cfg.hasSchemaCache());
   }

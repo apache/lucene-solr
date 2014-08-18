@@ -119,7 +119,7 @@ public abstract class ConfigSolr {
    * @return core root directory
    */
   public String getCoreRootDirectory() {
-    return get(CfgProp.SOLR_COREROOTDIRECTORY, config.getResourceLoader().getInstanceDir());
+    return SolrResourceLoader.normalizeDir( get(CfgProp.SOLR_COREROOTDIRECTORY, config.getResourceLoader().getInstanceDir()) );
   }
 
   public PluginInfo getShardHandlerFactoryPluginInfo() {
