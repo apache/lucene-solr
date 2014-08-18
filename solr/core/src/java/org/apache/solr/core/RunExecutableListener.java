@@ -78,7 +78,18 @@ class RunExecutableListener extends AbstractSolrEventListener {
       if (doLog) {
         log.debug("About to exec " + cmd[0]);
       }
-      Process proc = Runtime.getRuntime().exec(cmd, envp ,dir);
+      final Process proc;
+      try {
+        proc = Runtime.getRuntime().exec(cmd, envp ,dir);
+      } catch (Error err) {
+        // Create better error message
+        if (err.getMessage() != null && err.getMessage().contains("posix_spawn")) {
+          Error newErr = new Error("Error forking command due to JVM locale bug (see https://issues.apache.org/jira/browse/SOLR-6387): " + err.getMessage());
+          newErr.setStackTrace(err.getStackTrace());
+          err = newErr;
+        }
+        throw err;
+      }
 
       if (wait) {
         try {
