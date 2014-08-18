@@ -17,13 +17,16 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.Arrays;
 
 /**
  * A builder for {@link CharsRef} instances.
  * @lucene.internal
  */
-public class CharsRefBuilder {
+public class CharsRefBuilder implements Appendable {
+
+  private static final String NULL_STRING = "null";
 
   private final CharsRef ref;
 
@@ -62,6 +65,33 @@ public class CharsRefBuilder {
    */
   public void clear() {
     ref.length = 0;
+  }
+
+  @Override
+  public Appendable append(CharSequence csq) {
+    if (csq == null) {
+      return append(NULL_STRING);
+    }
+    return append(csq, 0, csq.length());
+  }
+
+  @Override
+  public Appendable append(CharSequence csq, int start, int end) {
+    if (csq == null) {
+      return append(NULL_STRING);
+    }
+    grow(ref.length + end - start);
+    for (int i = start; i < end; ++i) {
+      setCharAt(ref.length++, csq.charAt(i));
+    }
+    return this;
+  }
+
+  @Override
+  public Appendable append(char c) {
+    grow(ref.length + 1);
+    setCharAt(ref.length++, c);
+    return this;
   }
 
   /**
