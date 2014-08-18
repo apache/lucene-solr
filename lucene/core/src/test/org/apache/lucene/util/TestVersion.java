@@ -19,6 +19,7 @@ package org.apache.lucene.util;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.Random;
 
 public class TestVersion extends LuceneTestCase {
 
@@ -185,5 +186,24 @@ public class TestVersion extends LuceneTestCase {
         commonBuildVersion != null);
     assertEquals("Version.LATEST does not match the one given in common-build.xml",
         Version.LATEST.toString(), commonBuildVersion);
+  }
+
+  public void testEqualsHashCode() {
+    Random random = random();
+    String version = "" + (4 + random.nextInt(1)) + "."  + random.nextInt(10) + "." + random.nextInt(10);
+    Version v1 = Version.parseLeniently(version);
+    Version v2 = Version.parseLeniently(version);
+    assertEquals(v1.hashCode(), v2.hashCode());
+    assertEquals(v1, v2);
+    final int iters = 10 + random.nextInt(20);
+    for (int i = 0; i < iters; i++) {
+      String v = "" + (4 + random.nextInt(1)) + "."  + random.nextInt(10) + "." + random.nextInt(10);
+      if (v.equals(version)) {
+        assertEquals(Version.parseLeniently(v).hashCode(), v1.hashCode());
+        assertEquals(Version.parseLeniently(v), v1);
+      } else {
+        assertFalse(Version.parseLeniently(v).equals(v1));
+      }
+    }
   }
 }

@@ -349,4 +349,9 @@ public final class Version {
   public boolean equals(Object o) {
     return o != null && o instanceof Version && ((Version)o).encodedValue == encodedValue;
   }
+
+  @Override
+  public int hashCode() {
+    return encodedValue;
+  }
 }
