@@ -24,10 +24,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -84,8 +85,22 @@ public class FacetComponent extends SearchComponent {
    */
   @Override
   public void process(ResponseBuilder rb) throws IOException {
+
+    //SolrParams params = rb.req.getParams();
     if (rb.doFacets) {
-      SolrParams params = rb.req.getParams();
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      SolrParams origParams = rb.req.getParams();
+      Iterator<String> iter = origParams.getParameterNamesIterator();
+      while (iter.hasNext()) {
+        String paramName = iter.next();
+        // Deduplicate the list with LinkedHashSet, but _only_ for facet params.
+        if (paramName.startsWith(FacetParams.FACET) == false) {
+          params.add(paramName, origParams.getParams(paramName));
+          continue;
+        }
+        HashSet<String> deDupe = new LinkedHashSet<>(Arrays.asList(origParams.getParams(paramName)));
+        params.add(paramName, deDupe.toArray(new String[deDupe.size()]));
+      }
 
       SimpleFacets f = new SimpleFacets(rb.req, rb.getResults().docSet, params, rb);
       

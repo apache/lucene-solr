@@ -175,9 +175,9 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     // then the primary sort should always be a tie and then the secondary should always decide
     query("q","{!func}ms(NOW)", "sort","score desc,"+i1+" desc","fl","id");    
 
-    query("q","*:*", "rows",0, "facet","true", "facet.field",t1);
+    query("q","*:*", "rows",0, "facet","true", "facet.field",t1, "facet.field",t1);
     query("q","*:*", "rows",0, "facet","true", "facet.field",t1,"facet.limit",1);
-    query("q","*:*", "rows",0, "facet","true", "facet.query","quick", "facet.query","all", "facet.query","*:*");
+    query("q","*:*", "rows",0, "facet","true", "facet.query","quick", "facet.query","quick", "facet.query","all", "facet.query","*:*");
     query("q","*:*", "rows",0, "facet","true", "facet.field",t1, "facet.mincount",2);
 
     // a facet query to test out chars out of the ascii range
@@ -195,7 +195,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
     // simple date facet on one field
     query("q","*:*", "rows",100, "facet","true", 
-          "facet.date",tdate_a, 
+          "facet.date",tdate_a,
+          "facet.date",tdate_a,
           "facet.date.other", "all", 
           "facet.date.start","2010-05-01T11:00:00Z", 
           "facet.date.gap","+1DAY", 
@@ -203,8 +204,9 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
     // date facet on multiple fields
     query("q","*:*", "rows",100, "facet","true", 
-          "facet.date",tdate_a, 
-          "facet.date",tdate_b, 
+          "facet.date",tdate_a,
+          "facet.date",tdate_b,
+          "facet.date",tdate_a,
           "facet.date.other", "all", 
           "f."+tdate_b+".facet.date.start","2009-05-01T11:00:00Z", 
           "f."+tdate_b+".facet.date.gap","+3MONTHS", 
@@ -214,7 +216,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
     // simple range facet on one field
     query("q","*:*", "rows",100, "facet","true", 
-          "facet.range",tlong, 
+          "facet.range",tlong,
+          "facet.range",tlong,
           "facet.range.start",200, 
           "facet.range.gap",100, 
           "facet.range.end",900);
@@ -385,6 +388,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           "q","*:*",
           "facet","true", 
           "facet.field",t1,
+          "facet.field",t1,
           "facet.limit",5,
           ShardParams.SHARDS_INFO,"true",
           ShardParams.SHARDS_TOLERANT,"true");
@@ -392,6 +396,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       queryPartialResults(upShards, upClients,
           "q", "*:*",
           "facet", "true",
+          "facet.query", i1 + ":[1 TO 50]",
           "facet.query", i1 + ":[1 TO 50]",
           ShardParams.SHARDS_INFO, "true",
           ShardParams.SHARDS_TOLERANT, "true");

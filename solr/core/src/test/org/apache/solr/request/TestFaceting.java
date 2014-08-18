@@ -710,8 +710,8 @@ public class TestFaceting extends SolrTestCaseJ4 {
             , "facet.threads", "1000"
             , "facet.limit", "-1"
         )
-        , "*[count(//lst[@name='facet_fields']/lst)=50]"
-        , "*[count(//lst[@name='facet_fields']/lst/int)=100]"
+        , "*[count(//lst[@name='facet_fields']/lst)=10]"
+        , "*[count(//lst[@name='facet_fields']/lst/int)=20]"
     );
 
   }
@@ -856,8 +856,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
       );
 
       // After this all, the uninverted fields should be exactly the same as they were the first time, even if we
-      // blast a whole bunch of identical fields at the facet code. Which, BTW, doesn't detect
-      // if you've asked for the same field more than once.
+      // blast a whole bunch of identical fields at the facet code.
       // The way fetching the uninverted field is written, all this is really testing is if the cache is working.
       // It's NOT testing whether the pending/sleep is actually functioning, I had to do that by hand since I don't
       // see how to make sure that uninverting the field multiple times actually happens to hit the wait state.
@@ -917,8 +916,8 @@ public class TestFaceting extends SolrTestCaseJ4 {
               , "facet.threads", "1000"
               , "facet.limit", "-1"
           )
-          , "*[count(//lst[@name='facet_fields']/lst)=50]"
-          , "*[count(//lst[@name='facet_fields']/lst/int)=100]"
+          , "*[count(//lst[@name='facet_fields']/lst)=10]"
+          , "*[count(//lst[@name='facet_fields']/lst/int)=20]"
       );
 
       // Now, are all the UnInvertedFields still the same? Meaning they weren't re-fetched even when a bunch were
