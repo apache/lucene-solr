@@ -289,6 +289,9 @@ Bug Fixes
   Java bug #8047340 to SystemInfoHandler: On Turkish default locale, some JVMs fail
   to fork on MacOSX, BSD, AIX, and Solaris platforms.  (hossman, Uwe Schindler)
 
+* SOLR-6338: coreRootDirectory requires trailing slash, or SolrCloud cores are created in wrong location.
+    (Primož Skale via Erick Erickson)
+
 Optimizations
 ---------------------
 
