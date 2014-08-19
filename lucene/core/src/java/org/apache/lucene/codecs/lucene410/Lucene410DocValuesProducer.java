@@ -420,23 +420,19 @@ class Lucene410DocValuesProducer extends DocValuesProducer implements Closeable 
   }
   
   /** returns an address instance for variable-length binary values. */
-  private MonotonicBlockPackedReader getAddressInstance(IndexInput data, FieldInfo field, BinaryEntry bytes) throws IOException {
-    final MonotonicBlockPackedReader addresses;
-    synchronized (addressInstances) {
-      MonotonicBlockPackedReader addrInstance = addressInstances.get(field.number);
-      if (addrInstance == null) {
-        data.seek(bytes.addressesOffset);
-        addrInstance = MonotonicBlockPackedReader.of(data, bytes.packedIntsVersion, bytes.blockSize, bytes.count+1, false);
-        addressInstances.put(field.number, addrInstance);
-        ramBytesUsed.addAndGet(addrInstance.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
-      }
-      addresses = addrInstance;
+  private synchronized MonotonicBlockPackedReader getAddressInstance(FieldInfo field, BinaryEntry bytes) throws IOException {
+    MonotonicBlockPackedReader addresses = addressInstances.get(field.number);
+    if (addresses == null) {
+      data.seek(bytes.addressesOffset);
+      addresses = MonotonicBlockPackedReader.of(data, bytes.packedIntsVersion, bytes.blockSize, bytes.count+1, false);
+      addressInstances.put(field.number, addresses);
+      ramBytesUsed.addAndGet(addresses.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
     }
     return addresses;
   }
   
   private BinaryDocValues getVariableBinary(FieldInfo field, final BinaryEntry bytes) throws IOException {
-    final MonotonicBlockPackedReader addresses = getAddressInstance(data, field, bytes);
+    final MonotonicBlockPackedReader addresses = getAddressInstance(field, bytes);
 
     final IndexInput data = this.data.slice("var-binary", bytes.offset, bytes.addressesOffset - bytes.offset);
     final BytesRef term = new BytesRef(Math.max(0, bytes.maxLength));
@@ -461,48 +457,39 @@ class Lucene410DocValuesProducer extends DocValuesProducer implements Closeable 
   }
   
   /** returns an address instance for prefix-compressed binary values. */
-  private MonotonicBlockPackedReader getIntervalInstance(IndexInput data, FieldInfo field, BinaryEntry bytes) throws IOException {
-    final MonotonicBlockPackedReader addresses;
-    synchronized (addressInstances) {
-      MonotonicBlockPackedReader addrInstance = addressInstances.get(field.number);
-      if (addrInstance == null) {
-        data.seek(bytes.addressesOffset);
-        final long size = (bytes.count + INTERVAL_MASK) >>> INTERVAL_SHIFT;
-        addrInstance = MonotonicBlockPackedReader.of(data, bytes.packedIntsVersion, bytes.blockSize, size, false);
-        addressInstances.put(field.number, addrInstance);
-        ramBytesUsed.addAndGet(addrInstance.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
-      }
-      addresses = addrInstance;
+  private synchronized MonotonicBlockPackedReader getIntervalInstance(FieldInfo field, BinaryEntry bytes) throws IOException {
+    MonotonicBlockPackedReader addresses = addressInstances.get(field.number);
+    if (addresses == null) {
+      data.seek(bytes.addressesOffset);
+      final long size = (bytes.count + INTERVAL_MASK) >>> INTERVAL_SHIFT;
+      addresses = MonotonicBlockPackedReader.of(data, bytes.packedIntsVersion, bytes.blockSize, size, false);
+      addressInstances.put(field.number, addresses);
+      ramBytesUsed.addAndGet(addresses.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
     }
     return addresses;
   }
   
   /** returns a reverse lookup instance for prefix-compressed binary values. */
-  private ReverseTermsIndex getReverseIndexInstance(IndexInput data, FieldInfo field, BinaryEntry bytes) throws IOException {
-    final ReverseTermsIndex index;
-    synchronized (reverseIndexInstances) {
-      ReverseTermsIndex instance = reverseIndexInstances.get(field.number);
-      if (instance == null) {
-        instance = new ReverseTermsIndex();
-        data.seek(bytes.reverseIndexOffset);
-        long size = (bytes.count + REVERSE_INTERVAL_MASK) >>> REVERSE_INTERVAL_SHIFT;
-        instance.termAddresses = MonotonicBlockPackedReader.of(data, bytes.packedIntsVersion, bytes.blockSize, size, false);
-        long dataSize = data.readVLong();
-        PagedBytes pagedBytes = new PagedBytes(15);
-        pagedBytes.copy(data, dataSize);
-        instance.terms = pagedBytes.freeze(true);
-        reverseIndexInstances.put(field.number, instance);
-        ramBytesUsed.addAndGet(instance.termAddresses.ramBytesUsed() + instance.terms.ramBytesUsed());
-      }
-      index = instance;
+  private synchronized ReverseTermsIndex getReverseIndexInstance(FieldInfo field, BinaryEntry bytes) throws IOException {
+    ReverseTermsIndex index = reverseIndexInstances.get(field.number);
+    if (index == null) {
+      index = new ReverseTermsIndex();
+      data.seek(bytes.reverseIndexOffset);
+      long size = (bytes.count + REVERSE_INTERVAL_MASK) >>> REVERSE_INTERVAL_SHIFT;
+      index.termAddresses = MonotonicBlockPackedReader.of(data, bytes.packedIntsVersion, bytes.blockSize, size, false);
+      long dataSize = data.readVLong();
+      PagedBytes pagedBytes = new PagedBytes(15);
+      pagedBytes.copy(data, dataSize);
+      index.terms = pagedBytes.freeze(true);
+      reverseIndexInstances.put(field.number, index);
+      ramBytesUsed.addAndGet(index.termAddresses.ramBytesUsed() + index.terms.ramBytesUsed());
     }
     return index;
   }
 
-
   private BinaryDocValues getCompressedBinary(FieldInfo field, final BinaryEntry bytes) throws IOException {
-    final MonotonicBlockPackedReader addresses = getIntervalInstance(data, field, bytes);
-    final ReverseTermsIndex index = getReverseIndexInstance(data, field, bytes);
+    final MonotonicBlockPackedReader addresses = getIntervalInstance(field, bytes);
+    final ReverseTermsIndex index = getReverseIndexInstance(field, bytes);
     assert addresses.size() > 0; // we don't have to handle empty case
     IndexInput slice = data.slice("terms", bytes.offset, bytes.addressesOffset - bytes.offset);
     return new CompressedBinaryDocValues(bytes, addresses, index, slice);
@@ -552,19 +539,15 @@ class Lucene410DocValuesProducer extends DocValuesProducer implements Closeable 
   }
   
   /** returns an address instance for sortedset ordinal lists */
-  private MonotonicBlockPackedReader getOrdIndexInstance(IndexInput data, FieldInfo field, NumericEntry entry) throws IOException {
-    final MonotonicBlockPackedReader ordIndex;
-    synchronized (ordIndexInstances) {
-      MonotonicBlockPackedReader ordIndexInstance = ordIndexInstances.get(field.number);
-      if (ordIndexInstance == null) {
-        data.seek(entry.offset);
-        ordIndexInstance = MonotonicBlockPackedReader.of(data, entry.packedIntsVersion, entry.blockSize, entry.count+1, false);
-        ordIndexInstances.put(field.number, ordIndexInstance);
-        ramBytesUsed.addAndGet(ordIndexInstance.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
-      }
-      ordIndex = ordIndexInstance;
+  private synchronized MonotonicBlockPackedReader getOrdIndexInstance(FieldInfo field, NumericEntry entry) throws IOException {
+    MonotonicBlockPackedReader instance = ordIndexInstances.get(field.number);
+    if (instance == null) {
+      data.seek(entry.offset);
+      instance = MonotonicBlockPackedReader.of(data, entry.packedIntsVersion, entry.blockSize, entry.count+1, false);
+      ordIndexInstances.put(field.number, instance);
+      ramBytesUsed.addAndGet(instance.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
     }
-    return ordIndex;
+    return instance;
   }
   
   @Override
@@ -576,8 +559,7 @@ class Lucene410DocValuesProducer extends DocValuesProducer implements Closeable 
       final Bits docsWithField = getMissingBits(numericEntry.missingOffset);
       return DocValues.singleton(values, docsWithField);
     } else if (ss.format == SORTED_WITH_ADDRESSES) {
-      final IndexInput data = this.data.clone();
-      final MonotonicBlockPackedReader ordIndex = getOrdIndexInstance(data, field, ordIndexes.get(field.number));
+      final MonotonicBlockPackedReader ordIndex = getOrdIndexInstance(field, ordIndexes.get(field.number));
       
       return new SortedNumericDocValues() {
         long startOffset;
@@ -614,13 +596,12 @@ class Lucene410DocValuesProducer extends DocValuesProducer implements Closeable 
       throw new AssertionError();
     }
 
-    final IndexInput data = this.data.clone();
     final long valueCount = binaries.get(field.number).count;
     // we keep the byte[]s and list of ords on disk, these could be large
     final LongBinaryDocValues binary = (LongBinaryDocValues) getBinary(field);
     final LongValues ordinals = getNumeric(ords.get(field.number));
     // but the addresses to the ord stream are in RAM
-    final MonotonicBlockPackedReader ordIndex = getOrdIndexInstance(data, field, ordIndexes.get(field.number));
+    final MonotonicBlockPackedReader ordIndex = getOrdIndexInstance(field, ordIndexes.get(field.number));
     
     return new RandomAccessOrds() {
       long startOffset;

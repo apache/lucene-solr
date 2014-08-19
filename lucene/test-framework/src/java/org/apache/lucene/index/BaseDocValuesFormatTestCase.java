@@ -19,7 +19,9 @@ package org.apache.lucene.index;
 
 import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -59,6 +61,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 
 /**
@@ -2953,7 +2956,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     Field dvNumericField = new NumericDocValuesField("dvNum", 0);
     
     // index some docs
-    int numDocs = atLeast(300);
+    int numDocs = TestUtil.nextInt(random(), 1025, 2047);
     for (int i = 0; i < numDocs; i++) {
       idField.setStringValue(Integer.toString(i));
       int length = TestUtil.nextInt(random(), 0, 8);
@@ -3107,6 +3110,74 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       t.join();
     }
     ir.close();
+    dir.close();
+  }
+  
+  public void testThreads3() throws Exception {
+    assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField());
+    assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
+    assumeTrue("Codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
+    Directory dir = newFSDirectory(createTempDir());
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
+    
+    int numSortedSets = random().nextInt(21);
+    int numBinaries = random().nextInt(21);
+    int numSortedNums = random().nextInt(21);
+    
+    int numDocs = TestUtil.nextInt(random(), 2025, 2047);
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      
+      for (int j = 0; j < numSortedSets; j++) {
+        doc.add(new SortedSetDocValuesField("ss" + j, new BytesRef(TestUtil.randomSimpleString(random()))));
+        doc.add(new SortedSetDocValuesField("ss" + j, new BytesRef(TestUtil.randomSimpleString(random()))));
+      }
+      
+      for (int j = 0; j < numBinaries; j++) {
+        doc.add(new BinaryDocValuesField("b" + j, new BytesRef(TestUtil.randomSimpleString(random()))));
+      }
+      
+      for (int j = 0; j < numSortedNums; j++) {
+        doc.add(new SortedNumericDocValuesField("sn" + j, TestUtil.nextLong(random(), Long.MIN_VALUE, Long.MAX_VALUE)));
+        doc.add(new SortedNumericDocValuesField("sn" + j, TestUtil.nextLong(random(), Long.MIN_VALUE, Long.MAX_VALUE)));
+      }
+      writer.addDocument(doc);
+    }
+    writer.close();
+    
+    // now check with threads
+    for (int i = 0; i < 10; i++) {
+      final DirectoryReader r = DirectoryReader.open(dir);
+      final CountDownLatch startingGun = new CountDownLatch(1);
+      Thread threads[] = new Thread[TestUtil.nextInt(random(), 4, 10)];
+      for (int tid = 0; tid < threads.length; tid++) {
+        threads[tid] = new Thread() {
+          @Override
+          public void run() {
+            try {
+              ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
+              PrintStream infoStream = new PrintStream(bos, false, IOUtils.UTF_8);
+              startingGun.await();
+              for (AtomicReaderContext leaf : r.leaves()) {
+                CheckIndex.testDocValues(leaf.reader(), infoStream, true);
+              }
+            } catch (Exception e) {
+              throw new RuntimeException();
+            }
+          }
+        };
+      }
+      for (int tid = 0; tid < threads.length; tid++) {
+        threads[tid].start();
+      }
+      startingGun.countDown();
+      for (int tid = 0; tid < threads.length; tid++) {
+        threads[tid].join();
+      }
+      r.close();
+    }
+
     dir.close();
   }
 
