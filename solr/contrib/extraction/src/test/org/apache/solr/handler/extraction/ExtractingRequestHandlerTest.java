@@ -23,9 +23,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.handler.extraction.ExtractingDocumentLoader;
-import org.apache.solr.handler.extraction.ExtractingParams;
-import org.apache.solr.handler.extraction.ExtractingRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -546,7 +543,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testPasswordProtected() throws Exception {
     // PDF, Passwords from resource.password
-    loadLocal("extraction/enctypted-password-is-solrRules.pdf", 
+    loadLocal("extraction/encrypted-password-is-solrRules.pdf",
         "fmap.created", "extractedDate", 
         "fmap.producer", "extractedProducer",
         "fmap.creator", "extractedCreator", 
@@ -556,12 +553,12 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
         "fmap.Author", "extractedAuthor",
         "fmap.content", "wdf_nocase",
         "literal.id", "pdfpwliteral",
-        "resource.name", "enctypted-password-is-solrRules.pdf",
+        "resource.name", "encrypted-password-is-solrRules.pdf",
         "resource.password", "solrRules",
         "fmap.Last-Modified", "extractedDate");
 
     // PDF, Passwords from passwords property file
-    loadLocal("extraction/enctypted-password-is-solrRules.pdf", 
+    loadLocal("extraction/encrypted-password-is-solrRules.pdf",
         "fmap.created", "extractedDate", 
         "fmap.producer", "extractedProducer",
         "fmap.creator", "extractedCreator", 
@@ -571,7 +568,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
         "fmap.Author", "extractedAuthor",
         "fmap.content", "wdf_nocase",
         "literal.id", "pdfpwfile",
-        "resource.name", "enctypted-password-is-solrRules.pdf",
+        "resource.name", "encrypted-password-is-solrRules.pdf",
         "passwordsFile", "passwordRegex.properties", // Passwords-file
         "fmap.Last-Modified", "extractedDate");
 
