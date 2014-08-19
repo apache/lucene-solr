@@ -225,7 +225,7 @@ public class SystemInfoHandler extends RequestHandlerBase
       // ignore - log.warn("Error executing command", ex);
       return "(error executing: " + cmd + ")";
     } catch (Error err) {
-      if (err.getMessage() != null && err.getMessage().contains("posix_spawn")) {
+      if (err.getMessage() != null && (err.getMessage().contains("posix_spawn") || err.getMessage().contains("UNIXProcess"))) {
         log.warn("Error forking command due to JVM locale bug (see https://issues.apache.org/jira/browse/SOLR-6387): " + err.getMessage());
         return "(error executing: " + cmd + ")";
       }
