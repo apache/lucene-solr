@@ -42,6 +42,7 @@ import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -131,9 +132,7 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
     this.textTerms = MultiFields.getTerms(atomicReader, textFieldName);
 
     if (textTerms == null) {
-      throw new IOException(new StringBuilder(
-          "term vectors need to be available for field ").append(textFieldName)
-          .toString());
+      throw new IOException("term vectors need to be available for field " + textFieldName);
     }
 
     this.analyzer = analyzer;
@@ -244,6 +243,24 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
           .getValue().longValue());
     }
     fst = fstBuilder.finish();
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public List<ClassificationResult<BytesRef>> getClasses(String text)
+      throws IOException {
+    return null;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public List<ClassificationResult<BytesRef>> getClasses(String text, int max)
+      throws IOException {
+    return null;
   }
 
 }

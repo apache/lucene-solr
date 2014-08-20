@@ -31,7 +31,10 @@ import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -79,6 +82,42 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
    */
   @Override
   public ClassificationResult<BytesRef> assignClass(String text) throws IOException {
+    TopDocs topDocs=knnSearcher(text);
+    List<ClassificationResult<BytesRef>> doclist=buildListFromTopDocs(topDocs);
+    ClassificationResult<BytesRef> retval=null;
+    double maxscore=-Double.MAX_VALUE;
+    for(ClassificationResult<BytesRef> element:doclist){
+      if(element.getScore()>maxscore){
+        retval=element;
+        maxscore=element.getScore();
+      }
+    }
+    return retval;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public List<ClassificationResult<BytesRef>> getClasses(String text) throws IOException {
+    TopDocs topDocs=knnSearcher(text);
+    List<ClassificationResult<BytesRef>> doclist=buildListFromTopDocs(topDocs);
+    Collections.sort(doclist);
+    return doclist;
+  }
+  
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public List<ClassificationResult<BytesRef>> getClasses(String text, int max) throws IOException {
+    TopDocs topDocs=knnSearcher(text);
+    List<ClassificationResult<BytesRef>> doclist=buildListFromTopDocs(topDocs);
+    Collections.sort(doclist);
+    return doclist.subList(0, max);
+  }
+
+  private TopDocs knnSearcher(String text) throws IOException{
     if (mlt == null) {
       throw new IOException("You must first call Classifier#train");
     }
@@ -91,33 +130,36 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
     if (query != null) {
       mltQuery.add(query, BooleanClause.Occur.MUST);
     }
-    TopDocs topDocs = indexSearcher.search(mltQuery, k);
-    return selectClassFromNeighbors(topDocs);
+    return indexSearcher.search(mltQuery, k);
   }
-
-  private ClassificationResult<BytesRef> selectClassFromNeighbors(TopDocs topDocs) throws IOException {
-    // TODO : improve the nearest neighbor selection
+  
+  private List<ClassificationResult<BytesRef>> buildListFromTopDocs(TopDocs topDocs) throws IOException {
     Map<BytesRef, Integer> classCounts = new HashMap<>();
     for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-      BytesRef cl = new BytesRef(indexSearcher.doc(scoreDoc.doc).getField(classFieldName).stringValue());
-      Integer count = classCounts.get(cl);
-      if (count != null) {
-        classCounts.put(cl, count + 1);
-      } else {
-        classCounts.put(cl, 1);
-      }
+        BytesRef cl = new BytesRef(indexSearcher.doc(scoreDoc.doc).getField(classFieldName).stringValue());
+        Integer count = classCounts.get(cl);
+        if (count != null) {
+            classCounts.put(cl, count + 1);
+        } else {
+            classCounts.put(cl, 1);
+        }
     }
-    double max = 0;
-    BytesRef assignedClass = new BytesRef();
+    List<ClassificationResult<BytesRef>> returnList = new ArrayList<>();
+    int sumdoc=0;
     for (Map.Entry<BytesRef, Integer> entry : classCounts.entrySet()) {
-      Integer count = entry.getValue();
-      if (count > max) {
-        max = count;
-        assignedClass = entry.getKey().clone();
+        Integer count = entry.getValue();
+        returnList.add(new ClassificationResult<>(entry.getKey().clone(), count / (double) k));
+        sumdoc+=count;
+
+    }
+    
+    //correction
+    if(sumdoc<k){
+      for(ClassificationResult<BytesRef> cr:returnList){
+        cr.setScore(cr.getScore()*(double)k/(double)sumdoc);
       }
     }
-    double score = max / (double) k;
-    return new ClassificationResult<>(assignedClass, score);
+    return returnList;
   }
 
   /**
