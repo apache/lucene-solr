@@ -2097,7 +2097,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       }
 
       if (numSlices == null ) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, NUM_SLICES + " is a required param");
+        throw new SolrException(ErrorCode.BAD_REQUEST, NUM_SLICES + " is a required param (when using CompositeId router).");
       }
 
       int maxShardsPerNode = message.getInt(ZkStateReader.MAX_SHARDS_PER_NODE, 1);
