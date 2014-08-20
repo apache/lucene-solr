@@ -941,8 +941,8 @@ public abstract class LuceneTestCase extends Assert {
     if (r.nextBoolean()) {
       c.setMergeScheduler(new SerialMergeScheduler());
     } else if (rarely(r)) {
-      int maxThreadCount = TestUtil.nextInt(random(), 1, 4);
-      int maxMergeCount = TestUtil.nextInt(random(), maxThreadCount, maxThreadCount+4);
+      int maxThreadCount = TestUtil.nextInt(r, 1, 4);
+      int maxMergeCount = TestUtil.nextInt(r, maxThreadCount, maxThreadCount+4);
       ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
       cms.setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
       c.setMergeScheduler(cms);
@@ -1034,7 +1034,7 @@ public abstract class LuceneTestCase extends Assert {
       mergePolicy.setNoCFSRatio(r.nextBoolean() ? 1.0 : 0.0);
     }
     
-    if (rarely()) {
+    if (rarely(r)) {
       mergePolicy.setMaxCFSSegmentSizeMB(0.2 + r.nextDouble() * 2.0);
     } else {
       mergePolicy.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
@@ -1104,7 +1104,7 @@ public abstract class LuceneTestCase extends Assert {
           flushByRAM = false;
           break;
         case EITHER:
-          flushByRAM = random().nextBoolean();
+          flushByRAM = r.nextBoolean();
           break;
         default:
           throw new AssertionError();
