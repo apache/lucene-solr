@@ -51,14 +51,10 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.OfflineSorter;
-import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util.Version;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FST.Arc;
@@ -71,12 +67,12 @@ import org.apache.lucene.util.fst.Util.TopResults;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 
 //import java.io.PrintWriter;
@@ -296,17 +292,7 @@ public class FreeTextSuggester extends Lookup {
     }
 
     String prefix = getClass().getSimpleName();
-    File directory = OfflineSorter.defaultTempDir();
-    // TODO: messy ... java7 has Files.createTempDirectory
-    // ... but 4.x is java6:
-    File tempIndexPath = null;
-    Random random = new Random();
-    while (true) {
-      tempIndexPath = new File(directory, prefix + ".index." + random.nextInt(Integer.MAX_VALUE));
-      if (tempIndexPath.mkdir()) {
-        break;
-      }
-    }
+    File tempIndexPath = Files.createTempDirectory(prefix + ".index.").toFile();
 
     Directory dir = FSDirectory.open(tempIndexPath);
 
