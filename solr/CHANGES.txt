@@ -320,9 +320,6 @@ Other Changes
 
 * SOLR-6173: Fixed wrong failure message in TestDistributedSearch. (shalin)
 
-* SOLR-6178, LUCENE-5775: Deprecate JaspellLookupFactory. (Uwe Schindler,
-  Mike McCandless)
-
 * SOLR-5902: Corecontainer level mbeans are not exposed (noble)
 
 * SOLR-6194: Allow access to DataImporter and DIHConfiguration from DataImportHandler.
