@@ -46,7 +46,13 @@
 
 SOLR_SCRIPT="$0"
 verbose=false
-isLegacyExampleDir=false
+THIS_OS=`uname -s`
+# for now, we don't support running this script from cygwin due to problems
+# like not having lsof, ps waux, curl, and awkward directory handling
+if [ "${THIS_OS:0:6}" == "CYGWIN" ]; then
+  echo -e "This script does not support cygwin due to severe limitations and lack of adherence\nto BASH standards, such as lack of lsof, curl, and ps options.\n\nPlease use the native solr.cmd script on Windows!"
+  exit 1
+fi
 
 # Resolve symlinks to this script
 while [ -h "$SOLR_SCRIPT" ] ; do
@@ -69,7 +75,6 @@ if [ -e "$SOLR_TIP/server/start.jar" ]; then
   DEFAULT_SERVER_DIR=$SOLR_TIP/server
 else
   DEFAULT_SERVER_DIR=$SOLR_TIP/example
-  isLegacyExampleDir=true
 fi
 
 if [ "$SOLR_JAVA_HOME" != "" ]; then
@@ -93,7 +98,7 @@ function print_usage() {
   ERROR_MSG="$2"
     
   if [ "$ERROR_MSG" != "" ]; then
-    echo "$ERROR_MSG"
+    echo -e "\nERROR: $ERROR_MSG\n"
   fi
   
   if [ "$CMD" == "" ]; then
@@ -147,7 +152,7 @@ function print_usage() {
     echo ""
     echo "  -k <key>      Stop key; default is solrrocks"
     echo ""
-    echo "  -p <port>     Specify the port to start the Solr HTTP listener on; default is 8983"
+    echo "  -p <port>     Specify the port the Solr HTTP listener is bound to; default is 8983"
     echo ""
     echo "  -V            Verbose messages from this script"
     echo ""
@@ -301,15 +306,23 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
     while true; do  
       case $1 in
           -c|-collection)
+              if [ "${2:0:1}" == "-" ]; then
+                print_usage "$SCRIPT_CMD" "$2 is not a valid collection!"
+                exit 1            
+              fi
               HEALTHCHECK_COLLECTION=$2
               shift 2
           ;;
-          -z|-zkhost)
+          -z|-zkhost)          
+              if [ "${2:0:1}" == "-" ]; then
+                print_usage "$SCRIPT_CMD" "$2 is not a valid ZooKeeper connnection string!"
+                exit 1            
+              fi          
               ZK_HOST="$2"
               shift 2
           ;;
           -help|-usage)
-              print_usage "$SCRIPT_CMD" ""            
+              print_usage "$SCRIPT_CMD"           
               exit 0
           ;;
           --)
@@ -318,8 +331,7 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
           ;;
           *)
               if [ "$1" != "" ]; then            
-                echo "Error parsing argument $1!" >&2
-                print_usage "$SCRIPT_CMD"
+                print_usage "$SCRIPT_CMD" "Unrecognized or misplaced argument: $1!"
                 exit 1
               else
                 break # out-of-args, stop looping
@@ -331,6 +343,12 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
   
   if [ "$ZK_HOST" == "" ]; then
     ZK_HOST=localhost:9983
+  fi
+  
+  if [ "$HEALTHCHECK_COLLECTION" == "" ]; then
+    echo "collection parameter is required!"
+    print_usage "healthcheck"
+    exit 1  
   fi
     
   run_tool healthcheck -zkHost $ZK_HOST -collection $HEALTHCHECK_COLLECTION
@@ -373,6 +391,11 @@ if [ $# -gt 0 ]; then
             shift
         ;;
         -d|-dir)
+            if [ "${2:0:1}" == "-" ]; then
+              print_usage "$SCRIPT_CMD" "$2 is not a valid directory!"
+              exit 1            
+            fi
+
             # see if the arg value is relative to the tip vs full path
             if [ -d "$SOLR_TIP/$2" ]; then
               SOLR_SERVER_DIR="$SOLR_TIP/$2"              
@@ -382,6 +405,10 @@ if [ $# -gt 0 ]; then
             shift 2
         ;;
         -e|-example)
+            if [ "${2:0:1}" == "-" ]; then
+              print_usage "$SCRIPT_CMD" "$2 is not a valid example!"
+              exit 1            
+            fi
             EXAMPLE="$2"
             shift 2
         ;;
@@ -390,23 +417,40 @@ if [ $# -gt 0 ]; then
             shift
         ;;
         -h|-host)
+            if [ "${2:0:1}" == "-" ]; then
+              print_usage "$SCRIPT_CMD" "$2 is not a valid hostname!"
+              exit 1            
+            fi
             SOLR_HOST="$2"
             shift 2
         ;;
         -m|-memory)
+            if [ "${2:0:1}" == "-" ]; then
+              print_usage "$SCRIPT_CMD" "$2 is not a valid memory setting!"
+              exit 1            
+            fi            
             SOLR_HEAP="$2"
             shift 2
         ;;
         -p|-port)
+            if [ "${2:0:1}" == "-" ]; then
+              print_usage "$SCRIPT_CMD" "$2 is not a valid port!"
+              exit 1            
+            fi            
             SOLR_PORT="$2"
             shift 2
         ;;
         -z|-zkhost)
+            if [ "${2:0:1}" == "-" ]; then
+              print_usage "$SCRIPT_CMD" "$2 is not a valid ZooKeeper connection string!"
+              exit 1            
+            fi
+
             ZK_HOST="$2"
             shift 2
         ;;
         -help|-usage)
-            print_usage "$SCRIPT_CMD" ""            
+            print_usage "$SCRIPT_CMD"
             exit 0
         ;;
         -noprompt)
@@ -423,8 +467,7 @@ if [ $# -gt 0 ]; then
         ;;
         *)
             if [ "$1" != "" ]; then            
-              echo "Error parsing argument $1!" >&2
-              print_usage "$SCRIPT_CMD"
+              print_usage "$SCRIPT_CMD" "Error parsing argument $1!"
               exit 1
             else
               break # out-of-args, stop looping
@@ -636,7 +679,13 @@ if [ "$SOLR_MODE" == "solrcloud" ]; then
     fi
 
     CLOUD_MODE_OPTS="$CLOUD_MODE_OPTS -DzkRun"
+    
+    # and if collection1 needs to be bootstrapped
+    if [ -e "$SOLR_HOME/collection1/core.properties" ]; then
+      CLOUD_MODE_OPTS="$CLOUD_MODE_OPTS -Dbootstrap_confdir=./solr/collection1/conf -Dcollection.configName=myconf"
+    fi
   fi
+    
 fi
 
 # These are useful for attaching remove profilers like VisualVM/JConsole
@@ -723,6 +772,7 @@ $SOLR_HOST_ARG -Djetty.port=$SOLR_PORT \
     # run Solr in the background
     nohup $JAVA $SOLR_START_OPTS $SOLR_ADDL_ARGS -XX:OnOutOfMemoryError="$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT" -jar start.jar 1>$SOLR_TIP/bin/solr-$SOLR_PORT-console.log 2>&1 &
   
+    # no lsof on cygwin though
     echo -n "Waiting to see Solr listening on port $SOLR_PORT"
     # Launch in a subshell to show the spinner
     (loops=0
@@ -745,7 +795,6 @@ $SOLR_HOST_ARG -Djetty.port=$SOLR_PORT \
       fi
     done) &
     spinner $!
-        
   fi
 }
 
@@ -760,14 +809,9 @@ else
   SOLR_PORT=${CLOUD_PORTS[0]}
   echo -e "\nStarting up SolrCloud node1 on port ${CLOUD_PORTS[0]} using command:\n"
   echo -e "solr start -cloud -d node1 -p $SOLR_PORT \n\n"
-  
-  if $isLegacyExampleDir ; then
-    # have to pass these when working with the legacy example directory
-    BOOTSTRAP_ARGS="-Dbootstrap_confdir=./solr/collection1/conf -Dcollection.configName=myconf"
-  fi
-  
+    
   # can't launch this node in the foreground else we can't run anymore commands
-  launch_solr "false" "$BOOTSTRAP_ARGS"
+  launch_solr "false" ""
   
   zk_port=$[$SOLR_PORT+1000]  
   zk_host=localhost:$zk_port
@@ -784,20 +828,20 @@ else
   
   # TODO: better (shorter) name??
   CLOUD_COLLECTION=gettingstarted
-
-  # if the new default config directory is available, then use it, 
-  # otherwise, use the schema-less example
-  if [ -d "$SOLR_TIP/server/solr/default_conf" ]; then
-    CLOUD_CONFIG_DIR=$SOLR_TIP/server/solr/default_conf
-  else
-    CLOUD_CONFIG_DIR=$SOLR_TIP/example/example-schemaless/solr/collection1/conf
-  fi
-  
-  CLOUD_CONFIG=schemaless
-  
+    
   if $noprompt ; then
     CLOUD_NUM_SHARDS=2
-    CLOUD_REPFACT=2  
+    CLOUD_REPFACT=2
+    # if the new default config directory is available, then use it, 
+    # otherwise, use the legacy collection1 example
+    # TODO: this will need to change when SOLR-3619 is resolved
+    if [ -d "$SOLR_TIP/server/solr/configsets/schemaless" ]; then
+      CLOUD_CONFIG_DIR=$SOLR_TIP/server/solr/configsets/schemaless
+      CLOUD_CONFIG=schemaless
+    else
+      CLOUD_CONFIG_DIR=$SOLR_TIP/example/solr/collection1/conf
+      CLOUD_CONFIG=default
+    fi        
   else
     echo -e "\nNow let's create a new collection for indexing documents in your $CLOUD_NUM_NODES-node cluster.\n"
     read -e -p "Please provide a name for your new collection: [gettingstarted] " USER_INPUT
@@ -810,6 +854,7 @@ else
     fi                    
     echo $CLOUD_COLLECTION
 
+    USER_INPUT=
     read -e -p "How many shards would you like to split $CLOUD_COLLECTION into? [2] " USER_INPUT
     # trim whitespace out of the user input
     CLOUD_NUM_SHARDS=`echo $USER_INPUT | tr -d ' '`
@@ -820,6 +865,7 @@ else
     fi                    
     echo $CLOUD_NUM_SHARDS
     
+    USER_INPUT=
     read -e -p "How many replicas per shard would you like to create? [2] " USER_INPUT
     # trim whitespace out of the user input
     CLOUD_REPFACT=`echo $USER_INPUT | tr -d ' '`
@@ -830,8 +876,28 @@ else
     fi                    
     echo $CLOUD_REPFACT
     
+    USER_INPUT=
+    read -e -p "Please choose a configuration for the $CLOUD_COLLECTION collection, available options are: default or schemaless [default] " USER_INPUT
+    # trim whitespace out of the user input
+    CLOUD_CONFIG=`echo $USER_INPUT | tr -d ' '`
+
+    # handle the default selection or empty input
+    if [ "$CLOUD_CONFIG" == "" ]; then
+      CLOUD_CONFIG=default
+    fi                    
+    echo $CLOUD_CONFIG
+    
+    if [ "$CLOUD_CONFIG" == "schemaless" ]; then
+      if [ -d "$SOLR_TIP/server/solr/configsets/schemaless" ]; then
+        CLOUD_CONFIG_DIR=$SOLR_TIP/server/solr/configsets/schemaless
+      else
+        CLOUD_CONFIG_DIR=$SOLR_TIP/example/example-schemaless/solr/collection1/conf
+      fi        
+    else
+      CLOUD_CONFIG_DIR=$SOLR_TIP/example/solr/collection1/conf
+    fi    
   fi
- 
+   
   echo -e "\nDeploying default Solr configuration files to embedded ZooKeeper using command:\n" 
   echo -e "$DEFAULT_SERVER_DIR/scripts/cloud-scripts/zkcli.sh -zkhost $zk_host -cmd upconfig -confdir $CLOUD_CONFIG_DIR -confname $CLOUD_CONFIG\n"
   # upload the config directory to ZooKeeper
@@ -842,7 +908,7 @@ else
   $JAVA -Dlog4j.configuration=file:$DEFAULT_SERVER_DIR/scripts/cloud-scripts/log4j.properties \
     -classpath "$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*:$DEFAULT_SERVER_DIR/lib/ext/*" \
     org.apache.solr.cloud.ZkCLI -zkhost $zk_host -cmd upconfig -confdir $CLOUD_CONFIG_DIR -confname $CLOUD_CONFIG > /dev/null 2>&1
-  echo -e "Successfully deployed $CLOUD_CONFIG to ZooKeeper\n"
+  echo -e "Successfully deployed the $CLOUD_CONFIG_DIR configuration directory to ZooKeeper as $CLOUD_CONFIG\n"
 
   # note use of ceiling logic in case of remainder
   MAX_SHARDS_PER_NODE=$((($CLOUD_NUM_SHARDS*$CLOUD_REPFACT+$CLOUD_NUM_NODES-1)/$CLOUD_NUM_NODES))
@@ -850,9 +916,8 @@ else
   COLLECTIONS_API=http://localhost:$SOLR_PORT/solr/admin/collections
   
   CLOUD_CREATE_COLLECTION_CMD="$COLLECTIONS_API?action=CREATE&name=$CLOUD_COLLECTION&replicationFactor=$CLOUD_REPFACT&numShards=$CLOUD_NUM_SHARDS&collection.configName=$CLOUD_CONFIG&maxShardsPerNode=$MAX_SHARDS_PER_NODE&wt=json&indent=2"
-  echo -e "\n\nCreating new collection $CLOUD_COLLECTION with $CLOUD_NUM_SHARDS shards and replication factor $CLOUD_REPFACT using Collections API command:\n\n$CLOUD_CREATE_COLLECTION_CMD\n\nFor more information about the Collections API, please see: https://cwiki.apache.org/confluence/display/solr/Collections+API\n"  
-  curl "$CLOUD_CREATE_COLLECTION_CMD"
-    
+  echo -e "\n\nCreating new collection $CLOUD_COLLECTION with $CLOUD_NUM_SHARDS shards and replication factor $CLOUD_REPFACT using Collections API command:\n\n$CLOUD_CREATE_COLLECTION_CMD\n\nFor more information about the Collections API, please see: https://cwiki.apache.org/confluence/display/solr/Collections+API\n"
+  curl "$CLOUD_CREATE_COLLECTION_CMD"    
   echo -e "\n\nSolrCloud example running, please visit http://localhost:$SOLR_PORT/solr \n\n"
 fi
 

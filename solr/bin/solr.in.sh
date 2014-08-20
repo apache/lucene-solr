@@ -43,8 +43,11 @@ GC_TUNE="-XX:-UseSuperWord \
 -XX:+ParallelRefProcEnabled \
 -XX:+AggressiveOpts"
 
+# Mac OSX and Cygwin don't seem to like the UseLargePages flag
 thisOs=`uname -s`
-if [ "$thisOs" != "Darwin" ]; then
+# for now, we don't support running this script from cygwin due to problems
+# like not having lsof, ps waux, curl, and awkward directory handling
+if [[ "$thisOs" != "Darwin" && "${thisOs:0:6}" != "CYGWIN" ]]; then
   # UseLargePages flag causes JVM crash on Mac OSX
   GC_TUNE="$GC_TUNE -XX:+UseLargePages"
 fi

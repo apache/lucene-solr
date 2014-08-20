@@ -207,6 +207,14 @@ SHIFT
 goto parse_args
 
 :set_server_dir
+
+set "arg=%2"
+set firstChar=%arg:~0,1%
+IF "%firstChar%"=="-" (
+  set SCRIPT_ERROR=%2 is not a valid directory!
+  goto invalid_cmd_line
+)
+
 REM See if they are using a short-hand name relative from the Solr tip directory
 IF EXIST "%SOLR_TIP%\%2" (
   set "SOLR_SERVER_DIR=%SOLR_TIP%\%2"
@@ -218,12 +226,28 @@ SHIFT
 goto parse_args
 
 :set_example
+
+set "arg=%2"
+set firstChar=%arg:~0,1%
+IF "%firstChar%"=="-" (
+  set SCRIPT_ERROR=%2 is not a valid example!
+  goto invalid_cmd_line
+)
+
 set EXAMPLE=%2
 SHIFT
 SHIFT
 goto parse_args
 
 :set_memory
+
+set "arg=%2"
+set firstChar=%arg:~0,1%
+IF "%firstChar%"=="-" (
+  set SCRIPT_ERROR=%2 is not a valid memory setting!
+  goto invalid_cmd_line
+)
+
 set SOLR_HEAP=%2
 @echo SOLR_HEAP=%SOLR_HEAP%
 SHIFT
@@ -231,18 +255,40 @@ SHIFT
 goto parse_args
 
 :set_host
+set "arg=%2"
+set firstChar=%arg:~0,1%
+IF "%firstChar%"=="-" (
+  set SCRIPT_ERROR=%2 is not a valid hostname!
+  goto invalid_cmd_line
+)
+
 set SOLR_HOST=%2
 SHIFT
 SHIFT
 goto parse_args
 
 :set_port
+set "arg=%2"
+set firstChar=%arg:~0,1%
+IF "%firstChar%"=="-" (
+  set SCRIPT_ERROR=%2 is not a valid port!
+  goto invalid_cmd_line
+)
+
 set SOLR_PORT=%2
 SHIFT
 SHIFT
 goto parse_args
 
 :set_zookeeper
+
+set "arg=%2"
+set firstChar=%arg:~0,1%
+IF "%firstChar%"=="-" (
+  set SCRIPT_ERROR=%2 is not a valid ZooKeeper connection string!
+  goto invalid_cmd_line
+)
+
 set "ZK_HOST=%2"
 SHIFT
 SHIFT
@@ -272,7 +318,7 @@ REM TODO: Change this to "server" when we resolve SOLR-3619
 IF "%SOLR_SERVER_DIR%"=="" set SOLR_SERVER_DIR=%DEFAULT_SERVER_DIR%
 
 IF NOT EXIST "%SOLR_SERVER_DIR%" (
-  set SCRIPT_ERROR='Solr server directory %SOLR_SERVER_DIR% not found!'
+  set SCRIPT_ERROR=Solr server directory %SOLR_SERVER_DIR% not found!
   goto err
 )
 
@@ -348,16 +394,17 @@ REM if verbose gc logging enabled, setup the location of the log file
 IF NOT "%GC_LOG_OPTS%"=="" set GC_LOG_OPTS=%GC_LOG_OPTS% -Xloggc:"%SOLR_SERVER_DIR%/logs/solr_gc.log"
 
 IF "%SOLR_MODE%"=="solrcloud" (
-  IF "%ZK_CLIENT_TIMEOUT%"=="" set ZK_CLIENT_TIMEOUT=15000
+  IF "%ZK_CLIENT_TIMEOUT%"=="" set "ZK_CLIENT_TIMEOUT=15000"
 
-  set CLOUD_MODE_OPTS=-DzkClientTimeout=%ZK_CLIENT_TIMEOUT%
+  set "CLOUD_MODE_OPTS=-DzkClientTimeout=!ZK_CLIENT_TIMEOUT!"
 
   IF NOT "%ZK_HOST%"=="" (
-    set "CLOUD_MODE_OPTS=%CLOUD_MODE_OPTS% -DzkHost=%ZK_HOST%"
+    set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DzkHost=%ZK_HOST%"
   ) ELSE (
-    IF "%verbose%"=="1" echo 'Configuring SolrCloud to launch an embedded ZooKeeper using -DzkRun'
-    set "CLOUD_MODE_OPTS=%CLOUD_MODE_OPTS% -DzkRun"
-  )
+    IF "%verbose%"=="1" echo Configuring SolrCloud to launch an embedded ZooKeeper using -DzkRun
+    set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DzkRun"
+    IF EXIST "%SOLR_HOME%\collection1\core.properties" set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -Dbootstrap_confdir=./solr/collection1/conf -Dcollection.configName=myconf"
+  )  
 ) ELSE (
   set CLOUD_MODE_OPTS=
 )
@@ -397,12 +444,12 @@ IF "%verbose%"=="1" (
 
 set START_OPTS=-Duser.timezone=%SOLR_TIMEZONE% -Djava.net.preferIPv4Stack=true -Dsolr.autoSoftCommit.maxTime=3000
 set START_OPTS=%START_OPTS% %GC_TUNE% %GC_LOG_OPTS%
-IF NOT "%CLOUD_MODE_OPTS%"=="" set START_OPTS=%START_OPTS% %CLOUD_MODE_OPTS%
+IF NOT "!CLOUD_MODE_OPTS!"=="" set START_OPTS=%START_OPTS% !CLOUD_MODE_OPTS!
 IF NOT "%REMOTE_JMX_OPTS%"=="" set START_OPTS=%START_OPTS% %REMOTE_JMX_OPTS%
 IF NOT "%SOLR_ADDL_ARGS%"=="" set START_OPTS=%START_OPTS% %SOLR_ADDL_ARGS%
 IF NOT "%SOLR_HOST_ARG%"=="" set START_OPTS=%START_OPTS% %SOLR_HOST_ARG%
 
-cd %SOLR_SERVER_DIR%
+cd "%SOLR_SERVER_DIR%"
 @echo.
 @echo Starting Solr on port %SOLR_PORT% from %SOLR_SERVER_DIR%
 @echo.    
@@ -411,7 +458,7 @@ IF "%FG%"=="1" (
   "%JAVA%" -server -Xss256k %SOLR_JAVA_MEM% %START_OPTS% -DSTOP.PORT=%STOP_PORT% -DSTOP.KEY=%STOP_KEY% ^
     -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -jar start.jar
 ) ELSE (
-  START %JAVA% -server -Xss256k %SOLR_JAVA_MEM% %START_OPTS% -DSTOP.PORT=%STOP_PORT% -DSTOP.KEY=%STOP_KEY% ^
+  START "" "%JAVA%" -server -Xss256k %SOLR_JAVA_MEM% %START_OPTS% -DSTOP.PORT=%STOP_PORT% -DSTOP.KEY=%STOP_KEY% ^
     -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -jar start.jar > "%SOLR_TIP%\bin\solr-%SOLR_PORT%-console.log"
 )
 
@@ -482,12 +529,12 @@ for /l %%x in (1, 1, !CLOUD_NUM_NODES!) do (
   
   IF %%x EQU 1 (  
     set EXAMPLE=
-    START %SDIR%\solr -f -c -p !NODE_PORT! -d node1
+    START "" "%SDIR%\solr" -f -c -p !NODE_PORT! -d node1
     set NODE1_PORT=!NODE_PORT!
   ) ELSE (
     set /A ZK_PORT=!NODE1_PORT!+1000
     set "ZK_HOST=localhost:!ZK_PORT!"
-    START %SDIR%\solr -f -c -p !NODE_PORT! -d node%%x -z !ZK_HOST!    
+    START "" "%SDIR%\solr" -f -c -p !NODE_PORT! -d node%%x -z !ZK_HOST!    
   )
 
   timeout /T 10
@@ -500,6 +547,8 @@ IF "%NO_USER_PROMPT%"=="1" (
   set CLOUD_COLLECTION=gettingstarted
   set CLOUD_NUM_SHARDS=2
   set CLOUD_REPFACT=2
+  set CLOUD_CONFIG=default
+  set "CLOUD_CONFIG_DIR=%SOLR_TIP%\example\solr\collection1\conf"
   goto create_collection
 ) ELSE (
   goto get_create_collection_params
@@ -522,25 +571,35 @@ set /P "USER_INPUT=How many replicas per shard would you like to create? [2] "
 IF "!USER_INPUT!"=="" set USER_INPUT=2
 set CLOUD_REPFACT=!USER_INPUT!
 echo !CLOUD_REPFACT!
+set USER_INPUT=
+echo.
+set /P "USER_INPUT=Please choose a configuration for the !CLOUD_COLLECTION! collection, available options are: default or schemaless [default] "
+IF "!USER_INPUT!"=="" set USER_INPUT=default
+set CLOUD_CONFIG=!USER_INPUT!
+echo !CLOUD_CONFIG!
+
+IF "!CLOUD_CONFIG!"=="schemaless" (
+  IF EXIST "%SOLR_TIP%\server\solr\configsets\schemaless" set "CLOUD_CONFIG_DIR=%SOLR_TIP%\server\solr\configsets\schemaless"
+  IF NOT EXIST "%SOLR_TIP%\server\solr\configsets\schemaless" set "CLOUD_CONFIG_DIR=%SOLR_TIP%\example\example-schemaless\solr\collection1\conf"
+) ELSE (
+  set "CLOUD_CONFIG_DIR=%SOLR_TIP%\example\solr\collection1\conf"
+)
+
 goto create_collection
 
 :create_collection
 set /A MAX_SHARDS_PER_NODE=((!CLOUD_NUM_SHARDS!*!CLOUD_REPFACT!)/!CLOUD_NUM_NODES!)+1
-
-IF EXIST "%SOLR_TIP%\server\solr\default_conf" set "CLOUD_CONFIG_DIR=%SOLR_TIP%\server\solr\default_conf"
-IF NOT EXIST "%SOLR_TIP%\server\solr\default_conf" set "CLOUD_CONFIG_DIR=%SOLR_TIP%\example\example-schemaless\solr\collection1\conf"
-set CLOUD_CONFIG=schemaless
 
 echo.
 echo Deploying default Solr configuration files to embedded ZooKeeper
 echo.
 "%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cloud.ZkCLI -zkhost %zk_host% -cmd upconfig -confdir "%CLOUD_CONFIG_DIR%" -confname %CLOUD_CONFIG%
+  org.apache.solr.cloud.ZkCLI -zkhost %zk_host% -cmd upconfig -confdir "!CLOUD_CONFIG_DIR!" -confname !CLOUD_CONFIG!
 
 set COLLECTIONS_API=http://localhost:!NODE1_PORT!/solr/admin/collections
 
-set "CLOUD_CREATE_COLLECTION_CMD=%COLLECTIONS_API%?action=CREATE&name=%CLOUD_COLLECTION%&replicationFactor=%CLOUD_REPFACT%&numShards=%CLOUD_NUM_SHARDS%&collection.configName=%CLOUD_CONFIG%&maxShardsPerNode=%MAX_SHARDS_PER_NODE%&wt=json&indent=2"
+set "CLOUD_CREATE_COLLECTION_CMD=%COLLECTIONS_API%?action=CREATE&name=%CLOUD_COLLECTION%&replicationFactor=%CLOUD_REPFACT%&numShards=%CLOUD_NUM_SHARDS%&collection.configName=!CLOUD_CONFIG!&maxShardsPerNode=%MAX_SHARDS_PER_NODE%&wt=json&indent=2"
 echo Creating new collection %CLOUD_COLLECTION% with %CLOUD_NUM_SHARDS% shards and replication factor %CLOUD_REPFACT% using Collections API command: 
 echo.
 @echo "%CLOUD_CREATE_COLLECTION_CMD%"
@@ -618,7 +677,11 @@ goto done
 
 :invalid_cmd_line
 @echo.
-@echo Invalid command-line option: %1
+IF "!SCRIPT_ERROR!"=="" (
+  @echo Invalid command-line option: %1
+) ELSE (
+  @echo ERROR: !SCRIPT_ERROR!
+)
 @echo.
 IF "%FIRST_ARG%"=="start" (
   goto start_usage
@@ -644,7 +707,7 @@ goto done
 
 :err
 @echo.
-@echo %SCRIPT_ERROR%
+@echo ERROR: !SCRIPT_ERROR!
 @echo.
 exit /b 1
 
