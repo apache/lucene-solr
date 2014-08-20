@@ -296,6 +296,8 @@ Bug Fixes
 
 * SOLR-6378: Fixed example/example-DIH/ issues with "tika" and "solr" configurations, and tidied up README.txt
   (Daniel Shchyokin via ehatcher)
+  
+* SOLR-6393: TransactionLog replay performance on HDFS is very poor. (Mark Miller)  
 
 Optimizations
 ---------------------

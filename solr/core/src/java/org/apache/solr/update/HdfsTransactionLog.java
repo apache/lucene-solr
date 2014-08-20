@@ -341,12 +341,14 @@ public class HdfsTransactionLog extends TransactionLog {
   public class HDFSLogReader extends LogReader{
     FSDataFastInputStream fis;
     private LogCodec codec = new LogCodec(resolver);
+    private long sz;
 
     public HDFSLogReader(long startingPos) {
       super();
       incref();
       try {
         FSDataInputStream fdis = fs.open(tlogFile);
+        sz = fs.getFileStatus(tlogFile).getLen();
         fis = new FSDataFastInputStream(fdis, startingPos);
       } catch (IOException e) {
         throw new RuntimeException(e);
@@ -361,7 +363,6 @@ public class HdfsTransactionLog extends TransactionLog {
     public Object next() throws IOException, InterruptedException {
       long pos = fis.position();
 
-
       synchronized (HdfsTransactionLog.this) {
         if (trace) {
           log.trace("Reading log record.  pos="+pos+" currentSize="+fos.size());
@@ -372,18 +373,22 @@ public class HdfsTransactionLog extends TransactionLog {
         }
        
         fos.flushBuffer();
-        tlogOutStream.hflush();
-        
-        // we actually need a new reader
+      }
+      
+      // we actually need a new reader to 
+      // see if any data was added by the writer
+      if (fis.position() >= sz) {
         fis.close();
+        tlogOutStream.hflush();
         try {
           FSDataInputStream fdis = fs.open(tlogFile);
           fis = new FSDataFastInputStream(fdis, pos);
+          sz = fs.getFileStatus(tlogFile).getLen();
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
-        
       }
+      
       if (pos == 0) {
         readHeader(fis);
 
@@ -396,7 +401,6 @@ public class HdfsTransactionLog extends TransactionLog {
         }
       }
 
-      tlogOutStream.hflush();
       Object o = codec.readVal(fis);
 
       // skip over record size
