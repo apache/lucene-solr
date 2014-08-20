@@ -589,6 +589,7 @@ public class TestAutomaton extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("  randomNoOp: skip op=minimize: too many states (" + a.getNumStates() + ")");
         }
+        return a;
       }
     case 2:
       if (VERBOSE) {
