@@ -105,6 +105,8 @@ import org.apache.lucene.util.fst.FST;
 // conflict resolving (eg greedy matching) because that algo
 // finds all matches.  This really amounts to adding a .*
 // closure to the FST and then determinizing it.
+//
+// Another possible solution is described at http://www.cis.uni-muenchen.de/people/Schulz/Pub/dictle5.ps
 
 public final class SynonymFilter extends TokenFilter {
 
