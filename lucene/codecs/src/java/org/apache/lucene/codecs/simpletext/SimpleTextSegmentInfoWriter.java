@@ -48,6 +48,7 @@ public class SimpleTextSegmentInfoWriter extends SegmentInfoWriter {
   final static BytesRef SI_DIAG_VALUE       = new BytesRef("      value ");
   final static BytesRef SI_NUM_FILES        = new BytesRef("    files ");
   final static BytesRef SI_FILE             = new BytesRef("      file ");
+  final static BytesRef SI_ID               = new BytesRef("    id ");
   
   @Override
   public void write(Directory dir, SegmentInfo si, FieldInfos fis, IOContext ioContext) throws IOException {
@@ -104,6 +105,10 @@ public class SimpleTextSegmentInfoWriter extends SegmentInfoWriter {
           SimpleTextUtil.writeNewline(output);
         }
       }
+
+      SimpleTextUtil.write(output, SI_ID);
+      SimpleTextUtil.write(output, si.getId(), scratch);
+      SimpleTextUtil.writeNewline(output);
       
       SimpleTextUtil.writeChecksum(output, scratch);
       success = true;

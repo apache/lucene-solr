@@ -98,6 +98,11 @@ Other
 ======================= Lucene 4.11.0 ======================
 (No Changes)
 
+New Features
+
+* LUCENE-5895: Lucene now stores a unique id per-segment and per-commit to aid
+  in accurate replication of index files (Robert Muir, Mike McCandless)
+
 ======================= Lucene 4.10.0 ======================
 
 New Features

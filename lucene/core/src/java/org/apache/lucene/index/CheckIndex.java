@@ -484,7 +484,7 @@ public class CheckIndex {
     }
 
     msg(infoStream, "Segments file=" + segmentsFileName + " numSegments=" + numSegments
-        + " " + versionString + " format=" + sFormat + userDataString);
+        + " " + versionString + " id=" + sis.getId() + " format=" + sFormat + userDataString);
 
     if (onlySegments != null) {
       result.partial = true;
@@ -535,6 +535,7 @@ public class CheckIndex {
 
       try {
         msg(infoStream, "    version=" + (version == null ? "3.0" : version));
+        msg(infoStream, "    id=" + info.info.getId());
         final Codec codec = info.info.getCodec();
         msg(infoStream, "    codec=" + codec);
         segInfoStat.codec = codec;

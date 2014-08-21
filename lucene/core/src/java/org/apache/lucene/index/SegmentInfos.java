@@ -27,8 +27,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.codecs.Codec;
@@ -43,6 +43,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.NoSuchDirectoryException;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.StringHelper;
 
 /**
  * A collection of segmentInfo objects with methods for operating on those
@@ -137,6 +138,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   /** The file format version for the segments_N codec header, since 4.9+ */
   public static final int VERSION_49 = 3;
 
+  /** The file format version for the segments_N codec header, since 4.10+ */
+  public static final int VERSION_410 = 4;
+
   // Used for the segments.gen file only!
   // Whenever you add a new format, make it 1 smaller (negative version logic)!
   private static final int FORMAT_SEGMENTS_GEN_47 = -2;
@@ -166,6 +170,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
    * will be printed here.  @see #setInfoStream.
    */
   private static PrintStream infoStream = null;
+
+  /** Id for this commit; only written starting with Lucene 4.10 */
+  private String id;
 
   /** Sole constructor. Typically you call this and then
    *  use {@link #read(Directory) or
@@ -317,6 +324,12 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
                                                  nextGeneration);
   }
 
+  /** Since Lucene 4.10, every commit (segments_N) writes a unique id.  This will
+   *  return that id, or null if this commit was pre-4.10. */
+  public String getId() {
+    return id;
+  }
+
   /**
    * Read a particular segmentFileName.  Note that this may
    * throw an IOException if a commit is in process.
@@ -345,7 +358,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         throw new IndexFormatTooOldException(input, magic, CodecUtil.CODEC_MAGIC, CodecUtil.CODEC_MAGIC);
       }
       // 4.0+
-      int format = CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_40, VERSION_49);
+      int format = CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_40, VERSION_410);
       version = input.readLong();
       counter = input.readInt();
       int numSegments = input.readInt();
@@ -410,6 +423,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         add(siPerCommit);
       }
       userData = input.readStringStringMap();
+      if (format >= VERSION_410) {
+        id = input.readString();
+      }
 
       if (format >= VERSION_48) {
         CodecUtil.checkFooter(input);
@@ -470,7 +486,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
 
     try {
       segnOutput = directory.createOutput(segmentFileName, IOContext.DEFAULT);
-      CodecUtil.writeHeader(segnOutput, "segments", VERSION_49);
+      CodecUtil.writeHeader(segnOutput, "segments", VERSION_410);
       segnOutput.writeLong(version); 
       segnOutput.writeInt(counter); // write counter
       segnOutput.writeInt(size()); // write infos
@@ -496,6 +512,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         assert si.dir == directory;
       }
       segnOutput.writeStringStringMap(userData);
+      segnOutput.writeString(StringHelper.randomId());
       pendingSegnOutput = segnOutput;
       success = true;
     } finally {

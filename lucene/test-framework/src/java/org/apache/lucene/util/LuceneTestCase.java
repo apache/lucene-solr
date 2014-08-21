@@ -55,6 +55,9 @@ import java.util.logging.Logger;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.SegmentInfoFormat;
+import org.apache.lucene.codecs.lucene46.Lucene46SegmentInfoFormat;
+import org.apache.lucene.codecs.simpletext.SimpleTextSegmentInfoFormat;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -1734,6 +1737,12 @@ public abstract class LuceneTestCase extends Assert {
       return false;
     }
     return true;
+  }
+
+  /** Returns true if the codec "supports" writing segment and commit ids. */
+  public static boolean defaultCodecSupportsSegmentIds() {
+    SegmentInfoFormat siFormat = Codec.getDefault().segmentInfoFormat();
+    return siFormat instanceof SimpleTextSegmentInfoFormat || siFormat instanceof Lucene46SegmentInfoFormat;
   }
 
   public void assertReaderEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
