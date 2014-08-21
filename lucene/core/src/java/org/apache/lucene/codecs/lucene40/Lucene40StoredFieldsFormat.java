@@ -94,6 +94,6 @@ public class Lucene40StoredFieldsFormat extends StoredFieldsFormat {
   @Override
   public StoredFieldsWriter fieldsWriter(Directory directory, SegmentInfo si,
       IOContext context) throws IOException {
-    return new Lucene40StoredFieldsWriter(directory, si.name, context);
+    throw new UnsupportedOperationException("this codec can only be used for reading");
   }
 }

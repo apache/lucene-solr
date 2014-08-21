@@ -37,8 +37,6 @@ import org.apache.lucene.util.RamUsageEstimator;
 import java.io.Closeable;
 import java.nio.charset.StandardCharsets;
 
-import static org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsWriter.*;
-
 /**
  * Class responsible for access to stored document fields.
  * <p/>
@@ -49,6 +47,38 @@ import static org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsWriter.*;
  */
 public final class Lucene40StoredFieldsReader extends StoredFieldsReader implements Cloneable, Closeable {
 
+  // NOTE: bit 0 is free here!  You can steal it!
+  static final int FIELD_IS_BINARY = 1 << 1;
+
+  // the old bit 1 << 2 was compressed, is now left out
+
+  private static final int _NUMERIC_BIT_SHIFT = 3;
+  static final int FIELD_IS_NUMERIC_MASK = 0x07 << _NUMERIC_BIT_SHIFT;
+
+  static final int FIELD_IS_NUMERIC_INT = 1 << _NUMERIC_BIT_SHIFT;
+  static final int FIELD_IS_NUMERIC_LONG = 2 << _NUMERIC_BIT_SHIFT;
+  static final int FIELD_IS_NUMERIC_FLOAT = 3 << _NUMERIC_BIT_SHIFT;
+  static final int FIELD_IS_NUMERIC_DOUBLE = 4 << _NUMERIC_BIT_SHIFT;
+
+  // the next possible bits are: 1 << 6; 1 << 7
+  // currently unused: static final int FIELD_IS_NUMERIC_SHORT = 5 << _NUMERIC_BIT_SHIFT;
+  // currently unused: static final int FIELD_IS_NUMERIC_BYTE = 6 << _NUMERIC_BIT_SHIFT;
+
+  static final String CODEC_NAME_IDX = "Lucene40StoredFieldsIndex";
+  static final String CODEC_NAME_DAT = "Lucene40StoredFieldsData";
+  static final int VERSION_START = 0;
+  static final int VERSION_CURRENT = VERSION_START;
+  static final long HEADER_LENGTH_IDX = CodecUtil.headerLength(CODEC_NAME_IDX);
+  static final long HEADER_LENGTH_DAT = CodecUtil.headerLength(CODEC_NAME_DAT);
+
+
+
+  /** Extension of stored fields file */
+  public static final String FIELDS_EXTENSION = "fdt";
+  
+  /** Extension of stored fields index file */
+  public static final String FIELDS_INDEX_EXTENSION = "fdx";
+  
   private static final long RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(Lucene40StoredFieldsReader.class);
 
   private final FieldInfos fieldInfos;
@@ -222,32 +252,6 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
       final int length = fieldsStream.readVInt();
       fieldsStream.seek(fieldsStream.getFilePointer() + length);
     }
-  }
-
-  /** Returns the length in bytes of each raw document in a
-   *  contiguous range of length numDocs starting with
-   *  startDocID.  Returns the IndexInput (the fieldStream),
-   *  already seeked to the starting point for startDocID.*/
-  public final IndexInput rawDocs(int[] lengths, int startDocID, int numDocs) throws IOException {
-    seekIndex(startDocID);
-    long startOffset = indexStream.readLong();
-    long lastOffset = startOffset;
-    int count = 0;
-    while (count < numDocs) {
-      final long offset;
-      final int docID = startDocID + count + 1;
-      assert docID <= numTotalDocs;
-      if (docID < numTotalDocs) 
-        offset = indexStream.readLong();
-      else
-        offset = fieldsStream.length();
-      lengths[count++] = (int) (offset-lastOffset);
-      lastOffset = offset;
-    }
-
-    fieldsStream.seek(startOffset);
-
-    return fieldsStream;
   }
 
   @Override

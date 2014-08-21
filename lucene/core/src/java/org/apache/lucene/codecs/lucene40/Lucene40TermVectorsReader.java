@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.lucene40;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -146,64 +145,9 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
     }
   }
 
-  // Used for bulk copy when merging
-  IndexInput getTvdStream() {
-    return tvd;
-  }
-
-  // Used for bulk copy when merging
-  IndexInput getTvfStream() {
-    return tvf;
-  }
-
   // Not private to avoid synthetic access$NNN methods
   void seekTvx(final int docNum) throws IOException {
     tvx.seek(docNum * 16L + HEADER_LENGTH_INDEX);
-  }
-
-  /** Retrieve the length (in bytes) of the tvd and tvf
-   *  entries for the next numDocs starting with
-   *  startDocID.  This is used for bulk copying when
-   *  merging segments, if the field numbers are
-   *  congruent.  Once this returns, the tvf & tvd streams
-   *  are seeked to the startDocID. */
-  final void rawDocs(int[] tvdLengths, int[] tvfLengths, int startDocID, int numDocs) throws IOException {
-
-    if (tvx == null) {
-      Arrays.fill(tvdLengths, 0);
-      Arrays.fill(tvfLengths, 0);
-      return;
-    }
-
-    seekTvx(startDocID);
-
-    long tvdPosition = tvx.readLong();
-    tvd.seek(tvdPosition);
-
-    long tvfPosition = tvx.readLong();
-    tvf.seek(tvfPosition);
-
-    long lastTvdPosition = tvdPosition;
-    long lastTvfPosition = tvfPosition;
-
-    int count = 0;
-    while (count < numDocs) {
-      final int docID = startDocID + count + 1;
-      assert docID <= numTotalDocs;
-      if (docID < numTotalDocs)  {
-        tvdPosition = tvx.readLong();
-        tvfPosition = tvx.readLong();
-      } else {
-        tvdPosition = tvd.length();
-        tvfPosition = tvf.length();
-        assert count == numDocs-1;
-      }
-      tvdLengths[count] = (int) (tvdPosition-lastTvdPosition);
-      tvfLengths[count] = (int) (tvfPosition-lastTvfPosition);
-      count++;
-      lastTvdPosition = tvdPosition;
-      lastTvfPosition = tvfPosition;
-    }
   }
 
   @Override

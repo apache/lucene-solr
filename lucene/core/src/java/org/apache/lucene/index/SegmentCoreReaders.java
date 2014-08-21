@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
@@ -56,7 +57,7 @@ final class SegmentCoreReaders implements Accountable {
   private final AtomicInteger ref = new AtomicInteger(1);
   
   final FieldsProducer fields;
-  final DocValuesProducer normsProducer;
+  final NormsProducer normsProducer;
 
   final StoredFieldsReader fieldsReaderOrig;
   final TermVectorsReader termVectorsReaderOrig;
@@ -166,7 +167,7 @@ final class SegmentCoreReaders implements Accountable {
         return null;
       }
       assert normsProducer != null;
-      norms = normsProducer.getNumeric(fi);
+      norms = normsProducer.getNorms(fi);
       normFields.put(field, norms);
       return norms;
     }

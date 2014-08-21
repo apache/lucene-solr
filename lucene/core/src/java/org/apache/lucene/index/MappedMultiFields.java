@@ -27,11 +27,14 @@ import static org.apache.lucene.index.FilterAtomicReader.FilterTermsEnum;
 
 /** A {@link Fields} implementation that merges multiple
  *  Fields into one, and maps around deleted documents.
- *  This is used for merging. */
-
-class MappedMultiFields extends FilterFields {
+ *  This is used for merging. 
+ *  @lucene.internal
+ */
+public class MappedMultiFields extends FilterFields {
   final MergeState mergeState;
 
+  /** Create a new MappedMultiFields for merging, based on the supplied
+   * mergestate and merged view of terms. */
   public MappedMultiFields(MergeState mergeState, MultiFields multiFields) {
     super(multiFields);
     this.mergeState = mergeState;

@@ -20,9 +20,10 @@ package org.apache.lucene.codecs.cranky;
 import java.io.IOException;
 import java.util.Random;
 
-import org.apache.lucene.codecs.DocValuesConsumer;
-import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.NormsProducer;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
@@ -36,15 +37,41 @@ class CrankyNormsFormat extends NormsFormat {
   }
 
   @Override
-  public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
+  public NormsConsumer normsConsumer(SegmentWriteState state) throws IOException {
     if (random.nextInt(100) == 0) {
-      throw new IOException("Fake IOException from NormsFormat.fieldsConsumer()");
+      throw new IOException("Fake IOException from NormsFormat.normsConsumer()");
     }
-    return new CrankyDocValuesFormat.CrankyDocValuesConsumer(delegate.normsConsumer(state), random);
+    return new CrankyNormsConsumer(delegate.normsConsumer(state), random);
   }
 
   @Override
-  public DocValuesProducer normsProducer(SegmentReadState state) throws IOException {
+  public NormsProducer normsProducer(SegmentReadState state) throws IOException {
     return delegate.normsProducer(state);
+  }
+  
+  static class CrankyNormsConsumer extends NormsConsumer {
+    final NormsConsumer delegate;
+    final Random random;
+    
+    CrankyNormsConsumer(NormsConsumer delegate, Random random) {
+      this.delegate = delegate;
+      this.random = random;
+    }
+    
+    @Override
+    public void close() throws IOException {
+      delegate.close();
+      if (random.nextInt(100) == 0) {
+        throw new IOException("Fake IOException from NormsConsumer.close()");
+      }
+    }
+
+    @Override
+    public void addNormsField(FieldInfo field, Iterable<Number> values) throws IOException {
+      if (random.nextInt(100) == 0) {
+        throw new IOException("Fake IOException from NormsConsumer.addNormsField()");
+      }
+      delegate.addNormsField(field, values);
+    }
   }
 }

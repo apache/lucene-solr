@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene42;
+package org.apache.lucene.codecs.lucene40;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,21 +19,23 @@ package org.apache.lucene.codecs.lucene42;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.NormsConsumer;
-import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.codecs.StoredFieldsWriter;
+import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.LuceneTestCase;
 
-/**
- * Read-write version of {@link Lucene42NormsFormat}
- */
-public class Lucene42RWNormsFormat extends Lucene42NormsFormat {
+/** 
+ * Simulates writing Lucene 4.0 Stored Fields Format.
+ */ 
+public class Lucene40RWStoredFieldsFormat extends Lucene40StoredFieldsFormat {
 
   @Override
-  public NormsConsumer normsConsumer(SegmentWriteState state) throws IOException {
-    if (LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
-      return new Lucene42NormsConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION, acceptableOverheadRatio);
+  public StoredFieldsWriter fieldsWriter(Directory directory, SegmentInfo si, IOContext context) throws IOException {
+    if (!LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
+      throw new UnsupportedOperationException("this codec can only be used for reading");
     } else {
-      return super.normsConsumer(state);
+      return new Lucene40StoredFieldsWriter(directory, si.name, context);
     }
   }
 }

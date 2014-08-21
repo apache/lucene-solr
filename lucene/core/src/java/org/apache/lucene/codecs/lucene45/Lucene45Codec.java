@@ -20,11 +20,11 @@ package org.apache.lucene.codecs.lucene45;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.LiveDocsFormat;
+import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
@@ -140,7 +140,7 @@ public class Lucene45Codec extends Codec {
 
   private final NormsFormat normsFormat = new Lucene42NormsFormat() {
     @Override
-    public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
+    public NormsConsumer normsConsumer(SegmentWriteState state) throws IOException {
       throw new UnsupportedOperationException("this codec can only be used for reading");
     }
   };

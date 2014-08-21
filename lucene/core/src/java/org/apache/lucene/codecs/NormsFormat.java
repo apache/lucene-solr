@@ -31,12 +31,12 @@ public abstract class NormsFormat {
   protected NormsFormat() {
   }
 
-  /** Returns a {@link DocValuesConsumer} to write norms to the
+  /** Returns a {@link NormsConsumer} to write norms to the
    *  index. */
-  public abstract DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException;
+  public abstract NormsConsumer normsConsumer(SegmentWriteState state) throws IOException;
 
   /** 
-   * Returns a {@link DocValuesProducer} to read norms from the index. 
+   * Returns a {@link NormsProducer} to read norms from the index. 
    * <p>
    * NOTE: by the time this call returns, it must hold open any files it will 
    * need to use; else, those files may be deleted. Additionally, required files 
@@ -45,5 +45,5 @@ public abstract class NormsFormat {
    * the implementation. IOExceptions are expected and will automatically cause 
    * a retry of the segment opening logic with the newly revised segments.
    */
-  public abstract DocValuesProducer normsProducer(SegmentReadState state) throws IOException;
+  public abstract NormsProducer normsProducer(SegmentReadState state) throws IOException;
 }

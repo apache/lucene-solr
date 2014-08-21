@@ -730,8 +730,10 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
     int docCount = 0;
     int idx = 0;
 
+    MatchingReaders matching = new MatchingReaders(mergeState);
+    
     for (AtomicReader reader : mergeState.readers) {
-      final SegmentReader matchingSegmentReader = mergeState.matchingSegmentReaders[idx++];
+      final SegmentReader matchingSegmentReader = matching.matchingSegmentReaders[idx++];
       CompressingTermVectorsReader matchingVectorsReader = null;
       if (matchingSegmentReader != null) {
         final TermVectorsReader vectorsReader = matchingSegmentReader.getTermVectorsReader();

@@ -156,17 +156,6 @@ public class MergeState {
    * @lucene.internal */
   public int checkAbortCount;
 
-  // TODO: get rid of this? it tells you which segments are 'aligned' (e.g. for bulk merging)
-  // but is this really so expensive to compute again in different components, versus once in SM?
-
-  /** {@link SegmentReader}s that have identical field
-   * name/number mapping, so their stored fields and term
-   * vectors may be bulk merged. */
-  public SegmentReader[] matchingSegmentReaders;
-
-  /** How many {@link #matchingSegmentReaders} are set. */
-  public int matchedCount;
-
   /** Sole constructor. */
   MergeState(List<AtomicReader> readers, SegmentInfo segmentInfo, InfoStream infoStream, CheckAbort checkAbort) {
     this.readers = readers;
