@@ -38,6 +38,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
+import org.apache.zookeeper.KeeperException.SessionExpiredException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -251,6 +252,8 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
             ZkNodeProps.load(data));
         return leaderProps.getCoreUrl();
       } catch (NoNodeException e) {
+        Thread.sleep(500);
+      } catch (SessionExpiredException e) {
         Thread.sleep(500);
       }
     }
@@ -482,8 +485,11 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
             int j;
             j = random().nextInt(threads.size());
             try {
-              threads.get(j).es.zkClient.getSolrZooKeeper().pauseCnxn(
-                  ZkTestServer.TICK_TIME * 2);
+              threads.get(j).es.zkClient.getSolrZooKeeper().closeCnxn();
+              if (random().nextBoolean()) {
+                long sessionId = zkClient.getSolrZooKeeper().getSessionId();
+                server.expire(sessionId);
+              }
             } catch (Exception e) {
               e.printStackTrace();
             }

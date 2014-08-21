@@ -98,7 +98,24 @@ Other Changes
   command and DataImportHandler responses. (ehatcher)
 
 ==================  4.11.0 =================
-(No Changes)
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
+
+Versions of Major Components
+---------------------
+Apache Tika 1.5 (with upgraded Apache POI 3.10.1)
+Carrot2 3.9.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+
+Detailed Change List
+----------------------
+
+Other Changes
+---------------------
+
+* SOLR-6400: SolrCloud tests are not properly testing session expiration. (Mark Miller)
 
 ==================  4.10.0 =================
 
