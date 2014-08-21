@@ -81,7 +81,6 @@
       <fileset dir="${validate.currDir}">
         <include name="**/*.java"/>
         <include name="**/*.py"/>
-        <include name="**/*.xml"/>
         <exclude name="**/backwards/**"/>
         <or>
           <containsregexp expression="@author\b" casesensitive="yes"/>
