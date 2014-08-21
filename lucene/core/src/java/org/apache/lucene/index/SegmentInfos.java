@@ -171,7 +171,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
    */
   private static PrintStream infoStream = null;
 
-  /** Id for this commit; only written starting with Lucene 4.10 */
+  /** Id for this commit; only written starting with Lucene 4.11 */
   private String id;
 
   /** Sole constructor. Typically you call this and then
@@ -324,8 +324,8 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
                                                  nextGeneration);
   }
 
-  /** Since Lucene 4.10, every commit (segments_N) writes a unique id.  This will
-   *  return that id, or null if this commit was pre-4.10. */
+  /** Since Lucene 4.11, every commit (segments_N) writes a unique id.  This will
+   *  return that id, or null if this commit was pre-4.11. */
   public String getId() {
     return id;
   }
