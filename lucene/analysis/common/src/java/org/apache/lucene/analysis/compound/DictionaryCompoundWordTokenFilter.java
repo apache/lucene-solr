@@ -18,21 +18,18 @@ package org.apache.lucene.analysis.compound;
  */
 
 
-import java.util.Set;
-
-import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.Version;
 
 /**
- * A {@link TokenFilter} that decomposes compound words found in many Germanic languages.
+ * A {@link org.apache.lucene.analysis.TokenFilter} that decomposes compound words found in many Germanic languages.
  * <p>
  * "Donaudampfschiff" becomes Donau, dampf, schiff so that you can find
- * "Donaudampfschiff" even when you only enter "schiff". 
+ * "Donaudampfschiff" even when you only enter "schiff".
  *  It uses a brute-force algorithm to achieve this.
  * <p>
- * You must specify the required {@link Version} compatibility when creating
+ * You may specify the {@link Version} compatibility when creating
  * CompoundWordTokenFilterBase:
  * <ul>
  * <li>As of 3.1, CompoundWordTokenFilterBase correctly handles Unicode 4.0
@@ -41,37 +38,38 @@ import org.apache.lucene.util.Version;
  * </ul>
  */
 public class DictionaryCompoundWordTokenFilter extends CompoundWordTokenFilterBase {
-  
+
   /**
    * Creates a new {@link DictionaryCompoundWordTokenFilter}
-   * 
-   * @param matchVersion
-   *          Lucene version to enable correct Unicode 4.0 behavior in the
-   *          dictionaries if Version > 3.0. See <a
-   *          href="CompoundWordTokenFilterBase.html#version"
-   *          >CompoundWordTokenFilterBase</a> for details.
+   *
    * @param input
-   *          the {@link TokenStream} to process
+   *          the {@link org.apache.lucene.analysis.TokenStream} to process
    * @param dictionary
    *          the word dictionary to match against.
    */
+  public DictionaryCompoundWordTokenFilter(TokenStream input, CharArraySet dictionary) {
+    super(input, dictionary);
+    if (dictionary == null) {
+      throw new IllegalArgumentException("dictionary cannot be null");
+    }
+  }
+
+  /**
+   * @deprecated Use {@link #DictionaryCompoundWordTokenFilter(TokenStream,CharArraySet)}
+   */
+  @Deprecated
   public DictionaryCompoundWordTokenFilter(Version matchVersion, TokenStream input, CharArraySet dictionary) {
     super(matchVersion, input, dictionary);
     if (dictionary == null) {
       throw new IllegalArgumentException("dictionary cannot be null");
     }
   }
-  
+
   /**
    * Creates a new {@link DictionaryCompoundWordTokenFilter}
-   * 
-   * @param matchVersion
-   *          Lucene version to enable correct Unicode 4.0 behavior in the
-   *          dictionaries if Version > 3.0. See <a
-   *          href="CompoundWordTokenFilterBase.html#version"
-   *          >CompoundWordTokenFilterBase</a> for details.
+   *
    * @param input
-   *          the {@link TokenStream} to process
+   *          the {@link org.apache.lucene.analysis.TokenStream} to process
    * @param dictionary
    *          the word dictionary to match against.
    * @param minWordSize
@@ -83,6 +81,18 @@ public class DictionaryCompoundWordTokenFilter extends CompoundWordTokenFilterBa
    * @param onlyLongestMatch
    *          Add only the longest matching subword to the stream
    */
+  public DictionaryCompoundWordTokenFilter(TokenStream input, CharArraySet dictionary,
+                                           int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
+    super(input, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);
+    if (dictionary == null) {
+      throw new IllegalArgumentException("dictionary cannot be null");
+    }
+  }
+
+  /**
+   * @deprecated Use {@link #DictionaryCompoundWordTokenFilter(TokenStream,CharArraySet,int,int,int,boolean)}
+   */
+  @Deprecated
   public DictionaryCompoundWordTokenFilter(Version matchVersion, TokenStream input, CharArraySet dictionary,
       int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
     super(matchVersion, input, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);

@@ -239,7 +239,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     IndexReader reader = DirectoryReader.open(ramdir);
     IndexSearcher ram = newSearcher(reader);
     IndexSearcher mem = memory.createSearcher();
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "foo", analyzer);
+    QueryParser qp = new QueryParser("foo", analyzer);
     for (String query : queries) {
       TopDocs ramDocs = ram.search(qp.parse(query), 1);
       TopDocs memDocs = mem.search(qp.parse(query), 1);

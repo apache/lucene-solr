@@ -22,12 +22,13 @@ import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.util.Version;
 
 import java.util.Map;
 import java.io.IOException;
 
 /** 
- * Factory for {@link DictionaryCompoundWordTokenFilter}. 
+ * Factory for {@link DictionaryCompoundWordTokenFilter}.
  * <pre class="prettyprint">
  * &lt;fieldType name="text_dictcomp" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -67,8 +68,13 @@ public class DictionaryCompoundWordTokenFilterFactory extends TokenFilterFactory
   @Override
   public TokenStream create(TokenStream input) {
     // if the dictionary is null, it means it was empty
-    return dictionary == null ? input : new DictionaryCompoundWordTokenFilter
-        (luceneMatchVersion, input, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);
+    if (dictionary == null) {
+      return input;
+    }
+    if (luceneMatchVersion.onOrAfter(Version.LUCENE_4_4_0)) {
+      return new DictionaryCompoundWordTokenFilter(input, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);
+    }
+    return new Lucene43DictionaryCompoundWordTokenFilter(input, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);
   }
 }
 

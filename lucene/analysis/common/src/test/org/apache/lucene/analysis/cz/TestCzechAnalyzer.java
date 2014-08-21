@@ -36,12 +36,12 @@ public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
    */
   @Deprecated
   public void testStopWordLegacy() throws Exception {
-    assertAnalyzesTo(new CzechAnalyzer(Version.LUCENE_3_0), "Pokud mluvime o volnem", 
+    assertAnalyzesTo(new CzechAnalyzer(Version.LUCENE_3_0), "Pokud mluvime o volnem",
         new String[] { "mluvime", "volnem" });
   }
   
   public void testStopWord() throws Exception {
-    assertAnalyzesTo(new CzechAnalyzer(TEST_VERSION_CURRENT), "Pokud mluvime o volnem", 
+    assertAnalyzesTo(new CzechAnalyzer(), "Pokud mluvime o volnem", 
         new String[] { "mluvim", "voln" });
   }
   
@@ -56,20 +56,20 @@ public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
   }
   
   public void testReusableTokenStream() throws Exception {
-    Analyzer analyzer = new CzechAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer analyzer = new CzechAnalyzer();
     assertAnalyzesTo(analyzer, "Pokud mluvime o volnem", new String[] { "mluvim", "voln" });
     assertAnalyzesTo(analyzer, "Česká Republika", new String[] { "česk", "republik" });
   }
 
   public void testWithStemExclusionSet() throws IOException{
-    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
+    CharArraySet set = new CharArraySet(1, true);
     set.add("hole");
-    CzechAnalyzer cz = new CzechAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, set);
+    CzechAnalyzer cz = new CzechAnalyzer(CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(cz, "hole desek", new String[] {"hole", "desk"});
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new CzechAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new CzechAnalyzer(), 1000*RANDOM_MULTIPLIER);
   }
 }

@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -50,6 +51,10 @@ public class TypeTokenFilterFactory extends TokenFilterFactory implements Resour
     super(args);
     stopTypesFiles = require(args, "types");
     enablePositionIncrements = getBoolean(args, "enablePositionIncrements", true);
+    if (enablePositionIncrements == false &&
+        (luceneMatchVersion == null || luceneMatchVersion.onOrAfter(Version.LUCENE_4_4_0))) {
+      throw new IllegalArgumentException("enablePositionIncrements=false is not supported anymore as of Lucene 4.4");
+    }
     useWhitelist = getBoolean(args, "useWhitelist", false);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
@@ -78,6 +83,10 @@ public class TypeTokenFilterFactory extends TokenFilterFactory implements Resour
 
   @Override
   public TokenStream create(TokenStream input) {
+    if (luceneMatchVersion == null) {
+      final TokenStream filter = new TypeTokenFilter(input, stopTypes, useWhitelist);
+      return filter;
+    }
     @SuppressWarnings("deprecation")
     final TokenStream filter = new TypeTokenFilter(luceneMatchVersion, enablePositionIncrements, input, stopTypes, useWhitelist);
     return filter;

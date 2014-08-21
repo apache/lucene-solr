@@ -130,7 +130,7 @@ public class TestBrazilianStemmer extends BaseTokenStreamTestCase {
   }
   
   public void testReusableTokenStream() throws Exception {
-    Analyzer a = new BrazilianAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer a = new BrazilianAnalyzer();
     checkReuse(a, "boa", "boa");
     checkReuse(a, "boainain", "boainain");
     checkReuse(a, "boas", "boas");
@@ -138,22 +138,22 @@ public class TestBrazilianStemmer extends BaseTokenStreamTestCase {
   }
  
   public void testStemExclusionTable() throws Exception {
-    BrazilianAnalyzer a = new BrazilianAnalyzer(TEST_VERSION_CURRENT, 
-        CharArraySet.EMPTY_SET, new CharArraySet(TEST_VERSION_CURRENT, asSet("quintessência"), false));
+    BrazilianAnalyzer a = new BrazilianAnalyzer(
+        CharArraySet.EMPTY_SET, new CharArraySet(asSet("quintessência"), false));
     checkReuse(a, "quintessência", "quintessência"); // excluded words will be completely unchanged.
   }
   
   public void testWithKeywordAttribute() throws IOException {
-    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
+    CharArraySet set = new CharArraySet(1, true);
     set.add("Brasília");
     BrazilianStemFilter filter = new BrazilianStemFilter(
-        new SetKeywordMarkerFilter(new LowerCaseTokenizer(TEST_VERSION_CURRENT, new StringReader(
+        new SetKeywordMarkerFilter(new LowerCaseTokenizer(new StringReader(
             "Brasília Brasilia")), set));
     assertTokenStreamContents(filter, new String[] { "brasília", "brasil" });
   }
 
   private void check(final String input, final String expected) throws Exception {
-    checkOneTerm(new BrazilianAnalyzer(TEST_VERSION_CURRENT), input, expected);
+    checkOneTerm(new BrazilianAnalyzer(), input, expected);
   }
   
   private void checkReuse(Analyzer a, String input, String expected) throws Exception {
@@ -162,7 +162,7 @@ public class TestBrazilianStemmer extends BaseTokenStreamTestCase {
 
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new BrazilianAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new BrazilianAnalyzer(), 1000*RANDOM_MULTIPLIER);
   }
   
   public void testEmptyTerm() throws IOException {

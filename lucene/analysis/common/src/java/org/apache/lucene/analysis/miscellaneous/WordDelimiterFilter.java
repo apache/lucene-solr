@@ -206,6 +206,14 @@ public final class WordDelimiterFilter extends TokenFilter {
    * @param configurationFlags Flags configuring the filter
    * @param protWords If not null is the set of tokens to protect from being delimited
    */
+  public WordDelimiterFilter(TokenStream in, byte[] charTypeTable, int configurationFlags, CharArraySet protWords) {
+    this(Version.LATEST, in, charTypeTable, configurationFlags, protWords);
+  }
+
+  /**
+   * @deprecated Use {@link #WordDelimiterFilter(TokenStream, byte[], int, CharArraySet)}
+   */
+  @Deprecated
   public WordDelimiterFilter(Version matchVersion, TokenStream in, byte[] charTypeTable, int configurationFlags, CharArraySet protWords) {
     super(in);
     if (!matchVersion.onOrAfter(Version.LUCENE_4_8)) {
@@ -225,6 +233,14 @@ public final class WordDelimiterFilter extends TokenFilter {
    * @param configurationFlags Flags configuring the filter
    * @param protWords If not null is the set of tokens to protect from being delimited
    */
+  public WordDelimiterFilter(TokenStream in, int configurationFlags, CharArraySet protWords) {
+    this(in, WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, configurationFlags, protWords);
+  }
+
+  /**
+   * @deprecated Use {@link #WordDelimiterFilter(TokenStream, int, CharArraySet)}
+   */
+  @Deprecated
   public WordDelimiterFilter(Version matchVersion, TokenStream in, int configurationFlags, CharArraySet protWords) {
     this(matchVersion, in, WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, configurationFlags, protWords);
   }

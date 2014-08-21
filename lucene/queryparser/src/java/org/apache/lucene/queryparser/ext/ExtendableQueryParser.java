@@ -84,24 +84,26 @@ public class ExtendableQueryParser extends QueryParser {
   /**
    * Creates a new {@link ExtendableQueryParser} instance
    * 
-   * @param matchVersion
-   *          the lucene version to use.
    * @param f
    *          the default query field
    * @param a
    *          the analyzer used to find terms in a query string
    */
-  public ExtendableQueryParser(final Version matchVersion, final String f,
-      final Analyzer a) {
-    this(matchVersion, f, a, DEFAULT_EXTENSION);
+  public ExtendableQueryParser(final String f, final Analyzer a) {
+    this(f, a, DEFAULT_EXTENSION);
+  }
 
+  /**
+   * @deprecated Use {@link #ExtendableQueryParser(String, Analyzer)}
+   */
+  @Deprecated
+  public ExtendableQueryParser(final Version matchVersion, final String f, final Analyzer a) {
+    this(matchVersion, f, a, DEFAULT_EXTENSION);
   }
 
   /**
    * Creates a new {@link ExtendableQueryParser} instance
    * 
-   * @param matchVersion
-   *          the lucene version to use.
    * @param f
    *          the default query field
    * @param a
@@ -109,8 +111,15 @@ public class ExtendableQueryParser extends QueryParser {
    * @param ext
    *          the query parser extensions
    */
-  public ExtendableQueryParser(final Version matchVersion, final String f,
-      final Analyzer a, final Extensions ext) {
+  public ExtendableQueryParser(final String f, final Analyzer a, final Extensions ext) {
+    this(Version.LATEST, f, a, ext);
+  }
+
+  /**
+   * @deprecated Use {@link #ExtendableQueryParser(String, Analyzer, Extensions)}
+   */
+  @Deprecated
+  public ExtendableQueryParser(final Version matchVersion, final String f, final Analyzer a, final Extensions ext) {
     super(matchVersion, f, a);
     this.defaultField = f;
     this.extensions = ext;

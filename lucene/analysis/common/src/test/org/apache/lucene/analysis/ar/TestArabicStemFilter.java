@@ -119,7 +119,7 @@ public class TestArabicStemFilter extends BaseTokenStreamTestCase {
   }
   
   public void testWithKeywordAttribute() throws IOException {
-    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
+    CharArraySet set = new CharArraySet(1, true);
     set.add("ساهدهات");
     ArabicLetterTokenizer tokenStream  = new ArabicLetterTokenizer(TEST_VERSION_CURRENT, new StringReader("ساهدهات"));
 

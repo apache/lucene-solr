@@ -36,7 +36,7 @@ import org.apache.lucene.util.Version;
 public abstract class FilteringTokenFilter extends TokenFilter {
 
   private static void checkPositionIncrement(Version version, boolean enablePositionIncrements) {
-    if (!enablePositionIncrements && version.onOrAfter(Version.LUCENE_4_4)) {
+    if (!enablePositionIncrements && version.onOrAfter(Version.LUCENE_4_4_0)) {
       throw new IllegalArgumentException("enablePositionIncrements=false is not supported anymore as of Lucene 4.4 as it can create broken token streams");
     }
   }
@@ -49,7 +49,7 @@ public abstract class FilteringTokenFilter extends TokenFilter {
 
   /**
    * Create a new {@link FilteringTokenFilter}.
-   * @param version                  the <a href="#lucene_match_version">Lucene match version</a>
+   *
    * @param enablePositionIncrements whether to increment position increments when filtering out terms
    * @param input                    the input to consume
    * @deprecated enablePositionIncrements=false is not supported anymore as of Lucene 4.4
@@ -63,9 +63,17 @@ public abstract class FilteringTokenFilter extends TokenFilter {
 
   /**
    * Create a new {@link FilteringTokenFilter}.
-   * @param version the Lucene match version
+   *
    * @param in      the {@link TokenStream} to consume
    */
+  public FilteringTokenFilter(TokenStream in) {
+    this(Version.LATEST, in);
+  }
+
+  /**
+   * @deprecated Use {@link #FilteringTokenFilter(TokenStream)}
+   */
+  @Deprecated
   public FilteringTokenFilter(Version version, TokenStream in) {
     super(in);
     this.version = version;

@@ -39,7 +39,7 @@ import org.apache.lucene.analysis.util.CharArraySet;
  * Most tests adopted from TestCJKTokenizer
  */
 public class TestCJKAnalyzer extends BaseTokenStreamTestCase {
-  private Analyzer analyzer = new CJKAnalyzer(TEST_VERSION_CURRENT);
+  private Analyzer analyzer = new CJKAnalyzer();
   
   public void testJa1() throws IOException {
     assertAnalyzesTo(analyzer, "一二三四五六七八九十",
@@ -209,7 +209,7 @@ public class TestCJKAnalyzer extends BaseTokenStreamTestCase {
     Analyzer analyzer = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT, reader);
+        Tokenizer tokenizer = new StandardTokenizer(reader);
         return new TokenStreamComponents(tokenizer, new CJKBigramFilter(tokenizer));
       }
 
@@ -255,7 +255,7 @@ public class TestCJKAnalyzer extends BaseTokenStreamTestCase {
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
         TokenFilter filter = new FakeStandardTokenizer(tokenizer);
-        filter = new StopFilter(TEST_VERSION_CURRENT, filter, CharArraySet.EMPTY_SET);
+        filter = new StopFilter(filter, CharArraySet.EMPTY_SET);
         filter = new CJKBigramFilter(filter);
         return new TokenStreamComponents(tokenizer, filter);
       }
@@ -271,13 +271,13 @@ public class TestCJKAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new CJKAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new CJKAnalyzer(), 1000*RANDOM_MULTIPLIER);
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
-    checkRandomData(random, new CJKAnalyzer(TEST_VERSION_CURRENT), 100*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, new CJKAnalyzer(), 100*RANDOM_MULTIPLIER, 8192);
   }
   
   public void testEmptyTerm() throws IOException {

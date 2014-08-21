@@ -27,12 +27,12 @@ public class TestSpanishAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new SpanishAnalyzer(TEST_VERSION_CURRENT);
+    new SpanishAnalyzer();
   }
   
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
-    Analyzer a = new SpanishAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer a = new SpanishAnalyzer();
     // stemming
     checkOneTerm(a, "chicana", "chican");
     checkOneTerm(a, "chicano", "chican");
@@ -42,8 +42,8 @@ public class TestSpanishAnalyzer extends BaseTokenStreamTestCase {
   
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("chicano"), false);
-    Analyzer a = new SpanishAnalyzer(TEST_VERSION_CURRENT, 
+    CharArraySet exclusionSet = new CharArraySet( asSet("chicano"), false);
+    Analyzer a = new SpanishAnalyzer( 
         SpanishAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "chicana", "chican");
     checkOneTerm(a, "chicano", "chicano");
@@ -51,6 +51,6 @@ public class TestSpanishAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new SpanishAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new SpanishAnalyzer(), 1000*RANDOM_MULTIPLIER);
   }
 }

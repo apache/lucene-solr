@@ -29,7 +29,6 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.AttributeFactory;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Version;
 
 /** A grammar-based tokenizer constructed with JFlex.
@@ -132,6 +131,14 @@ public final class StandardTokenizer extends Tokenizer {
    *
    * See http://issues.apache.org/jira/browse/LUCENE-1068
    */
+  public StandardTokenizer(Reader input) {
+    this(Version.LATEST, input);
+  }
+
+  /**
+   * @deprecated Use {@link #StandardTokenizer(Reader)}
+   */
+  @Deprecated
   public StandardTokenizer(Version matchVersion, Reader input) {
     super(input);
     init(matchVersion);
@@ -140,6 +147,14 @@ public final class StandardTokenizer extends Tokenizer {
   /**
    * Creates a new StandardTokenizer with a given {@link org.apache.lucene.util.AttributeFactory} 
    */
+  public StandardTokenizer(AttributeFactory factory, Reader input) {
+    this(Version.LATEST, factory, input);
+  }
+
+  /**
+   * @deprecated Use {@link #StandardTokenizer(AttributeFactory, Reader)}
+   */
+  @Deprecated
   public StandardTokenizer(Version matchVersion, AttributeFactory factory, Reader input) {
     super(factory, input);
     init(matchVersion);

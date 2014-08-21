@@ -60,7 +60,7 @@ import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
 import org.apache.lucene.analysis.cjk.CJKBigramFilter;
 import org.apache.lucene.analysis.commongrams.CommonGramsFilter;
 import org.apache.lucene.analysis.commongrams.CommonGramsQueryFilter;
-import org.apache.lucene.analysis.compound.HyphenationCompoundWordTokenFilter;
+import org.apache.lucene.analysis.compound.Lucene43HyphenationCompoundWordTokenFilter;
 import org.apache.lucene.analysis.compound.TestCompoundWordTokenFilter;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.apache.lucene.analysis.hunspell.Dictionary;
@@ -387,7 +387,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     put(CharArraySet.class, new ArgProducer() {
       @Override public Object create(Random random) {
         int num = random.nextInt(10);
-        CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, num, random.nextBoolean());
+        CharArraySet set = new CharArraySet(num, random.nextBoolean());
         for (int i = 0; i < num; i++) {
           // TODO: make nastier
           set.add(TestUtil.randomSimpleString(random));
@@ -445,7 +445,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         // TODO: make nastier
         try {
           InputSource is = new InputSource(TestCompoundWordTokenFilter.class.getResource("da_UTF8.xml").toExternalForm());
-          HyphenationTree hyphenator = HyphenationCompoundWordTokenFilter.getHyphenationTree(is);
+          HyphenationTree hyphenator = Lucene43HyphenationCompoundWordTokenFilter.getHyphenationTree(is);
           return hyphenator;
         } catch (Exception ex) {
           Rethrow.rethrow(ex);
@@ -510,7 +510,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     put(CharArrayMap.class, new ArgProducer() {
       @Override public Object create(Random random) {
         int num = random.nextInt(10);
-        CharArrayMap<String> map = new CharArrayMap<>(TEST_VERSION_CURRENT, num, random.nextBoolean());
+        CharArrayMap<String> map = new CharArrayMap<>(num, random.nextBoolean());
         for (int i = 0; i < num; i++) {
           // TODO: make nastier
           map.put(TestUtil.randomSimpleString(random), TestUtil.randomSimpleString(random));
@@ -637,7 +637,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         args[i] = stream;
       } else if (paramType == CommonGramsFilter.class) {
         // TODO: fix this one, thats broken: CommonGramsQueryFilter takes this one explicitly
-        args[i] = new CommonGramsFilter(TEST_VERSION_CURRENT, stream, newRandomArg(random, CharArraySet.class));
+        args[i] = new CommonGramsFilter(stream, newRandomArg(random, CharArraySet.class));
       } else {
         args[i] = newRandomArg(random, paramType);
       }

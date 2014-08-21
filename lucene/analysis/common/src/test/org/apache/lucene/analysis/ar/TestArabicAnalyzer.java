@@ -31,14 +31,14 @@ public class TestArabicAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new ArabicAnalyzer(TEST_VERSION_CURRENT);
+    new ArabicAnalyzer();
   }
   
   /**
    * Some simple tests showing some features of the analyzer, how some regular forms will conflate
    */
   public void testBasicFeatures() throws Exception {
-    ArabicAnalyzer a = new ArabicAnalyzer(TEST_VERSION_CURRENT);
+    ArabicAnalyzer a = new ArabicAnalyzer();
     assertAnalyzesTo(a, "كبير", new String[] { "كبير" });
     assertAnalyzesTo(a, "كبيرة", new String[] { "كبير" }); // feminine marker
     
@@ -59,7 +59,7 @@ public class TestArabicAnalyzer extends BaseTokenStreamTestCase {
    * Simple tests to show things are getting reset correctly, etc.
    */
   public void testReusableTokenStream() throws Exception {
-    ArabicAnalyzer a = new ArabicAnalyzer(TEST_VERSION_CURRENT);
+    ArabicAnalyzer a = new ArabicAnalyzer();
     assertAnalyzesTo(a, "كبير", new String[] { "كبير" });
     assertAnalyzesTo(a, "كبيرة", new String[] { "كبير" }); // feminine marker
   }
@@ -68,7 +68,7 @@ public class TestArabicAnalyzer extends BaseTokenStreamTestCase {
    * Non-arabic text gets treated in a similar way as SimpleAnalyzer.
    */
   public void testEnglishInput() throws Exception {
-    assertAnalyzesTo(new ArabicAnalyzer(TEST_VERSION_CURRENT), "English text.", new String[] {
+    assertAnalyzesTo(new ArabicAnalyzer(), "English text.", new String[] {
         "english", "text" });
   }
   
@@ -76,26 +76,26 @@ public class TestArabicAnalyzer extends BaseTokenStreamTestCase {
    * Test that custom stopwords work, and are not case-sensitive.
    */
   public void testCustomStopwords() throws Exception {
-    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, asSet("the", "and", "a"), false);
-    ArabicAnalyzer a = new ArabicAnalyzer(TEST_VERSION_CURRENT, set);
+    CharArraySet set = new CharArraySet(asSet("the", "and", "a"), false);
+    ArabicAnalyzer a = new ArabicAnalyzer(set);
     assertAnalyzesTo(a, "The quick brown fox.", new String[] { "quick",
         "brown", "fox" });
   }
   
   public void testWithStemExclusionSet() throws IOException {
-    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, asSet("ساهدهات"), false);
-    ArabicAnalyzer a = new ArabicAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, set);
+    CharArraySet set = new CharArraySet(asSet("ساهدهات"), false);
+    ArabicAnalyzer a = new ArabicAnalyzer(CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(a, "كبيرة the quick ساهدهات", new String[] { "كبير","the", "quick", "ساهدهات" });
     assertAnalyzesTo(a, "كبيرة the quick ساهدهات", new String[] { "كبير","the", "quick", "ساهدهات" });
 
     
-    a = new ArabicAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, CharArraySet.EMPTY_SET);
+    a = new ArabicAnalyzer(CharArraySet.EMPTY_SET, CharArraySet.EMPTY_SET);
     assertAnalyzesTo(a, "كبيرة the quick ساهدهات", new String[] { "كبير","the", "quick", "ساهد" });
     assertAnalyzesTo(a, "كبيرة the quick ساهدهات", new String[] { "كبير","the", "quick", "ساهد" });
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new ArabicAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new ArabicAnalyzer(), 1000*RANDOM_MULTIPLIER);
   }
 }

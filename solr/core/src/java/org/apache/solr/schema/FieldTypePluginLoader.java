@@ -261,7 +261,7 @@ public final class FieldTypePluginLoader
       try {
         // No need to be core-aware as Analyzers are not in the core-aware list
         final Class<? extends Analyzer> clazz = loader.findClass(analyzerName, Analyzer.class);
-        
+
         try {
           // first try to use a ctor with version parameter 
           // (needed for many new Analyzers that have no default one anymore)

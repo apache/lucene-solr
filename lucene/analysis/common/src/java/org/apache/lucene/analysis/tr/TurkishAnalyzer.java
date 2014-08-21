@@ -77,16 +77,31 @@ public final class TurkishAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer with the default stop words: {@link #DEFAULT_STOPWORD_FILE}.
    */
+  public TurkishAnalyzer() {
+    this(DefaultSetHolder.DEFAULT_STOP_SET);
+  }
+
+  /**
+   * @deprecated Use {@link #TurkishAnalyzer()}
+   */
+  @Deprecated
   public TurkishAnalyzer(Version matchVersion) {
     this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
   }
   
   /**
    * Builds an analyzer with the given stop words.
-   * 
-   * @param matchVersion lucene compatibility version
+   *
    * @param stopwords a stopword set
    */
+  public TurkishAnalyzer(CharArraySet stopwords) {
+    this(stopwords, CharArraySet.EMPTY_SET);
+  }
+
+  /**
+   * @deprecated Use {@link #TurkishAnalyzer(CharArraySet)}
+   */
+  @Deprecated
   public TurkishAnalyzer(Version matchVersion, CharArraySet stopwords) {
     this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
   }
@@ -95,11 +110,19 @@ public final class TurkishAnalyzer extends StopwordAnalyzerBase {
    * Builds an analyzer with the given stop words. If a non-empty stem exclusion set is
    * provided this analyzer will add a {@link SetKeywordMarkerFilter} before
    * stemming.
-   * 
-   * @param matchVersion lucene compatibility version
+   *
    * @param stopwords a stopword set
    * @param stemExclusionSet a set of terms not to be stemmed
    */
+  public TurkishAnalyzer(CharArraySet stopwords, CharArraySet stemExclusionSet) {
+    super(stopwords);
+    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionSet));
+  }
+
+  /**
+   * @deprecated Use {@link #TurkishAnalyzer(CharArraySet,CharArraySet)}
+   */
+  @Deprecated
   public TurkishAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet) {
     super(matchVersion, stopwords);
     this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(
@@ -121,12 +144,12 @@ public final class TurkishAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    final Tokenizer source = new StandardTokenizer(matchVersion, reader);
-    TokenStream result = new StandardFilter(matchVersion, source);
-    if(matchVersion.onOrAfter(Version.LUCENE_4_8_0))
+    final Tokenizer source = new StandardTokenizer(getVersion(), reader);
+    TokenStream result = new StandardFilter(getVersion(), source);
+    if(getVersion().onOrAfter(Version.LUCENE_4_8_0))
       result = new ApostropheFilter(result);
     result = new TurkishLowerCaseFilter(result);
-    result = new StopFilter(matchVersion, result, stopwords);
+    result = new StopFilter(getVersion(), result, stopwords);
     if(!stemExclusionSet.isEmpty())
       result = new SetKeywordMarkerFilter(result, stemExclusionSet);
     result = new SnowballFilter(result, new TurkishStemmer());

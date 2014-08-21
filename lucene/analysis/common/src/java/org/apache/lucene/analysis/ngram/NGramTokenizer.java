@@ -85,11 +85,18 @@ public class NGramTokenizer extends Tokenizer {
 
   /**
    * Creates NGramTokenizer with given min and max n-grams.
-   * @param version the lucene compatibility <a href="#version">version</a>
    * @param input {@link Reader} holding the input to be tokenized
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
    */
+  public NGramTokenizer(Reader input, int minGram, int maxGram) {
+    this(Version.LATEST, input, minGram, maxGram, false);
+  }
+
+  /**
+   * @deprecated For {@link Version#LUCENE_4_3_0} and before, use {@link org.apache.lucene.analysis.ngram.Lucene43NGramTokenizer}, otherwise use {@link #NGramTokenizer(Reader, int, int)}
+   */
+  @Deprecated
   public NGramTokenizer(Version version, Reader input, int minGram, int maxGram) {
     this(version, input, minGram, maxGram, false);
   }
@@ -101,19 +108,25 @@ public class NGramTokenizer extends Tokenizer {
 
   /**
    * Creates NGramTokenizer with given min and max n-grams.
-   * @param version the lucene compatibility <a href="#version">version</a>
    * @param factory {@link org.apache.lucene.util.AttributeFactory} to use
    * @param input {@link Reader} holding the input to be tokenized
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
    */
+  public NGramTokenizer(AttributeFactory factory, Reader input, int minGram, int maxGram) {
+    this(Version.LATEST, factory, input, minGram, maxGram, false);
+  }
+
+  /**
+   * @deprecated For {@link Version#LUCENE_4_3_0} and before, use {@link org.apache.lucene.analysis.ngram.Lucene43NGramTokenizer}, otherwise use {@link #NGramTokenizer(AttributeFactory, Reader, int, int)}
+   */
+  @Deprecated
   public NGramTokenizer(Version version, AttributeFactory factory, Reader input, int minGram, int maxGram) {
     this(version, factory, input, minGram, maxGram, false);
   }
 
   /**
    * Creates NGramTokenizer with default min and max n-grams.
-   * @param version the lucene compatibility <a href="#version">version</a>
    * @param input {@link Reader} holding the input to be tokenized
    */
   public NGramTokenizer(Version version, Reader input) {
@@ -121,10 +134,10 @@ public class NGramTokenizer extends Tokenizer {
   }
 
   private void init(Version version, int minGram, int maxGram, boolean edgesOnly) {
-    if (!version.onOrAfter(Version.LUCENE_4_4)) {
+    if (!version.onOrAfter(Version.LUCENE_4_4_0)) {
       throw new IllegalArgumentException("This class only works with Lucene 4.4+. To emulate the old (broken) behavior of NGramTokenizer, use Lucene43NGramTokenizer/Lucene43EdgeNGramTokenizer");
     }
-    charUtils = version.onOrAfter(Version.LUCENE_4_4)
+    charUtils = version.onOrAfter(Version.LUCENE_4_4_0)
         ? CharacterUtils.getInstance(version)
         : CharacterUtils.getJava4Instance();
     if (minGram < 1) {

@@ -32,7 +32,7 @@ import org.apache.lucene.util.Version;
 public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
 
   public void testAnalyzer() throws Exception {
-    FrenchAnalyzer fa = new FrenchAnalyzer(TEST_VERSION_CURRENT);
+    FrenchAnalyzer fa = new FrenchAnalyzer();
 
     assertAnalyzesTo(fa, "", new String[] {
     });
@@ -204,7 +204,7 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
     }
 
   public void testReusableTokenStream() throws Exception {
-    FrenchAnalyzer fa = new FrenchAnalyzer(TEST_VERSION_CURRENT);
+    FrenchAnalyzer fa = new FrenchAnalyzer();
     // stopwords
       assertAnalyzesTo(
           fa,
@@ -225,20 +225,20 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
   }
 
   public void testExclusionTableViaCtor() throws Exception {
-    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
+    CharArraySet set = new CharArraySet( 1, true);
     set.add("habitable");
-    FrenchAnalyzer fa = new FrenchAnalyzer(TEST_VERSION_CURRENT,
+    FrenchAnalyzer fa = new FrenchAnalyzer(
         CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(fa, "habitable chiste", new String[] { "habitable",
         "chist" });
 
-    fa = new FrenchAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, set);
+    fa = new FrenchAnalyzer( CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(fa, "habitable chiste", new String[] { "habitable",
         "chist" });
   }
   
   public void testElision() throws Exception {
-    FrenchAnalyzer fa = new FrenchAnalyzer(TEST_VERSION_CURRENT);
+    FrenchAnalyzer fa = new FrenchAnalyzer();
     assertAnalyzesTo(fa, "voir l'embrouille", new String[] { "voir", "embrouil" });
   }
   
@@ -263,12 +263,12 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new FrenchAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new FrenchAnalyzer(), 1000*RANDOM_MULTIPLIER);
   }
   
   /** test accent-insensitive */
   public void testAccentInsensitive() throws Exception {
-    Analyzer a = new FrenchAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer a = new FrenchAnalyzer();
     checkOneTerm(a, "sécuritaires", "securitair");
     checkOneTerm(a, "securitaires", "securitair");
   }

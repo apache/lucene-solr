@@ -71,7 +71,7 @@ public final class SpanishAnalyzer extends StopwordAnalyzerBase {
     static {
       try {
         DEFAULT_STOP_SET = WordlistLoader.getSnowballWordSet(IOUtils.getDecodingReader(SnowballFilter.class, 
-            DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8), Version.LUCENE_CURRENT);
+            DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8));
       } catch (IOException ex) {
         // default set should always be present as it is part of the
         // distribution (JAR)
@@ -83,6 +83,14 @@ public final class SpanishAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer with the default stop words: {@link #DEFAULT_STOPWORD_FILE}.
    */
+  public SpanishAnalyzer() {
+    this(DefaultSetHolder.DEFAULT_STOP_SET);
+  }
+
+  /**
+   * @deprecated Use {@link #SpanishAnalyzer()}
+   */
+  @Deprecated
   public SpanishAnalyzer(Version matchVersion) {
     this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
   }
@@ -90,9 +98,16 @@ public final class SpanishAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer with the given stop words.
    * 
-   * @param matchVersion lucene compatibility version
    * @param stopwords a stopword set
    */
+  public SpanishAnalyzer(CharArraySet stopwords) {
+    this(stopwords, CharArraySet.EMPTY_SET);
+  }
+
+  /**
+   * @deprecated Use {@link #SpanishAnalyzer(CharArraySet)}
+   */
+  @Deprecated
   public SpanishAnalyzer(Version matchVersion, CharArraySet stopwords) {
     this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
   }
@@ -102,10 +117,18 @@ public final class SpanishAnalyzer extends StopwordAnalyzerBase {
    * provided this analyzer will add a {@link SetKeywordMarkerFilter} before
    * stemming.
    * 
-   * @param matchVersion lucene compatibility version
    * @param stopwords a stopword set
    * @param stemExclusionSet a set of terms not to be stemmed
    */
+  public SpanishAnalyzer(CharArraySet stopwords, CharArraySet stemExclusionSet) {
+    super(stopwords);
+    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionSet));
+  }
+
+  /**
+   * @deprecated Use {@link #SpanishAnalyzer(CharArraySet,CharArraySet)}
+   */
+  @Deprecated
   public SpanishAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet) {
     super(matchVersion, stopwords);
     this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(
@@ -127,13 +150,13 @@ public final class SpanishAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    final Tokenizer source = new StandardTokenizer(matchVersion, reader);
-    TokenStream result = new StandardFilter(matchVersion, source);
-    result = new LowerCaseFilter(matchVersion, result);
-    result = new StopFilter(matchVersion, result, stopwords);
+    final Tokenizer source = new StandardTokenizer(getVersion(), reader);
+    TokenStream result = new StandardFilter(getVersion(), source);
+    result = new LowerCaseFilter(getVersion(), result);
+    result = new StopFilter(getVersion(), result, stopwords);
     if(!stemExclusionSet.isEmpty())
       result = new SetKeywordMarkerFilter(result, stemExclusionSet);
-    if (matchVersion.onOrAfter(Version.LUCENE_3_6)) {
+    if (getVersion().onOrAfter(Version.LUCENE_3_6)) {
       result = new SpanishLightStemFilter(result);
     } else {
       result = new SnowballFilter(result, new SpanishStemmer());

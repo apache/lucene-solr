@@ -146,7 +146,7 @@ public class CollationField extends FieldType {
       else
         throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid decomposition: " + decomposition);
     }
-    analyzer = new CollationKeyAnalyzer(Version.LUCENE_CURRENT, collator);
+    analyzer = new CollationKeyAnalyzer(collator);
   }
   
   /**

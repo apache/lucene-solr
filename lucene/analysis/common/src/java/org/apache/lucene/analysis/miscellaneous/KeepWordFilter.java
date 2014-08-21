@@ -44,10 +44,17 @@ public final class KeepWordFilter extends FilteringTokenFilter {
    * Create a new {@link KeepWordFilter}.
    * <p><b>NOTE</b>: The words set passed to this constructor will be directly
    * used by this filter and should not be modified.
-   * @param version the Lucene match version
    * @param in      the {@link TokenStream} to consume
    * @param words   the words to keep
    */
+  public KeepWordFilter(TokenStream in, CharArraySet words) {
+    this(Version.LATEST, in, words);
+  }
+
+  /**
+   * @deprecated Use {@link #KeepWordFilter(TokenStream, CharArraySet)}
+   */
+  @Deprecated
   public KeepWordFilter(Version version, TokenStream in, CharArraySet words) {
     super(version, in);
     this.words = words;

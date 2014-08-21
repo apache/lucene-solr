@@ -24,7 +24,6 @@ import java.util.StringTokenizer;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
-import org.apache.lucene.util.Version;
 
 /**
  * Task to support benchmarking collation.
@@ -73,8 +72,8 @@ public class NewCollationAnalyzerTask extends PerfTask {
     
     final Class<? extends Analyzer> clazz = Class.forName(impl.className)
         .asSubclass(Analyzer.class);
-    Constructor<? extends Analyzer> ctor = clazz.getConstructor(Version.class, collatorClazz);
-    return ctor.newInstance(Version.LUCENE_CURRENT, collator);
+    Constructor<? extends Analyzer> ctor = clazz.getConstructor(collatorClazz);
+    return ctor.newInstance(collator);
   }
   
   @Override

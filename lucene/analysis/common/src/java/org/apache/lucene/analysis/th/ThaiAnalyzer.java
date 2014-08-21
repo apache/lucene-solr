@@ -80,19 +80,32 @@ public final class ThaiAnalyzer extends StopwordAnalyzerBase {
 
   /**
    * Builds an analyzer with the default stop words.
-   * 
-   * @param matchVersion lucene compatibility version
    */
+  public ThaiAnalyzer() {
+    this(DefaultSetHolder.DEFAULT_STOP_SET);
+  }
+
+  /**
+   * @deprecated Use {@link #ThaiAnalyzer()}
+   */
+  @Deprecated
   public ThaiAnalyzer(Version matchVersion) {
     this(matchVersion, matchVersion.onOrAfter(Version.LUCENE_3_6) ? DefaultSetHolder.DEFAULT_STOP_SET : StopAnalyzer.ENGLISH_STOP_WORDS_SET);
   }
   
   /**
    * Builds an analyzer with the given stop words.
-   * 
-   * @param matchVersion lucene compatibility version
+   *
    * @param stopwords a stopword set
    */
+  public ThaiAnalyzer(CharArraySet stopwords) {
+    super(stopwords);
+  }
+
+  /**
+   * @deprecated Use {@link #ThaiAnalyzer(CharArraySet)}
+   */
+  @Deprecated
   public ThaiAnalyzer(Version matchVersion, CharArraySet stopwords) {
     super(matchVersion, stopwords);
   }
@@ -108,21 +121,20 @@ public final class ThaiAnalyzer extends StopwordAnalyzerBase {
    *         {@link StopFilter}
    */
   @Override
-
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    if (matchVersion.onOrAfter(Version.LUCENE_4_8_0)) {
+    if (getVersion().onOrAfter(Version.LUCENE_4_8_0)) {
       final Tokenizer source = new ThaiTokenizer(reader);
-      TokenStream result = new LowerCaseFilter(matchVersion, source);
-      result = new StopFilter(matchVersion, result, stopwords);
+      TokenStream result = new LowerCaseFilter(getVersion(), source);
+      result = new StopFilter(getVersion(), result, stopwords);
       return new TokenStreamComponents(source, result);
     } else {
-      final Tokenizer source = new StandardTokenizer(matchVersion, reader);
-      TokenStream result = new StandardFilter(matchVersion, source);
-      if (matchVersion.onOrAfter(Version.LUCENE_3_1_0))
-        result = new LowerCaseFilter(matchVersion, result);
-      result = new ThaiWordFilter(matchVersion, result);
-      return new TokenStreamComponents(source, new StopFilter(matchVersion,
+      final Tokenizer source = new StandardTokenizer(getVersion(), reader);
+      TokenStream result = new StandardFilter(getVersion(), source);
+      if (getVersion().onOrAfter(Version.LUCENE_3_1_0))
+        result = new LowerCaseFilter(getVersion(), result);
+      result = new ThaiWordFilter(getVersion(), result);
+      return new TokenStreamComponents(source, new StopFilter(getVersion(),
         result, stopwords));
     }
   }

@@ -89,7 +89,7 @@ public final class CollationKeyAnalyzer extends Analyzer {
   
   /**
    * Create a new CollationKeyAnalyzer, using the specified collator.
-   * 
+   *
    * @param matchVersion See <a href="#version">above</a>
    * @param collator CollationKey generator
    */

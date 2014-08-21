@@ -32,12 +32,10 @@ import org.apache.lucene.util.Version;
  */
 public class MorfologikAnalyzer extends Analyzer {
   private final String dictionary;
-  private final Version version;
 
   /**
    * Builds an analyzer with an explicit dictionary resource.
    * 
-   * @param version Lucene compatibility version
    * @param dictionaryResource A constant specifying which dictionary to choose. The
    * dictionary resource must be named <code>morfologik/dictionaries/{dictionaryResource}.dict</code>
    * and have an associated <code>.info</code> metadata file. See the Morfologik project
@@ -45,14 +43,30 @@ public class MorfologikAnalyzer extends Analyzer {
    * 
    * @see "http://morfologik.blogspot.com/"
    */
+  public MorfologikAnalyzer(final String dictionaryResource) {
+    this.dictionary = dictionaryResource;
+  }
+
+  /**
+   * @deprecated Use {@link #MorfologikAnalyzer(String)}
+   */
+  @Deprecated
   public MorfologikAnalyzer(final Version version, final String dictionaryResource) {
-    this.version = version;
-      this.dictionary = dictionaryResource;
+    setVersion(version);
+    this.dictionary = dictionaryResource;
   }
 
   /**
    * Builds an analyzer with the default Morfologik's Polish dictionary.
    */
+  public MorfologikAnalyzer() {
+    this(MorfologikFilterFactory.DEFAULT_DICTIONARY_RESOURCE);
+  }
+
+  /**
+   * @deprecated Use {@link #MorfologikAnalyzer()}
+   */
+  @Deprecated
   public MorfologikAnalyzer(final Version version) {
     this(version, MorfologikFilterFactory.DEFAULT_DICTIONARY_RESOURCE);
   }
@@ -70,10 +84,10 @@ public class MorfologikAnalyzer extends Analyzer {
    */
   @Override
   protected TokenStreamComponents createComponents(final String field, final Reader reader) {
-    final Tokenizer src = new StandardTokenizer(this.version, reader);
+    final Tokenizer src = new StandardTokenizer(getVersion(), reader);
     
     return new TokenStreamComponents(
         src, 
-        new MorfologikFilter(new StandardFilter(this.version, src), dictionary, this.version));
+        new MorfologikFilter(new StandardFilter(getVersion(), src), dictionary, getVersion()));
   }
 }

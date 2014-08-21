@@ -28,7 +28,7 @@ import org.apache.lucene.util.Version;
  * Normalizes token text to lower case, removes some Greek diacritics,
  * and standardizes final sigma to sigma. 
  * <a name="version"/>
- * <p>You must specify the required {@link Version}
+ * <p>You may specify the {@link Version}
  * compatibility when creating GreekLowerCaseFilter:
  * <ul>
  *   <li> As of 3.1, supplementary characters are properly lowercased.
@@ -41,10 +41,17 @@ public final class GreekLowerCaseFilter extends TokenFilter {
   /**
    * Create a GreekLowerCaseFilter that normalizes Greek token text.
    * 
-   * @param matchVersion Lucene compatibility version, 
-   *   See <a href="#version">above</a>
    * @param in TokenStream to filter
    */
+  public GreekLowerCaseFilter(TokenStream in) {
+    super(in);
+    this.charUtils = CharacterUtils.getInstance();
+  }
+
+  /**
+   * @deprecated Use {@link #GreekLowerCaseFilter(TokenStream)}
+   */
+  @Deprecated
   public GreekLowerCaseFilter(Version matchVersion, TokenStream in) {
     super(in);
     this.charUtils = CharacterUtils.getInstance(matchVersion);

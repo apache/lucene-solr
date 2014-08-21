@@ -46,7 +46,7 @@ public class TestGermanStemFilter extends BaseTokenStreamTestCase {
         Reader reader) {
       Tokenizer t = new MockTokenizer(reader, MockTokenizer.KEYWORD, false);
       return new TokenStreamComponents(t,
-          new GermanStemFilter(new LowerCaseFilter(TEST_VERSION_CURRENT, t)));
+          new GermanStemFilter(new LowerCaseFilter(t)));
     }
   };
 
@@ -57,7 +57,7 @@ public class TestGermanStemFilter extends BaseTokenStreamTestCase {
   }
   
   public void testKeyword() throws IOException {
-    final CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("sängerinnen"), false);
+    final CharArraySet exclusionSet = new CharArraySet( asSet("sängerinnen"), false);
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {

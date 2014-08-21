@@ -42,7 +42,7 @@ class SimpleQueryConverter extends SpellingQueryConverter {
   @Override
   public Collection<Token> convert(String origQuery) {
     Collection<Token> result = new HashSet<>();
-    WhitespaceAnalyzer analyzer = new WhitespaceAnalyzer(LuceneTestCase.TEST_VERSION_CURRENT);
+    WhitespaceAnalyzer analyzer = new WhitespaceAnalyzer();
     
     TokenStream ts = null;
     try {

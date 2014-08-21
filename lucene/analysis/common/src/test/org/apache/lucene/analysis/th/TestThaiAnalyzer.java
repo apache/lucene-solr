@@ -47,14 +47,14 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
    * testcase for offsets
    */
   public void testOffsets() throws Exception {
-    assertAnalyzesTo(new ThaiAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET), "การที่ได้ต้องแสดงว่างานดี",
+    assertAnalyzesTo(new ThaiAnalyzer(CharArraySet.EMPTY_SET), "การที่ได้ต้องแสดงว่างานดี",
         new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี" },
         new int[] { 0, 3, 6, 9, 13, 17, 20, 23 },
         new int[] { 3, 6, 9, 13, 17, 20, 23, 25 });
   }
 
   public void testStopWords() throws Exception {
-    assertAnalyzesTo(new ThaiAnalyzer(TEST_VERSION_CURRENT), "การที่ได้ต้องแสดงว่างานดี",
+    assertAnalyzesTo(new ThaiAnalyzer(), "การที่ได้ต้องแสดงว่างานดี",
         new String[] { "แสดง", "งาน", "ดี" },
         new int[] { 13, 20, 23 },
         new int[] { 17, 23, 25 },
@@ -110,7 +110,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
    */
   // note this test uses stopfilter's stopset
   public void testPositionIncrements() throws Exception {
-    final ThaiAnalyzer analyzer = new ThaiAnalyzer(TEST_VERSION_CURRENT, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
+    final ThaiAnalyzer analyzer = new ThaiAnalyzer(StopAnalyzer.ENGLISH_STOP_WORDS_SET);
     assertAnalyzesTo(analyzer, "การที่ได้ต้อง the แสดงว่างานดี", 
         new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี" },
         new int[] { 0, 3, 6, 9, 18, 22, 25, 28 },
@@ -126,7 +126,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
   }
 
   public void testReusableTokenStream() throws Exception {
-    ThaiAnalyzer analyzer = new ThaiAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
+    ThaiAnalyzer analyzer = new ThaiAnalyzer(CharArraySet.EMPTY_SET);
     assertAnalyzesTo(analyzer, "", new String[] {});
 
       assertAnalyzesTo(
@@ -159,13 +159,13 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
 
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new ThaiAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new ThaiAnalyzer(), 1000*RANDOM_MULTIPLIER);
   }
   
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
-    checkRandomData(random, new ThaiAnalyzer(TEST_VERSION_CURRENT), 100*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, new ThaiAnalyzer(), 100*RANDOM_MULTIPLIER, 8192);
   }
   
   // LUCENE-3044
@@ -181,7 +181,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
   }
   
   public void testTwoSentences() throws Exception {
-    assertAnalyzesTo(new ThaiAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET), "This is a test. การที่ได้ต้องแสดงว่างานดี", 
+    assertAnalyzesTo(new ThaiAnalyzer(CharArraySet.EMPTY_SET), "This is a test. การที่ได้ต้องแสดงว่างานดี",
           new String[] { "this", "is", "a", "test", "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี" },
           new int[] { 0, 5, 8, 10, 16, 19, 22, 25, 29, 33, 36, 39 },
           new int[] { 4, 7, 9, 14, 19, 22, 25, 29, 33, 36, 39, 41 });

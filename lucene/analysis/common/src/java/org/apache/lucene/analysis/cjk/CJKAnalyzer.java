@@ -37,6 +37,7 @@ import org.apache.lucene.util.Version;
  * and filters stopwords with {@link StopFilter}
  */
 public final class CJKAnalyzer extends StopwordAnalyzerBase {
+
   /**
    * File containing default CJK stopwords.
    * <p/>
@@ -70,6 +71,14 @@ public final class CJKAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer which removes words in {@link #getDefaultStopSet()}.
    */
+  public CJKAnalyzer() {
+    this(DefaultSetHolder.DEFAULT_STOP_SET);
+  }
+
+  /**
+   * @deprecated Use {@link #CJKAnalyzer()}
+   */
+  @Deprecated
   public CJKAnalyzer(Version matchVersion) {
     this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
   }
@@ -77,11 +86,17 @@ public final class CJKAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer with the given stop words
    * 
-   * @param matchVersion
-   *          lucene compatibility version
    * @param stopwords
    *          a stopword set
    */
+  public CJKAnalyzer(CharArraySet stopwords){
+    super(stopwords);
+  }
+
+  /**
+   * @deprecated Use {@link #CJKAnalyzer(CharArraySet)}
+   */
+  @Deprecated
   public CJKAnalyzer(Version matchVersion, CharArraySet stopwords){
     super(matchVersion, stopwords);
   }
@@ -89,16 +104,16 @@ public final class CJKAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    if (matchVersion.onOrAfter(Version.LUCENE_3_6)) {
-      final Tokenizer source = new StandardTokenizer(matchVersion, reader);
+    if (getVersion().onOrAfter(Version.LUCENE_3_6_0)) {
+      final Tokenizer source = new StandardTokenizer(getVersion(), reader);
       // run the widthfilter first before bigramming, it sometimes combines characters.
       TokenStream result = new CJKWidthFilter(source);
-      result = new LowerCaseFilter(matchVersion, result);
+      result = new LowerCaseFilter(getVersion(), result);
       result = new CJKBigramFilter(result);
-      return new TokenStreamComponents(source, new StopFilter(matchVersion, result, stopwords));
+      return new TokenStreamComponents(source, new StopFilter(getVersion(), result, stopwords));
     } else {
       final Tokenizer source = new CJKTokenizer(reader);
-      return new TokenStreamComponents(source, new StopFilter(matchVersion, source, stopwords));
+      return new TokenStreamComponents(source, new StopFilter(getVersion(), source, stopwords));
     }
   }
 }

@@ -88,6 +88,14 @@ public final class PersianAnalyzer extends StopwordAnalyzerBase {
    * Builds an analyzer with the default stop words:
    * {@link #DEFAULT_STOPWORD_FILE}.
    */
+  public PersianAnalyzer() {
+    this(DefaultSetHolder.DEFAULT_STOP_SET);
+  }
+
+  /**
+   * @deprecated Use {@link #PersianAnalyzer()}
+   */
+  @Deprecated
   public PersianAnalyzer(Version matchVersion) {
     this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
   }
@@ -95,11 +103,17 @@ public final class PersianAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer with the given stop words 
    * 
-   * @param matchVersion
-   *          lucene compatibility version
    * @param stopwords
    *          a stopword set
    */
+  public PersianAnalyzer(CharArraySet stopwords) {
+    super(stopwords);
+  }
+
+  /**
+   * @deprecated Use {@link #PersianAnalyzer(CharArraySet)}
+   */
+  @Deprecated
   public PersianAnalyzer(Version matchVersion, CharArraySet stopwords){
     super(matchVersion, stopwords);
   }
@@ -118,12 +132,12 @@ public final class PersianAnalyzer extends StopwordAnalyzerBase {
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
     final Tokenizer source;
-    if (matchVersion.onOrAfter(Version.LUCENE_3_1)) {
-      source = new StandardTokenizer(matchVersion, reader);
+    if (getVersion().onOrAfter(Version.LUCENE_3_1_0)) {
+      source = new StandardTokenizer(getVersion(), reader);
     } else {
-      source = new ArabicLetterTokenizer(matchVersion, reader);
+      source = new ArabicLetterTokenizer(getVersion(), reader);
     }
-    TokenStream result = new LowerCaseFilter(matchVersion, source);
+    TokenStream result = new LowerCaseFilter(getVersion(), source);
     result = new ArabicNormalizationFilter(result);
     /* additional persian-specific normalization */
     result = new PersianNormalizationFilter(result);
@@ -131,7 +145,7 @@ public final class PersianAnalyzer extends StopwordAnalyzerBase {
      * the order here is important: the stopword list is normalized with the
      * above!
      */
-    return new TokenStreamComponents(source, new StopFilter(matchVersion, result, stopwords));
+    return new TokenStreamComponents(source, new StopFilter(getVersion(), result, stopwords));
   }
   
   /** 
@@ -139,7 +153,7 @@ public final class PersianAnalyzer extends StopwordAnalyzerBase {
    */
   @Override
   protected Reader initReader(String fieldName, Reader reader) {
-    return matchVersion.onOrAfter(Version.LUCENE_3_1) ? 
+    return getVersion().onOrAfter(Version.LUCENE_3_1_0) ?
        new PersianCharFilter(reader) :
        reader;
   }

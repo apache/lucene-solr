@@ -76,14 +76,6 @@ import org.apache.lucene.util.Version;
  * <p><b>NOTE</b>: there is a new QueryParser in contrib, which matches
  * the same syntax as this class, but is more modular,
  * enabling substantial customization to how a query is created.
- *
- * <a name="version"/>
- * <p><b>NOTE</b>: You must specify the required {@link Version}
- * compatibility when creating QueryParser:
- * <ul>
- *    <li> As of 3.1, {@link #setAutoGeneratePhraseQueries} is false by
- *         default.
- * </ul>
  */
 public class QueryParser extends QueryParserBase implements QueryParserConstants {
   /** The default operator for parsing queries.
@@ -92,13 +84,23 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
   static public enum Operator { OR, AND }
 
   /** Create a query parser.
-   *  @param matchVersion  Lucene version to match. See <a href="#version">above</a>.
    *  @param f  the default field for query terms.
    *  @param a   used to find terms in the query text.
+   *  @deprecated Use {@link #QueryParser(String, Analyzer)}
    */
+  @Deprecated
    public QueryParser(Version matchVersion, String f, Analyzer a) {
     this(new FastCharStream(new StringReader("")));
     init(matchVersion, f, a);
+  }
+
+  /** Create a query parser.
+   *  @param f  the default field for query terms.
+   *  @param a   used to find terms in the query text.
+   */
+  public QueryParser(String f, Analyzer a) {
+    this(new FastCharStream(new StringReader("")));
+    init(f, a);
   }
 
 // *   Query  ::= ( Clause )*

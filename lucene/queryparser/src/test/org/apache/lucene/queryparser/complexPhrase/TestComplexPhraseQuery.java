@@ -86,7 +86,7 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
   }
 
   private void checkBadQuery(String qString) {
-    ComplexPhraseQueryParser qp = new ComplexPhraseQueryParser(TEST_VERSION_CURRENT, defaultFieldName, analyzer);
+    ComplexPhraseQueryParser qp = new ComplexPhraseQueryParser(defaultFieldName, analyzer);
     qp.setInOrder(inOrder);
     Throwable expected = null;
     try {
@@ -100,7 +100,7 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
 
   private void checkMatches(String qString, String expectedVals)
       throws Exception {
-    ComplexPhraseQueryParser qp = new ComplexPhraseQueryParser(TEST_VERSION_CURRENT, defaultFieldName, analyzer);
+    ComplexPhraseQueryParser qp = new ComplexPhraseQueryParser(defaultFieldName, analyzer);
     qp.setInOrder(inOrder);
     qp.setFuzzyPrefixLength(1); // usually a good idea
 
@@ -140,7 +140,7 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
   }
 
   public void testHashcodeEquals() throws Exception {
-    ComplexPhraseQueryParser qp = new ComplexPhraseQueryParser(TEST_VERSION_CURRENT, defaultFieldName, analyzer);
+    ComplexPhraseQueryParser qp = new ComplexPhraseQueryParser(defaultFieldName, analyzer);
     qp.setInOrder(true);
     qp.setFuzzyPrefixLength(1);
 

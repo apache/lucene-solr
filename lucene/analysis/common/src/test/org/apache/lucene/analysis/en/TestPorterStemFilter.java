@@ -54,7 +54,7 @@ public class TestPorterStemFilter extends BaseTokenStreamTestCase {
   }
   
   public void testWithKeywordAttribute() throws IOException {
-    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
+    CharArraySet set = new CharArraySet( 1, true);
     set.add("yourselves");
     Tokenizer tokenizer = new MockTokenizer(new StringReader("yourselves yours"), MockTokenizer.WHITESPACE, false);
     TokenStream filter = new PorterStemFilter(new SetKeywordMarkerFilter(tokenizer, set));   

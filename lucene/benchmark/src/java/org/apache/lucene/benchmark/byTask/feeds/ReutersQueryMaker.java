@@ -27,7 +27,6 @@ import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.benchmark.byTask.tasks.NewAnalyzerTask;
-import org.apache.lucene.util.Version;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -73,7 +72,7 @@ public class ReutersQueryMaker extends AbstractQueryMaker implements QueryMaker 
    * @return array of Lucene queries
    */
   private static Query[] createQueries(List<Object> qs, Analyzer a) {
-    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, DocMaker.BODY_FIELD, a);
+    QueryParser qp = new QueryParser(DocMaker.BODY_FIELD, a);
     List<Object> queries = new ArrayList<>();
     for (int i = 0; i < qs.size(); i++)  {
       try {

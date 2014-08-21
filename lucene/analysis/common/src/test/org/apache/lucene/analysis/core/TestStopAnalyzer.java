@@ -23,7 +23,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.Version;
+
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -32,7 +32,7 @@ import java.util.HashSet;
 
 public class TestStopAnalyzer extends BaseTokenStreamTestCase {
   
-  private StopAnalyzer stop = new StopAnalyzer(TEST_VERSION_CURRENT);
+  private StopAnalyzer stop = new StopAnalyzer();
   private Set<Object> inValidTokens = new HashSet<>();
 
   @Override
@@ -63,8 +63,8 @@ public class TestStopAnalyzer extends BaseTokenStreamTestCase {
   }
 
   public void testStopList() throws IOException {
-    CharArraySet stopWordsSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("good", "test", "analyzer"), false);
-    StopAnalyzer newStop = new StopAnalyzer(TEST_VERSION_CURRENT, stopWordsSet);
+    CharArraySet stopWordsSet = new CharArraySet(asSet("good", "test", "analyzer"), false);
+    StopAnalyzer newStop = new StopAnalyzer(stopWordsSet);
     TokenStream stream = newStop.tokenStream("test", "This is a good test of the english stop analyzer");
     try {
       assertNotNull(stream);
@@ -82,8 +82,8 @@ public class TestStopAnalyzer extends BaseTokenStreamTestCase {
   }
 
   public void testStopListPositions() throws IOException {
-    CharArraySet stopWordsSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("good", "test", "analyzer"), false);
-    StopAnalyzer newStop = new StopAnalyzer(TEST_VERSION_CURRENT, stopWordsSet);
+    CharArraySet stopWordsSet = new CharArraySet(asSet("good", "test", "analyzer"), false);
+    StopAnalyzer newStop = new StopAnalyzer(stopWordsSet);
     String s =             "This is a good test of the english stop analyzer with positions";
     int expectedIncr[] =  { 1,   1, 1,          3, 1,  1,      1,            2,   1};
     TokenStream stream = newStop.tokenStream("test", s);

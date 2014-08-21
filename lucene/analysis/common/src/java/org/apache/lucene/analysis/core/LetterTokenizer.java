@@ -34,7 +34,7 @@ import org.apache.lucene.util.Version;
  * </p>
  * <p>
  * <a name="version"/>
- * You must specify the required {@link Version} compatibility when creating
+ * You may specify the {@link Version} compatibility when creating
  * {@link LetterTokenizer}:
  * <ul>
  * <li>As of 3.1, {@link CharTokenizer} uses an int based API to normalize and
@@ -48,12 +48,17 @@ public class LetterTokenizer extends CharTokenizer {
   
   /**
    * Construct a new LetterTokenizer.
-   * 
-   * @param matchVersion
-   *          Lucene version to match See {@link <a href="#version">above</a>}
    * @param in
    *          the input to split up into tokens
    */
+  public LetterTokenizer(Reader in) {
+    super(in);
+  }
+
+  /**
+   * @deprecated Use {@link #LetterTokenizer(Reader)}
+   */
+  @Deprecated
   public LetterTokenizer(Version matchVersion, Reader in) {
     super(matchVersion, in);
   }
@@ -62,13 +67,19 @@ public class LetterTokenizer extends CharTokenizer {
    * Construct a new LetterTokenizer using a given
    * {@link org.apache.lucene.util.AttributeFactory}.
    * 
-   * @param matchVersion
-   *          Lucene version to match See {@link <a href="#version">above</a>}
    * @param factory
    *          the attribute factory to use for this {@link Tokenizer}
    * @param in
    *          the input to split up into tokens
    */
+  public LetterTokenizer(AttributeFactory factory, Reader in) {
+    super(factory, in);
+  }
+
+  /**
+   * @deprecated Use {@link #LetterTokenizer(AttributeFactory,Reader)}
+   */
+  @Deprecated
   public LetterTokenizer(Version matchVersion, AttributeFactory factory, Reader in) {
     super(matchVersion, factory, in);
   }

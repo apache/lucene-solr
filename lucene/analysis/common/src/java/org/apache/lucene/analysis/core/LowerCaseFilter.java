@@ -28,7 +28,7 @@ import org.apache.lucene.util.Version;
 /**
  * Normalizes token text to lower case.
  * <a name="version"/>
- * <p>You must specify the required {@link Version}
+ * <p>You may specify the {@link Version}
  * compatibility when creating LowerCaseFilter:
  * <ul>
  *   <li> As of 3.1, supplementary characters are properly lowercased.
@@ -40,10 +40,18 @@ public final class LowerCaseFilter extends TokenFilter {
   
   /**
    * Create a new LowerCaseFilter, that normalizes token text to lower case.
-   * 
-   * @param matchVersion See <a href="#version">above</a>
+   *
    * @param in TokenStream to filter
    */
+  public LowerCaseFilter(TokenStream in) {
+    super(in);
+    charUtils = CharacterUtils.getInstance();
+  }
+
+  /**
+   * @deprecated Use {@link #LowerCaseFilter(TokenStream)}
+   */
+  @Deprecated
   public LowerCaseFilter(Version matchVersion, TokenStream in) {
     super(in);
     charUtils = CharacterUtils.getInstance(matchVersion);

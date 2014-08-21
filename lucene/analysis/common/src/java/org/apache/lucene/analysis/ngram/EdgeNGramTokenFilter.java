@@ -96,19 +96,23 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
   /**
    * Creates EdgeNGramTokenFilter that can generate n-grams in the sizes of the given range
    *
-   * @param version the <a href="#version">Lucene match version</a>
    * @param input {@link TokenStream} holding the input to be tokenized
    * @param side the {@link Side} from which to chop off an n-gram
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
+   * @deprecated Use {@link #EdgeNGramTokenFilter(TokenStream, int, int)}
+   */
+  @Deprecated
+  public EdgeNGramTokenFilter(TokenStream input, Side side, int minGram, int maxGram) {
+    this(Version.LATEST, input, side, minGram, maxGram);
+  }
+
+  /**
+   * @deprecated For {@link Version#LUCENE_4_3_0} or below, use {@link Lucene43EdgeNGramTokenFilter}, otherwise use {@link #EdgeNGramTokenFilter(TokenStream, int, int)}
    */
   @Deprecated
   public EdgeNGramTokenFilter(Version version, TokenStream input, Side side, int minGram, int maxGram) {
     super(input);
-
-    if (version == null) {
-      throw new IllegalArgumentException("version must not be null");
-    }
 
     if (version.onOrAfter(Version.LUCENE_4_4) && side == Side.BACK) {
       throw new IllegalArgumentException("Side.BACK is not supported anymore as of Lucene 4.4, use ReverseStringFilter up-front and afterward");
@@ -138,11 +142,19 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
   /**
    * Creates EdgeNGramTokenFilter that can generate n-grams in the sizes of the given range
    *
-   * @param version the <a href="#version">Lucene match version</a>
    * @param input {@link TokenStream} holding the input to be tokenized
    * @param sideLabel the name of the {@link Side} from which to chop off an n-gram
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
+   * @deprecated Use {@link #EdgeNGramTokenFilter(TokenStream, int, int)}
+   */
+  @Deprecated
+  public EdgeNGramTokenFilter(TokenStream input, String sideLabel, int minGram, int maxGram) {
+    this(input, Side.getSide(sideLabel), minGram, maxGram);
+  }
+
+  /**
+   * @deprecated For {@link Version#LUCENE_4_3_0} or below, use {@link Lucene43EdgeNGramTokenFilter}, otherwise use {@link #EdgeNGramTokenFilter(TokenStream, int, int)}
    */
   @Deprecated
   public EdgeNGramTokenFilter(Version version, TokenStream input, String sideLabel, int minGram, int maxGram) {
@@ -152,11 +164,18 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
   /**
    * Creates EdgeNGramTokenFilter that can generate n-grams in the sizes of the given range
    *
-   * @param version the <a href="#version">Lucene match version</a>
    * @param input {@link TokenStream} holding the input to be tokenized
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
    */
+  public EdgeNGramTokenFilter(TokenStream input, int minGram, int maxGram) {
+    this(input, Side.FRONT, minGram, maxGram);
+  }
+
+  /**
+   * @deprecated For {@link Version#LUCENE_4_3_0} or below, use {@link Lucene43EdgeNGramTokenFilter}, otherwise use {@link #EdgeNGramTokenFilter(TokenStream, int, int)}
+   */
+  @Deprecated
   public EdgeNGramTokenFilter(Version version, TokenStream input, int minGram, int maxGram) {
     this(version, input, Side.FRONT, minGram, maxGram);
   }

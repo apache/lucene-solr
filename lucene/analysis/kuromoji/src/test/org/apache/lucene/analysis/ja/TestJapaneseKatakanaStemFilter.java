@@ -65,7 +65,7 @@ public class TestJapaneseKatakanaStemFilter extends BaseTokenStreamTestCase {
   }
   
   public void testKeyword() throws IOException {
-    final CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("コーヒー"), false);
+    final CharArraySet exclusionSet = new CharArraySet(asSet("コーヒー"), false);
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {

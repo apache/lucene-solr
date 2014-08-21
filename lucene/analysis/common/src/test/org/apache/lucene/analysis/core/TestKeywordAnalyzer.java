@@ -50,8 +50,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer()));
 
     Document doc = new Document();
     doc.add(new StringField("partnum", "Q36", Field.Store.YES));
@@ -73,7 +72,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
 
   /*
   public void testPerFieldAnalyzer() throws Exception {
-    PerFieldAnalyzerWrapper analyzer = new PerFieldAnalyzerWrapper(new SimpleAnalyzer(TEST_VERSION_CURRENT));
+    PerFieldAnalyzerWrapper analyzer = new PerFieldAnalyzerWrapper(new SimpleAnalyzer());
     analyzer.addAnalyzer("partnum", new KeywordAnalyzer());
 
     QueryParser queryParser = new QueryParser(TEST_VERSION_CURRENT, "description", analyzer);

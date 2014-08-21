@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.core;
 import org.apache.lucene.analysis.NumericTokenStream;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.util.Version;
 
 import java.util.Set;
 
@@ -37,7 +38,7 @@ public class TestTypeTokenFilterFactory extends BaseTokenStreamFactoryTestCase {
     assertTrue("types Size: " + types.size() + " is not: " + 2, types.size() == 2);
     assertTrue("enablePositionIncrements was set to true but not correctly parsed", factory.isEnablePositionIncrements());
 
-    factory = (TypeTokenFilterFactory) tokenFilterFactory("Type",
+    factory = (TypeTokenFilterFactory) tokenFilterFactory("Type", Version.LUCENE_4_3_0,
         "types", "stoptypes-1.txt, stoptypes-2.txt",
         "enablePositionIncrements", "false",
         "useWhitelist", "true");

@@ -56,7 +56,7 @@ public class EdgeNGramTokenizerFactory extends TokenizerFactory {
       if (!EdgeNGramTokenFilter.Side.FRONT.getLabel().equals(side)) {
         throw new IllegalArgumentException(EdgeNGramTokenizer.class.getSimpleName() + " does not support backward n-grams as of Lucene 4.4");
       }
-      return new EdgeNGramTokenizer(luceneMatchVersion, input, minGramSize, maxGramSize);
+      return new EdgeNGramTokenizer(input, minGramSize, maxGramSize);
     } else {
       return new Lucene43EdgeNGramTokenizer(luceneMatchVersion, input, side, minGramSize, maxGramSize);
     }

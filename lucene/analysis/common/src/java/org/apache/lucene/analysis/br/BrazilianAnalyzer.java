@@ -65,7 +65,7 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
     static {
       try {
         DEFAULT_STOP_SET = WordlistLoader.getWordSet(IOUtils.getDecodingReader(BrazilianAnalyzer.class, 
-            DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8), "#", Version.LUCENE_CURRENT);
+            DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8), "#");
       } catch (IOException ex) {
         // default set should always be present as it is part of the
         // distribution (JAR)
@@ -83,6 +83,14 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer with the default stop words ({@link #getDefaultStopSet()}).
    */
+  public BrazilianAnalyzer() {
+    this(DefaultSetHolder.DEFAULT_STOP_SET);
+  }
+
+  /**
+   * @deprecated Use {@link #BrazilianAnalyzer()}
+   */
+  @Deprecated
   public BrazilianAnalyzer(Version matchVersion) {
     this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
   }
@@ -90,28 +98,39 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer with the given stop words
    * 
-   * @param matchVersion
-   *          lucene compatibility version
    * @param stopwords
    *          a stopword set
    */
+  public BrazilianAnalyzer(CharArraySet stopwords) {
+     super(stopwords);
+  }
+
+  /**
+   * @deprecated Use {@link #BrazilianAnalyzer(CharArraySet)}
+   */
+  @Deprecated
   public BrazilianAnalyzer(Version matchVersion, CharArraySet stopwords) {
-     super(matchVersion, stopwords);
+    super(matchVersion, stopwords);
   }
 
   /**
    * Builds an analyzer with the given stop words and stemming exclusion words
    * 
-   * @param matchVersion
-   *          lucene compatibility version
    * @param stopwords
    *          a stopword set
    */
-  public BrazilianAnalyzer(Version matchVersion, CharArraySet stopwords,
-      CharArraySet stemExclusionSet) {
+  public BrazilianAnalyzer(CharArraySet stopwords, CharArraySet stemExclusionSet) {
+    this(stopwords);
+    excltable = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionSet));
+  }
+
+  /**
+   * @deprecated Use {@link #BrazilianAnalyzer(CharArraySet,CharArraySet)}
+   */
+  @Deprecated
+  public BrazilianAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet) {
     this(matchVersion, stopwords);
-    excltable = CharArraySet.unmodifiableSet(CharArraySet
-        .copy(matchVersion, stemExclusionSet));
+    excltable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stemExclusionSet));
   }
 
   /**
@@ -127,10 +146,10 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    Tokenizer source = new StandardTokenizer(matchVersion, reader);
-    TokenStream result = new LowerCaseFilter(matchVersion, source);
-    result = new StandardFilter(matchVersion, result);
-    result = new StopFilter(matchVersion, result, stopwords);
+    Tokenizer source = new StandardTokenizer(getVersion(), reader);
+    TokenStream result = new LowerCaseFilter(getVersion(), source);
+    result = new StandardFilter(getVersion(), result);
+    result = new StopFilter(getVersion(), result, stopwords);
     if(excltable != null && !excltable.isEmpty())
       result = new SetKeywordMarkerFilter(result, excltable);
     return new TokenStreamComponents(source, new BrazilianStemFilter(result));

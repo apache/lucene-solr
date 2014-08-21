@@ -37,12 +37,12 @@ import java.io.Reader;
  *
  * <a name="version"/>
  * <p>
- *   You must specify the required {@link org.apache.lucene.util.Version}
+ *   You may specify the {@link org.apache.lucene.util.Version}
  *   compatibility when creating UAX29URLEmailAnalyzer
  * </p>
  */
 public final class UAX29URLEmailAnalyzer extends StopwordAnalyzerBase {
-
+  
   /** Default maximum allowed token length */
   public static final int DEFAULT_MAX_TOKEN_LENGTH = StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH;
 
@@ -53,27 +53,45 @@ public final class UAX29URLEmailAnalyzer extends StopwordAnalyzerBase {
   public static final CharArraySet STOP_WORDS_SET = StopAnalyzer.ENGLISH_STOP_WORDS_SET;
 
   /** Builds an analyzer with the given stop words.
-   * @param matchVersion Lucene version to match See {@link
-   * <a href="#version">above</a>}
    * @param stopWords stop words */
+  public UAX29URLEmailAnalyzer(CharArraySet stopWords) {
+    super(stopWords);
+  }
+
+  /**
+   * @deprecated Use {@link #UAX29URLEmailAnalyzer(CharArraySet)}
+   */
+  @Deprecated
   public UAX29URLEmailAnalyzer(Version matchVersion, CharArraySet stopWords) {
     super(matchVersion, stopWords);
   }
 
   /** Builds an analyzer with the default stop words ({@link
    * #STOP_WORDS_SET}).
-   * @param matchVersion Lucene version to match See {@link
-   * <a href="#version">above</a>}
    */
+  public UAX29URLEmailAnalyzer() {
+    this(STOP_WORDS_SET);
+  }
+
+  /**
+   * @deprecated Use {@link #UAX29URLEmailAnalyzer()}
+   */
+  @Deprecated
   public UAX29URLEmailAnalyzer(Version matchVersion) {
     this(matchVersion, STOP_WORDS_SET);
   }
 
   /** Builds an analyzer with the stop words from the given reader.
-   * @see org.apache.lucene.analysis.util.WordlistLoader#getWordSet(java.io.Reader, org.apache.lucene.util.Version)
-   * @param matchVersion Lucene version to match See {@link
-   * <a href="#version">above</a>}
+   * @see org.apache.lucene.analysis.util.WordlistLoader#getWordSet(java.io.Reader)
    * @param stopwords Reader to read stop words from */
+  public UAX29URLEmailAnalyzer(Reader stopwords) throws IOException {
+    this(loadStopwordSet(stopwords));
+  }
+
+  /**
+   * @deprecated Use {@link #UAX29URLEmailAnalyzer(Reader)}
+   */
+  @Deprecated
   public UAX29URLEmailAnalyzer(Version matchVersion, Reader stopwords) throws IOException {
     this(matchVersion, loadStopwordSet(stopwords, matchVersion));
   }
@@ -97,11 +115,11 @@ public final class UAX29URLEmailAnalyzer extends StopwordAnalyzerBase {
 
   @Override
   protected TokenStreamComponents createComponents(final String fieldName, final Reader reader) {
-    final UAX29URLEmailTokenizer src = new UAX29URLEmailTokenizer(matchVersion, reader);
+    final UAX29URLEmailTokenizer src = new UAX29URLEmailTokenizer(getVersion(), reader);
     src.setMaxTokenLength(maxTokenLength);
-    TokenStream tok = new StandardFilter(matchVersion, src);
-    tok = new LowerCaseFilter(matchVersion, tok);
-    tok = new StopFilter(matchVersion, tok, stopwords);
+    TokenStream tok = new StandardFilter(getVersion(), src);
+    tok = new LowerCaseFilter(getVersion(), tok);
+    tok = new StopFilter(getVersion(), tok, stopwords);
     return new TokenStreamComponents(src, tok) {
       @Override
       protected void setReader(final Reader reader) throws IOException {

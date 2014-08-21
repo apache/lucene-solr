@@ -30,7 +30,6 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.AttributeFactory;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Version;
 
 /**
@@ -51,7 +50,7 @@ import org.apache.lucene.util.Version;
  *   <li>&lt;HIRAGANA&gt;: A single hiragana character</li>
  * </ul>
  * <a name="version"/>
- * <p>You must specify the required {@link Version}
+ * <p>You may specify the {@link Version}
  * compatibility when creating UAX29URLEmailTokenizer:
  * <ul>
  *   <li> As of 3.4, Hiragana and Han characters are no longer wrongly split
@@ -111,6 +110,15 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
    *
    * @param input The input reader
    */
+  public UAX29URLEmailTokenizer(Reader input) {
+    super(input);
+    this.scanner = getScannerFor(Version.LATEST);
+  }
+
+  /**
+   * @deprecated Use {@link #UAX29URLEmailTokenizer(Reader)}
+   */
+  @Deprecated
   public UAX29URLEmailTokenizer(Version matchVersion, Reader input) {
     super(input);
     this.scanner = getScannerFor(matchVersion);
@@ -119,6 +127,15 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
   /**
    * Creates a new UAX29URLEmailTokenizer with a given {@link AttributeFactory}
    */
+  public UAX29URLEmailTokenizer(AttributeFactory factory, Reader input) {
+    super(factory, input);
+    this.scanner = getScannerFor(Version.LATEST);
+  }
+
+  /**
+   * @deprecated Use {@link #UAX29URLEmailTokenizer(Reader)}
+   */
+  @Deprecated
   public UAX29URLEmailTokenizer(Version matchVersion, AttributeFactory factory, Reader input) {
     super(factory, input);
     this.scanner = getScannerFor(matchVersion);

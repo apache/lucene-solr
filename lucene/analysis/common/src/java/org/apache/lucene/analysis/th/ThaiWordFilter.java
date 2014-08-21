@@ -68,9 +68,17 @@ public final class ThaiWordFilter extends TokenFilter {
   private boolean hasIllegalOffsets = false; // only if the length changed before this filter
 
   /** Creates a new ThaiWordFilter with the specified match version. */
+  public ThaiWordFilter(TokenStream input) {
+    this(Version.LATEST, input);
+  }
+
+  /**
+   * @deprecated Use {@link #ThaiWordFilter(TokenStream)}
+   */
+  @Deprecated
   public ThaiWordFilter(Version matchVersion, TokenStream input) {
     super(matchVersion.onOrAfter(Version.LUCENE_3_1) ?
-      input : new LowerCaseFilter(matchVersion, input));
+        input : new LowerCaseFilter(matchVersion, input));
     if (!DBBI_AVAILABLE)
       throw new UnsupportedOperationException("This JRE does not have support for Thai segmentation");
     handlePosIncr = matchVersion.onOrAfter(Version.LUCENE_3_1);

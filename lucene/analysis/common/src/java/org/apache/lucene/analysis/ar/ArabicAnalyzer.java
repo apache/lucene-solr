@@ -89,6 +89,14 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer with the default stop words: {@link #DEFAULT_STOPWORD_FILE}.
    */
+  public ArabicAnalyzer() {
+    this(DefaultSetHolder.DEFAULT_STOP_SET);
+  }
+
+  /**
+   * @deprecated Use {@link #ArabicAnalyzer()}
+   */
+  @Deprecated
   public ArabicAnalyzer(Version matchVersion) {
     this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
   }
@@ -96,11 +104,17 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer with the given stop words
    * 
-   * @param matchVersion
-   *          lucene compatibility version
    * @param stopwords
    *          a stopword set
    */
+  public ArabicAnalyzer(CharArraySet stopwords){
+    this(stopwords, CharArraySet.EMPTY_SET);
+  }
+
+  /**
+   * @deprecated Use {@link #ArabicAnalyzer(CharArraySet)}
+   */
+  @Deprecated
   public ArabicAnalyzer(Version matchVersion, CharArraySet stopwords){
     this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
   }
@@ -110,13 +124,20 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
    * provided this analyzer will add a {@link SetKeywordMarkerFilter} before
    * {@link ArabicStemFilter}.
    * 
-   * @param matchVersion
-   *          lucene compatibility version
    * @param stopwords
    *          a stopword set
    * @param stemExclusionSet
    *          a set of terms not to be stemmed
    */
+  public ArabicAnalyzer(CharArraySet stopwords, CharArraySet stemExclusionSet){
+    super(stopwords);
+    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionSet));
+  }
+
+  /**
+   * @deprecated Use {@link #ArabicAnalyzer(CharArraySet,CharArraySet)}
+   */
+  @Deprecated
   public ArabicAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet){
     super(matchVersion, stopwords);
     this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(
@@ -137,11 +158,11 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    final Tokenizer source = matchVersion.onOrAfter(Version.LUCENE_3_1) ? 
-        new StandardTokenizer(matchVersion, reader) : new ArabicLetterTokenizer(matchVersion, reader);
-    TokenStream result = new LowerCaseFilter(matchVersion, source);
+    final Tokenizer source = getVersion().onOrAfter(Version.LUCENE_3_1_0) ?
+        new StandardTokenizer(getVersion(), reader) : new ArabicLetterTokenizer(getVersion(), reader);
+    TokenStream result = new LowerCaseFilter(getVersion(), source);
     // the order here is important: the stopword list is not normalized!
-    result = new StopFilter( matchVersion, result, stopwords);
+    result = new StopFilter(getVersion(), result, stopwords);
     // TODO maybe we should make ArabicNormalization filter also KeywordAttribute aware?!
     result = new ArabicNormalizationFilter(result);
     if(!stemExclusionSet.isEmpty()) {

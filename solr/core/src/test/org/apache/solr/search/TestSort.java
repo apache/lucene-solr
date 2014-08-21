@@ -183,7 +183,7 @@ public class TestSort extends SolrTestCaseJ4 {
     for (int iterCnt = 0; iterCnt<iter; iterCnt++) {
       IndexWriter iw = new IndexWriter(
           dir,
-          new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)).
+          new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer()).
               setOpenMode(IndexWriterConfig.OpenMode.CREATE)
       );
       final MyDoc[] mydocs = new MyDoc[ndocs];

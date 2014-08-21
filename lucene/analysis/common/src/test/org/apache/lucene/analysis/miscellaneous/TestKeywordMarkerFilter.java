@@ -38,14 +38,14 @@ public class TestKeywordMarkerFilter extends BaseTokenStreamTestCase {
 
   @Test
   public void testSetFilterIncrementToken() throws IOException {
-    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 5, true);
+    CharArraySet set = new CharArraySet( 5, true);
     set.add("lucenefox");
     String[] output = new String[] { "the", "quick", "brown", "LuceneFox",
         "jumps" };
     assertTokenStreamContents(new LowerCaseFilterMock(
         new SetKeywordMarkerFilter(new MockTokenizer(new StringReader(
             "The quIck browN LuceneFox Jumps"), MockTokenizer.WHITESPACE, false), set)), output);
-    CharArraySet mixedCaseSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("LuceneFox"), false);
+    CharArraySet mixedCaseSet = new CharArraySet( asSet("LuceneFox"), false);
     assertTokenStreamContents(new LowerCaseFilterMock(
         new SetKeywordMarkerFilter(new MockTokenizer(new StringReader(
             "The quIck browN LuceneFox Jumps"), MockTokenizer.WHITESPACE, false), mixedCaseSet)), output);
@@ -77,8 +77,8 @@ public class TestKeywordMarkerFilter extends BaseTokenStreamTestCase {
                      new SetKeywordMarkerFilter(
                      new SetKeywordMarkerFilter(
                      new MockTokenizer(new StringReader("Dogs Trees Birds Houses"), MockTokenizer.WHITESPACE, false),
-                     new CharArraySet(TEST_VERSION_CURRENT, asSet("Birds", "Houses"), false)), 
-                     new CharArraySet(TEST_VERSION_CURRENT, asSet("Dogs", "Trees"), false)));
+                     new CharArraySet( asSet("Birds", "Houses"), false)), 
+                     new CharArraySet( asSet("Dogs", "Trees"), false)));
     
     assertTokenStreamContents(ts, new String[] { "Dogs", "Trees", "Birds", "Houses" });
     
@@ -96,7 +96,7 @@ public class TestKeywordMarkerFilter extends BaseTokenStreamTestCase {
         new PatternKeywordMarkerFilter(
         new MockTokenizer(new StringReader("Dogs Trees Birds Houses"), MockTokenizer.WHITESPACE, false),
         Pattern.compile("Birds|Houses")), 
-        new CharArraySet(TEST_VERSION_CURRENT, asSet("Dogs", "Trees"), false)));
+        new CharArraySet( asSet("Dogs", "Trees"), false)));
 
     assertTokenStreamContents(ts, new String[] { "Dogs", "Trees", "Birds", "Houses" });
   }

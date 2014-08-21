@@ -50,15 +50,13 @@ import java.util.Arrays;
  * </p>
  *
  * <a name="version"/>
- * <p>You must specify the required {@link Version}
+ * <p>You may specify the {@link Version}
  * compatibility when creating FrenchAnalyzer:
  * <ul>
  *   <li> As of 3.6, FrenchLightStemFilter is used for less aggressive stemming.
  *   <li> As of 3.1, Snowball stemming is done with SnowballFilter, 
  *        LowerCaseFilter is used prior to StopFilter, and ElisionFilter and 
  *        Snowball stopwords are used by default.
- *   <li> As of 2.9, StopFilter preserves position
- *        increments
  * </ul>
  *
  * <p><b>NOTE</b>: This class uses the same {@link Version}
@@ -101,7 +99,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
   
   /** Default set of articles for ElisionFilter */
   public static final CharArraySet DEFAULT_ARTICLES = CharArraySet.unmodifiableSet(
-      new CharArraySet(Version.LUCENE_CURRENT, Arrays.asList(
+      new CharArraySet(Arrays.asList(
           "l", "m", "t", "qu", "n", "s", "j", "d", "c", "jusqu", "quoiqu", "lorsqu", "puisqu"), true));
   
   /**
@@ -127,7 +125,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
     static {
       try {
         DEFAULT_STOP_SET = WordlistLoader.getSnowballWordSet(IOUtils.getDecodingReader(SnowballFilter.class, 
-                DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8), Version.LUCENE_CURRENT);
+                DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8));
       } catch (IOException ex) {
         // default set should always be present as it is part of the
         // distribution (JAR)
@@ -139,6 +137,14 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer with the default stop words ({@link #getDefaultStopSet}).
    */
+  public FrenchAnalyzer() {
+    this(DefaultSetHolder.DEFAULT_STOP_SET);
+  }
+
+  /**
+   * @deprecated Use {@link #FrenchAnalyzer()}
+   */
+  @Deprecated
   public FrenchAnalyzer(Version matchVersion) {
     this(matchVersion,
         matchVersion.onOrAfter(Version.LUCENE_3_1) ? DefaultSetHolder.DEFAULT_STOP_SET
@@ -148,11 +154,17 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer with the given stop words
    * 
-   * @param matchVersion
-   *          lucene compatibility version
    * @param stopwords
    *          a stopword set
    */
+  public FrenchAnalyzer(CharArraySet stopwords){
+    this(stopwords, CharArraySet.EMPTY_SET);
+  }
+
+  /**
+   * @deprecated Use {@link #FrenchAnalyzer(CharArraySet)}
+   */
+  @Deprecated
   public FrenchAnalyzer(Version matchVersion, CharArraySet stopwords){
     this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
   }
@@ -160,13 +172,22 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer with the given stop words
    * 
-   * @param matchVersion
-   *          lucene compatibility version
    * @param stopwords
    *          a stopword set
    * @param stemExclutionSet
    *          a stemming exclusion set
    */
+  public FrenchAnalyzer(CharArraySet stopwords,
+      CharArraySet stemExclutionSet) {
+    super(stopwords);
+    this.excltable = CharArraySet.unmodifiableSet(CharArraySet
+        .copy(stemExclutionSet));
+  }
+
+  /**
+   * @deprecated Use {@link #FrenchAnalyzer(CharArraySet,CharArraySet)}
+   */
+  @Deprecated
   public FrenchAnalyzer(Version matchVersion, CharArraySet stopwords,
       CharArraySet stemExclutionSet) {
     super(matchVersion, stopwords);
@@ -189,29 +210,29 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    if (matchVersion.onOrAfter(Version.LUCENE_3_1)) {
-      final Tokenizer source = new StandardTokenizer(matchVersion, reader);
-      TokenStream result = new StandardFilter(matchVersion, source);
+    if (getVersion().onOrAfter(Version.LUCENE_3_1_0)) {
+      final Tokenizer source = new StandardTokenizer(getVersion(), reader);
+      TokenStream result = new StandardFilter(getVersion(), source);
       result = new ElisionFilter(result, DEFAULT_ARTICLES);
-      result = new LowerCaseFilter(matchVersion, result);
-      result = new StopFilter(matchVersion, result, stopwords);
+      result = new LowerCaseFilter(getVersion(), result);
+      result = new StopFilter(getVersion(), result, stopwords);
       if(!excltable.isEmpty())
         result = new SetKeywordMarkerFilter(result, excltable);
-      if (matchVersion.onOrAfter(Version.LUCENE_3_6)) {
+      if (getVersion().onOrAfter(Version.LUCENE_3_6_0)) {
         result = new FrenchLightStemFilter(result);
       } else {
         result = new SnowballFilter(result, new org.tartarus.snowball.ext.FrenchStemmer());
       }
       return new TokenStreamComponents(source, result);
     } else {
-      final Tokenizer source = new StandardTokenizer(matchVersion, reader);
-      TokenStream result = new StandardFilter(matchVersion, source);
-      result = new StopFilter(matchVersion, result, stopwords);
+      final Tokenizer source = new StandardTokenizer(getVersion(), reader);
+      TokenStream result = new StandardFilter(getVersion(), source);
+      result = new StopFilter(getVersion(), result, stopwords);
       if(!excltable.isEmpty())
         result = new SetKeywordMarkerFilter(result, excltable);
       result = new FrenchStemFilter(result);
       // Convert to lowercase after stemming!
-      return new TokenStreamComponents(source, new LowerCaseFilter(matchVersion, result));
+      return new TokenStreamComponents(source, new LowerCaseFilter(getVersion(), result));
     }
   }
 }

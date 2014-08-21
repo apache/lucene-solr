@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.bg;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
@@ -42,6 +41,7 @@ import org.apache.lucene.util.Version;
  * <p>
  */
 public final class BulgarianAnalyzer extends StopwordAnalyzerBase {
+
   /**
    * File containing default Bulgarian stopwords.
    * 
@@ -84,6 +84,14 @@ public final class BulgarianAnalyzer extends StopwordAnalyzerBase {
    * Builds an analyzer with the default stop words:
    * {@link #DEFAULT_STOPWORD_FILE}.
    */
+  public BulgarianAnalyzer() {
+    this(DefaultSetHolder.DEFAULT_STOP_SET);
+  }
+
+  /**
+   * @deprecated Use {@link #BulgarianAnalyzer()}
+   */
+  @Deprecated
   public BulgarianAnalyzer(Version matchVersion) {
     this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
   }
@@ -91,6 +99,14 @@ public final class BulgarianAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer with the given stop words.
    */
+  public BulgarianAnalyzer(CharArraySet stopwords) {
+    this(stopwords, CharArraySet.EMPTY_SET);
+  }
+
+  /**
+   * @deprecated Use {@link #BulgarianAnalyzer(CharArraySet)}
+   */
+  @Deprecated
   public BulgarianAnalyzer(Version matchVersion, CharArraySet stopwords) {
     this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
   }
@@ -100,10 +116,20 @@ public final class BulgarianAnalyzer extends StopwordAnalyzerBase {
    * If a stem exclusion set is provided this analyzer will add a {@link SetKeywordMarkerFilter} 
    * before {@link BulgarianStemFilter}.
    */
+  public BulgarianAnalyzer(CharArraySet stopwords, CharArraySet stemExclusionSet) {
+    super(stopwords);
+    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionSet));  
+  }
+
+  /**
+   * @deprecated Use {@link #BulgarianAnalyzer(CharArraySet,CharArraySet)}
+   */
+  @Deprecated
   public BulgarianAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet) {
     super(matchVersion, stopwords);
     this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(
-        matchVersion, stemExclusionSet));  }
+        matchVersion, stemExclusionSet));
+  }
 
   /**
    * Creates a
@@ -119,10 +145,10 @@ public final class BulgarianAnalyzer extends StopwordAnalyzerBase {
    */
   @Override
   public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-    final Tokenizer source = new StandardTokenizer(matchVersion, reader);
-    TokenStream result = new StandardFilter(matchVersion, source);
-    result = new LowerCaseFilter(matchVersion, result);
-    result = new StopFilter(matchVersion, result, stopwords);
+    final Tokenizer source = new StandardTokenizer(getVersion(), reader);
+    TokenStream result = new StandardFilter(getVersion(), source);
+    result = new LowerCaseFilter(getVersion(), result);
+    result = new StopFilter(getVersion(), result, stopwords);
     if(!stemExclusionSet.isEmpty())
       result = new SetKeywordMarkerFilter(result, stemExclusionSet);
     result = new BulgarianStemFilter(result);

@@ -22,6 +22,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CollationTestBase;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.Version;
 
 import java.text.Collator;
 import java.util.Locale;
@@ -37,7 +38,7 @@ public class TestCollationKeyAnalyzer extends CollationTestBase {
   // RuleBasedCollator.  However, the Arabic Locale seems to order the Farsi
   // characters properly.
   private Collator collator = Collator.getInstance(new Locale("ar"));
-  private Analyzer analyzer = new CollationKeyAnalyzer(TEST_VERSION_CURRENT, collator);
+  private Analyzer analyzer = new CollationKeyAnalyzer(Version.LATEST, collator);
 
   private BytesRef firstRangeBeginning = new BytesRef(collator.getCollationKey(firstRangeBeginningOriginal).toByteArray());
   private BytesRef firstRangeEnd = new BytesRef(collator.getCollationKey(firstRangeEndOriginal).toByteArray());
@@ -84,7 +85,7 @@ public class TestCollationKeyAnalyzer extends CollationTestBase {
     for (int i = 0; i < iters; i++) {
       Collator collator = Collator.getInstance(Locale.GERMAN);
       collator.setStrength(Collator.PRIMARY);
-      assertThreadSafe(new CollationKeyAnalyzer(TEST_VERSION_CURRENT, collator));
+      assertThreadSafe(new CollationKeyAnalyzer(Version.LATEST, collator));
     }
   }
 }

@@ -22,6 +22,7 @@ import java.util.Map;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.TrimFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.util.Version;
 
 /**
  * Factory for {@link TrimFilter}.
@@ -43,6 +44,10 @@ public class TrimFilterFactory extends TokenFilterFactory {
   public TrimFilterFactory(Map<String,String> args) {
     super(args);
     updateOffsets = getBoolean(args, "updateOffsets", false);
+    if (updateOffsets &&
+        (luceneMatchVersion == null || luceneMatchVersion.onOrAfter(Version.LUCENE_4_4_0))) {
+      throw new IllegalArgumentException("updateOffsets=true is not supported anymore as of Lucene 4.4");
+    }
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -50,6 +55,9 @@ public class TrimFilterFactory extends TokenFilterFactory {
   
   @Override
   public TrimFilter create(TokenStream input) {
+    if (luceneMatchVersion == null) {
+      return new TrimFilter(input);
+    }
     @SuppressWarnings("deprecation")
     final TrimFilter filter = new TrimFilter(luceneMatchVersion, input, updateOffsets);
     return filter;

@@ -47,7 +47,7 @@ public class TestTrimFilter extends BaseTokenStreamTestCase {
                     new Token(new String(ccc, 0, ccc.length), 11, 15),
                     new Token(new String(whitespace, 0, whitespace.length), 16, 20),
                     new Token(new String(empty, 0, empty.length), 21, 21));
-    ts = new TrimFilter(TEST_VERSION_CURRENT, ts, false);
+    ts = new TrimFilter(ts);
 
     assertTokenStreamContents(ts, new String[] { "a", "b", "cCc", "", ""});
 
@@ -131,7 +131,7 @@ public class TestTrimFilter extends BaseTokenStreamTestCase {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.KEYWORD, false);
-        return new TokenStreamComponents(tokenizer, new TrimFilter(TEST_VERSION_CURRENT, tokenizer, false));
+        return new TokenStreamComponents(tokenizer, new TrimFilter(tokenizer));
       } 
     };
     checkRandomData(random(), b, 1000*RANDOM_MULTIPLIER);
@@ -143,7 +143,7 @@ public class TestTrimFilter extends BaseTokenStreamTestCase {
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new KeywordTokenizer(reader);
         final boolean updateOffsets = random().nextBoolean();
-        final Version version = updateOffsets ? Version.LUCENE_4_3 : TEST_VERSION_CURRENT;
+        final Version version = updateOffsets ? Version.LUCENE_4_3 : Version.LATEST;
         return new TokenStreamComponents(tokenizer, new TrimFilter(version, tokenizer, updateOffsets));
       }
     };

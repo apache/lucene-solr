@@ -63,7 +63,7 @@ public class FormBasedXmlQueryDemo extends HttpServlet {
   private QueryTemplateManager queryTemplateManager;
   private CorePlusExtensionsParser xmlParser;
   private IndexSearcher searcher;
-  private Analyzer analyzer = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT);
+  private Analyzer analyzer = new StandardAnalyzer();
 
   /** for instantiation by the servlet container */
   public FormBasedXmlQueryDemo() {}

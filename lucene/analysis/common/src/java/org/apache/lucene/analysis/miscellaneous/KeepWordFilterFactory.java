@@ -22,6 +22,7 @@ import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.util.Version;
 
 import java.util.Map;
 import java.io.IOException;
@@ -45,7 +46,6 @@ public class KeepWordFilterFactory extends TokenFilterFactory implements Resourc
   /** Creates a new KeepWordFilterFactory */
   public KeepWordFilterFactory(Map<String,String> args) {
     super(args);
-    assureMatchVersion();
     wordFiles = get(args, "words");
     ignoreCase = getBoolean(args, "ignoreCase", false);
     enablePositionIncrements = getBoolean(args, "enablePositionIncrements", true);
@@ -79,9 +79,15 @@ public class KeepWordFilterFactory extends TokenFilterFactory implements Resourc
     if (words == null) {
       return input;
     } else {
-      @SuppressWarnings("deprecation")
-      final TokenStream filter = new KeepWordFilter(luceneMatchVersion, enablePositionIncrements, input, words);
-      return filter;
+      if (luceneMatchVersion == null) {
+        @SuppressWarnings("deprecation")
+        final TokenStream filter = new KeepWordFilter(Version.LATEST, enablePositionIncrements, input, words);
+        return filter;
+      } else {
+        @SuppressWarnings("deprecation")
+        final TokenStream filter = new KeepWordFilter(luceneMatchVersion, enablePositionIncrements, input, words);
+        return filter;
+      }
     }
   }
 }

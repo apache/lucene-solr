@@ -49,12 +49,19 @@ public final class TypeTokenFilter extends FilteringTokenFilter {
 
   /**
    * Create a new {@link TypeTokenFilter}.
-   * @param version      the Lucene match version
    * @param input        the {@link TokenStream} to consume
    * @param stopTypes    the types to filter
    * @param useWhiteList if true, then tokens whose type is in stopTypes will
    *                     be kept, otherwise they will be filtered out
    */
+  public TypeTokenFilter(TokenStream input, Set<String> stopTypes, boolean useWhiteList) {
+    this(Version.LATEST, input, stopTypes, useWhiteList);
+  }
+
+  /**
+   * @deprecated Use {@link #TypeTokenFilter(TokenStream,Set,boolean)}
+   */
+  @Deprecated
   public TypeTokenFilter(Version version, TokenStream input, Set<String> stopTypes, boolean useWhiteList) {
     super(version, input);
     this.stopTypes = stopTypes;
@@ -64,8 +71,15 @@ public final class TypeTokenFilter extends FilteringTokenFilter {
   /**
    * Create a new {@link TypeTokenFilter} that filters tokens out
    * (useWhiteList=false).
-   * @see #TypeTokenFilter(Version, TokenStream, Set, boolean)
    */
+  public TypeTokenFilter(TokenStream input, Set<String> stopTypes) {
+    this(input, stopTypes, false);
+  }
+
+  /**
+   * @deprecated Use {@link #TypeTokenFilter(TokenStream,Set)}
+   */
+  @Deprecated
   public TypeTokenFilter(Version version, TokenStream input, Set<String> stopTypes) {
     this(version, input, stopTypes, false);
   }

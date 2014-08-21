@@ -65,7 +65,7 @@ public class TestHunspellStemFilter extends BaseTokenStreamTestCase {
     
     // assert with keyword marker
     tokenizer = new MockTokenizer(new StringReader("lucene is awesome"));
-    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, Arrays.asList("Lucene"), true);
+    CharArraySet set = new CharArraySet( Arrays.asList("Lucene"), true);
     filter = new HunspellStemFilter(new SetKeywordMarkerFilter(tokenizer, set), dictionary);
     assertTokenStreamContents(filter, new String[]{"lucene", "is", "awesome"}, new int[] {1, 1, 1});
   }

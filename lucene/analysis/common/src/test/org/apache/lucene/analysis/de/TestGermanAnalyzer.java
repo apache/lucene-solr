@@ -29,24 +29,24 @@ import org.apache.lucene.util.Version;
 
 public class TestGermanAnalyzer extends BaseTokenStreamTestCase {
   public void testReusableTokenStream() throws Exception {
-    Analyzer a = new GermanAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer a = new GermanAnalyzer();
     checkOneTerm(a, "Tisch", "tisch");
     checkOneTerm(a, "Tische", "tisch");
     checkOneTerm(a, "Tischen", "tisch");
   }
   
   public void testWithKeywordAttribute() throws IOException {
-    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
+    CharArraySet set = new CharArraySet( 1, true);
     set.add("fischen");
     GermanStemFilter filter = new GermanStemFilter(
-        new SetKeywordMarkerFilter(new LowerCaseTokenizer(TEST_VERSION_CURRENT, new StringReader( 
+        new SetKeywordMarkerFilter(new LowerCaseTokenizer(new StringReader(
             "Fischen Trinken")), set));
     assertTokenStreamContents(filter, new String[] { "fischen", "trink" });
   }
 
   public void testStemExclusionTable() throws Exception {
-    GermanAnalyzer a = new GermanAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, 
-        new CharArraySet(TEST_VERSION_CURRENT, asSet("tischen"), false));
+    GermanAnalyzer a = new GermanAnalyzer( CharArraySet.EMPTY_SET, 
+        new CharArraySet( asSet("tischen"), false));
     checkOneTerm(a, "tischen", "tischen");
   }
   
@@ -54,7 +54,7 @@ public class TestGermanAnalyzer extends BaseTokenStreamTestCase {
    * these only pass with LATEST, not if you use o.a.l.a.de.GermanStemmer
    */
   public void testGermanSpecials() throws Exception {
-    GermanAnalyzer a = new GermanAnalyzer(TEST_VERSION_CURRENT);
+    GermanAnalyzer a = new GermanAnalyzer();
     // a/o/u + e is equivalent to the umlaut form
     checkOneTerm(a, "Schaltflächen", "schaltflach");
     checkOneTerm(a, "Schaltflaechen", "schaltflach");
@@ -66,6 +66,6 @@ public class TestGermanAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new GermanAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new GermanAnalyzer(), 1000*RANDOM_MULTIPLIER);
   }
 }

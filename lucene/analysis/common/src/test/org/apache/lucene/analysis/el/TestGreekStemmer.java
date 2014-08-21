@@ -26,7 +26,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 
 public class TestGreekStemmer extends BaseTokenStreamTestCase {
-  Analyzer a = new GreekAnalyzer(TEST_VERSION_CURRENT);
+  Analyzer a = new GreekAnalyzer();
 
   public void testMasculineNouns() throws Exception {
     // -ος

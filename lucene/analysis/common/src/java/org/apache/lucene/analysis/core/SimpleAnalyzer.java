@@ -26,8 +26,8 @@ import org.apache.lucene.util.Version;
 /** An {@link Analyzer} that filters {@link LetterTokenizer} 
  *  with {@link LowerCaseFilter} 
  * <p>
- * <a name="version">You must specify the required {@link Version} compatibility
- * when creating {@link CharTokenizer}:
+ * <a name="version">You may specify the {@link Version} compatibility
+ * when creating {@link SimpleAnalyzer}:
  * <ul>
  * <li>As of 3.1, {@link LowerCaseTokenizer} uses an int based API to normalize and
  * detect token codepoints. See {@link CharTokenizer#isTokenChar(int)} and
@@ -37,19 +37,22 @@ import org.apache.lucene.util.Version;
  **/
 public final class SimpleAnalyzer extends Analyzer {
 
-  private final Version matchVersion;
-  
   /**
    * Creates a new {@link SimpleAnalyzer}
-   * @param matchVersion Lucene version to match See {@link <a href="#version">above</a>}
    */
+  public SimpleAnalyzer() {}
+
+  /**
+   * @deprecated Use {@link #SimpleAnalyzer()}
+   */
+  @Deprecated
   public SimpleAnalyzer(Version matchVersion) {
-    this.matchVersion = matchVersion;
+    setVersion(matchVersion);
   }
   
   @Override
   protected TokenStreamComponents createComponents(final String fieldName,
       final Reader reader) {
-    return new TokenStreamComponents(new LowerCaseTokenizer(matchVersion, reader));
+    return new TokenStreamComponents(new LowerCaseTokenizer(getVersion(), reader));
   }
 }

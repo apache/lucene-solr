@@ -31,17 +31,15 @@ import org.apache.lucene.util.Version;
 
 /**
  * Tokenizes the input into n-grams of the given size(s).
- * <a name="version"/>
- * <p>You must specify the required {@link Version} compatibility when
- * creating a {@link NGramTokenFilter}. As of Lucene 4.4, this token filters:<ul>
+ * As of Lucene 4.4, this token filter:<ul>
  * <li>handles supplementary characters correctly,</li>
  * <li>emits all n-grams for the same token at the same position,</li>
  * <li>does not modify offsets,</li>
  * <li>sorts n-grams by their offset in the original token first, then
  * increasing length (meaning that "abc" will give "a", "ab", "abc", "b", "bc",
  * "c").</li></ul>
- * <p>You can make this filter use the old behavior by providing a version &lt;
- * {@link Version#LUCENE_4_4} in the constructor but this is not recommended as
+ * <p>You can make this filter use the old behavior by using
+ * {@link org.apache.lucene.analysis.ngram.Lucene43NGramTokenFilter} but this is not recommended as
  * it will lead to broken {@link TokenStream}s that will cause highlighting
  * bugs.
  * <p>If you were using this {@link TokenFilter} to perform partial highlighting,
@@ -74,12 +72,18 @@ public final class NGramTokenFilter extends TokenFilter {
 
   /**
    * Creates NGramTokenFilter with given min and max n-grams.
-   * @param version Lucene version to enable correct position increments.
-   *                See <a href="#version">above</a> for details.
    * @param input {@link TokenStream} holding the input to be tokenized
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
    */
+  public NGramTokenFilter(TokenStream input, int minGram, int maxGram) {
+    this(Version.LATEST, input, minGram, maxGram);
+  }
+
+  /**
+   * @deprecated Use {@link #NGramTokenFilter(TokenStream, int, int)}
+   */
+  @Deprecated
   public NGramTokenFilter(Version version, TokenStream input, int minGram, int maxGram) {
     super(new CodepointCountFilter(version, input, minGram, Integer.MAX_VALUE));
     this.version = version;
@@ -108,7 +112,7 @@ public final class NGramTokenFilter extends TokenFilter {
       };
       posLenAtt = new PositionLengthAttribute() {
         @Override
-        public void setPositionLength(int positionLength) {}        
+        public void setPositionLength(int positionLength) {}
         @Override
         public int getPositionLength() {
           return 0;
@@ -119,10 +123,16 @@ public final class NGramTokenFilter extends TokenFilter {
 
   /**
    * Creates NGramTokenFilter with default min and max n-grams.
-   * @param version Lucene version to enable correct position increments.
-   *                See <a href="#version">above</a> for details.
    * @param input {@link TokenStream} holding the input to be tokenized
    */
+  public NGramTokenFilter(TokenStream input) {
+    this(Version.LATEST, input, DEFAULT_MIN_NGRAM_SIZE, DEFAULT_MAX_NGRAM_SIZE);
+  }
+
+  /**
+   * @deprecated Use {@link #NGramTokenFilter(TokenStream)}
+   */
+  @Deprecated
   public NGramTokenFilter(Version version, TokenStream input) {
     this(version, input, DEFAULT_MIN_NGRAM_SIZE, DEFAULT_MAX_NGRAM_SIZE);
   }
@@ -149,7 +159,7 @@ public final class NGramTokenFilter extends TokenFilter {
           hasIllegalOffsets = (tokStart + curTermLength) != tokEnd;
         }
       }
-      if (version.onOrAfter(Version.LUCENE_4_4)) {
+      if (version.onOrAfter(Version.LUCENE_4_4_0)) {
         if (curGramSize > maxGram || (curPos + curGramSize) > curCodePointCount) {
           ++curPos;
           curGramSize = minGram;

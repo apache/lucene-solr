@@ -53,6 +53,15 @@ public final class TrimFilter extends TokenFilter {
   }
 
   /** Create a new {@link TrimFilter} on top of <code>in</code>. */
+  public TrimFilter(TokenStream in) {
+    super(in);
+    this.updateOffsets = false;
+  }
+
+  /**
+   * @deprecated Use {@link #TrimFilter(TokenStream)}
+   */
+  @Deprecated
   public TrimFilter(Version version, TokenStream in) {
     this(version, in, false);
   }

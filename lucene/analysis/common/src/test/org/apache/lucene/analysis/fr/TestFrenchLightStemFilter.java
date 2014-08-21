@@ -180,7 +180,7 @@ public class TestFrenchLightStemFilter extends BaseTokenStreamTestCase {
   }
   
   public void testKeyword() throws IOException {
-    final CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("chevaux"), false);
+    final CharArraySet exclusionSet = new CharArraySet( asSet("chevaux"), false);
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {

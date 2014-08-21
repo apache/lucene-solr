@@ -29,18 +29,19 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
 public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
   
   public void testChineseStopWordsDefault() throws Exception {
-    Analyzer ca = new SmartChineseAnalyzer(Version.LUCENE_CURRENT); /* will load stopwords */
+    Analyzer ca = new SmartChineseAnalyzer(); /* will load stopwords */
     String sentence = "我购买了道具和服装。";
     String result[] = { "我", "购买", "了", "道具", "和", "服装" };
     assertAnalyzesTo(ca, sentence, result);
     // set stop-words from the outer world - must yield same behavior
-    ca = new SmartChineseAnalyzer(Version.LUCENE_CURRENT, SmartChineseAnalyzer.getDefaultStopSet());
+    ca = new SmartChineseAnalyzer(SmartChineseAnalyzer.getDefaultStopSet());
     assertAnalyzesTo(ca, sentence, result);
   }
   
@@ -49,7 +50,7 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
    * This tests to ensure the SentenceTokenizer->WordTokenFilter chain works correctly.
    */
   public void testChineseStopWordsDefaultTwoPhrases() throws Exception {
-    Analyzer ca = new SmartChineseAnalyzer(Version.LUCENE_CURRENT); /* will load stopwords */
+    Analyzer ca = new SmartChineseAnalyzer(); /* will load stopwords */
     String sentence = "我购买了道具和服装。 我购买了道具和服装。";
     String result[] = { "我", "购买", "了", "道具", "和", "服装", "我", "购买", "了", "道具", "和", "服装" };
     assertAnalyzesTo(ca, sentence, result);
@@ -60,7 +61,7 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
    * This tests to ensure the stopwords are working correctly.
    */
   public void testChineseStopWordsDefaultTwoPhrasesIdeoSpace() throws Exception {
-    Analyzer ca = new SmartChineseAnalyzer(Version.LUCENE_CURRENT); /* will load stopwords */
+    Analyzer ca = new SmartChineseAnalyzer(); /* will load stopwords */
     String sentence = "我购买了道具和服装　我购买了道具和服装。";
     String result[] = { "我", "购买", "了", "道具", "和", "服装", "我", "购买", "了", "道具", "和", "服装" };
     assertAnalyzesTo(ca, sentence, result);
@@ -74,8 +75,8 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
    */
   public void testChineseStopWordsOff() throws Exception {
     Analyzer[] analyzers = new Analyzer[] {
-      new SmartChineseAnalyzer(Version.LUCENE_CURRENT, false),/* doesn't load stopwords */
-      new SmartChineseAnalyzer(Version.LUCENE_CURRENT, null) /* sets stopwords to empty set */};
+      new SmartChineseAnalyzer(false),/* doesn't load stopwords */
+      new SmartChineseAnalyzer((CharArraySet)null) /* sets stopwords to empty set */};
     String sentence = "我购买了道具和服装。";
     String result[] = { "我", "购买", "了", "道具", "和", "服装", "," };
     for (Analyzer analyzer : analyzers) {
@@ -89,7 +90,7 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
    * when stopfilter is configured with enablePositionIncrements
    */
   public void testChineseStopWords2() throws Exception {
-    Analyzer ca = new SmartChineseAnalyzer(Version.LUCENE_CURRENT); /* will load stopwords */
+    Analyzer ca = new SmartChineseAnalyzer(); /* will load stopwords */
     String sentence = "Title:San"; // : is a stopword
     String result[] = { "titl", "san"};
     int startOffsets[] = { 0, 6 };
@@ -99,7 +100,7 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
   }
   
   public void testChineseAnalyzer() throws Exception {
-    Analyzer ca = new SmartChineseAnalyzer(Version.LUCENE_CURRENT, true);
+    Analyzer ca = new SmartChineseAnalyzer(true);
     String sentence = "我购买了道具和服装。";
     String[] result = { "我", "购买", "了", "道具", "和", "服装" };
     assertAnalyzesTo(ca, sentence, result);
@@ -109,7 +110,7 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
    * English words are lowercased and porter-stemmed.
    */
   public void testMixedLatinChinese() throws Exception {
-    assertAnalyzesTo(new SmartChineseAnalyzer(Version.LUCENE_CURRENT, true), "我购买 Tests 了道具和服装", 
+    assertAnalyzesTo(new SmartChineseAnalyzer(true), "我购买 Tests 了道具和服装",
         new String[] { "我", "购买", "test", "了", "道具", "和", "服装"});
   }
   
@@ -117,7 +118,7 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
    * Numerics are parsed as their own tokens
    */
   public void testNumerics() throws Exception {
-    assertAnalyzesTo(new SmartChineseAnalyzer(Version.LUCENE_CURRENT, true), "我购买 Tests 了道具和服装1234",
+    assertAnalyzesTo(new SmartChineseAnalyzer(true), "我购买 Tests 了道具和服装1234",
       new String[] { "我", "购买", "test", "了", "道具", "和", "服装", "1234"});
   }
   
@@ -125,7 +126,7 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
    * Full width alphas and numerics are folded to half-width
    */
   public void testFullWidth() throws Exception {
-    assertAnalyzesTo(new SmartChineseAnalyzer(Version.LUCENE_CURRENT, true), "我购买 Ｔｅｓｔｓ 了道具和服装１２３４",
+    assertAnalyzesTo(new SmartChineseAnalyzer(true), "我购买 Ｔｅｓｔｓ 了道具和服装１２３４",
         new String[] { "我", "购买", "test", "了", "道具", "和", "服装", "1234"});
   }
   
@@ -133,7 +134,7 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
    * Presentation form delimiters are removed
    */
   public void testDelimiters() throws Exception {
-    assertAnalyzesTo(new SmartChineseAnalyzer(Version.LUCENE_CURRENT, true), "我购买︱ Tests 了道具和服装", 
+    assertAnalyzesTo(new SmartChineseAnalyzer(true), "我购买︱ Tests 了道具和服装",
         new String[] { "我", "购买", "test", "了", "道具", "和", "服装"});
   }
   
@@ -142,7 +143,7 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
    * (regardless of Unicode category)
    */
   public void testNonChinese() throws Exception {
-    assertAnalyzesTo(new SmartChineseAnalyzer(Version.LUCENE_CURRENT, true), "我购买 روبرتTests 了道具和服装", 
+    assertAnalyzesTo(new SmartChineseAnalyzer(true), "我购买 روبرتTests 了道具和服装",
         new String[] { "我", "购买", "ر", "و", "ب", "ر", "ت", "test", "了", "道具", "和", "服装"});
   }
   
@@ -152,22 +153,22 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
    * Currently it is being analyzed into single characters...
    */
   public void testOOV() throws Exception {
-    assertAnalyzesTo(new SmartChineseAnalyzer(Version.LUCENE_CURRENT, true), "优素福·拉扎·吉拉尼",
+    assertAnalyzesTo(new SmartChineseAnalyzer(true), "优素福·拉扎·吉拉尼",
       new String[] { "优", "素", "福", "拉", "扎", "吉", "拉", "尼" });
     
-    assertAnalyzesTo(new SmartChineseAnalyzer(Version.LUCENE_CURRENT, true), "优素福拉扎吉拉尼",
+    assertAnalyzesTo(new SmartChineseAnalyzer(true), "优素福拉扎吉拉尼",
       new String[] { "优", "素", "福", "拉", "扎", "吉", "拉", "尼" });
   }
   
   public void testOffsets() throws Exception {
-    assertAnalyzesTo(new SmartChineseAnalyzer(Version.LUCENE_CURRENT, true), "我购买了道具和服装",
+    assertAnalyzesTo(new SmartChineseAnalyzer(true), "我购买了道具和服装",
         new String[] { "我", "购买", "了", "道具", "和", "服装" },
         new int[] { 0, 1, 3, 4, 6, 7 },
         new int[] { 1, 3, 4, 6, 7, 9 });
   }
   
   public void testReusableTokenStream() throws Exception {
-    Analyzer a = new SmartChineseAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer a = new SmartChineseAnalyzer();
     assertAnalyzesTo(a, "我购买 Tests 了道具和服装", 
         new String[] { "我", "购买", "test", "了", "道具", "和", "服装"},
         new int[] { 0, 1, 4, 10, 11, 13, 14 },
@@ -184,7 +185,7 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
     for (int i = 0; i < 5000; i++) {
       sb.append("我购买了道具和服装。");
     }
-    Analyzer analyzer = new SmartChineseAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer analyzer = new SmartChineseAnalyzer();
     TokenStream stream = analyzer.tokenStream("", sb.toString());
     try {
       stream.reset();
@@ -202,7 +203,7 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
     for (int i = 0; i < 5000; i++) {
       sb.append("我购买了道具和服装");
     }
-    Analyzer analyzer = new SmartChineseAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer analyzer = new SmartChineseAnalyzer();
     TokenStream stream = analyzer.tokenStream("", sb.toString());
     try {
       stream.reset();
@@ -234,13 +235,13 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new SmartChineseAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new SmartChineseAnalyzer(), 1000*RANDOM_MULTIPLIER);
   }
   
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
-    checkRandomData(random, new SmartChineseAnalyzer(TEST_VERSION_CURRENT), 100*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, new SmartChineseAnalyzer(), 100*RANDOM_MULTIPLIER, 8192);
   }
   
   public void testEmptyTerm() throws IOException {

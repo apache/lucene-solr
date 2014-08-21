@@ -29,6 +29,8 @@ import org.apache.lucene.util.IOUtils;
 import java.util.Map;
 import java.io.IOException;
 import java.io.InputStream;
+
+import org.apache.lucene.util.Version;
 import org.xml.sax.InputSource;
 
 /**
@@ -97,7 +99,11 @@ public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactor
       final InputSource is = new InputSource(stream);
       is.setEncoding(encoding); // if it's null let xml parser decide
       is.setSystemId(hypFile);
-      hyphenator = HyphenationCompoundWordTokenFilter.getHyphenationTree(is);
+      if (luceneMatchVersion.onOrAfter(Version.LUCENE_4_4_0)) {
+        hyphenator = HyphenationCompoundWordTokenFilter.getHyphenationTree(is);
+      } else {
+        hyphenator = Lucene43HyphenationCompoundWordTokenFilter.getHyphenationTree(is);
+      }
     } finally {
       IOUtils.closeWhileHandlingException(stream);
     }
@@ -105,6 +111,10 @@ public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactor
   
   @Override
   public TokenFilter create(TokenStream input) {
-    return new HyphenationCompoundWordTokenFilter(luceneMatchVersion, input, hyphenator, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);
+    if (luceneMatchVersion.onOrAfter(Version.LUCENE_4_4_0)) {
+      return new HyphenationCompoundWordTokenFilter(input, hyphenator, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);
+    }
+    return new Lucene43HyphenationCompoundWordTokenFilter(input, hyphenator, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);
+
   }
 }

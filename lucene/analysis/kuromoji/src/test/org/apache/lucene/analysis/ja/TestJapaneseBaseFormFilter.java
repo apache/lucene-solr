@@ -44,7 +44,7 @@ public class TestJapaneseBaseFormFilter extends BaseTokenStreamTestCase {
   }
   
   public void testKeyword() throws IOException {
-    final CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("あり"), false);
+    final CharArraySet exclusionSet = new CharArraySet(asSet("あり"), false);
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {

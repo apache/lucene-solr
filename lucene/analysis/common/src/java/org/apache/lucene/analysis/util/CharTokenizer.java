@@ -24,8 +24,6 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.AttributeFactory;
-import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.analysis.util.CharacterUtils;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.analysis.util.CharacterUtils.CharacterBuffer;
 
@@ -70,12 +68,18 @@ public abstract class CharTokenizer extends Tokenizer {
   
   /**
    * Creates a new {@link CharTokenizer} instance
-   * 
-   * @param matchVersion
-   *          Lucene version to match
    * @param input
    *          the input to split up into tokens
    */
+  public CharTokenizer(Reader input) {
+    super(input);
+    charUtils = CharacterUtils.getInstance();
+  }
+
+  /**
+   * @deprecated Use {@link #CharTokenizer(Reader)}
+   */
+  @Deprecated
   public CharTokenizer(Version matchVersion, Reader input) {
     super(input);
     charUtils = CharacterUtils.getInstance(matchVersion);
@@ -84,19 +88,26 @@ public abstract class CharTokenizer extends Tokenizer {
   /**
    * Creates a new {@link CharTokenizer} instance
    * 
-   * @param matchVersion
-   *          Lucene version to match
    * @param factory
    *          the attribute factory to use for this {@link Tokenizer}
    * @param input
    *          the input to split up into tokens
    */
+  public CharTokenizer(AttributeFactory factory, Reader input) {
+    super(factory, input);
+    charUtils = CharacterUtils.getInstance();
+  }
+
+  /**
+   * @deprecated Use {@link #CharTokenizer(AttributeFactory, Reader)}
+   */
+  @Deprecated
   public CharTokenizer(Version matchVersion, AttributeFactory factory,
       Reader input) {
     super(factory, input);
     charUtils = CharacterUtils.getInstance(matchVersion);
   }
-  
+
   private int offset = 0, bufferIndex = 0, dataLen = 0, finalOffset = 0;
   private static final int MAX_WORD_LEN = 255;
   private static final int IO_BUFFER_SIZE = 4096;

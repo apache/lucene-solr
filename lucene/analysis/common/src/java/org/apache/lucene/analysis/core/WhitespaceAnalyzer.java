@@ -26,8 +26,8 @@ import org.apache.lucene.util.Version;
 /**
  * An Analyzer that uses {@link WhitespaceTokenizer}.
  * <p>
- * <a name="version">You must specify the required {@link Version} compatibility
- * when creating {@link CharTokenizer}:
+ * <a name="version">You may specify the {@link Version} compatibility
+ * when creating {@link WhitespaceAnalyzer}:
  * <ul>
  * <li>As of 3.1, {@link WhitespaceTokenizer} uses an int based API to normalize and
  * detect token codepoints. See {@link CharTokenizer#isTokenChar(int)} and
@@ -37,19 +37,22 @@ import org.apache.lucene.util.Version;
  **/
 public final class WhitespaceAnalyzer extends Analyzer {
   
-  private final Version matchVersion;
-  
   /**
    * Creates a new {@link WhitespaceAnalyzer}
-   * @param matchVersion Lucene version to match See {@link <a href="#version">above</a>}
    */
+  public WhitespaceAnalyzer() {}
+
+  /**
+   * @deprecated Use {@link #WhitespaceAnalyzer()}
+   */
+  @Deprecated
   public WhitespaceAnalyzer(Version matchVersion) {
-    this.matchVersion = matchVersion;
+    setVersion(matchVersion);
   }
   
   @Override
   protected TokenStreamComponents createComponents(final String fieldName,
       final Reader reader) {
-    return new TokenStreamComponents(new WhitespaceTokenizer(matchVersion, reader));
+    return new TokenStreamComponents(new WhitespaceTokenizer(getVersion(), reader));
   }
 }

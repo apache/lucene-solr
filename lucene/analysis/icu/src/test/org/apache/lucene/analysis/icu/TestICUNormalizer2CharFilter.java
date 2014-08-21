@@ -76,7 +76,7 @@ public class TestICUNormalizer2CharFilter extends BaseTokenStreamTestCase {
     CharFilter reader = new ICUNormalizer2CharFilter(new StringReader(input),
       Normalizer2.getInstance(null, "nfkc_cf", Normalizer2.Mode.COMPOSE));
 
-    Tokenizer tokenStream = new NGramTokenizer(TEST_VERSION_CURRENT, newAttributeFactory(), reader, 1, 1);
+    Tokenizer tokenStream = new NGramTokenizer(newAttributeFactory(), reader, 1, 1);
 
     assertTokenStreamContents(tokenStream,
       new String[] {"ピ", "ゴ", "5", "°", "c", "n", "o", "(", "株", ")", "グ", "ラ", "ム", "ザ", "ゾ"},

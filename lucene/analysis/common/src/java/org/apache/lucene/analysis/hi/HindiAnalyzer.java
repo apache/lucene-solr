@@ -83,12 +83,20 @@ public final class HindiAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer with the given stop words
    * 
-   * @param version lucene compatibility version
    * @param stopwords a stopword set
    * @param stemExclusionSet a stemming exclusion set
    */
-  public HindiAnalyzer(Version version, CharArraySet stopwords, CharArraySet stemExclusionSet) {
-    super(version, stopwords);
+  public HindiAnalyzer(CharArraySet stopwords, CharArraySet stemExclusionSet) {
+    super(stopwords);
+    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionSet));
+  }
+
+  /**
+   * @deprecated Use {@link #HindiAnalyzer(CharArraySet, CharArraySet)}
+   */
+  @Deprecated
+  public HindiAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet) {
+    super(matchVersion, stopwords);
     this.stemExclusionSet = CharArraySet.unmodifiableSet(
         CharArraySet.copy(matchVersion, stemExclusionSet));
   }
@@ -96,9 +104,16 @@ public final class HindiAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer with the given stop words 
    * 
-   * @param version lucene compatibility version
    * @param stopwords a stopword set
    */
+  public HindiAnalyzer(CharArraySet stopwords) {
+    this(stopwords, CharArraySet.EMPTY_SET);
+  }
+
+  /**
+   * @deprecated Use {@link #HindiAnalyzer(CharArraySet)}
+   */
+  @Deprecated
   public HindiAnalyzer(Version version, CharArraySet stopwords) {
     this(version, stopwords, CharArraySet.EMPTY_SET);
   }
@@ -107,6 +122,14 @@ public final class HindiAnalyzer extends StopwordAnalyzerBase {
    * Builds an analyzer with the default stop words:
    * {@link #DEFAULT_STOPWORD_FILE}.
    */
+  public HindiAnalyzer() {
+    this(DefaultSetHolder.DEFAULT_STOP_SET);
+  }
+
+  /**
+   * @deprecated Use {@link #HindiAnalyzer()}
+   */
+  @Deprecated
   public HindiAnalyzer(Version version) {
     this(version, DefaultSetHolder.DEFAULT_STOP_SET);
   }
@@ -127,17 +150,17 @@ public final class HindiAnalyzer extends StopwordAnalyzerBase {
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
     final Tokenizer source;
-    if (matchVersion.onOrAfter(Version.LUCENE_3_6)) {
-      source = new StandardTokenizer(matchVersion, reader);
+    if (getVersion().onOrAfter(Version.LUCENE_3_6)) {
+      source = new StandardTokenizer(getVersion(), reader);
     } else {
-      source = new IndicTokenizer(matchVersion, reader);
+      source = new IndicTokenizer(getVersion(), reader);
     }
-    TokenStream result = new LowerCaseFilter(matchVersion, source);
+    TokenStream result = new LowerCaseFilter(getVersion(), source);
     if (!stemExclusionSet.isEmpty())
       result = new SetKeywordMarkerFilter(result, stemExclusionSet);
     result = new IndicNormalizationFilter(result);
     result = new HindiNormalizationFilter(result);
-    result = new StopFilter(matchVersion, result, stopwords);
+    result = new StopFilter(getVersion(), result, stopwords);
     result = new HindiStemFilter(result);
     return new TokenStreamComponents(source, result);
   }

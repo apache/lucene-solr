@@ -29,7 +29,7 @@ import org.apache.lucene.util.AttributeFactory;
  * Old broken version of {@link NGramTokenizer}.
  */
 @Deprecated
-public final class Lucene43NGramTokenizer extends Tokenizer {
+public class Lucene43NGramTokenizer extends Tokenizer {
   public static final int DEFAULT_MIN_NGRAM_SIZE = 1;
   public static final int DEFAULT_MAX_NGRAM_SIZE = 2;
 

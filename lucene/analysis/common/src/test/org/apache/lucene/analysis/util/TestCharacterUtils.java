@@ -47,7 +47,7 @@ public class TestCharacterUtils extends LuceneTestCase {
     } catch (IndexOutOfBoundsException e) {
     }
 
-    CharacterUtils java5 = CharacterUtils.getInstance(TEST_VERSION_CURRENT);
+    CharacterUtils java5 = CharacterUtils.getInstance();
     assertEquals((int) 'A', java5.codePointAt(cpAt3, 0));
     assertEquals(Character.toCodePoint('\ud801', '\udc1c'), java5.codePointAt(
         cpAt3, 3));
@@ -69,7 +69,7 @@ public class TestCharacterUtils extends LuceneTestCase {
     assertEquals((int) '\ud801', java4.codePointAt(cpAt3, 3, 5));
     assertEquals((int) '\ud801', java4.codePointAt(highSurrogateAt3, 3, 4));
 
-    CharacterUtils java5 = CharacterUtils.getInstance(TEST_VERSION_CURRENT);
+    CharacterUtils java5 = CharacterUtils.getInstance();
     assertEquals((int) 'A', java5.codePointAt(cpAt3, 0, 2));
     assertEquals(Character.toCodePoint('\ud801', '\udc1c'), java5.codePointAt(
         cpAt3, 3, 5));
@@ -79,7 +79,7 @@ public class TestCharacterUtils extends LuceneTestCase {
   @Test
   public void testCodePointCount() {
     CharacterUtils java4 = CharacterUtils.getJava4Instance();
-    CharacterUtils java5 = CharacterUtils.getInstance(TEST_VERSION_CURRENT);
+    CharacterUtils java5 = CharacterUtils.getInstance();
     final String s = TestUtil.randomUnicodeString(random());
     assertEquals(s.length(), java4.codePointCount(s));
     assertEquals(Character.codePointCount(s, 0, s.length()), java5.codePointCount(s));
@@ -88,7 +88,7 @@ public class TestCharacterUtils extends LuceneTestCase {
   @Test
   public void testOffsetByCodePoint() {
     CharacterUtils java4 = CharacterUtils.getJava4Instance();
-    CharacterUtils java5 = CharacterUtils.getInstance(TEST_VERSION_CURRENT);
+    CharacterUtils java5 = CharacterUtils.getInstance();
     for (int i = 0; i < 10; ++i) {
       final char[] s = TestUtil.randomUnicodeString(random()).toCharArray();
       final int index = TestUtil.nextInt(random(), 0, s.length);
@@ -120,7 +120,7 @@ public class TestCharacterUtils extends LuceneTestCase {
 
   public void testConversions() {
     CharacterUtils java4 = CharacterUtils.getJava4Instance();
-    CharacterUtils java5 = CharacterUtils.getInstance(TEST_VERSION_CURRENT);
+    CharacterUtils java5 = CharacterUtils.getInstance();
     testConversions(java4);
     testConversions(java5);
   }
@@ -181,7 +181,7 @@ public class TestCharacterUtils extends LuceneTestCase {
   @Test
   public void testFillJava15() throws IOException {
     String input = "1234\ud801\udc1c789123\ud801\ud801\udc1c\ud801";
-    CharacterUtils instance = CharacterUtils.getInstance(TEST_VERSION_CURRENT);
+    CharacterUtils instance = CharacterUtils.getInstance();
     Reader reader = new StringReader(input);
     CharacterBuffer buffer = CharacterUtils.newCharacterBuffer(5);
     assertTrue(instance.fill(buffer, reader));

@@ -28,7 +28,6 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.Version;
 
 /**
  * Test the Bulgarian Stemmer
@@ -39,7 +38,7 @@ public class TestBulgarianStemmer extends BaseTokenStreamTestCase {
    * common (and some rare) plural pattern is listed.
    */
   public void testMasculineNouns() throws IOException {
-    BulgarianAnalyzer a = new BulgarianAnalyzer(TEST_VERSION_CURRENT);
+    BulgarianAnalyzer a = new BulgarianAnalyzer();
     
     // -и pattern
     assertAnalyzesTo(a, "град", new String[] {"град"});
@@ -105,7 +104,7 @@ public class TestBulgarianStemmer extends BaseTokenStreamTestCase {
    * Test showing how feminine noun forms conflate
    */
   public void testFeminineNouns() throws IOException {
-    BulgarianAnalyzer a = new BulgarianAnalyzer(TEST_VERSION_CURRENT);
+    BulgarianAnalyzer a = new BulgarianAnalyzer();
     
     assertAnalyzesTo(a, "вест", new String[] {"вест"});
     assertAnalyzesTo(a, "вестта", new String[] {"вест"});
@@ -118,7 +117,7 @@ public class TestBulgarianStemmer extends BaseTokenStreamTestCase {
    * plural pattern is listed
    */
   public void testNeuterNouns() throws IOException {
-    BulgarianAnalyzer a = new BulgarianAnalyzer(TEST_VERSION_CURRENT);
+    BulgarianAnalyzer a = new BulgarianAnalyzer();
     
     // -а pattern
     assertAnalyzesTo(a, "дърво", new String[] {"дърв"});
@@ -146,7 +145,7 @@ public class TestBulgarianStemmer extends BaseTokenStreamTestCase {
    * Test showing how adjectival forms conflate
    */
   public void testAdjectives() throws IOException {
-    BulgarianAnalyzer a = new BulgarianAnalyzer(TEST_VERSION_CURRENT);
+    BulgarianAnalyzer a = new BulgarianAnalyzer();
     assertAnalyzesTo(a, "красив", new String[] {"красив"});
     assertAnalyzesTo(a, "красивия", new String[] {"красив"});
     assertAnalyzesTo(a, "красивият", new String[] {"красив"});
@@ -162,7 +161,7 @@ public class TestBulgarianStemmer extends BaseTokenStreamTestCase {
    * Test some exceptional rules, implemented as rewrites.
    */
   public void testExceptions() throws IOException {
-    BulgarianAnalyzer a = new BulgarianAnalyzer(TEST_VERSION_CURRENT);
+    BulgarianAnalyzer a = new BulgarianAnalyzer();
     
     // ци -> к
     assertAnalyzesTo(a, "собственик", new String[] {"собственик"});
@@ -217,7 +216,7 @@ public class TestBulgarianStemmer extends BaseTokenStreamTestCase {
   }
 
   public void testWithKeywordAttribute() throws IOException {
-    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
+    CharArraySet set = new CharArraySet(1, true);
     set.add("строеве");
     MockTokenizer tokenStream = new MockTokenizer(new StringReader("строевете строеве"), MockTokenizer.WHITESPACE, false);
 

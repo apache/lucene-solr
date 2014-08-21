@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.util.Version;
 
 /**
  * Factory for {@link org.apache.lucene.analysis.ja.JapanesePartOfSpeechStopFilter}.
@@ -51,6 +52,10 @@ public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory im
     super(args);
     stopTagFiles = get(args, "tags");
     enablePositionIncrements = getBoolean(args, "enablePositionIncrements", true);
+    if (enablePositionIncrements == false &&
+        (luceneMatchVersion == null || luceneMatchVersion.onOrAfter(Version.LUCENE_4_4_0))) {
+      throw new IllegalArgumentException("enablePositionIncrements=false is not supported anymore as of Lucene 4.4");
+    }
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -73,6 +78,9 @@ public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory im
   public TokenStream create(TokenStream stream) {
     // if stoptags is null, it means the file is empty
     if (stopTags != null) {
+      if (luceneMatchVersion == null) {
+        return new JapanesePartOfSpeechStopFilter(stream, stopTags);
+      }
       @SuppressWarnings("deprecation")
       final TokenStream filter = new JapanesePartOfSpeechStopFilter(luceneMatchVersion, enablePositionIncrements, stream, stopTags);
       return filter;

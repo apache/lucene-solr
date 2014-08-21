@@ -37,7 +37,6 @@ public class WhitespaceTokenizerFactory extends TokenizerFactory {
   /** Creates a new WhitespaceTokenizerFactory */
   public WhitespaceTokenizerFactory(Map<String,String> args) {
     super(args);
-    assureMatchVersion();
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -45,6 +44,9 @@ public class WhitespaceTokenizerFactory extends TokenizerFactory {
 
   @Override
   public WhitespaceTokenizer create(AttributeFactory factory, Reader input) {
+    if (luceneMatchVersion == null) {
+      return new WhitespaceTokenizer(factory, input);
+    }
     return new WhitespaceTokenizer(luceneMatchVersion, factory, input);
   }
 }

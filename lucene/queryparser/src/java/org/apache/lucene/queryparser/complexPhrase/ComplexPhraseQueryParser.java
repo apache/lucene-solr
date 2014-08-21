@@ -80,8 +80,16 @@ public class ComplexPhraseQueryParser extends QueryParser {
 
   private ComplexPhraseQuery currentPhraseQuery = null;
 
+  /**
+   * @deprecated Use {@link #ComplexPhraseQueryParser(String, Analyzer)}
+   */
+  @Deprecated
   public ComplexPhraseQueryParser(Version matchVersion, String f, Analyzer a) {
     super(matchVersion, f, a);
+  }
+
+  public ComplexPhraseQueryParser(String f, Analyzer a) {
+    this(Version.LATEST, f, a);
   }
 
   @Override

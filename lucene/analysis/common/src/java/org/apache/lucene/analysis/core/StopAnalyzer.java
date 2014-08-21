@@ -29,18 +29,17 @@ import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.Version;
 
-/** Filters {@link LetterTokenizer} with {@link LowerCaseFilter} and {@link StopFilter}.
+/** 
+ * Filters {@link LetterTokenizer} with {@link LowerCaseFilter} and {@link StopFilter}.
  *
  * <a name="version"/>
- * <p>You must specify the required {@link Version}
+ * <p>You may specify the {@link Version}
  * compatibility when creating StopAnalyzer:
  * <ul>
  *    <li> As of 3.1, StopFilter correctly handles Unicode 4.0
  *         supplementary characters in stopwords
- *   <li> As of 2.9, position increments are preserved
  * </ul>
-*/
-
+ */
 public final class StopAnalyzer extends StopwordAnalyzerBase {
   
   /** An unmodifiable set containing some common English words that are not usually useful
@@ -55,38 +54,65 @@ public final class StopAnalyzer extends StopwordAnalyzerBase {
       "that", "the", "their", "then", "there", "these",
       "they", "this", "to", "was", "will", "with"
     );
-    final CharArraySet stopSet = new CharArraySet(Version.LUCENE_CURRENT, 
-        stopWords, false);
+    final CharArraySet stopSet = new CharArraySet(stopWords, false);
     ENGLISH_STOP_WORDS_SET = CharArraySet.unmodifiableSet(stopSet); 
   }
   
   /** Builds an analyzer which removes words in
    *  {@link #ENGLISH_STOP_WORDS_SET}.
-   * @param matchVersion See <a href="#version">above</a>
    */
+  public StopAnalyzer() {
+    this(ENGLISH_STOP_WORDS_SET);
+  }
+
+  /**
+   * @deprecated Use {@link #StopAnalyzer()}
+   */
+  @Deprecated
   public StopAnalyzer(Version matchVersion) {
     this(matchVersion, ENGLISH_STOP_WORDS_SET);
   }
 
   /** Builds an analyzer with the stop words from the given set.
-   * @param matchVersion See <a href="#version">above</a>
    * @param stopWords Set of stop words */
+  public StopAnalyzer(CharArraySet stopWords) {
+    super(stopWords);
+  }
+
+  /**
+   * @deprecated Use {@link #StopAnalyzer(CharArraySet)}
+   */
+  @Deprecated
   public StopAnalyzer(Version matchVersion, CharArraySet stopWords) {
     super(matchVersion, stopWords);
   }
 
   /** Builds an analyzer with the stop words from the given file.
-   * @see WordlistLoader#getWordSet(Reader, Version)
-   * @param matchVersion See <a href="#version">above</a>
+   * @see WordlistLoader#getWordSet(Reader)
    * @param stopwordsFile File to load stop words from */
+  public StopAnalyzer(File stopwordsFile) throws IOException {
+    this(loadStopwordSet(stopwordsFile));
+  }
+
+  /**
+   * @deprecated Use {@link #StopAnalyzer(File)}
+   */
+  @Deprecated
   public StopAnalyzer(Version matchVersion, File stopwordsFile) throws IOException {
     this(matchVersion, loadStopwordSet(stopwordsFile, matchVersion));
   }
 
   /** Builds an analyzer with the stop words from the given reader.
-   * @see WordlistLoader#getWordSet(Reader, Version)
-   * @param matchVersion See <a href="#version">above</a>
+   * @see WordlistLoader#getWordSet(Reader)
    * @param stopwords Reader to load stop words from */
+  public StopAnalyzer(Reader stopwords) throws IOException {
+    this(loadStopwordSet(stopwords));
+  }
+
+  /**
+   * @deprecated Use {@link #StopAnalyzer(Reader)}
+   */
+  @Deprecated
   public StopAnalyzer(Version matchVersion, Reader stopwords) throws IOException {
     this(matchVersion, loadStopwordSet(stopwords, matchVersion));
   }
@@ -103,8 +129,8 @@ public final class StopAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    final Tokenizer source = new LowerCaseTokenizer(matchVersion, reader);
-    return new TokenStreamComponents(source, new StopFilter(matchVersion,
+    final Tokenizer source = new LowerCaseTokenizer(getVersion(), reader);
+    return new TokenStreamComponents(source, new StopFilter(getVersion(),
           source, stopwords));
   }
 }

@@ -31,6 +31,14 @@ import org.apache.lucene.util.Version;
 public class StandardFilter extends TokenFilter {
   private final Version matchVersion;
   
+  public StandardFilter(TokenStream in) {
+    this(Version.LATEST, in);
+  }
+
+  /**
+   * @deprecated Use {@link #StandardFilter(TokenStream)}
+   */
+  @Deprecated
   public StandardFilter(Version matchVersion, TokenStream in) {
     super(in);
     this.matchVersion = matchVersion;

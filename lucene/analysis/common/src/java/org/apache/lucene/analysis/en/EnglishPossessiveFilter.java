@@ -27,7 +27,7 @@ import org.apache.lucene.util.Version;
 /**
  * TokenFilter that removes possessives (trailing 's) from words.
  * <a name="version"/>
- * <p>You must specify the required {@link Version}
+ * <p>You may specify the {@link Version}
  * compatibility when creating EnglishPossessiveFilter:
  * <ul>
  *    <li> As of 3.6, U+2019 RIGHT SINGLE QUOTATION MARK and 

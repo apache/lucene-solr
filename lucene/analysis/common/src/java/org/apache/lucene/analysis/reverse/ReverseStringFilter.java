@@ -73,10 +73,17 @@ public final class ReverseStringFilter extends TokenFilter {
    * <p>
    * The reversed tokens will not be marked. 
    * </p>
-   * 
-   * @param matchVersion See <a href="#version">above</a>
+   *
    * @param in {@link TokenStream} to filter
    */
+  public ReverseStringFilter(TokenStream in) {
+    this(in, NOMARKER);
+  }
+
+  /**
+   * @deprecated Use {@link #ReverseStringFilter(TokenStream)}
+   */
+  @Deprecated
   public ReverseStringFilter(Version matchVersion, TokenStream in) {
     this(matchVersion, in, NOMARKER);
   }
@@ -88,11 +95,20 @@ public final class ReverseStringFilter extends TokenFilter {
    * The reversed tokens will be prepended (marked) by the <code>marker</code>
    * character.
    * </p>
-   * 
-   * @param matchVersion See <a href="#version">above</a>
+   *
    * @param in {@link TokenStream} to filter
    * @param marker A character used to mark reversed tokens
    */
+  public ReverseStringFilter(TokenStream in, char marker) {
+    super(in);
+    this.matchVersion = Version.LATEST;
+    this.marker = marker;
+  }
+
+  /**
+   * @deprecated Use {@link #ReverseStringFilter(TokenStream,char)}
+   */
+  @Deprecated
   public ReverseStringFilter(Version matchVersion, TokenStream in, char marker) {
     super(in);
     this.matchVersion = matchVersion;
@@ -118,11 +134,18 @@ public final class ReverseStringFilter extends TokenFilter {
 
   /**
    * Reverses the given input string
-   * 
-   * @param matchVersion See <a href="#version">above</a>
+   *
    * @param input the string to reverse
    * @return the given input string in reversed order
    */
+  public static String reverse(final String input ){
+    return reverse(Version.LATEST, input);
+  }
+
+  /**
+   * @deprecated Use {@link #reverse(String)}
+   */
+  @Deprecated
   public static String reverse( Version matchVersion, final String input ){
     final char[] charInput = input.toCharArray();
     reverse( matchVersion, charInput, 0, charInput.length );
@@ -131,9 +154,16 @@ public final class ReverseStringFilter extends TokenFilter {
   
   /**
    * Reverses the given input buffer in-place
-   * @param matchVersion See <a href="#version">above</a>
    * @param buffer the input char array to reverse
    */
+  public static void reverse(final char[] buffer) {
+    reverse(Version.LATEST, buffer, 0, buffer.length);
+  }
+
+  /**
+   * @deprecated Use {@link #reverse(char[])}
+   */
+  @Deprecated
   public static void reverse(Version matchVersion, final char[] buffer) {
     reverse(matchVersion, buffer, 0, buffer.length);
   }
@@ -141,11 +171,19 @@ public final class ReverseStringFilter extends TokenFilter {
   /**
    * Partially reverses the given input buffer in-place from offset 0
    * up to the given length.
-   * @param matchVersion See <a href="#version">above</a>
    * @param buffer the input char array to reverse
    * @param len the length in the buffer up to where the
    *        buffer should be reversed
    */
+  public static void reverse(final char[] buffer,
+                             final int len) {
+    reverse(Version.LATEST, buffer, 0, len );
+  }
+
+  /**
+   * @deprecated Use {@link #reverse(char[],int)}
+   */
+  @Deprecated
   public static void reverse(Version matchVersion, final char[] buffer,
       final int len) {
     reverse( matchVersion, buffer, 0, len );
@@ -168,12 +206,20 @@ public final class ReverseStringFilter extends TokenFilter {
   /**
    * Partially reverses the given input buffer in-place from the given offset
    * up to the given length.
-   * @param matchVersion See <a href="#version">above</a>
    * @param buffer the input char array to reverse
    * @param start the offset from where to reverse the buffer
    * @param len the length in the buffer up to where the
    *        buffer should be reversed
    */
+  public static void reverse(final char[] buffer,
+                             final int start, final int len) {
+    reverse(Version.LATEST, buffer, start, len);
+  }
+
+  /**
+   * @deprecated Use {@link #reverse(char[],int,int)}
+   */
+  @Deprecated
   public static void reverse(Version matchVersion, final char[] buffer,
       final int start, final int len) {
     if (!matchVersion.onOrAfter(Version.LUCENE_3_1)) {

@@ -39,12 +39,10 @@ import org.apache.lucene.util.Version;
  * </p>
  *
  * <a name="version"/>
- * <p>You must specify the required {@link Version}
+ * <p>You may specify the {@link Version}
  * compatibility when creating GreekAnalyzer:
  * <ul>
  *   <li> As of 3.1, StandardFilter and GreekStemmer are used by default.
- *   <li> As of 2.9, StopFilter preserves position
- *        increments
  * </ul>
  * 
  * <p><b>NOTE</b>: This class uses the same {@link Version}
@@ -78,9 +76,15 @@ public final class GreekAnalyzer extends StopwordAnalyzerBase {
   
   /**
    * Builds an analyzer with the default stop words.
-   * @param matchVersion Lucene compatibility version,
-   *   See <a href="#version">above</a>
    */
+  public GreekAnalyzer() {
+    this(DefaultSetHolder.DEFAULT_SET);
+  }
+
+  /**
+   * @deprecated Use {@link #GreekAnalyzer()}
+   */
+  @Deprecated
   public GreekAnalyzer(Version matchVersion) {
     this(matchVersion, DefaultSetHolder.DEFAULT_SET);
   }
@@ -90,11 +94,16 @@ public final class GreekAnalyzer extends StopwordAnalyzerBase {
    * <p>
    * <b>NOTE:</b> The stopwords set should be pre-processed with the logic of 
    * {@link GreekLowerCaseFilter} for best results.
-   *  
-   * @param matchVersion Lucene compatibility version,
-   *   See <a href="#version">above</a>
    * @param stopwords a stopword set
    */
+  public GreekAnalyzer(CharArraySet stopwords) {
+    super(stopwords);
+  }
+
+  /**
+   * @deprecated Use {@link #GreekAnalyzer(CharArraySet)}
+   */
+  @Deprecated
   public GreekAnalyzer(Version matchVersion, CharArraySet stopwords) {
     super(matchVersion, stopwords);
   }
@@ -112,12 +121,12 @@ public final class GreekAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    final Tokenizer source = new StandardTokenizer(matchVersion, reader);
-    TokenStream result = new GreekLowerCaseFilter(matchVersion, source);
-    if (matchVersion.onOrAfter(Version.LUCENE_3_1))
-      result = new StandardFilter(matchVersion, result);
-    result = new StopFilter(matchVersion, result, stopwords);
-    if (matchVersion.onOrAfter(Version.LUCENE_3_1))
+    final Tokenizer source = new StandardTokenizer(getVersion(), reader);
+    TokenStream result = new GreekLowerCaseFilter(getVersion(), source);
+    if (getVersion().onOrAfter(Version.LUCENE_3_1))
+      result = new StandardFilter(getVersion(), result);
+    result = new StopFilter(getVersion(), result, stopwords);
+    if (getVersion().onOrAfter(Version.LUCENE_3_1))
       result = new GreekStemFilter(result);
     return new TokenStreamComponents(source, result);
   }

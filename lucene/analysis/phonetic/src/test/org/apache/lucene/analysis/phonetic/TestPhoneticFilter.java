@@ -66,8 +66,7 @@ public class TestPhoneticFilter extends BaseTokenStreamTestCase {
   
   static void assertAlgorithm(Encoder encoder, boolean inject, String input,
       String[] expected) throws Exception {
-    Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT,
-        new StringReader(input));
+    Tokenizer tokenizer = new WhitespaceTokenizer(new StringReader(input));
     PhoneticFilter filter = new PhoneticFilter(tokenizer, encoder, inject);
     assertTokenStreamContents(filter, expected);
   }

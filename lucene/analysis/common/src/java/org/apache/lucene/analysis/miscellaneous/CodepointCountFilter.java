@@ -39,11 +39,18 @@ public final class CodepointCountFilter extends FilteringTokenFilter {
    * Create a new {@link CodepointCountFilter}. This will filter out tokens whose
    * {@link CharTermAttribute} is either too short ({@link Character#codePointCount(char[], int, int)}
    * &lt; min) or too long ({@link Character#codePointCount(char[], int, int)} &gt; max).
-   * @param version the Lucene match version
    * @param in      the {@link TokenStream} to consume
    * @param min     the minimum length
    * @param max     the maximum length
    */
+  public CodepointCountFilter(TokenStream in, int min, int max) {
+    this(Version.LATEST, in, min, max);
+  }
+
+  /**
+   * @deprecated Use {@link #CodepointCountFilter(TokenStream, int, int)}
+   */
+  @Deprecated
   public CodepointCountFilter(Version version, TokenStream in, int min, int max) {
     super(version, in);
     if (min < 0) {

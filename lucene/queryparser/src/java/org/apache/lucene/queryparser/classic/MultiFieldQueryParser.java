@@ -65,6 +65,14 @@ public class MultiFieldQueryParser extends QueryParser
    * <p>In other words, all the query's terms must appear, but it doesn't matter in
    * what fields they appear.</p>
    */
+  public MultiFieldQueryParser(String[] fields, Analyzer analyzer, Map<String,Float> boosts) {
+    this(Version.LATEST, fields, analyzer, boosts);
+  }
+
+  /**
+   * @deprecated Use {@link #MultiFieldQueryParser(String[], Analyzer, Map)}
+   */
+  @Deprecated
   public MultiFieldQueryParser(Version matchVersion, String[] fields, Analyzer analyzer, Map<String,Float> boosts) {
     this(matchVersion, fields, analyzer);
     this.boosts = boosts;
@@ -90,6 +98,14 @@ public class MultiFieldQueryParser extends QueryParser
    * <p>In other words, all the query's terms must appear, but it doesn't matter in
    * what fields they appear.</p>
    */
+  public MultiFieldQueryParser(String[] fields, Analyzer analyzer) {
+    this(Version.LATEST, fields, analyzer);
+  }
+
+  /**
+   * @deprecated Use {@link #MultiFieldQueryParser(String[], Analyzer)}
+   */
+  @Deprecated
   public MultiFieldQueryParser(Version matchVersion, String[] fields, Analyzer analyzer) {
     super(matchVersion, null, analyzer);
     this.fields = fields;
@@ -239,7 +255,6 @@ public class MultiFieldQueryParser extends QueryParser
    * (field1:query1) (field2:query2) (field3:query3)...(fieldx:queryx)
    * </code>
    * </pre>
-   * @param matchVersion Lucene version to match; this is passed through to QueryParser.
    * @param queries Queries strings to parse
    * @param fields Fields to search on
    * @param analyzer Analyzer to use
@@ -247,6 +262,16 @@ public class MultiFieldQueryParser extends QueryParser
    * @throws IllegalArgumentException if the length of the queries array differs
    *  from the length of the fields array
    */
+  public static Query parse(String[] queries, String[] fields,
+                            Analyzer analyzer) throws ParseException
+  {
+    return parse(Version.LATEST, queries, fields, analyzer);
+  }
+
+  /**
+   * @deprecated Use {@link #parse(String[], String[], org.apache.lucene.analysis.Analyzer)}
+   */
+  @Deprecated
   public static Query parse(Version matchVersion, String[] queries, String[] fields,
       Analyzer analyzer) throws ParseException
   {
@@ -288,7 +313,6 @@ public class MultiFieldQueryParser extends QueryParser
    * </code>
    * </pre>
    *
-   * @param matchVersion Lucene version to match; this is passed through to QueryParser.
    * @param query Query string to parse
    * @param fields Fields to search on
    * @param flags Flags describing the fields
@@ -297,8 +321,17 @@ public class MultiFieldQueryParser extends QueryParser
    * @throws IllegalArgumentException if the length of the fields array differs
    *  from the length of the flags array
    */
-  public static Query parse(Version matchVersion, String query, String[] fields,
+  public static Query parse(String query, String[] fields,
       BooleanClause.Occur[] flags, Analyzer analyzer) throws ParseException {
+    return parse(Version.LATEST, query, fields, flags, analyzer);
+  }
+
+  /**
+   * @deprecated Use {@link #parse(String, String[], BooleanClause.Occur[], Analyzer)}
+   */
+  @Deprecated
+  public static Query parse(Version matchVersion, String query, String[] fields,
+        BooleanClause.Occur[] flags, Analyzer analyzer) throws ParseException {
     if (fields.length != flags.length)
       throw new IllegalArgumentException("fields.length != flags.length");
     BooleanQuery bQuery = new BooleanQuery();
@@ -337,7 +370,6 @@ public class MultiFieldQueryParser extends QueryParser
    * </code>
    * </pre>
    *
-   * @param matchVersion Lucene version to match; this is passed through to QueryParser.
    * @param queries Queries string to parse
    * @param fields Fields to search on
    * @param flags Flags describing the fields
@@ -346,6 +378,15 @@ public class MultiFieldQueryParser extends QueryParser
    * @throws IllegalArgumentException if the length of the queries, fields,
    *  and flags array differ
    */
+  public static Query parse(String[] queries, String[] fields, BooleanClause.Occur[] flags,
+                            Analyzer analyzer) throws ParseException {
+    return parse(Version.LATEST, queries, fields, flags, analyzer);
+  }
+
+  /**
+   * @deprecated Use {@link #parse(String[], String[], BooleanClause.Occur[], Analyzer)}
+   */
+  @Deprecated
   public static Query parse(Version matchVersion, String[] queries, String[] fields, BooleanClause.Occur[] flags,
       Analyzer analyzer) throws ParseException
   {

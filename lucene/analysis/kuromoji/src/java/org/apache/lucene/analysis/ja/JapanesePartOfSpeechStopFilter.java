@@ -40,10 +40,18 @@ public final class JapanesePartOfSpeechStopFilter extends FilteringTokenFilter {
 
   /**
    * Create a new {@link JapanesePartOfSpeechStopFilter}.
-   * @param version  the Lucene match version
    * @param input    the {@link TokenStream} to consume
    * @param stopTags the part-of-speech tags that should be removed
    */
+  public JapanesePartOfSpeechStopFilter(TokenStream input, Set<String> stopTags) {
+    super(input);
+    this.stopTags = stopTags;
+  }
+
+  /**
+   * @deprecated Use {@link #JapanesePartOfSpeechStopFilter(TokenStream,Set)}
+   */
+  @Deprecated
   public JapanesePartOfSpeechStopFilter(Version version, TokenStream input, Set<String> stopTags) {
     super(version, input);
     this.stopTags = stopTags;

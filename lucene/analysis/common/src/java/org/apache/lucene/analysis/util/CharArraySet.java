@@ -35,7 +35,7 @@ import org.apache.lucene.util.Version;
  * to a String first.
  *
  * <a name="version"></a>
- * <p>You must specify the required {@link Version}
+ * <p>You may specify the {@link Version}
  * compatibility when creating {@link CharArraySet}:
  * <ul>
  *   <li> As of 3.1, supplementary characters are
@@ -64,15 +64,20 @@ public class CharArraySet extends AbstractSet<Object> {
   /**
    * Create set with enough capacity to hold startSize terms
    * 
-   * @param matchVersion
-   *          compatibility match version see <a href="#version">Version
-   *          note</a> above for details.
    * @param startSize
    *          the initial capacity
    * @param ignoreCase
    *          <code>false</code> if and only if the set should be case sensitive
    *          otherwise <code>true</code>.
    */
+  public CharArraySet(int startSize, boolean ignoreCase) {
+    this(new CharArrayMap<>(startSize, ignoreCase));
+  }
+
+  /**
+   * @deprecated Use {@link #CharArraySet(int, boolean)}
+   */
+  @Deprecated
   public CharArraySet(Version matchVersion, int startSize, boolean ignoreCase) {
     this(new CharArrayMap<>(matchVersion, startSize, ignoreCase));
   }
@@ -80,15 +85,20 @@ public class CharArraySet extends AbstractSet<Object> {
   /**
    * Creates a set from a Collection of objects. 
    * 
-   * @param matchVersion
-   *          compatibility match version see <a href="#version">Version
-   *          note</a> above for details.
    * @param c
    *          a collection whose elements to be placed into the set
    * @param ignoreCase
    *          <code>false</code> if and only if the set should be case sensitive
    *          otherwise <code>true</code>.
    */
+  public CharArraySet(Collection<?> c, boolean ignoreCase) {
+    this(Version.LATEST, c, ignoreCase);
+  }
+
+  /**
+   * @deprecated Use {@link #CharArraySet(Collection, boolean)}
+   */
+  @Deprecated
   public CharArraySet(Version matchVersion, Collection<?> c, boolean ignoreCase) {
     this(matchVersion, c.size(), ignoreCase);
     addAll(c);
@@ -179,18 +189,22 @@ public class CharArraySet extends AbstractSet<Object> {
    * The {@link #copy(Version, Set)} will preserve the {@link Version} of the
    * source set it is an instance of {@link CharArraySet}.
    * </p>
-   * 
-   * @param matchVersion
-   *          compatibility match version see <a href="#version">Version
-   *          note</a> above for details. This argument will be ignored if the
-   *          given set is a {@link CharArraySet}.
+   *
    * @param set
    *          a set to copy
    * @return a copy of the given set as a {@link CharArraySet}. If the given set
    *         is a {@link CharArraySet} the ignoreCase property as well as the
    *         matchVersion will be of the given set will be preserved.
    */
-  public static CharArraySet copy(final Version matchVersion, final Set<?> set) {
+  public static CharArraySet copy(final Set<?> set) {
+    return copy(Version.LATEST, set);
+  }
+
+  /**
+   * @deprecated Use {@link #copy(java.util.Set)}
+   */
+  @Deprecated
+  public static CharArraySet copy(Version matchVersion, final Set<?> set) {
     if(set == EMPTY_SET)
       return EMPTY_SET;
     if(set instanceof CharArraySet) {

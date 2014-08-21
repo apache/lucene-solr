@@ -144,11 +144,18 @@ public final class Lucene43EdgeNGramTokenizer extends Tokenizer {
   /**
    * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
    *
-   * @param version the <a href="#version">Lucene match version</a>
    * @param input {@link Reader} holding the input to be tokenized
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
    */
+  public Lucene43EdgeNGramTokenizer(Reader input, int minGram, int maxGram) {
+    this(Version.LATEST, input, Side.FRONT, minGram, maxGram);
+  }
+
+  /**
+   * @deprecated Use {@link #Lucene43EdgeNGramTokenizer(Reader, int, int)}
+   */
+  @Deprecated
   public Lucene43EdgeNGramTokenizer(Version version, Reader input, int minGram, int maxGram) {
     this(version, input, Side.FRONT, minGram, maxGram);
   }
@@ -156,12 +163,19 @@ public final class Lucene43EdgeNGramTokenizer extends Tokenizer {
   /**
    * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
    *
-   * @param version the <a href="#version">Lucene match version</a>
    * @param factory {@link org.apache.lucene.util.AttributeFactory} to use
    * @param input {@link Reader} holding the input to be tokenized
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
    */
+  public Lucene43EdgeNGramTokenizer(AttributeFactory factory, Reader input, int minGram, int maxGram) {
+    this(Version.LATEST, factory, input, Side.FRONT, minGram, maxGram);
+  }
+
+  /**
+   * @deprecated Use {@link #Lucene43EdgeNGramTokenizer(AttributeFactory, Reader, int, int)}
+   */
+  @Deprecated
   public Lucene43EdgeNGramTokenizer(Version version, AttributeFactory factory, Reader input, int minGram, int maxGram) {
     this(version, factory, input, Side.FRONT, minGram, maxGram);
   }

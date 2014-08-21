@@ -22,7 +22,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 
@@ -33,9 +32,8 @@ public final class RemoveDuplicatesTokenFilter extends TokenFilter {
 
   private final CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
   private final PositionIncrementAttribute posIncAttribute =  addAttribute(PositionIncrementAttribute.class);
-  
-  // use a fixed version, as we don't care about case sensitivity.
-  private final CharArraySet previous = new CharArraySet(Version.LUCENE_3_1, 8, false);
+
+  private final CharArraySet previous = new CharArraySet(8, false);
 
   /**
    * Creates a new RemoveDuplicatesTokenFilter

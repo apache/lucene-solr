@@ -22,7 +22,6 @@ import java.io.Reader;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.CharTokenizer;
 import org.apache.lucene.util.AttributeFactory;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Version;
 
 /**
@@ -37,7 +36,7 @@ import org.apache.lucene.util.Version;
  * </p>
  * <p>
  * <a name="version"/>
- * You must specify the required {@link Version} compatibility when creating
+ * You may specify the required {@link Version} compatibility when creating
  * {@link LowerCaseTokenizer}:
  * <ul>
  * <li>As of 3.1, {@link CharTokenizer} uses an int based API to normalize and
@@ -50,13 +49,17 @@ public final class LowerCaseTokenizer extends LetterTokenizer {
   
   /**
    * Construct a new LowerCaseTokenizer.
-   * 
-   * @param matchVersion
-   *          Lucene version to match See {@link <a href="#version">above</a>}
-   * 
    * @param in
    *          the input to split up into tokens
    */
+  public LowerCaseTokenizer(Reader in) {
+    super(in);
+  }
+
+  /**
+   * @deprecated Use {@link #LowerCaseTokenizer(Reader)}
+   */
+  @Deprecated
   public LowerCaseTokenizer(Version matchVersion, Reader in) {
     super(matchVersion, in);
   }
@@ -65,13 +68,19 @@ public final class LowerCaseTokenizer extends LetterTokenizer {
    * Construct a new LowerCaseTokenizer using a given
    * {@link org.apache.lucene.util.AttributeFactory}.
    *
-   * @param matchVersion
-   *          Lucene version to match See {@link <a href="#version">above</a>}
    * @param factory
    *          the attribute factory to use for this {@link Tokenizer}
    * @param in
    *          the input to split up into tokens
    */
+  public LowerCaseTokenizer(AttributeFactory factory, Reader in) {
+    super(factory, in);
+  }
+
+  /**
+   * @deprecated Use {@link #LowerCaseTokenizer(AttributeFactory,Reader)}
+   */
+  @Deprecated
   public LowerCaseTokenizer(Version matchVersion, AttributeFactory factory, Reader in) {
     super(matchVersion, factory, in);
   }

@@ -35,6 +35,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.util.TestUtil;
 
 import com.carrotsearch.randomizedtesting.generators.RandomStrings;
+import org.apache.lucene.util.Version;
 
 /**
  * Tests {@link NGramTokenizer} for correctness.
@@ -50,8 +51,8 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
   
   public void testInvalidInput() throws Exception {
     boolean gotException = false;
-    try {        
-      new NGramTokenizer(TEST_VERSION_CURRENT, input, 2, 1);
+    try {
+      NGramTokenizer tok = new NGramTokenizer(input, 2, 1);
     } catch (IllegalArgumentException e) {
       gotException = true;
     }
@@ -60,8 +61,8 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
   
   public void testInvalidInput2() throws Exception {
     boolean gotException = false;
-    try {        
-      new NGramTokenizer(TEST_VERSION_CURRENT, input, 0, 1);
+    try {
+      NGramTokenizer tok = new NGramTokenizer(input, 0, 1);
     } catch (IllegalArgumentException e) {
       gotException = true;
     }
@@ -69,17 +70,17 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
   }
   
   public void testUnigrams() throws Exception {
-    NGramTokenizer tokenizer = new NGramTokenizer(TEST_VERSION_CURRENT, input, 1, 1);
+    NGramTokenizer tokenizer = new NGramTokenizer(input, 1, 1);
     assertTokenStreamContents(tokenizer, new String[]{"a","b","c","d","e"}, new int[]{0,1,2,3,4}, new int[]{1,2,3,4,5}, 5 /* abcde */);
   }
   
   public void testBigrams() throws Exception {
-    NGramTokenizer tokenizer = new NGramTokenizer(TEST_VERSION_CURRENT, input, 2, 2);
+    NGramTokenizer tokenizer = new NGramTokenizer(input, 2, 2);
     assertTokenStreamContents(tokenizer, new String[]{"ab","bc","cd","de"}, new int[]{0,1,2,3}, new int[]{2,3,4,5}, 5 /* abcde */);
   }
   
   public void testNgrams() throws Exception {
-    NGramTokenizer tokenizer = new NGramTokenizer(TEST_VERSION_CURRENT, input, 1, 3);
+    NGramTokenizer tokenizer = new NGramTokenizer(input, 1, 3);
     assertTokenStreamContents(tokenizer,
         new String[]{"a","ab", "abc", "b", "bc", "bcd", "c", "cd", "cde", "d", "de", "e"},
         new int[]{0,0,0,1,1,1,2,2,2,3,3,4},
@@ -93,12 +94,12 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
   }
   
   public void testOversizedNgrams() throws Exception {
-    NGramTokenizer tokenizer = new NGramTokenizer(TEST_VERSION_CURRENT, input, 6, 7);
+    NGramTokenizer tokenizer = new NGramTokenizer(input, 6, 7);
     assertTokenStreamContents(tokenizer, new String[0], new int[0], new int[0], 5 /* abcde */);
   }
   
   public void testReset() throws Exception {
-    NGramTokenizer tokenizer = new NGramTokenizer(TEST_VERSION_CURRENT, input, 1, 1);
+    NGramTokenizer tokenizer = new NGramTokenizer(input, 1, 1);
     assertTokenStreamContents(tokenizer, new String[]{"a","b","c","d","e"}, new int[]{0,1,2,3,4}, new int[]{1,2,3,4,5}, 5 /* abcde */);
     tokenizer.setReader(new StringReader("abcde"));
     assertTokenStreamContents(tokenizer, new String[]{"a","b","c","d","e"}, new int[]{0,1,2,3,4}, new int[]{1,2,3,4,5}, 5 /* abcde */);
@@ -112,7 +113,7 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
       Analyzer a = new Analyzer() {
         @Override
         protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          Tokenizer tokenizer = new NGramTokenizer(TEST_VERSION_CURRENT, reader, min, max);
+          Tokenizer tokenizer = new NGramTokenizer(reader, min, max);
           return new TokenStreamComponents(tokenizer, tokenizer);
         }    
       };
@@ -157,7 +158,7 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
     for (int i = 0; i < codePoints.length; ++i) {
       offsets[i+1] = offsets[i] + Character.charCount(codePoints[i]);
     }
-    final TokenStream grams = new NGramTokenizer(TEST_VERSION_CURRENT, new StringReader(s), minGram, maxGram, edgesOnly) {
+    final TokenStream grams = new NGramTokenizer(Version.LATEST, new StringReader(s), minGram, maxGram, edgesOnly) {
       @Override
       protected boolean isTokenChar(int chr) {
         return nonTokenChars.indexOf(chr) < 0;

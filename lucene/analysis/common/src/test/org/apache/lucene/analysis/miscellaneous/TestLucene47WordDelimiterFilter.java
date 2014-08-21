@@ -215,7 +215,7 @@ public class TestLucene47WordDelimiterFilter extends BaseTokenStreamTestCase {
   @Test
   public void testPositionIncrements() throws Exception {
     final int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
-    final CharArraySet protWords = new CharArraySet(TEST_VERSION_CURRENT, new HashSet<>(Arrays.asList("NUTCH")), false);
+    final CharArraySet protWords = new CharArraySet(new HashSet<>(Arrays.asList("NUTCH")), false);
     
     /* analyzer that uses whitespace + wdf */
     Analyzer a = new Analyzer() {
@@ -304,8 +304,7 @@ public class TestLucene47WordDelimiterFilter extends BaseTokenStreamTestCase {
       @Override
       public TokenStreamComponents createComponents(String field, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-        StopFilter filter = new StopFilter(TEST_VERSION_CURRENT,
-            tokenizer, StandardAnalyzer.STOP_WORDS_SET);
+        StopFilter filter = new StopFilter(tokenizer, StandardAnalyzer.STOP_WORDS_SET);
         return new TokenStreamComponents(tokenizer, new Lucene47WordDelimiterFilter(filter, flags, protWords));
       }
     };
@@ -337,7 +336,7 @@ public class TestLucene47WordDelimiterFilter extends BaseTokenStreamTestCase {
       final int flags = random().nextInt(512);
       final CharArraySet protectedWords;
       if (random().nextBoolean()) {
-        protectedWords = new CharArraySet(TEST_VERSION_CURRENT, new HashSet<>(Arrays.asList("a", "b", "cd")), false);
+        protectedWords = new CharArraySet(new HashSet<>(Arrays.asList("a", "b", "cd")), false);
       } else {
         protectedWords = null;
       }
@@ -360,7 +359,7 @@ public class TestLucene47WordDelimiterFilter extends BaseTokenStreamTestCase {
       final int flags = i;
       final CharArraySet protectedWords;
       if (random.nextBoolean()) {
-        protectedWords = new CharArraySet(TEST_VERSION_CURRENT, new HashSet<>(Arrays.asList("a", "b", "cd")), false);
+        protectedWords = new CharArraySet(new HashSet<>(Arrays.asList("a", "b", "cd")), false);
       } else {
         protectedWords = null;
       }

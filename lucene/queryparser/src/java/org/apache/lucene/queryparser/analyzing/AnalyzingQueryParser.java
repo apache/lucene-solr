@@ -43,9 +43,18 @@ import org.apache.lucene.util.Version;
 public class AnalyzingQueryParser extends org.apache.lucene.queryparser.classic.QueryParser {
   // gobble escaped chars or find a wildcard character 
   private final Pattern wildcardPattern = Pattern.compile("(\\.)|([?*]+)");
+
+  /**
+   * @deprecated Use {@link #AnalyzingQueryParser(String, Analyzer)}
+   */
+  @Deprecated
   public AnalyzingQueryParser(Version matchVersion, String field, Analyzer analyzer) {
     super(matchVersion, field, analyzer);
     setAnalyzeRangeTerms(true);
+  }
+
+  public AnalyzingQueryParser(String field, Analyzer analyzer) {
+    this(Version.LATEST, field, analyzer);
   }
 
   /**

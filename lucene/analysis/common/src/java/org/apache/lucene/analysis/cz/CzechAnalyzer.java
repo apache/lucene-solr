@@ -44,7 +44,7 @@ import java.nio.charset.StandardCharsets;
  * 
  * <a name="version"/>
  * <p>
- * You must specify the required {@link Version} compatibility when creating
+ * You may specify the {@link Version} compatibility when creating
  * CzechAnalyzer:
  * <ul>
  * <li>As of 3.1, words are stemmed with {@link CzechStemFilter}
@@ -72,7 +72,7 @@ public final class CzechAnalyzer extends StopwordAnalyzerBase {
     static {
       try {
         DEFAULT_SET = WordlistLoader.getWordSet(IOUtils.getDecodingReader(CzechAnalyzer.class, 
-            DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8), "#", Version.LUCENE_CURRENT);
+            DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8), "#");
       } catch (IOException ex) {
         // default set should always be present as it is part of the
         // distribution (JAR)
@@ -86,10 +86,15 @@ public final class CzechAnalyzer extends StopwordAnalyzerBase {
 
   /**
    * Builds an analyzer with the default stop words ({@link #getDefaultStopSet()}).
-   *
-   * @param matchVersion Lucene version to match See
-   *          {@link <a href="#version">above</a>}
    */
+  public CzechAnalyzer() {
+    this(DefaultSetHolder.DEFAULT_SET);
+  }
+
+  /**
+   * @deprecated Use {@link #CzechAnalyzer()}
+   */
+  @Deprecated
   public CzechAnalyzer(Version matchVersion) {
     this(matchVersion, DefaultSetHolder.DEFAULT_SET);
   }
@@ -97,10 +102,16 @@ public final class CzechAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer with the given stop words.
    *
-   * @param matchVersion Lucene version to match See
-   *          {@link <a href="#version">above</a>}
    * @param stopwords a stopword set
    */
+  public CzechAnalyzer(CharArraySet stopwords) {
+    this(stopwords, CharArraySet.EMPTY_SET);
+  }
+
+  /**
+   * @deprecated Use {@link #CzechAnalyzer(CharArraySet)}
+   */
+  @Deprecated
   public CzechAnalyzer(Version matchVersion, CharArraySet stopwords) {
     this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
   }
@@ -108,12 +119,19 @@ public final class CzechAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer with the given stop words and a set of work to be
    * excluded from the {@link CzechStemFilter}.
-   * 
-   * @param matchVersion Lucene version to match See
-   *          {@link <a href="#version">above</a>}
+   *
    * @param stopwords a stopword set
    * @param stemExclusionTable a stemming exclusion set
    */
+  public CzechAnalyzer(CharArraySet stopwords, CharArraySet stemExclusionTable) {
+    super(stopwords);
+    this.stemExclusionTable = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionTable));
+  }
+
+  /**
+   * @deprecated Use {@link #CzechAnalyzer(CharArraySet, CharArraySet)}
+   */
+  @Deprecated
   public CzechAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionTable) {
     super(matchVersion, stopwords);
     this.stemExclusionTable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stemExclusionTable));
@@ -129,18 +147,18 @@ public final class CzechAnalyzer extends StopwordAnalyzerBase {
    *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link StopFilter}
    *         , and {@link CzechStemFilter} (only if version is >= LUCENE_3_1). If
    *         a version is >= LUCENE_3_1 and a stem exclusion set is provided via
-   *         {@link #CzechAnalyzer(Version, CharArraySet, CharArraySet)} a
+   *         {@link #CzechAnalyzer(CharArraySet, CharArraySet)} a
    *         {@link SetKeywordMarkerFilter} is added before
    *         {@link CzechStemFilter}.
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    final Tokenizer source = new StandardTokenizer(matchVersion, reader);
-    TokenStream result = new StandardFilter(matchVersion, source);
-    result = new LowerCaseFilter(matchVersion, result);
-    result = new StopFilter( matchVersion, result, stopwords);
-    if (matchVersion.onOrAfter(Version.LUCENE_3_1)) {
+    final Tokenizer source = new StandardTokenizer(getVersion(), reader);
+    TokenStream result = new StandardFilter(getVersion(), source);
+    result = new LowerCaseFilter(getVersion(), result);
+    result = new StopFilter(getVersion(), result, stopwords);
+    if (getVersion().onOrAfter(Version.LUCENE_3_1_0)) {
       if(!this.stemExclusionTable.isEmpty())
         result = new SetKeywordMarkerFilter(result, stemExclusionTable);
       result = new CzechStemFilter(result);

@@ -34,19 +34,30 @@ public abstract class CharacterUtils {
   private static final Java5CharacterUtils JAVA_5 = new Java5CharacterUtils();
 
   /**
-   * Returns a {@link CharacterUtils} implementation according to the given
-   * {@link Version} instance.
-   * 
-   * @param matchVersion
-   *          a version instance
+   * Returns a {@link CharacterUtils} implementation.
    * @return a {@link CharacterUtils} implementation according to the given
    *         {@link Version} instance.
    */
-  public static CharacterUtils getInstance(final Version matchVersion) {
+  public static CharacterUtils getInstance() {
+    return JAVA_5;
+  }
+
+  /**
+   * @deprecated Use {@link #getInstance()}
+   */
+  @Deprecated
+  public static CharacterUtils getInstance(Version matchVersion) {
     return matchVersion.onOrAfter(Version.LUCENE_3_1) ? JAVA_5 : JAVA_4;
   }
 
   /** Return a {@link CharacterUtils} instance compatible with Java 1.4. */
+
+  
+  /** 
+   * explicitly returns a version matching java 4 semantics 
+   * @deprecated Only for n-gram backwards compat
+   */
+  @Deprecated
   public static CharacterUtils getJava4Instance() {
     return JAVA_4;
   }
@@ -57,7 +68,7 @@ public abstract class CharacterUtils {
    * {@link CharacterUtils#getInstance(Version)} this method mimics the behavior
    * of {@link Character#codePointAt(char[], int)} as it would have been
    * available on a Java 1.4 JVM or on a later virtual machine version.
-   * 
+   *
    * @param seq
    *          a character sequence
    * @param offset
@@ -79,7 +90,7 @@ public abstract class CharacterUtils {
    * {@link CharacterUtils#getInstance(Version)} this method mimics the behavior
    * of {@link Character#codePointAt(char[], int)} as it would have been
    * available on a Java 1.4 JVM or on a later virtual machine version.
-   * 
+   *
    * @param chars
    *          a character array
    * @param offset

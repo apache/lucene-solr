@@ -31,7 +31,7 @@ public class TestPersianAnalyzer extends BaseTokenStreamTestCase {
    * This test fails with NPE when the stopwords file is missing in classpath
    */
   public void testResourcesAvailable() {
-    new PersianAnalyzer(TEST_VERSION_CURRENT);
+    new PersianAnalyzer();
   }
 
   /**
@@ -42,7 +42,7 @@ public class TestPersianAnalyzer extends BaseTokenStreamTestCase {
    * These verb forms are from http://en.wikipedia.org/wiki/Persian_grammar
    */
   public void testBehaviorVerbs() throws Exception {
-    Analyzer a = new PersianAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer a = new PersianAnalyzer();
     // active present indicative
     assertAnalyzesTo(a, "می‌خورد", new String[] { "خورد" });
     // active preterite indicative
@@ -118,7 +118,7 @@ public class TestPersianAnalyzer extends BaseTokenStreamTestCase {
    * These verb forms are from http://en.wikipedia.org/wiki/Persian_grammar
    */
   public void testBehaviorVerbsDefective() throws Exception {
-    Analyzer a = new PersianAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer a = new PersianAnalyzer();
     // active present indicative
     assertAnalyzesTo(a, "مي خورد", new String[] { "خورد" });
     // active preterite indicative
@@ -189,7 +189,7 @@ public class TestPersianAnalyzer extends BaseTokenStreamTestCase {
    * nouns, removing the plural -ha.
    */
   public void testBehaviorNouns() throws Exception {
-    Analyzer a = new PersianAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer a = new PersianAnalyzer();
     assertAnalyzesTo(a, "برگ ها", new String[] { "برگ" });
     assertAnalyzesTo(a, "برگ‌ها", new String[] { "برگ" });
   }
@@ -199,7 +199,7 @@ public class TestPersianAnalyzer extends BaseTokenStreamTestCase {
    * (lowercased, etc)
    */
   public void testBehaviorNonPersian() throws Exception {
-    Analyzer a = new PersianAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer a = new PersianAnalyzer();
     assertAnalyzesTo(a, "English test.", new String[] { "english", "test" });
   }
   
@@ -207,7 +207,7 @@ public class TestPersianAnalyzer extends BaseTokenStreamTestCase {
    * Basic test ensuring that tokenStream works correctly.
    */
   public void testReusableTokenStream() throws Exception {
-    Analyzer a = new PersianAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer a = new PersianAnalyzer();
     assertAnalyzesTo(a, "خورده مي شده بوده باشد", new String[] { "خورده" });
     assertAnalyzesTo(a, "برگ‌ها", new String[] { "برگ" });
   }
@@ -216,14 +216,14 @@ public class TestPersianAnalyzer extends BaseTokenStreamTestCase {
    * Test that custom stopwords work, and are not case-sensitive.
    */
   public void testCustomStopwords() throws Exception {
-    PersianAnalyzer a = new PersianAnalyzer(TEST_VERSION_CURRENT, 
-        new CharArraySet(TEST_VERSION_CURRENT, asSet("the", "and", "a"), false));
+    PersianAnalyzer a = new PersianAnalyzer( 
+        new CharArraySet( asSet("the", "and", "a"), false));
     assertAnalyzesTo(a, "The quick brown fox.", new String[] { "quick",
         "brown", "fox" });
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new PersianAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new PersianAnalyzer(), 1000*RANDOM_MULTIPLIER);
   }
 }

@@ -95,13 +95,16 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
    *  @param a   used to find terms in the query text.
    */
   public void init(Version matchVersion, String f, Analyzer a) {
-    setAnalyzer(a);
-    field = f;
-    if (matchVersion.onOrAfter(Version.LUCENE_3_1)) {
-      setAutoGeneratePhraseQueries(false);
-    } else {
+    init(f, a);
+    if (matchVersion.onOrAfter(Version.LUCENE_3_1) == false) {
       setAutoGeneratePhraseQueries(true);
     }
+  }
+
+  public void init(String f, Analyzer a) {
+    setAnalyzer(a);
+    field = f;
+    setAutoGeneratePhraseQueries(false);
   }
 
   // the generated parser will create these in QueryParser

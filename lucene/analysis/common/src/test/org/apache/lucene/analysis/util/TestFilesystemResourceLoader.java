@@ -50,8 +50,7 @@ public class TestFilesystemResourceLoader extends LuceneTestCase {
   private void assertClasspathDelegation(ResourceLoader rl) throws Exception {
     // try a stopwords file from classpath
     CharArraySet set = WordlistLoader.getSnowballWordSet(
-      new InputStreamReader(rl.openResource("org/apache/lucene/analysis/snowball/english_stop.txt"), StandardCharsets.UTF_8),
-      TEST_VERSION_CURRENT
+      new InputStreamReader(rl.openResource("org/apache/lucene/analysis/snowball/english_stop.txt"), StandardCharsets.UTF_8)
     );
     assertTrue(set.contains("you"));
     // try to load a class; we use string comparison because classloader may be different...

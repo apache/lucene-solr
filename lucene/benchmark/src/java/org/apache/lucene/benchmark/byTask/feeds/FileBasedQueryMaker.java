@@ -6,7 +6,6 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.benchmark.byTask.tasks.NewAnalyzerTask;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.Version;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -52,7 +51,7 @@ public class FileBasedQueryMaker extends AbstractQueryMaker implements QueryMake
     Analyzer anlzr = NewAnalyzerTask.createAnalyzer(config.get("analyzer",
             "org.apache.lucene.analysis.standard.StandardAnalyzer"));
     String defaultField = config.get("file.query.maker.default.field", DocMaker.BODY_FIELD);
-    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, defaultField, anlzr);
+    QueryParser qp = new QueryParser(defaultField, anlzr);
     qp.setAllowLeadingWildcard(true);
 
     List<Query> qq = new ArrayList<>();
