@@ -302,6 +302,10 @@ Bug Fixes
 * SOLR-6268: HdfsUpdateLog has a race condition that can expose a closed HDFS FileSystem instance and should 
   close it's FileSystem instance if either inherited close method is called. (Mark Miller)
 
+* SOLR-6089: When using the HDFS block cache, when a file is deleted, it's underlying data entries in the 
+  block cache are not removed, which is a problem with the global block cache option. 
+  (Mark Miller, Patrick Hunt)
+
 Optimizations
 ---------------------
 

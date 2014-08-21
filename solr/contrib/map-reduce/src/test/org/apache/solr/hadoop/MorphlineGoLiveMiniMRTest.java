@@ -44,6 +44,7 @@ import org.apache.hadoop.util.JarFinder;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -65,6 +66,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.hadoop.hack.MiniMRClientCluster;
@@ -128,6 +130,10 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
   
   @BeforeClass
   public static void setupClass() throws Exception {
+    System.setProperty("solr.hdfs.blockcache.global", Boolean.toString(LuceneTestCase.random().nextBoolean()));
+    System.setProperty("solr.hdfs.blockcache.enabled", Boolean.toString(LuceneTestCase.random().nextBoolean()));
+    System.setProperty("solr.hdfs.blockcache.blocksperbank", "2048");
+    
     solrHomeDirectory = createTempDir();
     assumeTrue(
             "Currently this test can only be run without the lucene test security policy in place",
@@ -155,8 +161,6 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     
     int taskTrackers = 2;
     int dataNodes = 2;
-    
-    System.setProperty("solr.hdfs.blockcache.enabled", "false");
     
     JobConf conf = new JobConf();
     conf.set("dfs.block.access.token.enable", "false");
@@ -218,6 +222,8 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
   
   @AfterClass
   public static void teardownClass() throws Exception {
+    System.clearProperty("solr.hdfs.blockcache.global");
+    System.clearProperty("solr.hdfs.blockcache.blocksperbank");
     System.clearProperty("solr.hdfs.blockcache.enabled");
     System.clearProperty("hadoop.log.dir");
     System.clearProperty("test.build.dir");
@@ -627,8 +633,65 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
       checkConsistency(replicatedCollection);
       
       assertEquals(RECORD_COUNT, executeSolrQuery(cloudClient, "*:*").size());
-    }  
+    }
     
+    // delete collection
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("action", CollectionAction.DELETE.toString());
+    params.set(CoreAdminParams.DELETE_INSTANCE_DIR, true);
+    params.set(CoreAdminParams.DELETE_DATA_DIR, true);
+    params.set(CoreAdminParams.DELETE_INDEX, true);
+    params.set("name", replicatedCollection);
+    QueryRequest request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+    cloudClient.request(request);
+
+    
+    long timeout = System.currentTimeMillis() + 10000;
+    while (cloudClient.getZkStateReader().getClusterState().hasCollection(replicatedCollection)) {
+      if (System.currentTimeMillis() > timeout) {
+        throw new AssertionError("Timeout waiting to see removed collection leave clusterstate");
+      }
+      
+      Thread.sleep(200);
+      cloudClient.getZkStateReader().updateClusterState(true);
+    }
+    
+    if (TEST_NIGHTLY) {
+      createCollection(replicatedCollection, 11, 3, 11);
+    } else {
+      createCollection(replicatedCollection, 2, 3, 2);
+    }
+    
+    waitForRecoveriesToFinish(replicatedCollection, false);
+    printLayout();
+    assertEquals(0, executeSolrQuery(cloudClient, "*:*").getNumFound());
+    
+    
+    args = new String[] {
+        "--solr-home-dir=" + MINIMR_CONF_DIR.getAbsolutePath(),
+        "--output-dir=" + outDir.toString(),
+        "--shards", "2",
+        "--mappers=3",
+        "--verbose",
+        "--go-live", 
+        "--go-live-threads", Integer.toString(random().nextInt(15) + 1),  dataDir.toString()
+    };
+    args = prependInitialArgs(args);
+
+    argList = new ArrayList<>();
+    getShardUrlArgs(argList, replicatedCollection);
+    args = concat(args, argList.toArray(new String[0]));
+    
+    tool = new MapReduceIndexerTool();
+    res = ToolRunner.run(jobConf, tool, args);
+    assertEquals(0, res);
+    assertTrue(tool.job.isComplete());
+    assertTrue(tool.job.isSuccessful());
+    
+    checkConsistency(replicatedCollection);
+    
+    assertEquals(RECORD_COUNT, executeSolrQuery(cloudClient, "*:*").size());
   }
 
   private void getShardUrlArgs(List<String> args) {

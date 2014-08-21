@@ -139,11 +139,11 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory {
       int bufferSize = params.getInt("solr.hdfs.blockcache.bufferstore.buffersize", 128);
       int bufferCount = params.getInt("solr.hdfs.blockcache.bufferstore.buffercount", 128 * 128);
       
-      BlockCache blockCache = getBlockDirectoryCache(path, numberOfBlocksPerBank,
+      BlockCache blockCache = getBlockDirectoryCache(numberOfBlocksPerBank,
           blockSize, bankCount, directAllocation, slabSize,
           bufferSize, bufferCount, blockCacheGlobal);
       
-      Cache cache = new BlockDirectoryCache(blockCache, path, metrics);
+      Cache cache = new BlockDirectoryCache(blockCache, path, metrics, blockCacheGlobal);
       HdfsDirectory hdfsDirectory = new HdfsDirectory(new Path(path), conf);
       dir = new BlockDirectory(path, hdfsDirectory, cache, null,
           blockCacheReadEnabled, blockCacheWriteEnabled);
@@ -164,17 +164,16 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory {
     return dir;
   }
 
-  private BlockCache getBlockDirectoryCache(String path,
-      int numberOfBlocksPerBank, int blockSize, int bankCount,
+  private BlockCache getBlockDirectoryCache(int numberOfBlocksPerBank, int blockSize, int bankCount,
       boolean directAllocation, int slabSize, int bufferSize, int bufferCount, boolean staticBlockCache) {
     if (!staticBlockCache) {
       LOG.info("Creating new single instance HDFS BlockCache");
       return createBlockCache(numberOfBlocksPerBank, blockSize, bankCount, directAllocation, slabSize, bufferSize, bufferCount);
     }
-    LOG.info("Creating new global HDFS BlockCache");
     synchronized (HdfsDirectoryFactory.class) {
       
       if (globalBlockCache == null) {
+        LOG.info("Creating new global HDFS BlockCache");
         globalBlockCache = createBlockCache(numberOfBlocksPerBank, blockSize, bankCount,
             directAllocation, slabSize, bufferSize, bufferCount);
       }

@@ -61,5 +61,10 @@ public interface Cache {
    *          final name
    */
   void renameCacheFile(String source, String dest);
+
+  /**
+   * Release any resources associated with the cache.
+   */
+  void releaseResources();
   
 }

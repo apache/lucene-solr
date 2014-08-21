@@ -172,14 +172,6 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     numShardsNumReplicas.add(1);
     checkForCollection("testcollection",numShardsNumReplicas, null);
   }
-
-  private void randomlyEnableAutoSoftCommit() {
-    if (r.nextBoolean()) {
-      enableAutoSoftCommit(1000);
-    } else {
-      log.info("Not turning on auto soft commit");
-    }
-  }
   
   // skip the randoms - they can deadlock...
   @Override

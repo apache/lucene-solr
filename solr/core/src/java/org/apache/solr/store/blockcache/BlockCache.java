@@ -80,6 +80,10 @@ public class BlockCache {
     this.blockSize = blockSize;
   }
   
+  public void release(BlockCacheKey key) {
+    releaseLocation(cache.get(key));
+  }
+  
   private void releaseLocation(BlockCacheLocation location) {
     if (location == null) {
       return;
