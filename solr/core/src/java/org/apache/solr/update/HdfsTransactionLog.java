@@ -274,21 +274,12 @@ public class HdfsTransactionLog extends TransactionLog {
     try {
       synchronized (this) {
         fos.flushBuffer();
-        
-        // we must flush to hdfs
-        // TODO: we probably don't need to
-        // hsync below if we do this - I
-        // think they are equivalent.
-        tlogOutStream.hflush();
       }
 
       if (syncLevel == UpdateLog.SyncLevel.FSYNC) {
-        // Since fsync is outside of synchronized block, we can end up with a partial
-        // last record on power failure (which is OK, and does not represent an error...
-        // we just need to be aware of it when reading).
-        
-        //raf.getFD().sync();
         tlogOutStream.hsync();
+      } else {
+        tlogOutStream.hflush();
       }
 
     } catch (IOException e) {
@@ -304,18 +295,23 @@ public class HdfsTransactionLog extends TransactionLog {
       }
 
       synchronized (this) {
-        fos.flush();
-        tlogOutStream.hflush();
-        fos.close();
-
-        tlogOutStream.close();
+        fos.flushBuffer();
       }
+      
+      tlogOutStream.hflush();
+      tlogOutStream.close();
 
-      if (deleteOnClose) {
-        fs.delete(tlogFile, true);
-      }
     } catch (IOException e) {
+      log.error("Exception closing tlog.", e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    } finally {
+      if (deleteOnClose) {
+        try {
+          fs.delete(tlogFile, true);
+        } catch (IOException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
+      }
     }
   }
 
