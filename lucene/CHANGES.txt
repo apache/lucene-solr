@@ -80,11 +80,6 @@ API Changes
   takes the same selectors. Add helper methods to DocValues.java that are better 
   suited for search code (never return null, etc).  (Mike McCandless, Robert Muir)
 
-* LUCENE-5859: Remove Version from Analyzer constructors.  Use Analyzer.setVersion()
-  to set the version an analyzer should use to replicate behavior from a specific
-  release.
-  (Ryan Ernst, Robert Muir)
-
 * LUCENE-5871: Remove Version from IndexWriterConfig. Use
   IndexWriterConfig.setCommitOnClose to change the behavior of IndexWriter.close().
   The default has been changed to match that of 4.x.
@@ -173,6 +168,11 @@ API Changes
   merge with UpgradeIndexMergePolicy without reopening the writer. Also, MergePolicy
   no longer implements Closeable; if you need to release your custom MegePolicy's
   resources, you need to implement close() and call it explicitly. (Shai Erera)
+
+* LUCENE-5859: Deprecate Analyzer constructors taking Version.  Use Analyzer.setVersion()
+  to set the version an analyzer to replicate behavior from a specific release.
+  (Ryan Ernst, Robert Muir)
+
   
 Optimizations
 
