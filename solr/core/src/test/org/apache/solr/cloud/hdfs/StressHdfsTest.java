@@ -90,6 +90,8 @@ public class StressHdfsTest extends BasicDistributedZkTest {
   
   @Override
   public void doTest() throws Exception {
+    randomlyEnableAutoSoftCommit();
+    
     int cnt = random().nextInt(2) + 1;
     for (int i = 0; i < cnt; i++) {
       createAndDeleteCollection();
@@ -161,19 +163,19 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     
     int i = 0;
     for (SolrServer client : clients) {
-      HttpSolrServer c = new HttpSolrServer(getBaseUrl(client)
-          + "/delete_data_dir");
+      HttpSolrServer c = new HttpSolrServer(getBaseUrl(client) + "/" + DELETE_DATA_DIR_COLLECTION);
       try {
-        c.add(getDoc("id", i++));
-        if (random().nextBoolean()) c.add(getDoc("id", i++));
-        if (random().nextBoolean()) c.add(getDoc("id", i++));
+        int docCnt = random().nextInt(1000) + 1;
+        for (int j = 0; j < docCnt; j++) {
+          c.add(getDoc("id", i++, "txt_t", "just some random text for a doc"));
+        }
+
         if (random().nextBoolean()) {
           c.commit();
         } else {
           c.commit(true, true, true);
         }
         
-        c.query(new SolrQuery("id:" + i));
         c.setConnectionTimeout(30000);
         NamedList<Object> response = c.query(
             new SolrQuery().setRequestHandler("/admin/system")).getResponse();
@@ -192,6 +194,10 @@ public class StressHdfsTest extends BasicDistributedZkTest {
       assertEquals(0, cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
     
+    cloudClient.commit();
+    cloudClient.query(new SolrQuery("*:*"));
+    
+    // delete collection
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionAction.DELETE.toString());
     params.set("name", DELETE_DATA_DIR_COLLECTION);

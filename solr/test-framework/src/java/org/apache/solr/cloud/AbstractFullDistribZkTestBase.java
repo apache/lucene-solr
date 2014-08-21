@@ -1100,6 +1100,14 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
   }
   
+  protected void randomlyEnableAutoSoftCommit() {
+    if (r.nextBoolean()) {
+      enableAutoSoftCommit(1000);
+    } else {
+      log.info("Not turning on auto soft commit");
+    }
+  }
+  
   protected void enableAutoSoftCommit(int time) {
     log.info("Turning on auto soft commit: " + time);
     for (List<CloudJettyRunner> jettyList : shardToJetty.values()) {

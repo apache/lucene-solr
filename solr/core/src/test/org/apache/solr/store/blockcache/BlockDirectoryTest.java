@@ -22,17 +22,13 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Random;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MergeInfo;
-import org.apache.lucene.util.LuceneTestCase;
-
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.store.hdfs.HdfsDirectory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -89,6 +85,9 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
     @Override
     public void renameCacheFile(String source, String dest) {
     }
+
+    @Override
+    public void releaseResources() {}
   }
 
   private static final int MAX_NUMBER_OF_WRITES = 10000;
