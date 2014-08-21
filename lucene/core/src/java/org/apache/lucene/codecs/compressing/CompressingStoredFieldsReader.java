@@ -31,8 +31,8 @@ import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_CHECKSUM;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_CURRENT;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_START;
-import static org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsWriter.FIELDS_EXTENSION;
-import static org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsWriter.FIELDS_INDEX_EXTENSION;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.FIELDS_EXTENSION;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.FIELDS_INDEX_EXTENSION;
 
 import java.io.EOFException;
 import java.io.IOException;

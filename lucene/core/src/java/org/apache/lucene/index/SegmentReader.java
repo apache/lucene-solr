@@ -18,18 +18,15 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.IdentityHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldInfosFormat;
+import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
@@ -41,8 +38,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.util.Version;
 
 /**
  * IndexReader implementation over a single segment. 
@@ -56,7 +51,6 @@ public final class SegmentReader extends AtomicReader implements Accountable {
   private static final long BASE_RAM_BYTES_USED =
         RamUsageEstimator.shallowSizeOfInstance(SegmentReader.class)
       + RamUsageEstimator.shallowSizeOfInstance(SegmentDocValues.class);
-  private static final long LONG_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(Long.class);
         
   private final SegmentCommitInfo si;
   private final Bits liveDocs;
@@ -83,12 +77,8 @@ public final class SegmentReader extends AtomicReader implements Accountable {
     }
   };
 
-  final Map<String,DocValuesProducer> dvProducersByField = new HashMap<>();
-  final Set<DocValuesProducer> dvProducers = Collections.newSetFromMap(new IdentityHashMap<DocValuesProducer,Boolean>());
-  
+  final DocValuesProducer docValuesProducer;
   final FieldInfos fieldInfos;
-
-  private final List<Long> dvGens = new ArrayList<>();
   
   /**
    * Constructs a new SegmentReader with a new core.
@@ -121,7 +111,9 @@ public final class SegmentReader extends AtomicReader implements Accountable {
       numDocs = si.info.getDocCount() - si.getDelCount();
 
       if (fieldInfos.hasDocValues()) {
-        initDocValuesProducers(codec);
+        docValuesProducer = initDocValuesProducer(codec);
+      } else {
+        docValuesProducer = null;
       }
 
       success = true;
@@ -171,7 +163,9 @@ public final class SegmentReader extends AtomicReader implements Accountable {
       }
       
       if (fieldInfos.hasDocValues()) {
-        initDocValuesProducers(codec);
+        docValuesProducer = initDocValuesProducer(codec);
+      } else {
+        docValuesProducer = null;
       }
       success = true;
     } finally {
@@ -182,82 +176,16 @@ public final class SegmentReader extends AtomicReader implements Accountable {
   }
 
   // initialize the per-field DocValuesProducer
-  @SuppressWarnings("deprecation")
-  private void initDocValuesProducers(Codec codec) throws IOException {
+  private DocValuesProducer initDocValuesProducer(Codec codec) throws IOException {
     final Directory dir = core.cfsReader != null ? core.cfsReader : si.info.dir;
     final DocValuesFormat dvFormat = codec.docValuesFormat();
 
     int termsIndexDivisor = getTermInfosIndexDivisor();
     if (!si.hasFieldUpdates()) {
       // simple case, no DocValues updates
-      final DocValuesProducer dvp = segDocValues.getDocValuesProducer(-1L, si, IOContext.READ, dir, dvFormat, fieldInfos, termsIndexDivisor);
-      dvGens.add(-1L);
-      dvProducers.add(dvp);
-      for (FieldInfo fi : fieldInfos) {
-        if (!fi.hasDocValues()) continue;
-        assert fi.getDocValuesGen() == -1;
-        dvProducersByField.put(fi.name, dvp);
-      }
-      return;
-    }
-
-    Version ver = si.info.getVersion();
-    if (ver != null && ver.onOrAfter(Version.LUCENE_4_9_0)) {
-      DocValuesProducer baseProducer = null;
-      for (FieldInfo fi : fieldInfos) {
-        if (!fi.hasDocValues()) continue;
-        long docValuesGen = fi.getDocValuesGen();
-        if (docValuesGen == -1) {
-          if (baseProducer == null) {
-//        System.out.println("[" + Thread.currentThread().getName() + "] SR.initDocValuesProducers: segInfo=" + si + "; gen=" + docValuesGen + "; field=" + fi.name);
-            // the base producer gets all the fields, so the Codec can validate properly
-            baseProducer = segDocValues.getDocValuesProducer(docValuesGen, si, IOContext.READ, dir, dvFormat, fieldInfos, termsIndexDivisor);
-            dvGens.add(docValuesGen);
-            dvProducers.add(baseProducer);
-          }
-//        System.out.println("[" + Thread.currentThread().getName() + "] SR.initDocValuesProducers: segInfo=" + si + "; gen=" + docValuesGen + "; field=" + fi.name);
-          dvProducersByField.put(fi.name, baseProducer);
-        } else {
-          assert !dvGens.contains(docValuesGen);
-//        System.out.println("[" + Thread.currentThread().getName() + "] SR.initDocValuesProducers: segInfo=" + si + "; gen=" + docValuesGen + "; field=" + fi.name);
-          final DocValuesProducer dvp = segDocValues.getDocValuesProducer(docValuesGen, si, IOContext.READ, dir, dvFormat, new FieldInfos(new FieldInfo[] { fi }), termsIndexDivisor);
-          dvGens.add(docValuesGen);
-          dvProducers.add(dvp);
-          dvProducersByField.put(fi.name, dvp);
-        }
-      }
+      return segDocValues.getDocValuesProducer(-1L, si, IOContext.READ, dir, dvFormat, fieldInfos, termsIndexDivisor);
     } else {
-      // For pre-4.9 indexes, especially with doc-values updates, multiple
-      // FieldInfos could belong to the same dvGen. Therefore need to make sure
-      // we initialize each DocValuesProducer once per gen.
-      Map<Long,List<FieldInfo>> genInfos = new HashMap<>();
-      for (FieldInfo fi : fieldInfos) {
-        if (!fi.hasDocValues()) continue;
-        List<FieldInfo> genFieldInfos = genInfos.get(fi.getDocValuesGen());
-        if (genFieldInfos == null) {
-          genFieldInfos = new ArrayList<>();
-          genInfos.put(fi.getDocValuesGen(), genFieldInfos);
-        }
-        genFieldInfos.add(fi);
-      }
-      
-      for (Map.Entry<Long,List<FieldInfo>> e : genInfos.entrySet()) {
-        long docValuesGen = e.getKey();
-        List<FieldInfo> infos = e.getValue();
-        final DocValuesProducer dvp;
-        if (docValuesGen == -1) {
-          // we need to send all FieldInfos to gen=-1, but later we need to
-          // record the DVP only for the "true" gen=-1 fields (not updated)
-          dvp = segDocValues.getDocValuesProducer(docValuesGen, si, IOContext.READ, dir, dvFormat, fieldInfos, termsIndexDivisor);
-        } else {
-          dvp = segDocValues.getDocValuesProducer(docValuesGen, si, IOContext.READ, dir, dvFormat, new FieldInfos(infos.toArray(new FieldInfo[infos.size()])), termsIndexDivisor);
-        }
-        dvGens.add(docValuesGen);
-        dvProducers.add(dvp);
-        for (FieldInfo fi : infos) {
-          dvProducersByField.put(fi.name, dvp);
-        }
-      }
+      return new SegmentDocValuesProducer(si, dir, fieldInfos, segDocValues, dvFormat, termsIndexDivisor);
     }
   }
   
@@ -306,11 +234,14 @@ public final class SegmentReader extends AtomicReader implements Accountable {
     try {
       core.decRef();
     } finally {
-      dvProducersByField.clear();
       try {
         IOUtils.close(docValuesLocal, docsWithFieldLocal);
       } finally {
-        segDocValues.decRef(dvGens);
+        if (docValuesProducer instanceof SegmentDocValuesProducer) {
+          segDocValues.decRef(((SegmentDocValuesProducer)docValuesProducer).dvGens);
+        } else if (docValuesProducer != null) {
+          segDocValues.decRef(Collections.singletonList(-1L));
+        }
       }
     }
   }
@@ -319,14 +250,6 @@ public final class SegmentReader extends AtomicReader implements Accountable {
   public FieldInfos getFieldInfos() {
     ensureOpen();
     return fieldInfos;
-  }
-
-  /** Expert: retrieve thread-private {@link
-   *  StoredFieldsReader}
-   *  @lucene.internal */
-  public StoredFieldsReader getFieldsReader() {
-    ensureOpen();
-    return core.fieldsReaderLocal.get();
   }
   
   @Override
@@ -359,6 +282,28 @@ public final class SegmentReader extends AtomicReader implements Accountable {
   public TermVectorsReader getTermVectorsReader() {
     ensureOpen();
     return core.termVectorsLocal.get();
+  }
+
+  /** Expert: retrieve thread-private {@link
+   *  StoredFieldsReader}
+   *  @lucene.internal */
+  public StoredFieldsReader getFieldsReader() {
+    ensureOpen();
+    return core.fieldsReaderLocal.get();
+  }
+  
+  /** Expert: retrieve underlying NormsProducer
+   *  @lucene.internal */
+  public NormsProducer getNormsReader() {
+    ensureOpen();
+    return core.normsProducer;
+  }
+  
+  /** Expert: retrieve underlying DocValuesProducer
+   *  @lucene.internal */
+  public DocValuesProducer getDocValuesReader() {
+    ensureOpen();
+    return docValuesProducer;
   }
 
   @Override
@@ -462,9 +407,7 @@ public final class SegmentReader extends AtomicReader implements Accountable {
       if (fi == null) {
         return null;
       }
-      DocValuesProducer dvProducer = dvProducersByField.get(field);
-      assert dvProducer != null;
-      NumericDocValues dv = dvProducer.getNumeric(fi);
+      NumericDocValues dv = docValuesProducer.getNumeric(fi);
       dvFields.put(field, dv);
       return dv;
     }
@@ -488,9 +431,7 @@ public final class SegmentReader extends AtomicReader implements Accountable {
         // Field was not indexed with doc values
         return null;
       }
-      DocValuesProducer dvProducer = dvProducersByField.get(field);
-      assert dvProducer != null;
-      Bits dv = dvProducer.getDocsWithField(fi);
+      Bits dv = docValuesProducer.getDocsWithField(fi);
       dvFields.put(field, dv);
       return dv;
     }
@@ -508,9 +449,7 @@ public final class SegmentReader extends AtomicReader implements Accountable {
 
     BinaryDocValues dvs = (BinaryDocValues) dvFields.get(field);
     if (dvs == null) {
-      DocValuesProducer dvProducer = dvProducersByField.get(field);
-      assert dvProducer != null;
-      dvs = dvProducer.getBinary(fi);
+      dvs = docValuesProducer.getBinary(fi);
       dvFields.put(field, dvs);
     }
 
@@ -530,9 +469,7 @@ public final class SegmentReader extends AtomicReader implements Accountable {
       if (fi == null) {
         return null;
       }
-      DocValuesProducer dvProducer = dvProducersByField.get(field);
-      assert dvProducer != null;
-      SortedDocValues dv = dvProducer.getSorted(fi);
+      SortedDocValues dv = docValuesProducer.getSorted(fi);
       dvFields.put(field, dv);
       return dv;
     }
@@ -551,9 +488,7 @@ public final class SegmentReader extends AtomicReader implements Accountable {
       if (fi == null) {
         return null;
       }
-      DocValuesProducer dvProducer = dvProducersByField.get(field);
-      assert dvProducer != null;
-      SortedNumericDocValues dv = dvProducer.getSortedNumeric(fi);
+      SortedNumericDocValues dv = docValuesProducer.getSortedNumeric(fi);
       dvFields.put(field, dv);
       return dv;
     }
@@ -572,9 +507,7 @@ public final class SegmentReader extends AtomicReader implements Accountable {
       if (fi == null) {
         return null;
       }
-      DocValuesProducer dvProducer = dvProducersByField.get(field);
-      assert dvProducer != null;
-      SortedSetDocValues dv = dvProducer.getSortedSet(fi);
+      SortedSetDocValues dv = docValuesProducer.getSortedSet(fi);
       dvFields.put(field, dv);
       return dv;
     }
@@ -602,13 +535,8 @@ public final class SegmentReader extends AtomicReader implements Accountable {
   public long ramBytesUsed() {
     ensureOpen();
     long ramBytesUsed = BASE_RAM_BYTES_USED;
-    ramBytesUsed += dvGens.size() * LONG_RAM_BYTES_USED;
-    ramBytesUsed += dvProducers.size() * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
-    ramBytesUsed += dvProducersByField.size() * 2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
-    if (dvProducers != null) {
-      for (DocValuesProducer producer : dvProducers) {
-        ramBytesUsed += producer.ramBytesUsed();
-      }
+    if (docValuesProducer != null) {
+      ramBytesUsed += docValuesProducer.ramBytesUsed();
     }
     if (core != null) {
       ramBytesUsed += core.ramBytesUsed();
@@ -640,10 +568,8 @@ public final class SegmentReader extends AtomicReader implements Accountable {
     }
     
     // docvalues
-    if (dvProducers != null) {
-      for (DocValuesProducer producer : dvProducers) {
-        producer.checkIntegrity();
-      }
+    if (docValuesProducer != null) {
+      docValuesProducer.checkIntegrity();
     }
   }
 }

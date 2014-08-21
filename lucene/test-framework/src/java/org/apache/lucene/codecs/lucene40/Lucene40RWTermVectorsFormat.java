@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene3x;
+package org.apache.lucene.codecs.lucene40;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,18 +19,23 @@ package org.apache.lucene.codecs.lucene3x;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.DocValuesConsumer;
-import org.apache.lucene.codecs.NormsConsumer;
-import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.codecs.TermVectorsWriter;
+import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.LuceneTestCase;
 
-/**
- * @lucene.internal
- * @lucene.experimental
- */
-class PreFlexRWNormsFormat extends Lucene3xNormsFormat {
+/** 
+ * Simulates writing Lucene 4.0 Stored Fields Format.
+ */ 
+public class Lucene40RWTermVectorsFormat extends Lucene40TermVectorsFormat {
 
   @Override
-  public NormsConsumer normsConsumer(SegmentWriteState state) throws IOException {
-    return new PreFlexRWNormsConsumer(state.directory, state.segmentInfo.name, state.context);
+  public TermVectorsWriter vectorsWriter(Directory directory, SegmentInfo segmentInfo, IOContext context) throws IOException {
+    if (!LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
+      throw new UnsupportedOperationException("this codec can only be used for reading");
+    } else {
+      return new Lucene40TermVectorsWriter(directory, segmentInfo.name, context);
+    }
   }
 }

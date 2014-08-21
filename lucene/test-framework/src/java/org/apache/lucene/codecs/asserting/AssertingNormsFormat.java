@@ -19,12 +19,13 @@ package org.apache.lucene.codecs.asserting;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.DocValuesConsumer;
-import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.NormsFormat;
-import org.apache.lucene.codecs.asserting.AssertingDocValuesFormat.AssertingNormsConsumer;
-import org.apache.lucene.codecs.asserting.AssertingDocValuesFormat.AssertingDocValuesProducer;
+import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.lucene49.Lucene49NormsFormat;
+import org.apache.lucene.index.AssertingAtomicReader;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
@@ -35,17 +36,77 @@ public class AssertingNormsFormat extends NormsFormat {
   private final NormsFormat in = new Lucene49NormsFormat();
   
   @Override
-  public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
-    DocValuesConsumer consumer = in.normsConsumer(state);
+  public NormsConsumer normsConsumer(SegmentWriteState state) throws IOException {
+    NormsConsumer consumer = in.normsConsumer(state);
     assert consumer != null;
     return new AssertingNormsConsumer(consumer, state.segmentInfo.getDocCount());
   }
 
   @Override
-  public DocValuesProducer normsProducer(SegmentReadState state) throws IOException {
+  public NormsProducer normsProducer(SegmentReadState state) throws IOException {
     assert state.fieldInfos.hasNorms();
-    DocValuesProducer producer = in.normsProducer(state);
+    NormsProducer producer = in.normsProducer(state);
     assert producer != null;
-    return new AssertingDocValuesProducer(producer, state.segmentInfo.getDocCount());
+    return new AssertingNormsProducer(producer, state.segmentInfo.getDocCount());
+  }
+  
+  static class AssertingNormsConsumer extends NormsConsumer {
+    private final NormsConsumer in;
+    private final int maxDoc;
+    
+    AssertingNormsConsumer(NormsConsumer in, int maxDoc) {
+      this.in = in;
+      this.maxDoc = maxDoc;
+    }
+
+    @Override
+    public void addNormsField(FieldInfo field, Iterable<Number> values) throws IOException {
+      int count = 0;
+      for (Number v : values) {
+        assert v != null;
+        count++;
+      }
+      assert count == maxDoc;
+      AssertingDocValuesFormat.checkIterator(values.iterator(), maxDoc, false);
+      in.addNormsField(field, values);
+    }
+    
+    @Override
+    public void close() throws IOException {
+      in.close();
+    }
+  }
+  
+  static class AssertingNormsProducer extends NormsProducer {
+    private final NormsProducer in;
+    private final int maxDoc;
+    
+    AssertingNormsProducer(NormsProducer in, int maxDoc) {
+      this.in = in;
+      this.maxDoc = maxDoc;
+    }
+
+    @Override
+    public NumericDocValues getNorms(FieldInfo field) throws IOException {
+      assert field.getNormType() == FieldInfo.DocValuesType.NUMERIC;
+      NumericDocValues values = in.getNorms(field);
+      assert values != null;
+      return new AssertingAtomicReader.AssertingNumericDocValues(values, maxDoc);
+    }
+
+    @Override
+    public void close() throws IOException {
+      in.close();
+    }
+
+    @Override
+    public long ramBytesUsed() {
+      return in.ramBytesUsed();
+    }
+
+    @Override
+    public void checkIntegrity() throws IOException {
+      in.checkIntegrity();
+    }
   }
 }

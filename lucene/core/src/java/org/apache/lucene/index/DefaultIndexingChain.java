@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosWriter;
+import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.document.FieldType;
@@ -171,7 +172,7 @@ final class DefaultIndexingChain extends DocConsumer {
 
   private void writeNorms(SegmentWriteState state) throws IOException {
     boolean success = false;
-    DocValuesConsumer normsConsumer = null;
+    NormsConsumer normsConsumer = null;
     try {
       if (state.fieldInfos.hasNorms()) {
         NormsFormat normsFormat = state.segmentInfo.getCodec().normsFormat();
@@ -416,7 +417,7 @@ final class DefaultIndexingChain extends DocConsumer {
 
       case NUMERIC:
         if (fp.docValuesWriter == null) {
-          fp.docValuesWriter = new NumericDocValuesWriter(fp.fieldInfo, bytesUsed, true);
+          fp.docValuesWriter = new NumericDocValuesWriter(fp.fieldInfo, bytesUsed);
         }
         ((NumericDocValuesWriter) fp.docValuesWriter).addValue(docID, field.numericValue().longValue());
         break;
@@ -531,7 +532,7 @@ final class DefaultIndexingChain extends DocConsumer {
     PerField next;
 
     // Lazy init'd:
-    NumericDocValuesWriter norms;
+    NormValuesWriter norms;
     
     // reused
     TokenStream tokenStream;
@@ -558,7 +559,7 @@ final class DefaultIndexingChain extends DocConsumer {
       if (fieldInfo.omitsNorms() == false) {
         if (norms == null) {
           fieldInfo.setNormValueType(FieldInfo.DocValuesType.NUMERIC);
-          norms = new NumericDocValuesWriter(fieldInfo, docState.docWriter.bytesUsed, false);
+          norms = new NormValuesWriter(fieldInfo, docState.docWriter.bytesUsed);
         }
         norms.addValue(docState.docID, similarity.computeNorm(invertState));
       }

@@ -19,10 +19,15 @@ package org.apache.lucene.codecs;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.MergeState;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.ReaderSlice;
 import org.apache.lucene.index.SegmentWriteState; // javadocs
 import org.apache.lucene.index.Terms;
 
@@ -62,11 +67,30 @@ public abstract class FieldsConsumer implements Closeable {
    *  (terms, docs, positions, etc.).  A {@link
    *  PostingsFormat} can override this default
    *  implementation to do its own merging. */
-  public void merge(MergeState mergeState, Fields fields) throws IOException {
-    for (String field : fields) {
+  public void merge(MergeState mergeState) throws IOException {
+    final List<Fields> fields = new ArrayList<>();
+    final List<ReaderSlice> slices = new ArrayList<>();
+
+    int docBase = 0;
+
+    for(int readerIndex=0;readerIndex<mergeState.readers.size();readerIndex++) {
+      final AtomicReader reader = mergeState.readers.get(readerIndex);
+      final Fields f = reader.fields();
+      final int maxDoc = reader.maxDoc();
+      if (f != null) {
+        slices.add(new ReaderSlice(docBase, maxDoc, readerIndex));
+        fields.add(f);
+      }
+      docBase += maxDoc;
+    }
+    
+    final Fields mergedFields = new MultiFields(fields.toArray(Fields.EMPTY_ARRAY),
+                                                slices.toArray(ReaderSlice.EMPTY_ARRAY));
+    
+    for (String field : mergedFields) {
       FieldInfo info = mergeState.fieldInfos.fieldInfo(field);
       assert info != null : "FieldInfo for field is null: "+ field;
-      Terms terms = fields.terms(field);
+      Terms terms = mergedFields.terms(field);
       if (terms != null) {
         final TermsConsumer termsConsumer = addField(info);
         termsConsumer.merge(mergeState, info.getIndexOptions(), terms.iterator(null));

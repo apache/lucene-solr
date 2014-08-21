@@ -19,7 +19,7 @@ package org.apache.lucene.codecs.lucene42;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -29,7 +29,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class Lucene42RWNormsFormat extends Lucene42NormsFormat {
 
   @Override
-  public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
+  public NormsConsumer normsConsumer(SegmentWriteState state) throws IOException {
     if (LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
       return new Lucene42NormsConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION, acceptableOverheadRatio);
     } else {

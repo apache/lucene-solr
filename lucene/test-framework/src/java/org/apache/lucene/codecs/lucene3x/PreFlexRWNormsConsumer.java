@@ -19,20 +19,19 @@ package org.apache.lucene.codecs.lucene3x;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
 /**
  * Writes and Merges Lucene 3.x norms format
  * @lucene.experimental
  */
-class PreFlexRWNormsConsumer extends DocValuesConsumer {
+class PreFlexRWNormsConsumer extends NormsConsumer {
   
   /** norms header placeholder */
   private static final byte[] NORMS_HEADER = new byte[]{'N','R','M',-1};
@@ -65,7 +64,7 @@ class PreFlexRWNormsConsumer extends DocValuesConsumer {
   }
 
   @Override
-  public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
+  public void addNormsField(FieldInfo field, Iterable<Number> values) throws IOException {
     assert field.number > lastFieldNumber : "writing norms fields out of order" + lastFieldNumber + " -> " + field.number;
     for (Number n : values) {
       if (n.longValue() < Byte.MIN_VALUE || n.longValue() > Byte.MAX_VALUE) {
@@ -79,25 +78,5 @@ class PreFlexRWNormsConsumer extends DocValuesConsumer {
   @Override
   public void close() throws IOException {
     IOUtils.close(out);
-  }
-
-  @Override
-  public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
-    throw new AssertionError();
-  }
-
-  @Override
-  public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
-    throw new AssertionError();
-  }
-
-  @Override
-  public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrdCount, Iterable<Number> ords) throws IOException {
-    throw new AssertionError();
-  }
-
-  @Override
-  public void addSortedNumericField(FieldInfo field, Iterable<Number> docToValueCount, Iterable<Number> values) throws IOException {
-    throw new AssertionError();
   }
 }

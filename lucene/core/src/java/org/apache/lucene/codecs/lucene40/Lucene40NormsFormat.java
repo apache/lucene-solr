@@ -19,9 +19,9 @@ package org.apache.lucene.codecs.lucene40;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.DocValuesConsumer;
-import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
@@ -49,15 +49,15 @@ public class Lucene40NormsFormat extends NormsFormat {
   public Lucene40NormsFormat() {}
   
   @Override
-  public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
+  public NormsConsumer normsConsumer(SegmentWriteState state) throws IOException {
     throw new UnsupportedOperationException("this codec can only be used for reading");
   }
 
   @Override
-  public DocValuesProducer normsProducer(SegmentReadState state) throws IOException {
+  public NormsProducer normsProducer(SegmentReadState state) throws IOException {
     String filename = IndexFileNames.segmentFileName(state.segmentInfo.name, 
                                                      "nrm", 
                                                      IndexFileNames.COMPOUND_FILE_EXTENSION);
-    return new Lucene40DocValuesReader(state, filename, Lucene40FieldInfosReader.LEGACY_NORM_TYPE_KEY);
+    return new Lucene40NormsReader(state, filename);
   }
 }

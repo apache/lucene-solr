@@ -86,7 +86,7 @@ public class Lucene41Codec extends Codec {
   }
   
   @Override
-  public final TermVectorsFormat termVectorsFormat() {
+  public TermVectorsFormat termVectorsFormat() {
     return vectorsFormat;
   }
 

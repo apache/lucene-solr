@@ -717,10 +717,10 @@ public class TestCodecs extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new StringField("f", "bar", Store.YES));
     doc.add(new NumericDocValuesField("n", 18L));
-    writer.addDocument(doc);
     
     OLD_FORMAT_IMPERSONATION_IS_ACTIVE = false;
     try {
+      writer.addDocument(doc);
       writer.close();
       fail("should not have succeeded to impersonate an old format!");
     } catch (UnsupportedOperationException e) {

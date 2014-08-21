@@ -207,54 +207,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
     }
   }
   
-  static class AssertingNormsConsumer extends DocValuesConsumer {
-    private final DocValuesConsumer in;
-    private final int maxDoc;
-    
-    AssertingNormsConsumer(DocValuesConsumer in, int maxDoc) {
-      this.in = in;
-      this.maxDoc = maxDoc;
-    }
-
-    @Override
-    public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
-      int count = 0;
-      for (Number v : values) {
-        assert v != null;
-        count++;
-      }
-      assert count == maxDoc;
-      checkIterator(values.iterator(), maxDoc, false);
-      in.addNumericField(field, values);
-    }
-
-    @Override
-    public void close() throws IOException {
-      in.close();
-    }
-
-    @Override
-    public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
-      throw new IllegalStateException();
-    }
-
-    @Override
-    public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
-      throw new IllegalStateException();
-    }
-    
-    @Override
-    public void addSortedNumericField(FieldInfo field, Iterable<Number> docToValueCount, Iterable<Number> values) throws IOException {
-      throw new IllegalStateException();
-    }
-
-    @Override
-    public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrdCount, Iterable<Number> ords) throws IOException {
-      throw new IllegalStateException();
-    }
-  }
-  
-  private static <T> void checkIterator(Iterator<T> iterator, long expectedSize, boolean allowNull) {
+  static <T> void checkIterator(Iterator<T> iterator, long expectedSize, boolean allowNull) {
     for (long i = 0; i < expectedSize; i++) {
       boolean hasNext = iterator.hasNext();
       assert hasNext;
@@ -287,8 +240,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
 
     @Override
     public NumericDocValues getNumeric(FieldInfo field) throws IOException {
-      assert field.getDocValuesType() == FieldInfo.DocValuesType.NUMERIC || 
-             field.getNormType() == FieldInfo.DocValuesType.NUMERIC;
+      assert field.getDocValuesType() == FieldInfo.DocValuesType.NUMERIC;
       NumericDocValues values = in.getNumeric(field);
       assert values != null;
       return new AssertingAtomicReader.AssertingNumericDocValues(values, maxDoc);

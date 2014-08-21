@@ -19,6 +19,7 @@ package org.apache.lucene.codecs;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -28,7 +29,9 @@ import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.MergeState;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.MultiDocValues.OrdinalMap;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SortedDocValues;
@@ -51,13 +54,14 @@ import org.apache.lucene.util.packed.PackedInts;
  * The lifecycle is:
  * <ol>
  *   <li>DocValuesConsumer is created by 
- *       {@link DocValuesFormat#fieldsConsumer(SegmentWriteState)} or
  *       {@link NormsFormat#normsConsumer(SegmentWriteState)}.
  *   <li>{@link #addNumericField}, {@link #addBinaryField},
- *       or {@link #addSortedField} are called for each Numeric,
- *       Binary, or Sorted docvalues field. The API is a "pull" rather
- *       than "push", and the implementation is free to iterate over the 
- *       values multiple times ({@link Iterable#iterator()}).
+ *       {@link #addSortedField}, {@link #addSortedSetField},
+ *       or {@link #addSortedNumericField} are called for each Numeric,
+ *       Binary, Sorted, SortedSet, or SortedNumeric docvalues field. 
+ *       The API is a "pull" rather than "push", and the implementation 
+ *       is free to iterate over the values multiple times 
+ *       ({@link Iterable#iterator()}).
  *   <li>After all fields are added, the consumer is {@link #close}d.
  * </ol>
  *
@@ -117,6 +121,83 @@ public abstract class DocValuesConsumer implements Closeable {
    * @throws IOException if an I/O error occurred.
    */
   public abstract void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrdCount, Iterable<Number> ords) throws IOException;
+  
+  /** Merges in the fields from the readers in 
+   *  <code>mergeState</code>. The default implementation 
+   *  calls {@link #mergeNumericField}, {@link #mergeBinaryField},
+   *  {@link #mergeSortedField}, {@link #mergeSortedSetField},
+   *  or {@link #mergeSortedNumericField} for each field,
+   *  depending on its type.
+   *  Implementations can override this method 
+   *  for more sophisticated merging (bulk-byte copying, etc). */
+  public void merge(MergeState mergeState) throws IOException {
+    for (FieldInfo field : mergeState.fieldInfos) {
+      DocValuesType type = field.getDocValuesType();
+      if (type != null) {
+        if (type == DocValuesType.NUMERIC) {
+          List<NumericDocValues> toMerge = new ArrayList<>();
+          List<Bits> docsWithField = new ArrayList<>();
+          for (AtomicReader reader : mergeState.readers) {
+            NumericDocValues values = reader.getNumericDocValues(field.name);
+            Bits bits = reader.getDocsWithField(field.name);
+            if (values == null) {
+              values = DocValues.emptyNumeric();
+              bits = new Bits.MatchNoBits(reader.maxDoc());
+            }
+            toMerge.add(values);
+            docsWithField.add(bits);
+          }
+          mergeNumericField(field, mergeState, toMerge, docsWithField);
+        } else if (type == DocValuesType.BINARY) {
+          List<BinaryDocValues> toMerge = new ArrayList<>();
+          List<Bits> docsWithField = new ArrayList<>();
+          for (AtomicReader reader : mergeState.readers) {
+            BinaryDocValues values = reader.getBinaryDocValues(field.name);
+            Bits bits = reader.getDocsWithField(field.name);
+            if (values == null) {
+              values = DocValues.emptyBinary();
+              bits = new Bits.MatchNoBits(reader.maxDoc());
+            }
+            toMerge.add(values);
+            docsWithField.add(bits);
+          }
+          mergeBinaryField(field, mergeState, toMerge, docsWithField);
+        } else if (type == DocValuesType.SORTED) {
+          List<SortedDocValues> toMerge = new ArrayList<>();
+          for (AtomicReader reader : mergeState.readers) {
+            SortedDocValues values = reader.getSortedDocValues(field.name);
+            if (values == null) {
+              values = DocValues.emptySorted();
+            }
+            toMerge.add(values);
+          }
+          mergeSortedField(field, mergeState, toMerge);
+        } else if (type == DocValuesType.SORTED_SET) {
+          List<SortedSetDocValues> toMerge = new ArrayList<>();
+          for (AtomicReader reader : mergeState.readers) {
+            SortedSetDocValues values = reader.getSortedSetDocValues(field.name);
+            if (values == null) {
+              values = DocValues.emptySortedSet();
+            }
+            toMerge.add(values);
+          }
+          mergeSortedSetField(field, mergeState, toMerge);
+        } else if (type == DocValuesType.SORTED_NUMERIC) {
+          List<SortedNumericDocValues> toMerge = new ArrayList<>();
+          for (AtomicReader reader : mergeState.readers) {
+            SortedNumericDocValues values = reader.getSortedNumericDocValues(field.name);
+            if (values == null) {
+              values = DocValues.emptySortedNumeric(reader.maxDoc());
+            }
+            toMerge.add(values);
+          }
+          mergeSortedNumericField(field, mergeState, toMerge);
+        } else {
+          throw new AssertionError("type=" + type);
+        }
+      }
+    }
+  }
   
   /**
    * Merges the numeric docvalues from <code>toMerge</code>.

@@ -23,11 +23,11 @@ import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40TermVectorsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
+import org.apache.lucene.codecs.lucene41.Lucene41StoredFieldsFormat;
 import org.apache.lucene.codecs.lucene410.Lucene410Codec;
 import org.apache.lucene.codecs.lucene410.Lucene410DocValuesFormat;
+import org.apache.lucene.codecs.lucene42.Lucene42TermVectorsFormat;
 import org.apache.lucene.codecs.lucene49.Lucene49NormsFormat;
 
 /** Codec that tries to use as little ram as possible because he spent all his money on beer */
@@ -37,9 +37,8 @@ public class CheapBastardCodec extends FilterCodec {
   
   // TODO: would be better to have no terms index at all and bsearch a terms dict
   private final PostingsFormat postings = new Lucene41PostingsFormat(100, 200);
-  // uncompressing versions, waste lots of disk but no ram
-  private final StoredFieldsFormat storedFields = new Lucene40StoredFieldsFormat();
-  private final TermVectorsFormat termVectors = new Lucene40TermVectorsFormat();
+  private final StoredFieldsFormat storedFields = new Lucene41StoredFieldsFormat();
+  private final TermVectorsFormat termVectors = new Lucene42TermVectorsFormat();
   private final DocValuesFormat docValues = new Lucene410DocValuesFormat();
   private final NormsFormat norms = new Lucene49NormsFormat();
 

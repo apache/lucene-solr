@@ -22,12 +22,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.MathUtil;
 import org.apache.lucene.util.packed.BlockPackedWriter;
@@ -39,7 +38,7 @@ import static org.apache.lucene.codecs.lucene42.Lucene42DocValuesProducer.VERSIO
 /**
  * Writer for {@link Lucene42NormsFormat}
  */
-class Lucene42NormsConsumer extends DocValuesConsumer { 
+class Lucene42NormsConsumer extends NormsConsumer { 
   static final byte NUMBER = 0;
 
   static final int BLOCK_SIZE = 4096;
@@ -73,7 +72,7 @@ class Lucene42NormsConsumer extends DocValuesConsumer {
   }
 
   @Override
-  public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
+  public void addNormsField(FieldInfo field, Iterable<Number> values) throws IOException {
     meta.writeVInt(field.number);
     meta.writeByte(NUMBER);
     meta.writeLong(data.getFilePointer());
@@ -193,25 +192,5 @@ class Lucene42NormsConsumer extends DocValuesConsumer {
       }
       meta = data = null;
     }
-  }
-
-  @Override
-  public void addBinaryField(FieldInfo field, final Iterable<BytesRef> values) throws IOException {
-    throw new UnsupportedOperationException();
-  }
-  
-  @Override
-  public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public void addSortedNumericField(FieldInfo field, Iterable<Number> docToValueCount, Iterable<Number> values) throws IOException {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, final Iterable<Number> docToOrdCount, final Iterable<Number> ords) throws IOException {
-    throw new UnsupportedOperationException();
   }
 }

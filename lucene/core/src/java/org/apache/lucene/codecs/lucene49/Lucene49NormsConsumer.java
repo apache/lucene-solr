@@ -23,12 +23,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.BlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
@@ -38,7 +37,7 @@ import static org.apache.lucene.codecs.lucene49.Lucene49NormsFormat.VERSION_CURR
 /**
  * Writer for {@link Lucene49NormsFormat}
  */
-class Lucene49NormsConsumer extends DocValuesConsumer { 
+class Lucene49NormsConsumer extends NormsConsumer { 
   static final byte DELTA_COMPRESSED = 0;
   static final byte TABLE_COMPRESSED = 1;
   static final byte CONST_COMPRESSED = 2;
@@ -74,7 +73,7 @@ class Lucene49NormsConsumer extends DocValuesConsumer {
   }
 
   @Override
-  public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
+  public void addNormsField(FieldInfo field, Iterable<Number> values) throws IOException {
     meta.writeVInt(field.number);
     long minValue = Long.MAX_VALUE;
     long maxValue = Long.MIN_VALUE;
@@ -185,26 +184,6 @@ class Lucene49NormsConsumer extends DocValuesConsumer {
       }
       meta = data = null;
     }
-  }
-
-  @Override
-  public void addBinaryField(FieldInfo field, final Iterable<BytesRef> values) throws IOException {
-    throw new UnsupportedOperationException();
-  }
-  
-  @Override
-  public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, final Iterable<Number> docToOrdCount, final Iterable<Number> ords) throws IOException {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public void addSortedNumericField(FieldInfo field, Iterable<Number> docToValueCount, Iterable<Number> values) throws IOException {
-    throw new UnsupportedOperationException();
   }
   
   // specialized deduplication of long->ord for norms: 99.99999% of the time this will be a single-byte range.

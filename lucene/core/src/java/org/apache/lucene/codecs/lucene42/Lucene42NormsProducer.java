@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene3x;
+package org.apache.lucene.codecs.lucene42;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,30 +19,41 @@ package org.apache.lucene.codecs.lucene3x;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.DocValuesConsumer;
-import org.apache.lucene.codecs.DocValuesProducer;
-import org.apache.lucene.codecs.NormsConsumer;
-import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.NormsProducer;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.index.SegmentWriteState;
 
 /**
- * Lucene3x ReadOnly NormsFormat implementation
- * @deprecated (4.0) This is only used to read indexes created
- * before 4.0.
- * @lucene.experimental
+ * Reads 4.2-4.8 norms.
+ * Implemented the same as docvalues, but with a different filename.
+ * @deprecated Only for reading old segments
  */
 @Deprecated
-class Lucene3xNormsFormat extends NormsFormat {
-
-  @Override
-  public NormsConsumer normsConsumer(SegmentWriteState state) throws IOException {
-    throw new UnsupportedOperationException("this codec can only be used for reading");
+class Lucene42NormsProducer extends NormsProducer {
+  private final Lucene42DocValuesProducer impl;
+  
+  Lucene42NormsProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
+    impl = new Lucene42DocValuesProducer(state, dataCodec, dataExtension, metaCodec, metaExtension);
   }
 
   @Override
-  public NormsProducer normsProducer(SegmentReadState state) throws IOException {
-    return new Lucene3xNormsProducer(state.directory, state.segmentInfo, state.fieldInfos, state.context);
+  public NumericDocValues getNorms(FieldInfo field) throws IOException {
+    return impl.getNumeric(field);
+  }
+
+  @Override
+  public void checkIntegrity() throws IOException {
+    impl.checkIntegrity();
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return impl.ramBytesUsed();
+  }
+
+  @Override
+  public void close() throws IOException {
+    impl.close();
   }
 }

@@ -19,7 +19,8 @@ package org.apache.lucene.codecs.lucene40;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.NormsConsumer;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.LuceneTestCase;
@@ -29,14 +30,25 @@ import org.apache.lucene.util.LuceneTestCase;
 public class Lucene40RWNormsFormat extends Lucene40NormsFormat {
 
   @Override
-  public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
+  public NormsConsumer normsConsumer(SegmentWriteState state) throws IOException {
     if (!LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
       return super.normsConsumer(state);
     } else {
       String filename = IndexFileNames.segmentFileName(state.segmentInfo.name, 
           "nrm", 
           IndexFileNames.COMPOUND_FILE_EXTENSION);
-      return new Lucene40DocValuesWriter(state, filename, Lucene40FieldInfosReader.LEGACY_NORM_TYPE_KEY);
+      final Lucene40DocValuesWriter impl = new Lucene40DocValuesWriter(state, filename, Lucene40FieldInfosReader.LEGACY_NORM_TYPE_KEY);
+      return new NormsConsumer() {
+        @Override
+        public void addNormsField(FieldInfo field, Iterable<Number> values) throws IOException {
+          impl.addNumericField(field, values);
+        }
+        
+        @Override
+        public void close() throws IOException {
+          impl.close();
+        }
+      };
     }
   }
 }

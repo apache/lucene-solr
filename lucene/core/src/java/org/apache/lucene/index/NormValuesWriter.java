@@ -21,77 +21,59 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
 
 /** Buffers up pending long per doc, then flushes when
  *  segment flushes. */
-class NumericDocValuesWriter extends DocValuesWriter {
+class NormValuesWriter {
 
   private final static long MISSING = 0L;
 
   private PackedLongValues.Builder pending;
   private final Counter iwBytesUsed;
   private long bytesUsed;
-  private FixedBitSet docsWithField;
   private final FieldInfo fieldInfo;
 
-  public NumericDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
+  public NormValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     pending = PackedLongValues.deltaPackedBuilder(PackedInts.COMPACT);
-    docsWithField = new FixedBitSet(64);
-    bytesUsed = pending.ramBytesUsed() + docsWithFieldBytesUsed();
+    bytesUsed = pending.ramBytesUsed();
     this.fieldInfo = fieldInfo;
     this.iwBytesUsed = iwBytesUsed;
     iwBytesUsed.addAndGet(bytesUsed);
   }
 
   public void addValue(int docID, long value) {
-    if (docID < pending.size()) {
-      throw new IllegalArgumentException("DocValuesField \"" + fieldInfo.name + "\" appears more than once in this document (only one value is allowed per field)");
-    }
-
     // Fill in any holes:
     for (int i = (int)pending.size(); i < docID; ++i) {
       pending.add(MISSING);
     }
 
     pending.add(value);
-    docsWithField = FixedBitSet.ensureCapacity(docsWithField, docID);
-    docsWithField.set(docID);
-    
     updateBytesUsed();
-  }
-  
-  private long docsWithFieldBytesUsed() {
-    // size of the long[] + some overhead
-    return RamUsageEstimator.sizeOf(docsWithField.getBits()) + 64;
   }
 
   private void updateBytesUsed() {
-    final long newBytesUsed = pending.ramBytesUsed() + docsWithFieldBytesUsed();
+    final long newBytesUsed = pending.ramBytesUsed();
     iwBytesUsed.addAndGet(newBytesUsed - bytesUsed);
     bytesUsed = newBytesUsed;
   }
 
-  @Override
   public void finish(int maxDoc) {
   }
 
-  @Override
-  public void flush(SegmentWriteState state, DocValuesConsumer dvConsumer) throws IOException {
+  public void flush(SegmentWriteState state, NormsConsumer normsConsumer) throws IOException {
 
     final int maxDoc = state.segmentInfo.getDocCount();
     final PackedLongValues values = pending.build();
 
-    dvConsumer.addNumericField(fieldInfo,
+    normsConsumer.addNormsField(fieldInfo,
                                new Iterable<Number>() {
                                  @Override
                                  public Iterator<Number> iterator() {
-                                   return new NumericIterator(maxDoc, values, docsWithField);
+                                   return new NumericIterator(maxDoc, values);
                                  }
                                });
   }
@@ -99,16 +81,14 @@ class NumericDocValuesWriter extends DocValuesWriter {
   // iterates over the values we have in ram
   private static class NumericIterator implements Iterator<Number> {
     final PackedLongValues.Iterator iter;
-    final FixedBitSet docsWithField;
     final int size;
     final int maxDoc;
     int upto;
     
-    NumericIterator(int maxDoc, PackedLongValues values, FixedBitSet docsWithFields) {
+    NumericIterator(int maxDoc, PackedLongValues values) {
       this.maxDoc = maxDoc;
       this.iter = values.iterator();
       this.size = (int) values.size();
-      this.docsWithField = docsWithFields;
     }
     
     @Override
@@ -123,14 +103,9 @@ class NumericDocValuesWriter extends DocValuesWriter {
       }
       Long value;
       if (upto < size) {
-        long v = iter.next();
-        if (docsWithField.get(upto)) {
-          value = v;
-        } else {
-          value = null;
-        }
+        value = iter.next();
       } else {
-        value = null;
+        value = MISSING;
       }
       upto++;
       return value;
@@ -142,3 +117,4 @@ class NumericDocValuesWriter extends DocValuesWriter {
     }
   }
 }
+

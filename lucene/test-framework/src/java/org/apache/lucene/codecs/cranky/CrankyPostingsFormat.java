@@ -81,11 +81,11 @@ class CrankyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public void merge(MergeState mergeState, Fields fields) throws IOException {
+    public void merge(MergeState mergeState) throws IOException {
       if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from FieldsConsumer.merge()");
       }  
-      super.merge(mergeState, fields);
+      super.merge(mergeState);
     }
 
     @Override

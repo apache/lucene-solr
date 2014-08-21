@@ -20,9 +20,9 @@ package org.apache.lucene.codecs.lucene49;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.codecs.DocValuesConsumer;
-import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.DataOutput;
@@ -103,12 +103,12 @@ public class Lucene49NormsFormat extends NormsFormat {
   public Lucene49NormsFormat() {}
   
   @Override
-  public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
+  public NormsConsumer normsConsumer(SegmentWriteState state) throws IOException {
     return new Lucene49NormsConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);
   }
 
   @Override
-  public DocValuesProducer normsProducer(SegmentReadState state) throws IOException {
+  public NormsProducer normsProducer(SegmentReadState state) throws IOException {
     return new Lucene49NormsProducer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);
   }
   
