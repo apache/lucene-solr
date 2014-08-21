@@ -116,6 +116,12 @@ New Features
 
 * SOLR-5244: Exporting Full Sorted Result Sets (Erik Hatcher, Joel Bernstein)
 
+* SOLR-3617: bin/solr and bin/solr.cmd scripts for starting, stopping, and running Solr examples
+  (Timothy Potter)
+
+* SOLR-6233: Provide basic command line tools for checking Solr status and health.
+  (Timothy Potter)
+
 Bug Fixes
 ----------------------
 
