@@ -299,6 +299,9 @@ Bug Fixes
   
 * SOLR-6393: TransactionLog replay performance on HDFS is very poor. (Mark Miller)  
 
+* SOLR-6268: HdfsUpdateLog has a race condition that can expose a closed HDFS FileSystem instance and should 
+  close it's FileSystem instance if either inherited close method is called. (Mark Miller)
+
 Optimizations
 ---------------------
 
