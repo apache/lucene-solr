@@ -50,12 +50,7 @@ public class SolrZooKeeper extends ZooKeeper {
     return testableLocalSocketAddress();
   }
   
-  /**
-   * Cause this ZooKeeper object to stop receiving from the ZooKeeperServer
-   * for the given number of milliseconds.
-   * @param ms the number of milliseconds to pause.
-   */
-  public void pauseCnxn(final long ms) {
+  public void closeCnxn() {
     final Thread t = new Thread() {
       @Override
       public void run() {
@@ -78,10 +73,7 @@ public class SolrZooKeeper extends ZooKeeper {
             } catch (Exception e) {
               throw new RuntimeException("Closing Zookeeper send channel failed.", e);
             }
-            Thread.sleep(ms);
           }
-        } catch (InterruptedException e) {
-          // ignore
         } finally {
           spawnedThreads.remove(this);
         }

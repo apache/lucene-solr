@@ -124,34 +124,12 @@ public class ChaosMonkey {
     if (solrDispatchFilter != null) {
       CoreContainer cores = solrDispatchFilter.getCores();
       if (cores != null) {
-        causeConnectionLoss(jetty, cores.getZkController().getClientTimeout() + 200);
+        causeConnectionLoss(jetty);
+        long sessionId = cores.getZkController().getZkClient()
+            .getSolrZooKeeper().getSessionId();
+        zkServer.expire(sessionId);
       }
     }
-    
-
-//    Thread thread = new Thread() {
-//      {
-//        setDaemon(true);
-//      }
-//      public void run() {
-//        SolrDispatchFilter solrDispatchFilter = (SolrDispatchFilter) jetty.getDispatchFilter().getFilter();
-//        if (solrDispatchFilter != null) {
-//          CoreContainer cores = solrDispatchFilter.getCores();
-//          if (cores != null) {
-//            try {
-//              Thread.sleep(ZkTestServer.TICK_TIME * 2 + 800);
-//            } catch (InterruptedException e) {
-//              // we act as only connection loss
-//              return;
-//            }
-//            long sessionId = cores.getZkController().getZkClient().getSolrZooKeeper().getSessionId();
-//            zkServer.expire(sessionId);
-//          }
-//        }
-//      }
-//    };
-//    thread.start();
-
   }
   
   public void expireRandomSession() throws KeeperException, InterruptedException {
@@ -176,18 +154,13 @@ public class ChaosMonkey {
   }
   
   public static void causeConnectionLoss(JettySolrRunner jetty) {
-    causeConnectionLoss(jetty, ZkTestServer.TICK_TIME * 2 + 200);
-  }
-  
-  public static void causeConnectionLoss(JettySolrRunner jetty, int pauseTime) {
     SolrDispatchFilter solrDispatchFilter = (SolrDispatchFilter) jetty
         .getDispatchFilter().getFilter();
     if (solrDispatchFilter != null) {
       CoreContainer cores = solrDispatchFilter.getCores();
       if (cores != null) {
         SolrZkClient zkClient = cores.getZkController().getZkClient();
-        // must be at least double tick time...
-        zkClient.getSolrZooKeeper().pauseCnxn(pauseTime);
+        zkClient.getSolrZooKeeper().closeCnxn();
       }
     }
   }
