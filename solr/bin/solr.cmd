@@ -211,7 +211,7 @@ goto parse_args
 set "arg=%2"
 set firstChar=%arg:~0,1%
 IF "%firstChar%"=="-" (
-  set SCRIPT_ERROR=%2 is not a valid directory!
+  set SCRIPT_ERROR=Expected directory but found %2 instead!
   goto invalid_cmd_line
 )
 
@@ -230,7 +230,7 @@ goto parse_args
 set "arg=%2"
 set firstChar=%arg:~0,1%
 IF "%firstChar%"=="-" (
-  set SCRIPT_ERROR=%2 is not a valid example!
+  set SCRIPT_ERROR=Expected example name but found %2 instead!
   goto invalid_cmd_line
 )
 
@@ -244,7 +244,7 @@ goto parse_args
 set "arg=%2"
 set firstChar=%arg:~0,1%
 IF "%firstChar%"=="-" (
-  set SCRIPT_ERROR=%2 is not a valid memory setting!
+  set SCRIPT_ERROR=Expected memory setting but found %2 instead!
   goto invalid_cmd_line
 )
 
@@ -258,7 +258,7 @@ goto parse_args
 set "arg=%2"
 set firstChar=%arg:~0,1%
 IF "%firstChar%"=="-" (
-  set SCRIPT_ERROR=%2 is not a valid hostname!
+  set SCRIPT_ERROR=Expected hostname but found %2 instead!
   goto invalid_cmd_line
 )
 
@@ -271,7 +271,7 @@ goto parse_args
 set "arg=%2"
 set firstChar=%arg:~0,1%
 IF "%firstChar%"=="-" (
-  set SCRIPT_ERROR=%2 is not a valid port!
+  set SCRIPT_ERROR=Expected port but found %2 instead!
   goto invalid_cmd_line
 )
 
@@ -285,7 +285,7 @@ goto parse_args
 set "arg=%2"
 set firstChar=%arg:~0,1%
 IF "%firstChar%"=="-" (
-  set SCRIPT_ERROR=%2 is not a valid ZooKeeper connection string!
+  set SCRIPT_ERROR=Expected ZooKeeper connection string but found %2 instead!
   goto invalid_cmd_line
 )
 

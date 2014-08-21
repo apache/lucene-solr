@@ -307,7 +307,7 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
       case $1 in
           -c|-collection)
               if [ "${2:0:1}" == "-" ]; then
-                print_usage "$SCRIPT_CMD" "$2 is not a valid collection!"
+                print_usage "$SCRIPT_CMD" "Expected collection name but found $2 instead!"
                 exit 1            
               fi
               HEALTHCHECK_COLLECTION=$2
@@ -315,7 +315,7 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
           ;;
           -z|-zkhost)          
               if [ "${2:0:1}" == "-" ]; then
-                print_usage "$SCRIPT_CMD" "$2 is not a valid ZooKeeper connnection string!"
+                print_usage "$SCRIPT_CMD" "Expected a ZooKeeper connection string but found $2 instead!"
                 exit 1            
               fi          
               ZK_HOST="$2"
@@ -392,7 +392,7 @@ if [ $# -gt 0 ]; then
         ;;
         -d|-dir)
             if [ "${2:0:1}" == "-" ]; then
-              print_usage "$SCRIPT_CMD" "$2 is not a valid directory!"
+              print_usage "$SCRIPT_CMD" "Expected directory but found $2 instead!"
               exit 1            
             fi
 
@@ -406,7 +406,7 @@ if [ $# -gt 0 ]; then
         ;;
         -e|-example)
             if [ "${2:0:1}" == "-" ]; then
-              print_usage "$SCRIPT_CMD" "$2 is not a valid example!"
+              print_usage "$SCRIPT_CMD" "Expected example name but found $2 instead!"
               exit 1            
             fi
             EXAMPLE="$2"
@@ -418,7 +418,7 @@ if [ $# -gt 0 ]; then
         ;;
         -h|-host)
             if [ "${2:0:1}" == "-" ]; then
-              print_usage "$SCRIPT_CMD" "$2 is not a valid hostname!"
+              print_usage "$SCRIPT_CMD" "Expected hostname but found $2 instead!"
               exit 1            
             fi
             SOLR_HOST="$2"
@@ -426,7 +426,7 @@ if [ $# -gt 0 ]; then
         ;;
         -m|-memory)
             if [ "${2:0:1}" == "-" ]; then
-              print_usage "$SCRIPT_CMD" "$2 is not a valid memory setting!"
+              print_usage "$SCRIPT_CMD" "Expected memory setting but found $2 instead!"
               exit 1            
             fi            
             SOLR_HEAP="$2"
@@ -434,7 +434,7 @@ if [ $# -gt 0 ]; then
         ;;
         -p|-port)
             if [ "${2:0:1}" == "-" ]; then
-              print_usage "$SCRIPT_CMD" "$2 is not a valid port!"
+              print_usage "$SCRIPT_CMD" "Expected port number but found $2 instead!"
               exit 1            
             fi            
             SOLR_PORT="$2"
@@ -442,7 +442,7 @@ if [ $# -gt 0 ]; then
         ;;
         -z|-zkhost)
             if [ "${2:0:1}" == "-" ]; then
-              print_usage "$SCRIPT_CMD" "$2 is not a valid ZooKeeper connection string!"
+              print_usage "$SCRIPT_CMD" "Expected ZooKeeper connection string but found $2 instead!"
               exit 1            
             fi
 
