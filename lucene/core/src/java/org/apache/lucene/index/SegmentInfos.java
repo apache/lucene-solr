@@ -138,8 +138,8 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   /** The file format version for the segments_N codec header, since 4.9+ */
   public static final int VERSION_49 = 3;
 
-  /** The file format version for the segments_N codec header, since 4.10+ */
-  public static final int VERSION_410 = 4;
+  /** The file format version for the segments_N codec header, since 4.11+ */
+  public static final int VERSION_411 = 4;
 
   // Used for the segments.gen file only!
   // Whenever you add a new format, make it 1 smaller (negative version logic)!
@@ -358,7 +358,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         throw new IndexFormatTooOldException(input, magic, CodecUtil.CODEC_MAGIC, CodecUtil.CODEC_MAGIC);
       }
       // 4.0+
-      int format = CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_40, VERSION_410);
+      int format = CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_40, VERSION_411);
       version = input.readLong();
       counter = input.readInt();
       int numSegments = input.readInt();
@@ -423,7 +423,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         add(siPerCommit);
       }
       userData = input.readStringStringMap();
-      if (format >= VERSION_410) {
+      if (format >= VERSION_411) {
         id = input.readString();
       }
 
@@ -486,7 +486,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
 
     try {
       segnOutput = directory.createOutput(segmentFileName, IOContext.DEFAULT);
-      CodecUtil.writeHeader(segnOutput, "segments", VERSION_410);
+      CodecUtil.writeHeader(segnOutput, "segments", VERSION_411);
       segnOutput.writeLong(version); 
       segnOutput.writeInt(counter); // write counter
       segnOutput.writeInt(size()); // write infos
