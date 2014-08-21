@@ -567,6 +567,7 @@ if [ "$EXAMPLE" != "" ]; then
             SOLR_MODE="solrcloud"
             SOLR_SERVER_DIR="$SOLR_TIP/node1"
             SOLR_HOME="$SOLR_SERVER_DIR/solr"
+            SOLR_PORT=${CLOUD_PORTS[0]}
             shift
         ;;
         default)
