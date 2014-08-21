@@ -17,9 +17,6 @@ In this release, there is an example Solr server including a bundled
 servlet container in the directory named "example".
 See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
-==================  4.11.0 =================
-(No Changes)
-
 ==================  5.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
@@ -99,6 +96,9 @@ Other Changes
 * SOLR-3957: Removed RequestHandlerUtils#addExperimentalFormatWarning(), which
   removes "experimental" warning from two places: replication handler details
   command and DataImportHandler responses. (ehatcher)
+
+==================  4.11.0 =================
+(No Changes)
 
 ==================  4.10.0 =================
 
