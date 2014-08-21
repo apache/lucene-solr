@@ -218,7 +218,10 @@ public final class Version {
    */
   public static final Version LUCENE_4_10_0 = new Version(4, 10, 0);
 
-  /* Add new constants for later versions **here** to respect order! */
+  /**
+   * Match settings and bugs in Lucene's 4.11.0 release.
+   */
+  public static final Version LUCENE_4_11_0 = new Version(4, 11, 0);
 
   // To add a new version:
   //  * Only add above this comment
