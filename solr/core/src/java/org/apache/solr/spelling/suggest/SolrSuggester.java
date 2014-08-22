@@ -17,6 +17,7 @@ package org.apache.solr.spelling.suggest;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -29,6 +30,7 @@ import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
@@ -102,7 +104,22 @@ public class SolrSuggester implements Accountable {
     // initialize appropriate lookup instance
     factory = core.getResourceLoader().newInstance(lookupImpl, LookupFactory.class);
     lookup = factory.create(config, core);
-    
+    core.addCloseHook(new CloseHook() {
+      @Override
+      public void preClose(SolrCore core) {
+        if (lookup != null && lookup instanceof Closeable) {
+          try {
+            ((Closeable) lookup).close();
+          } catch (IOException e) {
+            LOG.warn("Could not close the suggester lookup.", e);
+          }
+        }
+      }
+      
+      @Override
+      public void postClose(SolrCore core) {}
+    });
+
     // if store directory is provided make it or load up the lookup with its content
     if (store != null) {
       storeDir = new File(store);

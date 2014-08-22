@@ -17,10 +17,7 @@ package org.apache.solr.spelling.suggest;
  * limitations under the License.
  */
 
-import java.io.File;
-
 import org.apache.solr.SolrTestCaseJ4;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 public class TestBlendedInfixSuggestions extends SolrTestCaseJ4 {
@@ -31,17 +28,7 @@ public class TestBlendedInfixSuggestions extends SolrTestCaseJ4 {
     initCore("solrconfig-phrasesuggest.xml","schema-phrasesuggest.xml");
     assertQ(req("qt", URI, "q", "", SuggesterParams.SUGGEST_BUILD_ALL, "true"));
   }
-  
-  @AfterClass
-  public static void afterClass() throws Exception {
-    File indexPathDir = new File("blendedInfixSuggesterIndexDir");
-    File indexPathDirTmp = new File("blendedInfixSuggesterIndexDir.tmp");
-    if (indexPathDir.exists())
-      recurseDelete(indexPathDir);
-    if (indexPathDirTmp.exists())
-      recurseDelete(indexPathDirTmp);
-  }
-  
+
   public void testLinearBlenderType() {
     assertQ(req("qt", URI, "q", "the", SuggesterParams.SUGGEST_COUNT, "10", SuggesterParams.SUGGEST_DICT, "blended_infix_suggest_linear"),
         "//lst[@name='suggest']/lst[@name='blended_infix_suggest_linear']/lst[@name='the']/int[@name='numFound'][.='3']",
@@ -55,7 +42,6 @@ public class TestBlendedInfixSuggestions extends SolrTestCaseJ4 {
         "//lst[@name='suggest']/lst[@name='blended_infix_suggest_linear']/lst[@name='the']/arr[@name='suggestions']/lst[3]/long[@name='weight'][.='7']",
         "//lst[@name='suggest']/lst[@name='blended_infix_suggest_linear']/lst[@name='the']/arr[@name='suggestions']/lst[3]/str[@name='payload'][.='star']"
     );
-    
   }
   
   public void testReciprocalBlenderType() {
@@ -97,5 +83,4 @@ public class TestBlendedInfixSuggestions extends SolrTestCaseJ4 {
         "//lst[@name='suggest']/lst[@name='blended_infix_suggest_reciprocal']/lst[@name='the']/arr[@name='suggestions']/lst[3]/str[@name='payload'][.='star']"
     );
   }
-  
 }
