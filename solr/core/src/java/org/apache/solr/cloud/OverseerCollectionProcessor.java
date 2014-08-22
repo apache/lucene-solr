@@ -346,8 +346,6 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
             return;
           }
           SolrException.log(log, "", e);
-          throw new ZooKeeperException(
-              SolrException.ErrorCode.SERVER_ERROR, "", e);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           return;
