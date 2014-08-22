@@ -338,6 +338,9 @@ Bug Fixes
   block cache are not removed, which is a problem with the global block cache option. 
   (Mark Miller, Patrick Hunt)
 
+* SOLR-6402: OverseerCollectionProcessor should not exit for ZooKeeper ConnectionLoss.
+  (Jessica Cheng via Mark Miller)
+
 Optimizations
 ---------------------
 

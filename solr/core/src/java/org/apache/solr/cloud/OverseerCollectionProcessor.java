@@ -341,8 +341,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
           }
 
         } catch (KeeperException e) {
-          if (e.code() == KeeperException.Code.SESSIONEXPIRED
-              || e.code() == KeeperException.Code.CONNECTIONLOSS) {
+          if (e.code() == KeeperException.Code.SESSIONEXPIRED) {
             log.warn("Overseer cannot talk to ZK");
             return;
           }
