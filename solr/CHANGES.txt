@@ -118,6 +118,9 @@ Bug Fixes
 * SOLR-4895: An error should be returned when a rollback is attempted in SolrCloud mode.
   (Vamsee Yarlagadda via Mark Miller)
 
+* SOLR-6410: Ensure all Lookup instances are closed via CloseHook
+  (hossman, Areek Zillur, Ryan Ernst, Dawid Weiss)
+
 Other Changes
 ---------------------
 
@@ -343,7 +346,7 @@ Bug Fixes
   
 * SOLR-6405: ZooKeeper calls can easily not be retried enough on ConnectionLoss.
   (Jessica Cheng, Mark Miller)
- 
+
 Optimizations
 ---------------------
 
