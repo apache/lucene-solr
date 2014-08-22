@@ -17,8 +17,9 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import java.util.Comparator;
-import java.util.StringTokenizer;
+import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.Properties;
 
 /**
  * Methods for manipulating strings.
@@ -227,5 +228,89 @@ public abstract class StringHelper {
 
   public static int murmurhash3_x86_32(BytesRef bytes, int seed) {
     return murmurhash3_x86_32(bytes.bytes, bytes.offset, bytes.length, seed);
+  }
+
+  // Holds 128 bit unsigned value:
+  private static BigInteger nextId;
+  private static final BigInteger idMask;
+  private static final Object idLock = new Object();
+  private static final String idPad = "00000000000000000000000000000000";
+
+  static {
+    byte[] maskBytes = new byte[16];
+    Arrays.fill(maskBytes, (byte) 0xff);
+    idMask = new BigInteger(maskBytes);
+    String prop = System.getProperty("tests.seed");
+
+    // State for xorshift128:
+    long x0;
+    long x1;
+
+    long seed;
+    if (prop != null) {
+      // So if there is a test failure that somehow relied on this id,
+      // we remain reproducible based on the test seed:
+      if (prop.length() > 8) {
+        prop = prop.substring(prop.length()-8);
+      }
+      x0 = Long.parseLong(prop, 16);
+      x1 = x0;
+    } else {
+      // "Ghetto randomess" from 3 different sources:
+      x0 = System.nanoTime();
+      x1 = StringHelper.class.hashCode() << 32;
+      StringBuilder sb = new StringBuilder();
+      // Properties can vary across JVM instances:
+      Properties p = System.getProperties();
+      for (String s: p.stringPropertyNames()) {
+        sb.append(s);
+        sb.append(p.getProperty(s));
+      }
+      x1 |= sb.toString().hashCode();
+      // TODO: maybe read from /dev/urandom when it's available?
+    }
+
+    // Use a few iterations of xorshift128 to scatter the seed
+    // in case multiple Lucene instances starting up "near" the same
+    // nanoTime, since we use ++ (mod 2^128) for full period cycle:
+    for(int i=0;i<10;i++) {
+      long s1 = x0;
+      long s0 = x1;
+      x0 = s0;
+      s1 ^= s1 << 23; // a
+      x1 = s1 ^ s0 ^ (s1 >>> 17) ^ (s0 >>> 26); // b, c
+    }
+
+    // Concatentate bits of x0 and x1, as unsigned 128 bit integer:
+    nextId = new BigInteger(1, BigInteger.valueOf(x0).shiftLeft(64).or(BigInteger.valueOf(x1)).toByteArray());
+  }
+
+  /** Generates a non-cryptographic globally unique id. */
+  public static String randomId() {
+
+    // NOTE: we don't use Java's UUID.randomUUID() implementation here because:
+    //
+    //   * It's overkill for our usage: it tries to be cryptographically
+    //     secure, whereas for this use we don't care if someone can
+    //     guess the IDs.
+    //
+    //   * It uses SecureRandom, which on Linux can easily take a long time
+    //     (I saw ~ 10 seconds just running a Lucene test) when entropy
+    //     harvesting is falling behind.
+    //
+    //   * It loses a few (6) bits to version and variant and it's not clear
+    //     what impact that has on the period, whereas the simple ++ (mod 2^128)
+    //     we use here is guaranteed to have the full period.
+
+    String id;
+    synchronized(idLock) {
+      id = nextId.toString(16);
+      nextId = nextId.add(BigInteger.ONE).and(idMask);
+    }
+
+    assert id.length() <= 32: "id=" + id;
+    id = idPad.substring(id.length()) + id;
+
+    return id;
   }
 }

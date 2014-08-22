@@ -84,6 +84,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SetOnce;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.automaton.Automata;
@@ -2786,4 +2787,55 @@ public class TestIndexWriter extends LuceneTestCase {
     iw.close();
     dir.close();
   }
+
+  // LUCENE-5895:
+
+  /** Make sure we see ids per segment and per commit. */
+  public void testIds() throws Exception {
+    Directory d = newDirectory();
+    IndexWriter w = new IndexWriter(d, newIndexWriterConfig(new MockAnalyzer(random())));
+    w.addDocument(new Document());
+    w.close();
+    
+    SegmentInfos sis = new SegmentInfos();
+    sis.read(d);
+    String id1 = sis.getId();
+    assertNotNull(id1);
+    
+    String id2 = sis.info(0).info.getId();
+    if (defaultCodecSupportsSegmentIds()) {
+      assertNotNull(id2);
+    } else {
+      assertNull(id2);
+    }
+
+    // Make sure CheckIndex includes id output:
+    ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
+    CheckIndex checker = new CheckIndex(d);
+    checker.setCrossCheckTermVectors(false);
+    checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8), false);
+    CheckIndex.Status indexStatus = checker.checkIndex(null);
+    String s = bos.toString(IOUtils.UTF_8);
+    // Make sure CheckIndex didn't fail
+    assertTrue(s, indexStatus != null && indexStatus.clean);
+
+    // Commit id is always stored:
+    assertTrue("missing id=" + id1 + " in:\n" + s, s.contains("id=" + id1));
+
+    // Per-segment id may or may not be stored depending on the codec:
+    if (defaultCodecSupportsSegmentIds()) {
+      assertTrue("missing id=" + id2 + " in:\n" + s, s.contains("id=" + id2));
+    } else {
+      assertTrue("missing id=null in:\n" + s, s.contains("id=null"));
+    }
+    d.close();
+
+    Set<String> ids = new HashSet<>();
+    for(int i=0;i<100000;i++) {
+      String id = StringHelper.randomId();
+      assertFalse("id=" + id + " i=" + i, ids.contains(id));
+      ids.add(id);
+    }
+  }
 }
+

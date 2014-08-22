@@ -62,13 +62,20 @@ public class Lucene46SegmentInfoReader extends SegmentInfoReader {
       final Map<String,String> diagnostics = input.readStringStringMap();
       final Set<String> files = input.readStringSet();
       
+      String id;
+      if (codecVersion >= Lucene46SegmentInfoFormat.VERSION_ID) {
+        id = input.readString();
+      } else {
+        id = null;
+      }
+
       if (codecVersion >= Lucene46SegmentInfoFormat.VERSION_CHECKSUM) {
         CodecUtil.checkFooter(input);
       } else {
         CodecUtil.checkEOF(input);
       }
 
-      final SegmentInfo si = new SegmentInfo(dir, version, segment, docCount, isCompoundFile, null, diagnostics);
+      final SegmentInfo si = new SegmentInfo(dir, version, segment, docCount, isCompoundFile, null, diagnostics, null, id);
       si.setFiles(files);
 
       success = true;
