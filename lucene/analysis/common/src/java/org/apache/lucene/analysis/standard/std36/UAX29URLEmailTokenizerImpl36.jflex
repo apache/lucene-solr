@@ -185,6 +185,10 @@ EMAIL = {EMAILlocalPart} "@" ({DomainNameStrict} | {EMAILbracketedHost})
   public final void getText(CharTermAttribute t) {
     t.copyBuffer(zzBuffer, zzStartRead, zzMarkedPos-zzStartRead);
   }
+
+   public final void setBufferSize(int numChars) {
+     throw new UnsupportedOperationException();
+   }
 %}
 
 %%
