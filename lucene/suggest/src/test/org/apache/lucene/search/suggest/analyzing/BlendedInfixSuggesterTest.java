@@ -50,7 +50,7 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
     BlendedInfixSuggester suggester = new BlendedInfixSuggester(TEST_VERSION_CURRENT, newFSDirectory(tempDir), a, a,
                                                                 AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS,
                                                                 BlendedInfixSuggester.BlenderType.POSITION_LINEAR,
-                                                                BlendedInfixSuggester.DEFAULT_NUM_FACTOR);
+                                                                BlendedInfixSuggester.DEFAULT_NUM_FACTOR, false);
     suggester.build(new InputArrayIterator(keys));
 
     // we query for star wars and check that the weight
@@ -98,7 +98,8 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
 
     // BlenderType.RECIPROCAL is using 1/(1+p) * w where w is weight and p the position of the word
     suggester = new BlendedInfixSuggester(TEST_VERSION_CURRENT, newFSDirectory(tempDir), a, a,
-                                          AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS, BlendedInfixSuggester.BlenderType.POSITION_RECIPROCAL, 1);
+                                          AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS,
+                                          BlendedInfixSuggester.BlenderType.POSITION_RECIPROCAL, 1, false);
     suggester.build(new InputArrayIterator(keys));
 
     assertEquals(w, getInResults(suggester, "top", pl, 1));
@@ -129,7 +130,8 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
 
     // if factor is small, we don't get the expected element
     BlendedInfixSuggester suggester = new BlendedInfixSuggester(TEST_VERSION_CURRENT, newFSDirectory(tempDir), a, a,
-                                                                AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS, BlendedInfixSuggester.BlenderType.POSITION_RECIPROCAL, 1);
+                                                                AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS,
+                                                                BlendedInfixSuggester.BlenderType.POSITION_RECIPROCAL, 1, false);
 
     suggester.build(new InputArrayIterator(keys));
 
@@ -148,7 +150,8 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
 
     // if we increase the factor we have it
     suggester = new BlendedInfixSuggester(TEST_VERSION_CURRENT, newFSDirectory(tempDir), a, a,
-                                          AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS, BlendedInfixSuggester.BlenderType.POSITION_RECIPROCAL, 2);
+                                          AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS,
+                                          BlendedInfixSuggester.BlenderType.POSITION_RECIPROCAL, 2, false);
     suggester.build(new InputArrayIterator(keys));
 
     // we have it
@@ -179,8 +182,9 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
 
     // if factor is small, we don't get the expected element
     BlendedInfixSuggester suggester = new BlendedInfixSuggester(TEST_VERSION_CURRENT, newFSDirectory(tempDir), a, a,
-                                                                AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS, BlendedInfixSuggester.BlenderType.POSITION_RECIPROCAL,
-                                                                BlendedInfixSuggester.DEFAULT_NUM_FACTOR);
+                                                                AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS,
+                                                                BlendedInfixSuggester.BlenderType.POSITION_RECIPROCAL,
+                                                                BlendedInfixSuggester.DEFAULT_NUM_FACTOR, false);
     suggester.build(new InputArrayIterator(keys));
 
 
