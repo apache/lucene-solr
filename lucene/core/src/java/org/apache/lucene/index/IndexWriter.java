@@ -2539,11 +2539,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * free space required will be higher by the size of the
    * starting index (see {@link #forceMerge(int)} for details).
    *
-   * <p>
-   * <b>NOTE:</b> this method only copies the segments of the incoming indexes
-   * and does not merge them. Therefore deleted documents are not removed and
-   * the new segments are not merged with the existing ones.
-   *
    * <p>This requires this index not be among those to be added.
    *
    * <p>
@@ -2657,6 +2652,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         IOUtils.closeWhileHandlingException(locks);
       }
     }
+    maybeMerge();
   }
   
   /**
@@ -2815,6 +2811,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "addIndexes(IndexReader...)");
     }
+    maybeMerge();
   }
 
   /** Copies the segment files as-is into the IndexWriter's directory. */
