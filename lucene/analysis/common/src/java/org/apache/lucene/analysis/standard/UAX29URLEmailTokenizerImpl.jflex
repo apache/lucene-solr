@@ -50,7 +50,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 %function getNextToken
 %char
 %xstate AVOID_BAD_URL
-%buffer 4096
+%buffer 255
 
 // UAX#29 WB4. X (Extend | Format)* --> X
 //
@@ -189,6 +189,16 @@ EMAIL = {EMAILlocalPart} "@" ({DomainNameStrict} | {EMAILbracketedHost})
   public final void getText(CharTermAttribute t) {
     t.copyBuffer(zzBuffer, zzStartRead, zzMarkedPos-zzStartRead);
   }
+  
+  /**
+   * Sets the scanner buffer size in chars
+   */
+   public final void setBufferSize(int numChars) {
+     ZZ_BUFFERSIZE = numChars;
+     char[] newZzBuffer = new char[ZZ_BUFFERSIZE];
+     System.arraycopy(zzBuffer, 0, newZzBuffer, 0, Math.min(zzBuffer.length, ZZ_BUFFERSIZE));
+     zzBuffer = newZzBuffer;
+   }
 %}
 
 %%

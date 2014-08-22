@@ -45,7 +45,7 @@ public final class StandardTokenizerImpl implements StandardTokenizerInterface {
   public static final int YYEOF = -1;
 
   /** initial size of the lookahead buffer */
-  private static final int ZZ_BUFFERSIZE = 4096;
+  private int ZZ_BUFFERSIZE = 255;
 
   /** lexical states */
   public static final int YYINITIAL = 0;
@@ -454,6 +454,16 @@ public final class StandardTokenizerImpl implements StandardTokenizerInterface {
   public final void getText(CharTermAttribute t) {
     t.copyBuffer(zzBuffer, zzStartRead, zzMarkedPos-zzStartRead);
   }
+  
+  /**
+   * Sets the scanner buffer size in chars
+   */
+   public final void setBufferSize(int numChars) {
+     ZZ_BUFFERSIZE = numChars;
+     char[] newZzBuffer = new char[ZZ_BUFFERSIZE];
+     System.arraycopy(zzBuffer, 0, newZzBuffer, 0, Math.min(zzBuffer.length, ZZ_BUFFERSIZE));
+     zzBuffer = newZzBuffer;
+   }
 
 
   /**
@@ -509,18 +519,9 @@ public final class StandardTokenizerImpl implements StandardTokenizerInterface {
       zzStartRead = 0;
     }
 
-    /* is the buffer big enough? */
-    if (zzCurrentPos >= zzBuffer.length - zzFinalHighSurrogate) {
-      /* if not: blow it up */
-      char newBuffer[] = new char[zzBuffer.length*2];
-      System.arraycopy(zzBuffer, 0, newBuffer, 0, zzBuffer.length);
-      zzBuffer = newBuffer;
-      zzEndRead += zzFinalHighSurrogate;
-      zzFinalHighSurrogate = 0;
-    }
 
     /* fill the buffer with new input */
-    int requested = zzBuffer.length - zzEndRead;           
+    int requested = zzBuffer.length - zzEndRead - zzFinalHighSurrogate;           
     int totalRead = 0;
     while (totalRead < requested) {
       int numRead = zzReader.read(zzBuffer, zzEndRead + totalRead, requested - totalRead);
@@ -536,6 +537,7 @@ public final class StandardTokenizerImpl implements StandardTokenizerInterface {
         if (Character.isHighSurrogate(zzBuffer[zzEndRead - 1])) {
           --zzEndRead;
           zzFinalHighSurrogate = 1;
+          if (totalRead == 1) { return true; }
         }
       }
       return false;

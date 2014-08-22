@@ -3298,6 +3298,10 @@ public final class UAX29URLEmailTokenizerImpl31 implements StandardTokenizerInte
     t.copyBuffer(zzBuffer, zzStartRead, zzMarkedPos-zzStartRead);
   }
 
+   public final void setBufferSize(int numChars) {
+     throw new UnsupportedOperationException();
+   }
+
 
   /**
    * Creates a new scanner
