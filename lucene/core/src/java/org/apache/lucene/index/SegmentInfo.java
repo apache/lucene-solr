@@ -107,7 +107,7 @@ public final class SegmentInfo {
   }
 
   /**
-   * @deprecated Use {@link #SegmentInfo(Directory, Version, String, int, boolean, Codec, Map, Map)}
+   * @deprecated Use {@link #SegmentInfo(Directory, Version, String, int, boolean, Codec, Map, Map, String)}
    */
   @Deprecated
   public SegmentInfo(Directory dir, String version, String name, int docCount,
