@@ -112,6 +112,12 @@ Apache ZooKeeper 3.4.6
 Detailed Change List
 ----------------------
 
+Bug Fixes
+----------------------
+
+* SOLR-4895: An error should be returned when a rollback is attempted in SolrCloud mode.
+  (Vamsee Yarlagadda via Mark Miller)
+
 Other Changes
 ---------------------
 
