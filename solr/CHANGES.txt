@@ -340,7 +340,10 @@ Bug Fixes
 
 * SOLR-6402: OverseerCollectionProcessor should not exit for ZooKeeper ConnectionLoss.
   (Jessica Cheng via Mark Miller)
-
+  
+* SOLR-6405: ZooKeeper calls can easily not be retried enough on ConnectionLoss.
+  (Jessica Cheng, Mark Miller)
+ 
 Optimizations
 ---------------------
 
