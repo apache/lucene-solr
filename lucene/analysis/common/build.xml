@@ -59,12 +59,14 @@
   </target>
 
   <target name="-jflex-StandardAnalyzer" depends="init,-install-jflex">
-    <run-jflex dir="src/java/org/apache/lucene/analysis/standard" name="StandardTokenizerImpl"/>
+    <run-jflex-and-disable-buffer-expansion 
+        dir="src/java/org/apache/lucene/analysis/standard" name="StandardTokenizerImpl"/>
     <run-jflex dir="src/java/org/apache/lucene/analysis/standard" name="ClassicTokenizerImpl"/>
   </target>
 
   <target name="-jflex-UAX29URLEmailTokenizer" depends="init,-install-jflex">
-    <run-jflex dir="src/java/org/apache/lucene/analysis/standard" name="UAX29URLEmailTokenizerImpl"/>
+    <run-jflex-and-disable-buffer-expansion
+        dir="src/java/org/apache/lucene/analysis/standard" name="UAX29URLEmailTokenizerImpl"/>
   </target>
   
   <macrodef name="run-jflex">
@@ -72,6 +74,27 @@
     <attribute name="name"/>
     <sequential>
       <jflex file="@{dir}/@{name}.jflex" outdir="@{dir}" nobak="on" inputstreamctor="false"/>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="run-jflex-and-disable-buffer-expansion">
+    <attribute name="dir"/>
+    <attribute name="name"/>
+    <sequential>
+      <jflex file="@{dir}/@{name}.jflex" outdir="@{dir}" nobak="on" inputstreamctor="false"/>
+      <!-- LUCENE-5897: Disallow scanner buffer expansion -->
+      <replaceregexp file="@{dir}/@{name}.java"
+                     match="[ \t]*/\* is the buffer big enough\? \*/\s+if \(zzCurrentPos >= zzBuffer\.length.*?\}[ \t]*\r?\n"
+                     replace="" flags="s" />
+      <replaceregexp file="@{dir}/@{name}.java"
+                     match="private static final int ZZ_BUFFERSIZE ="
+                     replace="private int ZZ_BUFFERSIZE ="/>
+      <replaceregexp file="@{dir}/@{name}.java"
+                     match="int requested = zzBuffer.length - zzEndRead;"
+                     replace="int requested = zzBuffer.length - zzEndRead - zzFinalHighSurrogate;"/>
+      <replaceregexp file="@{dir}/@{name}.java"
+                     match="(zzFinalHighSurrogate = 1;)(\r?\n)"
+                     replace="\1\2          if (totalRead == 1) { return true; }\2"/>
     </sequential>
   </macrodef>
 

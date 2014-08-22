@@ -83,6 +83,7 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
       throw new IllegalArgumentException("maxTokenLength must be greater than zero");
     }
     this.maxTokenLength = length;
+    scanner.setBufferSize(Math.min(length, 1024 * 1024)); // limit buffer size to 1M chars
   }
 
   /** @see #setMaxTokenLength */

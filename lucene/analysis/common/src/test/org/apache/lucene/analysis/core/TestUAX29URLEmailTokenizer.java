@@ -7,8 +7,10 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.UAX29URLEmailTokenizer;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.util.TestUtil;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -18,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.regex.Pattern;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -37,7 +40,42 @@ import java.util.Random;
  */
 
 public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
-  
+
+  // LUCENE-5440: extremely slow tokenization of text matching email <local-part> (before the '@')
+  public void testLongEMAILatomText() throws Exception {
+    // EMAILatomText = [A-Za-z0-9!#$%&'*+-/=?\^_`{|}~]
+    char[] emailAtomChars
+        = "!#$%&'*+,-./0123456789=?ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz{|}~".toCharArray();
+    StringBuilder builder = new StringBuilder();
+    int numChars = TestUtil.nextInt(random(), 100 * 1024, 3 * 1024 * 1024);
+    for (int i = 0 ; i < numChars ; ++i) {
+      builder.append(emailAtomChars[random().nextInt(emailAtomChars.length)]);
+    }
+    int tokenCount = 0;
+    UAX29URLEmailTokenizer ts = new UAX29URLEmailTokenizer();
+    String text = builder.toString();
+    ts.setReader(new StringReader(text));
+    ts.reset();
+    while (ts.incrementToken()) {
+      tokenCount++;
+    }
+    ts.end();
+    ts.close();
+    assertTrue(tokenCount > 0);
+
+    tokenCount = 0;
+    int newBufferSize = TestUtil.nextInt(random(), 200, 8192);
+    ts.setMaxTokenLength(newBufferSize);
+    ts.setReader(new StringReader(text));
+    ts.reset();
+    while (ts.incrementToken()) {
+      tokenCount++;
+    }
+    ts.end();
+    ts.close();
+    assertTrue(tokenCount > 0);
+  }
+
   public void testHugeDoc() throws IOException {
     StringBuilder sb = new StringBuilder();
     char whitespace[] = new char[4094];
