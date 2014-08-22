@@ -4,7 +4,6 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 ======================= Lucene 4.11.0 ======================
-(No Changes)
 
 New Features
 
@@ -13,6 +12,11 @@ New Features
 
 * LUCENE-5889: Add commit method to AnalyzingInfixSuggester, and allow just using .add
   to build up the suggester.  (Varun Thacker via Mike McCandless)
+
+Bug Fixes
+
+* LUCENE-5672: IndexWriter.addIndexes() calls maybeMerge(), to ensure the index stays
+  healthy. If you don't want merging use NoMergePolicy instead. (Robert Muir)
 
 ======================= Lucene 4.10.0 ======================
 
