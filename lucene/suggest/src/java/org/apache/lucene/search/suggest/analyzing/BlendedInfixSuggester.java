@@ -106,11 +106,13 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
    *
    * @param blenderType Type of blending strategy, see BlenderType for more precisions
    * @param numFactor   Factor to multiply the number of searched elements before ponderate
+   * @param commitOnBuild Call commit after the index has finished building. This would persist the
+   *                      suggester index to disk and future instances of this suggester can use this pre-built dictionary.
    * @throws IOException If there are problems opening the underlying Lucene index.
    */
   public BlendedInfixSuggester(Version matchVersion, Directory dir, Analyzer indexAnalyzer, Analyzer queryAnalyzer,
-                               int minPrefixChars, BlenderType blenderType, int numFactor) throws IOException {
-    super(matchVersion, dir, indexAnalyzer, queryAnalyzer, minPrefixChars);
+                               int minPrefixChars, BlenderType blenderType, int numFactor, boolean commitOnBuild) throws IOException {
+    super(matchVersion, dir, indexAnalyzer, queryAnalyzer, minPrefixChars, commitOnBuild);
     this.blenderType = blenderType;
     this.numFactor = numFactor;
   }
