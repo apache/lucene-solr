@@ -47,11 +47,34 @@ import org.apache.lucene.util.BytesRef;
  */
 public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
 
+  /**
+   *
+   */
   protected AtomicReader atomicReader;
+
+  /**
+   * names of the fields to be used as input text
+   */
   protected String[] textFieldNames;
+
+  /**
+   * name of the field to be used as a class / category output
+   */
   protected String classFieldName;
+
+  /**
+   * {@link org.apache.lucene.analysis.Analyzer} to be used for tokenizing unseen input text
+   */
   protected Analyzer analyzer;
+
+  /**
+   * {@link org.apache.lucene.search.IndexSearcher} to run searches on the index for retrieving frequencies
+   */
   protected IndexSearcher indexSearcher;
+
+  /**
+   * {@link org.apache.lucene.search.Query} used to eventually filter the document set to be used to classify
+   */
   protected Query query;
 
   /**
@@ -172,6 +195,12 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
     return returnList;
   }
 
+  /**
+   * count the number of documents in the index having at least a value for the 'class' field
+   *
+   * @return the no. of documents having a value for the 'class' field
+   * @throws IOException
+   */
   protected int countDocsWithClass() throws IOException {
     int docCount = MultiFields.getTerms(this.atomicReader, this.classFieldName).getDocCount();
     if (docCount == -1) { // in case codec doesn't support getDocCount
@@ -188,6 +217,13 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
     return docCount;
   }
 
+  /**
+   * tokenize a <code>String</code> on this classifier's text fields and analyzer
+   *
+   * @param doc the <code>String</code> representing an input text (to be classified)
+   * @return
+   * @throws IOException
+   */
   protected String[] tokenizeDoc(String doc) throws IOException {
     Collection<String> result = new LinkedList<>();
     for (String textFieldName : textFieldNames) {
