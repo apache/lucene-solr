@@ -221,7 +221,7 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
    * tokenize a <code>String</code> on this classifier's text fields and analyzer
    *
    * @param doc the <code>String</code> representing an input text (to be classified)
-   * @return
+   * @return a <code>String</code> array of the resulting tokens
    * @throws IOException
    */
   protected String[] tokenizeDoc(String doc) throws IOException {
