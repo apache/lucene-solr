@@ -41,7 +41,7 @@
     <vc-anonymous-base-url>http://svn.apache.org/repos/asf/lucene/dev/trunk</vc-anonymous-base-url>
     <vc-dev-base-url>https://svn.apache.org/repos/asf/lucene/dev/trunk</vc-dev-base-url>
     <vc-browse-base-url>http://svn.apache.org/viewvc/lucene/dev/trunk</vc-browse-base-url>
-    <base.specification.version>5.0.0</base.specification.version>
+    <specification.version>@spec.version@</specification.version>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
     <java.compat.version>1.7</java.compat.version>
     <jetty.version>8.1.10.v20130312</jetty.version>
@@ -58,7 +58,7 @@
     <tests.codec>random</tests.codec>
     <tests.directory>random</tests.directory>
     <tests.locale>random</tests.locale>
-    <tests.luceneMatchVersion>5.0.0</tests.luceneMatchVersion>
+    <tests.luceneMatchVersion>@version.base@</tests.luceneMatchVersion>
     <tests.multiplier>1</tests.multiplier>
     <tests.nightly>false</tests.nightly>
     <tests.postingsformat>random</tests.postingsformat>
@@ -289,8 +289,7 @@
                 <Extension-Name>${project.groupId}</Extension-Name>
                 <Implementation-Title>${project.groupId}</Implementation-Title>
                 <Specification-Title>${project.name}</Specification-Title>
-                <!-- spec version must match "digit+{.digit+}*" -->
-                <Specification-Version>${base.specification.version}.${now.version}</Specification-Version>
+                <Specification-Version>${specification.version}</Specification-Version>
                 <Specification-Vendor>The Apache Software Foundation</Specification-Vendor>
                 <!-- impl version can be any string -->
                 <Implementation-Version>${project.version} ${svn.revision} - ${user.name} - ${now.timestamp}</Implementation-Version>
@@ -416,8 +415,7 @@
             <Extension-Name>${project.groupId}</Extension-Name>
             <Implementation-Title>${project.groupId}</Implementation-Title>
             <Specification-Title>${project.name}</Specification-Title>
-            <!-- spec version must match "digit+{.digit+}*" -->
-            <Specification-Version>${base.specification.version}.${now.version}</Specification-Version>
+            <Specification-Version>${specification.version}</Specification-Version>
             <Specification-Vendor>The Apache Software Foundation</Specification-Vendor>
             <!-- impl version can be any string -->
             <Implementation-Version>${project.version} ${svn.revision} - ${user.name} - ${now.timestamp}</Implementation-Version>

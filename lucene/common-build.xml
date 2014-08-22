@@ -62,6 +62,9 @@
   <!-- Suffix of the version, by default SNAPSHOT: -->
   <property name="version.suffix" value="${dev.version.suffix}"/>
   <property name="version" value="${version.base}-${version.suffix}"/>
+  
+  <!-- must be in format x.y with only digits, so we use version.base: -->
+  <property name="spec.version" value="${version.base}"/>
 
   
   <fail message="If you pass -Dversion=... to set a release version, it must match &quot;${version.base}&quot;, optionally followed by a suffix (e.g., &quot;-SNAPSHOT&quot;).">
@@ -629,7 +632,6 @@
   <macrodef name="build-manifest" description="Builds a manifest file">
   	<attribute name="title"/>
     <attribute name="implementation.title"/>
-    <attribute name="spec.version"/>
     <attribute name="manifest.file" default="${manifest.file}"/>
     <element name="additional-manifest-attributes" optional="true"/>
     <sequential>
@@ -660,7 +662,7 @@
         <attribute name="Extension-Name" value="@{implementation.title}"/>
         <attribute name="Specification-Title" value="@{title}"/>
         <!-- spec version must match "digit+{.digit+}*" -->
-        <attribute name="Specification-Version" value="@{spec.version}"/>
+        <attribute name="Specification-Version" value="${spec.version}"/>
         <attribute name="Specification-Vendor"
                    value="The Apache Software Foundation"/>
         <attribute name="Implementation-Title" value="@{implementation.title}"/>
@@ -683,14 +685,12 @@
     <attribute name="excludes" default="**/pom.xml,**/*.iml"/>
     <attribute name="metainf.source.dir" default="${common.dir}"/>
     <attribute name="implementation.title" default="org.apache.lucene"/>
-    <attribute name="spec.version" default="${version}"/>
     <attribute name="manifest.file" default="${manifest.file}"/>
     <element name="filesets" optional="true"/>
     <element name="jarify-additional-manifest-attributes" optional="true"/>
     <sequential>
       <build-manifest title="@{title}"
                       implementation.title="@{implementation.title}"
-                      spec.version="@{spec.version}"
                       manifest.file="@{manifest.file}">
         <additional-manifest-attributes>
           <jarify-additional-manifest-attributes />
@@ -1651,6 +1651,8 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
       <fileset dir="${common.dir}/../dev-tools/maven"/>
       <filterset begintoken="@" endtoken="@">
         <filter token="version" value="${version}"/>
+        <filter token="version.base" value="${version.base}"/>
+        <filter token="spec.version" value="${spec.version}"/>
       </filterset>
       <filterset>
         <filtersfile file="${maven.dependencies.filters.file}"/>

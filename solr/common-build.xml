@@ -200,7 +200,6 @@
     <attribute name="excludes" default="**/pom.xml,**/*.iml"/>
     <attribute name="metainf.source.dir" default="${common-solr.dir}"/>
     <attribute name="implementation.title" default="org.apache.solr"/>
-    <attribute name="spec.version" default="${version}"/>
     <attribute name="manifest.file" default="${manifest.file}"/>
     <element name="solr-jarify-filesets" optional="true"/>
     <element name="solr-jarify-additional-manifest-attributes" optional="true"/>
@@ -209,7 +208,6 @@
               title="@{title}" excludes="@{excludes}"
               metainf.source.dir="@{metainf.source.dir}"
               implementation.title="@{implementation.title}"
-              spec.version="@{spec.version}"
               manifest.file="@{manifest.file}">
         <filesets>
           <solr-jarify-filesets />

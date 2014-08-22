@@ -44,8 +44,7 @@
           description="Creates the Solr WAR Distribution file."
           depends="test, init-dist, dist-core, dist-solrj, lucene-jars-to-solr">
     <build-manifest title="Apache Solr Search Server"
-                    implementation.title="org.apache.solr"
-                    spec.version="${version}"/>
+                    implementation.title="org.apache.solr"/>
     <ant dir="${common-solr.dir}" inheritall="false" target="contribs-add-to-war"/>
     <war destfile="${dist}/solr-${version}${solr.war.suffix}.war"
          webxml="web/WEB-INF/web.xml"
