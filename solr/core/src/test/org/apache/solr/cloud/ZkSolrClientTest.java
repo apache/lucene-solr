@@ -24,6 +24,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import junit.framework.Assert;
 
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkCmdExecutor;
+import org.apache.solr.common.cloud.ZkOperation;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -193,6 +195,42 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
       if (zkClient != null) {
         zkClient.close();
       }
+      if (server != null) {
+        server.shutdown();
+      }
+    }
+  }
+  
+  public void testZkCmdExectutor() throws Exception {
+    String zkDir = createTempDir("zkData").getAbsolutePath();
+    ZkTestServer server = null;
+
+    try {
+      server = new ZkTestServer(zkDir);
+      server.run();
+      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
+      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
+
+      final int timeout = random().nextInt(10000) + 5000;
+      
+      ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(timeout);
+      final long start = System.nanoTime();
+      try {
+      zkCmdExecutor.retryOperation(new ZkOperation() {
+        @Override
+        public String execute() throws KeeperException, InterruptedException {
+          if (System.nanoTime() - start > TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS)) {
+            throw new KeeperException.SessionExpiredException();
+          } 
+          throw new KeeperException.ConnectionLossException();
+        }
+      });
+      } catch(KeeperException.SessionExpiredException e) {
+        
+      } catch (Exception e) {
+        fail("Expected " + KeeperException.SessionExpiredException.class.getSimpleName() + " but got " + e.getClass().getSimpleName());
+      }
+    } finally {
       if (server != null) {
         server.shutdown();
       }
