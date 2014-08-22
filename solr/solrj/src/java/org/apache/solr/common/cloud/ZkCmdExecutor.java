@@ -118,9 +118,7 @@ public class ZkCmdExecutor {
    *          the number of the attempts performed so far
    */
   protected void retryDelay(int attemptCount) throws InterruptedException {
-    if (attemptCount > 0) {
-      Thread.sleep((attemptCount + 1) * retryDelay);
-    }
+    Thread.sleep((attemptCount + 1) * retryDelay);
   }
 
 }
