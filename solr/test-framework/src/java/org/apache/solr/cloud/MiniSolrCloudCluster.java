@@ -48,14 +48,15 @@ public class MiniSolrCloudCluster {
    * "Mini" SolrCloud cluster to be used for testing
    * @param numServers number of Solr servers to start
    * @param hostContext context path of Solr servers used by Jetty
+   * @param baseDir base directory that the mini cluster should be run from
    * @param solrXml solr.xml file to be uploaded to ZooKeeper
    * @param extraServlets Extra servlets to be started by Jetty
    * @param extraRequestFilters extra filters to be started by Jetty
    */
-  public MiniSolrCloudCluster(int numServers, String hostContext, File solrXml,
+  public MiniSolrCloudCluster(int numServers, String hostContext, File baseDir, File solrXml,
       SortedMap<ServletHolder, String> extraServlets,
       SortedMap<Class, String> extraRequestFilters) throws Exception {
-    testDir = Files.createTempDir();
+    testDir = baseDir;
 
     String zkDir = testDir.getAbsolutePath() + File.separator
       + "zookeeper/server1/data";

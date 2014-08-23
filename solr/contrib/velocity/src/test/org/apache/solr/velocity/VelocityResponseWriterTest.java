@@ -22,12 +22,10 @@ import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.VelocityResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.StringWriter;
-import java.io.IOException;
 
 public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
   @BeforeClass

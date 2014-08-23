@@ -69,7 +69,7 @@ public class MorphlineBasicMiniMRTest extends SolrTestCaseJ4 {
   private static final String DOCUMENTS_DIR = RESOURCES_DIR + "/test-documents";
   private static final File MINIMR_CONF_DIR = new File(RESOURCES_DIR + "/solr/minimr");
   
-  private static final String SEARCH_ARCHIVES_JAR = JarFinder.getJar(MapReduceIndexerTool.class);
+  private static String SEARCH_ARCHIVES_JAR;
 
   private static MiniDFSCluster dfsCluster = null;
   private static MiniMRCluster mrCluster = null;
@@ -149,6 +149,9 @@ public class MorphlineBasicMiniMRTest extends SolrTestCaseJ4 {
     System.setProperty("test.build.dir", dataDir + File.separator + "hdfs" + File.separator + "test-build-dir");
     System.setProperty("test.build.data", dataDir + File.separator + "hdfs" + File.separator + "build");
     System.setProperty("test.cache.data", dataDir + File.separator + "hdfs" + File.separator + "cache");
+
+    // Initialize AFTER test.build.dir is set, JarFinder uses it.
+    SEARCH_ARCHIVES_JAR = JarFinder.getJar(MapReduceIndexerTool.class);
 
     JobConf conf = new JobConf();
     conf.set("dfs.block.access.token.enable", "false");

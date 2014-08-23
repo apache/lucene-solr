@@ -41,6 +41,9 @@ Bug Fixes
 * SOLR-6410: Ensure all Lookup instances are closed via CloseHook
   (hossman, Areek Zillur, Ryan Ernst, Dawid Weiss)
 
+* LUCENE-5650: Tests can no longer write to CWD. Update log dir is now made relative
+  to the instance dir if it is not an absolute path. (Ryan Ernst, Dawid Weiss)
+
 Other Changes
 ---------------------
 
