@@ -434,6 +434,10 @@ public class SortingResponseWriter implements QueryResponseWriter {
       }
       return docId+docBase < sd.docId+sd.docBase;
     }
+
+    public String toString() {
+      return "";
+    }
   }
 
   class SingleValueSortDoc extends SortDoc {
@@ -485,6 +489,10 @@ public class SortingResponseWriter implements QueryResponseWriter {
     public int compareTo(Object o) {
       SingleValueSortDoc sd = (SingleValueSortDoc)o;
       return value1.compareTo(sd.value1);
+    }
+
+    public String toString() {
+      return docId+":"+value1.toString();
     }
   }
 
@@ -1078,8 +1086,10 @@ public class SortingResponseWriter implements QueryResponseWriter {
 
     public StringValue(SortedDocValues vals, String field, IntComp comp)  {
       this.vals = vals;
-      this.segmentVals = ((MultiDocValues.MultiSortedDocValues) vals).values;
-      this.ordinalMap = ((MultiDocValues.MultiSortedDocValues) vals).mapping;
+      if(vals instanceof  MultiDocValues.MultiSortedDocValues) {
+        this.segmentVals = ((MultiDocValues.MultiSortedDocValues) vals).values;
+        this.ordinalMap = ((MultiDocValues.MultiSortedDocValues) vals).mapping;
+      }
       this.field = field;
       this.comp = comp;
       this.currentOrd = comp.resetValue();
@@ -1094,7 +1104,11 @@ public class SortingResponseWriter implements QueryResponseWriter {
       if(ord < 0) {
         currentOrd = -1;
       } else {
-        currentOrd = (int)globalOrds.get(ord);
+        if(globalOrds != null) {
+          currentOrd = (int)globalOrds.get(ord);
+        } else {
+          currentOrd = ord;
+        }
       }
     }
 
@@ -1105,8 +1119,12 @@ public class SortingResponseWriter implements QueryResponseWriter {
 
     public void setNextReader(AtomicReaderContext context) {
       segment = context.ord;
-      globalOrds = ordinalMap.getGlobalOrds(segment);
-      currentVals = segmentVals[segment];
+      if(ordinalMap != null) {
+        globalOrds = ordinalMap.getGlobalOrds(segment);
+        currentVals = segmentVals[segment];
+      } else {
+        currentVals = vals;
+      }
     }
 
     public void reset() {
@@ -1116,6 +1134,10 @@ public class SortingResponseWriter implements QueryResponseWriter {
     public int compareTo(SortValue o) {
       StringValue sv = (StringValue)o;
       return comp.compare(currentOrd, sv.currentOrd);
+    }
+
+    public String toString() {
+      return Integer.toString(this.currentOrd);
     }
   }
 
