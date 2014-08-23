@@ -959,11 +959,11 @@ public final class MemoryPostingsFormat extends PostingsFormat {
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, EXTENSION);
     final ChecksumIndexInput in = state.directory.openChecksumInput(fileName, IOContext.READONCE);
-    CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_CURRENT);
 
     final SortedMap<String,TermsReader> fields = new TreeMap<>();
 
     try {
+      CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_CURRENT);
       while(true) {
         final int termCount = in.readVInt();
         if (termCount == 0) {
