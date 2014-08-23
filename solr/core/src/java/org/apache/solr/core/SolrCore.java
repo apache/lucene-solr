@@ -163,6 +163,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   private final SolrResourceLoader resourceLoader;
   private volatile IndexSchema schema;
   private final String dataDir;
+  private final String ulogDir;
   private final UpdateHandler updateHandler;
   private final SolrCoreState solrCoreState;
   
@@ -242,6 +243,10 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   
   public String getDataDir() {
     return dataDir;
+  }
+
+  public String getUlogDir() {
+    return ulogDir;
   }
 
   public String getIndexDir() {
@@ -656,6 +661,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     this.setName(name);
     this.schema = null;
     this.dataDir = null;
+    this.ulogDir = null;
     this.solrConfig = null;
     this.startTime = System.currentTimeMillis();
     this.maxWarmingSearchers = 2;  // we don't have a config yet, just pick a number.
@@ -689,7 +695,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     if (updateHandler == null) {
       initDirectoryFactory();
     }
-    
+
     if (dataDir == null) {
       if (cd.usingDefaultDataDir()) dataDir = config.getDataDir();
       if (dataDir == null) {
@@ -703,8 +709,18 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
         }
       }
     }
-
     dataDir = SolrResourceLoader.normalizeDir(dataDir);
+
+    String updateLogDir = cd.getUlogDir();
+    if (updateLogDir == null) {
+      updateLogDir = dataDir;
+      if (new File(updateLogDir).isAbsolute() == false) {
+        updateLogDir = SolrResourceLoader.normalizeDir(cd.getInstanceDir()) + updateLogDir;
+      }
+    }
+    ulogDir = updateLogDir;
+
+
     log.info(logid+"Opening new SolrCore at " + resourceLoader.getInstanceDir() + ", dataDir="+dataDir);
 
     if (null != cd && null != cd.getCloudDescriptor()) {

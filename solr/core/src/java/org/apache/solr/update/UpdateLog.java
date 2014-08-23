@@ -222,15 +222,7 @@ public class UpdateLog implements PluginInfoInitialized {
    * for an existing log whenever the core or update handler changes.
    */
   public void init(UpdateHandler uhandler, SolrCore core) {
-    // ulogDir from CoreDescriptor overrides
-    String ulogDir = core.getCoreDescriptor().getUlogDir();
-    if (ulogDir != null) {
-      dataDir = ulogDir;
-    }
-
-    if (dataDir == null || dataDir.length()==0) {
-      dataDir = core.getDataDir();
-    }
+    dataDir = core.getUlogDir();
 
     this.uhandler = uhandler;
 
