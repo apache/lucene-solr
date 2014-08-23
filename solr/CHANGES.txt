@@ -126,6 +126,9 @@ Other Changes
 
 * SOLR-6400: SolrCloud tests are not properly testing session expiration. (Mark Miller)
 
+* LUCENE-5650: Tests can no longer write to CWD. Update log dir is now made relative
+  to the instance dir if it is not an absolute path. (Ryan Ernst, Dawid Weiss)
+
 ==================  4.10.0 =================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
@@ -597,9 +600,6 @@ Other Changes
   documents to a location external to Solr (ex. a NoSql db). (Roman Chyla via James Dyer)
 
 * SOLR-5340: Add support for named snapshots (Varun Thacker via Noble Paul)
-
-* LUCENE-5650: Tests can no longer write to CWD. Update log dir is now made relative
-  to the instance dir if it is not an absolute path. (Ryan Ernst, Dawid Weiss)
 
 * SOLR-5495: Recovery strategy for leader partitioned from replica case. Hardening
   recovery scenarios after the leader receives an error trying to forward an

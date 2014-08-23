@@ -105,6 +105,12 @@ New Features
 * LUCENE-5889: Add commit method to AnalyzingInfixSuggester, and allow just using .add
   to build up the suggester.  (Varun Thacker via Mike McCandless)
 
+Bug Fixes
+
+* LUCENE-5650: Enforce read-only access to any path outside the temporary
+  folder via security manager, and make test temp dirs absolute.
+  (Ryan Ernst, Dawid Weiss)
+
 ======================= Lucene 4.10.0 ======================
 
 New Features
@@ -626,10 +632,6 @@ Bug fixes
 
 * LUCENE-5671: Upgrade ICU version to fix an ICU concurrency problem that
   could cause exceptions when indexing. (feedly team, Robert Muir)
-
-* LUCENE-5650: Enforce read-only access to any path outside the temporary
-  folder via security manager, and make test temp dirs absolute.
-  (Ryan Ernst, Dawid Weiss)
 
 ======================= Lucene 4.8.0 =======================
 
