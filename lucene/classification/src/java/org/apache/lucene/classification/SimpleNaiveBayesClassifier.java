@@ -199,7 +199,7 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
    * count the number of documents in the index having at least a value for the 'class' field
    *
    * @return the no. of documents having a value for the 'class' field
-   * @throws IOException
+   * @throws IOException if accessing to term vectors or search fails
    */
   protected int countDocsWithClass() throws IOException {
     int docCount = MultiFields.getTerms(this.atomicReader, this.classFieldName).getDocCount();
@@ -222,7 +222,7 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
    *
    * @param doc the <code>String</code> representing an input text (to be classified)
    * @return a <code>String</code> array of the resulting tokens
-   * @throws IOException
+   * @throws IOException if tokenization fails
    */
   protected String[] tokenizeDoc(String doc) throws IOException {
     Collection<String> result = new LinkedList<>();
