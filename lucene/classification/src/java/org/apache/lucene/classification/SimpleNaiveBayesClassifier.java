@@ -48,7 +48,8 @@ import org.apache.lucene.util.BytesRef;
 public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
 
   /**
-   *
+   * {@link org.apache.lucene.index.AtomicReader} used to access the {@link org.apache.lucene.classification.Classifier}'s
+   * index
    */
   protected AtomicReader atomicReader;
 
