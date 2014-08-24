@@ -43,7 +43,7 @@ import java.util.TreeMap;
 /**
  * Tests a schemaless collection configuration with SolrCloud
  */
-// @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(TestCloudManagedSchemaConcurrent.class);
   private static final String SUCCESS_XPATH = "/response/lst[@name='responseHeader']/int[@name='status'][.='0']";
