@@ -614,7 +614,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
   }
 
   @Override
-  protected CloudSolrServer createCloudClient(String defaultCollection) throws MalformedURLException {
+  protected CloudSolrServer createCloudClient(String defaultCollection) {
     CloudSolrServer client = super.createCloudClient(defaultCollection);
     client.getLbServer().getHttpClient().getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, 5 * 60 * 1000);
     return client;

@@ -25,7 +25,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -251,13 +250,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected void initCloud() throws Exception {
     assert(cloudInit == false);
     cloudInit = true;
-    try {
-      cloudClient = createCloudClient(DEFAULT_COLLECTION);
-      
-      cloudClient.connect();
-    } catch (MalformedURLException e) {
-      throw new RuntimeException(e);
-    }
+    cloudClient = createCloudClient(DEFAULT_COLLECTION);
+    cloudClient.connect();
     
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
     
@@ -265,8 +259,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         shardToJetty, shardToLeaderJetty);
   }
   
-  protected CloudSolrServer createCloudClient(String defaultCollection)
-      throws MalformedURLException {
+  protected CloudSolrServer createCloudClient(String defaultCollection) {
     CloudSolrServer server = new CloudSolrServer(zkServer.getZkAddress(), random().nextBoolean());
     server.setParallelUpdates(random().nextBoolean());
     if (defaultCollection != null) server.setDefaultCollection(defaultCollection);
@@ -1668,16 +1661,12 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected CloudSolrServer getCommonCloudSolrServer() {
     synchronized (this) {
       if (commondCloudSolrServer == null) {
-        try {
-          commondCloudSolrServer = new CloudSolrServer(zkServer.getZkAddress(),
-              random().nextBoolean());
-          commondCloudSolrServer.getLbServer().setConnectionTimeout(30000);
-          commondCloudSolrServer.setParallelUpdates(random().nextBoolean());
-          commondCloudSolrServer.setDefaultCollection(DEFAULT_COLLECTION);
-          commondCloudSolrServer.connect();
-        } catch (MalformedURLException e) {
-          throw new RuntimeException(e);
-        }
+        commondCloudSolrServer = new CloudSolrServer(zkServer.getZkAddress(),
+            random().nextBoolean());
+        commondCloudSolrServer.getLbServer().setConnectionTimeout(30000);
+        commondCloudSolrServer.setParallelUpdates(random().nextBoolean());
+        commondCloudSolrServer.setDefaultCollection(DEFAULT_COLLECTION);
+        commondCloudSolrServer.connect();
       }
     }
     return commondCloudSolrServer;

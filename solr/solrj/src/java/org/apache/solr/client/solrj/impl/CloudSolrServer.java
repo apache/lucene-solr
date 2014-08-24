@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.impl;
  */
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -113,24 +112,38 @@ public class CloudSolrServer extends SolrServer {
 
   }
 
-
-
   /**
-   * @param zkHost The client endpoint of the zookeeper quorum containing the cloud state,
-   * in the form HOST:PORT.
+   * Create a new client object that connects to Zookeeper and is always aware
+   * of the SolrCloud state. If there is a fully redundant Zookeeper quorum and
+   * SolrCloud has enough replicas for every shard in a collection, there is no
+   * single point of failure. Updates will be sent to shard leaders by default.
+   * 
+   * @param zkHost
+   *          The client endpoint of the zookeeper quorum containing the cloud
+   *          state. The full specification for this string is one or more comma
+   *          separated HOST:PORT values, followed by an optional chroot value
+   *          that starts with a forward slash. Using a chroot allows multiple
+   *          applications to coexist in one ensemble. For full details, see the
+   *          Zookeeper documentation. Some examples:
+   *          <p/>
+   *          "host1:2181"
+   *          <p/>
+   *          "host1:2181,host2:2181,host3:2181/mysolrchroot"
+   *          <p/>
+   *          "zoo1.example.com:2181,zoo2.example.com:2181,zoo3.example.com:2181"
    */
   public CloudSolrServer(String zkHost) {
-      this.zkHost = zkHost;
-      this.myClient = HttpClientUtil.createClient(null);
-      this.lbServer = new LBHttpSolrServer(myClient);
-      this.lbServer.setRequestWriter(new BinaryRequestWriter());
-      this.lbServer.setParser(new BinaryResponseParser());
-      this.updatesToLeaders = true;
-      shutdownLBHttpSolrServer = true;
+      this(zkHost, true);
   }
   
-  public CloudSolrServer(String zkHost, boolean updatesToLeaders)
-      throws MalformedURLException {
+  /**
+   * @param zkHost
+   *          A zookeeper client endpoint.
+   * @param updatesToLeaders
+   *          If true, sends updates only to shard leaders.
+   * @see #CloudSolrServer(String) for full description and details on zkHost
+   */
+  public CloudSolrServer(String zkHost, boolean updatesToLeaders) {
     this.zkHost = zkHost;
     this.myClient = HttpClientUtil.createClient(null);
     this.lbServer = new LBHttpSolrServer(myClient);
@@ -141,22 +154,24 @@ public class CloudSolrServer extends SolrServer {
   }
 
   /**
-   * @param zkHost The client endpoint of the zookeeper quorum containing the cloud state,
-   * in the form HOST:PORT.
-   * @param lbServer LBHttpSolrServer instance for requests. 
+   * @param zkHost
+   *          A zookeeper client endpoint.
+   * @param lbServer
+   *          LBHttpSolrServer instance for requests.
+   * @see #CloudSolrServer(String) for full description and details on zkHost
    */
   public CloudSolrServer(String zkHost, LBHttpSolrServer lbServer) {
-    this.zkHost = zkHost;
-    this.lbServer = lbServer;
-    this.updatesToLeaders = true;
-    shutdownLBHttpSolrServer = false;
+    this(zkHost, lbServer, true);
   }
   
   /**
-   * @param zkHost The client endpoint of the zookeeper quorum containing the cloud state,
-   * in the form HOST:PORT.
-   * @param lbServer LBHttpSolrServer instance for requests. 
-   * @param updatesToLeaders sends updates only to leaders - defaults to true
+   * @param zkHost
+   *          A zookeeper client endpoint.
+   * @param lbServer
+   *          LBHttpSolrServer instance for requests.
+   * @param updatesToLeaders
+   *          If true, sends updates only to shard leaders.
+   * @see #CloudSolrServer(String) for full description and details on zkHost
    */
   public CloudSolrServer(String zkHost, LBHttpSolrServer lbServer, boolean updatesToLeaders) {
     this.zkHost = zkHost;
