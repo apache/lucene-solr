@@ -126,6 +126,9 @@ Bug Fixes
 * SOLR-6410: Ensure all Lookup instances are closed via CloseHook
   (hossman, Areek Zillur, Ryan Ernst, Dawid Weiss)
 
+* SOLR-6424: The hdfs block cache BLOCKCACHE_WRITE_ENABLED is not defaulting to false like it 
+  should. (Mark Miller)
+
 Other Changes
 ---------------------
 
