@@ -260,6 +260,9 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     }
   }
 
+  /** Commits all pending changes made to this suggester to disk.
+   *
+   *  @see IndexWriter#commit */
   public void commit() throws IOException {
     if (writer == null) {
       throw new IllegalStateException("Cannot commit on an closed writer. Add documents first");
