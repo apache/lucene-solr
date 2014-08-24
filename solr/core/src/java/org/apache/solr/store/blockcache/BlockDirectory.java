@@ -96,11 +96,6 @@ public class BlockDirectory extends Directory {
   public BlockDirectory(String dirName, Directory directory, Cache cache,
       Set<String> blockCacheFileTypes, boolean blockCacheReadEnabled,
       boolean blockCacheWriteEnabled) throws IOException {
-    this(dirName, directory, cache, blockCacheFileTypes, blockCacheReadEnabled, blockCacheWriteEnabled, false);
-  }
-  public BlockDirectory(String dirName, Directory directory, Cache cache,
-      Set<String> blockCacheFileTypes, boolean blockCacheReadEnabled,
-      boolean blockCacheWriteEnabled, boolean releaseBlocksOnClose) throws IOException {
     this.dirName = dirName;
     this.directory = directory;
     blockSize = BLOCK_SIZE;
@@ -244,11 +239,11 @@ public class BlockDirectory extends Directory {
       // segments.gen won't be removed above
       cache.delete(dirName + "/" + "segments.gen");
       
-      cache.releaseResources();
     } catch (FileNotFoundException e) {
       // the local file system folder may be gone
     } finally {
       directory.close();
+      cache.releaseResources();
     }
   }
   
