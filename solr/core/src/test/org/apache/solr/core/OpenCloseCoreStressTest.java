@@ -104,13 +104,18 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Slow
+  public void test5Seconds() throws Exception {
+    doStress(5, random().nextBoolean());
+  }
+  
+  @Test
+  @Nightly
   public void test15SecondsOld() throws Exception {
     doStress(15, true);
   }
 
   @Test
-  @Slow
+  @Nightly
   public void test15SecondsNew() throws Exception {
     doStress(15, false);
   }
