@@ -31,7 +31,7 @@ public class BlockDirectoryCache implements Cache {
   private final BlockCache blockCache;
   private final AtomicInteger counter = new AtomicInteger();
   private final Map<String,Integer> names = new ConcurrentHashMap<>();
-  private Set<BlockCacheKey> keys;
+  private Set<BlockCacheKey> keysToRelease;
   private final String path;
   private final Metrics metrics;
   
@@ -44,7 +44,7 @@ public class BlockDirectoryCache implements Cache {
     this.path = path;
     this.metrics = metrics;
     if (releaseBlocks) {
-      keys = Collections.synchronizedSet(new HashSet<BlockCacheKey>());
+      keysToRelease = Collections.synchronizedSet(new HashSet<BlockCacheKey>());
     }
   }
   
@@ -74,9 +74,8 @@ public class BlockDirectoryCache implements Cache {
     blockCacheKey.setPath(path);
     blockCacheKey.setBlock(blockId);
     blockCacheKey.setFile(file);
-    blockCache.store(blockCacheKey, blockOffset, buffer, offset, length);
-    if (keys != null) {
-      keys.add(blockCacheKey);
+    if (blockCache.store(blockCacheKey, blockOffset, buffer, offset, length) && keysToRelease != null) {
+      keysToRelease.add(blockCacheKey);
     }
   }
   
@@ -117,8 +116,8 @@ public class BlockDirectoryCache implements Cache {
 
   @Override
   public void releaseResources() {
-    if (keys != null) {
-      for (BlockCacheKey key : keys) {
+    if (keysToRelease != null) {
+      for (BlockCacheKey key : keysToRelease) {
         blockCache.release(key);
       }
     }
