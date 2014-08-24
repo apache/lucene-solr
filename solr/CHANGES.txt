@@ -49,6 +49,9 @@ Bug Fixes
 * LUCENE-5650: Tests can no longer write to CWD. Update log dir is now made relative
   to the instance dir if it is not an absolute path. (Ryan Ernst, Dawid Weiss)
 
+* SOLR-6424: The hdfs block cache BLOCKCACHE_WRITE_ENABLED is not defaulting to false like it 
+  should. (Mark Miller)
+
 Other Changes
 ---------------------
 
