@@ -129,6 +129,10 @@ Other Changes
 * LUCENE-5650: Tests can no longer write to CWD. Update log dir is now made relative
   to the instance dir if it is not an absolute path. (Ryan Ernst, Dawid Weiss)
 
+* SOLR-6390: Remove unnecessary checked exception for CloudSolrServer
+  constructors, improve javadocs for CloudSolrServer constructors.
+  (Steve Davids via Shawn Heisey)
+
 ==================  4.10.0 =================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
