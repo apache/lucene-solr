@@ -112,6 +112,11 @@ Apache ZooKeeper 3.4.6
 Detailed Change List
 ----------------------
 
+New Features
+----------------------
+
+* SOLR-6403: TransactionLog replay status logging. (Mark Miller)
+
 Bug Fixes
 ----------------------
 
