@@ -19,9 +19,11 @@ package org.apache.solr.cloud;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.Diagnostics;
@@ -107,7 +109,7 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     // randomly turn on 1 seconds 'soft' commit
     randomlyEnableAutoSoftCommit();
 
-    del("*:*");
+    tryDelete();
     
     List<StopableIndexingThread> threads = new ArrayList<>();
     int threadCount = 2;
@@ -182,6 +184,21 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     numShardsNumReplicas.add(1);
     numShardsNumReplicas.add(1);
     checkForCollection("testcollection",numShardsNumReplicas, null);
+  }
+
+  private void tryDelete() throws Exception {
+    long start = System.nanoTime();
+    long timeout = start + TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);
+    while (System.nanoTime() < timeout) {
+      try {
+        del("*:*");
+        break;
+      } catch (SolrServerException e) {
+        // cluster may not be up yet
+        e.printStackTrace();
+      }
+      Thread.sleep(100);
+    }
   }
   
   // skip the randoms - they can deadlock...
