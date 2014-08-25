@@ -479,6 +479,9 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       }
     }
     if (!forced && enableVirusScanner && randomState.nextInt(4) == 0) {
+      if (LuceneTestCase.VERBOSE) {
+        System.out.println("MDW: now refuse to delete file: " + name);
+      }
       throw new IOException("cannot delete file: " + name + ", a virus scanner has it open");
     }
     in.deleteFile(name);
