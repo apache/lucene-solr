@@ -60,7 +60,7 @@ import org.xml.sax.SAXException;
 @Slow
 public class OverseerTest extends SolrTestCaseJ4 {
 
-  static final int TIMEOUT = 10000;
+  static final int TIMEOUT = 30000;
   private static final boolean DEBUG = false;
   
   private List<Overseer> overseers = new ArrayList<>();
