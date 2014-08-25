@@ -24,6 +24,12 @@ limitations under the License.
   width: 150px;
 }
 
+.scroll #menu-wrapper
+{
+  position: absolute;
+  top: 90px;
+}
+
 .has-environment #menu-wrapper
 {
   top: 160px;

@@ -195,6 +195,11 @@ ul
   z-index: 42;
 }
 
+.scroll #header
+{
+  position: absolute;
+}
+
 #header #solr
 {
   background-image: url( ../../img/solr.png );
