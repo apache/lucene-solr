@@ -132,6 +132,8 @@ Bug Fixes
 * SOLR-6425: If you using the new global hdfs block cache option, you can end up reading corrupt 
   files on file name reuse. (Mark Miller, Gregory Chanan)
 
+* SOLR-6426: SolrZkClient clean can fail due to a race with children nodes. (Mark Miller)
+
 Other Changes
 ---------------------
 

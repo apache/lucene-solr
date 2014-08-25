@@ -44,6 +44,7 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
+import org.apache.zookeeper.KeeperException.NotEmptyException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
@@ -667,7 +668,11 @@ public class SolrZkClient implements Closeable {
     }
     try {
       if (!path.equals("/")) {
-        delete(path, -1, true);
+        try {
+          delete(path, -1, true);
+        } catch (NotEmptyException e) {
+          clean(path);
+        }
       }
     } catch (NoNodeException r) {
       return;
