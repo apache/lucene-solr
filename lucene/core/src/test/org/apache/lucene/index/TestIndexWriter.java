@@ -1021,8 +1021,10 @@ public class TestIndexWriter extends LuceneTestCase {
     final Directory adder;
     final ByteArrayOutputStream bytesLog = new ByteArrayOutputStream();
     final PrintStream log = new PrintStream(bytesLog, true, IOUtils.UTF_8);
-    
-    IndexerThreadInterrupt() throws IOException {
+    final int id;
+
+    IndexerThreadInterrupt(int id) throws IOException {
+      this.id = id;
       this.random = new Random(random().nextLong());
       // make a little directory for addIndexes
       // LUCENE-2239: won't work with NIOFS/MMAP
@@ -1164,7 +1166,7 @@ public class TestIndexWriter extends LuceneTestCase {
           // on!!  This test doesn't repro easily so when
           // Jenkins hits a fail we need to study where the
           // interrupts struck!
-          log.println("TEST: got interrupt");
+          log.println("TEST thread " + id + ": got interrupt");
           re.printStackTrace(log);
           Throwable e = re.getCause();
           assertTrue(e instanceof InterruptedException);
@@ -1172,7 +1174,7 @@ public class TestIndexWriter extends LuceneTestCase {
             break;
           }
         } catch (Throwable t) {
-          log.println("FAILED; unexpected exception");
+          log.println("thread " + id + " FAILED; unexpected exception");
           t.printStackTrace(log);
           failed = true;
           break;
@@ -1180,11 +1182,11 @@ public class TestIndexWriter extends LuceneTestCase {
       }
 
       if (VERBOSE) {
-        log.println("TEST: now finish failed=" + failed);
+        log.println("TEST: thread " + id + ": now finish failed=" + failed);
       }
       if (!failed) {
         if (VERBOSE) {
-          log.println("TEST: now rollback");
+          log.println("TEST: thread " + id + ": now rollback");
         }
         // clear interrupt state:
         Thread.interrupted();
@@ -1200,7 +1202,7 @@ public class TestIndexWriter extends LuceneTestCase {
           TestUtil.checkIndex(dir);
         } catch (Exception e) {
           failed = true;
-          log.println("CheckIndex FAILED: unexpected exception");
+          log.println("thread " + id + ": CheckIndex FAILED: unexpected exception");
           e.printStackTrace(log);
         }
         try {
@@ -1209,25 +1211,27 @@ public class TestIndexWriter extends LuceneTestCase {
           r.close();
         } catch (Exception e) {
           failed = true;
-          log.println("DirectoryReader.open FAILED: unexpected exception");
+          log.println("thread " + id + ": DirectoryReader.open FAILED: unexpected exception");
           e.printStackTrace(log);
         }
       }
       try {
         IOUtils.close(dir);
       } catch (IOException e) {
-        throw new RuntimeException(e);
+        failed = true;
+        throw new RuntimeException("thread " + id, e);
       }
       try {
         IOUtils.close(adder);
       } catch (IOException e) {
-        throw new RuntimeException(e);
+        failed = true;
+        throw new RuntimeException("thread " + id, e);
       }
     }
   }
 
   public void testThreadInterruptDeadlock() throws Exception {
-    IndexerThreadInterrupt t = new IndexerThreadInterrupt();
+    IndexerThreadInterrupt t = new IndexerThreadInterrupt(1);
     t.setDaemon(true);
     t.start();
 
@@ -1261,11 +1265,11 @@ public class TestIndexWriter extends LuceneTestCase {
   
   /** testThreadInterruptDeadlock but with 2 indexer threads */
   public void testTwoThreadsInterruptDeadlock() throws Exception {
-    IndexerThreadInterrupt t1 = new IndexerThreadInterrupt();
+    IndexerThreadInterrupt t1 = new IndexerThreadInterrupt(1);
     t1.setDaemon(true);
     t1.start();
     
-    IndexerThreadInterrupt t2 = new IndexerThreadInterrupt();
+    IndexerThreadInterrupt t2 = new IndexerThreadInterrupt(2);
     t2.setDaemon(true);
     t2.start();
 
@@ -1295,8 +1299,13 @@ public class TestIndexWriter extends LuceneTestCase {
     t2.finish = true;
     t1.join();
     t2.join();
-    assertFalse(t1.failed);
-    assertFalse(t2.failed);
+    if (t1.failed) {
+      System.out.println("Thread1 failed:\n" + new String(t1.bytesLog.toString("UTF-8")));
+    }
+    if (t2.failed) {
+      System.out.println("Thread2 failed:\n" + new String(t2.bytesLog.toString("UTF-8")));
+    }
+    assertFalse(t1.failed || t2.failed);
   }
 
 
