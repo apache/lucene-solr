@@ -152,6 +152,10 @@ public class MergeState {
   /** InfoStream for debugging messages. */
   public final InfoStream infoStream;
 
+  /** Counter used for periodic calls to checkAbort
+   * @lucene.internal */
+  public int checkAbortCount;
+
   /** Sole constructor. */
   MergeState(List<AtomicReader> readers, SegmentInfo segmentInfo, InfoStream infoStream, CheckAbort checkAbort) {
     this.readers = readers;

@@ -21,22 +21,18 @@ package org.apache.lucene.codecs.lucene40;
  *  index file format */
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.codecs.PostingsWriterBase;
-import org.apache.lucene.codecs.TermStats;
+import org.apache.lucene.codecs.PushPostingsWriterBase;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.DocsEnum;  // javadocs
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
@@ -46,7 +42,7 @@ import org.apache.lucene.util.IOUtils;
  * @see Lucene40PostingsFormat
  * @lucene.experimental 
  */
-public final class Lucene40PostingsWriter extends PostingsWriterBase {
+public final class Lucene40PostingsWriter extends PushPostingsWriterBase {
 
   final IndexOutput freqOut;
   final IndexOutput proxOut;
@@ -70,13 +66,9 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
   final int maxSkipLevels = 10;
   final int totalNumDocs;
 
-  IndexOptions indexOptions;
-  boolean storePayloads;
-  boolean storeOffsets;
   // Starts a new term
   long freqStart;
   long proxStart;
-  FieldInfo fieldInfo;
   int lastPayloadLength;
   int lastOffsetLength;
   int lastPosition;
@@ -150,7 +142,6 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
     return new StandardTermState();
   }
 
-
   @Override
   public void startTerm() {
     freqStart = freqOut.getFilePointer();
@@ -169,6 +160,7 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
   // our parent calls setField whenever the field changes
   @Override
   public int setField(FieldInfo fieldInfo) {
+    super.setField(fieldInfo);
     //System.out.println("SPW: setField");
     /*
     if (BlockTreeTermsWriter.DEBUG && fieldInfo.name.equals("id")) {
@@ -177,11 +169,7 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
       DEBUG = false;
     }
     */
-    this.fieldInfo = fieldInfo;
-    indexOptions = fieldInfo.getIndexOptions();
-    
-    storeOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;        
-    storePayloads = fieldInfo.hasPayloads();
+
     lastState = emptyState;
     //System.out.println("  set init blockFreqStart=" + freqStart);
     //System.out.println("  set init blockProxStart=" + proxStart);
@@ -190,7 +178,7 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
 
   int lastDocID;
   int df;
-  
+
   @Override
   public void startDoc(int docID, int termDocFreq) throws IOException {
     // if (DEBUG) System.out.println("SPW:   startDoc seg=" + segment + " docID=" + docID + " tf=" + termDocFreq + " freqOut.fp=" + freqOut.getFilePointer());
@@ -202,7 +190,7 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
     }
 
     if ((++df % skipInterval) == 0) {
-      skipListWriter.setSkipData(lastDocID, storePayloads, lastPayloadLength, storeOffsets, lastOffsetLength);
+      skipListWriter.setSkipData(lastDocID, writePayloads, lastPayloadLength, writeOffsets, lastOffsetLength);
       skipListWriter.bufferSkip(df);
     }
 
@@ -237,7 +225,7 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
 
     int payloadLength = 0;
 
-    if (storePayloads) {
+    if (writePayloads) {
       payloadLength = payload == null ? 0 : payload.length;
 
       if (payloadLength != lastPayloadLength) {
@@ -251,7 +239,7 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
       proxOut.writeVInt(delta);
     }
     
-    if (storeOffsets) {
+    if (writeOffsets) {
       // don't use startOffset - lastEndOffset, because this creates lots of negative vints for synonyms,
       // and the numbers aren't that much smaller anyways.
       int offsetDelta = startOffset - lastOffset;
@@ -285,7 +273,7 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
   /** Called when we are done adding docs to this term */
   @Override
   public void finishTerm(BlockTermState _state) throws IOException {
-    StandardTermState state = (StandardTermState)_state;
+    StandardTermState state = (StandardTermState) _state;
     // if (DEBUG) System.out.println("SPW: finishTerm seg=" + segment + " freqStart=" + freqStart);
     assert state.docFreq > 0;
 

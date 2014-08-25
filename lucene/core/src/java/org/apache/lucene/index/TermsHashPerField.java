@@ -73,7 +73,7 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
     bytesHash = new BytesRefHash(termBytePool, HASH_INIT_SIZE, byteStarts);
   }
 
-  public void reset() {
+  void reset() {
     bytesHash.clear(false);
     if (nextPerField != null) {
       nextPerField.reset();
@@ -90,17 +90,21 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
                 ints[upto+stream]);
   }
 
+  int[] sortedTermIDs;
+
   /** Collapse the hash table & sort in-place; also sets
    * this.sortedTermIDs to the results */
-  public int[] sortPostings(Comparator<BytesRef> termComp) {
-   return bytesHash.sort(termComp);
+  public int[] sortPostings(Comparator<BytesRef> comparator) {
+    sortedTermIDs = bytesHash.sort(comparator);
+    return sortedTermIDs;
   }
 
   private boolean doNextCall;
 
   // Secondary entry point (for 2nd & subsequent TermsHash),
   // because token text has already been "interned" into
-  // textStart, so we hash by textStart
+  // textStart, so we hash by textStart.  term vectors use
+  // this API.
   public void add(int textStart) throws IOException {
     int termID = bytesHash.addByPoolOffset(textStart);
     if (termID >= 0) {      // New posting

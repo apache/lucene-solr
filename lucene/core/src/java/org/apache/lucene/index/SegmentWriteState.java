@@ -114,5 +114,6 @@ public class SegmentWriteState {
     this.segmentSuffix = segmentSuffix;
     segUpdates = state.segUpdates;
     delCountOnFlush = state.delCountOnFlush;
+    liveDocs = state.liveDocs;
   }
 }

@@ -13,6 +13,16 @@ New Features
 * LUCENE-5889: Add commit method to AnalyzingInfixSuggester, and allow just using .add
   to build up the suggester.  (Varun Thacker via Mike McCandless)
 
+* LUCENE-5123: Add a "push" option to the postings writing API, so
+  that a PostingsFormat now receives a Fields instance and it is
+  responsible for iterating through all fields, terms, documents and
+  positions.  (Robert Muir, Mike McCandless)
+
+* LUCENE-5268: Full cutover of all postings formats to the "pull"
+  FieldsConsumer API, removing PushFieldsConsumer.  Added new
+  PushPostingsWriterBase for single-pass push of docs/positions to the
+  postings format.  (Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary

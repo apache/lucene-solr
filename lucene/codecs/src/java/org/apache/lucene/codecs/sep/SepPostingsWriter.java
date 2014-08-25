@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsWriterBase;
+import org.apache.lucene.codecs.PushPostingsWriterBase;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
@@ -38,7 +39,7 @@ import org.apache.lucene.util.IOUtils;
  *  to .pyl, skip data to .skp
  *
  * @lucene.experimental */
-public final class SepPostingsWriter extends PostingsWriterBase {
+public final class SepPostingsWriter extends PushPostingsWriterBase {
   final static String CODEC = "SepPostingsWriter";
 
   final static String DOC_EXTENSION = "doc";
@@ -190,6 +191,7 @@ public final class SepPostingsWriter extends PostingsWriterBase {
   // our parent calls setField whenever the field changes
   @Override
   public int setField(FieldInfo fieldInfo) {
+    super.setField(fieldInfo);
     this.fieldInfo = fieldInfo;
     this.indexOptions = fieldInfo.getIndexOptions();
     if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {

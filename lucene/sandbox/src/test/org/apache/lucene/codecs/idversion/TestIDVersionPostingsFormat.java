@@ -357,8 +357,6 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     return new StringAndPayloadField("id", id, payload);
   }
 
-  // In 4.x we cannot detect this case (IW doesn't tell us deleted docs):
-  /*
   public void testMoreThanOneDocPerIDOneSegment() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
@@ -415,7 +413,6 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     w.close();
     dir.close();
   }
-  */
 
   public void testMoreThanOneDocPerIDWithUpdates() throws Exception {
     Directory dir = newDirectory();

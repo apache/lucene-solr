@@ -25,10 +25,7 @@ import java.util.List;
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
-import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.PostingsWriterBase;
-import org.apache.lucene.codecs.TermStats;
-import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter; // javadocs
 import org.apache.lucene.codecs.blocktreeords.FSTOrdsOutputs.Output;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -139,7 +136,6 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
 
   final PostingsWriterBase postingsWriter;
   final FieldInfos fieldInfos;
-  FieldInfo currentField;
 
   private static class FieldMetaData {
     public final FieldInfo fieldInfo;
@@ -230,14 +226,34 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
     this.indexOut = indexOut;
   }
 
-  public TermsConsumer addField(FieldInfo field) throws IOException {
-    //DEBUG = field.name.equals("id");
-    //if (DEBUG) System.out.println("\nBTTW.addField seg=" + segment + " field=" + field.name);
-    assert currentField == null || currentField.name.compareTo(field.name) < 0;
-    currentField = field;
-    return new TermsWriter(field);
-  }
+  @Override
+  public void write(Fields fields) throws IOException {
 
+    String lastField = null;
+    for(String field : fields) {
+      assert lastField == null || lastField.compareTo(field) < 0;
+      lastField = field;
+
+      Terms terms = fields.terms(field);
+      if (terms == null) {
+        continue;
+      }
+
+      TermsEnum termsEnum = terms.iterator(null);
+
+      TermsWriter termsWriter = new TermsWriter(fieldInfos.fieldInfo(field));
+      while (true) {
+        BytesRef term = termsEnum.next();
+        if (term == null) {
+          break;
+        }
+        termsWriter.write(term, termsEnum);
+      }
+
+      termsWriter.finish();
+    }
+  }
+  
   static long encodeOutput(long fp, boolean hasTerms, boolean isFloor) {
     assert fp < (1L << 62);
     return (fp << 2) | (hasTerms ? OUTPUT_FLAG_HAS_TERMS : 0) | (isFloor ? OUTPUT_FLAG_IS_FLOOR : 0);
@@ -424,13 +440,13 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
   private final RAMOutputStream scratchBytes = new RAMOutputStream();
   private final IntsRefBuilder scratchIntsRef = new IntsRefBuilder();
 
-  class TermsWriter extends TermsConsumer {
+  class TermsWriter {
     private final FieldInfo fieldInfo;
     private final int longsSize;
     private long numTerms;
+    final FixedBitSet docsSeen;
     long sumTotalTermFreq;
     long sumDocFreq;
-    int docCount;
     long indexStartFP;
 
     // Records index into pending where the current prefix at that
@@ -770,50 +786,37 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
 
     TermsWriter(FieldInfo fieldInfo) {
       this.fieldInfo = fieldInfo;
+      docsSeen = new FixedBitSet(maxDoc);
       this.longsSize = postingsWriter.setField(fieldInfo);
       this.longs = new long[longsSize];
     }
     
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
-    }
-
-    @Override
-    public PostingsConsumer startTerm(BytesRef text) throws IOException {
-      //if (DEBUG) System.out.println("\nBTTW.startTerm term=" + fieldInfo.name + ":" + toString(text) + " seg=" + segment);
-      postingsWriter.startTerm();
+    /** Writes one term's worth of postings. */
+    public void write(BytesRef text, TermsEnum termsEnum) throws IOException {
       /*
-      if (fieldInfo.name.equals("id")) {
-        postingsWriter.termID = Integer.parseInt(text.utf8ToString());
-      } else {
-        postingsWriter.termID = -1;
+      if (DEBUG) {
+        int[] tmp = new int[lastTerm.length];
+        System.arraycopy(prefixStarts, 0, tmp, 0, tmp.length);
+        System.out.println("BTTW: write term=" + brToString(text) + " prefixStarts=" + Arrays.toString(tmp) + " pending.size()=" + pending.size());
       }
       */
-      return postingsWriter;
-    }
 
-    /** Writes one term's worth of postings. */
-    @Override
-    public void finishTerm(BytesRef text, TermStats stats) throws IOException {
-      assert stats.docFreq != 0;
-      assert fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY || stats.totalTermFreq >= stats.docFreq: "postingsWriter=" + postingsWriter;
+      BlockTermState state = postingsWriter.writeTerm(text, termsEnum, docsSeen);
+      if (state != null) {
+        assert state.docFreq != 0;
+        assert fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY || state.totalTermFreq >= state.docFreq: "postingsWriter=" + postingsWriter;
+        sumDocFreq += state.docFreq;
+        sumTotalTermFreq += state.totalTermFreq;
+        pushTerm(text);
 
-      pushTerm(text);
-
-      BlockTermState state = postingsWriter.newTermState();
-      state.docFreq = stats.docFreq;
-      state.totalTermFreq = stats.totalTermFreq;
-      postingsWriter.finishTerm(state);
-
-      PendingTerm term = new PendingTerm(BytesRef.deepCopyOf(text), state);
-      pending.add(term);
-      numTerms++;
-
-      if (firstPendingTerm == null) {
-        firstPendingTerm = term;
+        PendingTerm term = new PendingTerm(BytesRef.deepCopyOf(text), state);
+        pending.add(term);
+        numTerms++;
+        if (firstPendingTerm == null) {
+          firstPendingTerm = term;
+        }
+        lastPendingTerm = term;
       }
-      lastPendingTerm = term;
     }
 
     /** Pushes the new term to the top of the stack, and writes new blocks. */
@@ -854,7 +857,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
     }
 
     // Finishes all terms in this field
-    public void finish(long sumTotalTermFreq, long sumDocFreq, int docCount) throws IOException {
+    public void finish() throws IOException {
       if (numTerms > 0) {
         // if (DEBUG) System.out.println("BTTW.finish pending.size()=" + pending.size());
 
@@ -868,10 +871,6 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
         final PendingBlock root = (PendingBlock) pending.get(0);
         assert root.prefix.length == 0;
         assert root.index.getEmptyOutput() != null;
-
-        this.sumTotalTermFreq = sumTotalTermFreq;
-        this.sumDocFreq = sumDocFreq;
-        this.docCount = docCount;
 
         // Write FST to index
         indexStartFP = indexOut.getFilePointer();
@@ -898,13 +897,11 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
                                      indexStartFP,
                                      sumTotalTermFreq,
                                      sumDocFreq,
-                                     docCount,
+                                     docsSeen.cardinality(),
                                      longsSize,
                                      minTerm, maxTerm));
       } else {
-        assert sumTotalTermFreq == 0 || fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY && sumTotalTermFreq == -1;
-        assert sumDocFreq == 0;
-        assert docCount == 0;
+        assert docsSeen.cardinality() == 0;
       }
     }
 
@@ -959,5 +956,10 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
   private static void writeBytesRef(IndexOutput out, BytesRef bytes) throws IOException {
     out.writeVInt(bytes.length);
     out.writeBytes(bytes.bytes, bytes.offset, bytes.length);
+  }
+  
+  @Override
+  public Comparator<BytesRef> getComparator() {
+    return BytesRef.getUTF8SortedAsUnicodeComparator();
   }
 }
