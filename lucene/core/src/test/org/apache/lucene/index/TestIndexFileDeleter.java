@@ -42,6 +42,8 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     Directory dir = newDirectory();
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setPreventDoubleWrite(false);
+      // ensure we actually delete files
+      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
     }
 
     MergePolicy mergePolicy = newLogMergePolicy(true, 10);

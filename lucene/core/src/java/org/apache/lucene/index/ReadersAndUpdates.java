@@ -39,6 +39,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.MutableBits;
 
 // Used by IndexWriter to hold open SegmentReaders (for
@@ -278,11 +279,7 @@ class ReadersAndUpdates {
         
         // Delete any partially created file(s):
         for (String fileName : trackingDir.getCreatedFiles()) {
-          try {
-            dir.deleteFile(fileName);
-          } catch (Throwable t) {
-            // Ignore so we throw only the first exc
-          }
+          IOUtils.deleteFilesIgnoringExceptions(dir, fileName);
         }
       }
     }
@@ -534,11 +531,7 @@ class ReadersAndUpdates {
         
         // Delete any partially created file(s):
         for (String fileName : trackingDir.getCreatedFiles()) {
-          try {
-            dir.deleteFile(fileName);
-          } catch (Throwable t) {
-            // Ignore so we throw only the first exc
-          }
+          IOUtils.deleteFilesIgnoringExceptions(dir, fileName);
         }
       }
     }

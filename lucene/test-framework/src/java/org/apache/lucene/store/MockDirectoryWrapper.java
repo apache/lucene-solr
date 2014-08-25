@@ -75,6 +75,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   boolean trackDiskUsage = false;
   boolean wrapLockFactory = true;
   boolean useSlowOpenClosers = true;
+  boolean enableVirusScanner = true;
   boolean allowRandomFileNotFoundException = true;
   boolean allowReadingFilesStillOpenForWrite = false;
   private Set<String> unSyncedFiles;
@@ -153,6 +154,18 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
    *  that is still open for writes. */
   public void setAllowReadingFilesStillOpenForWrite(boolean value) {
     allowReadingFilesStillOpenForWrite = value;
+  }
+  
+  /** Returns true if the virus scanner is enabled */
+  public boolean getEnableVirusScanner() {
+    return enableVirusScanner;
+  }
+  
+  /** If set to true (the default), deleteFile sometimes
+   *  fails because a virus scanner is open.
+   */
+  public void setEnableVirusScanner(boolean value) {
+    this.enableVirusScanner = value;
   }
 
   /**
@@ -464,6 +477,9 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       } else {
         openFilesDeleted.remove(name);
       }
+    }
+    if (!forced && enableVirusScanner && randomState.nextInt(4) == 0) {
+      throw new IOException("cannot delete file: " + name + ", a virus scanner has it open");
     }
     in.deleteFile(name);
   }

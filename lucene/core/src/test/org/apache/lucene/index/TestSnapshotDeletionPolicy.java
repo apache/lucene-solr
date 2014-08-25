@@ -29,6 +29,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.junit.Test;
@@ -101,6 +102,10 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
   }
 
   private void runTest(Random random, Directory dir) throws Exception {
+    // we use the IW unref'ed files check which is unaware of retries:
+    if (dir instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
+    }
     // Run for ~1 seconds
     final long stopTime = System.currentTimeMillis() + 1000;
 
@@ -275,6 +280,10 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
   @Test
   public void testMultiThreadedSnapshotting() throws Exception {
     Directory dir = newDirectory();
+    if (dir instanceof MockDirectoryWrapper) {
+      // test relies on files actually being deleted
+      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
+    }
     final IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy()));
     final SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
 

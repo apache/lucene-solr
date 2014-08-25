@@ -37,6 +37,7 @@ public class TestCodecHoldsOpenFiles extends LuceneTestCase {
     }
 
     IndexReader r = w.getReader();
+    w.commit();
     w.close();
 
     for(String fileName : d.listAll()) {

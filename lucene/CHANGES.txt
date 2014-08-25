@@ -111,6 +111,10 @@ Bug Fixes
   folder via security manager, and make test temp dirs absolute.
   (Ryan Ernst, Dawid Weiss)
 
+* LUCENE-5904: Fix exception handling in IndexWriter when deleting files in
+  some cases, so that if they are e.g. busy on windows we properly retry later in
+  all circumstances.  (Robert Muir, Mike McCandless)
+
 ======================= Lucene 4.10.0 ======================
 
 New Features

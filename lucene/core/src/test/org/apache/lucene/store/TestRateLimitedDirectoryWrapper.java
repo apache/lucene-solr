@@ -23,7 +23,12 @@ public class TestRateLimitedDirectoryWrapper extends BaseDirectoryTestCase {
 
   @Override
   protected Directory getDirectory(File path) {
-    RateLimitedDirectoryWrapper dir = new RateLimitedDirectoryWrapper(newFSDirectory(path));
+    Directory in = newFSDirectory(path);
+    if (in instanceof MockDirectoryWrapper) {
+      // test manipulates directory directly
+      ((MockDirectoryWrapper)in).setEnableVirusScanner(false);
+    }
+    RateLimitedDirectoryWrapper dir = new RateLimitedDirectoryWrapper(in);
     RateLimiter limiter = new RateLimiter.SimpleRateLimiter(.1 + 3*random().nextDouble());
     dir.setRateLimiter(limiter, IOContext.Context.MERGE);
     return dir;

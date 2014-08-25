@@ -168,7 +168,12 @@ public class TestIndexWriter extends LuceneTestCase {
 
 
 
+    // TODO: we have the logic in MDW to do this check, and its better, because it knows about files it tried
+    // to delete but couldn't: we should replace this!!!!
     public static void assertNoUnreferencedFiles(Directory dir, String message) throws IOException {
+      if (dir instanceof MockDirectoryWrapper) {
+        assertFalse("test is broken: should disable virus scanner", ((MockDirectoryWrapper)dir).getEnableVirusScanner());
+      }
       String[] startFiles = dir.listAll();
       new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random()))).rollback();
       String[] endFiles = dir.listAll();
@@ -314,7 +319,7 @@ public class TestIndexWriter extends LuceneTestCase {
         int numFile = dir.listAll().length;
         // Verify that with a tiny RAM buffer we see new
         // segment after every doc
-        assertTrue(numFile > lastNumFile);
+        assertTrue("numFile=" + numFile + " lastNumFile=" + lastNumFile, numFile > lastNumFile);
         lastNumFile = numFile;
       }
       writer.close();
@@ -1379,7 +1384,8 @@ public class TestIndexWriter extends LuceneTestCase {
 
   public void testDeleteUnusedFiles() throws Exception {
     for(int iter=0;iter<2;iter++) {
-      Directory dir = newMockDirectory(); // relies on windows semantics
+      MockDirectoryWrapper dir = newMockDirectory(); // relies on windows semantics
+      dir.setEnableVirusScanner(false); // but ensures files are actually deleted
 
       MergePolicy mergePolicy = newLogMergePolicy(true);
       
@@ -1610,6 +1616,10 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testNoUnwantedTVFiles() throws Exception {
 
     Directory dir = newDirectory();
+    if (dir instanceof MockDirectoryWrapper) {
+      // test uses IW unref'ed check which is unaware of retries
+      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
+    }
     IndexWriter indexWriter = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                                      .setRAMBufferSizeMB(0.01)
                                                      .setMergePolicy(newLogMergePolicy()));
@@ -1772,7 +1782,8 @@ public class TestIndexWriter extends LuceneTestCase {
 
   public void testDeleteAllNRTLeftoverFiles() throws Exception {
 
-    Directory d = new MockDirectoryWrapper(random(), new RAMDirectory());
+    MockDirectoryWrapper d = new MockDirectoryWrapper(random(), new RAMDirectory());
+    d.setEnableVirusScanner(false); // needs for files to actually be deleted
     IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random())));
     Document doc = new Document();
     for(int i = 0; i < 20; i++) {
@@ -2730,6 +2741,9 @@ public class TestIndexWriter extends LuceneTestCase {
     assumeFalse("this test can't run on Windows", Constants.WINDOWS);
 
     MockDirectoryWrapper dir = newMockDirectory();
+    
+    // don't act like windows either, or the test won't simulate the condition
+    dir.setEnableVirusScanner(false);
 
     // Allow deletion of still open files:
     dir.setNoDeleteOpenFile(false);

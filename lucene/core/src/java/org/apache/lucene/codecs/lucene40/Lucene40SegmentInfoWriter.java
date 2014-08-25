@@ -67,7 +67,8 @@ public class Lucene40SegmentInfoWriter extends SegmentInfoWriter {
     } finally {
       if (!success) {
         IOUtils.closeWhileHandlingException(output);
-        si.dir.deleteFile(fileName);
+        // TODO: why must we do this? do we not get tracking dir wrapper?
+        IOUtils.deleteFilesIgnoringExceptions(si.dir, fileName);
       } else {
         output.close();
       }

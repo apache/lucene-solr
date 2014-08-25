@@ -24,6 +24,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -709,6 +710,10 @@ public class TestCompoundFile extends LuceneTestCase
   
   public void testReadNestedCFP() throws IOException {
     Directory newDir = newDirectory();
+    // manually manipulates directory
+    if (newDir instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper)newDir).setEnableVirusScanner(false);
+    }
     CompoundFileDirectory csw = new CompoundFileDirectory(newDir, "d.cfs", newIOContext(random()), true);
     CompoundFileDirectory nested = new CompoundFileDirectory(newDir, "b.cfs", newIOContext(random()), true);
     IndexOutput out = nested.createOutput("b.xyz", newIOContext(random()));

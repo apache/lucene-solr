@@ -192,11 +192,7 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
     } finally {
       if (!success) {
         IOUtils.closeWhileHandlingException(out);
-        try {
-          dir.deleteFile(fileName);
-        } catch (Exception e) {
-          // Suppress so we keep throwing original exception
-        }
+        IOUtils.deleteFilesIgnoringExceptions(dir, fileName);
       } else {
         IOUtils.close(out);
       }
@@ -206,11 +202,8 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
     
     if (nextWriteGen > 0) {
       String lastSaveFile = SNAPSHOTS_PREFIX + (nextWriteGen-1);
-      try {
-        dir.deleteFile(lastSaveFile);
-      } catch (IOException ioe) {
-        // OK: likely it didn't exist
-      }
+      // exception OK: likely it didn't exist
+      IOUtils.deleteFilesIgnoringExceptions(dir, lastSaveFile);
     }
 
     nextWriteGen++;
