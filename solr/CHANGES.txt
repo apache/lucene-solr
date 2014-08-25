@@ -134,6 +134,9 @@ Bug Fixes
 
 * SOLR-6426: SolrZkClient clean can fail due to a race with children nodes. (Mark Miller)
 
+* SOLR-5966: Admin UI Menu is fixed and doesn't respect smaller viewports.
+  (Aman Tandon, steffkes via shalin)
+
 Other Changes
 ---------------------
 
