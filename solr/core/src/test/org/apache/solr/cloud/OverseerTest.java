@@ -73,7 +73,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
     private final SolrZkClient zkClient;
     private final ZkStateReader zkStateReader;
     private final String nodeName;
-    private final LeaderElector elector;
     private final Map<String, ElectionContext> electionContext = Collections.synchronizedMap(new HashMap<String, ElectionContext>());
     
     public MockZKController(String zkAddress, String nodeName) throws InterruptedException, TimeoutException, IOException, KeeperException {
@@ -85,7 +84,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
       // live node
       final String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
       zkClient.makePath(nodePath, CreateMode.EPHEMERAL, true);
-      elector = new LeaderElector(zkClient);
     }
 
     private void deleteNode(final String path) {
@@ -121,7 +119,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
             ZkStateReader.COLLECTION_PROP, collection);
             DistributedQueue q = Overseer.getInQueue(zkClient);
             q.offer(ZkStateReader.toJSON(m));
-
+         return null;
       } else {
         ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, "state",
         ZkStateReader.STATE_PROP, stateName,
@@ -150,6 +148,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 ZkStateReader.SHARD_ID_PROP, shardId,
                 ZkStateReader.COLLECTION_PROP, collection,
                 ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
+            LeaderElector elector = new LeaderElector(zkClient);
             ShardLeaderElectionContextBase ctx = new ShardLeaderElectionContextBase(
                 elector, shardId, collection, nodeName + "_" + coreName, props,
                 zkStateReader);
@@ -335,9 +334,9 @@ public class OverseerTest extends SolrTestCaseJ4 {
   public void testShardAssignmentBigger() throws Exception {
     String zkDir = createTempDir("zkData").getAbsolutePath();
 
-    final int nodeCount = random().nextInt(50)+50;   //how many simulated nodes (num of threads)
-    final int coreCount = random().nextInt(100)+100;  //how many cores to register
-    final int sliceCount = random().nextInt(20)+1;  //how many slices
+    final int nodeCount = random().nextInt(TEST_NIGHTLY ? 50 : 10)+(TEST_NIGHTLY ? 50 : 10)+1;   //how many simulated nodes (num of threads)
+    final int coreCount = random().nextInt(TEST_NIGHTLY ? 100 : 11)+(TEST_NIGHTLY ? 100 : 11)+1; //how many cores to register
+    final int sliceCount = random().nextInt(TEST_NIGHTLY ? 20 : 5)+1;  //how many slices
     
     ZkTestServer server = new ZkTestServer(zkDir);
 
