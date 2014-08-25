@@ -311,19 +311,29 @@ public class TestIndexWriter extends LuceneTestCase {
               .setRAMBufferSizeMB(0.000001)
               .setMergePolicy(newLogMergePolicy(10))
       );
-      int lastNumFile = dir.listAll().length;
+      int lastNumSegments = getSegmentCount(dir);
       for(int j=0;j<9;j++) {
         Document doc = new Document();
         doc.add(newField("field", "aaa" + j, storedTextType));
         writer.addDocument(doc);
-        int numFile = dir.listAll().length;
         // Verify that with a tiny RAM buffer we see new
         // segment after every doc
-        assertTrue("numFile=" + numFile + " lastNumFile=" + lastNumFile, numFile > lastNumFile);
-        lastNumFile = numFile;
+        int numSegments = getSegmentCount(dir);
+        assertTrue(numSegments > lastNumSegments);
+        lastNumSegments = numSegments;
       }
       writer.close();
       dir.close();
+    }
+
+    /** Returns how many unique segment names are in the directory. */
+    private static int getSegmentCount(Directory dir) throws IOException {
+      Set<String> segments = new HashSet<>();
+      for(String file : dir.listAll()) {
+        segments.add(IndexFileNames.parseSegmentName(file));
+      }
+
+      return segments.size();
     }
 
     // Make sure it's OK to change RAM buffer size and
