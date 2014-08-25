@@ -1484,10 +1484,14 @@ public class TestIndexWriter extends LuceneTestCase {
     }
   }
 
-  public void testDeleteUnsedFiles2() throws Exception {
+  public void testDeleteUnusedFiles2() throws Exception {
     // Validates that iw.deleteUnusedFiles() also deletes unused index commits
     // in case a deletion policy which holds onto commits is used.
     Directory dir = newDirectory();
+    if (dir instanceof MockDirectoryWrapper) {
+      // otherwise the delete of old commit might not actually succeed temporarily.
+      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
+    }
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                                 .setIndexDeletionPolicy(new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy())));
     SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
