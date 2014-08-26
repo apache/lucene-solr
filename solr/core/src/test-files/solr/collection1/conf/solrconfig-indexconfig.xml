@@ -19,7 +19,7 @@
 <config>
   <dataDir>${solr.data.dir:}</dataDir>
 
-  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
+  <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
   <indexConfig>
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
