@@ -146,6 +146,9 @@ Other Changes
   constructors, improve javadocs for CloudSolrServer constructors.
   (Steve Davids via Shawn Heisey)
 
+* LUCENE-5901: Replaced all occurences of LUCENE_CURRENT with LATEST for luceneMatchVersion.
+  (Ryan Ernst)
+
 ==================  4.10.0 =================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

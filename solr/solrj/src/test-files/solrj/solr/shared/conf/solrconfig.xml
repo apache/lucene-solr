@@ -21,7 +21,7 @@
  It is *not* a good example to work from. 
 -->
 <config>
-  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
+  <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
   <indexConfig>
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
   </indexConfig>

@@ -19,7 +19,7 @@
 
 <config>
 
-  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
+  <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
   <!-- managed schema can't be named schema.xml -->
   <schemaFactory class="ManagedIndexSchemaFactory">

@@ -34,7 +34,7 @@
 
 -->
 <config>
-  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion><!--
+  <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion><!--
 
 
                 DO NOT ADD THINGS TO THIS CONFIG! 

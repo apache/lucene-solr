@@ -19,7 +19,7 @@
 
 <config>
 
-  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
+  <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
   <indexConfig>
     <mergedSegmentWarmer class="org.apache.lucene.index.SimpleMergedSegmentWarmer"/>
     <nrtMode>false</nrtMode>    <!-- BAD -->

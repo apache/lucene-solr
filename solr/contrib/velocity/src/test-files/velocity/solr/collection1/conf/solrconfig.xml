@@ -21,7 +21,7 @@
      this file, see http://wiki.apache.org/solr/SolrConfigXml. 
 -->
 <config>
-  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
+  <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
   <indexConfig>
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
   </indexConfig>

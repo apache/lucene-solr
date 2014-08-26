@@ -38,7 +38,7 @@
     <module>contrib</module>
   </modules>
   <properties>
-    <tests.luceneMatchVersion>LUCENE_CURRENT</tests.luceneMatchVersion>
+    <tests.luceneMatchVersion>LATEST</tests.luceneMatchVersion>
     <module-directory>solr</module-directory>
   </properties>
   <scm>

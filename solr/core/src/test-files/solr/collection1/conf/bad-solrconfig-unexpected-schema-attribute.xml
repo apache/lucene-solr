@@ -19,7 +19,7 @@
 
 <config>
 
-  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
+  <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
   <!-- The presence of bogusParam should trigger failure -->
   <schemaFactory class="ManagedIndexSchemaFactory">
