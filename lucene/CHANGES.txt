@@ -178,6 +178,12 @@ Bug Fixes
   buffer size was reduced, and scanner buffer growth was disabled, resulting
   in much, much faster tokenization for these text sequences.  
   (Chris Geeringh, Robert Muir, Steve Rowe)
+
+* LUCENE-5907: Fix corruption case when opening a pre-4.x index with
+  IndexWriter, then opening an NRT reader from that writer, then
+  calling commit from the writer, then closing the NRT reader.  This
+  case would remove the wrong files from the index leading to a
+  corrupt index.  (Mike McCandless)
   
 Test Framework
 
