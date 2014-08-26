@@ -30,7 +30,6 @@ import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 import org.apache.lucene.analysis.util.StringMockResourceLoader;
 import org.apache.lucene.util.Version;
-import org.apache.lucene.util.Version;
 
 public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
 
@@ -95,7 +94,7 @@ public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testEmptySynonyms() throws Exception {
     Reader reader = new StringReader("GB");
     TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    stream = tokenFilterFactory("Synonym", Version.LATEST,
+    stream = tokenFilterFactory("Synonym", TEST_VERSION_CURRENT, 
         new StringMockResourceLoader(""), // empty file!
         "synonyms", "synonyms.txt").create(stream);
     assertTokenStreamContents(stream, new String[] { "GB" });

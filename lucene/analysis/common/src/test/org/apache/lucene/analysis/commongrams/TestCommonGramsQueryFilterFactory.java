@@ -25,7 +25,6 @@ import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.util.Version;
 
 import java.io.StringReader;
 
@@ -39,7 +38,7 @@ public class TestCommonGramsQueryFilterFactory extends BaseTokenStreamFactoryTes
   public void testInform() throws Exception {
     ResourceLoader loader = new ClasspathResourceLoader(TestStopFilter.class);
     assertTrue("loader is null and it shouldn't be", loader != null);
-    CommonGramsQueryFilterFactory factory = (CommonGramsQueryFilterFactory) tokenFilterFactory("CommonGramsQuery", Version.LATEST, loader,
+    CommonGramsQueryFilterFactory factory = (CommonGramsQueryFilterFactory) tokenFilterFactory("CommonGramsQuery", TEST_VERSION_CURRENT, loader, 
         "words", "stop-1.txt", 
         "ignoreCase", "true");
     CharArraySet words = factory.getCommonWords();
@@ -49,7 +48,7 @@ public class TestCommonGramsQueryFilterFactory extends BaseTokenStreamFactoryTes
     assertTrue(factory.isIgnoreCase() + " does not equal: " + true, factory
         .isIgnoreCase() == true);
 
-    factory = (CommonGramsQueryFilterFactory) tokenFilterFactory("CommonGramsQuery", Version.LATEST, loader,
+    factory = (CommonGramsQueryFilterFactory) tokenFilterFactory("CommonGramsQuery", TEST_VERSION_CURRENT, loader, 
         "words", "stop-1.txt, stop-2.txt", 
         "ignoreCase", "true");
     words = factory.getCommonWords();
@@ -59,7 +58,7 @@ public class TestCommonGramsQueryFilterFactory extends BaseTokenStreamFactoryTes
     assertTrue(factory.isIgnoreCase() + " does not equal: " + true, factory
         .isIgnoreCase() == true);
 
-    factory = (CommonGramsQueryFilterFactory) tokenFilterFactory("CommonGramsQuery", Version.LATEST, loader,
+    factory = (CommonGramsQueryFilterFactory) tokenFilterFactory("CommonGramsQuery", TEST_VERSION_CURRENT, loader, 
         "words", "stop-snowball.txt", 
         "format", "snowball", 
         "ignoreCase", "true");

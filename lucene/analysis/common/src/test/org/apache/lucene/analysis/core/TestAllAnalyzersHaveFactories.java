@@ -58,7 +58,6 @@ import org.apache.lucene.analysis.util.StringMockResourceLoader;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 
 /**
  * Tests that any newly added Tokenizers/TokenFilters/CharFilters have a
@@ -140,7 +139,7 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
       }
       
       Map<String,String> args = new HashMap<>();
-      args.put("luceneMatchVersion", Version.LATEST.toString());
+      args.put("luceneMatchVersion", TEST_VERSION_CURRENT.toString());
       
       if (Tokenizer.class.isAssignableFrom(c)) {
         String clazzName = c.getSimpleName();

@@ -23,7 +23,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 
 public class TestMultiPassIndexSplitter extends LuceneTestCase {
   IndexReader input;
@@ -66,7 +65,7 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
             newDirectory(),
             newDirectory()
     };
-    splitter.split(Version.LATEST, input, dirs, false);
+    splitter.split(TEST_VERSION_CURRENT, input, dirs, false);
     IndexReader ir;
     ir = DirectoryReader.open(dirs[0]);
     assertTrue(ir.numDocs() - NUM_DOCS / 3 <= 1); // rounding error
@@ -111,7 +110,7 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
             newDirectory(),
             newDirectory()
     };
-    splitter.split(Version.LATEST, input, dirs, true);
+    splitter.split(TEST_VERSION_CURRENT, input, dirs, true);
     IndexReader ir;
     ir = DirectoryReader.open(dirs[0]);
     assertTrue(ir.numDocs() - NUM_DOCS / 3 <= 1);

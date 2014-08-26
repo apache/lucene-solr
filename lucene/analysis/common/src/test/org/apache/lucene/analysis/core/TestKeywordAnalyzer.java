@@ -75,7 +75,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
     PerFieldAnalyzerWrapper analyzer = new PerFieldAnalyzerWrapper(new SimpleAnalyzer());
     analyzer.addAnalyzer("partnum", new KeywordAnalyzer());
 
-    QueryParser queryParser = new QueryParser("description", analyzer);
+    QueryParser queryParser = new QueryParser(TEST_VERSION_CURRENT, "description", analyzer);
     Query query = queryParser.parse("partnum:Q36 AND SPACE");
 
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;

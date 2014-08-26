@@ -36,7 +36,6 @@ import org.apache.lucene.analysis.util.StringMockResourceLoader;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
-import org.apache.lucene.util.Version;
 
 /**
  * Sanity check some things about all factories,
@@ -124,7 +123,7 @@ public class TestFactories extends BaseTokenStreamTestCase {
   /** tries to initialize a factory with no arguments */
   private AbstractAnalysisFactory initialize(Class<? extends AbstractAnalysisFactory> factoryClazz) throws IOException {
     Map<String,String> args = new HashMap<>();
-    args.put("luceneMatchVersion", Version.LATEST.toString());
+    args.put("luceneMatchVersion", TEST_VERSION_CURRENT.toString());
     Constructor<? extends AbstractAnalysisFactory> ctor;
     try {
       ctor = factoryClazz.getConstructor(Map.class);

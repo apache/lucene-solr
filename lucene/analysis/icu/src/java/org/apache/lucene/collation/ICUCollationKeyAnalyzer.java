@@ -82,16 +82,10 @@ public final class ICUCollationKeyAnalyzer extends Analyzer {
 
   /**
    * Create a new ICUCollationKeyAnalyzer, using the specified collator.
+   * 
+   * @param matchVersion See <a href="#version">above</a>
    * @param collator CollationKey generator
    */
-  public ICUCollationKeyAnalyzer(Collator collator) {
-    this.factory = new ICUCollationAttributeFactory(collator);
-  }
-
-  /**
-   * @deprecated Use {@link #ICUCollationKeyAnalyzer(Collator)}
-   */
-  @Deprecated
   public ICUCollationKeyAnalyzer(Version matchVersion, Collator collator) {
     this.matchVersion = matchVersion;
     this.collator = collator;

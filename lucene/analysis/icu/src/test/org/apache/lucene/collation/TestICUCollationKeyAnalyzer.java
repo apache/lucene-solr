@@ -32,7 +32,7 @@ import java.util.Locale;
 public class TestICUCollationKeyAnalyzer extends CollationTestBase {
 
   private Collator collator = Collator.getInstance(new Locale("fa"));
-  private Analyzer analyzer = new ICUCollationKeyAnalyzer(collator);
+  private Analyzer analyzer = new ICUCollationKeyAnalyzer(TEST_VERSION_CURRENT, collator);
 
   private BytesRef firstRangeBeginning = new BytesRef
     (collator.getCollationKey(firstRangeBeginningOriginal).toByteArray());
@@ -88,7 +88,7 @@ public class TestICUCollationKeyAnalyzer extends CollationTestBase {
       Locale locale = Locale.GERMAN;
       Collator collator = Collator.getInstance(locale);
       collator.setStrength(Collator.IDENTICAL);
-      assertThreadSafe(new ICUCollationKeyAnalyzer(collator));
+      assertThreadSafe(new ICUCollationKeyAnalyzer(TEST_VERSION_CURRENT, collator));
     }
   }
 }
