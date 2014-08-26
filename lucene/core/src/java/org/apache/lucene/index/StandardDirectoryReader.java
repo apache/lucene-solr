@@ -74,6 +74,9 @@ final class StandardDirectoryReader extends DirectoryReader {
 
   /** Used by near real-time search */
   static DirectoryReader open(IndexWriter writer, SegmentInfos infos, boolean applyAllDeletes) throws IOException {
+
+    assert Thread.holdsLock(writer);
+
     // IndexWriter synchronizes externally before calling
     // us, which ensures infos will not change; so there's
     // no need to process segments in reverse order
@@ -82,7 +85,10 @@ final class StandardDirectoryReader extends DirectoryReader {
     List<SegmentReader> readers = new ArrayList<>();
     final Directory dir = writer.getDirectory();
 
-    final SegmentInfos segmentInfos = infos.clone();
+    // LUCENE-5907: must make a deep clone, even of the SegmentInfo, so that if its files changed e.g. due to upgrade from 3.x index, we
+    // don't later corrupt the index when this reader is closed:
+    final SegmentInfos segmentInfos = infos.clone(true);
+
     int infosUpto = 0;
     boolean success = false;
     try {

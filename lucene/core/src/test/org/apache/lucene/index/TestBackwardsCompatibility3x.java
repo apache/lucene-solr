@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,8 +56,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -947,5 +944,40 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
     ir.close();
     TestUtil.checkIndex(dir);
     dir.close();
+  }
+
+  // LUCENE-5907
+  public void testUpgradeWithNRTReader() throws Exception {
+    for (String name : oldNames) {
+      Directory dir = newDirectory(oldIndexDirs.get(name));
+
+      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+                                           .setOpenMode(OpenMode.APPEND));
+      writer.addDocument(new Document());
+      DirectoryReader r = DirectoryReader.open(writer, true);
+      writer.commit();
+      r.close();
+      writer.forceMerge(1);
+      writer.commit();
+      writer.rollback();
+      new SegmentInfos().read(dir);
+      dir.close();
+    }
+  }
+
+  // LUCENE-5907
+  public void testUpgradeThenMultipleCommits() throws Exception {
+    for (String name : oldNames) {
+      Directory dir = newDirectory(oldIndexDirs.get(name));
+
+      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+                                           .setOpenMode(OpenMode.APPEND));
+      writer.addDocument(new Document());
+      writer.commit();
+      writer.addDocument(new Document());
+      writer.commit();
+      writer.close();
+      dir.close();
+    }
   }
 }
