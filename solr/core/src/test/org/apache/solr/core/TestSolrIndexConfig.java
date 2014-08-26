@@ -51,8 +51,11 @@ public class TestSolrIndexConfig extends SolrTestCaseJ4 {
   
   public void testIndexConfigParsing() throws Exception {
     IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore().getLatestSchema());
-
-    checkIndexWriterConfig(iwc);
+    try {
+      checkIndexWriterConfig(iwc);
+    } finally {
+      iwc.getInfoStream().close();
+    }
   }
 
   private void checkIndexWriterConfig(LiveIndexWriterConfig iwc) {
