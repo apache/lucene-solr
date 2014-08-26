@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
@@ -26,10 +27,12 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Ignore;
 
 /*
   Verify we can read the pre-2.1 file format, do searches
@@ -204,5 +207,42 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     doc.add(newTextField("content", "aaa", Field.Store.NO));
     doc.add(newStringField("id", Integer.toString(id), Field.Store.NO));
     writer.addDocument(doc);
+  }
+  
+  @Ignore("not yet")
+  // nocommit
+  public void testVirusScannerDoesntCorruptIndex() throws IOException {
+    MockDirectoryWrapper dir = newMockDirectory();
+    dir.setPreventDoubleWrite(false); // we arent trying to test this
+    dir.setEnableVirusScanner(false); // we have our own to make test reproduce always
+    
+    // add empty commit
+    new IndexWriter(dir, new IndexWriterConfig(null)).close();
+    // add a trash unreferenced file
+    dir.createOutput("_0.si", IOContext.DEFAULT).close();
+
+    // start virus scanner
+    final AtomicBoolean stopScanning = new AtomicBoolean();
+    dir.failOn(new MockDirectoryWrapper.Failure() {
+      @Override
+      public void eval(MockDirectoryWrapper dir) throws IOException {
+        if (stopScanning.get()) {
+          return;
+        }
+        for (StackTraceElement f : new Exception().getStackTrace()) {
+          if ("deleteFile".equals(f.getMethodName())) {
+            throw new IOException("temporarily cannot delete file");
+          }
+        }
+      }
+    });
+    
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(null));
+    iw.addDocument(new Document());
+    // stop virus scanner
+    stopScanning.set(true);
+    iw.commit();
+    iw.close();
+    dir.close();
   }
 }
