@@ -242,4 +242,9 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
     testNGrams(minGram, maxGram, s, "abcdef");
   }
 
+  public void test43Tokenizer() {
+    // TODO: do more than instantiate (ie check the old broken behavior)
+    new Lucene43NGramTokenizer(input, 1, 1);
+  }
+
 }
