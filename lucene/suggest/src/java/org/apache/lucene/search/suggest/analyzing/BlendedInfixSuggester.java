@@ -94,6 +94,14 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
    * Create a new instance, loading from a previously built
    * directory, if it exists.
    */
+  public BlendedInfixSuggester(Directory dir, Analyzer analyzer) throws IOException {
+    this(analyzer.getVersion(), dir, analyzer);
+  }
+
+  /**
+   * @deprecated Use {@link #BlendedInfixSuggester(Directory, Analyzer)}
+   */
+  @Deprecated
   public BlendedInfixSuggester(Version matchVersion, Directory dir, Analyzer analyzer) throws IOException {
     super(matchVersion, dir, analyzer);
     this.blenderType = BlenderType.POSITION_LINEAR;
@@ -110,6 +118,15 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
    *                      suggester index to disk and future instances of this suggester can use this pre-built dictionary.
    * @throws IOException If there are problems opening the underlying Lucene index.
    */
+  public BlendedInfixSuggester(Directory dir, Analyzer indexAnalyzer, Analyzer queryAnalyzer,
+                               int minPrefixChars, BlenderType blenderType, int numFactor, boolean commitOnBuild) throws IOException {
+    this(indexAnalyzer.getVersion(), dir, indexAnalyzer, queryAnalyzer, minPrefixChars, blenderType, numFactor, commitOnBuild);
+  }
+
+  /**
+   * @deprecated Use {@link #BlendedInfixSuggester(Directory, Analyzer, Analyzer, int, BlendedInfixSuggester.BlenderType, int, boolean)}
+   */
+  @Deprecated
   public BlendedInfixSuggester(Version matchVersion, Directory dir, Analyzer indexAnalyzer, Analyzer queryAnalyzer,
                                int minPrefixChars, BlenderType blenderType, int numFactor, boolean commitOnBuild) throws IOException {
     super(matchVersion, dir, indexAnalyzer, queryAnalyzer, minPrefixChars, commitOnBuild);

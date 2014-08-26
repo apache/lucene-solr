@@ -14,7 +14,6 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<!-- :Post-Release-Update-Version.LUCENE_XY: - several mentions in this file -->
 <html>
   <head>
     <META http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -115,9 +114,9 @@ algorithm.
 <h3>Farsi Range Queries</h3>
 <pre class="prettyprint">
   Collator collator = Collator.getInstance(new ULocale("ar"));
-  ICUCollationKeyAnalyzer analyzer = new ICUCollationKeyAnalyzer(Version.LUCENE_5_0, collator);
+  ICUCollationKeyAnalyzer analyzer = new ICUCollationKeyAnalyzer(collator);
   RAMDirectory ramDir = new RAMDirectory();
-  IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(Version.LUCENE_5_0, analyzer));
+  IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(analyzer));
   Document doc = new Document();
   doc.add(new Field("content", "\u0633\u0627\u0628", 
                     Field.Store.YES, Field.Index.ANALYZED));
@@ -125,7 +124,7 @@ algorithm.
   writer.close();
   IndexSearcher is = new IndexSearcher(ramDir, true);
 
-  QueryParser aqp = new QueryParser(Version.LUCENE_5_0, "content", analyzer);
+  QueryParser aqp = new QueryParser("content", analyzer);
   aqp.setAnalyzeRangeTerms(true);
     
   // Unicode order would include U+0633 in [ U+062F - U+0698 ], but Farsi
@@ -141,9 +140,9 @@ algorithm.
 <h3>Danish Sorting</h3>
 <pre class="prettyprint">
   Analyzer analyzer 
-    = new ICUCollationKeyAnalyzer(Version.LUCENE_5_0, Collator.getInstance(new ULocale("da", "dk")));
+    = new ICUCollationKeyAnalyzer(Collator.getInstance(new ULocale("da", "dk")));
   RAMDirectory indexStore = new RAMDirectory();
-  IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(Version.LUCENE_5_0, analyzer));
+  IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(analyzer));
   String[] tracer = new String[] { "A", "B", "C", "D", "E" };
   String[] data = new String[] { "HAT", "HUT", "H\u00C5T", "H\u00D8T", "HOT" };
   String[] sortedTracerOrder = new String[] { "A", "E", "B", "D", "C" };
@@ -169,15 +168,15 @@ algorithm.
 <pre class="prettyprint">
   Collator collator = Collator.getInstance(new ULocale("tr", "TR"));
   collator.setStrength(Collator.PRIMARY);
-  Analyzer analyzer = new ICUCollationKeyAnalyzer(Version.LUCENE_5_0, collator);
+  Analyzer analyzer = new ICUCollationKeyAnalyzer(collator);
   RAMDirectory ramDir = new RAMDirectory();
-  IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(Version.LUCENE_5_0, analyzer));
+  IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(analyzer));
   Document doc = new Document();
   doc.add(new Field("contents", "DIGY", Field.Store.NO, Field.Index.ANALYZED));
   writer.addDocument(doc);
   writer.close();
   IndexSearcher is = new IndexSearcher(ramDir, true);
-  QueryParser parser = new QueryParser(Version.LUCENE_5_0, "contents", analyzer);
+  QueryParser parser = new QueryParser("contents", analyzer);
   Query query = parser.parse("d\u0131gy");   // U+0131: dotless i
   ScoreDoc[] result = is.search(query, null, 1000).scoreDocs;
   assertEquals("The index Term should be included.", 1, result.length);
