@@ -188,6 +188,11 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     final String contentFormat = TestUtil.getPostingsFormat("content");
     assumeFalse("This test cannot run with Memory codec", idFormat.equals("Memory") || contentFormat.equals("Memory"));
     MockDirectoryWrapper dir = newMockDirectory();
+    if (dir instanceof MockDirectoryWrapper) {
+      // the virus scanner can use up too much disk space :)
+      // an alternative is to expose MDW.triedToDelete and discount it
+      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
+    }
     Analyzer analyzer;
     if (random().nextBoolean()) {
       // no payloads

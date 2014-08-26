@@ -280,7 +280,7 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
         String curFileName = SNAPSHOTS_PREFIX + genLoaded;
         for(String file : snapshotFiles) {
           if (!curFileName.equals(file)) {
-            dir.deleteFile(file);
+            IOUtils.deleteFilesIgnoringExceptions(dir, file);
           }
         }
       }
