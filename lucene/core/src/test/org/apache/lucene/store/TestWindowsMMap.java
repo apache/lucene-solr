@@ -31,6 +31,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.util.Version;
 
 public class TestWindowsMMap extends LuceneTestCase {
   
@@ -74,7 +75,7 @@ public class TestWindowsMMap extends LuceneTestCase {
     MockAnalyzer analyzer = new MockAnalyzer(random());
     // TODO: something about lock timeouts and leftover locks.
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, analyzer)
+        Version.LATEST, analyzer)
         .setOpenMode(OpenMode.CREATE));
     writer.commit();
     IndexReader reader = DirectoryReader.open(dir);

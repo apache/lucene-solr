@@ -42,6 +42,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Version;
 
 /** Shows example usage of category associations. */
 public class AssociationsFacetsExample {
@@ -61,7 +62,7 @@ public class AssociationsFacetsExample {
   
   /** Build the example index. */
   private void index() throws IOException {
-    IndexWriterConfig iwc = new IndexWriterConfig(FacetExamples.EXAMPLES_VER, 
+    IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST,
                                                   new WhitespaceAnalyzer());
     IndexWriter indexWriter = new IndexWriter(indexDir, iwc);
 

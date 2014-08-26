@@ -145,7 +145,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
 
     // TODO: remove randomness
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer)
+    IndexWriterConfig conf = new IndexWriterConfig(Version.LATEST, analyzer)
       .setMergePolicy(mp);
     conf.setCodec(Codec.forName("Lucene40"));
     IndexWriter writer = new IndexWriter(dir, conf);
@@ -181,7 +181,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     TestUtil.rm(indexDir);
     Directory dir = newFSDirectory(indexDir);
     
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+    IndexWriterConfig conf = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
       .setUseCompoundFile(false).setMergePolicy(NoMergePolicy.INSTANCE);
     IndexWriter writer = new IndexWriter(dir, conf);
     // create an index w/ few doc-values fields, some with updates and some without
@@ -263,8 +263,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     final boolean streamType = random().nextBoolean();
     final int choice = TestUtil.nextInt(random(), 0, 2);
     switch (choice) {
-      case 0: return new IndexUpgrader(dir, TEST_VERSION_CURRENT);
-      case 1: return new IndexUpgrader(dir, TEST_VERSION_CURRENT, 
+      case 0: return new IndexUpgrader(dir, Version.LATEST);
+      case 1: return new IndexUpgrader(dir, Version.LATEST,
                                        streamType ? null : InfoStream.NO_OUTPUT, false);
       case 2: return new IndexUpgrader(dir, newIndexWriterConfig(null), false);
       default: fail("case statement didn't get updated when random bounds changed");
@@ -360,7 +360,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       }
       Directory dir = newDirectory(oldIndexDirs.get(name));
       IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+          Version.LATEST, new MockAnalyzer(random())));
       w.forceMerge(1);
       w.close();
       
@@ -667,7 +667,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     mp.setNoCFSRatio(doCFS ? 1.0 : 0.0);
     mp.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
     // TODO: remove randomness
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+    IndexWriterConfig conf = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
       .setUseCompoundFile(doCFS).setMaxBufferedDocs(10).setMergePolicy(mp);
     IndexWriter writer = new IndexWriter(dir, conf);
     
@@ -685,13 +685,13 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       mp = new LogByteSizeMergePolicy();
       mp.setNoCFSRatio(doCFS ? 1.0 : 0.0);
       // TODO: remove randomness
-      conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setUseCompoundFile(doCFS)
+      conf = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())).setUseCompoundFile(doCFS)
         .setMaxBufferedDocs(10).setMergePolicy(mp);
       writer = new IndexWriter(dir, conf);
       addNoProxDoc(writer);
       writer.close();
 
-      conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setUseCompoundFile(doCFS)
+      conf = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())).setUseCompoundFile(doCFS)
         .setMaxBufferedDocs(10).setMergePolicy(NoMergePolicy.INSTANCE);
       writer = new IndexWriter(dir, conf);
       Term searchTerm = new Term("id", "7");
@@ -1003,7 +1003,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       for (int i = 0; i < 3; i++) {
         // only use Log- or TieredMergePolicy, to make document addition predictable and not suddenly merge:
         MergePolicy mp = random().nextBoolean() ? newLogMergePolicy() : newTieredMergePolicy();
-        IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+        IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
           .setMergePolicy(mp);
         IndexWriter w = new IndexWriter(ramDir, iwc);
         // add few more docs:
@@ -1016,7 +1016,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       // add dummy segments (which are all in current
       // version) to single segment index
       MergePolicy mp = random().nextBoolean() ? newLogMergePolicy() : newTieredMergePolicy();
-      IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, null)
+      IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, null)
         .setMergePolicy(mp);
       IndexWriter w = new IndexWriter(dir, iwc);
       w.addIndexes(ramDir);
@@ -1084,7 +1084,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     verifyDocValues(dir);
     
     // update fields and verify index
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
     updateNumeric(writer, "1", "ndv1", "ndv1_c", 300L);
     updateNumeric(writer, "1", "ndv2", "ndv2_c", 300L);

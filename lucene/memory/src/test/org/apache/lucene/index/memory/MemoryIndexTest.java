@@ -77,6 +77,7 @@ import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.RecyclingByteBlockAllocator;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 
@@ -150,7 +151,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     Directory ramdir = new RAMDirectory();
     Analyzer analyzer = randomAnalyzer();
     IndexWriter writer = new IndexWriter(ramdir,
-                                         new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer).setCodec(TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat())));
+                                         new IndexWriterConfig(Version.LATEST, analyzer).setCodec(TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat())));
     Document doc = new Document();
     Field field1 = newTextField("foo", fooField.toString(), Field.Store.NO);
     Field field2 = newTextField("term", termField.toString(), Field.Store.NO);
@@ -431,7 +432,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       Directory dir = newDirectory();
       MockAnalyzer mockAnalyzer = new MockAnalyzer(random());
       mockAnalyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
-      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), TEST_VERSION_CURRENT, mockAnalyzer));
+      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), Version.LATEST, mockAnalyzer));
       Document nextDoc = lineFileDocs.nextDoc();
       Document doc = new Document();
       for (IndexableField field : nextDoc.getFields()) {
@@ -487,7 +488,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     doc.add(new Field(field_name, "foo bar foo bar foo", type));
 
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), TEST_VERSION_CURRENT, mockAnalyzer));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), Version.LATEST, mockAnalyzer));
     writer.updateDocument(new Term("id", "1"), doc);
     writer.commit();
     writer.close();

@@ -47,6 +47,7 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 
 public class TestAddIndexes extends LuceneTestCase {
   
@@ -415,7 +416,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
     setUpDirs(dir, aux, true);
 
-    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
       .setMergePolicy(NoMergePolicy.INSTANCE);
     IndexWriter writer = new IndexWriter(aux, dontMergeConfig);
     for (int i = 0; i < 20; i++) {
@@ -467,7 +468,7 @@ public class TestAddIndexes extends LuceneTestCase {
     assertEquals(3, writer.getSegmentCount());
     writer.close();
 
-    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
       .setMergePolicy(NoMergePolicy.INSTANCE);
     writer = new IndexWriter(aux, dontMergeConfig);
     for (int i = 0; i < 27; i++) {
@@ -478,7 +479,7 @@ public class TestAddIndexes extends LuceneTestCase {
     assertEquals(3, reader.numDocs());
     reader.close();
 
-    dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+    dontMergeConfig = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
     .setMergePolicy(NoMergePolicy.INSTANCE);
     writer = new IndexWriter(aux2, dontMergeConfig);
     for (int i = 0; i < 8; i++) {
@@ -662,14 +663,14 @@ public class TestAddIndexes extends LuceneTestCase {
       NUM_COPY = numCopy;
       dir = new MockDirectoryWrapper(random(), new RAMDirectory());
       IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+          Version.LATEST, new MockAnalyzer(random()))
           .setMaxBufferedDocs(2));
       for (int i = 0; i < NUM_INIT_DOCS; i++)
         addDoc(writer);
       writer.close();
 
       dir2 = newDirectory();
-      writer2 = new IndexWriter(dir2, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+      writer2 = new IndexWriter(dir2, new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())));
       writer2.commit();
       
 
@@ -967,7 +968,7 @@ public class TestAddIndexes extends LuceneTestCase {
       writer.close();
     }
 
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dirs[0], conf);
 
     // Now delete the document
@@ -1082,7 +1083,7 @@ public class TestAddIndexes extends LuceneTestCase {
     Directory[] dirs = new Directory[2];
     for (int i = 0; i < dirs.length; i++) {
       dirs[i] = new RAMDirectory();
-      IndexWriter w = new IndexWriter(dirs[i], new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+      IndexWriter w = new IndexWriter(dirs[i], new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())));
       Document d = new Document();
       FieldType customType = new FieldType(TextField.TYPE_STORED);
       customType.setStoreTermVectors(true);
@@ -1094,7 +1095,7 @@ public class TestAddIndexes extends LuceneTestCase {
     IndexReader[] readers = new IndexReader[] { DirectoryReader.open(dirs[0]), DirectoryReader.open(dirs[1]) };
     
     Directory dir = new MockDirectoryWrapper(random(), new RAMDirectory());
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy(true));
+    IndexWriterConfig conf = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy(true));
     MergePolicy lmp = conf.getMergePolicy();
     // Force creation of CFS:
     lmp.setNoCFSRatio(1.0);

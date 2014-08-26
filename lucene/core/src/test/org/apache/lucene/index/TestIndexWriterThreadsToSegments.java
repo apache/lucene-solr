@@ -37,6 +37,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 
 public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
 
@@ -44,7 +45,7 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
   // doc NOT at the same time, and should have shared the same thread state / segment
   public void testSegmentCountOnFlushBasic() throws Exception {
     Directory dir = newDirectory();
-    final IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    final IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())));
     final CountDownLatch startingGun = new CountDownLatch(1);
     final CountDownLatch startDone = new CountDownLatch(2);
     final CountDownLatch middleGun = new CountDownLatch(1);
@@ -161,7 +162,7 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
   // iteration, and then verify that no more segments were flushed than number of threads:
   public void testSegmentCountOnFlushRandom() throws Exception {
     Directory dir = newFSDirectory(createTempDir());
-    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()));
 
     int maxThreadStates = TestUtil.nextInt(random(), 1, 12);
 
@@ -279,7 +280,7 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
 
   public void testDocsStuckInRAMForever() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()));
     iwc.setRAMBufferSizeMB(.2);
     Codec codec = Codec.forName("Lucene410");
     iwc.setCodec(codec);

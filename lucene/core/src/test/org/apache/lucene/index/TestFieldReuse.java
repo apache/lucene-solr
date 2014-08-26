@@ -34,6 +34,7 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.Version;
 
 /** test tokenstream reuse by DefaultIndexingChain */
 public class TestFieldReuse extends BaseTokenStreamTestCase {
@@ -150,7 +151,7 @@ public class TestFieldReuse extends BaseTokenStreamTestCase {
   
   public void testIndexWriterActuallyReuses() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, null);
     IndexWriter iw = new IndexWriter(dir, iwc);
     final MyField field1 = new MyField();
     iw.addDocument(Collections.singletonList(field1));

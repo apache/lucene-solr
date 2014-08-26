@@ -145,7 +145,7 @@ public class EdgeNGramTokenizerTest extends BaseTokenStreamTestCase {
                               null,
                               false);
 
-    tokenizer = new EdgeNGramTokenizer(TEST_VERSION_CURRENT, new StringReader("abcde"), 1, 3);
+    tokenizer = new EdgeNGramTokenizer(Version.LATEST, new StringReader("abcde"), 1, 3);
     assertTokenStreamContents(tokenizer,
                               new String[]{"a","ab","abc"},
                               new int[]{0,0,0},

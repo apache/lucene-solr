@@ -254,7 +254,7 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
   */
   public void testWickedLongTerm() throws IOException {
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new ClassicAnalyzer()));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, new ClassicAnalyzer()));
 
     char[] chars = new char[IndexWriter.MAX_TERM_LENGTH];
     Arrays.fill(chars, 'x');
@@ -302,7 +302,7 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
     doc.add(new TextField("content", bigTerm, Field.Store.NO));
     ClassicAnalyzer sa = new ClassicAnalyzer();
     sa.setMaxTokenLength(100000);
-    writer  = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, sa));
+    writer  = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, sa));
     writer.addDocument(doc);
     writer.close();
     reader = IndexReader.open(dir);

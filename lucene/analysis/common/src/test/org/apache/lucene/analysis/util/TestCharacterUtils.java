@@ -159,7 +159,7 @@ public class TestCharacterUtils extends LuceneTestCase {
 
   @Test
   public void testFillNoHighSurrogate() throws IOException {
-    Version[] versions = new Version[] { Version.LUCENE_3_0, TEST_VERSION_CURRENT };
+    Version[] versions = new Version[] { Version.LUCENE_3_0, Version.LATEST };
     for (Version version : versions) {
       CharacterUtils instance = CharacterUtils.getInstance(version);
       Reader reader = new StringReader("helloworld");

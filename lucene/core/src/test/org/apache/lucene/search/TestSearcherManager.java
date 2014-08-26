@@ -43,6 +43,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
 public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
@@ -296,7 +297,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
   public void testCloseTwice() throws Exception {
     // test that we can close SM twice (per Closeable's contract).
     Directory dir = newDirectory();
-    new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null)).close();
+    new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, null)).close();
     SearcherManager sm = new SearcherManager(dir, null);
     sm.close();
     sm.close();
@@ -336,7 +337,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
 
   public void testEnsureOpen() throws Exception {
     Directory dir = newDirectory();
-    new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null)).close();
+    new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, null)).close();
     SearcherManager sm = new SearcherManager(dir, null);
     IndexSearcher s = sm.acquire();
     sm.close();
@@ -362,7 +363,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
 
   public void testListenerCalled() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, null));
     final AtomicBoolean afterRefreshCalled = new AtomicBoolean(false);
     SearcherManager sm = new SearcherManager(iw, false, new SearcherFactory());
     sm.addListener(new ReferenceManager.RefreshListener() {

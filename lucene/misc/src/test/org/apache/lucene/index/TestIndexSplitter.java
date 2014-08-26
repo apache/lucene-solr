@@ -25,6 +25,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 
 public class TestIndexSplitter extends LuceneTestCase {
   public void test() throws Exception {
@@ -42,7 +43,7 @@ public class TestIndexSplitter extends LuceneTestCase {
     mergePolicy.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
     IndexWriter iw = new IndexWriter(
         fsDir,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
+        new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())).
             setOpenMode(OpenMode.CREATE).
             setMergePolicy(mergePolicy)
     );

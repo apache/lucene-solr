@@ -53,12 +53,12 @@ public class TestKeepWordFilter extends BaseTokenStreamTestCase {
     
     // Test Stopwords
     stream = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
-    stream = new KeepWordFilter(Version.LUCENE_4_3, false, stream, new CharArraySet(TEST_VERSION_CURRENT, words, true));
+    stream = new KeepWordFilter(Version.LUCENE_4_3, false, stream, new CharArraySet(Version.LATEST, words, true));
     assertTokenStreamContents(stream, new String[] { "aaa", "BBB" }, new int[] { 1, 1 });
        
     // Now force case
     stream = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
-    stream = new KeepWordFilter(Version.LUCENE_4_3, false, stream, new CharArraySet(TEST_VERSION_CURRENT,words, false));
+    stream = new KeepWordFilter(Version.LUCENE_4_3, false, stream, new CharArraySet(Version.LATEST,words, false));
     assertTokenStreamContents(stream, new String[] { "aaa" }, new int[] { 1 });
   }
   

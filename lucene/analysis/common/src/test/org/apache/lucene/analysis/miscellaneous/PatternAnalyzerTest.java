@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.StopAnalyzer;
+import org.apache.lucene.util.Version;
 
 /**
  * Verifies the behavior of PatternAnalyzer.
@@ -39,13 +40,13 @@ public class PatternAnalyzerTest extends BaseTokenStreamTestCase {
    */
   public void testNonWordPattern() throws IOException {
     // Split on non-letter pattern, do not lowercase, no stopwords
-    PatternAnalyzer a = new PatternAnalyzer(TEST_VERSION_CURRENT, PatternAnalyzer.NON_WORD_PATTERN,
+    PatternAnalyzer a = new PatternAnalyzer(Version.LATEST, PatternAnalyzer.NON_WORD_PATTERN,
         false, null);
     check(a, "The quick brown Fox,the abcd1234 (56.78) dc.", new String[] {
         "The", "quick", "brown", "Fox", "the", "abcd", "dc" });
 
     // split on non-letter pattern, lowercase, english stopwords
-    PatternAnalyzer b = new PatternAnalyzer(TEST_VERSION_CURRENT, PatternAnalyzer.NON_WORD_PATTERN,
+    PatternAnalyzer b = new PatternAnalyzer(Version.LATEST, PatternAnalyzer.NON_WORD_PATTERN,
         true, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
     check(b, "The quick brown Fox,the abcd1234 (56.78) dc.", new String[] {
         "quick", "brown", "fox", "abcd", "dc" });
@@ -57,13 +58,13 @@ public class PatternAnalyzerTest extends BaseTokenStreamTestCase {
    */
   public void testWhitespacePattern() throws IOException {
     // Split on whitespace patterns, do not lowercase, no stopwords
-    PatternAnalyzer a = new PatternAnalyzer(TEST_VERSION_CURRENT, PatternAnalyzer.WHITESPACE_PATTERN,
+    PatternAnalyzer a = new PatternAnalyzer(Version.LATEST, PatternAnalyzer.WHITESPACE_PATTERN,
         false, null);
     check(a, "The quick brown Fox,the abcd1234 (56.78) dc.", new String[] {
         "The", "quick", "brown", "Fox,the", "abcd1234", "(56.78)", "dc." });
 
     // Split on whitespace patterns, lowercase, english stopwords
-    PatternAnalyzer b = new PatternAnalyzer(TEST_VERSION_CURRENT, PatternAnalyzer.WHITESPACE_PATTERN,
+    PatternAnalyzer b = new PatternAnalyzer(Version.LATEST, PatternAnalyzer.WHITESPACE_PATTERN,
         true, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
     check(b, "The quick brown Fox,the abcd1234 (56.78) dc.", new String[] {
         "quick", "brown", "fox,the", "abcd1234", "(56.78)", "dc." });
@@ -75,12 +76,12 @@ public class PatternAnalyzerTest extends BaseTokenStreamTestCase {
    */
   public void testCustomPattern() throws IOException {
     // Split on comma, do not lowercase, no stopwords
-    PatternAnalyzer a = new PatternAnalyzer(TEST_VERSION_CURRENT, Pattern.compile(","), false, null);
+    PatternAnalyzer a = new PatternAnalyzer(Version.LATEST, Pattern.compile(","), false, null);
     check(a, "Here,Are,some,Comma,separated,words,", new String[] { "Here",
         "Are", "some", "Comma", "separated", "words" });
 
     // split on comma, lowercase, english stopwords
-    PatternAnalyzer b = new PatternAnalyzer(TEST_VERSION_CURRENT, Pattern.compile(","), true,
+    PatternAnalyzer b = new PatternAnalyzer(Version.LATEST, Pattern.compile(","), true,
         StopAnalyzer.ENGLISH_STOP_WORDS_SET);
     check(b, "Here,Are,some,Comma,separated,words,", new String[] { "here",
         "some", "comma", "separated", "words" });
@@ -105,7 +106,7 @@ public class PatternAnalyzerTest extends BaseTokenStreamTestCase {
     document.append(largeWord2);
 
     // Split on whitespace patterns, do not lowercase, no stopwords
-    PatternAnalyzer a = new PatternAnalyzer(TEST_VERSION_CURRENT, PatternAnalyzer.WHITESPACE_PATTERN,
+    PatternAnalyzer a = new PatternAnalyzer(Version.LATEST, PatternAnalyzer.WHITESPACE_PATTERN,
         false, null);
     check(a, document.toString(), new String[] { new String(largeWord),
         new String(largeWord2) });
@@ -137,7 +138,7 @@ public class PatternAnalyzerTest extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    Analyzer a = new PatternAnalyzer(TEST_VERSION_CURRENT, Pattern.compile(","), true, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
+    Analyzer a = new PatternAnalyzer(Version.LATEST, Pattern.compile(","), true, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
     
     // dodge jre bug http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=7104012
     final UncaughtExceptionHandler savedHandler = Thread.getDefaultUncaughtExceptionHandler();

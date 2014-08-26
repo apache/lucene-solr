@@ -33,6 +33,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TimeUnits;
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+import org.apache.lucene.util.Version;
 
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
 @TimeoutSuite(millis = 6 * TimeUnits.HOUR)
@@ -41,7 +42,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
   @Monster("takes a long time")
   public void testExactlyAtTrueLimit() throws Exception {
     Directory dir = newFSDirectory(createTempDir("2BDocs3"));
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, null));
     Document doc = new Document();
     doc.add(newStringField("field", "text", Field.Store.NO));
     for (int i = 0; i < IndexWriter.MAX_DOCS; i++) {
@@ -81,7 +82,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
     setIndexWriterMaxDocs(10);
     try {
       Directory dir = newDirectory();
-      IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+      IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, null));
       for(int i=0;i<10;i++) {
         w.addDocument(new Document());
       }
@@ -104,7 +105,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
     setIndexWriterMaxDocs(10);
     try {
       Directory dir = newDirectory();
-      IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+      IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, null));
       for(int i=0;i<10;i++) {
         w.addDocument(new Document());
       }
@@ -127,7 +128,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
     setIndexWriterMaxDocs(10);
     try {
       Directory dir = newDirectory();
-      IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+      IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, null));
       for(int i=0;i<10;i++) {
         w.addDocument(new Document());
       }
@@ -150,7 +151,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
     setIndexWriterMaxDocs(10);
     try {
       Directory dir = newDirectory();
-      IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+      IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, null));
       for(int i=0;i<10;i++) {
         w.addDocument(new Document());
       }
@@ -173,7 +174,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
     setIndexWriterMaxDocs(10);
     try {
       Directory dir = newDirectory();
-      IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+      IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, null));
       for(int i=0;i<10;i++) {
         Document doc = new Document();
         doc.add(newStringField("id", ""+i, Field.Store.NO));
@@ -213,7 +214,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
     setIndexWriterMaxDocs(10);
     try {
       Directory dir = newDirectory();
-      IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
+      IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, null);
       iwc.setMergePolicy(NoMergePolicy.INSTANCE);
       IndexWriter w = new IndexWriter(dir, iwc);
       for(int i=0;i<10;i++) {
@@ -258,14 +259,14 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
     setIndexWriterMaxDocs(10);
     try {
       Directory dir = newDirectory();
-      IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+      IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, null));
       for(int i=0;i<10;i++) {
         w.addDocument(new Document());
       }
       w.close();
 
       Directory dir2 = newDirectory();
-      IndexWriter w2 = new IndexWriter(dir2, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+      IndexWriter w2 = new IndexWriter(dir2, new IndexWriterConfig(Version.LATEST, null));
       w2.addDocument(new Document());
       try {
         w2.addIndexes(new Directory[] {dir});
@@ -294,7 +295,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
   public void testMultiReaderExactLimit() throws Exception {
     Directory dir = newDirectory();
     Document doc = new Document();
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, null));
     for (int i = 0; i < 100000; i++) {
       w.addDocument(doc);
     }
@@ -302,7 +303,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
 
     int remainder = IndexWriter.MAX_DOCS % 100000;
     Directory dir2 = newDirectory();
-    w = new IndexWriter(dir2, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+    w = new IndexWriter(dir2, new IndexWriterConfig(Version.LATEST, null));
     for (int i = 0; i < remainder; i++) {
       w.addDocument(doc);
     }
@@ -329,7 +330,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
   public void testMultiReaderBeyondLimit() throws Exception {
     Directory dir = newDirectory();
     Document doc = new Document();
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, null));
     for (int i = 0; i < 100000; i++) {
       w.addDocument(doc);
     }
@@ -341,7 +342,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
     remainder++;
 
     Directory dir2 = newDirectory();
-    w = new IndexWriter(dir2, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+    w = new IndexWriter(dir2, new IndexWriterConfig(Version.LATEST, null));
     for (int i = 0; i < remainder; i++) {
       w.addDocument(doc);
     }

@@ -39,6 +39,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Version;
 
 /** Demonstrates indexing categories into different indexed fields. */
 public class MultiCategoryListsFacetsExample {
@@ -56,7 +57,7 @@ public class MultiCategoryListsFacetsExample {
 
   /** Build the example index. */
   private void index() throws IOException {
-    IndexWriter indexWriter = new IndexWriter(indexDir, new IndexWriterConfig(FacetExamples.EXAMPLES_VER, 
+    IndexWriter indexWriter = new IndexWriter(indexDir, new IndexWriterConfig(Version.LATEST,
         new WhitespaceAnalyzer()));
 
     // Writes facet ords to a separate directory from the main index

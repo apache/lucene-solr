@@ -34,6 +34,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 
 public class TestConcurrentMergeScheduler extends LuceneTestCase {
   
@@ -258,7 +259,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
   // LUCENE-4544
   public void testMaxMergeCount() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()));
 
     final int maxMergeCount = TestUtil.nextInt(random(), 1, 5);
     final int maxMergeThreads = TestUtil.nextInt(random(), 1, maxMergeCount);
@@ -373,7 +374,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
   public void testLiveMaxMergeCount() throws Exception {
     Directory d = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()));
     TieredMergePolicy tmp = new TieredMergePolicy();
     tmp.setSegmentsPerTier(1000);
     tmp.setMaxMergeAtOnce(1000);

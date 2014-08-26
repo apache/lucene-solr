@@ -36,6 +36,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 
 public class TestNRTCachingDirectory extends BaseDirectoryTestCase {
 
@@ -118,7 +119,7 @@ public class TestNRTCachingDirectory extends BaseDirectoryTestCase {
 
     Directory fsDir = FSDirectory.open(new File("/path/to/index"));
     NRTCachingDirectory cachedFSDir = new NRTCachingDirectory(fsDir, 2.0, 25.0);
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    IndexWriterConfig conf = new IndexWriterConfig(Version.LATEST, analyzer);
     IndexWriter writer = new IndexWriter(cachedFSDir, conf);
     writer.close();
     cachedFSDir.close();

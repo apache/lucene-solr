@@ -20,6 +20,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.util.StringMockResourceLoader;
+import org.apache.lucene.util.Version;
 import org.tartarus.snowball.ext.EnglishStemmer;
 
 import java.io.Reader;
@@ -50,7 +51,7 @@ public class TestSnowballPorterFilterFactory extends BaseTokenStreamFactoryTestC
   public void testProtected() throws Exception {
     Reader reader = new StringReader("ridding of some stemming");
     TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    stream = tokenFilterFactory("SnowballPorter", TEST_VERSION_CURRENT,
+    stream = tokenFilterFactory("SnowballPorter", Version.LATEST,
         new StringMockResourceLoader("ridding"),
         "protected", "protwords.txt",
         "language", "English").create(stream);

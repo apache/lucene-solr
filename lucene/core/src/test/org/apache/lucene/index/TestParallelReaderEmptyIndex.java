@@ -27,6 +27,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 
 /**
  * Some tests for {@link ParallelAtomicReader}s with empty indexes
@@ -103,7 +104,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
       iw.addDocument(doc);
       iw.close();
 
-      IndexWriterConfig dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+      IndexWriterConfig dontMergeConfig = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
         .setMergePolicy(NoMergePolicy.INSTANCE);
       if (VERBOSE) {
         System.out.println("\nTEST: make 2nd writer");

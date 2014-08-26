@@ -36,6 +36,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.highlight.SimpleHTMLEncoder;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -149,7 +150,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
   
   protected void makeUnstoredIndex() throws Exception {
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, analyzerW).setOpenMode(OpenMode.CREATE));
+        Version.LATEST, analyzerW).setOpenMode(OpenMode.CREATE));
     Document doc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
     customType.setStoreTermVectors(true);

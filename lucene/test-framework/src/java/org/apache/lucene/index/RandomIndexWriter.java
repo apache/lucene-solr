@@ -69,14 +69,14 @@ public class RandomIndexWriter implements Closeable {
     return new IndexWriter(dir, conf);
   }
 
-  /** create a RandomIndexWriter with a random config: Uses TEST_VERSION_CURRENT and MockAnalyzer */
+  /** create a RandomIndexWriter with a random config: Uses Version.LATEST and MockAnalyzer */
   public RandomIndexWriter(Random r, Directory dir) throws IOException {
-    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, LuceneTestCase.TEST_VERSION_CURRENT, new MockAnalyzer(r)));
+    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, Version.LATEST, new MockAnalyzer(r)));
   }
   
-  /** create a RandomIndexWriter with a random config: Uses TEST_VERSION_CURRENT */
+  /** create a RandomIndexWriter with a random config: Uses Version.LATEST */
   public RandomIndexWriter(Random r, Directory dir, Analyzer a) throws IOException {
-    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, LuceneTestCase.TEST_VERSION_CURRENT, a));
+    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, Version.LATEST, a));
   }
   
   /** create a RandomIndexWriter with a random config */

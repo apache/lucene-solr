@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.CollationTestBase;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.Version;
 
 import java.util.Locale;
 
@@ -32,7 +33,7 @@ import java.util.Locale;
 public class TestICUCollationKeyAnalyzer extends CollationTestBase {
 
   private Collator collator = Collator.getInstance(new Locale("fa"));
-  private Analyzer analyzer = new ICUCollationKeyAnalyzer(TEST_VERSION_CURRENT, collator);
+  private Analyzer analyzer = new ICUCollationKeyAnalyzer(Version.LATEST, collator);
 
   private BytesRef firstRangeBeginning = new BytesRef
     (collator.getCollationKey(firstRangeBeginningOriginal).toByteArray());
@@ -67,13 +68,13 @@ public class TestICUCollationKeyAnalyzer extends CollationTestBase {
   //  
   public void testCollationKeySort() throws Exception {
     Analyzer usAnalyzer = new ICUCollationKeyAnalyzer
-      (TEST_VERSION_CURRENT, Collator.getInstance(Locale.ROOT));
+      (Version.LATEST, Collator.getInstance(Locale.ROOT));
     Analyzer franceAnalyzer = new ICUCollationKeyAnalyzer
-      (TEST_VERSION_CURRENT, Collator.getInstance(Locale.FRANCE));
+      (Version.LATEST, Collator.getInstance(Locale.FRANCE));
     Analyzer swedenAnalyzer = new ICUCollationKeyAnalyzer
-      (TEST_VERSION_CURRENT, Collator.getInstance(new Locale("sv", "se")));
+      (Version.LATEST, Collator.getInstance(new Locale("sv", "se")));
     Analyzer denmarkAnalyzer = new ICUCollationKeyAnalyzer
-      (TEST_VERSION_CURRENT, Collator.getInstance(new Locale("da", "dk")));
+      (Version.LATEST, Collator.getInstance(new Locale("da", "dk")));
 
     // The ICU Collator and java.text.Collator implementations differ in their
     // orderings - "BFJHD" is the ordering for the ICU Collator for Locale.ROOT.
@@ -88,7 +89,7 @@ public class TestICUCollationKeyAnalyzer extends CollationTestBase {
       Locale locale = Locale.GERMAN;
       Collator collator = Collator.getInstance(locale);
       collator.setStrength(Collator.IDENTICAL);
-      assertThreadSafe(new ICUCollationKeyAnalyzer(TEST_VERSION_CURRENT, collator));
+      assertThreadSafe(new ICUCollationKeyAnalyzer(Version.LATEST, collator));
     }
   }
 }

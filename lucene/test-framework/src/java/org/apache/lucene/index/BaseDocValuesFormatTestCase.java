@@ -63,6 +63,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 
 /**
  * Abstract class to do basic tests for a docvalues format.
@@ -2371,7 +2372,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   
   private void doTestSortedSetVsUninvertedField(int minLength, int maxLength) throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig conf = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
     
     // index some docs
@@ -3241,7 +3242,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   public void testOneSortedNumberOneMissing() throws IOException {
     assumeTrue("Codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
     Directory directory = newDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(Version.LATEST, null));
     Document doc = new Document();
     doc.add(new SortedNumericDocValuesField("dv", 5));
     writer.addDocument(doc);
@@ -3293,7 +3294,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   public void testTwoSortedNumberOneMissing() throws IOException {
     assumeTrue("Codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
     Directory directory = newDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(Version.LATEST, null));
     Document doc = new Document();
     doc.add(new SortedNumericDocValuesField("dv", 11));
     doc.add(new SortedNumericDocValuesField("dv", -5));
@@ -3324,7 +3325,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   public void testSortedNumberMerge() throws IOException {
     assumeTrue("Codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
     Directory directory = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, null);
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter writer = new IndexWriter(directory, iwc);
     Document doc = new Document();

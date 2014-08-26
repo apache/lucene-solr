@@ -56,7 +56,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
     };
 
     Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
-    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, newDirectory(), a, a, 3, false);
+    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(newDirectory(), a, a, 3, false);
     suggester.build(new InputArrayIterator(keys));
 
     List<LookupResult> results = suggester.lookup(TestUtil.stringToCharSequence("ear", random()), 10, true, true);
@@ -99,12 +99,12 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
     File tempDir = createTempDir("AnalyzingInfixSuggesterTest");
 
     Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
-    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, newFSDirectory(tempDir), a, a, 3, false);
+    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(newFSDirectory(tempDir), a, a, 3, false);
     suggester.build(new InputArrayIterator(keys));
     assertEquals(2, suggester.getCount());
     suggester.close();
 
-    suggester = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, newFSDirectory(tempDir), a, a, 3, false);
+    suggester = new AnalyzingInfixSuggester(newFSDirectory(tempDir), a, a, 3, false);
     List<LookupResult> results = suggester.lookup(TestUtil.stringToCharSequence("ear", random()), 10, true, true);
     assertEquals(2, results.size());
     assertEquals("a penny saved is a penny <b>ear</b>ned", results.get(0).key);
@@ -143,7 +143,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
     };
 
     Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
-    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, newDirectory(), a, a, 3, false) {
+    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(newDirectory(), a, a, 3, false) {
         @Override
         protected Object highlight(String text, Set<String> matchedTokens, String prefixToken) throws IOException {
           TokenStream ts = queryAnalyzer.tokenStream("text", new StringReader(text));
@@ -222,7 +222,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
 
     Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
     int minPrefixLength = random().nextInt(10);
-    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, newFSDirectory(tempDir), a, a, minPrefixLength, false);
+    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(newFSDirectory(tempDir), a, a, minPrefixLength, false);
     suggester.build(new InputArrayIterator(keys));
 
     for(int i=0;i<2;i++) {
@@ -279,7 +279,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
 
       // Make sure things still work after close and reopen:
       suggester.close();
-      suggester = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, newFSDirectory(tempDir), a, a, minPrefixLength, false);
+      suggester = new AnalyzingInfixSuggester(newFSDirectory(tempDir), a, a, minPrefixLength, false);
     }
     suggester.close();
   }
@@ -290,7 +290,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
     };
 
     Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
-    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, newDirectory(), a, a, 3, false);
+    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(newDirectory(), a, a, 3, false);
     suggester.build(new InputArrayIterator(keys));
     List<LookupResult> results = suggester.lookup(TestUtil.stringToCharSequence("penn", random()), 10, true, true);
     assertEquals(1, results.size());
@@ -304,7 +304,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
     };
 
     Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true);
-    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, newDirectory(), a, a, 3, false);
+    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(newDirectory(), a, a, 3, false);
     suggester.build(new InputArrayIterator(keys));
     List<LookupResult> results = suggester.lookup(TestUtil.stringToCharSequence("penn", random()), 10, true, true);
     assertEquals(1, results.size());
@@ -313,7 +313,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
 
     // Try again, but overriding addPrefixMatch to highlight
     // the entire hit:
-    suggester = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, newDirectory(), a, a, 3, false) {
+    suggester = new AnalyzingInfixSuggester(newDirectory(), a, a, 3, false) {
         @Override
         protected void addPrefixMatch(StringBuilder sb, String surface, String analyzed, String prefixToken) {
           sb.append("<b>");
@@ -334,7 +334,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
     };
 
     Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
-    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, newDirectory(), a, a, 3, false);
+    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(newDirectory(), a, a, 3, false);
     suggester.build(new InputArrayIterator(keys));
     suggester.close();
     suggester.close();
@@ -360,7 +360,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
         }
       };
 
-    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, newDirectory(), indexAnalyzer, queryAnalyzer, 3, false);
+    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(newDirectory(), indexAnalyzer, queryAnalyzer, 3, false);
 
     Input keys[] = new Input[] {
       new Input("a bob for apples", 10, new BytesRef("foobaz")),
@@ -375,7 +375,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
 
   public void testEmptyAtStart() throws Exception {
     Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
-    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, newDirectory(), a, a, 3, false);
+    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(newDirectory(), a, a, 3, false);
     suggester.build(new InputArrayIterator(new Input[0]));
     suggester.add(new BytesRef("a penny saved is a penny earned"), null, 10, new BytesRef("foobaz"));
     suggester.add(new BytesRef("lend me your ear"), null, 8, new BytesRef("foobar"));
@@ -413,7 +413,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
 
   public void testBothExactAndPrefix() throws Exception {
     Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
-    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, newDirectory(), a, a, 3, false);
+    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(newDirectory(), a, a, 3, false);
     suggester.build(new InputArrayIterator(new Input[0]));
     suggester.add(new BytesRef("the pen is pretty"), null, 10, new BytesRef("foobaz"));
     suggester.refresh();
@@ -486,7 +486,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
       System.out.println("  minPrefixChars=" + minPrefixChars);
     }
 
-    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, newFSDirectory(tempDir), a, a, minPrefixChars, false);
+    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(newFSDirectory(tempDir), a, a, minPrefixChars, false);
 
     // Initial suggester built with nothing:
     suggester.build(new InputArrayIterator(new Input[0]));
@@ -566,7 +566,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
         }
         lookupThread.finish();
         suggester.close();
-        suggester = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, newFSDirectory(tempDir), a, a, minPrefixChars, false);
+        suggester = new AnalyzingInfixSuggester(newFSDirectory(tempDir), a, a, minPrefixChars, false);
         lookupThread = new LookupThread(suggester);
         lookupThread.start();
 
@@ -738,7 +738,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
     };
 
     Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
-    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, newDirectory(), a, a, 3, false);
+    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(newDirectory(), a, a, 3, false);
     suggester.build(new InputArrayIterator(keys));
 
     List<LookupResult> results = suggester.lookup(TestUtil.stringToCharSequence("ear", random()), 10, true, true);
@@ -802,7 +802,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
     String[] keys = new String[] {"python", "java", "c", "scala", "ruby", "clojure", "erlang", "go", "swift", "lisp"};
     Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
     File tempDir = createTempDir("AIS_NRT_PERSIST_TEST");
-    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, newFSDirectory(tempDir), a, a, 3, false);
+    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(newFSDirectory(tempDir), a, a, 3, false);
     Thread[] multiAddThreads = new Thread[10];
     try {
       suggester.refresh();
@@ -830,7 +830,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
     suggester.commit();
     suggester.close();
 
-    suggester = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, newFSDirectory(tempDir), a, a, 3, false);
+    suggester = new AnalyzingInfixSuggester(newFSDirectory(tempDir), a, a, 3, false);
     results = suggester.lookup(TestUtil.stringToCharSequence("python", random()), 10, true, false);
     assertEquals(1, results.size());
     assertEquals("python", results.get(0).key);
@@ -879,11 +879,11 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
       AnalyzingInfixSuggester suggester;
       Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
       if (iter == 0) {
-        suggester = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, newFSDirectory(tempDir), a, a, 3, false);
+        suggester = new AnalyzingInfixSuggester(newFSDirectory(tempDir), a, a, 3, false);
         suggester.build(new InputArrayIterator(keys));
       } else {
         // Test again, after close/reopen:
-        suggester = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, newFSDirectory(tempDir), a, a, 3, false);
+        suggester = new AnalyzingInfixSuggester(newFSDirectory(tempDir), a, a, 3, false);
       }
 
       // No context provided, all results returned

@@ -21,6 +21,7 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.Version;
 import org.junit.Test;
 
 /*
@@ -260,7 +261,7 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
     // hold onto IW to forceMerge
     // note how we don't close it, since DTW will close it.
     final IndexWriter iw = new IndexWriter(dir,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+        new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
             .setMergePolicy(new LogByteSizeMergePolicy()));
     DirectoryTaxonomyWriter writer = new DirectoryTaxonomyWriter(dir) {
       @Override
@@ -303,7 +304,7 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
     // hold onto IW to forceMerge
     // note how we don't close it, since DTW will close it.
     final IndexWriter iw = new IndexWriter(dir,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+        new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
             .setMergePolicy(new LogByteSizeMergePolicy()));
     DirectoryTaxonomyWriter writer = new DirectoryTaxonomyWriter(dir) {
       @Override

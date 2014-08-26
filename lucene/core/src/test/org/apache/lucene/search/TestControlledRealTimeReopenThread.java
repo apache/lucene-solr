@@ -432,7 +432,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
 
   public void testListenerCalled() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, null));
     final AtomicBoolean afterRefreshCalled = new AtomicBoolean(false);
     SearcherManager sm = new SearcherManager(iw, true, new SearcherFactory());
     sm.addListener(new ReferenceManager.RefreshListener() {

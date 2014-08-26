@@ -25,12 +25,13 @@ import org.apache.lucene.analysis.core.LowerCaseFilterFactory;
 import org.apache.lucene.analysis.core.WhitespaceTokenizerFactory;
 import org.apache.lucene.analysis.miscellaneous.RemoveDuplicatesTokenFilterFactory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 
 public class TestAnalysisSPILoader extends LuceneTestCase {
   
   private Map<String,String> versionArgOnly() {
     return new HashMap<String,String>() {{
-      put("luceneMatchVersion", TEST_VERSION_CURRENT.toString());
+      put("luceneMatchVersion", Version.LATEST.toString());
     }};
   }
   

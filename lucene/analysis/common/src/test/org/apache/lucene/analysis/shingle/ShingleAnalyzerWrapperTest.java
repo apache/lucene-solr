@@ -39,6 +39,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.Version;
 
 import java.io.Reader;
 
@@ -61,7 +62,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
     super.setUp();
     analyzer = new ShingleAnalyzerWrapper(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false), 2);
     directory = newDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(Version.LATEST, analyzer));
 
     Document doc;
     doc = new Document();

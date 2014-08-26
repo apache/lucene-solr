@@ -229,7 +229,7 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
       }
       Directory dir = newDirectory(oldIndexDirs.get(name));
       IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+          Version.LATEST, new MockAnalyzer(random())));
       w.forceMerge(1);
       w.close();
       
@@ -308,7 +308,7 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
       assertEquals(35, ir.numDocs());
       ir.close();
 
-      IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+      IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, null));
       iw.deleteDocuments(new Term("id", "3"));
       iw.close();
 
@@ -317,7 +317,7 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
       ir.close();
 
       // Delete all but 1 document:
-      iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+      iw = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, null));
       for(int i=0;i<35;i++) {
         iw.deleteDocuments(new Term("id", ""+i));
       }
@@ -554,7 +554,7 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
     mp.setNoCFSRatio(doCFS ? 1.0 : 0.0);
     mp.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
     // TODO: remove randomness
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+    IndexWriterConfig conf = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
       .setMaxBufferedDocs(10).setMergePolicy(mp).setUseCompoundFile(doCFS);
     IndexWriter writer = new IndexWriter(dir, conf);
     
@@ -572,7 +572,7 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
       mp = new LogByteSizeMergePolicy();
       mp.setNoCFSRatio(doCFS ? 1.0 : 0.0);
       // TODO: remove randomness
-      conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+      conf = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
         .setMaxBufferedDocs(10).setMergePolicy(mp).setUseCompoundFile(doCFS);
       writer = new IndexWriter(dir, conf);
       addNoProxDoc(writer);
@@ -836,7 +836,7 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
       for (int i = 0; i < 3; i++) {
         // only use Log- or TieredMergePolicy, to make document addition predictable and not suddenly merge:
         MergePolicy mp = random().nextBoolean() ? newLogMergePolicy() : newTieredMergePolicy();
-        IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+        IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
           .setMergePolicy(mp);
         IndexWriter w = new IndexWriter(ramDir, iwc);
         // add few more docs:
@@ -849,7 +849,7 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
       // add dummy segments (which are all in current
       // version) to single segment index
       MergePolicy mp = random().nextBoolean() ? newLogMergePolicy() : newTieredMergePolicy();
-      IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, null)
+      IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, null)
         .setMergePolicy(mp);
       IndexWriter w = new IndexWriter(dir, iwc);
       w.addIndexes(ramDir);

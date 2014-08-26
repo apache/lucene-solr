@@ -65,6 +65,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 
 public class TestIndexWriterExceptions extends LuceneTestCase {
 
@@ -1567,7 +1568,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   public void testNullStoredField() throws Exception {
     Directory dir = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, analyzer));
     // add good document
     Document doc = new Document();
     iw.addDocument(doc);
@@ -1590,7 +1591,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   public void testNullStoredFieldReuse() throws Exception {
     Directory dir = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, analyzer));
     // add good document
     Document doc = new Document();
     Field theField = new StoredField("foo", "hello");
@@ -1614,7 +1615,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   public void testNullStoredBytesField() throws Exception {
     Directory dir = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, analyzer));
     // add good document
     Document doc = new Document();
     iw.addDocument(doc);
@@ -1639,7 +1640,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   public void testNullStoredBytesFieldReuse() throws Exception {
     Directory dir = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, analyzer));
     // add good document
     Document doc = new Document();
     Field theField = new StoredField("foo", new BytesRef("hello").bytes);
@@ -1664,7 +1665,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   public void testNullStoredBytesRefField() throws Exception {
     Directory dir = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, analyzer));
     // add good document
     Document doc = new Document();
     iw.addDocument(doc);
@@ -1689,7 +1690,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   public void testNullStoredBytesRefFieldReuse() throws Exception {
     Directory dir = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, analyzer));
     // add good document
     Document doc = new Document();
     Field theField = new StoredField("foo", new BytesRef("hello"));
@@ -1723,7 +1724,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         return -2;
       }
     };
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, analyzer));
     // add good document
     Document doc = new Document();
     iw.addDocument(doc);
@@ -1822,7 +1823,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   
   public void testBoostOmitNorms() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()));
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter iw = new IndexWriter(dir, iwc);
     Document doc = new Document();
@@ -1918,7 +1919,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     dir.failOn(failure);
 
     // Create an index with one document
-    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()));
     IndexWriter iw = new IndexWriter(dir, iwc);
     Document doc = new Document();
     doc.add(new StringField("foo", "bar", Field.Store.NO));
@@ -1932,7 +1933,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     // Open and close the index a few times
     for (int i = 0; i < 10; i++) {
       failure.setDoFail();
-      iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+      iwc = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()));
       try {
         iw = new IndexWriter(dir, iwc);
       } catch (CorruptIndexException ex) {
@@ -2223,7 +2224,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     };
     
     Directory dir = newMockDirectory(); // we want to ensure we don't leak any locks or file handles
-    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, null);
     iwc.setInfoStream(evilInfoStream);
     IndexWriter iw = new IndexWriter(dir, iwc);
     Document doc = new Document();
@@ -2292,7 +2293,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         }
       });
       
-      IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
+      IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, null);
       IndexWriter iw = new IndexWriter(dir, iwc);
       Document doc = new Document();
       for (int i = 0; i < 10; i++) {

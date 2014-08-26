@@ -28,6 +28,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.PrintStreamInfoStream;
+import org.apache.lucene.util.Version;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -69,7 +70,7 @@ public class TestDocInverterPerFieldErrorInfo extends LuceneTestCase {
   public void testInfoStreamGetsFieldName() throws Exception {
     Directory dir = newDirectory();
     IndexWriter writer;
-    IndexWriterConfig c = new IndexWriterConfig(TEST_VERSION_CURRENT, new ThrowingAnalyzer());
+    IndexWriterConfig c = new IndexWriterConfig(Version.LATEST, new ThrowingAnalyzer());
     final ByteArrayOutputStream infoBytes = new ByteArrayOutputStream();
     PrintStream infoPrintStream = new PrintStream(infoBytes, true, IOUtils.UTF_8);
     PrintStreamInfoStream printStreamInfoStream = new PrintStreamInfoStream(infoPrintStream);
@@ -94,7 +95,7 @@ public class TestDocInverterPerFieldErrorInfo extends LuceneTestCase {
   public void testNoExtraNoise() throws Exception {
     Directory dir = newDirectory();
     IndexWriter writer;
-    IndexWriterConfig c = new IndexWriterConfig(TEST_VERSION_CURRENT, new ThrowingAnalyzer());
+    IndexWriterConfig c = new IndexWriterConfig(Version.LATEST, new ThrowingAnalyzer());
     final ByteArrayOutputStream infoBytes = new ByteArrayOutputStream();
     PrintStream infoPrintStream = new PrintStream(infoBytes, true, IOUtils.UTF_8);
     PrintStreamInfoStream printStreamInfoStream = new PrintStreamInfoStream(infoPrintStream);

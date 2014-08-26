@@ -33,6 +33,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 
 
 public class TestTryDelete extends LuceneTestCase
@@ -41,7 +42,7 @@ public class TestTryDelete extends LuceneTestCase
     throws IOException
   {
     MergePolicy policy = new LogByteSizeMergePolicy();
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT,
+    IndexWriterConfig conf = new IndexWriterConfig(Version.LATEST,
                                                    new MockAnalyzer(random()));
     conf.setMergePolicy(policy);
     conf.setOpenMode(OpenMode.CREATE_OR_APPEND);

@@ -48,6 +48,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
 
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+import org.apache.lucene.util.Version;
 
 // NOTE: this test will fail w/ PreFlexRW codec!  (Because
 // this test uses full binary term space, but PreFlex cannot
@@ -189,7 +190,7 @@ public class Test2BTerms extends LuceneTestCase {
     if (true) {
 
       IndexWriter w = new IndexWriter(dir,
-                                      new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+                                      new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
                                       .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
                                       .setRAMBufferSizeMB(256.0)
                                       .setMergeScheduler(new ConcurrentMergeScheduler())

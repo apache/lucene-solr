@@ -22,12 +22,13 @@ import java.io.IOException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 
 public class TestMockDirectoryWrapper extends LuceneTestCase {
   
   public void testFailIfIndexWriterNotClosed() throws IOException {
     MockDirectoryWrapper dir = newMockDirectory();
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, null));
     try {
       dir.close();
       fail();
@@ -41,7 +42,7 @@ public class TestMockDirectoryWrapper extends LuceneTestCase {
   public void testFailIfIndexWriterNotClosedChangeLockFactory() throws IOException {
     MockDirectoryWrapper dir = newMockDirectory();
     dir.setLockFactory(new SingleInstanceLockFactory());
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, null));
     try {
       dir.close();
       fail();

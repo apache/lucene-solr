@@ -26,6 +26,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import java.io.IOException;
 
+import org.apache.lucene.util.Version;
 import org.junit.Before;
 import org.junit.After;
 
@@ -56,7 +57,7 @@ public class TestExceedMaxTermLength extends LuceneTestCase {
     
     IndexWriter w = new IndexWriter
       (dir, newIndexWriterConfig(random(), 
-                                 TEST_VERSION_CURRENT,
+                                 Version.LATEST,
                                  new MockAnalyzer(random())));
     try {
       final FieldType ft = new FieldType();

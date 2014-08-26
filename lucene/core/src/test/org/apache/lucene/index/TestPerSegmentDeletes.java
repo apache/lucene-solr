@@ -33,12 +33,13 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 
 public class TestPerSegmentDeletes extends LuceneTestCase {
   public void testDeletes1() throws Exception {
     //IndexWriter.debug2 = System.out;
     Directory dir = new MockDirectoryWrapper(new Random(random().nextLong()), new RAMDirectory());
-    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT,
+    IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST,
         new MockAnalyzer(random()));
     iwc.setMergeScheduler(new SerialMergeScheduler());
     iwc.setMaxBufferedDocs(5000);

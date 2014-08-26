@@ -42,6 +42,7 @@ import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.RamUsageTester;
+import org.apache.lucene.util.Version;
 
 /**
  * Common tests to all index formats.
@@ -176,7 +177,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     // do not use RIW which will change things up!
     MergePolicy mp = newTieredMergePolicy();
     mp.setNoCFSRatio(0);
-    IndexWriterConfig cfg = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setUseCompoundFile(false).setMergePolicy(mp);
+    IndexWriterConfig cfg = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())).setUseCompoundFile(false).setMergePolicy(mp);
     IndexWriter w = new IndexWriter(dir, cfg);
     final int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; ++i) {
@@ -192,7 +193,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     Directory dir2 = newDirectory();
     mp = newTieredMergePolicy();
     mp.setNoCFSRatio(0);
-    cfg = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setUseCompoundFile(false).setMergePolicy(mp);
+    cfg = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())).setUseCompoundFile(false).setMergePolicy(mp);
     w = new IndexWriter(dir2, cfg);
     w.addIndexes(reader);
     w.commit();

@@ -39,6 +39,7 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 
 public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   
@@ -50,7 +51,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer()));
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(Version.LATEST, new SimpleAnalyzer()));
 
     Document doc = new Document();
     doc.add(new StringField("partnum", "Q36", Field.Store.YES));
@@ -75,7 +76,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
     PerFieldAnalyzerWrapper analyzer = new PerFieldAnalyzerWrapper(new SimpleAnalyzer());
     analyzer.addAnalyzer("partnum", new KeywordAnalyzer());
 
-    QueryParser queryParser = new QueryParser(TEST_VERSION_CURRENT, "description", analyzer);
+    QueryParser queryParser = new QueryParser("description", analyzer);
     Query query = queryParser.parse("partnum:Q36 AND SPACE");
 
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
@@ -87,7 +88,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
 
   public void testMutipleDocument() throws Exception {
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new KeywordAnalyzer()));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, new KeywordAnalyzer()));
     Document doc = new Document();
     doc.add(new TextField("partnum", "Q36", Field.Store.YES));
     writer.addDocument(doc);

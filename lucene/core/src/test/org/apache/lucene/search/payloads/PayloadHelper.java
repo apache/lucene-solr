@@ -34,8 +34,7 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
-
-import static org.apache.lucene.util.LuceneTestCase.TEST_VERSION_CURRENT;
+import org.apache.lucene.util.Version;
 
 import java.io.Reader;
 import java.io.IOException;
@@ -121,7 +120,7 @@ public class PayloadHelper {
 
     // TODO randomize this
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, analyzer).setSimilarity(similarity));
+        Version.LATEST, analyzer).setSimilarity(similarity));
     // writer.infoStream = System.out;
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();

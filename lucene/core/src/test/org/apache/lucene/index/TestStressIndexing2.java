@@ -244,7 +244,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
   
   public static void indexSerial(Random random, Map<String,Document> docs, Directory dir) throws IOException {
-    IndexWriter w = new IndexWriter(dir, LuceneTestCase.newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+    IndexWriter w = new IndexWriter(dir, LuceneTestCase.newIndexWriterConfig(random, Version.LATEST, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
 
     // index all docs in a single thread
     Iterator<Document> iter = docs.values().iterator();

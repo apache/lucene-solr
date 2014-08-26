@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.util.Version;
 
 /**
  * Simple tests for {@link JapanesePartOfSpeechStopFilterFactory}
@@ -38,7 +39,7 @@ public class TestJapanesePartOfSpeechStopFilterFactory extends BaseTokenStreamTe
     tokenizerFactory.inform(new StringMockResourceLoader(""));
     TokenStream ts = tokenizerFactory.create(new StringReader("私は制限スピードを超える。"));
     Map<String,String> args = new HashMap<>();
-    args.put("luceneMatchVersion", TEST_VERSION_CURRENT.toString());
+    args.put("luceneMatchVersion", Version.LATEST.toString());
     args.put("tags", "stoptags.txt");
     JapanesePartOfSpeechStopFilterFactory factory = new JapanesePartOfSpeechStopFilterFactory(args);
     factory.inform(new StringMockResourceLoader(tags));
@@ -52,7 +53,7 @@ public class TestJapanesePartOfSpeechStopFilterFactory extends BaseTokenStreamTe
   public void testBogusArguments() throws Exception {
     try {
       new JapanesePartOfSpeechStopFilterFactory(new HashMap<String,String>() {{
-        put("luceneMatchVersion", TEST_VERSION_CURRENT.toString());
+        put("luceneMatchVersion", Version.LATEST.toString());
         put("bogusArg", "bogusValue");
       }});
       fail();

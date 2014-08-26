@@ -33,6 +33,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.Version;
 
 /** Tests MultiDocValues versus ordinary segment merging */
 @SuppressCodecs("Lucene3x")
@@ -44,7 +45,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     Field field = new NumericDocValuesField("numbers", 0);
     doc.add(field);
     
-    IndexWriterConfig iwc = newIndexWriterConfig(random(), TEST_VERSION_CURRENT, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), Version.LATEST, null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
@@ -78,7 +79,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     Field field = new BinaryDocValuesField("bytes", new BytesRef());
     doc.add(field);
     
-    IndexWriterConfig iwc = newIndexWriterConfig(random(), TEST_VERSION_CURRENT, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), Version.LATEST, null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
@@ -115,7 +116,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     Field field = new SortedDocValuesField("bytes", new BytesRef());
     doc.add(field);
     
-    IndexWriterConfig iwc = newIndexWriterConfig(random(), TEST_VERSION_CURRENT, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), Version.LATEST, null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
@@ -160,7 +161,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     Field field = new SortedDocValuesField("bytes", new BytesRef());
     doc.add(field);
     
-    IndexWriterConfig iwc = newIndexWriterConfig(random(), TEST_VERSION_CURRENT, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), Version.LATEST, null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
@@ -199,7 +200,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     assumeTrue("codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
     
-    IndexWriterConfig iwc = newIndexWriterConfig(random(), TEST_VERSION_CURRENT, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), Version.LATEST, null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
@@ -262,7 +263,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     assumeTrue("codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
     
-    IndexWriterConfig iwc = newIndexWriterConfig(random(), TEST_VERSION_CURRENT, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), Version.LATEST, null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
@@ -324,7 +325,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     assumeTrue("codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
     Directory dir = newDirectory();
     
-    IndexWriterConfig iwc = newIndexWriterConfig(random(), TEST_VERSION_CURRENT, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), Version.LATEST, null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
@@ -376,7 +377,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     assumeTrue("codec does not support docsWithField", defaultCodecSupportsDocsWithField());
     Directory dir = newDirectory();
     
-    IndexWriterConfig iwc = newIndexWriterConfig(random(), TEST_VERSION_CURRENT, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), Version.LATEST, null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 

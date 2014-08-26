@@ -38,6 +38,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.Version;
 
 /**
  * 
@@ -166,7 +167,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   // LUCENE-3870
   public void testLengthPrefixAcrossTwoPages() throws Exception {
     Directory d = newDirectory();
-    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())));
     Document doc = new Document();
     byte[] bytes = new byte[32764];
     BytesRef b = new BytesRef();

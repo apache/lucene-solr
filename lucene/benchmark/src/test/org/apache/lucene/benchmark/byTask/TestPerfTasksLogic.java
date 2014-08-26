@@ -64,6 +64,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
+import org.apache.lucene.util.Version;
 
 /**
  * Test very simply that perf tasks - simple algorithms - are doing what they should.
@@ -107,7 +108,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     assertTrue("Index does not exist?...!", DirectoryReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write. 
     IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(),
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+        new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
             .setOpenMode(OpenMode.APPEND));
     iw.close();
     IndexReader ir = DirectoryReader.open(benchmark.getRunData().getDirectory());
@@ -199,7 +200,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
 
     assertTrue("Index does not exist?...!", DirectoryReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write.
-    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
+    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
     iw.close();
     IndexReader ir = DirectoryReader.open(benchmark.getRunData().getDirectory());
     assertEquals("100 docs were added to the index, this is what we expect to find!",100,ir.numDocs());
@@ -239,7 +240,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
 
     assertTrue("Index does not exist?...!", DirectoryReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write.
-    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
+    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
     iw.close();
     IndexReader ir = DirectoryReader.open(benchmark.getRunData().getDirectory());
     assertEquals("1000 docs were added to the index, this is what we expect to find!",1000,ir.numDocs());
@@ -312,7 +313,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     assertEquals("TestSearchTask was supposed to be called!",139,CountingSearchTestTask.numSearches);
     assertTrue("Index does not exist?...!", DirectoryReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write. 
-    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
+    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
     iw.close();
     IndexReader ir = DirectoryReader.open(benchmark.getRunData().getDirectory());
     assertEquals("1 docs were added to the index, this is what we expect to find!",1,ir.numDocs());
@@ -443,7 +444,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
 
     // now we should be able to open the index for write. 
     IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(),
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+        new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
             .setOpenMode(OpenMode.APPEND));
     iw.close();
 

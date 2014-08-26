@@ -34,6 +34,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.handler.SnapPuller;
@@ -115,7 +116,7 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
     Directory dir = newFSDirectory(newDir);
     IndexWriter iw = new IndexWriter(
         dir,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer())
+        new IndexWriterConfig(Version.LATEST, new StandardAnalyzer())
     );
     Document doc = new Document();
     doc.add(new TextField("id", "2", Field.Store.YES));

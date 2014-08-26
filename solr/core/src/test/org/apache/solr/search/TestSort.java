@@ -50,6 +50,7 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
@@ -183,7 +184,7 @@ public class TestSort extends SolrTestCaseJ4 {
     for (int iterCnt = 0; iterCnt<iter; iterCnt++) {
       IndexWriter iw = new IndexWriter(
           dir,
-          new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer()).
+          new IndexWriterConfig(Version.LATEST, new SimpleAnalyzer()).
               setOpenMode(IndexWriterConfig.OpenMode.CREATE)
       );
       final MyDoc[] mydocs = new MyDoc[ndocs];

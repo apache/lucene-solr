@@ -33,7 +33,7 @@ public class TestFlex extends LuceneTestCase {
 
     IndexWriter w = new IndexWriter(
         d,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
+        new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())).
             setMaxBufferedDocs(7).setMergePolicy(newLogMergePolicy())
     );
 

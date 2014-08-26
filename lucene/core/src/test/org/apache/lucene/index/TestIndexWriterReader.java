@@ -45,6 +45,7 @@ import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
+import org.apache.lucene.util.Version;
 import org.junit.Test;
 
 public class TestIndexWriterReader extends LuceneTestCase {
@@ -577,7 +578,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
   public static void createIndex(Random random, Directory dir1, String indexName,
       boolean multiSegment) throws IOException {
     IndexWriter w = new IndexWriter(dir1, LuceneTestCase.newIndexWriterConfig(random,
-        TEST_VERSION_CURRENT, new MockAnalyzer(random))
+        Version.LATEST, new MockAnalyzer(random))
         .setMergePolicy(new LogDocMergePolicy()));
     for (int i = 0; i < 100; i++) {
       w.addDocument(DocHelper.createDocument(i, indexName, 4));
@@ -1156,7 +1157,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     Directory dir = getAssertNoDeletesDirectory(newDirectory());
     // Don't use newIndexWriterConfig, because we need a
     // "sane" mergePolicy:
-    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     // Create 500 segments:
     for(int i=0;i<500;i++) {

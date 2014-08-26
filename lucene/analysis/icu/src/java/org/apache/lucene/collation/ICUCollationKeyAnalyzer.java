@@ -82,7 +82,7 @@ public final class ICUCollationKeyAnalyzer extends Analyzer {
 
   /**
    * Create a new ICUCollationKeyAnalyzer, using the specified collator.
-   * 
+   *
    * @param matchVersion See <a href="#version">above</a>
    * @param collator CollationKey generator
    */

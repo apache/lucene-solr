@@ -39,8 +39,7 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
-
-import static org.apache.lucene.util.LuceneTestCase.TEST_VERSION_CURRENT;
+import org.apache.lucene.util.Version;
 
 /**
  * Utility class for sanity-checking queries.
@@ -208,7 +207,7 @@ public class QueryUtils {
     if (LuceneTestCase.VERBOSE) {
       System.out.println("NOTE: QueryUtils: now create empty index");
     }
-    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random)));
     for (int i = 0; i < numDocs; i++) {
       w.addDocument(new Document());
     }

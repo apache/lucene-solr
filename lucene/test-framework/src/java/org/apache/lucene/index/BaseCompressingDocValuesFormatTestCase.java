@@ -27,6 +27,7 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 import org.apache.lucene.util.packed.PackedInts;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
@@ -44,7 +45,7 @@ public abstract class BaseCompressingDocValuesFormatTestCase extends BaseDocValu
 
   public void testUniqueValuesCompression() throws IOException {
     final Directory dir = new RAMDirectory();
-    final IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    final IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()));
     final IndexWriter iwriter = new IndexWriter(dir, iwc);
 
     final int uniqueValueCount = TestUtil.nextInt(random(), 1, 256);
@@ -78,7 +79,7 @@ public abstract class BaseCompressingDocValuesFormatTestCase extends BaseDocValu
 
   public void testDateCompression() throws IOException {
     final Directory dir = new RAMDirectory();
-    final IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    final IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()));
     final IndexWriter iwriter = new IndexWriter(dir, iwc);
 
     final long base = 13; // prime
@@ -105,7 +106,7 @@ public abstract class BaseCompressingDocValuesFormatTestCase extends BaseDocValu
 
   public void testSingleBigValueCompression() throws IOException {
     final Directory dir = new RAMDirectory();
-    final IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    final IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()));
     final IndexWriter iwriter = new IndexWriter(dir, iwc);
 
     final Document doc = new Document();

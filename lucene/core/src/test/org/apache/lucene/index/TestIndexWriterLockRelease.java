@@ -27,6 +27,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 
 /**
  * This tests the patch for issue #LUCENE-715 (IndexWriter does not
@@ -38,10 +39,10 @@ public class TestIndexWriterLockRelease extends LuceneTestCase {
   public void testIndexWriterLockRelease() throws IOException {
     Directory dir = newFSDirectory(createTempDir("testLockRelease"));
     try {
-      new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
+      new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
     } catch (FileNotFoundException | NoSuchFileException e) {
       try {
-        new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
+        new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
       } catch (FileNotFoundException | NoSuchFileException e1) {
       }
     } finally {

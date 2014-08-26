@@ -48,6 +48,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 
 // TODO: we really need to test indexingoffsets, but then getting only docs / docs + freqs.
 // not all codecs store prx separate...
@@ -464,7 +465,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
         return -10;
       }
     };
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, analyzer));
     // add good document
     Document doc = new Document();
     iw.addDocument(doc);

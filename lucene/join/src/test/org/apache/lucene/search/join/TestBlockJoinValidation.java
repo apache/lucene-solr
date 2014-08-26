@@ -35,6 +35,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -62,7 +63,7 @@ public class TestBlockJoinValidation extends LuceneTestCase {
   @Before
   public void before() throws Exception {
     directory = newDirectory();
-    final IndexWriterConfig config = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    final IndexWriterConfig config = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()));
     final IndexWriter indexWriter = new IndexWriter(directory, config);
     for (int i = 0; i < AMOUNT_OF_SEGMENTS; i++) {
       List<Document> segmentDocs = createDocsForSegment(i);

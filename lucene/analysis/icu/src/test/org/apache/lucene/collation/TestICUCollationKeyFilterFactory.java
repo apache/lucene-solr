@@ -298,7 +298,7 @@ public class TestICUCollationKeyFilterFactory extends BaseTokenStreamTestCase {
       String previous = args.put(keysAndValues[i], keysAndValues[i+1]);
       assertNull("duplicate values for key: " + keysAndValues[i], previous);
     }
-    String previous = args.put("luceneMatchVersion", TEST_VERSION_CURRENT.toString());
+    String previous = args.put("luceneMatchVersion", Version.LATEST.toString());
     assertNull("duplicate values for key: luceneMatchVersion", previous);
     TokenFilterFactory factory = null;
     try {

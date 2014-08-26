@@ -39,6 +39,7 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 
 /*
  * Very simple tests of sorting.
@@ -1269,7 +1270,7 @@ public class TestSort extends LuceneTestCase {
   public void testMaxScore() throws Exception {
     Directory d = newDirectory();
     // Not RIW because we need exactly 2 segs:
-    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())));
     int id = 0;
     for(int seg=0;seg<2;seg++) {
       for(int docIDX=0;docIDX<10;docIDX++) {

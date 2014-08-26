@@ -36,6 +36,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.TestRuleLimitSysouts.Limit;
+import org.apache.lucene.util.Version;
 import org.junit.After;
 import org.junit.Before;
 
@@ -71,7 +72,7 @@ public abstract class SpatialTestCase extends LuceneTestCase {
   }
 
   protected IndexWriterConfig newIndexWriterConfig(Random random) {
-    final IndexWriterConfig indexWriterConfig = LuceneTestCase.newIndexWriterConfig(random, LuceneTestCase.TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    final IndexWriterConfig indexWriterConfig = LuceneTestCase.newIndexWriterConfig(random, Version.LATEST, new MockAnalyzer(random));
     //TODO can we randomly choose a doc-values supported format?
     if (needsDocValues())
       indexWriterConfig.setCodec( TestUtil.alwaysDocValuesFormat(new Lucene410DocValuesFormat()));;

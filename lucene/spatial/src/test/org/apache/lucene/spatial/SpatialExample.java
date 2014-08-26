@@ -46,6 +46,7 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 
@@ -103,7 +104,7 @@ public class SpatialExample extends LuceneTestCase {
   }
 
   private void indexPoints() throws Exception {
-    IndexWriterConfig iwConfig = new IndexWriterConfig(TEST_VERSION_CURRENT,null);
+    IndexWriterConfig iwConfig = new IndexWriterConfig(Version.LATEST,null);
     IndexWriter indexWriter = new IndexWriter(directory, iwConfig);
 
     //Spatial4j is x-y order for arguments

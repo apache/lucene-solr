@@ -44,6 +44,7 @@ import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ThrottledIndexOutput;
+import org.apache.lucene.util.Version;
 
 /**
  * This is a Directory Wrapper that adds methods
@@ -700,7 +701,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           Set<String> allFiles = new HashSet<>(Arrays.asList(listAll()));
           allFiles.removeAll(pendingDeletions);
           String[] startFiles = allFiles.toArray(new String[0]);
-          IndexWriterConfig iwc = new IndexWriterConfig(LuceneTestCase.TEST_VERSION_CURRENT, null);
+          IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, null);
           iwc.setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE);
           new IndexWriter(in, iwc).rollback();
           String[] endFiles = in.listAll();
@@ -791,7 +792,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           DirectoryReader ir1 = DirectoryReader.open(this);
           int numDocs1 = ir1.numDocs();
           ir1.close();
-          new IndexWriter(this, new IndexWriterConfig(LuceneTestCase.TEST_VERSION_CURRENT, null)).close();
+          new IndexWriter(this, new IndexWriterConfig(Version.LATEST, null)).close();
           DirectoryReader ir2 = DirectoryReader.open(this);
           int numDocs2 = ir2.numDocs();
           ir2.close();

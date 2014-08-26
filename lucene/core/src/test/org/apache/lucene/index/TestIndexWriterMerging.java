@@ -24,6 +24,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -152,7 +153,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     assertEquals(10, ir.numDocs());
     ir.close();
 
-    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
       .setMergePolicy(NoMergePolicy.INSTANCE);
     writer = new IndexWriter(dir, dontMergeConfig);
     writer.deleteDocuments(new Term("id", "0"));
@@ -216,7 +217,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     assertEquals(98, ir.numDocs());
     ir.close();
     
-    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
       .setMergePolicy(NoMergePolicy.INSTANCE);
     writer = new IndexWriter(dir, dontMergeConfig);
     for(int i=0;i<98;i+=2) {
@@ -282,7 +283,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     assertEquals(98, ir.numDocs());
     ir.close();
     
-    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
       .setMergePolicy(NoMergePolicy.INSTANCE);
     writer = new IndexWriter(dir, dontMergeConfig);
     for(int i=0;i<98;i+=2) {

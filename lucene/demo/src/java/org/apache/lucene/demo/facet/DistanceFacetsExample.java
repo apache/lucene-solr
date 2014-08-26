@@ -52,7 +52,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.SloppyMath;
-
+import org.apache.lucene.util.Version;
 
 
 /** Shows simple usage of dynamic range faceting, using the
@@ -86,7 +86,7 @@ public class DistanceFacetsExample implements Closeable {
   
   /** Build the example index. */
   public void index() throws IOException {
-    IndexWriter writer = new IndexWriter(indexDir, new IndexWriterConfig(FacetExamples.EXAMPLES_VER, 
+    IndexWriter writer = new IndexWriter(indexDir, new IndexWriterConfig(Version.LATEST,
         new WhitespaceAnalyzer()));
 
     // TODO: we could index in radians instead ... saves all the conversions in getBoundingBoxFilter
