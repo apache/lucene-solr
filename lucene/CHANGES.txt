@@ -292,6 +292,8 @@ Bug Fixes
   buffer size was reduced, and scanner buffer growth was disabled, resulting
   in much, much faster tokenization for these text sequences.  
   (Chris Geeringh, Robert Muir, Steve Rowe)
+
+* LUCENE-5908: Fix Lucene43NGramTokenizer to be final
   
 Test Framework
 
