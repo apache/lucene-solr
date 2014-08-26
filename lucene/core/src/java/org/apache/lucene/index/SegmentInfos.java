@@ -527,7 +527,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         assert si.dir == directory;
 
         // If this segment is pre-4.x, perform a one-time
-        // "ugprade" to write the .si file for it:
+        // "upgrade" to write the .si file for it:
         Version version = si.getVersion();
         if (version == null || version.onOrAfter(Version.LUCENE_4_0_0) == false) {
 
