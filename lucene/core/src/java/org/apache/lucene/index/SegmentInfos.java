@@ -338,8 +338,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   public final void read(Directory directory, String segmentFileName) throws IOException {
     boolean success = false;
 
-    System.out.println("SIS.read " + segmentFileName);
-
     // Clear any previous segments:
     this.clear();
 
