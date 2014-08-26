@@ -58,7 +58,7 @@ import java.util.regex.Pattern;
  *   <li>zero or more TokenFilterFactory's</li>
  * </ol>
  *
- * Each component analysis factory map specify <tt>luceneMatchVersion</tt> (defaults to
+ * Each component analysis factory may specify <tt>luceneMatchVersion</tt> (defaults to
  * {@link Version#LATEST}) and any of the args understood by the specified
  * *Factory class, in the above-describe param format.
  * <p/>

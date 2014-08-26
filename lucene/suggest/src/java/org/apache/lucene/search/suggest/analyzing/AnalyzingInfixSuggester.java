@@ -147,9 +147,18 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    *  private to the infix suggester (i.e., not an external
    *  Lucene index).  Note that {@link #close}
    *  will also close the provided directory. */
+  public AnalyzingInfixSuggester(Directory dir, Analyzer analyzer) throws IOException {
+    this(dir, analyzer, analyzer, DEFAULT_MIN_PREFIX_CHARS, false);
+  }
+
+  /**
+   * @deprecated Use {@link #AnalyzingInfixSuggester(Directory, Analyzer)}
+   */
+  @Deprecated
   public AnalyzingInfixSuggester(Version matchVersion, Directory dir, Analyzer analyzer) throws IOException {
     this(matchVersion, dir, analyzer, analyzer, DEFAULT_MIN_PREFIX_CHARS, false);
   }
+
 
   /** Create a new instance, loading from a previously built
    *  AnalyzingInfixSuggester directory, if it exists.  This directory must be
@@ -166,6 +175,15 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    *  @param commitOnBuild Call commit after the index has finished building. This would persist the
    *                       suggester index to disk and future instances of this suggester can use this pre-built dictionary.
    */
+  public AnalyzingInfixSuggester(Directory dir, Analyzer indexAnalyzer, Analyzer queryAnalyzer, int minPrefixChars,
+                                 boolean commitOnBuild) throws IOException {
+     this(indexAnalyzer.getVersion(), dir, indexAnalyzer, queryAnalyzer, minPrefixChars, commitOnBuild);
+  }
+
+  /**
+   * @deprecated Use {@link #AnalyzingInfixSuggester(Directory, Analyzer, Analyzer, int, boolean)}
+   */
+  @Deprecated
   public AnalyzingInfixSuggester(Version matchVersion, Directory dir, Analyzer indexAnalyzer, Analyzer queryAnalyzer, int minPrefixChars,
                                  boolean commitOnBuild) throws IOException {
 
