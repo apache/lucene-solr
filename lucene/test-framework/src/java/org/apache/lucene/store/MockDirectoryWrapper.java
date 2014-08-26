@@ -483,7 +483,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         openFilesDeleted.remove(name);
       }
     }
-    if (!forced && enableVirusScanner && (true || randomState.nextInt(4) == 0)) { // nocommit
+    if (!forced && enableVirusScanner && (randomState.nextInt(4) == 0)) {
       triedToDelete.add(name);
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MDW: now refuse to delete file: " + name);
