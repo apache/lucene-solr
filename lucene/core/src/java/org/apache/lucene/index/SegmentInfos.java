@@ -150,6 +150,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   public static final int FORMAT_SEGMENTS_GEN_CURRENT = FORMAT_SEGMENTS_GEN_CHECKSUM;
 
   /** Used to name new segments. */
+  // TODO: should this be a long ...?
   public int counter;
   
   /** Counts how often the index has been changed.  */
@@ -336,6 +337,8 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
    */
   public final void read(Directory directory, String segmentFileName) throws IOException {
     boolean success = false;
+
+    System.out.println("SIS.read " + segmentFileName);
 
     // Clear any previous segments:
     this.clear();
@@ -861,6 +864,11 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   void updateGeneration(SegmentInfos other) {
     lastGeneration = other.lastGeneration;
     generation = other.generation;
+  }
+
+  void setGeneration(long generation) {
+    this.generation = generation;
+    this.lastGeneration = generation;
   }
 
   final void rollbackCommit(Directory dir) {

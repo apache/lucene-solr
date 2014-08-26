@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -569,6 +570,8 @@ public class TestIndexWriterCommit extends LuceneTestCase {
   // LUCENE-1274: test writer.prepareCommit()
   public void testPrepareCommitRollback() throws IOException {
     Directory dir = newDirectory();
+
+    // nocommit remove:
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setPreventDoubleWrite(false);
     }
@@ -581,8 +584,9 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     );
     writer.commit();
 
-    for (int i = 0; i < 23; i++)
+    for (int i = 0; i < 23; i++) {
       TestIndexWriter.addDoc(writer);
+    }
 
     DirectoryReader reader = DirectoryReader.open(dir);
     assertEquals(0, reader.numDocs());
@@ -593,6 +597,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     assertEquals(0, reader2.numDocs());
 
     writer.rollback();
+    System.out.println("TEST: after rollback: " + Arrays.toString(dir.listAll()));
 
     IndexReader reader3 = DirectoryReader.openIfChanged(reader);
     assertNull(reader3);
@@ -602,8 +607,9 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     reader2.close();
 
     writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    for (int i = 0; i < 17; i++)
+    for (int i = 0; i < 17; i++) {
       TestIndexWriter.addDoc(writer);
+    }
 
     reader = DirectoryReader.open(dir);
     assertEquals(0, reader.numDocs());
@@ -611,6 +617,9 @@ public class TestIndexWriterCommit extends LuceneTestCase {
 
     writer.prepareCommit();
 
+    // nocommit test fails here because at this point (thanks to gen inflation) we have a good segments_1 (empty first commit), a broken
+    // segments_2 (prepareCommit then rollback) and a broken segmetns_3 (prepareCommit, writer still open) ... this easily can happen in a
+    // real app ... I think we must fix SIS fallback logic to try more than just the last one?
     reader = DirectoryReader.open(dir);
     assertEquals(0, reader.numDocs());
     reader.close();

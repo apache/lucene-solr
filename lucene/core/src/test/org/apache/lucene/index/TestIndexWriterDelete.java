@@ -741,7 +741,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
                 System.out.println("TEST: mock failure: now fail");
                 new Throwable().printStackTrace(System.out);
               }
-              throw new IOException("fail after applyDeletes");
+              throw new RuntimeException("fail after applyDeletes");
             }
           }
           if (!failed) {
@@ -845,7 +845,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         System.out.println("TEST: now commit for failure");
       }
       modifier.commit();
-    } catch (IOException ioe) {
+    } catch (RuntimeException ioe) {
       // expected
       failed = true;
     }

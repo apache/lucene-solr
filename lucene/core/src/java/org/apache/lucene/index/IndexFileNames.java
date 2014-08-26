@@ -172,6 +172,21 @@ public final class IndexFileNames {
     }
     return filename;
   }
+
+  /** Returns the generation from this file name, or 0 if there is no
+   *  generation. */
+  public static long parseGeneration(String filename) {
+    String gen = stripExtension(stripSegmentName(filename));
+    if (gen.length() == 0) {
+      return 0L;
+    } else if (gen.indexOf('_') != -1) {
+      // This is a non-generational segment file of form _seg_codec_perFieldId.ext:
+      return 0L;
+    } else {
+      assert gen.startsWith("_");
+      return Long.parseLong(gen.substring(1), Character.MAX_RADIX);
+    }
+  }
   
   /**
    * Parses the segment name out of the given file name.

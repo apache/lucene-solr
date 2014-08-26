@@ -209,8 +209,6 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     writer.addDocument(doc);
   }
   
-  @Ignore("not yet")
-  // nocommit
   public void testVirusScannerDoesntCorruptIndex() throws IOException {
     MockDirectoryWrapper dir = newMockDirectory();
     dir.setPreventDoubleWrite(false); // we arent trying to test this

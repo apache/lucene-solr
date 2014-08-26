@@ -148,6 +148,16 @@ public class SegmentCommitInfo {
     nextWriteDelGen++;
   }
   
+  /** Gets the nextWriteDelGen. */
+  long getNextWriteDelGen() {
+    return nextWriteDelGen;
+  }
+  
+  /** Sets the nextWriteDelGen. */
+  void setNextWriteDelGen(long v) {
+    nextWriteDelGen = v;
+  }
+  
   /** Called when we succeed in writing a new FieldInfos generation. */
   void advanceFieldInfosGen() {
     fieldInfosGen = nextWriteFieldInfosGen;
@@ -163,6 +173,16 @@ public class SegmentCommitInfo {
     nextWriteFieldInfosGen++;
   }
   
+  /** Gets the nextWriteFieldInfosGen. */
+  long getNextWriteFieldInfosGen() {
+    return nextWriteFieldInfosGen;
+  }
+  
+  /** Sets the nextWriteFieldInfosGen. */
+  void setNextWriteFieldInfosGen(long v) {
+    nextWriteFieldInfosGen = v;
+  }
+
   /** Called when we succeed in writing a new DocValues generation. */
   void advanceDocValuesGen() {
     docValuesGen = nextWriteDocValuesGen;
@@ -178,6 +198,16 @@ public class SegmentCommitInfo {
     nextWriteDocValuesGen++;
   }
 
+  /** Gets the nextWriteDocValuesGen. */
+  long getNextWriteDocValuesGen() {
+    return nextWriteDocValuesGen;
+  }
+  
+  /** Sets the nextWriteDocValuesGen. */
+  void setNextWriteDocValuesGen(long v) {
+    nextWriteDocValuesGen = v;
+  }
+  
   /** Returns total size in bytes of all files for this
    *  segment. */
   public long sizeInBytes() throws IOException {
