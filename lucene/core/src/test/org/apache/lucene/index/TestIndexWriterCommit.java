@@ -191,7 +191,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     if (dir instanceof MockDirectoryWrapper) {
       // the virus scanner can use up too much disk space :)
       // an alternative is to expose MDW.triedToDelete and discount it
-      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
+      dir.setEnableVirusScanner(false);
     }
     Analyzer analyzer;
     if (random().nextBoolean()) {
