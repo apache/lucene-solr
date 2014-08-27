@@ -184,6 +184,8 @@ Bug Fixes
   calling commit from the writer, then closing the NRT reader.  This
   case would remove the wrong files from the index leading to a
   corrupt index.  (Mike McCandless)
+
+* LUCENE-5908: Fix Lucene43NGramTokenizer to be final
   
 Test Framework
 

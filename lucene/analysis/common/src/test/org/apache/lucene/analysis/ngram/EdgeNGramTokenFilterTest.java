@@ -292,4 +292,8 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
     assertFalse(tk.incrementToken());
   }
 
+  public void test43Tokenizer() {
+    new Lucene43EdgeNGramTokenizer(new StringReader("abc"), 1, 1);
+  }
+
 }
