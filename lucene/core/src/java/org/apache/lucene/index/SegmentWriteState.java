@@ -65,7 +65,9 @@ public class SegmentWriteState {
    *  each of the postings formats it wraps.  If you create
    *  a new {@link PostingsFormat} then any files you
    *  write/read must be derived using this suffix (use
-   *  {@link IndexFileNames#segmentFileName(String,String,String)}). */
+   *  {@link IndexFileNames#segmentFileName(String,String,String)}).
+   *  
+   *  Note: the suffix must be either empty, or be a textual suffix contain exactly two parts (separated by underscore), or be a base36 generation. */
   public final String segmentSuffix;
   
   /** {@link IOContext} for all writes; you should pass this
@@ -91,6 +93,7 @@ public class SegmentWriteState {
     this.directory = directory;
     this.segmentInfo = segmentInfo;
     this.fieldInfos = fieldInfos;
+    assert assertSegmentSuffix(segmentSuffix);
     this.segmentSuffix = segmentSuffix;
     this.context = context;
   }
@@ -106,5 +109,24 @@ public class SegmentWriteState {
     segUpdates = state.segUpdates;
     delCountOnFlush = state.delCountOnFlush;
     liveDocs = state.liveDocs;
+  }
+  
+  // currently only used by assert? clean up and make real check?
+  // either its a segment suffix (_X_Y) or its a parseable generation
+  // TODO: this is very confusing how ReadersAndUpdates passes generations via
+  // this mechanism, maybe add 'generation' explicitly to ctor create the 'actual suffix' here?
+  private boolean assertSegmentSuffix(String segmentSuffix) {
+    assert segmentSuffix != null;
+    if (!segmentSuffix.isEmpty()) {
+      int numParts = segmentSuffix.split("_").length;
+      if (numParts == 2) {
+        return true;
+      } else if (numParts == 1) {
+        Long.parseLong(segmentSuffix, Character.MAX_RADIX);
+        return true;
+      }
+      return false; // invalid
+    }
+    return true;
   }
 }

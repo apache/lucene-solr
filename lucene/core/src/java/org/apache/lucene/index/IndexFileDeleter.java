@@ -284,20 +284,28 @@ final class IndexFileDeleter implements Closeable {
       if (fileName.equals(IndexFileNames.SEGMENTS_GEN)) {
         // do nothing
       } else if (fileName.startsWith(IndexFileNames.SEGMENTS)) {
-        maxSegmentGen = Math.max(SegmentInfos.generationFromSegmentsFileName(fileName), maxSegmentGen);
+        try {
+          maxSegmentGen = Math.max(SegmentInfos.generationFromSegmentsFileName(fileName), maxSegmentGen);
+        } catch (NumberFormatException ignore) {
+          // trash file: we have to handle this since we allow anything starting with 'segments' here
+        }
       } else {
         String segmentName = IndexFileNames.parseSegmentName(fileName);
         assert segmentName.startsWith("_");
 
         maxSegmentName = Math.max(maxSegmentName, Integer.parseInt(segmentName.substring(1), Character.MAX_RADIX));
 
-        long gen = IndexFileNames.parseGeneration(fileName);
         Long curGen = maxPerSegmentGen.get(segmentName);
         if (curGen == null) {
-          // We can't detect a gen=0 situation, so we always assume gen=1 to start:
-          curGen = 1L;
+          curGen = 0L;
         }
-        maxPerSegmentGen.put(segmentName, Math.max(curGen, gen));
+
+        try {
+          curGen = Math.max(curGen, IndexFileNames.parseGeneration(fileName));
+        } catch (NumberFormatException ignore) {
+          // trash file: we have to handle this since codec regex is only so good
+        }
+        maxPerSegmentGen.put(segmentName, curGen);
       }
     }
 
