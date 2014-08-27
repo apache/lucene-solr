@@ -281,7 +281,7 @@ final class IndexFileDeleter implements Closeable {
     Map<String,Long> maxPerSegmentGen = new HashMap<>();
 
     for(String fileName : files) {
-      if (fileName.equals(IndexFileNames.SEGMENTS_GEN)) {
+      if (fileName.equals(IndexFileNames.SEGMENTS_GEN) || fileName.equals(IndexWriter.WRITE_LOCK_NAME)) {
         // do nothing
       } else if (fileName.startsWith(IndexFileNames.SEGMENTS)) {
         try {
@@ -291,7 +291,7 @@ final class IndexFileDeleter implements Closeable {
         }
       } else {
         String segmentName = IndexFileNames.parseSegmentName(fileName);
-        assert segmentName.startsWith("_");
+        assert segmentName.startsWith("_"): "wtf? file=" + fileName;
 
         maxSegmentName = Math.max(maxSegmentName, Integer.parseInt(segmentName.substring(1), Character.MAX_RADIX));
 
