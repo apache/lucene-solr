@@ -260,4 +260,30 @@ public class TestIndexFileDeleter extends LuceneTestCase {
 
     dir.close();
   }
+  
+  public void testSegmentsInflation() throws IOException {
+    MockDirectoryWrapper dir = newMockDirectory();
+    dir.setCheckIndexOnClose(false); // TODO: allow falling back more than one commit
+    
+    // empty commit
+    new IndexWriter(dir, new IndexWriterConfig(null)).close();   
+    
+    SegmentInfos sis = new SegmentInfos();
+    sis.read(dir);
+    assertEquals(1, sis.getGeneration());
+    
+    // add trash commit
+    dir.createOutput(IndexFileNames.SEGMENTS + "_2", IOContext.DEFAULT).close();
+    
+    // ensure inflation
+    IndexFileDeleter.inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
+    assertEquals(2, sis.getGeneration());
+    
+    // add another trash commit
+    dir.createOutput(IndexFileNames.SEGMENTS + "_4", IOContext.DEFAULT).close();
+    IndexFileDeleter.inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
+    assertEquals(4, sis.getGeneration());
+
+    dir.close();
+  }
 }
