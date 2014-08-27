@@ -627,7 +627,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
    * commit finishing.
    */
   public abstract static class FindSegmentsFile {
-    
+
     final Directory directory;
 
     /** Sole constructor. */ 
@@ -798,6 +798,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
           }
           return v;
         } catch (IOException err) {
+
+          // TODO: we should use the new IO apis in Java7 to get better exceptions on why the open failed.  E.g. we don't want to fall back
+          // if the open failed for a "different" reason (too many open files, access denied) than "the commit was in progress"
 
           // Save the original root cause:
           if (exc == null) {

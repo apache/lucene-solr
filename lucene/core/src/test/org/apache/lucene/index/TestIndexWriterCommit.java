@@ -571,9 +571,12 @@ public class TestIndexWriterCommit extends LuceneTestCase {
   public void testPrepareCommitRollback() throws IOException {
     Directory dir = newDirectory();
 
-    // nocommit remove:
+    MockDirectoryWrapper mockDir;
     if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)dir).setPreventDoubleWrite(false);
+      mockDir = (MockDirectoryWrapper) dir;
+      mockDir.setPreventDoubleWrite(false);
+    } else {
+      mockDir = null;
     }
 
     IndexWriter writer = new IndexWriter(
@@ -596,8 +599,14 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     IndexReader reader2 = DirectoryReader.open(dir);
     assertEquals(0, reader2.numDocs());
 
+    // We need to let IW delete the partial segments_N that was written in prepareCommit:
+    if (mockDir != null) {
+      mockDir.setEnableVirusScanner(false);
+    }
     writer.rollback();
-    System.out.println("TEST: after rollback: " + Arrays.toString(dir.listAll()));
+    if (mockDir != null) {
+      mockDir.setEnableVirusScanner(true);
+    }
 
     IndexReader reader3 = DirectoryReader.openIfChanged(reader);
     assertNull(reader3);
@@ -605,6 +614,8 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     assertEquals(0, reader2.numDocs());
     reader.close();
     reader2.close();
+
+    // System.out.println("TEST: after rollback: " + Arrays.toString(dir.listAll()));
 
     writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     for (int i = 0; i < 17; i++) {
