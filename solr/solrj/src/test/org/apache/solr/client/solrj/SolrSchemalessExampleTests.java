@@ -17,13 +17,21 @@
 
 package org.apache.solr.client.solrj;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.InputStreamEntity;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.ByteArrayInputStream;
 
 public class SolrSchemalessExampleTests extends SolrExampleTestsBase {
   private static Logger log = LoggerFactory
@@ -33,7 +41,27 @@ public class SolrSchemalessExampleTests extends SolrExampleTestsBase {
   public static void beforeTest() throws Exception {
     createJetty(ExternalPaths.EXAMPLE_SCHEMALESS_HOME, null, null);
   }
-  
+
+  @Test
+  public void testArbitraryJsonIndexing() throws Exception  {
+    HttpSolrServer server = (HttpSolrServer) getSolrServer();
+    server.deleteByQuery("*:*");
+    server.commit();
+    assertNumFound("*:*", 0); // make sure it got in
+
+    // two docs, one with uniqueKey, another without it
+    String json = "{\"id\":\"abc1\", \"name\": \"name1\"} {\"name\" : \"name2\"}";
+    HttpClient httpClient = server.getHttpClient();
+    HttpPost post = new HttpPost(server.getBaseURL() + "/update/json/docs");
+    post.setHeader("Content-Type", "application/json");
+    post.setEntity(new InputStreamEntity(new ByteArrayInputStream(json.getBytes("UTF-8")), -1));
+    HttpResponse response = httpClient.execute(post);
+    assertEquals(200, response.getStatusLine().getStatusCode());
+    server.commit();
+    assertNumFound("*:*", 2);
+  }
+
+
   @Override
   public SolrServer createNewSolrServer() {
     try {
