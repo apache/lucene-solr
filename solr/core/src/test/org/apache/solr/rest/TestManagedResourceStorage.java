@@ -58,7 +58,7 @@ public class TestManagedResourceStorage extends AbstractZkTestCase {
       zkStorageIO.configure(loader, initArgs);
       doStorageTests(loader, zkStorageIO);
     } finally {
-      zkClient.close();
+      loader.close();
     }
   }
 
@@ -70,12 +70,16 @@ public class TestManagedResourceStorage extends AbstractZkTestCase {
   public void testFileBasedJsonStorage() throws Exception {
     File instanceDir = createTempDir("json-storage");
     SolrResourceLoader loader = new SolrResourceLoader(instanceDir.getAbsolutePath());
-    NamedList<String> initArgs = new NamedList<>();
-    String managedDir = instanceDir.getAbsolutePath() + File.separator + "managed";
-    initArgs.add(ManagedResourceStorage.STORAGE_DIR_INIT_ARG, managedDir);
-    FileStorageIO fileStorageIO = new FileStorageIO();
-    fileStorageIO.configure(loader, initArgs);
-    doStorageTests(loader, fileStorageIO);
+    try {
+      NamedList<String> initArgs = new NamedList<>();
+      String managedDir = instanceDir.getAbsolutePath() + File.separator + "managed";
+      initArgs.add(ManagedResourceStorage.STORAGE_DIR_INIT_ARG, managedDir);
+      FileStorageIO fileStorageIO = new FileStorageIO();
+      fileStorageIO.configure(loader, initArgs);
+      doStorageTests(loader, fileStorageIO);
+    } finally {
+      loader.close();
+    }
   }
 
   /**
