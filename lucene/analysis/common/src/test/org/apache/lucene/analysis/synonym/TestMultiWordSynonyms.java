@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.synonym;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.util.StringMockResourceLoader;
+import org.apache.lucene.util.Version;
 
 import java.io.Reader;
 import java.io.StringReader;
@@ -32,7 +33,7 @@ public class TestMultiWordSynonyms extends BaseTokenStreamFactoryTestCase {
   public void testMultiWordSynonyms() throws Exception {
     Reader reader = new StringReader("a e");
     TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = tokenFilterFactory("Synonym", TEST_VERSION_CURRENT,
+    stream = tokenFilterFactory("Synonym", Version.LATEST,
         new StringMockResourceLoader("a b c,d"),
         "synonyms", "synonyms.txt").create(stream);
     // This fails because ["e","e"] is the value of the token stream

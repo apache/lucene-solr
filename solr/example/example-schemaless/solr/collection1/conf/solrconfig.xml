@@ -1001,6 +1001,29 @@
     </lst>
   </requestHandler>
 
+  <requestHandler name="/update/json" class="solr.UpdateRequestHandler">
+    <!-- See below for information on defining
+         updateRequestProcessorChains that can be used by name
+         on each Update Request
+      -->
+    <lst name="defaults">
+      <str name="update.contentType">application/json</str>
+      <str name="update.chain">add-unknown-fields-to-the-schema</str>
+    </lst>
+  </requestHandler>
+
+  <requestHandler name="/update/json/docs" class="solr.UpdateRequestHandler">
+    <!-- See below for information on defining
+         updateRequestProcessorChains that can be used by name
+         on each Update Request
+      -->
+    <lst name="defaults">
+      <str name="update.contentType">application/json</str>
+      <str name="update.chain">add-unknown-fields-to-the-schema</str>
+      <bool name="json.command">false</bool>
+    </lst>
+  </requestHandler>
+
   <!-- Solr Cell Update Request Handler
 
        http://wiki.apache.org/solr/ExtractingRequestHandler 

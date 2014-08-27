@@ -37,11 +37,6 @@ public class TestLucene41PostingsFormat extends BasePostingsFormatTestCase {
     return TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat());
   }
 
-  @Override
-  public void testMergeStability() throws Exception {
-    assumeTrue("The MockRandom PF randomizes content on the fly, so we can't check it", false);
-  }
-
   /** Make sure the final sub-block(s) are not skipped. */
   public void testFinalBlock() throws Exception {
     Directory d = newDirectory();

@@ -17,7 +17,7 @@
 -->
 
 <config>
-  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
+  <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
   <!-- Used to specify an alternate directory to hold all index data
        other than the default ./data under the Solr home.

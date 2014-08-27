@@ -1127,4 +1127,38 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     dir.close();
   }
   
+  // LUCENE-5907
+  public void testUpgradeWithNRTReader() throws Exception {
+    for (String name : oldNames) {
+      Directory dir = newDirectory(oldIndexDirs.get(name));
+
+      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+                                           .setOpenMode(OpenMode.APPEND));
+      writer.addDocument(new Document());
+      DirectoryReader r = DirectoryReader.open(writer, true);
+      writer.commit();
+      r.close();
+      writer.forceMerge(1);
+      writer.commit();
+      writer.rollback();
+      new SegmentInfos().read(dir);
+      dir.close();
+    }
+  }
+
+  // LUCENE-5907
+  public void testUpgradeThenMultipleCommits() throws Exception {
+    for (String name : oldNames) {
+      Directory dir = newDirectory(oldIndexDirs.get(name));
+
+      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+                                           .setOpenMode(OpenMode.APPEND));
+      writer.addDocument(new Document());
+      writer.commit();
+      writer.addDocument(new Document());
+      writer.commit();
+      writer.close();
+      dir.close();
+    }
+  }
 }

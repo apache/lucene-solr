@@ -23,6 +23,7 @@ import java.io.StringReader;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.util.StringMockResourceLoader;
+import org.apache.lucene.util.Version;
 
 /**
  * Simple tests to ensure the stemmer override filter factory is working.
@@ -32,7 +33,7 @@ public class TestStemmerOverrideFilterFactory extends BaseTokenStreamFactoryTest
     // our stemdict stems dogs to 'cat'
     Reader reader = new StringReader("testing dogs");
     TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = tokenFilterFactory("StemmerOverride", TEST_VERSION_CURRENT,
+    stream = tokenFilterFactory("StemmerOverride", Version.LATEST,
         new StringMockResourceLoader("dogs\tcat"),
         "dictionary", "stemdict.txt").create(stream);
     stream = tokenFilterFactory("PorterStem").create(stream);
@@ -43,7 +44,7 @@ public class TestStemmerOverrideFilterFactory extends BaseTokenStreamFactoryTest
   public void testKeywordsCaseInsensitive() throws Exception {
     Reader reader = new StringReader("testing DoGs");
     TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = tokenFilterFactory("StemmerOverride", TEST_VERSION_CURRENT,
+    stream = tokenFilterFactory("StemmerOverride", Version.LATEST,
         new StringMockResourceLoader("dogs\tcat"),
         "dictionary", "stemdict.txt",
         "ignoreCase", "true").create(stream);

@@ -30,6 +30,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Version;
 import org.junit.BeforeClass;
 
 /** Tests the functionality of {@link AddIndexesTask}. */
@@ -57,7 +58,7 @@ public class AddIndexesTaskTest extends BenchmarkTestCase {
   
   private PerfRunData createPerfRunData() throws Exception {
     Properties props = new Properties();
-    props.setProperty("writer.version", TEST_VERSION_CURRENT.toString());
+    props.setProperty("writer.version", Version.LATEST.toString());
     props.setProperty("print.props", "false"); // don't print anything
     props.setProperty("directory", "RAMDirectory");
     props.setProperty(AddIndexesTask.ADDINDEXES_INPUT_DIR, inputDir.getAbsolutePath());

@@ -490,7 +490,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
   // LUCENE-2593
   public void testCorruptionAfterDiskFullDuringMerge() throws IOException {
     MockDirectoryWrapper dir = newMockDirectory();
-    //IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setReaderPooling(true));
+    //IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random)).setReaderPooling(true));
     IndexWriter w = new IndexWriter(
         dir,
         newIndexWriterConfig(new MockAnalyzer(random()))

@@ -352,7 +352,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     put(Version.class, new ArgProducer() {
       @Override public Object create(Random random) {
         // we expect bugs in emulating old versions
-        return TEST_VERSION_CURRENT;
+        return Version.LATEST;
       }
     });
     put(AttributeFactory.class, new ArgProducer() {

@@ -24,7 +24,7 @@
     https://issues.apache.org/jira/browse/SOLR-1167
   -->
 <config xmlns:xi="http://www.w3.org/2001/XInclude">
-  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
+  <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
   <indexConfig>
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
   </indexConfig>

@@ -18,7 +18,7 @@
 -->
 
 <config>
-  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
+  <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
   <jmx />
   <indexConfig>
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>

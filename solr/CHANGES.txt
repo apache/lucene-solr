@@ -123,9 +123,6 @@ Bug Fixes
 * SOLR-4895: An error should be returned when a rollback is attempted in SolrCloud mode.
   (Vamsee Yarlagadda via Mark Miller)
 
-* SOLR-6410: Ensure all Lookup instances are closed via CloseHook
-  (hossman, Areek Zillur, Ryan Ernst, Dawid Weiss)
-
 * SOLR-6424: The hdfs block cache BLOCKCACHE_WRITE_ENABLED is not defaulting to false like it 
   should. (Mark Miller)
 
@@ -133,6 +130,9 @@ Bug Fixes
   files on file name reuse. (Mark Miller, Gregory Chanan)
 
 * SOLR-6426: SolrZkClient clean can fail due to a race with children nodes. (Mark Miller)
+
+* SOLR-5966: Admin UI Menu is fixed and doesn't respect smaller viewports.
+  (Aman Tandon, steffkes via shalin)
 
 Other Changes
 ---------------------
@@ -145,6 +145,9 @@ Other Changes
 * SOLR-6390: Remove unnecessary checked exception for CloudSolrServer
   constructors, improve javadocs for CloudSolrServer constructors.
   (Steve Davids via Shawn Heisey)
+
+* LUCENE-5901: Replaced all occurences of LUCENE_CURRENT with LATEST for luceneMatchVersion.
+  (Ryan Ernst)
 
 ==================  4.10.0 =================
 
@@ -224,7 +227,7 @@ New Features
   a UUID into the unique Key field.
   (Vitaliy Zhovtyuk, hossman, Steve Rowe, Erik Hatcher, shalin)
 
-* SOLR-6294: Remove the restriction of adding json by only wrapping it in an array in a
+* SOLR-6294: SOLR-6437: Remove the restriction of adding json by only wrapping it in an array in a
   new path /update/json/docs (Noble Paul , hossman, Yonik Seeley, Steve Rowe)
 
 * SOLR-6302: UpdateRequestHandlers are registered implicitly /update ,
@@ -366,6 +369,9 @@ Bug Fixes
   
 * SOLR-6405: ZooKeeper calls can easily not be retried enough on ConnectionLoss.
   (Jessica Cheng, Mark Miller)
+
+* SOLR-6410: Ensure all Lookup instances are closed via CloseHook
+  (hossman, Areek Zillur, Ryan Ernst, Dawid Weiss)
 
 Optimizations
 ---------------------

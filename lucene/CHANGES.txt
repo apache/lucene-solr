@@ -105,6 +105,12 @@ New Features
   PushPostingsWriterBase for single-pass push of docs/positions to the
   postings format.  (Mike McCandless)
 
+API Changes:
+
+* LUCENE-5900: Deprecated more constructors taking Version in *InfixSuggester and
+  ICUCollationKeyAnalyzer, and removed TEST_VERSION_CURRENT from the test framework.
+  (Ryan Ernst)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary
@@ -290,6 +296,8 @@ Bug Fixes
   buffer size was reduced, and scanner buffer growth was disabled, resulting
   in much, much faster tokenization for these text sequences.  
   (Chris Geeringh, Robert Muir, Steve Rowe)
+
+* LUCENE-5908: Fix Lucene43NGramTokenizer to be final
   
 Test Framework
 
