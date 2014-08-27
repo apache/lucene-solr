@@ -236,7 +236,8 @@ final class IndexFileDeleter implements Closeable {
     // We keep commits list in sorted order (oldest to newest):
     CollectionUtil.timSort(commits);
 
-    inflateGens(segmentInfos);
+    // refCounts only includes "normal" filenames (does not include segments.gen, write.lock)
+    inflateGens(segmentInfos, refCounts.keySet(), infoStream);
 
     // Now delete anything with ref count at 0.  These are
     // presumably abandoned files eg due to crash of
@@ -267,7 +268,7 @@ final class IndexFileDeleter implements Closeable {
 
   /** Set all gens beyond what we currently see in the directory, to avoid double-write in cases where the previous IndexWriter did not
    *  gracefully close/rollback (e.g. os/machine crashed or lost power). */
-  private void inflateGens(SegmentInfos infos) {
+  static void inflateGens(SegmentInfos infos, Collection<String> files, InfoStream infoStream) {
 
     long maxSegmentGen = Long.MIN_VALUE;
     int maxSegmentName = Integer.MIN_VALUE;
@@ -279,9 +280,10 @@ final class IndexFileDeleter implements Closeable {
     // codec which file is which:
     Map<String,Long> maxPerSegmentGen = new HashMap<>();
 
-    // refCounts only includes "normal" filenames (does not include segments.gen, write.lock)
-    for(String fileName : refCounts.keySet()) {
-      if (fileName.startsWith(IndexFileNames.SEGMENTS)) {
+    for(String fileName : files) {
+      if (fileName.equals(IndexFileNames.SEGMENTS_GEN)) {
+        // do nothing
+      } else if (fileName.startsWith(IndexFileNames.SEGMENTS)) {
         maxSegmentGen = Math.max(SegmentInfos.generationFromSegmentsFileName(fileName), maxSegmentGen);
       } else {
         String segmentName = IndexFileNames.parseSegmentName(fileName);
