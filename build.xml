@@ -386,14 +386,11 @@ File | Project Structure | Platform Settings | SDKs):
    <exec executable="${python32.exe}" failonerror="true">
       <arg value="-V"/>
    </exec>
-   <property name="svnversion.exe" value="svnversion" />
    <subant target="prepare-release-no-sign" inheritall="false" failonerror="true">
      <fileset dir="lucene" includes="build.xml" />
      <fileset dir="solr" includes="build.xml" />
      <property name="version" value="${fakeReleaseVersion}" />
    </subant>
-   <delete dir="${fakeRelease}"/>
-   <delete dir="${fakeReleaseTmp}"/>
    <mkdir dir="${fakeRelease}"/>
    <copy todir="${fakeRelease}/lucene">
      <fileset dir="lucene/dist"/>
@@ -407,12 +404,14 @@ File | Project Structure | Platform Settings | SDKs):
      <!-- Tell Python not to write any bytecode cache into the filesystem: -->
      <arg value="-B"/>
      <arg file="dev-tools/scripts/smokeTestRelease.py"/>
-     <arg value="${fakeRelease.uri}"/>
+     <arg value="--revision"/>
      <arg value="skip"/>
+     <arg value="--version"/>
      <arg value="${fakeReleaseVersion}"/>
+     <arg value="--tmp-dir"/>
      <arg file="${fakeReleaseTmp}"/>
-     <arg value="false"/>
-     <arg value="-testArgs"/>
+     <arg value="--not-signed"/>
+     <arg value="${fakeRelease.uri}"/>
      <arg value="${smokeTestRelease.testArgs}"/>
      <env key="JAVA7_HOME" file="${JAVA7_HOME}"/>
    </exec>
