@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import datetime
 import re
 import time
@@ -20,16 +21,7 @@ import shutil
 import os
 import sys
 import subprocess
-
-# Usage: python3.2 -u buildAndPushRelease.py [-sign gpgKey(eg: 6E68DA61)] [-prepare] [-push userName] [-pushLocal dirName] [-smoke tmpDir] /path/to/checkout version(eg: 3.4.0) rcNum(eg: 0)
-#
-# EG: python3.2 -u buildAndPushRelease.py -prepare -push mikemccand -sign 6E68DA61 /path/to/lucene_solr_4_7 4.7.0 0
-
-# NOTE: if you specify -sign, you have to type in your gpg password at
-# some point while this runs; it's VERY confusing because the output
-# is directed to /tmp/release.log, so, you have to tail that and when
-# GPG wants your password, type it!  Also sometimes you have to type
-# it twice in a row!
+import textwrap
 
 LOG = '/tmp/release.log'
 
@@ -226,94 +218,89 @@ def pushLocal(version, root, rev, rcNum, localDir):
 
   print('  done!')
   return 'file://%s/%s' % (os.path.abspath(localDir), dir)
-  
-def main():
-  doPrepare = '-prepare' in sys.argv
-  if doPrepare:
-    sys.argv.remove('-prepare')
 
-  try:
-    idx = sys.argv.index('-push')
-  except ValueError:
-    doPushRemote = False
-  else:
-    doPushRemote = True
-    username = sys.argv[idx+1]
-    del sys.argv[idx:idx+2]
+def read_version(path):
+  version_props_file = os.path.join(path, 'lucene', 'version.properties')
+  return re.search(r'version\.base=(.*)', open(version_props_file).read()).group(1)
 
-  try:
-    idx = sys.argv.index('-smoke')
-  except ValueError:
-    smokeTmpDir = None
-  else:
-    smokeTmpDir = sys.argv[idx+1]
-    del sys.argv[idx:idx+2]
-    if os.path.exists(smokeTmpDir):
-      print()
-      print('ERROR: smoke tmpDir "%s" exists; please remove first' % smokeTmpDir)
-      print()
-      sys.exit(1)
-    
-  try:
-    idx = sys.argv.index('-pushLocal')
-  except ValueError:
-    doPushLocal = False
-  else:
-    doPushLocal = True
-    localStagingDir = sys.argv[idx+1]
-    del sys.argv[idx:idx+2]
-    if os.path.exists(localStagingDir):
-      print()
-      print('ERROR: pushLocal dir "%s" exists; please remove first' % localStagingDir)
-      print()
-      sys.exit(1)
+def parse_config():
+  epilogue = textwrap.dedent('''
+    Example usage for a Release Manager:
+    python3.2 -u buildAndPushRelease.py --push-remote mikemccand --sign 6E68DA61 --rc-num 1 --version 4.7.0 /path/to/lucene_solr_4_7
+  ''')
+  description = 'Utility to build, push, and test a release.'
+  parser = argparse.ArgumentParser(description=description, epilog=epilogue,
+                                   formatter_class=argparse.RawDescriptionHelpFormatter)
+  parser.add_argument('--no-prepare', dest='prepare', default=True, action='store_false',
+                      help='Use the already built release in the provided checkout')
+  parser.add_argument('--push-remote', metavar='USERNAME',
+                      help='Push the release to people.apache.org for the given user')
+  parser.add_argument('--push-local', metavar='PATH',
+                      help='Push the release to the local path')
+  parser.add_argument('--sign', metavar='KEYID',
+                      help='Sign the release with the given gpg key')
+  parser.add_argument('--rc-num', metavar='NUM', type=int, default=1,
+                      help='Release Candidate number, required')
+  parser.add_argument('--smoke-test', metavar='PATH', 
+                      help='Run the smoker tester on the release in the given directory')
+  parser.add_argument('root', metavar='checkout_path',
+                      help='Root of SVN checkout for lucene-solr')
+  config = parser.parse_args()
 
-  if doPushRemote and doPushLocal:
-    print()
-    print('ERROR: specify at most one of -push or -pushLocal (got both)')
-    print()
-    sys.exit(1)
+  if config.push_remote is not None and config.push_local is not None:
+    parser.error('Cannot specify --push-remote and --push-local together')
+  if not config.prepare and config.sign:
+    parser.error('Cannot sign already built release')
+  if config.push_local is not None and os.path.exists(config.push_local):
+    parser.error('Cannot push to local path that already exists')
+  if config.rc_num <= 0:
+    parser.error('Release Candidate number must be a positive integer')
+  if not os.path.isdir(config.root):
+    # TODO: add additional svn check to ensure dir is a real lucene-solr checkout
+    parser.error('Root path is not a valid lucene-solr checkout')
+  if config.smoke_test is not None and os.path.exists(config.smoke_test):
+    parser.error('Smoke test path already exists')
 
-  try:
-    idx = sys.argv.index('-sign')
-  except ValueError:
-    gpgKeyID = None
-  else:
-    gpgKeyID = sys.argv[idx+1]
-    del sys.argv[idx:idx+2]
+  config.version = read_version(config.root)
+  print('Building version: %s' % config.version)
 
+  if config.sign:
     sys.stdout.flush()
     import getpass
-    gpgPassword = getpass.getpass('Enter GPG keystore password: ')
+    config.key_id = config.sign
+    config.key_password = getpass.getpass('Enter GPG keystore password: ')
+  else:
+    config.gpg_password = None
 
-  root = os.path.abspath(sys.argv[1])
-  version = sys.argv[2]
-  rcNum = int(sys.argv[3])
+  return config
+  
+def main():
+  c = parse_config()
 
-  if doPrepare:
-    rev = prepare(root, version, gpgKeyID, gpgPassword, smokeTmpDir is None)
+  if c.prepare:
+    rev = prepare(c.root, c.version, c.key_id, c.key_password, key.smoke_test is None)
   else:
     os.chdir(root)
     rev = open('rev.txt', encoding='UTF-8').read()
 
-  if doPushRemote:
+  if c.push_remote:
     url = push(version, root, rev, rcNum, username)
-  elif doPushLocal:
-    url = pushLocal(version, root, rev, rcNum, localStagingDir)
+  elif c.push_local:
+    url = pushLocal(version, root, rev, c.rc_num, c.push_local)
   else:
     url = None
 
   if url is not None:
     print('  URL: %s' % url)
 
-  if smokeTmpDir is not None:
+  if c.smoke_test is not None:
     import smokeTestRelease
     smokeTestRelease.DEBUG = False
-    smokeTestRelease.smokeTest(url, rev, version, smokeTmpDir, gpgKeyID is not None, '')
+    smokeTestRelease.smokeTest(url, rev, c.version, c.smoke_test, c.sign is not None, '')
 
 if __name__ == '__main__':
   try:
     main()
-  except:
-    import traceback
-    traceback.print_exc()
+  except KeyboardInterrupt:
+    print('Keyboard interrupt...exiting')
+
