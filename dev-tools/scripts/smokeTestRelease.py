@@ -694,7 +694,7 @@ def verifyUnpacked(project, artifact, unpackPath, svnRevision, version, testArgs
     # TODO: clean this up to not be a list of modules that we must maintain
     extras = ('analysis', 'benchmark', 'classification', 'codecs', 'core', 'demo', 'docs', 'expressions', 'facet', 'grouping', 'highlighter', 'join', 'memory', 'misc', 'queries', 'queryparser', 'replicator', 'sandbox', 'spatial', 'suggest', 'test-framework', 'licenses')
     if isSrc:
-      extras += ('build.xml', 'common-build.xml', 'module-build.xml', 'ivy-settings.xml', 'ivy-versions.properties', 'ivy-ignore-conflicts.properties', 'backwards', 'tools', 'site')
+      extras += ('build.xml', 'common-build.xml', 'module-build.xml', 'ivy-settings.xml', 'ivy-versions.properties', 'ivy-ignore-conflicts.properties', 'version.properties', 'backwards', 'tools', 'site')
   else:
     extras = ()
 
