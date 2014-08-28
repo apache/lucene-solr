@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import os
 import zipfile
 import codecs
@@ -40,6 +41,7 @@ import checkJavaDocs
 import checkJavadocLinks
 import io
 import codecs
+import textwrap
 
 # This tool expects to find /lucene and /solr off the base URL.  You
 # must have a working gpg, tar, unzip in your path.  This has been
@@ -1248,55 +1250,60 @@ def crawl(downloadedFiles, urlString, targetDir, exclusions=set()):
         downloadedFiles.append(path)
         sys.stdout.write('.')
 
-reAllowedVersion = re.compile(r'^\d+\.\d+\.\d+(-ALPHA|-BETA)?$')
+version_re = re.compile(r'(\d+\.\d+\.\d+(-ALPHA|-BETA)?)')
+revision_re = re.compile(r'rev(\d+)')
+def parse_config():
+  epilogue = textwrap.dedent('''
+    Example usage:
+    python3.2 -u dev-tools/scripts/smokeTestRelease.py http://people.apache.org/~whoever/staging_area/lucene-solr-4.3.0-RC1-rev1469340')
+  ''')
+  description = 'Utility to test a release.'
+  parser = argparse.ArgumentParser(description=description, epilog=epilogue,
+                                   formatter_class=argparse.RawDescriptionHelpFormatter)
+  parser.add_argument('--tmp-dir', metavar='PATH',
+                      help='Temporary directory to test inside, defaults to /tmp/smoke_lucene_$version_$revision')
+  parser.add_argument('--not-signed', dest='is_signed', action='store_false', default=True,
+                      help='Indicates the release is not signed')
+  parser.add_argument('--revision',
+                      help='SVN revision number that release was built with, defaults to that in URL')
+  parser.add_argument('--version', metavar='X.Y.Z(-ALPHA|-BETA)?',
+                      help='Version of the release, defaults to that in URL')
+  parser.add_argument('url', help='Url pointing to release to test')
+  parser.add_argument('test_args', nargs=argparse.REMAINDER, metavar='ARGS',
+                      help='Arguments to pass to ant for testing, e.g. -Dwhat=ever')
+  c = parser.parse_args()
+
+  if c.version is not None:
+    if not version_re.match(c.version):
+      parser.error('version "%s" does not match format X.Y.Z[-ALPHA|-BETA]' % c.version)
+  else:
+    version_match = version_re.search(c.url)
+    if version_match is None:
+      parser.error('Could not find version in URL')
+    c.version = version_match.group(1)
+
+  if c.revision is None:
+    revision_match = revision_re.search(c.url)
+    if revision_match is None:
+      parser.error('Could not find revision in URL')
+    c.revision = revision_match.group(1)
+
+  if c.tmp_dir:
+    c.tmp_dir = os.path.abspath(c.tmp_dir)
+  else:
+    tmp = '/tmp/smoke_lucene_%s_%s' % (c.version, c.revision)
+    c.tmp_dir = tmp
+    i = 1
+    while os.path.exists(c.tmp_dir):
+      c.tmp_dir = tmp + '_%d' % i
+      i += 1
+
+  return c
 
 def main():
-
-  if len(sys.argv) < 5:
-    print()
-    print('Usage python -u %s BaseURL SvnRevision version tmpDir [ isSigned(True|False) ] [ -testArgs "-Dwhat=ever [ ... ]" ]'
-          % sys.argv[0])
-    print()
-    print('  example: python3.2 -u dev-tools/scripts/smokeTestRelease.py http://people.apache.org/~whoever/staging_area/lucene-solr-4.3.0-RC1-rev1469340 1469340 4.3.0 /path/to/a/tmp/dir')
-    print()
-    sys.exit(1)
-
-  baseURL = sys.argv[1]
-  svnRevision = sys.argv[2]
-  version = sys.argv[3]
-
-  if not reAllowedVersion.match(version):
-    raise RuntimeError('version "%s" does not match format X.Y.Z[-ALPHA|-BETA]' % version)
-  
-  tmpDirArgNum = 4
-  tmpDir = os.path.abspath(sys.argv[tmpDirArgNum])
-
-  # TODO: yuck: positional-only args with more than one optional arg totally sucks
-  # TODO: consider naming all args
-  isSigned = True
-  testArgs = ''
-  lastArgNum = len(sys.argv) - 1
-  if lastArgNum > tmpDirArgNum:
-    nextArgNum = tmpDirArgNum + 1
-    if sys.argv[nextArgNum] == '-testArgs':
-      if nextArgNum == lastArgNum:
-        raise RuntimeError('missing expected argument to -testArgs')
-      else:
-        # TODO: should there be arg validation here?  E.g. starts with '-D'?
-        testArgs = sys.argv[nextArgNum + 1]
-        nextArgNum += 2
-    if nextArgNum <= lastArgNum:
-      isSigned = (sys.argv[nextArgNum].lower() == "true")
-      nextArgNum += 1
-    if nextArgNum <= lastArgNum and testArgs == '':
-      if sys.argv[nextArgNum] == '-testArgs':
-        if nextArgNum == lastArgNum:
-          raise RuntimeError('missing expected argument to -testArgs')
-        else:
-          # TODO: should there be arg validation here?  E.g. starts with '-D'?
-          testArgs = sys.argv[nextArgNum + 1]
-
-  smokeTest(baseURL, svnRevision, version, tmpDir, isSigned, testArgs)
+  c = parse_config()
+  print('NOTE: output encoding is %s' % sys.stdout.encoding)
+  smokeTest(c.url, c.revision, c.version, c.tmp_dir, c.is_signed, ' '.join(c.test_args))
 
 def smokeTest(baseURL, svnRevision, version, tmpDir, isSigned, testArgs):
 
@@ -1350,10 +1357,8 @@ def smokeTest(baseURL, svnRevision, version, tmpDir, isSigned, testArgs):
   print('\nSUCCESS! [%s]\n' % (datetime.datetime.now() - startTime))
 
 if __name__ == '__main__':
-  print('NOTE: output encoding is %s' % sys.stdout.encoding)
   try:
     main()
-  except:
-    traceback.print_exc()
-    sys.exit(1)
-  sys.exit(0)
+  except KeyboardInterrupt:
+    print('Keyboard interrupt...exiting')
+
