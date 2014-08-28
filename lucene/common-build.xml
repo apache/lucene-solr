@@ -27,17 +27,18 @@
   </description>
 
   <dirname file="${ant.file.common}" property="common.dir"/>
-  <property name="dev-tools.dir" location="${common.dir}/../dev-tools"/>
-  <property name="prettify.dir" location="${common.dir}/tools/prettify"/>
-  <property name="maven.build.dir" location="${build.dir}/maven"/>
-  <property name="license.dir" location="${common.dir}/licenses"/>
-
+  
   <!-- Give user a chance to override without editing this file
       (and without typing -D each time it compiles it -->
   <property file="${user.home}/lucene.build.properties"/>
   <property file="${user.home}/build.properties"/>
   <property file="${basedir}/build.properties"/>
   <property file="${common.dir}/build.properties"/>
+
+  <property name="dev-tools.dir" location="${common.dir}/../dev-tools"/>
+  <property name="prettify.dir" location="${common.dir}/tools/prettify"/>
+  <property name="maven.build.dir" location="${build.dir}/maven"/>
+  <property name="license.dir" location="${common.dir}/licenses"/>
 
   <tstamp>
     <format property="current.year" pattern="yyyy"/>

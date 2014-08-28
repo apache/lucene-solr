@@ -27,6 +27,21 @@
   <!-- include version number from property file (includes "version.*" properties) -->
   <loadproperties srcFile="lucene/version.properties"/>
 
+  <!-- define here, as common-build is not included! TODO: maybe include into a property file like the version? -->
+  <property name="python32.exe" value="python3.2" />
+
+  <!-- other settings: -->
+  <property name="tests.heap-dump-dir" location="heapdumps"/>
+  
+  <property name="maven-build-dir" value="maven-build"/>
+  <property name="maven-version" value="2.2.1"/>
+  <property name="maven.dependencies.filters.file" location="lucene/build/maven.dependencies.filters.properties"/>
+
+  <property name="fakeRelease" location="lucene/build/fakeRelease"/>
+  <property name="fakeReleaseTmp" location="lucene/build/fakeReleaseTmp"/>
+  <property name="fakeReleaseVersion" value="${version.base}"/>
+  <property name="smokeTestRelease.testArgs" value=""/>
+
   <target name="-projecthelp">
     <java fork="false" classname="org.apache.tools.ant.Main" taskname="-">
       <arg value="-projecthelp"/>
@@ -39,8 +54,6 @@
     <subant buildpath="lucene" target="test-help" inheritall="false" failonerror="true"/>
   </target>
 
-  <property name="tests.heap-dump-dir" location="heapdumps"/>
-  
   <target name="precommit" description="Run basic checks before committing"
           depends="check-svn-working-copy,validate,documentation-lint"/>
 
@@ -146,11 +159,6 @@
       <fileset dir="solr" includes="build.xml"/>
     </subant>
   </target>
-
-  <property name="maven-build-dir" value="maven-build"/>
-  <property name="maven-version" value="2.2.1"/>
-
-  <property name="maven.dependencies.filters.file" location="lucene/build/maven.dependencies.filters.properties"/>
 
   <target name="get-maven-poms" depends="resolve" 
           description="Copy Maven POMs from dev-tools/maven/ to maven-build/">
@@ -364,13 +372,6 @@ File | Project Structure | Platform Settings | SDKs):
       <fileset dir="solr" includes="build.xml" />
     </subant>
   </target>
-
-  <!-- define here, as common-build is not included! -->
-  <property name="python32.exe" value="python3.2" />
-  <property name="fakeRelease" location="lucene/build/fakeRelease"/>
-  <property name="fakeReleaseTmp" location="lucene/build/fakeReleaseTmp"/>
-  <property name="fakeReleaseVersion" value="${version.base}"/>
-  <property name="smokeTestRelease.testArgs" value=""/>
 
   <target name="-load-env">
      <!-- load the properties only here, so not on every invocation /usr/bin/env is called: -->

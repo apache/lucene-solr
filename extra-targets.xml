@@ -25,6 +25,8 @@
   
   <import file="lucene/common-build.xml"/>
 
+  <property name="svnkit.version" value="1.8.5"/>
+
   <target name="-run-test">
     <mkdir dir="lucene/build" />
     <tempfile property="tests.totals.tmpfile"
@@ -92,8 +94,6 @@
     <svn-checker failonmodifications="true"/>
   </target>
   
-  <property name="svnkit.version" value="1.8.5"/>
-
   <macrodef xmlns:ivy="antlib:org.apache.ivy.ant" name="svn-checker">
     <attribute name="failonmodifications" default="true"/> <!-- false if file modifications are allowed -->
     <sequential>
