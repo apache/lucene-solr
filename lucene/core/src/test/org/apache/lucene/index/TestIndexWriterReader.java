@@ -1129,4 +1129,30 @@ public class TestIndexWriterReader extends LuceneTestCase {
     w.close();
     dir.close();
   }
+
+  // LUCENE-5912: make sure when you reopen an NRT reader using a commit point, the SegmentReaders are in fact shared:
+  public void testReopenNRTReaderOnCommit() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriter w = new IndexWriter(dir, iwc);
+    w.addDocument(new Document());
+
+    // Pull NRT reader; it has 1 segment:
+    DirectoryReader r1 = DirectoryReader.open(w, true);
+    assertEquals(1, r1.leaves().size());
+    w.addDocument(new Document());
+    w.commit();
+
+    List<IndexCommit> commits = DirectoryReader.listCommits(dir);
+    assertEquals(1, commits.size());
+    DirectoryReader r2 = DirectoryReader.openIfChanged(r1, commits.get(0));
+    assertEquals(2, r2.leaves().size());
+
+    // Make sure we shared same instance of SegmentReader w/ first reader:
+    assertTrue(r1.leaves().get(0).reader() == r2.leaves().get(0).reader());
+    r1.close();
+    r2.close();
+    w.close();
+    dir.close();
+  }
 }
