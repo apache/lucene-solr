@@ -63,6 +63,8 @@ def unshortenURL(url):
 def javaExe(version):
   if version == '1.7':
     path = JAVA7_HOME
+  elif version == '1.8':
+    path = JAVA8_HOME
   else:
     raise RuntimeError("unknown Java version '%s'" % version)
   if cygwin:
@@ -81,8 +83,14 @@ try:
 except KeyError:
   raise RuntimeError('please set JAVA7_HOME in the env before running smokeTestRelease')
 print('JAVA7_HOME is %s' % JAVA7_HOME)
+try:
+  JAVA8_HOME = env['JAVA8_HOME']
+except KeyError:
+  raise RuntimeError('please set JAVA7_HOME in the env before running smokeTestRelease')
+print('JAVA8_HOME is %s' % JAVA7_HOME)
 
 verifyJavaVersion('1.7')
+verifyJavaVersion('1.8')
 
 # TODO
 #   + verify KEYS contains key that signed the release
@@ -739,12 +747,21 @@ def verifyUnpacked(project, artifact, unpackPath, svnRevision, version, testArgs
       run('%s; ant javadocs' % javaExe('1.7'), '%s/javadocs.log' % unpackPath)
       checkJavadocpathFull('%s/build/docs' % unpackPath)
 
+      print("    run tests w/ Java 8 and testArgs='%s'..." % testArgs)
+      run('%s; ant clean test %s' % (javaExe('1.8'), testArgs), '%s/test.log' % unpackPath)
+      run('%s; ant jar' % javaExe('1.8'), '%s/compile.log' % unpackPath)
+      testDemo(isSrc, version, '1.8')
+
+      print('    generate javadocs w/ Java 8...')
+      run('%s; ant javadocs' % javaExe('1.8'), '%s/javadocs.log' % unpackPath)
+      checkJavadocpathFull('%s/build/docs' % unpackPath)
+
     else:
       os.chdir('solr')
 
       print("    run tests w/ Java 7 and testArgs='%s'..." % testArgs)
       run('%s; ant clean test -Dtests.slow=false %s' % (javaExe('1.7'), testArgs), '%s/test.log' % unpackPath)
- 
+
       # test javadocs
       print('    generate javadocs w/ Java 7...')
       run('%s; ant clean javadocs' % javaExe('1.7'), '%s/javadocs.log' % unpackPath)
@@ -753,8 +770,19 @@ def verifyUnpacked(project, artifact, unpackPath, svnRevision, version, testArgs
       print('    test solr example w/ Java 7...')
       run('%s; ant clean example' % javaExe('1.7'), '%s/antexample.log' % unpackPath)
       testSolrExample(unpackPath, JAVA7_HOME, True)
-      os.chdir('..')
 
+      print("    run tests w/ Java 8 and testArgs='%s'..." % testArgs)
+      run('%s; ant clean test -Dtests.slow=false %s' % (javaExe('1.8'), testArgs), '%s/test.log' % unpackPath)
+
+      print('    generate javadocs w/ Java 8...')
+      run('%s; ant clean javadocs' % javaExe('1.8'), '%s/javadocs.log' % unpackPath)
+      checkJavadocpathFull('%s/solr/build/docs' % unpackPath, False)
+
+      print('    test solr example w/ Java 8...')
+      run('%s; ant clean example' % javaExe('1.8'), '%s/antexample.log' % unpackPath)
+      testSolrExample(unpackPath, JAVA8_HOME, True)
+
+      os.chdir('..')
       print('    check NOTICE')
       testNotice(unpackPath)
 
@@ -764,12 +792,16 @@ def verifyUnpacked(project, artifact, unpackPath, svnRevision, version, testArgs
     
     if project == 'lucene':
       testDemo(isSrc, version, '1.7')
+      testDemo(isSrc, version, '1.8')
+
+      print('    check Lucene\'s javadoc JAR')
+      checkJavadocpath('%s/docs' % unpackPath)
 
     else:
       checkSolrWAR('%s/example/webapps/solr.war' % unpackPath, svnRevision, version, tmpDir, baseURL)
 
       print('    copying unpacked distribution for Java 7 ...')
-      java7UnpackPath = '%s-java7' %unpackPath
+      java7UnpackPath = '%s-java7' % unpackPath
       if os.path.exists(java7UnpackPath):
         shutil.rmtree(java7UnpackPath)
       shutil.copytree(unpackPath, java7UnpackPath)
@@ -777,13 +809,18 @@ def verifyUnpacked(project, artifact, unpackPath, svnRevision, version, testArgs
       print('    test solr example w/ Java 7...')
       testSolrExample(java7UnpackPath, JAVA7_HOME, False)
 
+      print('    copying unpacked distribution for Java 8 ...')
+      java8UnpackPath = '%s-java8' % unpackPath
+      if os.path.exists(java8UnpackPath):
+        shutil.rmtree(java8UnpackPath)
+      shutil.copytree(unpackPath, java8UnpackPath)
+      os.chdir(java8UnpackPath)
+      print('    test solr example w/ Java 8...')
+      testSolrExample(java8UnpackPath, JAVA8_HOME, False)
+
       os.chdir(unpackPath)
 
   testChangesText('.', version, project)
-
-  if project == 'lucene' and not isSrc:
-    print('    check Lucene\'s javadoc JAR')
-    checkJavadocpath('%s/docs' % unpackPath)
 
 def testNotice(unpackPath):
   solrNotice = open('%s/NOTICE.txt' % unpackPath, encoding='UTF-8').read()

@@ -381,9 +381,14 @@ File | Project Structure | Platform Settings | SDKs):
   <target name="-env-JAVA7_HOME" depends="-load-env" if="env.JAVA7_HOME">
      <property name="JAVA7_HOME" value="${env.JAVA7_HOME}"/>
   </target>
+
+  <target name="-env-JAVA8_HOME" depends="-load-env" if="env.JAVA8_HOME">
+     <property name="JAVA8_HOME" value="${env.JAVA8_HOME}"/>
+  </target>
   
-  <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it" depends="clean,-env-JAVA7_HOME">
+  <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it" depends="clean,-env-JAVA7_HOME,-env-JAVA8_HOME">
    <fail unless="JAVA7_HOME">JAVA7_HOME property or environment variable is not defined.</fail>
+   <fail unless="JAVA8_HOME">JAVA8_HOME property or environment variable is not defined.</fail>
    <exec executable="${python32.exe}" failonerror="true">
       <arg value="-V"/>
    </exec>
@@ -415,6 +420,7 @@ File | Project Structure | Platform Settings | SDKs):
      <arg value="${fakeRelease.uri}"/>
      <arg value="${smokeTestRelease.testArgs}"/>
      <env key="JAVA7_HOME" file="${JAVA7_HOME}"/>
+     <env key="JAVA8_HOME" file="${JAVA8_HOME}"/>
    </exec>
    <delete dir="${fakeRelease}"/>
    <delete dir="${fakeReleaseTmp}"/>
