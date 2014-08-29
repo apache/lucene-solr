@@ -39,8 +39,12 @@ public class TestRollingUpdates extends LuceneTestCase {
   public void testRollingUpdates() throws Exception {
     Random random = new Random(random().nextLong());
     final BaseDirectoryWrapper dir = newDirectory();
+    // test checks for no unref'ed files with the IW helper method, which isn't aware of "tried to delete files"
+    if (dir instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
+    }
     final LineFileDocs docs = new LineFileDocs(random, defaultCodecSupportsDocValues());
-
+    
     //provider.register(new MemoryCodec());
     if ( (!"Lucene3x".equals(Codec.getDefault().getName())) && random().nextBoolean()) {
       Codec.setDefault(TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat(random().nextBoolean(), random.nextFloat())));

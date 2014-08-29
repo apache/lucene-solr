@@ -155,6 +155,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   public static final int FORMAT_SEGMENTS_GEN_CURRENT = FORMAT_SEGMENTS_GEN_CHECKSUM;
 
   /** Used to name new segments. */
+  // TODO: should this be a long ...?
   public int counter;
   
   /** Counts how often the index has been changed.  */
@@ -304,12 +305,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     } catch (Throwable t) {
       // It's OK if we fail to write this file since it's
       // used only as one of the retry fallbacks.
-      try {
-        dir.deleteFile(IndexFileNames.SEGMENTS_GEN);
-      } catch (Throwable t2) {
-        // Ignore; this file is only used in a retry
-        // fallback on init.
-      }
+      IOUtils.deleteFilesIgnoringExceptions(dir, IndexFileNames.SEGMENTS_GEN);
     }
   }
 
@@ -574,13 +570,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
           }
         }
 
-        try {
-          // Try not to leave a truncated segments_N file in
-          // the index:
-          directory.deleteFile(segmentsFileName);
-        } catch (Throwable t) {
-          // Suppress so we keep throwing the original exception
-        }
+        // Try not to leave a truncated segments_N file in
+        // the index:
+        IOUtils.deleteFilesIgnoringExceptions(directory, segmentsFileName);
       }
     }
   }
@@ -761,7 +753,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
    * commit finishing.
    */
   public abstract static class FindSegmentsFile {
-    
+
     final Directory directory;
 
     /** Sole constructor. */ 
@@ -933,6 +925,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
           return v;
         } catch (IOException err) {
 
+          // TODO: we should use the new IO apis in Java7 to get better exceptions on why the open failed.  E.g. we don't want to fall back
+          // if the open failed for a "different" reason (too many open files, access denied) than "the commit was in progress"
+
           // Save the original root cause:
           if (exc == null) {
             exc = err;
@@ -996,6 +991,11 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   void updateGeneration(SegmentInfos other) {
     lastGeneration = other.lastGeneration;
     generation = other.generation;
+  }
+
+  void setGeneration(long generation) {
+    this.generation = generation;
+    this.lastGeneration = generation;
   }
 
   final void rollbackCommit(Directory dir) {
@@ -1103,11 +1103,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       success = true;
     } finally {
       if (!success) {
-        try {
-          dir.deleteFile(fileName);
-        } catch (Throwable t) {
-          // Suppress so we keep throwing the original exception
-        }
+        IOUtils.deleteFilesIgnoringExceptions(dir, fileName);
       }
     }
 

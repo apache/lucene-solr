@@ -35,6 +35,7 @@ import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.replicator.ReplicationClient.ReplicationHandler;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 
 /**
@@ -122,12 +123,9 @@ public class IndexReplicationHandler implements ReplicationHandler {
    */
   public static void cleanupFilesOnFailure(Directory dir, List<String> files) {
     for (String file : files) {
-      try {
-        dir.deleteFile(file);
-      } catch (Throwable t) {
-        // suppress any exception because if we're here, it means copy
-        // failed, and we must cleanup after ourselves.
-      }
+      // suppress any exception because if we're here, it means copy
+      // failed, and we must cleanup after ourselves.
+      IOUtils.deleteFilesIgnoringExceptions(dir, file);
     }
   }
   
@@ -155,11 +153,8 @@ public class IndexReplicationHandler implements ReplicationHandler {
         for (String file : dir.listAll()) {
           if (!commitFiles.contains(file)
               && (matcher.reset(file).matches() || file.startsWith(IndexFileNames.SEGMENTS))) {
-            try {
-              dir.deleteFile(file);
-            } catch (Throwable t) {
-              // suppress, it's just a best effort
-            }
+            // suppress exceptions, it's just a best effort
+            IOUtils.deleteFilesIgnoringExceptions(dir, file);
           }
         }
       }
@@ -194,11 +189,7 @@ public class IndexReplicationHandler implements ReplicationHandler {
     if (segmentsFile != null) {
       SegmentInfos.writeSegmentsGen(dir, SegmentInfos.generationFromSegmentsFileName(segmentsFile));
     } else {
-      try {
-        dir.deleteFile(IndexFileNames.SEGMENTS_GEN);
-      } catch (Throwable t) {
-        // suppress any errors while deleting this file.
-      }
+      IOUtils.deleteFilesIgnoringExceptions(dir, IndexFileNames.SEGMENTS_GEN);
     }
   }
 

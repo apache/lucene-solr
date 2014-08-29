@@ -100,6 +100,7 @@ public class TestIndexWriterOutOfMemory extends LuceneTestCase {
         int numDocs = atLeast(2000);
       
         IndexWriter iw = new IndexWriter(dir, conf);
+        iw.commit(); // ensure there is always a commit
 
         final Random r = new Random(random().nextLong());
         dir.failOn(new Failure() {

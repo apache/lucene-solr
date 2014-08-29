@@ -1094,7 +1094,8 @@ public class TestAddIndexes extends LuceneTestCase {
     
     IndexReader[] readers = new IndexReader[] { DirectoryReader.open(dirs[0]), DirectoryReader.open(dirs[1]) };
     
-    Directory dir = new MockDirectoryWrapper(random(), new RAMDirectory());
+    MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new RAMDirectory());
+    dir.setEnableVirusScanner(false); // we check for specific list of files
     IndexWriterConfig conf = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy(true));
     MergePolicy lmp = conf.getMergePolicy();
     // Force creation of CFS:

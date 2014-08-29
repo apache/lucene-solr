@@ -115,10 +115,7 @@ public class SimpleTextSegmentInfoWriter extends SegmentInfoWriter {
     } finally {
       if (!success) {
         IOUtils.closeWhileHandlingException(output);
-        try {
-          dir.deleteFile(segFileName);
-        } catch (Throwable t) {
-        }
+        IOUtils.deleteFilesIgnoringExceptions(dir, segFileName);
       } else {
         output.close();
       }

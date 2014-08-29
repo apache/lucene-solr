@@ -54,6 +54,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.SimpleFSDirectory;
@@ -994,6 +995,11 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         System.out.println("testUpgradeOldSingleSegmentIndexWithAdditions: index=" +name);
       }
       Directory dir = newDirectory(oldIndexDirs.get(name));
+      if (dir instanceof MockDirectoryWrapper) {
+        // we need to ensure we delete old commits for this test,
+        // otherwise IndexUpgrader gets angry
+        ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
+      }
 
       assertEquals("Original index must be single segment", 1, getNumberOfSegments(dir));
 
@@ -1025,6 +1031,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       // determine count of segments in modified index
       final int origSegCount = getNumberOfSegments(dir);
       
+      // ensure there is only one commit
+      assertEquals(1, DirectoryReader.listCommits(dir).size());
       newIndexUpgrader(dir).upgrade();
 
       final int segCount = checkAllSegmentsUpgraded(dir);

@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -28,7 +29,9 @@ import org.apache.lucene.util.TestUtil;
 
 public class TestCodecHoldsOpenFiles extends LuceneTestCase {
   public void test() throws Exception {
-    Directory d = newDirectory();
+    BaseDirectoryWrapper d = newDirectory();
+    d.setCheckIndexOnClose(false);
+    // we nuke files, but verify the reader still works
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
     int numDocs = atLeast(100);
     for(int i=0;i<numDocs;i++) {
@@ -38,11 +41,13 @@ public class TestCodecHoldsOpenFiles extends LuceneTestCase {
     }
 
     IndexReader r = w.getReader();
+    w.commit();
     w.close();
 
     for(String fileName : d.listAll()) {
       try {
         d.deleteFile(fileName);
+        // may succeed, e.g. if the file is completely read into RAM.
       } catch (IOException ioe) {
         // ignore: this means codec (correctly) is holding
         // the file open
