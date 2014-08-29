@@ -53,6 +53,9 @@ public class ZkContainer {
   private ExecutorService coreZkRegister = Executors.newFixedThreadPool(Integer.MAX_VALUE,
       new DefaultSolrThreadFactory("coreZkRegister") );
   
+  // see ZkController.zkRunOnly
+  private boolean zkRunOnly = Boolean.getBoolean("zkRunOnly"); // expert
+  
   public ZkContainer() {
     
   }
@@ -119,7 +122,7 @@ public class ZkContainer {
     if (zkRun != null) {
       String zkDataHome = System.getProperty("zkServerDataDir", solrHome + "zoo_data");
       String zkConfHome = System.getProperty("zkServerConfDir", solrHome);
-      zkServer = new SolrZkServer(zkRun, zookeeperHost, zkDataHome, zkConfHome, hostPort);
+      zkServer = new SolrZkServer(stripChroot(zkRun), stripChroot(zookeeperHost), zkDataHome, zkConfHome, hostPort);
       zkServer.parseConfig();
       zkServer.start();
       
@@ -145,9 +148,9 @@ public class ZkContainer {
         String confDir = System.getProperty("bootstrap_confdir");
         boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");  
         
-        if(!ZkController.checkChrootPath(zookeeperHost, (confDir!=null) || boostrapConf)) {
+        if(!ZkController.checkChrootPath(zookeeperHost, (confDir!=null) || boostrapConf || zkRunOnly)) {
           throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-              "A chroot was specified in ZkHost but the znode doesn't exist. ");
+              "A chroot was specified in ZkHost but the znode doesn't exist. " + zookeeperHost);
         }
         zkController = new ZkController(cc, zookeeperHost, zkClientTimeout,
             zkClientConnectTimeout, host, hostPort, hostContext,
@@ -213,6 +216,10 @@ public class ZkContainer {
     this.zkController = zkController;
   }
   
+  private String stripChroot(String zkRun) {
+    return zkRun.substring(0, zkRun.lastIndexOf('/'));
+  }
+
   public void registerInZk(final SolrCore core, boolean background) {
     Thread thread = new Thread() {
       @Override

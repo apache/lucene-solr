@@ -164,6 +164,9 @@ public class ConfigSolrXml extends ConfigSolr {
 
     storeConfigPropertyAsBoolean(s, nl, CfgProp.SOLR_GENERICCORENODENAMES, "genericCoreNodeNames");
     
+    storeConfigPropertyAsString(s, nl, CfgProp.SOLR_ZKACLPROVIDER, "zkACLProvider");
+    storeConfigPropertyAsString(s, nl, CfgProp.SOLR_ZKCREDENTIALPROVIDER, "zkCredentialProvider");
+    
     errorOnLeftOvers(s, nl);
   }
 

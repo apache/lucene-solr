@@ -47,7 +47,6 @@ public class DistributedMap {
   private final String dir;
 
   private SolrZkClient zookeeper;
-  private List<ACL> acl = ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
   private final String prefix = "mn-";
 
@@ -66,9 +65,6 @@ public class DistributedMap {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
 
-    if (acl != null) {
-      this.acl = acl;
-    }
     this.zookeeper = zookeeper;
   }
 
@@ -113,10 +109,10 @@ public class DistributedMap {
       throws KeeperException, InterruptedException {
       for (;;) {
       try {
-        return zookeeper.create(path, data, acl, mode, true);
+        return zookeeper.create(path, data, mode, true);
       } catch (KeeperException.NoNodeException e) {
         try {
-          zookeeper.create(dir, new byte[0], acl, CreateMode.PERSISTENT, true);
+          zookeeper.create(dir, new byte[0], CreateMode.PERSISTENT, true);
         } catch (KeeperException.NodeExistsException ne) {
           // someone created it
         }

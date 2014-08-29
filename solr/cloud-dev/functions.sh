@@ -2,6 +2,7 @@ INT_JAVA_OPTS="-server -Xms256M -Xmx256M"
 BASE_PORT=8900
 BASE_STOP_PORT=9900
 ZK_PORT="2414"
+ZK_CHROOT="solr"
 
 rebuild() {
 	echo "Rebuilding"
@@ -26,17 +27,11 @@ reinstall() {
 }
 
 start() {
-	OPT="-DzkHost=localhost:$ZK_PORT -DzkRun"
+	OPT="-DzkHost=localhost:$ZK_PORT/$ZK_CHROOT"
 	NUMSHARDS=$2
 
 	echo "Starting instance $1"
-	if [ "1" = "$1" ]; then
-		if [ "" = "$NUMSHARDS" ]; then 
-			NUMSHARDS="1"
-		fi
-        	echo "Instance is running zk, numshards=$NUMSHARDS"
-		OPT="-DzkRun -Dbootstrap_conf=true -DnumShards=$NUMSHARDS"
-        fi
+
 	setports $1
 	cd ../example$1
 	java $JAVA_OPTS -Djetty.port=$PORT $OPT -DSTOP.PORT=$STOP_PORT -DSTOP.KEY=key -jar start.jar 1>example$1.log 2>&1 &

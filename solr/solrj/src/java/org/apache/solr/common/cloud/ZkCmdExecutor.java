@@ -17,19 +17,14 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
-import java.util.List;
-
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
-import org.apache.zookeeper.ZooDefs;
-import org.apache.zookeeper.data.ACL;
 
 
 public class ZkCmdExecutor {
   private long retryDelay = 1500L; // 1 second would match timeout, so 500 ms over for padding
   private int retryCount;
-  private List<ACL> acl = ZooDefs.Ids.OPEN_ACL_UNSAFE;
   private double timeouts;
   
   /**
@@ -43,14 +38,6 @@ public class ZkCmdExecutor {
   public ZkCmdExecutor(int timeoutms) {
     timeouts = timeoutms / 1000.0;
     this.retryCount = Math.round(0.5f * ((float)Math.sqrt(8.0f * timeouts + 1.0f) - 1.0f)) + 1;
-  }
-  
-  public List<ACL> getAcl() {
-    return acl;
-  }
-  
-  public void setAcl(List<ACL> acl) {
-    this.acl = acl;
   }
   
   public long getRetryDelay() {

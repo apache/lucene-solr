@@ -18,6 +18,14 @@
 
 package org.apache.solr.cloud;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.TreeMap;
+
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -28,18 +36,8 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooDefs;
-import org.apache.zookeeper.data.ACL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Set;
-import java.util.TreeMap;
 
 /**
  * A distributed queue from zk recipes.
@@ -53,7 +51,6 @@ public class DistributedQueue {
   private final String dir;
   
   private SolrZkClient zookeeper;
-  private List<ACL> acl = ZooDefs.Ids.OPEN_ACL_UNSAFE;
   
   private final String prefix = "qn-";
   
@@ -61,11 +58,11 @@ public class DistributedQueue {
 
   private final Overseer.Stats stats;
   
-  public DistributedQueue(SolrZkClient zookeeper, String dir, List<ACL> acl) {
-    this(zookeeper, dir, acl, new Overseer.Stats());
+  public DistributedQueue(SolrZkClient zookeeper, String dir) {
+    this(zookeeper, dir, new Overseer.Stats());
   }
 
-  public DistributedQueue(SolrZkClient zookeeper, String dir, List<ACL> acl, Overseer.Stats stats) {
+  public DistributedQueue(SolrZkClient zookeeper, String dir, Overseer.Stats stats) {
     this.dir = dir;
 
     ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(zookeeper.getZkClientTimeout());
@@ -78,9 +75,6 @@ public class DistributedQueue {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
 
-    if (acl != null) {
-      this.acl = acl;
-    }
     this.zookeeper = zookeeper;
     this.stats = stats;
   }
@@ -294,7 +288,7 @@ public class DistributedQueue {
           children = orderedChildren(watcher);
           break;
         } catch (KeeperException.NoNodeException e) {
-          zookeeper.create(dir, new byte[0], acl, CreateMode.PERSISTENT, true);
+          zookeeper.create(dir, new byte[0], CreateMode.PERSISTENT, true);
           // go back to the loop and try again
         }
       }
@@ -366,10 +360,10 @@ public class DistributedQueue {
       throws KeeperException, InterruptedException {
     for (;;) {
       try {
-        return zookeeper.create(path, data, acl, mode, true);
+        return zookeeper.create(path, data, mode, true);
       } catch (KeeperException.NoNodeException e) {
         try {
-          zookeeper.create(dir, new byte[0], acl, CreateMode.PERSISTENT, true);
+          zookeeper.create(dir, new byte[0], CreateMode.PERSISTENT, true);
         } catch (KeeperException.NodeExistsException ne) {
           // someone created it
         }
