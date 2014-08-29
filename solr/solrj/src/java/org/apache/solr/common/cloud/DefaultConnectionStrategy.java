@@ -34,7 +34,7 @@ public class DefaultConnectionStrategy extends ZkClientConnectionStrategy {
   
   @Override
   public void connect(String serverAddress, int timeout, Watcher watcher, ZkUpdate updater) throws IOException, InterruptedException, TimeoutException {
-    SolrZooKeeper zk = new SolrZooKeeper(serverAddress, timeout, watcher);
+    SolrZooKeeper zk = createSolrZooKeeper(serverAddress, timeout, watcher);
     boolean success = false;
     try {
       updater.update(zk);
@@ -50,7 +50,7 @@ public class DefaultConnectionStrategy extends ZkClientConnectionStrategy {
   public void reconnect(final String serverAddress, final int zkClientTimeout,
       final Watcher watcher, final ZkUpdate updater) throws IOException {
     log.info("Connection expired - starting a new one...");
-    SolrZooKeeper zk = new SolrZooKeeper(serverAddress, zkClientTimeout, watcher);
+    SolrZooKeeper zk = createSolrZooKeeper(serverAddress, zkClientTimeout, watcher);
     boolean success = false;
     try {
       updater

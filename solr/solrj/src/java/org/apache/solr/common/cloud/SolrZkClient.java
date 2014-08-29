@@ -37,6 +37,7 @@ import javax.xml.transform.stream.StreamSource;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ZkClientConnectionStrategy.ZkUpdate;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
@@ -47,7 +48,6 @@ import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.KeeperException.NotEmptyException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
@@ -83,6 +83,8 @@ public class SolrZkClient implements Closeable {
   private volatile boolean isClosed = false;
   private ZkClientConnectionStrategy zkClientConnectionStrategy;
   private int zkClientTimeout;
+  private ZkACLProvider zkACLProvider;
+  private String zkServerAddress;
 
   public int getZkClientTimeout() {
     return zkClientTimeout;
@@ -112,17 +114,34 @@ public class SolrZkClient implements Closeable {
   
   public SolrZkClient(String zkServerAddress, int zkClientTimeout, int clientConnectTimeout,
       ZkClientConnectionStrategy strat, final OnReconnect onReconnect) {
-    this(zkServerAddress, zkClientTimeout, clientConnectTimeout, strat, onReconnect, null);
+    this(zkServerAddress, zkClientTimeout, clientConnectTimeout, strat, onReconnect, null, null);
+  }
+  
+  public SolrZkClient(String zkServerAddress, int zkClientTimeout, int clientConnectTimeout,
+      ZkClientConnectionStrategy strat, final OnReconnect onReconnect, BeforeReconnect beforeReconnect) {
+    this(zkServerAddress, zkClientTimeout, clientConnectTimeout, strat, onReconnect, beforeReconnect, null);
   }
 
   public SolrZkClient(String zkServerAddress, int zkClientTimeout, int clientConnectTimeout, 
-      ZkClientConnectionStrategy strat, final OnReconnect onReconnect, BeforeReconnect beforeReconnect) {
+      ZkClientConnectionStrategy strat, final OnReconnect onReconnect, BeforeReconnect beforeReconnect, ZkACLProvider zkACLProvider) {
     this.zkClientConnectionStrategy = strat;
+    this.zkServerAddress = zkServerAddress;
+    
+    if (strat == null) {
+      strat = new DefaultConnectionStrategy();
+    }
+    
+    if (!strat.hasZkCredentialsToAddAutomatically()) {
+      ZkCredentialsProvider zkCredentialsToAddAutomatically = createZkCredentialsToAddAutomatically();
+      strat.setZkCredentialsToAddAutomatically(zkCredentialsToAddAutomatically);
+    }
+    
     this.zkClientTimeout = zkClientTimeout;
     // we must retry at least as long as the session timeout
     zkCmdExecutor = new ZkCmdExecutor(zkClientTimeout);
     connManager = new ConnectionManager("ZooKeeperConnection Watcher:"
         + zkServerAddress, this, zkServerAddress, strat, onReconnect, beforeReconnect);
+
     try {
       strat.connect(zkServerAddress, zkClientTimeout, connManager,
           new ZkUpdate() {
@@ -164,6 +183,11 @@ public class SolrZkClient implements Closeable {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
     numOpens.incrementAndGet();
+    if (zkACLProvider == null) {
+      this.zkACLProvider = createZkACLProvider();
+    } else {
+      this.zkACLProvider = zkACLProvider;
+    }
   }
 
   public ConnectionManager getConnectionManager() {
@@ -174,6 +198,38 @@ public class SolrZkClient implements Closeable {
     return zkClientConnectionStrategy;
   }
 
+  public static final String ZK_CRED_PROVIDER_CLASS_NAME_VM_PARAM_NAME = "zkCredentialsProvider";
+  protected ZkCredentialsProvider createZkCredentialsToAddAutomatically() {
+    String zkCredentialsProviderClassName = System.getProperty(ZK_CRED_PROVIDER_CLASS_NAME_VM_PARAM_NAME);
+    if (!StringUtils.isEmpty(zkCredentialsProviderClassName)) {
+      try {
+        log.info("Using ZkCredentialsProvider: " + zkCredentialsProviderClassName);
+        return (ZkCredentialsProvider)Class.forName(zkCredentialsProviderClassName).getConstructor().newInstance();
+      } catch (Throwable t) {
+        // just ignore - go default
+        log.warn("VM param zkCredentialsProvider does not point to a class implementing ZkCredentialsProvider and with a non-arg constructor", t);
+      }
+    }
+    log.info("Using default ZkCredentialsProvider");
+    return new DefaultZkCredentialsProvider();
+  }
+
+  public static final String ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME = "zkACLProvider";
+  protected ZkACLProvider createZkACLProvider() {
+    String zkACLProviderClassName = System.getProperty(ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME);
+    if (!StringUtils.isEmpty(zkACLProviderClassName)) {
+      try {
+        log.info("Using ZkACLProvider: " + zkACLProviderClassName);
+        return (ZkACLProvider)Class.forName(zkACLProviderClassName).getConstructor().newInstance();
+      } catch (Throwable t) {
+        // just ignore - go default
+        log.warn("VM param zkACLProvider does not point to a class implementing ZkACLProvider and with a non-arg constructor", t);
+      }
+    }
+    log.info("Using default ZkACLProvider");
+    return new DefaultZkACLProvider();
+  }
+  
   /**
    * Returns true if client is connected
    */
@@ -263,23 +319,6 @@ public class SolrZkClient implements Closeable {
   }
 
   /**
-   * Returns path of created node
-   */
-  public String create(final String path, final byte data[], final List<ACL> acl,
-      final CreateMode createMode, boolean retryOnConnLoss) throws KeeperException, InterruptedException {
-    if (retryOnConnLoss) {
-      return zkCmdExecutor.retryOperation(new ZkOperation() {
-        @Override
-        public String execute() throws KeeperException, InterruptedException {
-          return keeper.create(path, data, acl, createMode);
-        }
-      });
-    } else {
-      return keeper.create(path, data, acl, createMode);
-    }
-  }
-
-  /**
    * Returns children of the node at the path
    */
   public List<String> getChildren(final String path, final Watcher watcher, boolean retryOnConnLoss)
@@ -340,12 +379,13 @@ public class SolrZkClient implements Closeable {
       return zkCmdExecutor.retryOperation(new ZkOperation() {
         @Override
         public String execute() throws KeeperException, InterruptedException {
-          return keeper.create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE,
+          return keeper.create(path, data, zkACLProvider.getACLsToAdd(path),
               createMode);
         }
       });
     } else {
-      return keeper.create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, createMode);
+      List<ACL> acls = zkACLProvider.getACLsToAdd(path);
+      return keeper.create(path, data, acls, createMode);
     }
   }
 
@@ -460,12 +500,12 @@ public class SolrZkClient implements Closeable {
             zkCmdExecutor.retryOperation(new ZkOperation() {
               @Override
               public Object execute() throws KeeperException, InterruptedException {
-                keeper.create(currentPath, finalBytes, ZooDefs.Ids.OPEN_ACL_UNSAFE, finalMode);
+                keeper.create(currentPath, finalBytes, zkACLProvider.getACLsToAdd(currentPath), finalMode);
                 return null;
               }
             });
           } else {
-            keeper.create(currentPath, bytes, ZooDefs.Ids.OPEN_ACL_UNSAFE, mode);
+            keeper.create(currentPath, bytes, zkACLProvider.getACLsToAdd(currentPath), mode);
           }
         } catch (NodeExistsException e) {
           
@@ -677,6 +717,13 @@ public class SolrZkClient implements Closeable {
     } catch (NoNodeException r) {
       return;
     }
+  }
+  
+  /**
+   * Validates if zkHost contains a chroot. See http://zookeeper.apache.org/doc/r3.2.2/zookeeperProgrammers.html#ch_zkSessions
+   */
+  public static boolean containsChroot(String zkHost) {
+    return zkHost.contains("/");
   }
 
 }

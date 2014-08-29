@@ -117,6 +117,8 @@ New Features
 
 * SOLR-6403: TransactionLog replay status logging. (Mark Miller)
 
+* SOLR-4580: Support for protecting content in ZooKeeper. (Per Steffensen, Mark Miller)
+
 Bug Fixes
 ----------------------
 
