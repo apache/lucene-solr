@@ -624,6 +624,10 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
 
   public void testOverDecRefDuringReopen() throws Exception {
     MockDirectoryWrapper dir = newMockDirectory();
+    if (dir instanceof MockDirectoryWrapper) {
+      // ensure we produce enough of our exceptions
+      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
+    }
 
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(Codec.forName("Lucene410"));

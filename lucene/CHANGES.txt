@@ -117,6 +117,16 @@ Bug Fixes
   folder via security manager, and make test temp dirs absolute.
   (Ryan Ernst, Dawid Weiss)
 
+* LUCENE-5904: Fixed a corruption case that can happen when 1)
+  IndexWriter is uncleanly shut-down (OS crash, power loss, etc.), 2)
+  on startup, when a new IndexWriter is created, a virus checker is
+  holding some of the previously written but unused files open and
+  preventing deletion, 3) IndexWriter writes these files again during
+  the course of indexing, then the files can later be deleted, causing
+  corruption.  This case was detected by adding evilness to
+  MockDirectoryWrapper to have it simulate a virus checker holding a
+  file open and preventing deletion (Robert Muir, Mike McCandless)
+
 ======================= Lucene 4.10.0 ======================
 
 New Features

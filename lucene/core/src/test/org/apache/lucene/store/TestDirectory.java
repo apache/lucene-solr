@@ -30,11 +30,17 @@ public class TestDirectory extends BaseDirectoryTestCase {
 
   @Override
   protected Directory getDirectory(File path) throws IOException {
+    final Directory dir;
     if (random().nextBoolean()) {
-      return newDirectory();
+      dir = newDirectory();
     } else {
-      return newFSDirectory(path);
+      dir = newFSDirectory(path);
     }
+    if (dir instanceof MockDirectoryWrapper) {
+      // test manipulates directory directly
+      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
+    }
+    return dir;
   }
 
   // we wrap the directory in slow stuff, so only run nightly

@@ -939,6 +939,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     for (FailOnlyInCommit failure : failures) {
       MockDirectoryWrapper dir = newMockDirectory();
       dir.setFailOnCreateOutput(false);
+      dir.setEnableVirusScanner(false); // we check for specific list of files
       IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
       Document doc = new Document();
       doc.add(newTextField("field", "a field", Field.Store.YES));
@@ -1160,6 +1161,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   public void testSimulatedCorruptIndex1() throws IOException {
       BaseDirectoryWrapper dir = newDirectory();
       dir.setCheckIndexOnClose(false); // we are corrupting it!
+      if (dir instanceof MockDirectoryWrapper) {
+        // we want to ensure our corruption always succeeds!
+        ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
+      }
 
       IndexWriter writer = null;
 
@@ -1208,6 +1213,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   public void testSimulatedCorruptIndex2() throws IOException {
     BaseDirectoryWrapper dir = newDirectory();
     dir.setCheckIndexOnClose(false); // we are corrupting it!
+    if (dir instanceof MockDirectoryWrapper) {
+      // we want to ensure our corruption always succeeds!
+      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
+    }
     IndexWriter writer = null;
 
     writer  = new IndexWriter(

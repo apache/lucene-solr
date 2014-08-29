@@ -26,6 +26,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -189,6 +190,10 @@ public class TestOmitPositions extends LuceneTestCase {
   // Verifies no *.prx exists when all fields omit term positions:
   public void testNoPrxFile() throws Throwable {
     Directory ram = newDirectory();
+    if (ram instanceof MockDirectoryWrapper) {
+      // we verify some files get deleted
+      ((MockDirectoryWrapper)ram).setEnableVirusScanner(false);
+    }
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(analyzer)
                                                 .setMaxBufferedDocs(3)
