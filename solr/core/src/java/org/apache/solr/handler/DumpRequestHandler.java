@@ -35,6 +35,21 @@ public class DumpRequestHandler extends RequestHandlerBase
   {
     // Show params
     rsp.add( "params", req.getParams().toNamedList() );
+    String[] returnParams = req.getParams().getParams("param");
+    if(returnParams !=null) {
+      NamedList params = (NamedList) rsp.getValues().get("params");
+      for (String returnParam : returnParams) {
+        String[] vals = req.getParams().getParams(returnParam);
+        if(vals != null){
+          for (String val : vals) {
+            params.add(returnParam,val);
+          }
+        }
+
+      }
+    }
+
+    if(Boolean.TRUE.equals( req.getParams().getBool("initArgs"))) rsp.add("initArgs", initArgs);
         
     // Write the streams...
     if( req.getContentStreams() != null ) {

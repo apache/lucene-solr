@@ -119,6 +119,9 @@ New Features
 
 * SOLR-4580: Support for protecting content in ZooKeeper. (Per Steffensen, Mark Miller)
 
+* SOLR-6365: specify appends, defaults, invariants outside of the request handler.
+  (Noble Paul, Erik Hatcher, shalin)
+
 Bug Fixes
 ----------------------
 
