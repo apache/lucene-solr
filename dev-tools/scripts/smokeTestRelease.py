@@ -42,6 +42,7 @@ import checkJavadocLinks
 import io
 import codecs
 import textwrap
+from collections import namedtuple
 
 # This tool expects to find /lucene and /solr off the base URL.  You
 # must have a working gpg, tar, unzip in your path.  This has been
@@ -59,30 +60,6 @@ def unshortenURL(url):
     if int(response.status/100) == 3 and response.getheader('Location'):
       return response.getheader('Location')
   return url  
-
-def javaExe(version):
-  if version == '1.7':
-    path = JAVA7_HOME
-  else:
-    raise RuntimeError("unknown Java version '%s'" % version)
-  if cygwin:
-    path = os.popen('cygpath -u "%s"' % path).read().strip()
-  return 'export JAVA_HOME="%s" PATH="%s/bin:$PATH" JAVACMD="%s/bin/java"' % (path, path, path)
-
-def verifyJavaVersion(version):
-  s = os.popen('%s; java -version 2>&1' % javaExe(version)).read()
-  if s.find(' version "%s.' % version) == -1:
-    raise RuntimeError('got wrong version for java %s:\n%s' % (version, s))
-
-# http://s.apache.org/lusolr32rc2
-env = os.environ
-try:
-  JAVA7_HOME = env['JAVA7_HOME']
-except KeyError:
-  raise RuntimeError('please set JAVA7_HOME in the env before running smokeTestRelease')
-print('JAVA7_HOME is %s' % JAVA7_HOME)
-
-verifyJavaVersion('1.7')
 
 # TODO
 #   + verify KEYS contains key that signed the release
@@ -616,7 +593,7 @@ def getDirEntries(urlString):
       if text == 'Parent Directory' or text == '..':
         return links[(i+1):]
 
-def unpackAndVerify(project, tmpDir, artifact, svnRevision, version, testArgs, baseURL):
+def unpackAndVerify(java, project, tmpDir, artifact, svnRevision, version, testArgs, baseURL):
   destDir = '%s/unpack' % tmpDir
   if os.path.exists(destDir):
     shutil.rmtree(destDir)
@@ -636,14 +613,14 @@ def unpackAndVerify(project, tmpDir, artifact, svnRevision, version, testArgs, b
     raise RuntimeError('unpack produced entries %s; expected only %s' % (l, expected))
 
   unpackPath = '%s/%s' % (destDir, expected)
-  verifyUnpacked(project, artifact, unpackPath, svnRevision, version, testArgs, tmpDir, baseURL)
+  verifyUnpacked(java, project, artifact, unpackPath, svnRevision, version, testArgs, tmpDir, baseURL)
 
 LUCENE_NOTICE = None
 LUCENE_LICENSE = None
 SOLR_NOTICE = None
 SOLR_LICENSE = None
 
-def verifyUnpacked(project, artifact, unpackPath, svnRevision, version, testArgs, tmpDir, baseURL):
+def verifyUnpacked(java, project, artifact, unpackPath, svnRevision, version, testArgs, tmpDir, baseURL):
   global LUCENE_NOTICE
   global LUCENE_LICENSE
   global SOLR_NOTICE
@@ -727,34 +704,56 @@ def verifyUnpacked(project, artifact, unpackPath, svnRevision, version, testArgs
       raise RuntimeError('source release has WARs...')
 
     print('    run "ant validate"')
-    run('%s; ant validate' % javaExe('1.7'), '%s/validate.log' % unpackPath)
+    java.run_java7('ant validate', '%s/validate.log' % unpackPath)
 
     if project == 'lucene':
       print("    run tests w/ Java 7 and testArgs='%s'..." % testArgs)
-      run('%s; ant clean test %s' % (javaExe('1.7'), testArgs), '%s/test.log' % unpackPath)
-      run('%s; ant jar' % javaExe('1.7'), '%s/compile.log' % unpackPath)
-      testDemo(isSrc, version, '1.7')
+      java.run_java7('ant clean test %s' % testArgs, '%s/test.log' % unpackPath)
+      java.run_java7('ant jar', '%s/compile.log' % unpackPath)
+      testDemo(java.run_java7, isSrc, version, '1.7')
 
       print('    generate javadocs w/ Java 7...')
-      run('%s; ant javadocs' % javaExe('1.7'), '%s/javadocs.log' % unpackPath)
+      java.run_java7('ant javadocs', '%s/javadocs.log' % unpackPath)
       checkJavadocpathFull('%s/build/docs' % unpackPath)
+
+      if java.run_java8:
+        print("    run tests w/ Java 8 and testArgs='%s'..." % testArgs)
+        java.run_java8('ant clean test %s' % testArgs, '%s/test.log' % unpackPath)
+        java.run_java8('ant jar', '%s/compile.log' % unpackPath)
+        testDemo(java.run_java8, isSrc, version, '1.8')
+
+        print('    generate javadocs w/ Java 8...')
+        java.run_java8('ant javadocs', '%s/javadocs.log' % unpackPath)
+        checkJavadocpathFull('%s/build/docs' % unpackPath)
 
     else:
       os.chdir('solr')
 
       print("    run tests w/ Java 7 and testArgs='%s'..." % testArgs)
-      run('%s; ant clean test -Dtests.slow=false %s' % (javaExe('1.7'), testArgs), '%s/test.log' % unpackPath)
- 
+      java.run_java7('ant clean test -Dtests.slow=false %s' % testArgs, '%s/test.log' % unpackPath)
+
       # test javadocs
       print('    generate javadocs w/ Java 7...')
-      run('%s; ant clean javadocs' % javaExe('1.7'), '%s/javadocs.log' % unpackPath)
+      java.run_java7('ant clean javadocs', '%s/javadocs.log' % unpackPath)
       checkJavadocpathFull('%s/solr/build/docs' % unpackPath, False)
 
       print('    test solr example w/ Java 7...')
-      run('%s; ant clean example' % javaExe('1.7'), '%s/antexample.log' % unpackPath)
-      testSolrExample(unpackPath, JAVA7_HOME, True)
-      os.chdir('..')
+      java.run_java7('ant clean example', '%s/antexample.log' % unpackPath)
+      testSolrExample(unpackPath, java.java7_home, True)
 
+      if java.run_java8:
+        print("    run tests w/ Java 8 and testArgs='%s'..." % testArgs)
+        java.run_java8('ant clean test -Dtests.slow=false %s' % testArgs, '%s/test.log' % unpackPath)
+
+        print('    generate javadocs w/ Java 8...')
+        java.run_java8('ant clean javadocs', '%s/javadocs.log' % unpackPath)
+        checkJavadocpathFull('%s/solr/build/docs' % unpackPath, False)
+
+        print('    test solr example w/ Java 8...')
+        java.run_java8('ant clean example', '%s/antexample.log' % unpackPath)
+        testSolrExample(unpackPath, java.java8_home, True)
+
+      os.chdir('..')
       print('    check NOTICE')
       testNotice(unpackPath)
 
@@ -763,27 +762,38 @@ def verifyUnpacked(project, artifact, unpackPath, svnRevision, version, testArgs
     checkAllJARs(os.getcwd(), project, svnRevision, version, tmpDir, baseURL)
     
     if project == 'lucene':
-      testDemo(isSrc, version, '1.7')
+      testDemo(java.run_java7, isSrc, version, '1.7')
+      if java.run_java8:
+        testDemo(java.run_java8, isSrc, version, '1.8')
+
+      print('    check Lucene\'s javadoc JAR')
+      checkJavadocpath('%s/docs' % unpackPath)
 
     else:
       checkSolrWAR('%s/example/webapps/solr.war' % unpackPath, svnRevision, version, tmpDir, baseURL)
 
       print('    copying unpacked distribution for Java 7 ...')
-      java7UnpackPath = '%s-java7' %unpackPath
+      java7UnpackPath = '%s-java7' % unpackPath
       if os.path.exists(java7UnpackPath):
         shutil.rmtree(java7UnpackPath)
       shutil.copytree(unpackPath, java7UnpackPath)
       os.chdir(java7UnpackPath)
       print('    test solr example w/ Java 7...')
-      testSolrExample(java7UnpackPath, JAVA7_HOME, False)
+      testSolrExample(java7UnpackPath, java.java7_home, False)
+
+      if java.run_java8:
+        print('    copying unpacked distribution for Java 8 ...')
+        java8UnpackPath = '%s-java8' % unpackPath
+        if os.path.exists(java8UnpackPath):
+          shutil.rmtree(java8UnpackPath)
+        shutil.copytree(unpackPath, java8UnpackPath)
+        os.chdir(java8UnpackPath)
+        print('    test solr example w/ Java 8...')
+        testSolrExample(java8UnpackPath, java.java8_home, False)
 
       os.chdir(unpackPath)
 
   testChangesText('.', version, project)
-
-  if project == 'lucene' and not isSrc:
-    print('    check Lucene\'s javadoc JAR')
-    checkJavadocpath('%s/docs' % unpackPath)
 
 def testNotice(unpackPath):
   solrNotice = open('%s/NOTICE.txt' % unpackPath, encoding='UTF-8').read()
@@ -918,7 +928,7 @@ def checkJavadocpathFull(path, failOnMissing=True):
   if checkJavadocLinks.checkAll(path):
     raise RuntimeError('broken javadocs links found!')
 
-def testDemo(isSrc, version, jdk):
+def testDemo(run_java, isSrc, version, jdk):
   if os.path.exists('index'):
     shutil.rmtree('index') # nuke any index from any previous iteration
 
@@ -930,8 +940,8 @@ def testDemo(isSrc, version, jdk):
   else:
     cp = 'core/lucene-core-{0}.jar{1}demo/lucene-demo-{0}.jar{1}analysis/common/lucene-analyzers-common-{0}.jar{1}queryparser/lucene-queryparser-{0}.jar'.format(version, sep)
     docsDir = 'docs'
-  run('%s; java -cp "%s" org.apache.lucene.demo.IndexFiles -index index -docs %s' % (javaExe(jdk), cp, docsDir), 'index.log')
-  run('%s; java -cp "%s" org.apache.lucene.demo.SearchFiles -index index -query lucene' % (javaExe(jdk), cp), 'search.log')
+  run_java('java -cp "%s" org.apache.lucene.demo.IndexFiles -index index -docs %s' % (cp, docsDir), 'index.log')
+  run_java('java -cp "%s" org.apache.lucene.demo.SearchFiles -index index -query lucene' % cp, 'search.log')
   reMatchingDocs = re.compile('(\d+) total matching documents')
   m = reMatchingDocs.search(open('search.log', encoding='UTF-8').read())
   if m is None:
@@ -942,7 +952,7 @@ def testDemo(isSrc, version, jdk):
       raise RuntimeError('lucene demo\'s SearchFiles found too few results: %s' % numHits)
     print('      got %d hits for query "lucene"' % numHits)
   print('    checkindex with %s...' % jdk)
-  run('%s; java -ea -cp "%s" org.apache.lucene.index.CheckIndex index' % (javaExe(jdk), cp), 'checkindex.log')
+  run_java('java -ea -cp "%s" org.apache.lucene.index.CheckIndex index' % cp, 'checkindex.log')
   s = open('checkindex.log').read()
   m = re.search(r'^\s+version=(.*?)$', s, re.MULTILINE)
   if m is None:
@@ -1250,6 +1260,31 @@ def crawl(downloadedFiles, urlString, targetDir, exclusions=set()):
         downloadedFiles.append(path)
         sys.stdout.write('.')
 
+def make_java_config(parser, java8_home):
+  def _make_runner(java_home, version):
+    print('Java %s JAVA_HOME=%s' % (version, java_home))
+    if cygwin:
+      java_home = subprocess.check_output('cygpath -u "%s"' % java_home).read().decode('utf-8').strip()
+    cmd_prefix = 'export JAVA_HOME="%s" PATH="%s/bin:$PATH" JAVACMD="%s/bin/java"' % \
+                 (java_home, java_home, java_home)
+    s = subprocess.check_output('%s; java -version' % cmd_prefix,
+                                shell=True, stderr=subprocess.STDOUT).decode('utf-8')
+    if s.find(' version "%s.' % version) == -1:
+      parser.error('got wrong version for java %s:\n%s' % (version, s)) 
+    def run_java(cmd, logfile):
+      run('%s; %s' % (cmd_prefix, cmd), logfile)
+    return run_java
+  java7_home =  os.environ.get('JAVA_HOME')
+  if java7_home is None:
+    parser.error('JAVA_HOME must be set')
+  run_java7 = _make_runner(java7_home, '1.7')
+  run_java8 = None
+  if java8_home is not None:
+    run_java8 = _make_runner(java8_home, '1.8')
+
+  jc = namedtuple('JavaConfig', 'run_java7 java7_home run_java8 java8_home')
+  return jc(run_java7, java7_home, run_java8, java8_home)
+
 version_re = re.compile(r'(\d+\.\d+\.\d+(-ALPHA|-BETA)?)')
 revision_re = re.compile(r'rev(\d+)')
 def parse_config():
@@ -1268,9 +1303,11 @@ def parse_config():
                       help='SVN revision number that release was built with, defaults to that in URL')
   parser.add_argument('--version', metavar='X.Y.Z(-ALPHA|-BETA)?',
                       help='Version of the release, defaults to that in URL')
+  parser.add_argument('--test-java8', metavar='JAVA8_HOME',
+                      help='Path to Java8 home directory, to run tests with if specified')
   parser.add_argument('url', help='Url pointing to release to test')
-  parser.add_argument('test_args', nargs=argparse.REMAINDER, metavar='ARGS',
-                      help='Arguments to pass to ant for testing, e.g. -Dwhat=ever')
+  parser.add_argument('test_args', nargs=argparse.REMAINDER,
+                      help='Arguments to pass to ant for testing, e.g. -Dwhat=ever.')
   c = parser.parse_args()
 
   if c.version is not None:
@@ -1287,6 +1324,8 @@ def parse_config():
     if revision_match is None:
       parser.error('Could not find revision in URL')
     c.revision = revision_match.group(1)
+  
+  c.java = make_java_config(parser, c.test_java8)
 
   if c.tmp_dir:
     c.tmp_dir = os.path.abspath(c.tmp_dir)
@@ -1303,9 +1342,9 @@ def parse_config():
 def main():
   c = parse_config()
   print('NOTE: output encoding is %s' % sys.stdout.encoding)
-  smokeTest(c.url, c.revision, c.version, c.tmp_dir, c.is_signed, ' '.join(c.test_args))
+  smokeTest(c.java, c.url, c.revision, c.version, c.tmp_dir, c.is_signed, ' '.join(c.test_args))
 
-def smokeTest(baseURL, svnRevision, version, tmpDir, isSigned, testArgs):
+def smokeTest(java, baseURL, svnRevision, version, tmpDir, isSigned, testArgs):
 
   startTime = datetime.datetime.now()
   
@@ -1340,15 +1379,15 @@ def smokeTest(baseURL, svnRevision, version, tmpDir, isSigned, testArgs):
   print('Test Lucene...')
   checkSigs('lucene', lucenePath, version, tmpDir, isSigned)
   for artifact in ('lucene-%s.tgz' % version, 'lucene-%s.zip' % version):
-    unpackAndVerify('lucene', tmpDir, artifact, svnRevision, version, testArgs, baseURL)
-  unpackAndVerify('lucene', tmpDir, 'lucene-%s-src.tgz' % version, svnRevision, version, testArgs, baseURL)
+    unpackAndVerify(java, 'lucene', tmpDir, artifact, svnRevision, version, testArgs, baseURL)
+  unpackAndVerify(java, 'lucene', tmpDir, 'lucene-%s-src.tgz' % version, svnRevision, version, testArgs, baseURL)
 
   print()
   print('Test Solr...')
   checkSigs('solr', solrPath, version, tmpDir, isSigned)
   for artifact in ('solr-%s.tgz' % version, 'solr-%s.zip' % version):
-    unpackAndVerify('solr', tmpDir, artifact, svnRevision, version, testArgs, baseURL)
-  unpackAndVerify('solr', tmpDir, 'solr-%s-src.tgz' % version, svnRevision, version, testArgs, baseURL)
+    unpackAndVerify(java, 'solr', tmpDir, artifact, svnRevision, version, testArgs, baseURL)
+  unpackAndVerify(java, 'solr', tmpDir, 'solr-%s-src.tgz' % version, svnRevision, version, testArgs, baseURL)
 
   print()
   print('Test Maven artifacts for Lucene and Solr...')

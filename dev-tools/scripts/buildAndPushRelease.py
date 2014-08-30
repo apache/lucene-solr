@@ -82,7 +82,7 @@ def getSVNRev():
   return rev
   
 
-def prepare(root, version, gpgKeyID, gpgPassword, doTest):
+def prepare(root, version, gpgKeyID, gpgPassword):
   print()
   print('Prepare release...')
   if os.path.exists(LOG):
@@ -96,10 +96,8 @@ def prepare(root, version, gpgKeyID, gpgPassword, doTest):
   print('  svn rev: %s' % rev)
   log('\nSVN rev: %s\n' % rev)
 
-  if doTest:
-    # Don't run tests if we are gonna smoke test after the release...
-    print('  ant clean test')
-    run('ant clean test')
+  print('  ant clean test')
+  run('ant clean test')
 
   print('  clean checkout')
   scrubCheckout()
@@ -258,8 +256,6 @@ def parse_config():
   if not os.path.isdir(config.root):
     # TODO: add additional svn check to ensure dir is a real lucene-solr checkout
     parser.error('Root path is not a valid lucene-solr checkout')
-  if config.smoke_test is not None and os.path.exists(config.smoke_test):
-    parser.error('Smoke test path already exists')
 
   config.version = read_version(config.root)
   print('Building version: %s' % config.version)
@@ -278,7 +274,7 @@ def main():
   c = parse_config()
 
   if c.prepare:
-    rev = prepare(c.root, c.version, c.key_id, c.key_password, key.smoke_test is None)
+    rev = prepare(c.root, c.version, c.key_id, c.key_password)
   else:
     os.chdir(root)
     rev = open('rev.txt', encoding='UTF-8').read()
@@ -292,11 +288,8 @@ def main():
 
   if url is not None:
     print('  URL: %s' % url)
-
-  if c.smoke_test is not None:
-    import smokeTestRelease
-    smokeTestRelease.DEBUG = False
-    smokeTestRelease.smokeTest(url, rev, c.version, c.smoke_test, c.sign is not None, '')
+    print('Next set the PYTHON_EXEC env var and you can run the smoker tester:')
+    print('  $PYTHON_EXEC %s %s' % (sys.argv[0], url))
 
 if __name__ == '__main__':
   try:

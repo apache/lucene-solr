@@ -127,6 +127,11 @@ Bug Fixes
   MockDirectoryWrapper to have it simulate a virus checker holding a
   file open and preventing deletion (Robert Muir, Mike McCandless)
 
+Build
+
+* LUCENE-5909: Smoke tester now has better command line parsing and
+  optionally also runs on Java 8.  (Ryan Ernst, Uwe Schindler)
+
 ======================= Lucene 4.10.0 ======================
 
 New Features

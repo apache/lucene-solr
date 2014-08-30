@@ -37,9 +37,8 @@
   <property name="maven-version" value="2.2.1"/>
   <property name="maven.dependencies.filters.file" location="lucene/build/maven.dependencies.filters.properties"/>
 
-  <property name="fakeRelease" location="lucene/build/fakeRelease"/>
-  <property name="fakeReleaseTmp" location="lucene/build/fakeReleaseTmp"/>
-  <property name="fakeReleaseVersion" value="${version.base}"/>
+  <property name="smokeTestRelease.dir" location="lucene/build/smokeTestRelease/dist"/>
+  <property name="smokeTestRelease.tmp" location="lucene/build/smokeTestRelease/tmp"/>
   <property name="smokeTestRelease.testArgs" value=""/>
 
   <target name="-projecthelp">
@@ -372,52 +371,60 @@ File | Project Structure | Platform Settings | SDKs):
       <fileset dir="solr" includes="build.xml" />
     </subant>
   </target>
+  
+  <target name="-nightly-smoke-java8params" if="smokeTestRelease.java8">
+    <!-- convert path to UNIX style, so windows backslashes don't hurt escaping: -->
+    <pathconvert targetos="unix" property="-smokeTestRelease.java8params">
+      <regexpmapper from="^(.*)$" to="--test-java8 '\1'"/>
+      <path location="smokeTestRelease.java8"/>
+    </pathconvert>
+  </target>
 
-  <target name="-load-env">
-     <!-- load the properties only here, so not on every invocation /usr/bin/env is called: -->
-     <property environment="env"/>
-  </target>
-  
-  <target name="-env-JAVA7_HOME" depends="-load-env" if="env.JAVA7_HOME">
-     <property name="JAVA7_HOME" value="${env.JAVA7_HOME}"/>
-  </target>
-  
-  <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it" depends="clean,-env-JAVA7_HOME">
-   <fail unless="JAVA7_HOME">JAVA7_HOME property or environment variable is not defined.</fail>
-   <exec executable="${python32.exe}" failonerror="true">
+  <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it, pass '-DsmokeTestRelease.java8=/path/to/jdk1.8.0' to enable Java 8)"
+    depends="clean,-nightly-smoke-java8params">
+    <fail message="To run nightly smoke, the JDK must be exactly Java 1.7, was: ${java.specification.version}">
+      <condition>
+        <not><equals arg1="${java.specification.version}" arg2="1.7"/></not>
+      </condition>
+    </fail>
+    <property name="-smokeTestRelease.java8params" value=""/><!-- (if not yet defined) -->
+    <exec executable="${python32.exe}" failonerror="true" taskname="python32">
       <arg value="-V"/>
-   </exec>
-   <subant target="prepare-release-no-sign" inheritall="false" failonerror="true">
-     <fileset dir="lucene" includes="build.xml" />
-     <fileset dir="solr" includes="build.xml" />
-     <property name="version" value="${fakeReleaseVersion}" />
-   </subant>
-   <mkdir dir="${fakeRelease}"/>
-   <copy todir="${fakeRelease}/lucene">
-     <fileset dir="lucene/dist"/>
-   </copy>
-   <copy todir="${fakeRelease}/solr">
-     <fileset dir="solr/package"/>
-   </copy>
-   <makeurl file="${fakeRelease}" validate="false" property="fakeRelease.uri"/>
-   <exec executable="${python32.exe}" failonerror="true">
-     <arg value="-u"/>
-     <!-- Tell Python not to write any bytecode cache into the filesystem: -->
-     <arg value="-B"/>
-     <arg file="dev-tools/scripts/smokeTestRelease.py"/>
-     <arg value="--revision"/>
-     <arg value="skip"/>
-     <arg value="--version"/>
-     <arg value="${fakeReleaseVersion}"/>
-     <arg value="--tmp-dir"/>
-     <arg file="${fakeReleaseTmp}"/>
-     <arg value="--not-signed"/>
-     <arg value="${fakeRelease.uri}"/>
-     <arg value="${smokeTestRelease.testArgs}"/>
-     <env key="JAVA7_HOME" file="${JAVA7_HOME}"/>
-   </exec>
-   <delete dir="${fakeRelease}"/>
-   <delete dir="${fakeReleaseTmp}"/>
+    </exec>
+    <subant target="prepare-release-no-sign" inheritall="false" failonerror="true">
+      <fileset dir="lucene" includes="build.xml" />
+      <fileset dir="solr" includes="build.xml" />
+      <!-- pass ${version.base} here to emulate a real release, without appendix like "-SNAPSHOT": -->
+      <property name="version" value="${version.base}" />
+    </subant>
+    <mkdir dir="${smokeTestRelease.dir}"/>
+    <copy todir="${smokeTestRelease.dir}/lucene">
+      <fileset dir="lucene/dist"/>
+    </copy>
+    <copy todir="${smokeTestRelease.dir}/solr">
+      <fileset dir="solr/package"/>
+    </copy>
+    <local name="url"/>
+    <makeurl file="${smokeTestRelease.dir}" validate="false" property="url"/>
+    <exec executable="${python32.exe}" failonerror="true" taskname="smoker">
+      <arg value="-u"/>
+      <!-- Tell Python not to write any bytecode cache into the filesystem: -->
+      <arg value="-B"/>
+      <arg file="dev-tools/scripts/smokeTestRelease.py"/>
+      <arg line="${-smokeTestRelease.java8params}"/>
+      <arg value="--revision"/>
+      <arg value="skip"/>
+      <!-- pass ${version.base} here to emulate a real release, without appendix like "-SNAPSHOT": -->
+      <arg value="--version"/>
+      <arg value="${version.base}"/>
+      <arg value="--tmp-dir"/>
+      <arg file="${smokeTestRelease.tmp}"/>
+      <arg value="--not-signed"/>
+      <arg value="${url}"/>
+      <arg value="${smokeTestRelease.testArgs}"/>
+    </exec>
+    <delete dir="${smokeTestRelease.dir}"/>
+    <delete dir="${smokeTestRelease.tmp}"/>
   </target>
   
   <target name="check-svn-working-copy" description="Checks the status of the SVN working copy">
