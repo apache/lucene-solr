@@ -632,7 +632,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     MockDirectoryWrapper dir = newMockDirectory();
     if (dir instanceof MockDirectoryWrapper) {
       // ensure we produce enough of our exceptions
-      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
+      dir.setEnableVirusScanner(false);
     }
 
     IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()));
