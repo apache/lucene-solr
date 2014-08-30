@@ -554,6 +554,8 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
 
     writerRef.set(new IndexWriter(d, newIndexWriterConfig(analyzer)));
+    // Make initial commit so the test doesn't trip "corrupt first commit" when virus checker refuses to delete partial segments_N file:
+    writerRef.get().commit();
     final LineFileDocs docs = new LineFileDocs(random());
     final Thread[] threads = new Thread[threadCount];
     final int iters = atLeast(100);
