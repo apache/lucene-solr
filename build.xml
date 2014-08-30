@@ -380,7 +380,7 @@ File | Project Structure | Platform Settings | SDKs):
     </pathconvert>
   </target>
 
-  <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it, pass '-DsmokeTestRelease.java8=/path/to/jdk1.8.0' to enable Java 8)"
+  <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it (pass '-DsmokeTestRelease.java8=/path/to/jdk1.8.0' to additionally test with Java 8)"
     depends="clean,-nightly-smoke-java8params">
     <fail message="To run nightly smoke, the JDK must be exactly Java 1.7, was: ${java.specification.version}">
       <condition>
