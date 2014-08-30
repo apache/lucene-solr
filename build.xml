@@ -376,7 +376,7 @@ File | Project Structure | Platform Settings | SDKs):
     <!-- convert path to UNIX style, so windows backslashes don't hurt escaping: -->
     <pathconvert targetos="unix" property="-smokeTestRelease.java8params">
       <regexpmapper from="^(.*)$" to="--test-java8 '\1'"/>
-      <path location="smokeTestRelease.java8"/>
+      <path location="${smokeTestRelease.java8}"/>
     </pathconvert>
   </target>
 
