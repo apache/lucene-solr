@@ -440,7 +440,6 @@ File | Project Structure | Platform Settings | SDKs):
       <param name="tests.multiplier" value="1"/>
       <param name="tests.nightly" value="false"/>
       <param name="tests.weekly" value="false"/>
-      <param name="tests.slow" value="false"/>
       <param name="tests.badapples" value="true"/>
       <!-- The idea behind Clover is to determine test coverage, so be immune to failing tests: -->
       <param name="tests.haltonfailure" value="false"/>
