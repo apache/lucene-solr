@@ -1700,7 +1700,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   </target>
 
   <target name="rat-sources-typedef" unless="rat.loaded">
-    <ivy:cachepath organisation="org.apache.rat" module="apache-rat" revision="0.10" transitive="false" inline="true" conf="master" type="jar" pathid="rat.classpath"/>
+    <ivy:cachepath organisation="org.apache.rat" module="apache-rat" revision="0.11" transitive="false" inline="true" conf="master" type="jar" pathid="rat.classpath"/>
     <typedef resource="org/apache/rat/anttasks/antlib.xml" uri="antlib:org.apache.rat.anttasks" classpathref="rat.classpath"/>
     <property name="rat.loaded" value="true"/>
   </target>
@@ -2286,7 +2286,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
 
   <!-- GROOVY scripting engine for ANT tasks -->
   <target name="resolve-groovy" unless="groovy.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="org.codehaus.groovy" module="groovy-all" revision="2.3.1"
+    <ivy:cachepath organisation="org.codehaus.groovy" module="groovy-all" revision="2.3.6"
       inline="true" conf="default" type="jar" transitive="true" pathid="groovy.classpath"/>
     <taskdef name="groovy"
       classname="org.codehaus.groovy.ant.Groovy"
