@@ -2504,7 +2504,10 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testCorruptFirstCommit() throws Exception {
     for(int i=0;i<6;i++) {
       BaseDirectoryWrapper dir = newDirectory();
+
+      // Create a corrupt first commit:
       dir.createOutput("segments_0", IOContext.DEFAULT).close();
+
       IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
       int mode = i/2;
       if (mode == 0) {
@@ -2544,6 +2547,16 @@ public class TestIndexWriter extends LuceneTestCase {
       if (mode != 0) {
         dir.setCheckIndexOnClose(false);
       }
+
+      if (dir instanceof MockDirectoryWrapper) {
+        MockDirectoryWrapper mdw = (MockDirectoryWrapper) dir;
+        if (Arrays.equals(new String[] {"segments_0"}, dir.listAll()) &&
+            mdw.didTryToDelete("segments_0")) {
+          // This means virus checker blocked IW deleting the corrupt first commit
+          dir.setCheckIndexOnClose(false);
+        }
+      }
+
       dir.close();
     }
   }
