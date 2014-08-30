@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -382,6 +383,11 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     sb.append('}');
 
     return sb.toString();
+  }
+
+  public NamedList getImmutableCopy() {
+    NamedList copy = clone();
+    return new NamedList<>( Collections.unmodifiableList(copy.nvPairs));
   }
 
   /**

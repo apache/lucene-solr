@@ -48,6 +48,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.core.ParamSet;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
@@ -124,6 +125,17 @@ public class SolrPluginUtils {
    */
   public static void setDefaults(SolrQueryRequest req, SolrParams defaults,
                                  SolrParams appends, SolrParams invariants) {
+      String paramSetNames = req.getParams().get(ParamSet.TYPE);
+      if(paramSetNames !=null){
+        for (String name : StrUtils.splitSmart(paramSetNames,',')) {
+          ParamSet paramSet = req.getCore().getSolrConfig().getParamSets().get(name);
+          if(paramSet!=null){
+            if(paramSet.defaults != null) defaults = SolrParams.wrapDefaults(SolrParams.toSolrParams(paramSet.defaults) , defaults);
+            if(paramSet.invariants != null) invariants = SolrParams.wrapDefaults(invariants, SolrParams.toSolrParams(paramSet.invariants));
+            if(paramSet.appends != null)  appends = SolrParams.wrapAppended(appends, SolrParams.toSolrParams(paramSet.appends));
+          }
+        }
+      }
 
       SolrParams p = req.getParams();
       p = SolrParams.wrapDefaults(p, defaults);

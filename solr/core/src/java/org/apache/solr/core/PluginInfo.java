@@ -111,4 +111,7 @@ public class PluginInfo {
                    "str",
                    "int","long",
                    "float","double"));
+  public static final String DEFAULTS = "defaults";
+  public static final String APPENDS = "appends";
+  public static final String INVARIANTS = "invariants";
 }
