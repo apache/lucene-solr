@@ -61,12 +61,12 @@
       <include name="*/build/**/test/TEST-*.xml"/>
       <exclude name="lucene/build/backwards/**"/>
     </fileset>
-    <clover-report>
-      <current outfile="${clover.report.dir}" title="${final.name}" numThreads="0">
+    <clover-report projectName="Apache Lucene/Solr">
+      <current outfile="${clover.report.dir}" title="Apache Lucene/Solr ${version}" numThreads="0">
         <format type="html" filter="assert"/>
         <testresults refid="clover.test.result.files"/>
       </current>
-      <current outfile="${clover.report.dir}/clover.xml" title="${final.name}">
+      <current outfile="${clover.report.dir}/clover.xml" title="Apache Lucene/Solr ${version}">
         <format type="xml" filter="assert"/>
         <testresults refid="clover.test.result.files"/>
       </current>
