@@ -41,6 +41,7 @@ import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.kitesdk.morphline.api.Collector;
@@ -61,7 +62,7 @@ import com.google.common.io.Files;
 import com.typesafe.config.Config;
 
 public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
-
+  private static Locale savedLocale;
   protected Collector collector;
   protected Command morphline;
   protected SolrServer solrServer;
@@ -84,9 +85,22 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    // TODO: test doesn't work with some Locales, see SOLR-6458
+    savedLocale = Locale.getDefault();
+    Locale.setDefault(Locale.ENGLISH);
+    
+    // we leave this in case the above is addressed
     assumeFalse("This test fails on UNIX with Turkish default locale (https://issues.apache.org/jira/browse/SOLR-6387)",
         new Locale("tr").getLanguage().equals(Locale.getDefault().getLanguage()));
+    
     myInitCore(DEFAULT_BASE_DIR);
+  }
+  
+  @AfterClass
+  public static void afterClass() throws Exception {
+    if (savedLocale != null) {
+      Locale.setDefault(savedLocale);
+    }
   }
 
   protected static void myInitCore(String baseDirName) throws Exception {
