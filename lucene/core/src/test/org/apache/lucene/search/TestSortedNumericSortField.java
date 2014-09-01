@@ -30,8 +30,6 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.NumericUtils;
 
 /** Simple tests for SortedNumericSortField */
-@SuppressCodecs({"Lucene40", "Lucene41", "Lucene42", "Lucene45", "Lucene46"}) 
-// avoid codecs that don't support sortednumeric
 public class TestSortedNumericSortField extends LuceneTestCase {
   
   public void testEmptyIndex() throws Exception {

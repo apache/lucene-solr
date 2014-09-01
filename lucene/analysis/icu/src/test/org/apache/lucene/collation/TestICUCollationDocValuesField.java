@@ -46,7 +46,6 @@ import com.ibm.icu.util.ULocale;
 /**
  * trivial test of ICUCollationDocValuesField
  */
-@SuppressCodecs("Lucene3x")
 public class TestICUCollationDocValuesField extends LuceneTestCase {
   
   public void testBasic() throws Exception {

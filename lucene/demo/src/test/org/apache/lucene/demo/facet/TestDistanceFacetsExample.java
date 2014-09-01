@@ -23,7 +23,6 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 
-@SuppressCodecs("Lucene3x")
 public class TestDistanceFacetsExample extends LuceneTestCase {
 
   public void testSimple() throws Exception {

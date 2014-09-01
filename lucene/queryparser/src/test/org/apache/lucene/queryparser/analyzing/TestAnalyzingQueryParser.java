@@ -45,7 +45,6 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /**
  */
-@SuppressCodecs("Lucene3x") // binary terms
 public class TestAnalyzingQueryParser extends LuceneTestCase {
   private final static String FIELD = "field";
    

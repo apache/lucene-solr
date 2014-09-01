@@ -31,7 +31,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
-@SuppressCodecs({"Lucene40", "Lucene41"}) // avoid codecs that don't support sortedset
 public class TestSortedSetFieldSource extends LuceneTestCase {
   public void testSimple() throws Exception {
     Directory dir = newDirectory();

@@ -25,7 +25,6 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
-@SuppressCodecs("Lucene3x")
 public class TestRangeFacetsExample extends LuceneTestCase {
 
   @Test

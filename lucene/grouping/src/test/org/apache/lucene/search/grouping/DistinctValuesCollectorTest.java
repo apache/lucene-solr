@@ -58,7 +58,6 @@ import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueStr;
 
 
-@SuppressCodecs({"Lucene40", "Lucene41", "Lucene42"}) // we need missing support... i think?
 public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
 
   private final static NullComparator nullComparator = new NullComparator();

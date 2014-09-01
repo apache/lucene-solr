@@ -35,7 +35,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.AfterClass;
 
-@SuppressCodecs("Lucene3x")
 public abstract class ReplicatorTestCase extends LuceneTestCase {
   
   private static HttpClientConnectionManager clientConnectionManager;

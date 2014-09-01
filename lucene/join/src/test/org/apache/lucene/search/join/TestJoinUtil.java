@@ -72,7 +72,6 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
-@SuppressCodecs({"Lucene40", "Lucene41", "Lucene42"}) // we need SortedSet, docsWithField
 public class TestJoinUtil extends LuceneTestCase {
 
   public void testSimple() throws Exception {

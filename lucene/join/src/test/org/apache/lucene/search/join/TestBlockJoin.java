@@ -35,7 +35,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.*;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
-@SuppressCodecs({"Lucene40", "Lucene41", "Lucene42"}) // needs working "missing"
 public class TestBlockJoin extends LuceneTestCase {
 
   // One resume...

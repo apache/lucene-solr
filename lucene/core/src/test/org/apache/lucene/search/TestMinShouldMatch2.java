@@ -48,7 +48,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /** tests BooleanScorer2's minShouldMatch */
-@SuppressCodecs({"Lucene40", "Lucene41"})
 public class TestMinShouldMatch2 extends LuceneTestCase {
   static Directory dir;
   static DirectoryReader r;

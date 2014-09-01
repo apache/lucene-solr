@@ -46,7 +46,6 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 /**
  * trivial test of CollationDocValuesField
  */
-@SuppressCodecs("Lucene3x")
 public class TestCollationDocValuesField extends LuceneTestCase {
   
   public void testBasic() throws Exception {

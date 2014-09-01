@@ -40,7 +40,6 @@ import org.apache.lucene.util.UnicodeUtil;
 /**
  * Tests the DocTermOrdsRangeFilter
  */
-@SuppressCodecs({"Lucene40", "Lucene41", "Lucene42"}) // needs SORTED_SET
 public class TestDocTermOrdsRangeFilter extends LuceneTestCase {
   protected IndexSearcher searcher1;
   protected IndexSearcher searcher2;
