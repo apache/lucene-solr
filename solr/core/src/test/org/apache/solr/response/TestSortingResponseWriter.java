@@ -19,9 +19,7 @@ package org.apache.solr.response;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.*;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
-@SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
 public class TestSortingResponseWriter extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {

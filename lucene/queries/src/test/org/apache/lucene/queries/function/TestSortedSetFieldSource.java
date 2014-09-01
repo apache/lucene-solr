@@ -29,7 +29,6 @@ import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 public class TestSortedSetFieldSource extends LuceneTestCase {
   public void testSimple() throws Exception {

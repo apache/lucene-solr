@@ -73,11 +73,6 @@ import org.junit.BeforeClass;
   Verify we can read the pre-5.0 file format, do searches
   against it, and add documents to it.
 */
-// note: add this if we make a 4.x impersonator
-// TODO: don't use 4.x codec, its unrealistic since it means
-// we won't even be running the actual code, only the impostor
-// @SuppressCodecs("Lucene4x")
-@SuppressCodecs({"Lucene40", "Lucene41", "Lucene42", "Lucene45", "Lucene46", "Lucene49"})
 public class TestBackwardsCompatibility extends LuceneTestCase {
 
   // Uncomment these cases & run them on an older Lucene version,

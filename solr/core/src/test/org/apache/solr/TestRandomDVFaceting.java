@@ -25,7 +25,6 @@ import java.util.Random;
 
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
@@ -38,7 +37,6 @@ import org.junit.Test;
  * to the indexed facet results as if it were just another faceting method.
  */
 @Slow
-@SuppressCodecs({"Lucene40", "Lucene41", "Lucene42"})
 public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
   @BeforeClass

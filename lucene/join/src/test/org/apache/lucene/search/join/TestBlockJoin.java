@@ -33,7 +33,6 @@ import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.*;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 public class TestBlockJoin extends LuceneTestCase {
 

@@ -35,7 +35,6 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 public class TestExpressionValueSource extends LuceneTestCase {
   DirectoryReader reader;

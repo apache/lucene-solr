@@ -38,7 +38,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 import com.ibm.icu.text.Collator;
 import com.ibm.icu.util.ULocale;

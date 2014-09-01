@@ -21,11 +21,9 @@ package org.apache.solr.analytics;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Appending","Asserting"})
 public class NoFacetTest extends AbstractAnalyticsStatsTest {
   static String fileName = "/analytics/requestFiles/noFacets.txt";
 

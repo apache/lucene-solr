@@ -20,7 +20,6 @@ package org.apache.solr.analytics.expression;
 import com.google.common.collect.ObjectArrays;
 
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.AbstractAnalyticsStatsTest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -34,7 +33,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-@SuppressCodecs({"Lucene3x", "Lucene40", "Lucene41", "Lucene42", "Appending", "Asserting"})
 public class ExpressionTest extends AbstractAnalyticsStatsTest {
   private static final String fileName = "/analytics/requestFiles/expressions.txt";
 

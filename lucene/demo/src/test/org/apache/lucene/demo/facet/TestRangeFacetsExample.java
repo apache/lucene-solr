@@ -21,7 +21,6 @@ import java.util.List;
 
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
