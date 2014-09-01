@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -49,7 +48,7 @@ public class TestLucene40PostingsReader extends LuceneTestCase {
   public void testPostings() throws Exception {
     Directory dir = newFSDirectory(createTempDir("postings"));
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(Codec.forName("Lucene40"));
+    iwc.setCodec(new Lucene40RWCodec());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     
     Document doc = new Document();
