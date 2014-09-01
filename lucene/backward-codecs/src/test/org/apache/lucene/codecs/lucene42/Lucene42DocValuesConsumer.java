@@ -87,6 +87,9 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
 
   @Override
   public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
+    if (field.getDocValuesGen() != -1) {
+      throw new UnsupportedOperationException("4.2 does not support dv updates");
+    }
     addNumericField(field, values, true);
   }
 
@@ -209,6 +212,9 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
 
   @Override
   public void addBinaryField(FieldInfo field, final Iterable<BytesRef> values) throws IOException {
+    if (field.getDocValuesGen() != -1) {
+      throw new UnsupportedOperationException("4.2 does not support dv updates");
+    }
     // write the byte[] data
     meta.writeVInt(field.number);
     meta.writeByte(BYTES);
@@ -270,6 +276,9 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
 
   @Override
   public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
+    if (field.getDocValuesGen() != -1) {
+      throw new UnsupportedOperationException("4.2 does not support dv updates");
+    }
     // three cases for simulating the old writer:
     // 1. no missing
     // 2. missing (and empty string in use): remap ord=-1 -> ord=0
@@ -307,6 +316,7 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
   // note: this might not be the most efficient... but its fairly simple
   @Override
   public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, final Iterable<Number> docToOrdCount, final Iterable<Number> ords) throws IOException {
+    assert field.getDocValuesGen() == -1;
     // write the ordinals as a binary field
     addBinaryField(field, new Iterable<BytesRef>() {
       @Override

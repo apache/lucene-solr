@@ -33,24 +33,20 @@ public class Lucene40RWPostingsFormat extends Lucene40PostingsFormat {
   
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    if (!LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
-      return super.fieldsConsumer(state);
-    } else {
-      PostingsWriterBase docs = new Lucene40PostingsWriter(state);
-      
-      // TODO: should we make the terms index more easily
-      // pluggable?  Ie so that this codec would record which
-      // index impl was used, and switch on loading?
-      // Or... you must make a new Codec for this?
-      boolean success = false;
-      try {
-        FieldsConsumer ret = new BlockTreeTermsWriter(state, docs, minBlockSize, maxBlockSize);
-        success = true;
-        return ret;
-      } finally {
-        if (!success) {
-          docs.close();
-        }
+    PostingsWriterBase docs = new Lucene40PostingsWriter(state);
+    
+    // TODO: should we make the terms index more easily
+    // pluggable?  Ie so that this codec would record which
+    // index impl was used, and switch on loading?
+    // Or... you must make a new Codec for this?
+    boolean success = false;
+    try {
+      FieldsConsumer ret = new BlockTreeTermsWriter(state, docs, minBlockSize, maxBlockSize);
+      success = true;
+      return ret;
+    } finally {
+      if (!success) {
+        docs.close();
       }
     }
   }

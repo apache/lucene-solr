@@ -41,11 +41,7 @@ public class Lucene41RWCodec extends Lucene41Codec {
   private final FieldInfosFormat fieldInfos = new Lucene40FieldInfosFormat() {
     @Override
     public FieldInfosWriter getFieldInfosWriter() throws IOException {
-      if (!LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
-        return super.getFieldInfosWriter();
-      } else {
-        return new Lucene40FieldInfosWriter();
-      }
+      return new Lucene40FieldInfosWriter();
     }
   };
   

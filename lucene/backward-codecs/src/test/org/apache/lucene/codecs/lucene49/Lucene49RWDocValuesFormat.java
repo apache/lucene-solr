@@ -29,16 +29,12 @@ public class Lucene49RWDocValuesFormat extends Lucene49DocValuesFormat {
 
   @Override
   public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    if (LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
-      return new Lucene49DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION) {
-        @Override
-        void checkCanWrite(FieldInfo field) {
-          // allow writing all fields 
-        }
-      };
-    } else {
-      return super.fieldsConsumer(state);
-    }
+    return new Lucene49DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION) {
+      @Override
+      void checkCanWrite(FieldInfo field) {
+        // allow writing all fields 
+      }
+    };
   }
   
 }

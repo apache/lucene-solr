@@ -19,8 +19,6 @@ package org.apache.lucene.codecs.lucene40;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BaseNormsFormatTestCase;
-import org.junit.BeforeClass;
-
 
 /** Tests Lucene40's norms format */
 public class TestLucene40NormsFormat extends BaseNormsFormatTestCase {
@@ -29,10 +27,5 @@ public class TestLucene40NormsFormat extends BaseNormsFormatTestCase {
   @Override
   protected Codec getCodec() {
     return codec;
-  }
-  
-  @BeforeClass
-  public static void beforeClass() {
-    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true; // explicitly instantiates ancient codec
   }
 }

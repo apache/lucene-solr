@@ -30,9 +30,4 @@ public class TestLucene42NormsFormat extends BaseNormsFormatTestCase {
   protected Codec getCodec() {
     return codec;
   }
-  
-  @BeforeClass
-  public static void beforeClass() {
-    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true; // explicitly instantiates ancient codec
-  }
 }

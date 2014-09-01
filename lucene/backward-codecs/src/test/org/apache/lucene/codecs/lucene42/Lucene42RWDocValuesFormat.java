@@ -31,11 +31,7 @@ public class Lucene42RWDocValuesFormat extends Lucene42DocValuesFormat {
   
   @Override
   public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    if (!LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
-      return super.fieldsConsumer(state);
-    } else {
-      // note: we choose DEFAULT here (its reasonably fast, and for small bpv has tiny waste)
-      return new Lucene42DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION, acceptableOverheadRatio);
-    }
+    // note: we choose DEFAULT here (its reasonably fast, and for small bpv has tiny waste)
+    return new Lucene42DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION, acceptableOverheadRatio);
   }
 }

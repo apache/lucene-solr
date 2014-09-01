@@ -46,6 +46,9 @@ public final class Lucene42FieldInfosWriter extends FieldInfosWriter {
   
   @Override
   public void write(Directory directory, String segmentName, String segmentSuffix, FieldInfos infos, IOContext context) throws IOException {
+    if (!segmentSuffix.isEmpty()) {
+      throw new UnsupportedOperationException("4.2 does not support fieldinfo updates");
+    }
     final String fileName = IndexFileNames.segmentFileName(segmentName, "", Lucene42FieldInfosFormat.EXTENSION);
     IndexOutput output = directory.createOutput(fileName, context);
     boolean success = false;

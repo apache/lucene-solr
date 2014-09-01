@@ -466,15 +466,6 @@ public abstract class LuceneTestCase extends Assert {
   // Fields initialized in class or instance rules.
   // -----------------------------------------------------------------
 
-  /**
-   * When {@code true}, Codecs for old Lucene version will support writing
-   * indexes in that format. Defaults to {@code false}, can be disabled by
-   * specific tests on demand.
-   * 
-   * @lucene.internal
-   */
-  public static boolean OLD_FORMAT_IMPERSONATION_IS_ACTIVE = false;
-
 
   // -----------------------------------------------------------------
   // Class level (suite) rules.

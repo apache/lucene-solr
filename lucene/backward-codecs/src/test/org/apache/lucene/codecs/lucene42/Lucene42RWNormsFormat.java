@@ -30,10 +30,6 @@ public class Lucene42RWNormsFormat extends Lucene42NormsFormat {
 
   @Override
   public NormsConsumer normsConsumer(SegmentWriteState state) throws IOException {
-    if (LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
-      return new Lucene42NormsConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION, acceptableOverheadRatio);
-    } else {
-      return super.normsConsumer(state);
-    }
+    return new Lucene42NormsConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION, acceptableOverheadRatio);
   }
 }

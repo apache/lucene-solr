@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Read-write version of {@link Lucene45DocValuesFormat} for testing.
@@ -31,15 +30,11 @@ public class Lucene45RWDocValuesFormat extends Lucene45DocValuesFormat {
 
   @Override
   public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    if (LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
-      return new Lucene45DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION) {
-        @Override
-        void checkCanWrite(FieldInfo field) {
-           // allow writing all fields 
-        }
-      };
-    } else {
-      return super.fieldsConsumer(state);
-    }
+    return new Lucene45DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION) {
+      @Override
+      void checkCanWrite(FieldInfo field) {
+        // allow writing all fields 
+      }
+    };
   }
 }

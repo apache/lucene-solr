@@ -23,7 +23,6 @@ import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.util.LuceneTestCase;
 
 /** 
  * Simulates writing Lucene 4.0 Stored Fields Format.
@@ -32,10 +31,6 @@ public class Lucene40RWStoredFieldsFormat extends Lucene40StoredFieldsFormat {
 
   @Override
   public StoredFieldsWriter fieldsWriter(Directory directory, SegmentInfo si, IOContext context) throws IOException {
-    if (!LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
-      throw new UnsupportedOperationException("this codec can only be used for reading");
-    } else {
-      return new Lucene40StoredFieldsWriter(directory, si.name, context);
-    }
+    return new Lucene40StoredFieldsWriter(directory, si.name, context);
   }
 }

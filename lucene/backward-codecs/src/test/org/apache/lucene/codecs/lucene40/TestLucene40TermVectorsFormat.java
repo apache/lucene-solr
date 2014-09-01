@@ -22,11 +22,6 @@ import org.apache.lucene.index.BaseTermVectorsFormatTestCase;
 import org.junit.BeforeClass;
 
 public class TestLucene40TermVectorsFormat extends BaseTermVectorsFormatTestCase {
-
-  @BeforeClass
-  public static void beforeClass() {
-    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true; // explicitly instantiates ancient codec
-  }
   
   @Override
   protected Codec getCodec() {

@@ -6,6 +6,7 @@ import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.util.LuceneTestCase;
@@ -34,11 +35,7 @@ public final class Lucene40RWCodec extends Lucene40Codec {
   private final FieldInfosFormat fieldInfos = new Lucene40FieldInfosFormat() {
     @Override
     public FieldInfosWriter getFieldInfosWriter() throws IOException {
-      if (!LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
-        return super.getFieldInfosWriter();
-      } else {
-        return new Lucene40FieldInfosWriter();
-      }
+      return new Lucene40FieldInfosWriter();
     }
   };
   
@@ -46,6 +43,7 @@ public final class Lucene40RWCodec extends Lucene40Codec {
   private final NormsFormat norms = new Lucene40RWNormsFormat();
   private final StoredFieldsFormat stored = new Lucene40RWStoredFieldsFormat();
   private final TermVectorsFormat vectors = new Lucene40RWTermVectorsFormat();
+  private final PostingsFormat postings = new Lucene40RWPostingsFormat();
   
   @Override
   public FieldInfosFormat fieldInfosFormat() {
@@ -70,5 +68,10 @@ public final class Lucene40RWCodec extends Lucene40Codec {
   @Override
   public TermVectorsFormat termVectorsFormat() {
     return vectors;
+  }
+
+  @Override
+  public PostingsFormat getPostingsFormatForField(String field) {
+    return postings;
   }
 }

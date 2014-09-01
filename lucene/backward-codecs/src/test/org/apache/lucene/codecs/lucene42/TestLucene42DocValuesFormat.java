@@ -26,11 +26,6 @@ import org.junit.BeforeClass;
  */
 public class TestLucene42DocValuesFormat extends BaseCompressingDocValuesFormatTestCase {
   private final Codec codec = new Lucene42RWCodec();
-
-  @BeforeClass
-  public static void beforeClass() {
-    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true; // explicitly instantiates ancient codec
-  }
   
   @Override
   protected Codec getCodec() {

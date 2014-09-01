@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.util.LuceneTestCase;
 
 /** Read-write version of {@link Lucene40DocValuesFormat} for testing */
 @SuppressWarnings("deprecation")
@@ -30,13 +29,9 @@ public class Lucene40RWDocValuesFormat extends Lucene40DocValuesFormat {
 
   @Override
   public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    if (!LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
-      return super.fieldsConsumer(state);
-    } else {
-      String filename = IndexFileNames.segmentFileName(state.segmentInfo.name, 
+    String filename = IndexFileNames.segmentFileName(state.segmentInfo.name, 
           "dv", 
           IndexFileNames.COMPOUND_FILE_EXTENSION);
-      return new Lucene40DocValuesWriter(state, filename, Lucene40FieldInfosReader.LEGACY_DV_TYPE_KEY);
-    }
+    return new Lucene40DocValuesWriter(state, filename, Lucene40FieldInfosReader.LEGACY_DV_TYPE_KEY);
   }
 }

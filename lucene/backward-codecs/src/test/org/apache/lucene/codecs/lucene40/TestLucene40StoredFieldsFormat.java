@@ -23,11 +23,6 @@ import org.junit.BeforeClass;
 
 public class TestLucene40StoredFieldsFormat extends BaseStoredFieldsFormatTestCase {
   
-  @BeforeClass
-  public static void beforeClass() {
-    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true; // explicitly instantiates ancient codec
-  }
-  
   @Override
   protected Codec getCodec() {
     return new Lucene40RWCodec();

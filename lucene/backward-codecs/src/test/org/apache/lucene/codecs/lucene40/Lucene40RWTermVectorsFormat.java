@@ -32,10 +32,6 @@ public class Lucene40RWTermVectorsFormat extends Lucene40TermVectorsFormat {
 
   @Override
   public TermVectorsWriter vectorsWriter(Directory directory, SegmentInfo segmentInfo, IOContext context) throws IOException {
-    if (!LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
-      throw new UnsupportedOperationException("this codec can only be used for reading");
-    } else {
-      return new Lucene40TermVectorsWriter(directory, segmentInfo.name, context);
-    }
+    return new Lucene40TermVectorsWriter(directory, segmentInfo.name, context);
   }
 }

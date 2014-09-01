@@ -148,9 +148,6 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
       avoidCodecs.addAll(Arrays.asList(a.value()));
     }
     
-    // set back to default
-    LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE = false;
-    
     savedCodec = Codec.getDefault();
     int randomVal = random.nextInt(11);
     if (("random".equals(TEST_POSTINGSFORMAT) == false) || ("random".equals(TEST_DOCVALUESFORMAT) == false)) {

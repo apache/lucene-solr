@@ -52,6 +52,9 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
   
   @Override
   public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
+    if (field.getDocValuesGen() != -1) {
+      throw new UnsupportedOperationException("4.0 does not support dv updates");
+    }
     // examine the values to determine best type to use
     long minValue = Long.MAX_VALUE;
     long maxValue = Long.MIN_VALUE;
@@ -154,6 +157,9 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
 
   @Override
   public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
+    if (field.getDocValuesGen() != -1) {
+      throw new UnsupportedOperationException("4.0 does not support dv updates");
+    }
     // examine the values to determine best type to use
     HashSet<BytesRef> uniqueValues = new HashSet<>();
     int minLength = Integer.MAX_VALUE;
@@ -395,6 +401,9 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
 
   @Override
   public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
+    if (field.getDocValuesGen() != -1) {
+      throw new UnsupportedOperationException("4.0 does not support dv updates");
+    }
     // examine the values to determine best type to use
     int minLength = Integer.MAX_VALUE;
     int maxLength = Integer.MIN_VALUE;

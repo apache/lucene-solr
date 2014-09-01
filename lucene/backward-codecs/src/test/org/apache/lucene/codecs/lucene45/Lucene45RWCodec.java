@@ -26,7 +26,6 @@ import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.lucene42.Lucene42FieldInfosFormat;
 import org.apache.lucene.codecs.lucene42.Lucene42FieldInfosWriter;
 import org.apache.lucene.codecs.lucene42.Lucene42RWNormsFormat;
-import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Read-write version of {@link Lucene45Codec} for testing.
@@ -37,11 +36,7 @@ public class Lucene45RWCodec extends Lucene45Codec {
   private final FieldInfosFormat fieldInfosFormat = new Lucene42FieldInfosFormat() {
     @Override
     public FieldInfosWriter getFieldInfosWriter() throws IOException {
-      if (!LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
-        return super.getFieldInfosWriter();
-      } else {
-        return new Lucene42FieldInfosWriter();
-      }
+      return new Lucene42FieldInfosWriter();
     }
   };
 
