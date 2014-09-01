@@ -31,4 +31,9 @@ public class TestLucene45DocValuesFormat extends BaseCompressingDocValuesFormatT
   protected Codec getCodec() {
     return codec;
   }
+  
+  @Override
+  protected boolean codecSupportsSortedNumeric() {
+    return false;
+  }
 }

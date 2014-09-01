@@ -378,7 +378,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   }
   
   public void testTooLargeTermSortedSetBytes() throws IOException {
-    assumeTrue("codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();

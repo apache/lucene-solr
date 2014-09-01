@@ -182,14 +182,10 @@ public abstract class SorterTestBase extends LuceneTestCase {
     doc.add(norms);
     doc.add(new BinaryDocValuesField(BINARY_DV_FIELD, new BytesRef(Integer.toString(id))));
     doc.add(new SortedDocValuesField(SORTED_DV_FIELD, new BytesRef(Integer.toString(id))));
-    if (defaultCodecSupportsSortedSet()) {
-      doc.add(new SortedSetDocValuesField(SORTED_SET_DV_FIELD, new BytesRef(Integer.toString(id))));
-      doc.add(new SortedSetDocValuesField(SORTED_SET_DV_FIELD, new BytesRef(Integer.toString(id + 1))));
-    }
-    if (defaultCodecSupportsSortedNumeric()) {
-      doc.add(new SortedNumericDocValuesField(SORTED_NUMERIC_DV_FIELD, id));
-      doc.add(new SortedNumericDocValuesField(SORTED_NUMERIC_DV_FIELD, id + 1));
-    }
+    doc.add(new SortedSetDocValuesField(SORTED_SET_DV_FIELD, new BytesRef(Integer.toString(id))));
+    doc.add(new SortedSetDocValuesField(SORTED_SET_DV_FIELD, new BytesRef(Integer.toString(id + 1))));
+    doc.add(new SortedNumericDocValuesField(SORTED_NUMERIC_DV_FIELD, id));
+    doc.add(new SortedNumericDocValuesField(SORTED_NUMERIC_DV_FIELD, id + 1));
     doc.add(new Field(TERM_VECTORS_FIELD, Integer.toString(id), TERM_VECTORS_TYPE));
     return doc;
   }
@@ -381,7 +377,6 @@ public abstract class SorterTestBase extends LuceneTestCase {
   
   @Test
   public void testSortedSetDocValuesField() throws Exception {
-    assumeTrue("default codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
     SortedSetDocValues dv = reader.getSortedSetDocValues(SORTED_SET_DV_FIELD);
     int maxDoc = reader.maxDoc();
     for (int i = 0; i < maxDoc; i++) {
@@ -397,7 +392,6 @@ public abstract class SorterTestBase extends LuceneTestCase {
   
   @Test
   public void testSortedNumericDocValuesField() throws Exception {
-    assumeTrue("default codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
     SortedNumericDocValues dv = reader.getSortedNumericDocValues(SORTED_NUMERIC_DV_FIELD);
     int maxDoc = reader.maxDoc();
     for (int i = 0; i < maxDoc; i++) {

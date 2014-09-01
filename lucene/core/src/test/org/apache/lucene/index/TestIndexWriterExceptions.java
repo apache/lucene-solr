@@ -156,14 +156,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       doc.add(new NumericDocValuesField("numericdv", 5));
       doc.add(new BinaryDocValuesField("binarydv", new BytesRef("hello")));
       doc.add(new SortedDocValuesField("sorteddv", new BytesRef("world")));
-      if (defaultCodecSupportsSortedSet()) {
-        doc.add(new SortedSetDocValuesField("sortedsetdv", new BytesRef("hellllo")));
-        doc.add(new SortedSetDocValuesField("sortedsetdv", new BytesRef("again")));
-      }
-      if (defaultCodecSupportsSortedNumeric()) {
-        doc.add(new SortedNumericDocValuesField("sortednumericdv", 10));
-        doc.add(new SortedNumericDocValuesField("sortednumericdv", 5));
-      }
+      doc.add(new SortedSetDocValuesField("sortedsetdv", new BytesRef("hellllo")));
+      doc.add(new SortedSetDocValuesField("sortedsetdv", new BytesRef("again")));
+      doc.add(new SortedNumericDocValuesField("sortednumericdv", 10));
+      doc.add(new SortedNumericDocValuesField("sortednumericdv", 5));
 
       doc.add(newField(r, "content7", "aaa bbb ccc ddd", DocCopyIterator.custom4));
 
@@ -2054,10 +2050,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       shouldFail.set(true);
       boolean doClose = false;
       try {
-        boolean defaultCodecSupportsFieldUpdates = defaultCodecSupportsFieldUpdates();
         for(int i=0;i<numDocs;i++) {
           if (random().nextInt(10) == 7) {
-            boolean fieldUpdate = defaultCodecSupportsFieldUpdates && random().nextBoolean();
+            boolean fieldUpdate = random().nextBoolean();
             int docid = docBase + i;
             if (fieldUpdate) {
               long value = iter;

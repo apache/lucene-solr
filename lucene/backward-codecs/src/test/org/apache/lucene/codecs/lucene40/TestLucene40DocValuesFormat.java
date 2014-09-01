@@ -37,4 +37,20 @@ public class TestLucene40DocValuesFormat extends BaseDocValuesFormatTestCase {
     return false;
   }
 
+  // this codec doesnt support missing (its the same as empty string)
+  @Override
+  protected boolean codecSupportsDocsWithField() {
+    return false;
+  }
+
+  @Override
+  protected boolean codecSupportsSortedSet() {
+    return false;
+  }
+
+  @Override
+  protected boolean codecSupportsSortedNumeric() {
+    return false;
+  }
+
 }

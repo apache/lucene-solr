@@ -36,4 +36,15 @@ public class TestLucene42DocValuesFormat extends BaseCompressingDocValuesFormatT
   protected boolean codecAcceptsHugeBinaryValues(String field) {
     return false;
   }
+  
+  // this codec doesnt support missing (its the same as empty string)
+  @Override
+  protected boolean codecSupportsDocsWithField() {
+    return false;
+  }
+  
+  @Override
+  protected boolean codecSupportsSortedNumeric() {
+    return false;
+  }
 }

@@ -99,7 +99,6 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
   }
   
   public void testSortedSetFixedLengthVsUninvertedField() throws Exception {
-    assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       int fixedLength = TestUtil.nextInt(random(), 1, 10);
@@ -108,7 +107,6 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
   }
   
   public void testSortedSetVariableLengthVsUninvertedField() throws Exception {
-    assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       doTestSortedSetVsUninvertedField(1, 10);
@@ -403,7 +401,6 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
   }
   
   private void doTestMissingVsFieldCache(LongProducer longs) throws Exception {
-    assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField());
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);

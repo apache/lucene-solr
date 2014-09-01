@@ -401,8 +401,6 @@ public class TestDrillSideways extends FacetTestCase {
 
   public void testRandom() throws Exception {
 
-    boolean canUseDV = defaultCodecSupportsSortedSet();
-
     while (aChance == 0.0) {
       aChance = random().nextDouble();
     }
@@ -490,7 +488,7 @@ public class TestDrillSideways extends FacetTestCase {
       config.setMultiValued("dim"+i, true);
     }
 
-    boolean doUseDV = canUseDV && random().nextBoolean();
+    boolean doUseDV = random().nextBoolean();
 
     for(Doc rawDoc : docs) {
       Document doc = new Document();
