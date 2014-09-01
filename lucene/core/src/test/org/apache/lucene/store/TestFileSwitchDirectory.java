@@ -49,9 +49,7 @@ public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
     secondaryDir.setCheckIndexOnClose(false); // only part of an index
     
     FileSwitchDirectory fsd = new FileSwitchDirectory(fileExtensions, primaryDir, secondaryDir, true);
-    // for now we wire Lucene40Codec because we rely upon its specific impl
-    boolean oldValue = OLD_FORMAT_IMPERSONATION_IS_ACTIVE;
-    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true;
+    // for now we wire Lucene410Codec because we rely upon its specific impl
     IndexWriter writer = new IndexWriter(
         fsd,
         new IndexWriterConfig(new MockAnalyzer(random())).
@@ -83,7 +81,6 @@ public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
       assertNotNull(files[i]);
     }
     fsd.close();
-    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = oldValue;
   }
   
   private Directory newFSSwitchDirectory(Set<String> primaryExtensions) throws IOException {
