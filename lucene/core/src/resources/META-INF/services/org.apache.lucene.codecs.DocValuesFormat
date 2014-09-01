@@ -13,7 +13,4 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-org.apache.lucene.codecs.lucene42.Lucene42DocValuesFormat
-org.apache.lucene.codecs.lucene45.Lucene45DocValuesFormat
-org.apache.lucene.codecs.lucene49.Lucene49DocValuesFormat
 org.apache.lucene.codecs.lucene410.Lucene410DocValuesFormat

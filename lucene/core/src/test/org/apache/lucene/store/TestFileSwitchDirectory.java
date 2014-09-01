@@ -55,7 +55,7 @@ public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
     IndexWriter writer = new IndexWriter(
         fsd,
         new IndexWriterConfig(new MockAnalyzer(random())).
-            setMergePolicy(newLogMergePolicy(false)).setCodec(Codec.forName("Lucene40")).setUseCompoundFile(false)
+            setMergePolicy(newLogMergePolicy(false)).setCodec(Codec.forName("Lucene410")).setUseCompoundFile(false)
     );
     TestIndexWriterReader.createIndexNoClose(true, "ram", writer);
     IndexReader reader = DirectoryReader.open(writer, true);

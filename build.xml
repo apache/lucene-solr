@@ -260,8 +260,8 @@
     </copy>
     
     <pathconvert property="eclipse.fileset.sourcefolders" pathsep="|" dirsep="/">
-      <dirset dir="${basedir}/lucene" includes="**/src/java, **/src/resources, **/src/test, **/src/test-files, **/src/examples" excludes="tools/**, build/**, backwards/**" />
-      <dirset dir="${basedir}/solr" includes="**/src/java, **/src/resources, **/src/test, **/src/test-files, **/src/examples" excludes="build/**" />
+      <dirset dir="${basedir}/lucene" includes="**/src/java, **/src/resources, **/src/test, **/src/test-resources, **/src/test-files, **/src/examples" excludes="tools/**, build/**, backwards/**" />
+      <dirset dir="${basedir}/solr" includes="**/src/java, **/src/resources, **/src/test, **/src/test-resources, **/src/test-files, **/src/examples" excludes="build/**" />
       <map from="${basedir}/" to=""/>
     </pathconvert>
     <!-- TODO: find a better way to exclude duplicate JAR files & fix the servlet-api mess! -->

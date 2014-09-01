@@ -12,10 +12,6 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.asserting.AssertingDocValuesFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40RWCodec;
-import org.apache.lucene.codecs.lucene41.Lucene41RWCodec;
-import org.apache.lucene.codecs.lucene42.Lucene42RWCodec;
-import org.apache.lucene.codecs.lucene45.Lucene45RWCodec;
 import org.apache.lucene.codecs.lucene410.Lucene410DocValuesFormat;
 import org.apache.lucene.codecs.lucene410.Lucene410Codec;
 import org.apache.lucene.document.BinaryDocValuesField;
@@ -849,39 +845,6 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     NumericDocValues ndv = r.leaves().get(0).reader().getNumericDocValues("f");
     assertEquals(17, ndv.get(0));
     r.close();
-    
-    dir.close();
-  }
-  
-  @Test
-  public void testUpdateOldSegments() throws Exception {
-    Codec[] oldCodecs = new Codec[] { new Lucene40RWCodec(), new Lucene41RWCodec(), new Lucene42RWCodec(), new Lucene45RWCodec() };
-    Directory dir = newDirectory();
-    
-    boolean oldValue = OLD_FORMAT_IMPERSONATION_IS_ACTIVE;
-    // create a segment with an old Codec
-    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
-    conf.setCodec(oldCodecs[random().nextInt(oldCodecs.length)]);
-    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true;
-    IndexWriter writer = new IndexWriter(dir, conf);
-    Document doc = new Document();
-    doc.add(new StringField("id", "doc", Store.NO));
-    doc.add(new NumericDocValuesField("f", 5));
-    writer.addDocument(doc);
-    writer.close();
-    
-    conf = newIndexWriterConfig(new MockAnalyzer(random()));
-    writer = new IndexWriter(dir, conf);
-    writer.updateNumericDocValue(new Term("id", "doc"), "f", 4L);
-    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = false;
-    try {
-      writer.close();
-      fail("should not have succeeded to update a segment written with an old Codec");
-    } catch (UnsupportedOperationException e) {
-      writer.rollback(); 
-    } finally {
-      OLD_FORMAT_IMPERSONATION_IS_ACTIVE = oldValue;
-    }
     
     dir.close();
   }

@@ -167,8 +167,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
   
   private void updateBinary(IndexWriter writer, String id, String f, String cf, long value) throws IOException {
-    writer.updateBinaryDocValue(new Term("id", id), f, TestBinaryDocValuesUpdates.toBytes(value));
-    writer.updateBinaryDocValue(new Term("id", id), cf, TestBinaryDocValuesUpdates.toBytes(value*2));
+    writer.updateBinaryDocValue(new Term("id", id), f, TestDocValuesUpdatesOnOldSegments.toBytes(value));
+    writer.updateBinaryDocValue(new Term("id", id), cf, TestDocValuesUpdatesOnOldSegments.toBytes(value*2));
   }
 
 /*  // Creates an index with DocValues updates
@@ -191,10 +191,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       doc.add(new NumericDocValuesField("ndv1_c", i*2));
       doc.add(new NumericDocValuesField("ndv2", i*3));
       doc.add(new NumericDocValuesField("ndv2_c", i*6));
-      doc.add(new BinaryDocValuesField("bdv1", TestBinaryDocValuesUpdates.toBytes(i)));
-      doc.add(new BinaryDocValuesField("bdv1_c", TestBinaryDocValuesUpdates.toBytes(i*2)));
-      doc.add(new BinaryDocValuesField("bdv2", TestBinaryDocValuesUpdates.toBytes(i*3)));
-      doc.add(new BinaryDocValuesField("bdv2_c", TestBinaryDocValuesUpdates.toBytes(i*6)));
+      doc.add(new BinaryDocValuesField("bdv1", TestDocValuesUpdatesOnOldSegments.toBytes(i)));
+      doc.add(new BinaryDocValuesField("bdv1_c", TestDocValuesUpdatesOnOldSegments.toBytes(i*2)));
+      doc.add(new BinaryDocValuesField("bdv2", TestDocValuesUpdatesOnOldSegments.toBytes(i*3)));
+      doc.add(new BinaryDocValuesField("bdv2_c", TestDocValuesUpdatesOnOldSegments.toBytes(i*6)));
       writer.addDocument(doc);
       if ((i+1) % 10 == 0) {
         writer.commit(); // flush every 10 docs
@@ -1085,7 +1085,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     BinaryDocValues bdvf = r.getBinaryDocValues(f);
     BinaryDocValues bdvcf = r.getBinaryDocValues(cf);
     for (int i = 0; i < r.maxDoc(); i++) {
-      assertEquals(TestBinaryDocValuesUpdates.getValue(bdvcf, i), TestBinaryDocValuesUpdates.getValue(bdvf, i)*2);
+      assertEquals(TestDocValuesUpdatesOnOldSegments.getValue(bdvcf, i), TestDocValuesUpdatesOnOldSegments.getValue(bdvf, i)*2);
     }
   }
   

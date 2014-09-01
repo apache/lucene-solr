@@ -227,6 +227,7 @@
   <property name="src.dir" location="src/java"/>
   <property name="resources.dir" location="${src.dir}/../resources"/>
   <property name="tests.src.dir" location="src/test"/>
+  <property name="tests.resources.dir" location="${tests.src.dir}/../test-resources"/>
   <available property="module.has.tests" type="dir" file="${tests.src.dir}"/>
   <property name="build.dir" location="build"/>
   <!-- Needed in case a module needs the original build, also for compile-tools to be called from a module -->
@@ -794,10 +795,14 @@
   </target>
 
   <target name="compile-test" depends="compile-core,compile-test-framework">
-  	<compile-test-macro srcdir="${tests.src.dir}" destdir="${build.dir}/classes/test"
-  						test.classpath="test.classpath"/>
+    <compile-test-macro srcdir="${tests.src.dir}" destdir="${build.dir}/classes/test" test.classpath="test.classpath"/>
+
+    <!-- Copy the resources folder (if existent) -->
+    <copy todir="${build.dir}/classes/test">
+      <fileset dir="${tests.resources.dir}" erroronmissingdir="no"/>
+    </copy>
   </target>
-	
+
   <macrodef name="compile-test-macro" description="Compiles junit tests.">
   	<attribute name="srcdir"/>
   	<attribute name="destdir"/>
@@ -1720,6 +1725,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
 
       <!-- TODO: Check all resource files. Currently not all stopword and similar files have no header! -->
       <fileset dir="${resources.dir}" includes="META-INF/**" erroronmissingdir="false"/>
+      <fileset dir="${tests.resources.dir}" includes="META-INF/**" erroronmissingdir="false"/>
       
       <!-- BSD 4-clause stuff (is disallowed below) -->
       <rat:substringMatcher licenseFamilyCategory="BSD4 "

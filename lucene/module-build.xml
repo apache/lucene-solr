@@ -433,6 +433,28 @@
     <property name="codecs-javadocs.uptodate" value="true"/>
   </target>
 
+  <property name="backward-codecs.jar" value="${common.dir}/build/backward-codecs/lucene-backward-codecs-${version}.jar"/>
+  <target name="check-backward-codecs-uptodate" unless="backward-codecs.uptodate">
+    <module-uptodate name="backward-codecs" jarfile="${backward-codecs.jar}" property="backward-codecs.uptodate"/>
+  </target>
+  <target name="jar-backward-codecs" unless="backward-codecs.uptodate" depends="check-backward-codecs-uptodate">
+    <ant dir="${common.dir}/backward-codecs" target="jar-core" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="backward-codecs.uptodate" value="true"/>
+  </target>
+
+  <property name="backward-codecs-javadoc.jar" value="${common.dir}/build/backward-codecs/lucene-backward-codecs-${version}-javadoc.jar"/>
+  <target name="check-backward-codecs-javadocs-uptodate" unless="backward-codecs-javadocs.uptodate">
+    <module-uptodate name="backward-codecs" jarfile="${backward-codecs-javadoc.jar}" property="backward-codecs-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-backward-codecs" unless="backward-codecs-javadocs.uptodate" depends="check-backward-codecs-javadocs-uptodate">
+    <ant dir="${common.dir}/backward-codecs" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="backward-codecs-javadocs.uptodate" value="true"/>
+  </target>
+
   <property name="expressions.jar" value="${common.dir}/build/expressions/lucene-expressions-${version}.jar"/>
   <target name="check-expressions-uptodate" unless="expressions.uptodate">
     <module-uptodate name="expressions" jarfile="${expressions.jar}" property="expressions.uptodate"/>

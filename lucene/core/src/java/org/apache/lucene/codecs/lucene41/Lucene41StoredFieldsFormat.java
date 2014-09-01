@@ -22,7 +22,6 @@ import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.compressing.CompressingStoredFieldsFormat;
 import org.apache.lucene.codecs.compressing.CompressingStoredFieldsIndexWriter;
 import org.apache.lucene.codecs.compressing.CompressionMode;
-import org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsFormat;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.packed.PackedInts;
@@ -112,9 +111,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * </ol>
  * <p><b>Known limitations</b></p>
  * <p>This {@link StoredFieldsFormat} does not support individual documents
- * larger than (<tt>2<sup>31</sup> - 2<sup>14</sup></tt>) bytes. In case this
- * is a problem, you should use another format, such as
- * {@link Lucene40StoredFieldsFormat}.</p>
+ * larger than (<tt>2<sup>31</sup> - 2<sup>14</sup></tt>) bytes.</p>
  * @lucene.experimental
  */
 public final class Lucene41StoredFieldsFormat extends CompressingStoredFieldsFormat {
