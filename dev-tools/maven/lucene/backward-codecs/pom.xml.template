@@ -22,47 +22,50 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.apache.lucene</groupId>
-    <artifactId>lucene-solr-grandparent</artifactId>
+    <artifactId>lucene-parent</artifactId>
     <version>@version@</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.apache.lucene</groupId>
-  <artifactId>lucene-parent</artifactId>
-  <packaging>pom</packaging>
-  <name>Lucene parent POM</name>
-  <description>Lucene parent POM</description>
+  <artifactId>lucene-backward-codecs</artifactId>
+  <packaging>jar</packaging>
+  <name>Lucene Memory</name>
+  <description>
+    Codecs for older versions of Lucene.
+  </description>
   <properties>
-    <module-directory>lucene</module-directory>
+    <module-directory>lucene/backward-codecs</module-directory>
+    <relative-top-level>../../..</relative-top-level>
+    <module-path>${relative-top-level}/${module-directory}</module-path>
   </properties>
   <scm>
     <connection>scm:svn:${vc-anonymous-base-url}/${module-directory}</connection>
     <developerConnection>scm:svn:${vc-dev-base-url}/${module-directory}</developerConnection>
     <url>${vc-browse-base-url}/${module-directory}</url>
   </scm>
-  <modules>
-    <module>core</module>
-    <module>backward-codecs</module>
-    <module>codecs</module>
-    <module>test-framework</module>
-    <module>analysis</module>
-    <module>benchmark</module>
-    <module>classification</module>
-    <module>demo</module>
-    <module>expressions</module>
-    <module>facet</module>
-    <module>grouping</module>
-    <module>highlighter</module>
-    <module>join</module>
-    <module>memory</module>
-    <module>misc</module>
-    <module>queries</module>
-    <module>queryparser</module>
-    <module>replicator</module>
-    <module>sandbox</module>
-    <module>spatial</module>
-    <module>suggest</module>
-  </modules>
+  <dependencies>
+    <dependency> 
+      <!-- lucene-test-framework dependency must be declared before lucene-core -->
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-test-framework</artifactId>
+      <scope>test</scope>
+    </dependency>
+@lucene-backward-codecs.internal.dependencies@
+@lucene-backward-codecs.external.dependencies@
+@lucene-backward-codecs.internal.test.dependencies@
+@lucene-backward-codecs.external.test.dependencies@
+  </dependencies>
   <build>
+    <sourceDirectory>${module-path}/src/java</sourceDirectory>
+    <testSourceDirectory>${module-path}/src/test</testSourceDirectory>
+    <testResources>
+      <testResource>
+        <directory>${project.build.testSourceDirectory}</directory>
+        <excludes>
+          <exclude>**/*.java</exclude>
+        </excludes>
+      </testResource>
+    </testResources>
     <plugins>
       <plugin>
         <groupId>de.thetaphi</groupId>
@@ -70,6 +73,10 @@
         <executions>
           <execution>
             <id>lucene-shared-check-forbidden-apis</id>
+            <phase>none</phase> <!-- Block inherited execution -->
+          </execution>
+          <execution>
+            <id>check-forbidden-apis</id>
             <configuration>
               <!-- disallow undocumented classes like sun.misc.Unsafe: -->
               <internalRuntimeForbidden>true</internalRuntimeForbidden>
@@ -84,24 +91,6 @@
             </configuration>
             <goals>
               <goal>check</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>lucene-shared-test-check-forbidden-apis</id>
-            <configuration>
-              <!-- disallow undocumented classes like sun.misc.Unsafe: -->
-              <internalRuntimeForbidden>true</internalRuntimeForbidden>
-              <bundledSignatures>
-                <bundledSignature>jdk-unsafe</bundledSignature>
-                <bundledSignature>jdk-deprecated</bundledSignature>
-              </bundledSignatures>
-              <signaturesFiles>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/tests.txt</signaturesFile>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>
-              </signaturesFiles>
-            </configuration>
-            <goals>
-              <goal>testCheck</goal>
             </goals>
           </execution>
         </executions>
