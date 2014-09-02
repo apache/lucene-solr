@@ -52,95 +52,13 @@
   </target>
 
   <!-- "-clover.load" is *not* a useless dependency. do not remove -->
-  <target name="test" depends="-clover.load, -init-totals, test-core, test-modules, test-backwards, -check-totals"
+  <target name="test" depends="-clover.load, -init-totals, test-core, test-modules, -check-totals"
           description="Runs all unit tests (core, modules and back-compat)"
   />
 
   <target name="pitest" depends="pitest-modules"
           description="Runs pitests (core, modules and back-compat)"
   />
-
-  <path id="backwards.test.compile.classpath">
-    <path refid="junit-path"/>
-    <path refid="ant-path"/>
-    <fileset dir="${backwards.dir}/lib">
-      <include name="lucene-core*.jar"/>
-    </fileset>
-  </path>
-	
-  <path id="backwards.junit.classpath">
-    <path refid="junit-path"/>
-    <path refid="classpath"/>
-    <pathelement location="${build.dir.backwards}/classes/test"/>
-    <pathelement path="${java.class.path}"/>
-  </path>
-
-  <target name="compile-backwards" depends="compile-core"
-  	description="Runs tests of a previous Lucene version.">
-	<sequential>
-      <mkdir dir="${build.dir.backwards}"/>	  
-      
-      <!-- TODO: separate test-framework from core tests (because META-INF duplicates in trunk) -->
-      
-      <!-- compile branch tests against previous version JAR file -->	
-      <compile-test-macro srcdir="${backwards.dir}/test-framework/src/java" destdir="${build.dir.backwards}/classes/test"
-                  test.classpath="backwards.test.compile.classpath" javac.source="${javac.source.backwards}" javac.target="${javac.target.backwards}"/>
-      <!-- Copy the resources folder (if existent) -->
-      <copy todir="${build.dir.backwards}/classes/test">
-        <fileset dir="${backwards.dir}/test-framework/src/resources" erroronmissingdir="no"/>
-      </copy>
-      <compile-test-macro srcdir="${backwards.dir}/core/src/test" destdir="${build.dir.backwards}/classes/test"
-                  test.classpath="backwards.test.compile.classpath" javac.source="${javac.source.backwards}" javac.target="${javac.target.backwards}"/>
-      
-
-  	</sequential>
-  </target>	
-
-  <target name="backwards-test-warning" depends="check-backwards-params" if="backwards.ignoring.params">
-    <echo>
-       Warning: Ignoring your multiplier and nightly settings for backwards tests.
-       These tests are for API compatibility only!
-    </echo>
-  </target>
-
-  <!--
-  Add dependency after 4.0: depends="compile-backwards, backwards-test-warning"
-  and uncomment inside of this target.
-  -->
-  <target name="test-backwards" depends="install-junit4-taskdef">
-    <!--
-    <mkdir dir="${build.dir.backwards}/test"/>
-    <backwards-test-macro/>
-    -->
-  </target>
-
-  <target name="check-backwards-params">
-    <condition property="backwards.ignoring.params">
-      <or>
-        <istrue value="${tests.nightly}"/>
-        <not><equals arg1="${tests.multiplier}" arg2="1"/></not>
-      </or>
-    </condition>
-  </target>
-
-  <macrodef name="backwards-test-macro">
-  	<attribute name="threadNum" default="1"/>
-  	<attribute name="threadTotal" default="1"/>
-  	<sequential>
-  	  <!-- run branch tests against trunk jar:
-          Note: we disable multiplier/nightly because the purpose is to find API breaks
-          -->
-      <test-macro 
-        dataDir="${backwards.dir}/core/src/test" 
-        workDir="${build.dir.backwards}/test" 
-        junit.classpath="backwards.junit.classpath" 
-        junit.output.dir="${junit.output.dir.backwards}" 
-        tests.nightly="false"
-        tests.multiplier="1"
-        threadNum="@{threadNum}" 
-        threadTotal="@{threadTotal}"/>
-    </sequential>
-  </macrodef>
 
   <target name="compile-core" depends="compile-lucene-core"/>
 
@@ -277,7 +195,7 @@
 
   <target name="process-webpages" depends="resolve-groovy,resolve-pegdown">
     <makeurl property="process-webpages.buildfiles" separator="|">
-      <fileset dir="." includes="**/build.xml" excludes="build.xml,analysis/*,build/**,tools/**,backwards/**,site/**"/>
+      <fileset dir="." includes="**/build.xml" excludes="build.xml,analysis/*,build/**,tools/**,site/**"/>
     </makeurl>
     <property name="Codec.java" location="core/src/java/org/apache/lucene/codecs/Codec.java"/>
     <loadfile srcfile="${Codec.java}" property="defaultCodecPackage">

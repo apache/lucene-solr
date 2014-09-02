@@ -59,7 +59,6 @@
     <mkdir dir="${clover.report.dir}"/>
     <fileset dir="." id="clover.test.result.files">
       <include name="*/build/**/test/TEST-*.xml"/>
-      <exclude name="lucene/build/backwards/**"/>
     </fileset>
     <clover-report projectName="Apache Lucene/Solr">
       <current outfile="${clover.report.dir}" title="Apache Lucene/Solr ${version}" numThreads="0">
