@@ -103,7 +103,7 @@ Other Changes
   command and DataImportHandler responses. (ehatcher)
 
 * SOLR-6073: Remove helper methods from CollectionsRequest (SolrJ) for CollectionsAPI
-  calls and move to a builder design for the same. (Anshum Gupta)
+  calls and move to a builder design for the same. (Varun Thacker, Anshum Gupta)
 
 ==================  4.11.0 =================
 
@@ -173,7 +173,7 @@ Other Changes
 * SOLR-6445: Upgrade Noggit to verion 0.6 to support more flexible JSON input (Noble Paul , Yonik Seeley)
 
 * SOLR-6073: Remove helper methods from CollectionsRequest (SolrJ) for CollectionsAPI
-  calls and move to a builder design for the same. (Anshum Gupta)
+  calls and move to a builder design for the same. (Varun Thacker, Anshum Gupta)
 ==================  4.10.0 =================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
