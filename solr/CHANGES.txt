@@ -108,6 +108,7 @@ Carrot2 3.9.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
+Noggit 0.6
 
 Detailed Change List
 ----------------------
@@ -153,6 +154,9 @@ Other Changes
 
 * LUCENE-5901: Replaced all occurences of LUCENE_CURRENT with LATEST for luceneMatchVersion.
   (Ryan Ernst)
+
+* SOLR-6445: Upgrade Noggit to verion 0.6 to support more flexible JSON input (Noble Paul , Yonik Seeley)
+
 
 ==================  4.10.0 =================
 
