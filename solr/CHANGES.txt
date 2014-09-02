@@ -51,7 +51,7 @@ New Features
   (Noble Paul, Erik Hatcher, shalin)
 
 * SOLR-6073: Remove helper methods from CollectionsRequest (SolrJ) for CollectionsAPI
-  calls and move to a builder design for the same. (Anshum Gupta)
+  calls and move to a builder design for the same. (Varun Thacker, Anshum Gupta)
 
 Bug Fixes
 ----------------------
