@@ -21,7 +21,9 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest.RequestStatus;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest.SplitShard;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.params.CollectionParams;
@@ -77,7 +79,12 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
     SolrServer server = createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(0)));
 
     for(int i = 1 ; i <= NUM_COLLECTIONS ; i++) {
-      CollectionAdminRequest.createCollection("ocptest" + i, 4, "conf1", server, i + "");
+      Create createCollectionRequest = new Create();
+      createCollectionRequest.setCollectionName("ocptest" + i);
+      createCollectionRequest.setNumShards(4);
+      createCollectionRequest.setConfigName("conf1");
+      createCollectionRequest.setAsyncId(String.valueOf(i));
+      createCollectionRequest.process(server);
     }
 
     boolean pass = false;
@@ -107,10 +114,24 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
   private void testTaskExclusivity() throws IOException, SolrServerException {
     SolrServer server = createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(0)));
-    CollectionAdminRequest.createCollection("ocptest_shardsplit", 4, "conf1", server, "1000");
+    Create createCollectionRequest = new Create();
+    createCollectionRequest.setCollectionName("ocptest_shardsplit");
+    createCollectionRequest.setNumShards(4);
+    createCollectionRequest.setConfigName("conf1");
+    createCollectionRequest.setAsyncId("1000");
+    createCollectionRequest.process(server);
 
-    CollectionAdminRequest.splitShard("ocptest_shardsplit", SHARD1, server, "1001");
-    CollectionAdminRequest.splitShard("ocptest_shardsplit", SHARD2, server, "1002");
+    SplitShard splitShardRequest = new SplitShard();
+    splitShardRequest.setCollectionName("ocptest_shardsplit");
+    splitShardRequest.setShardName(SHARD1);
+    splitShardRequest.setAsyncId("1001");
+    splitShardRequest.process(server);
+
+    splitShardRequest = new SplitShard();
+    splitShardRequest.setCollectionName("ocptest_shardsplit");
+    splitShardRequest.setShardName(SHARD2);
+    splitShardRequest.setAsyncId("1002");
+    splitShardRequest.process(server);
 
     int iterations = 0;
     while(true) {
@@ -147,13 +168,32 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
   private void testDeduplicationOfSubmittedTasks() throws IOException, SolrServerException {
     SolrServer server = createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(0)));
-    CollectionAdminRequest.createCollection("ocptest_shardsplit2", 4, "conf1", server, "3000");
+    Create createCollectionRequest = new Create();
+    createCollectionRequest.setCollectionName("ocptest_shardsplit2");
+    createCollectionRequest.setNumShards(4);
+    createCollectionRequest.setConfigName("conf1");
+    createCollectionRequest.setAsyncId("3000");
+    createCollectionRequest.process(server);
 
-    CollectionAdminRequest.splitShard("ocptest_shardsplit2", SHARD1, server, "3001");
-    CollectionAdminRequest.splitShard("ocptest_shardsplit2", SHARD2, server, "3002");
+    SplitShard splitShardRequest = new SplitShard();
+    splitShardRequest.setCollectionName("ocptest_shardsplit2");
+    splitShardRequest.setShardName(SHARD1);
+    splitShardRequest.setAsyncId("3001");
+    splitShardRequest.process(server);
+
+    splitShardRequest = new SplitShard();
+    splitShardRequest.setCollectionName("ocptest_shardsplit2");
+    splitShardRequest.setShardName(SHARD2);
+    splitShardRequest.setAsyncId("3002");
+    splitShardRequest.process(server);
 
     // Now submit another task with the same id. At this time, hopefully the previous 3002 should still be in the queue.
-    CollectionAdminResponse response = CollectionAdminRequest.splitShard("ocptest_shardsplit2", SHARD1, server, "3002");
+    splitShardRequest = new SplitShard();
+    splitShardRequest.setCollectionName("ocptest_shardsplit2");
+    splitShardRequest.setShardName(SHARD1);
+    splitShardRequest.setAsyncId("3002");
+    CollectionAdminResponse response = splitShardRequest.process(server);
+
     NamedList r = response.getResponse();
     assertEquals("Duplicate request was supposed to exist but wasn't found. De-duplication of submitted task failed.",
         "Task with the same requestid already exists.", r.get("error"));
@@ -185,7 +225,11 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
     try {
 
       SolrServer server = createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(0)));
-      CollectionAdminRequest.splitShard("collection1", SHARD1, server, "2000");
+      SplitShard splitShardRequest = new SplitShard();
+      splitShardRequest.setCollectionName("collection1");
+      splitShardRequest.setShardName(SHARD1);
+      splitShardRequest.setAsyncId("2000");
+      splitShardRequest.process(server);
 
       String state = getRequestState("2000", server);
       while (state.equals("submitted")) {
@@ -246,7 +290,10 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
   }
 
   private String getRequestState(String requestId, SolrServer server) throws IOException, SolrServerException {
-    CollectionAdminResponse response = CollectionAdminRequest.requestStatus(requestId, server);
+    RequestStatus requestStatusRequest = new RequestStatus();
+    requestStatusRequest.setRequestId(requestId);
+    CollectionAdminResponse response = requestStatusRequest.process(server);
+
     NamedList innerResponse = (NamedList) response.getResponse().get("status");
     return (String) innerResponse.get("state");
   }

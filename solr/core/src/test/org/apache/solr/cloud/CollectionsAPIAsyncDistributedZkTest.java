@@ -22,6 +22,9 @@ import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest.RequestStatus;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest.SplitShard;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.DirectUpdateHandler2;
@@ -67,14 +70,25 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
 
   private void testSolrJAPICalls() throws Exception {
     SolrServer server = createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(0)));
-    CollectionAdminRequest.createCollection("testasynccollectioncreation", 1, "conf1", server, "1001");
-    String state = null;
 
-    state = getRequestStateAfterCompletion("1001", MAX_TIMEOUT_SECONDS, server);
+    Create createCollectionRequest = new Create();
+    createCollectionRequest.setCollectionName("testasynccollectioncreation");
+    createCollectionRequest.setNumShards(1);
+    createCollectionRequest.setConfigName("conf1");
+    createCollectionRequest.setAsyncId("1001");
+    createCollectionRequest.process(server);
+
+    String state = getRequestStateAfterCompletion("1001", MAX_TIMEOUT_SECONDS, server);
 
     assertEquals("CreateCollection task did not complete!", "completed", state);
 
-    CollectionAdminRequest.createCollection("testasynccollectioncreation", 1, "conf1", server, "1002");
+
+    createCollectionRequest = new Create();
+    createCollectionRequest.setCollectionName("testasynccollectioncreation");
+    createCollectionRequest.setNumShards(1);
+    createCollectionRequest.setConfigName("conf1");
+    createCollectionRequest.setAsyncId("1002");
+    createCollectionRequest.process(server);
 
     state = getRequestStateAfterCompletion("1002", MAX_TIMEOUT_SECONDS, server);
 
@@ -88,7 +102,12 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
     state = getRequestStateAfterCompletion("1003", MAX_TIMEOUT_SECONDS, server);
     assertEquals("Add replica did not complete", "completed", state);
 
-    CollectionAdminRequest.splitShard("testasynccollectioncreation", "shard1", server, "1004");
+
+    SplitShard splitShardRequest = new SplitShard();
+    splitShardRequest.setCollectionName("testasynccollectioncreation");
+    splitShardRequest.setShardName("shard1");
+    splitShardRequest.setAsyncId("1004");
+    splitShardRequest.process(server);
 
     state = getRequestStateAfterCompletion("1004", MAX_TIMEOUT_SECONDS * 2, server);
 
@@ -111,7 +130,9 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
   }
 
   private String getRequestState(String requestId, SolrServer server) throws IOException, SolrServerException {
-    CollectionAdminResponse response = CollectionAdminRequest.requestStatus(requestId, server);
+    RequestStatus request = new RequestStatus();
+    request.setRequestId(requestId);
+    CollectionAdminResponse response = request.process(server);
     NamedList innerResponse = (NamedList) response.getResponse().get("status");
     return (String) innerResponse.get("state");
   }

@@ -55,6 +55,11 @@ Upgrading from Solr 4.x
   the "suggestions" subsection, and now are directly under "spellcheck".
   See SOLR-3029 for more information.
 
+* The CollectionsAPI SolrJ calls createCollection(), reloadCollection(),
+  deleteCollection(), requestStatus(), createShard(), splitShard(), deleteShard(),
+  createAlias() and deleteAlias() which were deprecated in 4.11 have been removed.
+  The new usage involves a builder style construction of the call.
+
 Detailed Change List
 ----------------------
 
@@ -97,6 +102,9 @@ Other Changes
   removes "experimental" warning from two places: replication handler details
   command and DataImportHandler responses. (ehatcher)
 
+* SOLR-6073: Remove helper methods from CollectionsRequest (SolrJ) for CollectionsAPI
+  calls and move to a builder design for the same. (Anshum Gupta)
+
 ==================  4.11.0 =================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
@@ -109,6 +117,13 @@ Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
 Noggit 0.6
+
+Upgrading from Solr 4.10
+----------------------
+* The CollectionsAPI SolrJ calls createCollection(), reloadCollection(),
+  deleteCollection(), requestStatus(), createShard(), splitShard(), deleteShard(),
+  createAlias() and deleteAlias() have been deprecated. The new usage involves a
+  builder style construction of the call.
 
 Detailed Change List
 ----------------------
@@ -157,7 +172,8 @@ Other Changes
 
 * SOLR-6445: Upgrade Noggit to verion 0.6 to support more flexible JSON input (Noble Paul , Yonik Seeley)
 
-
+* SOLR-6073: Remove helper methods from CollectionsRequest (SolrJ) for CollectionsAPI
+  calls and move to a builder design for the same. (Anshum Gupta)
 ==================  4.10.0 =================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
