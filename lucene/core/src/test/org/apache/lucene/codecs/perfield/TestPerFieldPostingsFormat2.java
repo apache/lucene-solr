@@ -23,8 +23,8 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
 import org.apache.lucene.codecs.lucene410.Lucene410Codec;
+import org.apache.lucene.codecs.lucene41vargap.Lucene41VarGapFixedInterval;
 import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
-import org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -272,9 +272,9 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
         if ("id".equals(field)) {
-          return new Pulsing41PostingsFormat(1);
+          return new MemoryPostingsFormat();
         } else if ("date".equals(field)) {
-          return new Pulsing41PostingsFormat(1);
+          return new MemoryPostingsFormat();
         } else {
           return super.getPostingsFormatForField(field);
         }
@@ -288,9 +288,9 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
         if ("id".equals(field)) {
-          return new Pulsing41PostingsFormat(1);
+          return new Lucene41VarGapFixedInterval(1);
         } else if ("date".equals(field)) {
-          return new Pulsing41PostingsFormat(2);
+          return new Lucene41VarGapFixedInterval(2);
         } else {
           return super.getPostingsFormatForField(field);
         }

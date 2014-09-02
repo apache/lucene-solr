@@ -36,9 +36,9 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
   public void testPostingsFormats() {
     Codec codec = h.getCore().getCodec();
     Map<String, SchemaField> fields = h.getCore().getLatestSchema().getFields();
-    SchemaField schemaField = fields.get("string_pulsing_f");
+    SchemaField schemaField = fields.get("string_direct_f");
     PerFieldPostingsFormat format = (PerFieldPostingsFormat) codec.postingsFormat();
-    assertEquals("Pulsing41", format.getPostingsFormatForField(schemaField.getName()).getName());
+    assertEquals("Direct", format.getPostingsFormatForField(schemaField.getName()).getName());
     schemaField = fields.get("string_simpletext_f");
     assertEquals("SimpleText",
         format.getPostingsFormatForField(schemaField.getName()).getName());
@@ -68,8 +68,8 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
 
     assertEquals("SimpleText", format.getPostingsFormatForField("foo_simple").getName());
     assertEquals("SimpleText", format.getPostingsFormatForField("bar_simple").getName());
-    assertEquals("Pulsing41", format.getPostingsFormatForField("foo_pulsing").getName());
-    assertEquals("Pulsing41", format.getPostingsFormatForField("bar_pulsing").getName());
+    assertEquals("Direct", format.getPostingsFormatForField("foo_direct").getName());
+    assertEquals("Direct", format.getPostingsFormatForField("bar_direct").getName());
     assertEquals("Lucene41", format.getPostingsFormatForField("foo_standard").getName());
     assertEquals("Lucene41", format.getPostingsFormatForField("bar_standard").getName());
   }

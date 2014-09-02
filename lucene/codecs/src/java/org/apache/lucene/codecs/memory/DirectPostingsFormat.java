@@ -839,7 +839,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
       @Override
       public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) {
-        // TODO: implement reuse, something like Pulsing:
+        // TODO: implement reuse
         // it's hairy!
 
         if (terms[termOrd] instanceof LowFreqTerm) {
@@ -916,7 +916,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
           return null;
         }
 
-        // TODO: implement reuse, something like Pulsing:
+        // TODO: implement reuse
         // it's hairy!
 
         if (terms[termOrd] instanceof LowFreqTerm) {
@@ -1437,7 +1437,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
       @Override
       public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) {
-        // TODO: implement reuse, something like Pulsing:
+        // TODO: implement reuse
         // it's hairy!
 
         if (terms[termOrd] instanceof LowFreqTerm) {
@@ -1473,7 +1473,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
           return null;
         }
 
-        // TODO: implement reuse, something like Pulsing:
+        // TODO: implement reuse
         // it's hairy!
 
         if (terms[termOrd] instanceof LowFreqTerm) {

@@ -17,7 +17,7 @@
 -->
 <schema name="codec" version="1.2">
  <types>
-  <fieldType name="string_pulsing" class="solr.StrField" postingsFormat="Pulsing41"/>
+  <fieldType name="string_direct" class="solr.StrField" postingsFormat="Direct"/>
   <fieldType name="string_simpletext" class="solr.StrField" postingsFormat="SimpleText"/>
   <fieldType name="string_standard" class="solr.StrField" postingsFormat="Lucene41"/>
 
@@ -28,7 +28,7 @@
 
  </types>
  <fields>
-   <field name="string_pulsing_f" type="string_pulsing" indexed="true" stored="true" />
+   <field name="string_direct_f" type="string_direct" indexed="true" stored="true" />
    <field name="string_simpletext_f" type="string_simpletext" indexed="true" stored="true" />
    <field name="string_standard_f" type="string_standard" indexed="true" stored="true" />
 
@@ -38,7 +38,7 @@
    <field name="string_f" type="string" indexed="true" stored="true" docValues="true" required="true"/>
 
    <dynamicField name="*_simple" type="string_simpletext"  indexed="true" stored="true"/>
-   <dynamicField name="*_pulsing" type="string_pulsing"  indexed="true" stored="true"/>
+   <dynamicField name="*_direct" type="string_direct"  indexed="true" stored="true"/>
    <dynamicField name="*_standard" type="string_standard"  indexed="true" stored="true"/>
 
    <dynamicField name="*_disk" type="string_disk" indexed="false" stored="false" docValues="true" />

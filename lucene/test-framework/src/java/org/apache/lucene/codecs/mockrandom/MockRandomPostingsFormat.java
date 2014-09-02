@@ -44,8 +44,6 @@ import org.apache.lucene.codecs.memory.FSTOrdTermsReader;
 import org.apache.lucene.codecs.memory.FSTOrdTermsWriter;
 import org.apache.lucene.codecs.memory.FSTTermsReader;
 import org.apache.lucene.codecs.memory.FSTTermsWriter;
-import org.apache.lucene.codecs.pulsing.PulsingPostingsReader;
-import org.apache.lucene.codecs.pulsing.PulsingPostingsWriter;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
@@ -120,14 +118,6 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
     random.nextInt(); // consume a random for buffersize
 
     PostingsWriterBase postingsWriter = new Lucene41PostingsWriter(state, skipInterval);
-
-    if (random.nextBoolean()) {
-      final int totTFCutoff = TestUtil.nextInt(random, 1, 20);
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockRandomCodec: writing pulsing postings with totTFCutoff=" + totTFCutoff);
-      }
-      postingsWriter = new PulsingPostingsWriter(state, totTFCutoff, postingsWriter);
-    }
 
     final FieldsConsumer fields;
     final int t1 = random.nextInt(5);
@@ -291,14 +281,6 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
     }
 
     PostingsReaderBase postingsReader = new Lucene41PostingsReader(state.directory, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
-
-    if (random.nextBoolean()) {
-      final int totTFCutoff = TestUtil.nextInt(random, 1, 20);
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockRandomCodec: reading pulsing postings with totTFCutoff=" + totTFCutoff);
-      }
-      postingsReader = new PulsingPostingsReader(state, postingsReader);
-    }
 
     final FieldsProducer fields;
     final int t1 = random.nextInt(5);

@@ -29,7 +29,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene410.Lucene410Codec;
-import org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat;
+import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -1149,7 +1149,7 @@ public class TestAddIndexes extends LuceneTestCase {
     {
       Directory dir = newDirectory();
       IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
-      conf.setCodec(TestUtil.alwaysPostingsFormat(new Pulsing41PostingsFormat(1 + random().nextInt(20))));
+      conf.setCodec(TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat()));
       IndexWriter w = new IndexWriter(dir, conf);
       try {
         w.addIndexes(toAdd);

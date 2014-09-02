@@ -88,6 +88,8 @@ Other
 * LUCENE-5858: Moved compatibility codecs to 'lucene-backward-codecs.jar'. 
   (Adrien Grand, Robert Muir)
 
+* LUCENE-5915: Remove Pulsing postings format. (Robert Muir)
+
 ======================= Lucene 4.11.0 ======================
 
 New Features

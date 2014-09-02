@@ -19,7 +19,7 @@
 <schema name="bad-schema-codec-global-vs-ft-mismatch" version="1.0">
   <types>
     <!-- BAD: postingsFormat here but no codec that allows it -->
-    <fieldType name="pulsing1" class="solr.TextField" postingsFormat="Pulsing">
+    <fieldType name="direct1" class="solr.TextField" postingsFormat="Direct">
       <analyzer>
         <tokenizer class="solr.MockTokenizerFactory"/>
       </analyzer>
@@ -27,10 +27,10 @@
  </types>
 
  <fields>
-   <field name="pulsing1text" type="pulsing1" indexed="true" stored="true"/>
-   <dynamicField name="*" type="pulsing1" />
+   <field name="direct1text" type="direct1" indexed="true" stored="true"/>
+   <dynamicField name="*" type="direct1" />
  </fields>
 
- <defaultSearchField>pulsing1text</defaultSearchField>
+ <defaultSearchField>direct1text</defaultSearchField>
 
 </schema>

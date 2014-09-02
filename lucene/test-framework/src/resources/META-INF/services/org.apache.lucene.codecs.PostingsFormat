@@ -14,7 +14,6 @@
 #  limitations under the License.
 
 org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat
-org.apache.lucene.codecs.nestedpulsing.NestedPulsingPostingsFormat
 org.apache.lucene.codecs.ramonly.RAMOnlyPostingsFormat
 org.apache.lucene.codecs.lucene41ords.Lucene41WithOrds
 org.apache.lucene.codecs.lucene41vargap.Lucene41VarGapFixedInterval
