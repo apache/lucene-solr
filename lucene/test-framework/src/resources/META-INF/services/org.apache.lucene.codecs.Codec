@@ -19,9 +19,3 @@ org.apache.lucene.codecs.compressing.FastCompressingCodec
 org.apache.lucene.codecs.compressing.FastDecompressionCompressingCodec
 org.apache.lucene.codecs.compressing.HighCompressionCompressingCodec
 org.apache.lucene.codecs.compressing.dummy.DummyCompressingCodec
-org.apache.lucene.codecs.lucene40.Lucene40RWCodec
-org.apache.lucene.codecs.lucene41.Lucene41RWCodec
-org.apache.lucene.codecs.lucene42.Lucene42RWCodec
-org.apache.lucene.codecs.lucene45.Lucene45RWCodec
-org.apache.lucene.codecs.lucene46.Lucene46RWCodec
-org.apache.lucene.codecs.lucene49.Lucene49RWCodec

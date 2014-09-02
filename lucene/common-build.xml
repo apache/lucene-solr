@@ -794,10 +794,9 @@
   </target>
 
   <target name="compile-test" depends="compile-core,compile-test-framework">
-  	<compile-test-macro srcdir="${tests.src.dir}" destdir="${build.dir}/classes/test"
-  						test.classpath="test.classpath"/>
+    <compile-test-macro srcdir="${tests.src.dir}" destdir="${build.dir}/classes/test" test.classpath="test.classpath"/>
   </target>
-	
+
   <macrodef name="compile-test-macro" description="Compiles junit tests.">
   	<attribute name="srcdir"/>
   	<attribute name="destdir"/>

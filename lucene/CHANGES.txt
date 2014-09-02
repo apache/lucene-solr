@@ -85,6 +85,9 @@ Other
 * LUCENE-5563: Removed sep layout: which has fallen behind on features and doesn't
   perform as well as other options.  (Robert Muir)
 
+* LUCENE-5858: Moved compatibility codecs to 'lucene-backward-codecs.jar'. 
+  (Adrien Grand, Robert Muir)
+
 ======================= Lucene 4.11.0 ======================
 
 New Features

@@ -46,7 +46,6 @@ import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
@@ -90,7 +89,6 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Conseque
 @ThreadLeakLingering(linger = 0)
 @ThreadLeakZombies(Consequence.CONTINUE)
 @ThreadLeakScope(Scope.NONE)
-@SuppressCodecs({"Lucene3x", "Lucene40"})
 @SuppressSSL // SSL does not work with this test for currently unknown reasons
 @Slow
 public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {

@@ -41,7 +41,6 @@ import org.apache.lucene.search.grouping.term.TermSecondPassGroupingCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueStr;
@@ -55,7 +54,6 @@ import java.util.*;
 //   - test ties
 //   - test compound sort
 
-@SuppressCodecs({"Lucene40", "Lucene41", "Lucene42"}) // we need missing support... i think?
 public class TestGrouping extends LuceneTestCase {
 
   public void testBasic() throws Exception {

@@ -25,7 +25,6 @@ import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.lucene42.Lucene42DocValuesFormat;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -100,7 +99,6 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
   }
   
   public void testSortedSetFixedLengthVsUninvertedField() throws Exception {
-    assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       int fixedLength = TestUtil.nextInt(random(), 1, 10);
@@ -109,7 +107,6 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
   }
   
   public void testSortedSetVariableLengthVsUninvertedField() throws Exception {
-    assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       doTestSortedSetVsUninvertedField(1, 10);
@@ -211,6 +208,8 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     d.close();
   }
 
+  private static final int LARGE_BINARY_FIELD_LENGTH = (1 << 15) - 2;
+
   // TODO: get this out of here and into the deprecated codecs (4.0, 4.2)
   public void testHugeBinaryValueLimit() throws Exception {
     // We only test DVFormats that have a limit
@@ -226,7 +225,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
       // Sometimes make all values fixed length since some
       // codecs have different code paths for this:
       numDocs = TestUtil.nextInt(random(), 10, 20);
-      fixedLength = Lucene42DocValuesFormat.MAX_BINARY_FIELD_LENGTH;
+      fixedLength = LARGE_BINARY_FIELD_LENGTH;
     } else {
       numDocs = TestUtil.nextInt(random(), 100, 200);
     }
@@ -243,9 +242,9 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
       if (doFixed) {
         numBytes = fixedLength;
       } else if (docID == 0 || random().nextInt(5) == 3) {
-        numBytes = Lucene42DocValuesFormat.MAX_BINARY_FIELD_LENGTH;
+        numBytes = LARGE_BINARY_FIELD_LENGTH;
       } else {
-        numBytes = TestUtil.nextInt(random(), 1, Lucene42DocValuesFormat.MAX_BINARY_FIELD_LENGTH);
+        numBytes = TestUtil.nextInt(random(), 1, LARGE_BINARY_FIELD_LENGTH);
       }
       totalBytes += numBytes;
       if (totalBytes > 5 * 1024*1024) {
@@ -402,7 +401,6 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
   }
   
   private void doTestMissingVsFieldCache(LongProducer longs) throws Exception {
-    assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField());
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);

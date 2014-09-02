@@ -37,7 +37,6 @@ import java.util.List;
  */
 public class TestFieldCacheTermsFilter extends LuceneTestCase {
   public void testMissingTerms() throws Exception {
-    assumeTrue("requires support for missing values", defaultCodecSupportsMissingDocValues());
     String fieldName = "field1";
     Directory rd = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), rd);

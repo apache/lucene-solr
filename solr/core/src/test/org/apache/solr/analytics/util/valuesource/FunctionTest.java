@@ -18,13 +18,11 @@
 package org.apache.solr.analytics.util.valuesource;
 
 
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.analytics.AbstractAnalyticsStatsTest;
 import org.apache.solr.analytics.facet.AbstractAnalyticsFacetTest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Appending","Asserting"})
 public class FunctionTest extends AbstractAnalyticsStatsTest {
   static String fileName = "/analytics/requestFiles/functions.txt";
 

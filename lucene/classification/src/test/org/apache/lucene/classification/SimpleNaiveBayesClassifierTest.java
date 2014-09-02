@@ -34,7 +34,6 @@ import java.io.Reader;
  * Testcase for {@link SimpleNaiveBayesClassifier}
  */
 // TODO : eventually remove this if / when fallback methods exist for all un-supportable codec methods (see LUCENE-4872)
-@LuceneTestCase.SuppressCodecs("Lucene3x")
 public class SimpleNaiveBayesClassifierTest extends ClassificationTestBase<BytesRef> {
 
   @Test

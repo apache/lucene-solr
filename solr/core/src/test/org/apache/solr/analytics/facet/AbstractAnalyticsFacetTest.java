@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Scanner;
 
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.util.MedianCalculator;
 import org.apache.solr.analytics.util.PercentileCalculator;
@@ -52,7 +51,6 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
-@SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Appending","Asserting"})
 public class AbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
   protected static final HashMap<String,Object> defaults = new HashMap<>();
   

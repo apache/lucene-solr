@@ -466,15 +466,6 @@ public abstract class LuceneTestCase extends Assert {
   // Fields initialized in class or instance rules.
   // -----------------------------------------------------------------
 
-  /**
-   * When {@code true}, Codecs for old Lucene version will support writing
-   * indexes in that format. Defaults to {@code false}, can be disabled by
-   * specific tests on demand.
-   * 
-   * @lucene.internal
-   */
-  public static boolean OLD_FORMAT_IMPERSONATION_IS_ACTIVE = false;
-
 
   // -----------------------------------------------------------------
   // Class level (suite) rules.
@@ -1681,61 +1672,6 @@ public abstract class LuceneTestCase extends Assert {
     } catch (Exception e) {
       throw new IOException("Cannot find resource: " + name);
     }
-  }
-  
-  /** Returns true if the default codec supports single valued docvalues with missing values */ 
-  public static boolean defaultCodecSupportsMissingDocValues() {
-    String name = Codec.getDefault().getName();
-    if (name.equals("Lucene3x") ||
-        name.equals("Lucene40") || name.equals("Appending") ||
-        name.equals("Lucene41") || 
-        name.equals("Lucene42")) {
-      return false;
-    }
-    return true;
-  }
-  
-  /** Returns true if the default codec supports SORTED_SET docvalues */ 
-  public static boolean defaultCodecSupportsSortedSet() {
-    String name = Codec.getDefault().getName();
-    if (name.equals("Lucene40") || name.equals("Lucene41")) {
-      return false;
-    }
-    return true;
-  }
-  
-  /** Returns true if the default codec supports SORTED_NUMERIC docvalues */ 
-  public static boolean defaultCodecSupportsSortedNumeric() {
-    String name = Codec.getDefault().getName();
-    if (name.equals("Lucene40") || name.equals("Lucene41") || name.equals("Lucene42") || name.equals("Lucene45") || name.equals("Lucene46")) {
-      return false;
-    }
-    return true;
-  }
-  
-  /** Returns true if the codec "supports" docsWithField 
-   * (other codecs return MatchAllBits, because you couldnt write missing values before) */
-  public static boolean defaultCodecSupportsDocsWithField() {
-    String name = Codec.getDefault().getName();
-    if (name.equals("Lucene40") || name.equals("Lucene41") || name.equals("Lucene42")) {
-      return false;
-    }
-    return true;
-  }
-  
-  /** Returns true if the codec "supports" field updates. */
-  public static boolean defaultCodecSupportsFieldUpdates() {
-    String name = Codec.getDefault().getName();
-    if (name.equals("Lucene40") || name.equals("Lucene41") || name.equals("Lucene42") || name.equals("Lucene45")) {
-      return false;
-    }
-    return true;
-  }
-
-  /** Returns true if the codec "supports" writing segment and commit ids. */
-  public static boolean defaultCodecSupportsSegmentIds() {
-    SegmentInfoFormat siFormat = Codec.getDefault().segmentInfoFormat();
-    return siFormat instanceof SimpleTextSegmentInfoFormat || siFormat instanceof Lucene46SegmentInfoFormat;
   }
 
   public void assertReaderEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {

@@ -30,7 +30,6 @@ import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -54,7 +53,6 @@ import com.google.common.io.Files;
 @ThreadLeakLingering(linger = 0)
 @ThreadLeakZombies(Consequence.CONTINUE)
 @ThreadLeakScope(Scope.NONE)
-@SuppressCodecs({"Lucene3x", "Lucene40"})
 @Slow
 public class SolrMorphlineZkAvroTest extends AbstractSolrMorphlineZkTestBase {
   

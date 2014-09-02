@@ -21,13 +21,11 @@ import java.util.List;
 
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 
 // We require sorted set DVs:
-@SuppressCodecs({"Lucene40", "Lucene41"})
 public class TestSimpleSortedSetFacetsExample extends LuceneTestCase {
 
   @Test

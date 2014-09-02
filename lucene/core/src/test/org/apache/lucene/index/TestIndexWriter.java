@@ -1037,14 +1037,10 @@ public class TestIndexWriter extends LuceneTestCase {
       doc.add(new BinaryDocValuesField("binarydv", new BytesRef("500")));
       doc.add(new NumericDocValuesField("numericdv", 500));
       doc.add(new SortedDocValuesField("sorteddv", new BytesRef("500")));
-      if (defaultCodecSupportsSortedSet()) {
-        doc.add(new SortedSetDocValuesField("sortedsetdv", new BytesRef("one")));
-        doc.add(new SortedSetDocValuesField("sortedsetdv", new BytesRef("two")));
-      }
-      if (defaultCodecSupportsSortedNumeric()) {
-        doc.add(new SortedNumericDocValuesField("sortednumericdv", 4));
-        doc.add(new SortedNumericDocValuesField("sortednumericdv", 3));
-      }
+      doc.add(new SortedSetDocValuesField("sortedsetdv", new BytesRef("one")));
+      doc.add(new SortedSetDocValuesField("sortedsetdv", new BytesRef("two")));
+      doc.add(new SortedNumericDocValuesField("sortednumericdv", 4));
+      doc.add(new SortedNumericDocValuesField("sortednumericdv", 3));
       w.addDocument(doc);
       doc = new Document();
       doc.add(newStringField(random, "id", "501", Field.Store.NO));
@@ -1052,14 +1048,10 @@ public class TestIndexWriter extends LuceneTestCase {
       doc.add(new BinaryDocValuesField("binarydv", new BytesRef("501")));
       doc.add(new NumericDocValuesField("numericdv", 501));
       doc.add(new SortedDocValuesField("sorteddv", new BytesRef("501")));
-      if (defaultCodecSupportsSortedSet()) {
-        doc.add(new SortedSetDocValuesField("sortedsetdv", new BytesRef("two")));
-        doc.add(new SortedSetDocValuesField("sortedsetdv", new BytesRef("three")));
-      }
-      if (defaultCodecSupportsSortedNumeric()) {
-        doc.add(new SortedNumericDocValuesField("sortednumericdv", 6));
-        doc.add(new SortedNumericDocValuesField("sortednumericdv", 1));
-      }
+      doc.add(new SortedSetDocValuesField("sortedsetdv", new BytesRef("two")));
+      doc.add(new SortedSetDocValuesField("sortedsetdv", new BytesRef("three")));
+      doc.add(new SortedNumericDocValuesField("sortednumericdv", 6));
+      doc.add(new SortedNumericDocValuesField("sortednumericdv", 1));
       w.addDocument(doc);
       w.deleteDocuments(new Term("id", "500"));
       w.close();
@@ -1108,9 +1100,7 @@ public class TestIndexWriter extends LuceneTestCase {
             doc.add(binaryDVField);
             doc.add(numericDVField);
             doc.add(sortedDVField);
-            if (defaultCodecSupportsSortedSet()) {
-              doc.add(sortedSetDVField);
-            }
+            doc.add(sortedSetDVField);
             for(int i=0;i<100;i++) {
               idField.setStringValue(Integer.toString(i));
               binaryDVField.setBytesValue(new BytesRef(idField.stringValue()));
@@ -2893,11 +2883,7 @@ public class TestIndexWriter extends LuceneTestCase {
     assertNotNull(id1);
     
     String id2 = sis.info(0).info.getId();
-    if (defaultCodecSupportsSegmentIds()) {
-      assertNotNull(id2);
-    } else {
-      assertNull(id2);
-    }
+    assertNotNull(id2);
 
     // Make sure CheckIndex includes id output:
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
@@ -2912,12 +2898,7 @@ public class TestIndexWriter extends LuceneTestCase {
     // Commit id is always stored:
     assertTrue("missing id=" + id1 + " in:\n" + s, s.contains("id=" + id1));
 
-    // Per-segment id may or may not be stored depending on the codec:
-    if (defaultCodecSupportsSegmentIds()) {
-      assertTrue("missing id=" + id2 + " in:\n" + s, s.contains("id=" + id2));
-    } else {
-      assertTrue("missing id=null in:\n" + s, s.contains("id=null"));
-    }
+    assertTrue("missing id=" + id2 + " in:\n" + s, s.contains("id=" + id2));
     d.close();
 
     Set<String> ids = new HashSet<>();

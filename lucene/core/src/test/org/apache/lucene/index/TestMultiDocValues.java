@@ -120,7 +120,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     for (int i = 0; i < numDocs; i++) {
       BytesRef ref = new BytesRef(TestUtil.randomUnicodeString(random()));
       field.setBytesValue(ref);
-      if (defaultCodecSupportsDocsWithField() && random().nextInt(7) == 0) {
+      if (random().nextInt(7) == 0) {
         iw.addDocument(new Document());
       }
       iw.addDocument(doc);
@@ -193,7 +193,6 @@ public class TestMultiDocValues extends LuceneTestCase {
   }
   
   public void testSortedSet() throws Exception {
-    assumeTrue("codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
     
     IndexWriterConfig iwc = newIndexWriterConfig(random(), null);
@@ -256,7 +255,6 @@ public class TestMultiDocValues extends LuceneTestCase {
   
   // tries to make more dups than testSortedSet
   public void testSortedSetWithDups() throws Exception {
-    assumeTrue("codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
     
     IndexWriterConfig iwc = newIndexWriterConfig(random(), null);
@@ -318,7 +316,6 @@ public class TestMultiDocValues extends LuceneTestCase {
   }
   
   public void testSortedNumeric() throws Exception {
-    assumeTrue("codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
     Directory dir = newDirectory();
     
     IndexWriterConfig iwc = newIndexWriterConfig(random(), null);
@@ -370,7 +367,6 @@ public class TestMultiDocValues extends LuceneTestCase {
   }
   
   public void testDocsWithField() throws Exception {
-    assumeTrue("codec does not support docsWithField", defaultCodecSupportsDocsWithField());
     Directory dir = newDirectory();
     
     IndexWriterConfig iwc = newIndexWriterConfig(random(), null);

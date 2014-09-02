@@ -1,0 +1,100 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <!--
+    Licensed to the Apache Software Foundation (ASF) under one
+    or more contributor license agreements.  See the NOTICE file
+    distributed with this work for additional information
+    regarding copyright ownership.  The ASF licenses this file
+    to you under the Apache License, Version 2.0 (the
+    "License"); you may not use this file except in compliance
+    with the License.  You may obtain a copy of the License at
+    
+    http://www.apache.org/licenses/LICENSE-2.0
+    
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    KIND, either express or implied.  See the License for the
+    specific language governing permissions and limitations
+    under the License.
+  -->
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.apache.lucene</groupId>
+    <artifactId>lucene-parent</artifactId>
+    <version>@version@</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+  <groupId>org.apache.lucene</groupId>
+  <artifactId>lucene-backward-codecs</artifactId>
+  <packaging>jar</packaging>
+  <name>Lucene Memory</name>
+  <description>
+    Codecs for older versions of Lucene.
+  </description>
+  <properties>
+    <module-directory>lucene/backward-codecs</module-directory>
+    <relative-top-level>../../..</relative-top-level>
+    <module-path>${relative-top-level}/${module-directory}</module-path>
+  </properties>
+  <scm>
+    <connection>scm:svn:${vc-anonymous-base-url}/${module-directory}</connection>
+    <developerConnection>scm:svn:${vc-dev-base-url}/${module-directory}</developerConnection>
+    <url>${vc-browse-base-url}/${module-directory}</url>
+  </scm>
+  <dependencies>
+    <dependency> 
+      <!-- lucene-test-framework dependency must be declared before lucene-core -->
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-test-framework</artifactId>
+      <scope>test</scope>
+    </dependency>
+@lucene-backward-codecs.internal.dependencies@
+@lucene-backward-codecs.external.dependencies@
+@lucene-backward-codecs.internal.test.dependencies@
+@lucene-backward-codecs.external.test.dependencies@
+  </dependencies>
+  <build>
+    <sourceDirectory>${module-path}/src/java</sourceDirectory>
+    <testSourceDirectory>${module-path}/src/test</testSourceDirectory>
+    <testResources>
+      <testResource>
+        <directory>${project.build.testSourceDirectory}</directory>
+        <excludes>
+          <exclude>**/*.java</exclude>
+        </excludes>
+      </testResource>
+    </testResources>
+    <plugins>
+      <plugin>
+        <groupId>de.thetaphi</groupId>
+        <artifactId>forbiddenapis</artifactId>
+        <executions>
+          <execution>
+            <id>lucene-shared-check-forbidden-apis</id>
+            <phase>none</phase> <!-- Block inherited execution -->
+          </execution>
+          <execution>
+            <id>check-forbidden-apis</id>
+            <configuration>
+              <!-- disallow undocumented classes like sun.misc.Unsafe: -->
+              <internalRuntimeForbidden>true</internalRuntimeForbidden>
+              <bundledSignatures>
+                <bundledSignature>jdk-unsafe</bundledSignature>
+                <bundledSignature>jdk-deprecated</bundledSignature>
+                <bundledSignature>jdk-system-out</bundledSignature>
+              </bundledSignatures>
+              <signaturesFiles>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>
+              </signaturesFiles>
+            </configuration>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

@@ -27,9 +27,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
-import org.apache.lucene.codecs.lucene40.Lucene40RWCodec;
-import org.apache.lucene.codecs.lucene41.Lucene41RWCodec;
-import org.apache.lucene.codecs.lucene42.Lucene42RWCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -846,31 +843,6 @@ public class TestCodecs extends LuceneTestCase {
       }
     }
     reader.close();
-    
-    dir.close();
-  }
-  
-  public void testDisableImpersonation() throws Exception {
-    Codec[] oldCodecs = new Codec[] { new Lucene40RWCodec(), new Lucene41RWCodec(), new Lucene42RWCodec() };
-    Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
-    conf.setCodec(oldCodecs[random().nextInt(oldCodecs.length)]);
-    IndexWriter writer = new IndexWriter(dir, conf);
-    
-    Document doc = new Document();
-    doc.add(new StringField("f", "bar", Store.YES));
-    doc.add(new NumericDocValuesField("n", 18L));
-    
-    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = false;
-    try {
-      writer.addDocument(doc);
-      writer.close();
-      fail("should not have succeeded to impersonate an old format!");
-    } catch (UnsupportedOperationException e) {
-      writer.rollback();
-    } finally {
-      OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true;
-    }
     
     dir.close();
   }

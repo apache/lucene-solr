@@ -78,13 +78,13 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       doc.add(new BinaryDocValuesField("bdv", new BytesRef(TestUtil.randomSimpleString(random()))));
       doc.add(new SortedDocValuesField("sdv", new BytesRef(TestUtil.randomSimpleString(random(), 2))));
     }
-    if (defaultCodecSupportsSortedSet()) {
+    if (codecSupportsSortedSet()) {
       final int numValues = random().nextInt(5);
       for (int i = 0; i < numValues; ++i) {
         doc.add(new SortedSetDocValuesField("ssdv", new BytesRef(TestUtil.randomSimpleString(random(), 2))));
       }
     }
-    if (defaultCodecSupportsSortedNumeric()) {
+    if (codecSupportsSortedNumeric()) {
       final int numValues = random().nextInt(5);
       for (int i = 0; i < numValues; ++i) {
         doc.add(new SortedNumericDocValuesField("sndv", TestUtil.nextLong(random(), Long.MIN_VALUE, Long.MAX_VALUE)));
@@ -711,7 +711,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.close();
     
     SortedDocValues dv = getOnlySegmentReader(ireader).getSortedDocValues("field");
-    if (defaultCodecSupportsDocsWithField()) {
+    if (codecSupportsDocsWithField()) {
       assertEquals(-1, dv.getOrd(0));
       assertEquals(0, dv.getValueCount());
     } else {
@@ -768,7 +768,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     SortedDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv");
     BytesRef scratch = dv.lookupOrd(dv.getOrd(0));
     assertEquals(new BytesRef("hello world 2"), scratch);
-    if (defaultCodecSupportsDocsWithField()) {
+    if (codecSupportsDocsWithField()) {
       assertEquals(-1, dv.getOrd(1));
     }
     scratch = dv.get(1);
@@ -1056,7 +1056,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   public void testRandomSortedBytes() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig cfg = newIndexWriterConfig(new MockAnalyzer(random()));
-    if (!defaultCodecSupportsDocsWithField()) {
+    if (!codecSupportsDocsWithField()) {
       // if the codec doesnt support missing, we expect missing to be mapped to byte[]
       // by the impersonator, but we have to give it a chance to merge them to this
       cfg.setMergePolicy(newLogMergePolicy());
@@ -1085,14 +1085,14 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       doc.add(newTextField("id", "noValue", Field.Store.YES));
       w.addDocument(doc);
     }
-    if (!defaultCodecSupportsDocsWithField()) {
+    if (!codecSupportsDocsWithField()) {
       BytesRef bytesRef = new BytesRef();
       hash.add(bytesRef); // add empty value for the gaps
     }
     if (rarely()) {
       w.commit();
     }
-    if (!defaultCodecSupportsDocsWithField()) {
+    if (!codecSupportsDocsWithField()) {
       // if the codec doesnt support missing, we expect missing to be mapped to byte[]
       // by the impersonator, but we have to give it a chance to merge them to this
       w.forceMerge(1);
@@ -1472,7 +1472,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetOneValue() throws IOException {
-    assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
+    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     Directory directory = newDirectory();
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory);
     
@@ -1497,7 +1497,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetTwoFields() throws IOException {
-    assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
+    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     Directory directory = newDirectory();
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory);
     
@@ -1532,7 +1532,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetTwoDocumentsMerged() throws IOException {
-    assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
+    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     Directory directory = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
@@ -1574,7 +1574,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetTwoValues() throws IOException {
-    assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
+    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     Directory directory = newDirectory();
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory);
     
@@ -1604,7 +1604,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetTwoValuesUnordered() throws IOException {
-    assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
+    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     Directory directory = newDirectory();
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory);
     
@@ -1634,7 +1634,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetThreeValuesTwoDocs() throws IOException {
-    assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
+    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     Directory directory = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
@@ -1683,7 +1683,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetTwoDocumentsLastMissing() throws IOException {
-    assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
+    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     Directory directory = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
@@ -1715,7 +1715,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetTwoDocumentsLastMissingMerge() throws IOException {
-    assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
+    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     Directory directory = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
@@ -1749,7 +1749,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetTwoDocumentsFirstMissing() throws IOException {
-    assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
+    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     Directory directory = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
@@ -1782,7 +1782,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetTwoDocumentsFirstMissingMerge() throws IOException {
-    assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
+    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     Directory directory = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
@@ -1816,7 +1816,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetMergeAwayAllValues() throws IOException {
-    assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
+    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     Directory directory = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
@@ -1845,7 +1845,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetTermsEnum() throws IOException {
-    assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
+    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     Directory directory = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
@@ -2006,7 +2006,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetFixedLengthVsStoredFields() throws Exception {
-    assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
+    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       int fixedLength = TestUtil.nextInt(random(), 1, 10);
@@ -2015,7 +2015,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedNumericsSingleValuedVsStoredFields() throws Exception {
-    assumeTrue("Codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
+    assumeTrue("Codec does not support SORTED_NUMERIC", codecSupportsSortedNumeric());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       doTestSortedNumericsVsStoredFields(
@@ -2036,7 +2036,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedNumericsSingleValuedMissingVsStoredFields() throws Exception {
-    assumeTrue("Codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
+    assumeTrue("Codec does not support SORTED_NUMERIC", codecSupportsSortedNumeric());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       doTestSortedNumericsVsStoredFields(
@@ -2057,7 +2057,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedNumericsMultipleValuesVsStoredFields() throws Exception {
-    assumeTrue("Codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
+    assumeTrue("Codec does not support SORTED_NUMERIC", codecSupportsSortedNumeric());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       doTestSortedNumericsVsStoredFields(
@@ -2078,7 +2078,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetVariableLengthVsStoredFields() throws Exception {
-    assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
+    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       doTestSortedSetVsStoredFields(atLeast(300), 1, 10, 16);
@@ -2086,7 +2086,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
 
   public void testSortedSetFixedLengthSingleValuedVsStoredFields() throws Exception {
-    assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
+    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       int fixedLength = TestUtil.nextInt(random(), 1, 10);
@@ -2095,7 +2095,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetVariableLengthSingleValuedVsStoredFields() throws Exception {
-    assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
+    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       doTestSortedSetVsStoredFields(atLeast(300), 1, 10, 1);
@@ -2137,7 +2137,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testTwoNumbersOneMissing() throws IOException {
-    assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField());
+    assumeTrue("Codec does not support getDocsWithField", codecSupportsDocsWithField());
     Directory directory = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(null);
     conf.setMergePolicy(newLogMergePolicy());
@@ -2166,7 +2166,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testTwoNumbersOneMissingWithMerging() throws IOException {
-    assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField());
+    assumeTrue("Codec does not support getDocsWithField", codecSupportsDocsWithField());
     Directory directory = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(null);
     conf.setMergePolicy(newLogMergePolicy());
@@ -2196,7 +2196,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testThreeNumbersOneMissingWithMerging() throws IOException {
-    assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField());
+    assumeTrue("Codec does not support getDocsWithField", codecSupportsDocsWithField());
     Directory directory = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(null);
     conf.setMergePolicy(newLogMergePolicy());
@@ -2232,7 +2232,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testTwoBytesOneMissing() throws IOException {
-    assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField());
+    assumeTrue("Codec does not support getDocsWithField", codecSupportsDocsWithField());
     Directory directory = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(null);
     conf.setMergePolicy(newLogMergePolicy());
@@ -2263,7 +2263,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testTwoBytesOneMissingWithMerging() throws IOException {
-    assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField());
+    assumeTrue("Codec does not support getDocsWithField", codecSupportsDocsWithField());
     Directory directory = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(null);
     conf.setMergePolicy(newLogMergePolicy());
@@ -2295,7 +2295,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testThreeBytesOneMissingWithMerging() throws IOException {
-    assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField());
+    assumeTrue("Codec does not support getDocsWithField", codecSupportsDocsWithField());
     Directory directory = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(null);
     conf.setMergePolicy(newLogMergePolicy());
@@ -2424,9 +2424,9 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   
   /** Tests dv against stored fields with threads (all types + missing) */
   public void testThreads2() throws Exception {
-    assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField());
-    assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
-    assumeTrue("Codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
+    assumeTrue("Codec does not support getDocsWithField", codecSupportsDocsWithField());
+    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
+    assumeTrue("Codec does not support SORTED_NUMERIC", codecSupportsSortedNumeric());
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
@@ -2596,9 +2596,9 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testThreads3() throws Exception {
-    assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField());
-    assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
-    assumeTrue("Codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
+    assumeTrue("Codec does not support getDocsWithField", codecSupportsDocsWithField());
+    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
+    assumeTrue("Codec does not support SORTED_NUMERIC", codecSupportsSortedNumeric());
     Directory dir = newFSDirectory(createTempDir());
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
@@ -2700,7 +2700,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testOneSortedNumber() throws IOException {
-    assumeTrue("Codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
+    assumeTrue("Codec does not support SORTED_NUMERIC", codecSupportsSortedNumeric());
     Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     Document doc = new Document();
@@ -2721,7 +2721,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testOneSortedNumberOneMissing() throws IOException {
-    assumeTrue("Codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
+    assumeTrue("Codec does not support SORTED_NUMERIC", codecSupportsSortedNumeric());
     Directory directory = newDirectory();
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(null));
     Document doc = new Document();
@@ -2750,7 +2750,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testTwoSortedNumber() throws IOException {
-    assumeTrue("Codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
+    assumeTrue("Codec does not support SORTED_NUMERIC", codecSupportsSortedNumeric());
     Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     Document doc = new Document();
@@ -2773,7 +2773,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testTwoSortedNumberOneMissing() throws IOException {
-    assumeTrue("Codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
+    assumeTrue("Codec does not support SORTED_NUMERIC", codecSupportsSortedNumeric());
     Directory directory = newDirectory();
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(null));
     Document doc = new Document();
@@ -2804,7 +2804,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedNumberMerge() throws IOException {
-    assumeTrue("Codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
+    assumeTrue("Codec does not support SORTED_NUMERIC", codecSupportsSortedNumeric());
     Directory directory = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(null);
     iwc.setMergePolicy(newLogMergePolicy());
@@ -2835,7 +2835,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedNumberMergeAwayAllValues() throws IOException {
-    assumeTrue("Codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
+    assumeTrue("Codec does not support SORTED_NUMERIC", codecSupportsSortedNumeric());
     Directory directory = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
@@ -2865,6 +2865,22 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
 
   protected boolean codecAcceptsHugeBinaryValues(String field) {
+    return true;
+  }
+  
+  /** Returns true if the codec "supports" docsWithField 
+   * (other codecs return MatchAllBits, because you couldnt write missing values before) */
+  protected boolean codecSupportsDocsWithField() {
+    return true;
+  }
+  
+  /** Returns true if the default codec supports SORTED_SET docvalues */ 
+  protected boolean codecSupportsSortedSet() {
+    return true;
+  }
+  
+  /** Returns true if the default codec supports SORTED_NUMERIC docvalues */ 
+  protected boolean codecSupportsSortedNumeric() {
     return true;
   }
 }

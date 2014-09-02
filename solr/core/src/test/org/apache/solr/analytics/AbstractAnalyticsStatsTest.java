@@ -36,7 +36,6 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.util.MedianCalculator;
@@ -48,7 +47,6 @@ import org.xml.sax.SAXException;
 
 import com.google.common.collect.ObjectArrays;
 
-@SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Appending","Asserting"})
 public class AbstractAnalyticsStatsTest extends SolrTestCaseJ4 {
   
   protected static final String[] BASEPARMS = new String[]{ "q", "*:*", "indent", "true", "olap", "true", "rows", "0" };

@@ -29,12 +29,10 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /**
  * 
  */
-@SuppressCodecs({"Lucene40", "Lucene41", "Lucene42"}) // suppress codecs without missing
 public class TestFieldValueFilter extends LuceneTestCase {
 
   public void testFieldValueFilterNoValue() throws IOException {

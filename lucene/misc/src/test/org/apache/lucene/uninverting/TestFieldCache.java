@@ -430,10 +430,8 @@ public class TestFieldCache extends LuceneTestCase {
     doc.add(new BinaryDocValuesField("binary", new BytesRef("binary value")));
     doc.add(new SortedDocValuesField("sorted", new BytesRef("sorted value")));
     doc.add(new NumericDocValuesField("numeric", 42));
-    if (defaultCodecSupportsSortedSet()) {
-      doc.add(new SortedSetDocValuesField("sortedset", new BytesRef("sortedset value1")));
-      doc.add(new SortedSetDocValuesField("sortedset", new BytesRef("sortedset value2")));
-    }
+    doc.add(new SortedSetDocValuesField("sortedset", new BytesRef("sortedset value1")));
+    doc.add(new SortedSetDocValuesField("sortedset", new BytesRef("sortedset value2")));
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
     iw.close();
@@ -525,37 +523,35 @@ public class TestFieldCache extends LuceneTestCase {
     assertTrue(bits.get(0));
     
     // SortedSet type: can be retrieved via getDocTermOrds() 
-    if (defaultCodecSupportsSortedSet()) {
-      try {
-        FieldCache.DEFAULT.getNumerics(ar, "sortedset", FieldCache.NUMERIC_UTILS_INT_PARSER, false);
-        fail();
-      } catch (IllegalStateException expected) {}
+    try {
+      FieldCache.DEFAULT.getNumerics(ar, "sortedset", FieldCache.NUMERIC_UTILS_INT_PARSER, false);
+      fail();
+    } catch (IllegalStateException expected) {}
     
-      try {
-        FieldCache.DEFAULT.getTerms(ar, "sortedset", true);
-        fail();
-      } catch (IllegalStateException expected) {}
+    try {
+      FieldCache.DEFAULT.getTerms(ar, "sortedset", true);
+      fail();
+    } catch (IllegalStateException expected) {}
     
-      try {
-        FieldCache.DEFAULT.getTermsIndex(ar, "sortedset");
-        fail();
-      } catch (IllegalStateException expected) {}
-      
-      try {
-        new DocTermOrds(ar, null, "sortedset");
-        fail();
-      } catch (IllegalStateException expected) {}
+    try {
+      FieldCache.DEFAULT.getTermsIndex(ar, "sortedset");
+      fail();
+    } catch (IllegalStateException expected) {}
     
-      sortedSet = FieldCache.DEFAULT.getDocTermOrds(ar, "sortedset", null);
-      sortedSet.setDocument(0);
-      assertEquals(0, sortedSet.nextOrd());
-      assertEquals(1, sortedSet.nextOrd());
-      assertEquals(SortedSetDocValues.NO_MORE_ORDS, sortedSet.nextOrd());
-      assertEquals(2, sortedSet.getValueCount());
+    try {
+      new DocTermOrds(ar, null, "sortedset");
+      fail();
+    } catch (IllegalStateException expected) {}
     
-      bits = FieldCache.DEFAULT.getDocsWithField(ar, "sortedset");
-      assertTrue(bits.get(0));
-    }
+    sortedSet = FieldCache.DEFAULT.getDocTermOrds(ar, "sortedset", null);
+    sortedSet.setDocument(0);
+    assertEquals(0, sortedSet.nextOrd());
+    assertEquals(1, sortedSet.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, sortedSet.nextOrd());
+    assertEquals(2, sortedSet.getValueCount());
+    
+    bits = FieldCache.DEFAULT.getDocsWithField(ar, "sortedset");
+    assertTrue(bits.get(0));
     
     ir.close();
     dir.close();

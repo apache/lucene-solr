@@ -21,7 +21,6 @@ import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -30,7 +29,6 @@ import org.junit.BeforeClass;
 
 import java.io.IOException;
 
-@SuppressCodecs({"Lucene40", "Lucene41"})
 public class DocValuesMultiTest extends SolrTestCaseJ4 {
 
   @BeforeClass

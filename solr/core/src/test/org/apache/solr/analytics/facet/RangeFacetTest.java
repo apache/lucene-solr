@@ -20,12 +20,10 @@ package org.apache.solr.analytics.facet;
 
 import java.util.ArrayList;
 
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 
-@SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Appending","Asserting"})
 public class RangeFacetTest extends AbstractAnalyticsFacetTest {
   static String fileName = "/analytics/requestFiles/rangeFacets.txt";
 

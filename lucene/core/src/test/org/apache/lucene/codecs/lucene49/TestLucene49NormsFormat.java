@@ -18,19 +18,14 @@ package org.apache.lucene.codecs.lucene49;
  */
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.lucene410.Lucene410Codec;
 import org.apache.lucene.index.BaseNormsFormatTestCase;
-import org.junit.BeforeClass;
 
 /**
  * Tests Lucene49NormsFormat
  */
 public class TestLucene49NormsFormat extends BaseNormsFormatTestCase {
-  private final Codec codec = new Lucene49RWCodec();
-  
-  @BeforeClass
-  public static void beforeClass() {
-    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true; // explicitly instantiates ancient codec
-  }
+  private final Codec codec = new Lucene410Codec();
   
   @Override
   protected Codec getCodec() {

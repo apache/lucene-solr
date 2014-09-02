@@ -34,7 +34,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.RegExp;
 import org.apache.lucene.util.UnicodeUtil;
@@ -42,7 +41,6 @@ import org.apache.lucene.util.UnicodeUtil;
 /**
  * Tests the DocTermOrdsRewriteMethod
  */
-@SuppressCodecs({"Lucene40", "Lucene41", "Lucene42"}) // needs SORTED_SET
 public class TestDocTermOrdsRewriteMethod extends LuceneTestCase {
   protected IndexSearcher searcher1;
   protected IndexSearcher searcher2;

@@ -125,7 +125,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     SolrParams params = null;
     
     final String intsort = "int" + (random().nextBoolean() ? "" : "_dv");
-    final String intmissingsort = defaultCodecSupportsMissingDocValues() ? intsort : "int";
+    final String intmissingsort = intsort;
 
     // trivial base case: ensure cursorMark against an empty index doesn't blow up
     cursorMark = CURSOR_MARK_START;
@@ -633,24 +633,13 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
    * </p>
    * <ul>
    *  <li><code>_version_</code> is removed</li>
-   *  <li>
-   *    <code>*_dv_last</code>, <code>*_dv_first</code> and <code>*_dv</code>
-   *    fields are removed if the codec doesn't support missing DocValues
-   *  </li>
    * </ul>
-   * @see #defaultCodecSupportsMissingDocValues
    */
   public static List<String> pruneAndDeterministicallySort(Collection<String> raw) {
-
-    final boolean prune_dv = ! defaultCodecSupportsMissingDocValues();
 
     ArrayList<String> names = new ArrayList<>(37);
     for (String f : raw) {
       if (f.equals("_version_")) {
-        continue;
-      }
-      if (prune_dv && (f.endsWith("_dv_last") || f.endsWith("_dv_first"))
-                       || f.endsWith("_dv")) {
         continue;
       }
       names.add(f);

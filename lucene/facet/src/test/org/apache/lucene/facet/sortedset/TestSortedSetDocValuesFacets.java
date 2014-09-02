@@ -49,7 +49,6 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
   // randomly uses SortedSetDV
 
   public void testBasic() throws Exception {
-    assumeTrue("Test requires SortedSetDV support", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
 
     FacetsConfig config = new FacetsConfig();
@@ -99,7 +98,6 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
   // LUCENE-5090
   @SuppressWarnings("unused")
   public void testStaleState() throws Exception {
-    assumeTrue("Test requires SortedSetDV support", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -142,7 +140,6 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
 
   // LUCENE-5333
   public void testSparseFacets() throws Exception {
-    assumeTrue("Test requires SortedSetDV support", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -196,7 +193,6 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
   }
 
   public void testSomeSegmentsMissing() throws Exception {
-    assumeTrue("Test requires SortedSetDV support", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -236,7 +232,6 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
   }
 
   public void testSlowCompositeReaderWrapper() throws Exception {
-    assumeTrue("Test requires SortedSetDV support", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -272,7 +267,6 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
 
 
   public void testRandom() throws Exception {
-    assumeTrue("Test requires SortedSetDV support", defaultCodecSupportsSortedSet());
     String[] tokens = getRandomTokens(10);
     Directory indexDir = newDirectory();
     Directory taxoDir = newDirectory();

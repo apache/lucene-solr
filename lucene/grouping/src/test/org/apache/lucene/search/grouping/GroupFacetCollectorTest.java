@@ -48,12 +48,9 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.grouping.term.TermGroupFacetCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
 
 
-// Need SSDV, ord=-1 for missing:
-@SuppressCodecs({"Lucene40", "Lucene41", "Lucene42"})
 public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
 
   public void testSimple() throws Exception {

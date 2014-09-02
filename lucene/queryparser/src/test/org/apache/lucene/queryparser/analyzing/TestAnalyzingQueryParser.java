@@ -41,11 +41,9 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /**
  */
-@SuppressCodecs("Lucene3x") // binary terms
 public class TestAnalyzingQueryParser extends LuceneTestCase {
   private final static String FIELD = "field";
    

@@ -27,10 +27,8 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /** Simple tests for SortedSetSortField, indexing the sortedset up front */
-@SuppressCodecs({"Lucene40", "Lucene41"}) // avoid codecs that don't support sortedset
 public class TestSortedSetSortField extends LuceneTestCase {
   
   public void testEmptyIndex() throws Exception {
