@@ -213,6 +213,12 @@ public class CollectionAdminRequest extends SolrRequest
     public String getRequestId() { return this.requestId; }
 
     @Override
+    public void setAsyncId(String asyncId) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "You can not set async id for " +
+          "a REQUESTSTATUS call. Try setRequestId()." );
+    }
+
+    @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       params.set("requestid", requestId);
@@ -381,6 +387,7 @@ public class CollectionAdminRequest extends SolrRequest
   //---------------------------------------------------------------------------------------
 
   // creates collection using a compositeId router
+  @Deprecated
   public static CollectionAdminResponse createCollection( String name,
                                                           Integer shards, Integer repl, Integer maxShards,
                                                           String nodeSet,
@@ -390,8 +397,9 @@ public class CollectionAdminRequest extends SolrRequest
   {
     return createCollection(name, shards, repl, maxShards, nodeSet, conf, routerField, server, null);
   }
-  
+
   // creates collection using a compositeId router
+  @Deprecated
   public static CollectionAdminResponse createCollection( String name,
                                                           Integer shards, Integer repl, Integer maxShards,
                                                           String nodeSet,
@@ -414,6 +422,7 @@ public class CollectionAdminRequest extends SolrRequest
   }
 
   // creates collection using a compositeId router
+  @Deprecated
   public static CollectionAdminResponse createCollection( String name,
                                                           Integer shards, Integer repl, Integer maxShards,
                                                           String nodeSet,
@@ -435,12 +444,14 @@ public class CollectionAdminRequest extends SolrRequest
     return req.process( server );
   }
 
+  @Deprecated
   public static CollectionAdminResponse createCollection(String name, Integer shards,
                                                         String conf,
                                                         SolrServer server) throws SolrServerException, IOException {
     return createCollection(name, shards, conf, server, null);
   }
 
+  @Deprecated
   public static CollectionAdminResponse createCollection( String name,
                                                           Integer shards, String conf,
                                                           SolrServer server,
@@ -455,6 +466,7 @@ public class CollectionAdminRequest extends SolrRequest
     return req.process( server );
   }
 
+  @Deprecated
   public static CollectionAdminResponse createCollection(String name,
                                                          String shards, Integer repl, Integer maxShards,
                                                          String nodeSet,
@@ -465,6 +477,7 @@ public class CollectionAdminRequest extends SolrRequest
   }
 
   // creates a collection using an implicit router
+  @Deprecated
   public static CollectionAdminResponse createCollection( String name,
                                                           String shards, Integer repl, Integer maxShards,
                                                           String nodeSet,
@@ -486,6 +499,7 @@ public class CollectionAdminRequest extends SolrRequest
     return req.process( server );
   }
 
+  @Deprecated
   public static CollectionAdminResponse createCollection( String name,
                                                           String shards, String conf,
                                                           SolrServer server) throws SolrServerException, IOException
@@ -493,6 +507,7 @@ public class CollectionAdminRequest extends SolrRequest
     return createCollection(name, shards, conf, server, null);
   }
 
+  @Deprecated
   public static CollectionAdminResponse createCollection( String name,
                                                           String shards, String conf,
                                                           SolrServer server, String asyncId ) throws SolrServerException, IOException
@@ -506,11 +521,13 @@ public class CollectionAdminRequest extends SolrRequest
     return req.process( server );
   }
 
+  @Deprecated
   public static CollectionAdminResponse reloadCollection( String name, SolrServer server)
       throws SolrServerException, IOException {
     return reloadCollection(name, server, null);
   }
 
+  @Deprecated
   public static CollectionAdminResponse reloadCollection( String name, SolrServer server, String asyncId )
       throws SolrServerException, IOException
   {
@@ -520,12 +537,14 @@ public class CollectionAdminRequest extends SolrRequest
     return req.process( server );
   }
 
+  @Deprecated
   public static CollectionAdminResponse deleteCollection( String name, SolrServer server)
       throws SolrServerException, IOException
   {
     return deleteCollection(name, server, null);
   }
 
+  @Deprecated
   public static CollectionAdminResponse deleteCollection( String name, SolrServer server,
                                                           String asyncId)
       throws SolrServerException, IOException
@@ -536,6 +555,7 @@ public class CollectionAdminRequest extends SolrRequest
     return req.process( server );
   }
 
+  @Deprecated
   public static CollectionAdminResponse requestStatus(String requestId, SolrServer server)
       throws SolrServerException, IOException {
     RequestStatus req = new RequestStatus();
@@ -544,6 +564,7 @@ public class CollectionAdminRequest extends SolrRequest
     return req.process(server);
   }
 
+  @Deprecated
   public static CollectionAdminResponse createShard( String name, String shard, String nodeSet, SolrServer server ) throws SolrServerException, IOException
   {
     CreateShard req = new CreateShard();
@@ -552,16 +573,20 @@ public class CollectionAdminRequest extends SolrRequest
     req.setNodeSet(nodeSet);
     return req.process( server );
   }
+
+  @Deprecated
   public static CollectionAdminResponse createShard( String name, String shard, SolrServer server ) throws SolrServerException, IOException
   {
     return createShard(name, shard, null, server);
   }
 
+  @Deprecated
   public static CollectionAdminResponse splitShard( String name, String shard, String ranges, SolrServer server ) throws SolrServerException, IOException
   {
     return splitShard(name, shard, ranges, server, null);
   }
 
+  @Deprecated
   public static CollectionAdminResponse splitShard( String name, String shard, String ranges, SolrServer server,
                                                     String asyncId) throws SolrServerException, IOException
   {
@@ -573,17 +598,20 @@ public class CollectionAdminRequest extends SolrRequest
     return req.process( server );
   }
 
+  @Deprecated
   public static CollectionAdminResponse splitShard(String name, String shard, SolrServer server)
       throws SolrServerException, IOException {
     return splitShard(name, shard, null, server, null);
   }
 
+  @Deprecated
   public static CollectionAdminResponse splitShard( String name, String shard, SolrServer server,
                                                     String asyncId ) throws SolrServerException, IOException
   {
     return splitShard(name, shard, null, server, asyncId);
   }
 
+  @Deprecated
   public static CollectionAdminResponse deleteShard( String name, String shard, SolrServer server ) throws SolrServerException, IOException
   {
     CollectionShardAdminRequest req = new DeleteShard();
@@ -592,6 +620,7 @@ public class CollectionAdminRequest extends SolrRequest
     return req.process( server );
   }
 
+  @Deprecated
   public static CollectionAdminResponse createAlias( String name, String collections, SolrServer server ) throws SolrServerException, IOException
   {
     CreateAlias req = new CreateAlias();
@@ -600,6 +629,7 @@ public class CollectionAdminRequest extends SolrRequest
     return req.process( server );
   }
 
+  @Deprecated
   public static CollectionAdminResponse deleteAlias( String name, SolrServer server ) throws SolrServerException, IOException
   {
     CollectionAdminRequest req = new DeleteAlias();
