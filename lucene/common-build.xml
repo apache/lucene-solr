@@ -167,8 +167,6 @@
   <property name="javac.debug" value="on"/>
   <property name="javac.source" value="1.7"/>
   <property name="javac.target" value="1.7"/>
-  <property name="javac.source.backwards" value="1.7"/>
-  <property name="javac.target.backwards" value="1.7"/>
   <property name="javac.args" value="-Xlint -Xlint:-deprecation -Xlint:-serial -Xlint:-options"/>
   <property name="javadoc.link" value="http://download.oracle.com/javase/7/docs/api/"/>
   <property name="javadoc.link.junit" value="http://junit.sourceforge.net/javadoc/"/>
@@ -238,13 +236,8 @@
   <property name="m2.repository.id" value="local"/>
   <property name="m2.credentials.prompt" value="true"/>
 
-  <property name="backwards.dir" location="backwards"/>
-  <property name="build.dir.backwards" location="${build.dir}/backwards"/>
-
   <property name="junit.output.dir" location="${build.dir}/test"/>
-  <property name="junit.output.dir.backwards" location="${build.dir.backwards}/test"/>
   <property name="junit.reports" location="${build.dir}/test/reports"/>
-  <property name="junit.reports.backwards" location="${build.dir.backwards}/test/reports"/>
 
   <property name="manifest.file" location="${build.dir}/MANIFEST.MF"/>
 
@@ -1475,17 +1468,6 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
         <include name="**/test/TEST-*.xml"/>
       </fileset>
       <report format="frames" todir="${junit.reports}"/>
-    </junitreport>
-    
-    <mkdir dir="${junit.reports.backwards}"/>
-    <junitreport todir="${junit.output.dir.backwards}">
-      <!-- this fileset let's the task work for individual modules,
-           as well as the project as a whole
-       -->
-      <fileset dir="${build.dir.backwards}">
-        <include name="**/test/TEST-*.xml"/>
-      </fileset>
-      <report format="frames" todir="${junit.reports.backwards}"/>
     </junitreport>
   </target>
 
