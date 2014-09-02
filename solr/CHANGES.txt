@@ -137,6 +137,9 @@ New Features
 
 * SOLR-6365: specify appends, defaults, invariants outside of the request handler.
   (Noble Paul, Erik Hatcher, shalin)
+  
+* SOLR-5097: Schema API: Add REST support for adding dynamic fields to the schema.
+  (Steve Rowe)
 
 Bug Fixes
 ----------------------

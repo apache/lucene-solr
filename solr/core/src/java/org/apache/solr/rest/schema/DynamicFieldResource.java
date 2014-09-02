@@ -20,20 +20,27 @@ package org.apache.solr.rest.schema;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.rest.GETable;
+import org.apache.solr.rest.PUTable;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.noggit.ObjectBuilder;
+import org.restlet.data.MediaType;
 import org.restlet.representation.Representation;
 import org.restlet.resource.ResourceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * This class responds to requests at /solr/(corename)/schema/dynamicfields/(pattern)
  * where pattern is a field name pattern (with an asterisk at the beginning or the end).
  */
-public class DynamicFieldResource extends BaseFieldResource implements GETable {
+public class DynamicFieldResource extends BaseFieldResource implements GETable, PUTable {
   private static final Logger log = LoggerFactory.getLogger(DynamicFieldResource.class);
 
   private String fieldNamePattern;
@@ -77,6 +84,100 @@ public class DynamicFieldResource extends BaseFieldResource implements GETable {
           throw new SolrException(ErrorCode.NOT_FOUND, message);
         } else {
           getSolrResponse().add(IndexSchema.DYNAMIC_FIELD, getFieldProperties(field));
+        }
+      }
+    } catch (Exception e) {
+      getSolrResponse().setException(e);
+    }
+    handlePostExecution(log);
+
+    return new SolrOutputRepresentation();
+  }
+
+  /**
+   * Accepts JSON add dynamic field request
+   */
+  @Override
+  public Representation put(Representation entity) {
+    try {
+      if ( ! getSchema().isMutable()) {
+        final String message = "This IndexSchema is not mutable.";
+        throw new SolrException(ErrorCode.BAD_REQUEST, message);
+      } else {
+        if (null == entity.getMediaType()) {
+          entity.setMediaType(MediaType.APPLICATION_JSON);
+        }
+        if ( ! entity.getMediaType().equals(MediaType.APPLICATION_JSON, true)) {
+          String message = "Only media type " + MediaType.APPLICATION_JSON.toString() + " is accepted."
+                         + "  Request has media type " + entity.getMediaType().toString() + ".";
+          log.error(message);
+          throw new SolrException(ErrorCode.BAD_REQUEST, message);
+        } else {
+          Object object = ObjectBuilder.fromJSON(entity.getText());
+          if ( ! (object instanceof Map)) {
+            String message = "Invalid JSON type " + object.getClass().getName() + ", expected Map of the form"
+                           + " (ignore the backslashes): {\"type\":\"text_general\", ...}, either with or"
+                           + " without a \"name\" mapping.  If the \"name\" is specified, it must match the"
+                           + " name given in the request URL: /schema/dynamicfields/(name)";
+            log.error(message);
+            throw new SolrException(ErrorCode.BAD_REQUEST, message);
+          } else {
+            Map<String,Object> map = (Map<String,Object>)object;
+            if (1 == map.size() && map.containsKey(IndexSchema.DYNAMIC_FIELD)) {
+              map = (Map<String,Object>)map.get(IndexSchema.DYNAMIC_FIELD);
+            }
+            String bodyFieldName;
+            if (null != (bodyFieldName = (String)map.remove(IndexSchema.NAME))
+                && ! fieldNamePattern.equals(bodyFieldName)) {
+              String message = "Dynamic field name in the request body '" + bodyFieldName
+                  + "' doesn't match dynamic field name in the request URL '" + fieldNamePattern + "'";
+              log.error(message);
+              throw new SolrException(ErrorCode.BAD_REQUEST, message);
+            } else {
+              String fieldType;
+              if (null == (fieldType = (String) map.remove(IndexSchema.TYPE))) {
+                String message = "Missing '" + IndexSchema.TYPE + "' mapping.";
+                log.error(message);
+                throw new SolrException(ErrorCode.BAD_REQUEST, message);
+              } else {
+                ManagedIndexSchema oldSchema = (ManagedIndexSchema)getSchema();
+                Object copies = map.get(IndexSchema.COPY_FIELDS);
+                List<String> copyFieldNames = null;
+                if (copies != null) {
+                  if (copies instanceof List) {
+                    copyFieldNames = (List<String>)copies;
+                  } else if (copies instanceof String) {
+                    copyFieldNames = Collections.singletonList(copies.toString());
+                  } else {
+                    String message = "Invalid '" + IndexSchema.COPY_FIELDS + "' type.";
+                    log.error(message);
+                    throw new SolrException(ErrorCode.BAD_REQUEST, message);
+                  }
+                }
+                if (copyFieldNames != null) {
+                  map.remove(IndexSchema.COPY_FIELDS);
+                }
+                boolean success = false;
+                while ( ! success) {
+                  try {
+                    SchemaField newDynamicField = oldSchema.newDynamicField(fieldNamePattern, fieldType, map);
+                    synchronized (oldSchema.getSchemaUpdateLock()) {
+                      IndexSchema newSchema = oldSchema.addDynamicField(newDynamicField, copyFieldNames);
+                      if (null != newSchema) {
+                        getSolrCore().setLatestSchema(newSchema);
+                        success = true;
+                      } else {
+                        throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to add dynamic field.");
+                      }
+                    }
+                  } catch (ManagedIndexSchema.SchemaChangedInZkException e) {
+                    log.debug("Schema changed while processing request, retrying");
+                    oldSchema = (ManagedIndexSchema)getSolrCore().getLatestSchema();
+                  }
+                }
+              }
+            }
+          }
         }
       }
     } catch (Exception e) {

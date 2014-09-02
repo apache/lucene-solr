@@ -219,19 +219,4 @@ public class FieldCollectionResource extends BaseFieldResource implements GETabl
 
     return new SolrOutputRepresentation();
   }
-
-  private static class NewFieldArguments {
-    private String name;
-    private String type;
-    Map<String, Object> map;
-    NewFieldArguments(String name, String type, Map<String, Object> map){
-      this.name = name;
-      this.type = type;
-      this.map = map;
-    }
-
-    public String getName() { return name; }
-    public String getType() { return type; }
-    public Map<String, Object> getMap() { return map; }
-  }
 }
