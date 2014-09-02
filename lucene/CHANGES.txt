@@ -127,6 +127,10 @@ Bug Fixes
   MockDirectoryWrapper to have it simulate a virus checker holding a
   file open and preventing deletion (Robert Muir, Mike McCandless)
 
+* LUCENE-5916: Static scope test components should be consistent between
+  tests (and test iterations). Fix for FaultyIndexInput in particular.
+  (Dawid Weiss)
+
 Build
 
 * LUCENE-5909: Smoke tester now has better command line parsing and
