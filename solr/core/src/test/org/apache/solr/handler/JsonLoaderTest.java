@@ -281,7 +281,32 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
     JsonLoader loader = new JsonLoader();
     loader.load(req, rsp, new ContentStreamBase.StringStream(doc), p);
-
+    assertEquals( 2, p.addCommands.size() );
+     doc = "\n" +
+        "\n" +
+        "{bool: true,\n" +
+        " f0: \"v0\",\n" +
+        " f2: {\n" +
+        "    \t  \"boost\": 2.3,\n" +
+        "    \t  \"value\": \"test\"\n" +
+        "    \t   },\n" +
+        "array: [ \"aaa\", \"bbb\" ],\n" +
+        "boosted: {\n" +
+        "    \t      \"boost\": 6.7,\n" +
+        "    \t      \"value\": [ \"aaa\", \"bbb\" ]\n" +
+        "    \t    }\n" +
+        " }\n" +
+        "\n" +
+        "\n" +
+        " {f1: \"v1\",\n" +
+        "  f1: \"v2\",\n" +
+        "   f2: null\n" +
+        "  }\n";
+    req = req("json.command","false");
+    rsp = new SolrQueryResponse();
+    p = new BufferingRequestProcessor(null);
+    loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(doc), p);
 
     assertEquals( 2, p.addCommands.size() );
 
