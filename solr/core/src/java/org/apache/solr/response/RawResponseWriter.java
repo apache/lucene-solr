@@ -18,6 +18,7 @@
 package org.apache.solr.response;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
@@ -45,8 +46,7 @@ import org.apache.solr.request.SolrQueryRequest;
  *
  * @since solr 1.3
  */
-public class RawResponseWriter implements BinaryQueryResponseWriter 
-{
+public class RawResponseWriter implements BinaryQueryResponseWriter {
   /** 
    * The key that should be used to add a ContentStream to the 
    * SolrQueryResponse if you intend to use this Writer.
@@ -65,8 +65,7 @@ public class RawResponseWriter implements BinaryQueryResponseWriter
   }
 
   // Even if this is null, it should be ok
-  protected QueryResponseWriter getBaseWriter( SolrQueryRequest request )
-  {
+  protected QueryResponseWriter getBaseWriter( SolrQueryRequest request ) {
     return request.getCore().getQueryResponseWriter( _baseWriter );
   }
   
@@ -80,42 +79,31 @@ public class RawResponseWriter implements BinaryQueryResponseWriter
   }
 
   @Override
-  public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response) throws IOException 
-  {
+  public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response) throws IOException {
     Object obj = response.getValues().get( CONTENT );
     if( obj != null && (obj instanceof ContentStream ) ) {
       // copy the contents to the writer...
       ContentStream content = (ContentStream)obj;
-      Reader reader = content.getReader();
-      try {
+      try(Reader reader = content.getReader()) {
         IOUtils.copy( reader, writer );
-      } finally {
-        reader.close();
       }
-    }
-    else {
+    } else {
       getBaseWriter( request ).write( writer, request, response );
     }
   }
 
-@Override
-public void write(OutputStream out, SolrQueryRequest request,
-    SolrQueryResponse response) throws IOException {
+  @Override
+  public void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse response) throws IOException {
     Object obj = response.getValues().get( CONTENT );
     if( obj != null && (obj instanceof ContentStream ) ) {
       // copy the contents to the writer...
       ContentStream content = (ContentStream)obj;
-      java.io.InputStream in = content.getStream();
-      try {
+      try(InputStream in = content.getStream()) {
         IOUtils.copy( in, out );
-      } finally {
-        in.close();
       }
+    } else {
+      QueryResponseWriterUtil.writeQueryResponse(out, 
+          getBaseWriter(request), request, response, getContentType(request, response));
     }
-    else {
-      //getBaseWriter( request ).write( writer, request, response );
-      throw new IOException("did not find a CONTENT object");
-    }
-
   }
 }
