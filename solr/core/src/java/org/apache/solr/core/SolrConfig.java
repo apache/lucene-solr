@@ -312,7 +312,7 @@ public class SolrConfig extends Config {
      addHttpRequestToContext = getBool( 
          "requestDispatcher/requestParsers/@addHttpRequestToContext", false );
 
-    loadPluginInfo(ParamSet.class,ParamSet.TYPE);
+    loadPluginInfo(ParamSet.class,ParamSet.TYPE, MULTI_OK);
     List<PluginInfo> paramSetInfos =  pluginStore.get(ParamSet.class.getName()) ;
     if(paramSetInfos!=null){
       Map<String,ParamSet> paramSets = new HashMap<>();

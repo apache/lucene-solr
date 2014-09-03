@@ -49,6 +49,22 @@ public class TestParamSet  extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testMultiParamSet(){
+    SolrRequestHandler handler = h.getCore().getRequestHandler("/dump6");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    handler.handleRequest(req("initArgs", "true"), rsp);
+    NamedList nl = (NamedList) rsp.getValues().get("initArgs");
+    NamedList def = (NamedList) nl.get(PluginInfo.DEFAULTS);
+    assertEquals("A", def.get("a"));
+    assertEquals("P", def.get("p"));
+    def = (NamedList) nl.get(PluginInfo.INVARIANTS);
+    assertEquals("B", def.get("b"));
+    def = (NamedList) nl.get(PluginInfo.APPENDS);
+    assertEquals("C", def.get("c"));
+
+  }
+
+  @Test
   public void testComponentWithParamSetRequestParam(){
     for (String s : Arrays.asList("/dump4")) {
       SolrRequestHandler handler = h.getCore().getRequestHandler(s);
