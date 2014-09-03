@@ -49,6 +49,9 @@ New Features
 
 * SOLR-6365: specify appends, defaults, invariants outside of the request handler.
   (Noble Paul, Erik Hatcher, shalin)
+  
+* SOLR-5097: Schema API: Add REST support for adding dynamic fields to the schema.
+  (Steve Rowe)
 
 * SOLR-6073: Remove helper methods from CollectionsRequest (SolrJ) for CollectionsAPI
   calls and move to a builder design for the same. (Varun Thacker, Anshum Gupta)

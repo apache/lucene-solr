@@ -24,6 +24,7 @@ import org.apache.solr.schema.SchemaField;
 import org.restlet.resource.ResourceException;
 
 import java.util.LinkedHashSet;
+import java.util.Map;
 
 
 /**
@@ -97,5 +98,24 @@ abstract class BaseFieldResource extends BaseSolrResource {
       properties.add(IndexSchema.UNIQUE_KEY, true);
     }
     return properties;
+  }
+
+  // protected access on this class triggers a bug in javadoc generation caught by
+  // documentation-link: "BROKEN LINK" reported in javadoc for classes using
+  // NewFieldArguments because the link target file is BaseFieldResource.NewFieldArguments,
+  // but the actual file is BaseFieldResource$NewFieldArguments.
+  static class NewFieldArguments {
+    private String name;
+    private String type;
+    Map<String,Object> map;
+    NewFieldArguments(String name, String type, Map<String,Object> map) {
+      this.name = name;
+      this.type = type;
+      this.map = map;
+    }
+
+    public String getName() { return name; }
+    public String getType() { return type; }
+    public Map<String, Object> getMap() { return map; }
   }
 }

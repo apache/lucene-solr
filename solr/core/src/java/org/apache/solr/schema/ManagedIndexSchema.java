@@ -40,10 +40,12 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /** Solr-managed schema - non-user-editable, but can be mutable via internal and external REST API requests. */
@@ -174,16 +176,6 @@ public final class ManagedIndexSchema extends IndexSchema {
     return success; 
   }
 
-  @Override
-  public ManagedIndexSchema addField(SchemaField newField) {
-    return addFields(Arrays.asList(newField));
-  }
-
-  @Override
-  public ManagedIndexSchema addField(SchemaField newField, Collection<String> copyFieldNames) {
-    return addFields(Arrays.asList(newField), Collections.singletonMap(newField.getName(), copyFieldNames));
-  }
-
   public class FieldExistsException extends SolrException {
     public FieldExistsException(ErrorCode code, String msg) {
       super(code, msg);
@@ -194,6 +186,16 @@ public final class ManagedIndexSchema extends IndexSchema {
     public SchemaChangedInZkException(ErrorCode code, String msg) {
       super(code, msg);
     }
+  }
+
+  @Override
+  public ManagedIndexSchema addField(SchemaField newField) {
+    return addFields(Arrays.asList(newField));
+  }
+
+  @Override
+  public ManagedIndexSchema addField(SchemaField newField, Collection<String> copyFieldNames) {
+    return addFields(Arrays.asList(newField), Collections.singletonMap(newField.getName(), copyFieldNames));
   }
 
   @Override
@@ -232,18 +234,82 @@ public final class ManagedIndexSchema extends IndexSchema {
             newSchema.registerCopyField(newField.getName(), copyField);
           }
         }
+      }
 
-        // Run the callbacks on SchemaAware now that everything else is done
-        for (SchemaAware aware : newSchema.schemaAware) {
-          aware.inform(newSchema);
+      // Run the callbacks on SchemaAware now that everything else is done
+      for (SchemaAware aware : newSchema.schemaAware) {
+        aware.inform(newSchema);
+      }
+      newSchema.refreshAnalyzers();
+      success = newSchema.persistManagedSchema(false); // don't just create - update it if it already exists
+      if (success) {
+        log.debug("Added field(s): {}", newFields);
+      } else {
+        log.error("Failed to add field(s): {}", newFields);
+        newSchema = null;
+      }
+    } else {
+      String msg = "This ManagedIndexSchema is not mutable.";
+      log.error(msg);
+      throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+    }
+    return newSchema;
+  }
+
+  @Override
+  public IndexSchema addDynamicField(SchemaField newDynamicField) {
+    return addDynamicFields(Arrays.asList(newDynamicField));
+  }
+
+  @Override
+  public IndexSchema addDynamicField(SchemaField newDynamicField, Collection<String> copyFieldNames) {
+    return addDynamicFields(Arrays.asList(newDynamicField),
+        Collections.singletonMap(newDynamicField.getName(), copyFieldNames));
+  }
+
+  @Override
+  public ManagedIndexSchema addDynamicFields(Collection<SchemaField> newDynamicFields) {
+    return addDynamicFields(newDynamicFields, Collections.<String,Collection<String>>emptyMap());
+  }
+
+  @Override
+  public ManagedIndexSchema addDynamicFields(Collection<SchemaField> newDynamicFields, 
+                                             Map<String,Collection<String>> copyFieldNames) {
+    ManagedIndexSchema newSchema = null;
+    if (isMutable) {
+      boolean success = false;
+      if (copyFieldNames == null){
+        copyFieldNames = Collections.emptyMap();
+      }
+      newSchema = shallowCopy(true);
+
+      for (SchemaField newDynamicField : newDynamicFields) {
+        List<DynamicField> dFields = new ArrayList<>(Arrays.asList(newSchema.dynamicFields));
+        if (isDuplicateDynField(dFields, newDynamicField)) {
+          String msg = "Dynamic field '" + newDynamicField.getName() + "' already exists.";
+          throw new FieldExistsException(ErrorCode.BAD_REQUEST, msg);
         }
-        newSchema.refreshAnalyzers();
-        success = newSchema.persistManagedSchema(false); // don't just create - update it if it already exists
-        if (success) {
-          log.debug("Added field(s): {}", newFields);
-        } else {
-          log.error("Failed to add field(s): {}", newFields);
+        dFields.add(new DynamicField(newDynamicField));
+        newSchema.dynamicFields = dynamicFieldListToSortedArray(dFields);
+        
+        Collection<String> copyFields = copyFieldNames.get(newDynamicField.getName());
+        if (copyFields != null) {
+          for (String copyField : copyFields) {
+            newSchema.registerCopyField(newDynamicField.getName(), copyField);
+          }
         }
+      }
+
+      // Run the callbacks on SchemaAware now that everything else is done
+      for (SchemaAware aware : newSchema.schemaAware) {
+        aware.inform(newSchema);
+      }
+      newSchema.refreshAnalyzers();
+      success = newSchema.persistManagedSchema(false); // don't just create - update it if it already exists
+      if (success) {
+        log.debug("Added dynamic field(s): {}", newDynamicFields);
+      } else {
+        log.error("Failed to add dynamic field(s): {}", newDynamicFields);
       }
     } else {
       String msg = "This ManagedIndexSchema is not mutable.";
@@ -303,6 +369,36 @@ public final class ManagedIndexSchema extends IndexSchema {
           throw new SolrException(ErrorCode.BAD_REQUEST, msg);
         }
         sf = SchemaField.create(fieldName, type, options);
+      } catch (SolrException e) {
+        throw e;
+      } catch (Exception e) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, e);
+      }
+    } else {
+      String msg = "This ManagedIndexSchema is not mutable.";
+      log.error(msg);
+      throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+    }
+    return sf;
+  }
+
+  @Override
+  public SchemaField newDynamicField(String fieldNamePattern, String fieldType, Map<String,?> options) {
+    SchemaField sf;
+    if (isMutable) {
+      try {
+        FieldType type = getFieldTypeByName(fieldType);
+        if (null == type) {
+          String msg = "Dynamic field '" + fieldNamePattern + "': Field type '" + fieldType + "' not found.";
+          log.error(msg);
+          throw new SolrException(ErrorCode.BAD_REQUEST, msg);
+        }
+        sf = SchemaField.create(fieldNamePattern, type, options);
+        if ( ! isValidDynamicField(Arrays.asList(dynamicFields), sf)) {
+          String msg =  "Invalid dynamic field '" + fieldNamePattern + "'";
+          log.error(msg);
+          throw new SolrException(ErrorCode.BAD_REQUEST, msg);
+        }
       } catch (SolrException e) {
         throw e;
       } catch (Exception e) {

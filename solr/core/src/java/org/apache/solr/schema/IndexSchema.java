@@ -514,7 +514,7 @@ public class IndexSchema {
         }
       }
 
-      //                      /schema/defaultSearchField/@text()
+      //                      /schema/defaultSearchField/text()
       expression = stepsToPath(SCHEMA, DEFAULT_SEARCH_FIELD, TEXT_FUNCTION);
       node = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
       if (node==null) {
@@ -661,21 +661,8 @@ public class IndexSchema {
           requiredFields.add(f);
         }
       } else if (node.getNodeName().equals(DYNAMIC_FIELD)) {
-        if( f.getDefaultValue() != null ) {
-          throw new SolrException(ErrorCode.SERVER_ERROR,
-                                  DYNAMIC_FIELD + " can not have a default value: " + name);
-        }
-        if ( f.isRequired() ) {
-          throw new SolrException(ErrorCode.SERVER_ERROR,
-                                  DYNAMIC_FIELD + " can not be required: " + name);
-        }
-        if (isValidFieldGlob(name)) {
-          // make sure nothing else has the same path
-          addDynamicField(dFields, f);
-        } else {
-          String msg = "Dynamic field name '" + name 
-              + "' should have either a leading or a trailing asterisk, and no others.";
-          throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+        if (isValidDynamicField(dFields, f)) {
+          addDynamicFieldNoDupCheck(dFields, f);
         }
       } else {
         // we should never get here
@@ -688,17 +675,24 @@ public class IndexSchema {
     // in DocumentBuilder.getDoc()
     requiredFields.addAll(fieldsWithDefaultValue);
 
-    // OK, now sort the dynamic fields largest to smallest size so we don't get
-    // any false matches.  We want to act like a compiler tool and try and match
-    // the largest string possible.
-    Collections.sort(dFields);
-
-    log.trace("Dynamic Field Ordering:" + dFields);
-
-    // stuff it in a normal array for faster access
-    dynamicFields = dFields.toArray(new DynamicField[dFields.size()]);
-
+    dynamicFields = dynamicFieldListToSortedArray(dFields);
+                                                                   
     return explicitRequiredProp;
+  }
+  
+  /**
+   * Sort the dynamic fields and stuff them in a normal array for faster access.
+   */
+  protected static DynamicField[] dynamicFieldListToSortedArray(List<DynamicField> dynamicFieldList) {
+    // Avoid creating the array twice by converting to an array first and using Arrays.sort(),
+    // rather than Collections.sort() then converting to an array, since Collections.sort()
+    // copies to an array first, then sets each collection member from the array. 
+    DynamicField[] dFields = dynamicFieldList.toArray(new DynamicField[dynamicFieldList.size()]);
+    Arrays.sort(dFields);
+
+    log.trace("Dynamic Field Ordering:" + Arrays.toString(dFields));
+
+    return dFields; 
   }
 
   /**
@@ -766,14 +760,28 @@ public class IndexSchema {
     return false;
   }
   
-  private void addDynamicField(List<DynamicField> dFields, SchemaField f) {
-    if (isDuplicateDynField(dFields, f)) {
-      String msg = "[schema.xml] Duplicate DynamicField definition for '" + f.getName() + "'";
-      throw new SolrException(ErrorCode.SERVER_ERROR, msg);
-    } else {
-      addDynamicFieldNoDupCheck(dFields, f);
+  protected boolean isValidDynamicField(List<DynamicField> dFields, SchemaField f) {
+    String glob = f.getName();
+    if (f.getDefaultValue() != null) {
+      throw new SolrException(ErrorCode.SERVER_ERROR,
+          DYNAMIC_FIELD + " can not have a default value: " + glob);
     }
+    if (f.isRequired()) {
+      throw new SolrException(ErrorCode.SERVER_ERROR,
+          DYNAMIC_FIELD + " can not be required: " + glob);
+    }
+    if ( ! isValidFieldGlob(glob)) {
+      String msg = "Dynamic field name '" + glob
+          + "' should have either a leading or a trailing asterisk, and no others.";
+      throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+    }
+    if (isDuplicateDynField(dFields, f)) {
+      String msg = "[schema.xml] Duplicate DynamicField definition for '" + glob + "'";
+      throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+    }
+    return true;
   }
+
 
   /**
    * Register one or more new Dynamic Fields with the Schema.
@@ -789,8 +797,7 @@ public class IndexSchema {
         addDynamicFieldNoDupCheck(dynFields, field);
       }
     }
-    Collections.sort(dynFields);
-    dynamicFields = dynFields.toArray(new DynamicField[dynFields.size()]);
+    dynamicFields = dynamicFieldListToSortedArray(dynFields);
   }
 
   private void addDynamicFieldNoDupCheck(List<DynamicField> dFields, SchemaField f) {
@@ -798,7 +805,7 @@ public class IndexSchema {
     log.debug("dynamic field defined: " + f);
   }
 
-  private boolean isDuplicateDynField(List<DynamicField> dFields, SchemaField f) {
+  protected boolean isDuplicateDynField(List<DynamicField> dFields, SchemaField f) {
     for (DynamicField df : dFields) {
       if (df.getRegex().equals(f.name)) return true;
     }
@@ -1528,6 +1535,69 @@ public class IndexSchema {
   }
 
   /**
+   * Copies this schema, adds the given dynamic field to the copy, then persists the
+   * new schema.  Requires synchronizing on the object returned by
+   * {@link #getSchemaUpdateLock()}.
+   *
+   * @param newDynamicField the SchemaField to add 
+   * @return a new IndexSchema based on this schema with newField added
+   * @see #newDynamicField(String, String, Map)
+   */
+  public IndexSchema addDynamicField(SchemaField newDynamicField) {
+    String msg = "This IndexSchema is not mutable.";
+    log.error(msg);
+    throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+  }
+
+  /**
+   * Copies this schema, adds the given dynamic field to the copy, then persists the
+   * new schema.  Requires synchronizing on the object returned by
+   * {@link #getSchemaUpdateLock()}.
+   *
+   * @param newDynamicField the SchemaField to add
+   * @param copyFieldNames 0 or more names of targets to copy this field to.  The targets must already exist.
+   * @return a new IndexSchema based on this schema with newDynamicField added
+   * @see #newDynamicField(String, String, Map)
+   */
+  public IndexSchema addDynamicField(SchemaField newDynamicField, Collection<String> copyFieldNames) {
+    String msg = "This IndexSchema is not mutable.";
+    log.error(msg);
+    throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+  }
+
+  /**
+   * Copies this schema, adds the given dynamic fields to the copy, then persists the
+   * new schema.  Requires synchronizing on the object returned by
+   * {@link #getSchemaUpdateLock()}.
+   *
+   * @param newDynamicFields the SchemaFields to add
+   * @return a new IndexSchema based on this schema with newDynamicFields added
+   * @see #newDynamicField(String, String, Map)
+   */
+  public IndexSchema addDynamicFields(Collection<SchemaField> newDynamicFields) {
+    String msg = "This IndexSchema is not mutable.";
+    log.error(msg);
+    throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+  }
+
+  /**
+   * Copies this schema, adds the given dynamic fields to the copy, then persists the
+   * new schema.  Requires synchronizing on the object returned by
+   * {@link #getSchemaUpdateLock()}.
+   *
+   * @param newDynamicFields the SchemaFields to add
+   * @param copyFieldNames 0 or more names of targets to copy this field to.  The target fields must already exist.
+   * @return a new IndexSchema based on this schema with newDynamicFields added
+   * @see #newDynamicField(String, String, Map)
+   */
+  public IndexSchema addDynamicFields
+      (Collection<SchemaField> newDynamicFields, Map<String, Collection<String>> copyFieldNames) {
+    String msg = "This IndexSchema is not mutable.";
+    log.error(msg);
+    throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+  }
+
+  /**
    * Copies this schema and adds the new copy fields to the copy, then
    * persists the new schema.  Requires synchronizing on the object returned by
    * {@link #getSchemaUpdateLock()}.
@@ -1554,6 +1624,24 @@ public class IndexSchema {
    * @see #addField(SchemaField)
    */
   public SchemaField newField(String fieldName, String fieldType, Map<String,?> options) {
+    String msg = "This IndexSchema is not mutable.";
+    log.error(msg);
+    throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+  }
+
+  /**
+   * Returns a SchemaField if the given dynamic field glob does not already 
+   * exist in this schema, and does not match any dynamic fields 
+   * in this schema.  The resulting SchemaField can be used in a call
+   * to {@link #addField(SchemaField)}.
+   *
+   * @param fieldNamePattern the pattern for the dynamic field to add
+   * @param fieldType the field type for the new field
+   * @param options the options to use when creating the SchemaField
+   * @return The created SchemaField
+   * @see #addField(SchemaField)
+   */
+  public SchemaField newDynamicField(String fieldNamePattern, String fieldType, Map<String,?> options) {
     String msg = "This IndexSchema is not mutable.";
     log.error(msg);
     throw new SolrException(ErrorCode.SERVER_ERROR, msg);

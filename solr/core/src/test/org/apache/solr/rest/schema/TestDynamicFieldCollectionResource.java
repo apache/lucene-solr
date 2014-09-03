@@ -59,4 +59,11 @@ public class TestDynamicFieldCollectionResource extends SolrRestletTestBase {
              "/dynamicFields/[0]/name=='*_i'",
              "/dynamicFields/[1]/name=='*_s'");
   }
+
+  @Test
+  public void testJsonPostFieldsToNonMutableIndexSchema() throws Exception {
+    assertJPost("/schema/dynamicfields",
+        "[{\"name\":\"foobarbaz\", \"type\":\"text_general\", \"stored\":\"false\"}]",
+        "/error/msg=='This IndexSchema is not mutable.'");
+  }
 }
