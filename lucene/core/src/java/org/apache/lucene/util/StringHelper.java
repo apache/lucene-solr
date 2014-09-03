@@ -281,8 +281,12 @@ public abstract class StringHelper {
       x1 = s1 ^ s0 ^ (s1 >>> 17) ^ (s0 >>> 26); // b, c
     }
 
+    // First make unsigned versions of x0, x1:
+    BigInteger unsignedX0 = new BigInteger(1, BigInteger.valueOf(x0).toByteArray());
+    BigInteger unsignedX1 = new BigInteger(1, BigInteger.valueOf(x1).toByteArray());
+
     // Concatentate bits of x0 and x1, as unsigned 128 bit integer:
-    nextId = new BigInteger(1, BigInteger.valueOf(x0).shiftLeft(64).or(BigInteger.valueOf(x1)).toByteArray());
+    nextId = unsignedX0.shiftLeft(64).or(unsignedX1);
   }
 
   /** Generates a non-cryptographic globally unique id. */
