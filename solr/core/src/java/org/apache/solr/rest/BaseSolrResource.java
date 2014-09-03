@@ -24,12 +24,11 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.BinaryQueryResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.QueryResponseWriterUtil;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.servlet.ResponseUtils;
-import org.apache.solr.util.FastWriter;
 import org.restlet.data.MediaType;
 import org.restlet.data.Method;
 import org.restlet.data.Status;
@@ -40,19 +39,14 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
-import java.io.Writer;
 import java.net.URLDecoder;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 
 
 /**
  * Base class of all Solr Restlet server resource classes.
  */
 public abstract class BaseSolrResource extends ServerResource {
-  protected static final Charset UTF8 = StandardCharsets.UTF_8;
   protected static final String SHOW_DEFAULTS = "showDefaults";
 
   private SolrCore solrCore;
@@ -157,18 +151,7 @@ public abstract class BaseSolrResource extends ServerResource {
     @Override
     public void write(OutputStream outputStream) throws IOException {
       if (getRequest().getMethod() != Method.HEAD) {
-        if (responseWriter instanceof BinaryQueryResponseWriter) {
-          BinaryQueryResponseWriter binWriter = (BinaryQueryResponseWriter)responseWriter;
-          binWriter.write(outputStream, solrRequest, solrResponse);
-        } else {
-          String charset = ContentStreamBase.getCharsetFromContentType(contentType);
-          Writer out = (charset == null)
-              ? new OutputStreamWriter(outputStream, UTF8)
-              : new OutputStreamWriter(outputStream, charset);
-          out = new FastWriter(out);
-          responseWriter.write(out, solrRequest, solrResponse);
-          out.flush();
-        }
+        QueryResponseWriterUtil.writeQueryResponse(outputStream, responseWriter, solrRequest, solrResponse, contentType);
       }
     }
   }

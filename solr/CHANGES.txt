@@ -158,6 +158,9 @@ Bug Fixes
 * SOLR-5966: Admin UI Menu is fixed and doesn't respect smaller viewports.
   (Aman Tandon, steffkes via shalin)
 
+* SOLR-4406: Fix RawResponseWriter to respect 'base' writer
+  (Steve Davids, hossman)
+
 Other Changes
 ---------------------
 

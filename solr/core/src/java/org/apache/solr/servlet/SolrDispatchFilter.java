@@ -66,11 +66,11 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.BinaryQueryResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.QueryResponseWriterUtil;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
-import org.apache.solr.util.FastWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,11 +86,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.net.URL;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -120,8 +116,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   protected String abortErrorMessage = null;
   protected final HttpClient httpClient = HttpClientUtil.createClient(new ModifiableSolrParams());
   
-  private static final Charset UTF8 = StandardCharsets.UTF_8;
-
   public SolrDispatchFilter() {
   }
   
@@ -756,18 +750,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     }
     
     if (Method.HEAD != reqMethod) {
-      if (responseWriter instanceof BinaryQueryResponseWriter) {
-        BinaryQueryResponseWriter binWriter = (BinaryQueryResponseWriter) responseWriter;
-        binWriter.write(response.getOutputStream(), solrReq, solrRsp);
-      } else {
-        String charset = ContentStreamBase.getCharsetFromContentType(ct);
-        Writer out = (charset == null)
-          ? new OutputStreamWriter(response.getOutputStream(), UTF8)
-          : new OutputStreamWriter(response.getOutputStream(), charset);
-        out = new FastWriter(out);
-        responseWriter.write(out, solrReq, solrRsp);
-        out.flush();
-      }
+      QueryResponseWriterUtil.writeQueryResponse(response.getOutputStream(), responseWriter, solrReq, solrRsp, ct);
     }
     //else http HEAD request, nothing to write out, waited this long just to get ContentType
   }
