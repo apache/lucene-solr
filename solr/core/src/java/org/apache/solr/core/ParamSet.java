@@ -89,7 +89,7 @@ public class ParamSet {
     if(first == null) first = new NamedList();
     NamedList nl = first.clone();
     if(appends) {
-      nl.addAll(second);
+      if(second!=null) nl.addAll(second);
     } else {
       Set<String> a = new HashSet<>();
       Set<String> b = new HashSet<>();
