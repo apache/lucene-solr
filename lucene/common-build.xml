@@ -1161,8 +1161,11 @@
         <echo file="${tests.totals.tmpfile}" append="true" encoding="UTF-8"># module: ${ant.project.name}&#x000a;${junit4.stats.nonIgnored}&#x000a;</echo>
 
         <!-- Report the 5 slowest tests from this run to the console. -->
-        <echo>5 slowest tests:</echo>
-        <junit4:tophints max="5">
+        <local name="tests.showtophints"/>
+        <condition property="tests.showtophints" value="0" else="5">
+          <isset property="beast.iters"/>
+        </condition>
+        <junit4:tophints max="${tests.showtophints}" taskname="slow-tests">
           <file file="${tests.cachedir}/${name}/timehints.txt" />
         </junit4:tophints>
     </sequential>
