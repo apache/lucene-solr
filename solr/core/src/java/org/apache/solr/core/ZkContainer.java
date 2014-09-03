@@ -217,6 +217,7 @@ public class ZkContainer {
   }
   
   private String stripChroot(String zkRun) {
+    if (zkRun == null || zkRun.trim().length() == 0) return zkRun;
     return zkRun.substring(0, zkRun.lastIndexOf('/'));
   }
 
