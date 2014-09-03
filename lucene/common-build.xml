@@ -69,10 +69,9 @@
   <property name="year" value="2000-${current.year}"/>
   
   <!-- Lucene modules unfortunately don't have the "lucene-" prefix, so we add it if no prefix is given in $name: -->
-  <condition property="final.name" value="${name}-${version}">
+  <condition property="final.name" value="${name}-${version}" else="lucene-${name}-${version}">
     <matches pattern="^(lucene|solr)\b" string="${name}"/>
   </condition>
-  <property name="final.name" value="lucene-${name}-${version}"/>
 
   <!-- we exclude ext/*.jar because we don't want example/lib/ext logging jars on the cp -->
   <property name="common.classpath.excludes" value="**/*.txt,**/*.template,**/*.sha1,ext/*.jar" />
@@ -129,15 +128,13 @@
   <property name="tests.filterstacks" value="true"/>
   <property name="tests.luceneMatchVersion" value="${version.base}"/>
 
-  <condition property="tests.heapsize" value="768M">
+  <condition property="tests.heapsize" value="768M" else="512M">
     <isset property="run.clover"/>
   </condition>
-  <property name="tests.heapsize" value="512M"/>
   
-  <condition property="tests.clover.args" value="-XX:ReservedCodeCacheSize=128m -XX:MaxPermSize=192m">
+  <condition property="tests.clover.args" value="-XX:ReservedCodeCacheSize=128m -XX:MaxPermSize=192m" else="">
     <isset property="run.clover"/>
   </condition>
-  <property name="tests.clover.args" value=""/>
 
   <property name="tests.heapdump.args" value=""/>
 
@@ -149,7 +146,9 @@
   <!-- Max width for class name truncation.  -->
   <property name="tests.maxClassNameColumns" value="10000" />
   <!-- Show suite summaries for tests. -->
-  <property name="tests.showSuiteSummary" value="true" />
+  <condition property="tests.showSuiteSummary" value="false" else="true">
+    <isset property="beast.iters"/>
+  </condition>
   <!-- Show timestamps in console test reports. -->
   <property name="tests.timestamps" value="false" />
   <!-- Heartbeat in seconds for reporting long running tests or hung forked JVMs. -->
@@ -833,22 +832,32 @@
     <isset property="testmethod" />
   </condition>
 
-  <condition property="tests.showSuccess" value="true">
-    <or>
-      <isset property="tests.class" />
-      <isset property="tests.method" />
-    </or>
+  <condition property="tests.showSuccess" value="true" else="false">
+    <and>
+      <or>
+        <isset property="tests.class" />
+        <isset property="tests.method" />
+      </or>
+      <not>
+        <isset property="beast.iters" />
+      </not>
+    </and>
   </condition>
-  <property name="tests.showSuccess" value="false"/>
 
-  <condition property="tests.showOutput" value="always">
+  <condition property="tests.showOutput" value="always" else="onerror">
     <or>
-      <isset property="tests.class" />
-      <isset property="tests.method" />
+      <and>
+        <or>
+          <isset property="tests.class" />
+          <isset property="tests.method" />
+        </or>
+        <not>
+          <isset property="beast.iters" />
+        </not>
+      </and>
       <istrue value="${tests.showSuccess}"/>
     </or>
   </condition>
-  <property name="tests.showOutput" value="onerror"/>
 
   <!-- Test macro using junit4. -->
   <macrodef name="test-macro" description="Executes junit tests.">
