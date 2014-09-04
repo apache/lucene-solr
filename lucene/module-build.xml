@@ -18,8 +18,6 @@
  -->
 
 <project name="module-build" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
-  <echo>Building ${ant.project.name}...</echo>
-
   <!-- TODO: adjust build.dir/dist.dir appropriately when a module is run individually -->
   <dirname file="${ant.file.module-build}" property="module-build.dir"/>
   <property name="build.dir" location="${module-build.dir}/build/${ant.project.name}"/>
