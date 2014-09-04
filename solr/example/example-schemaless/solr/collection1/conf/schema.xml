@@ -1049,11 +1049,4 @@
        <str name="paramkey">param value</str>
      </similarity>
     -->
-  <field name="_text" type="text_general" indexed="true" stored="false" multiValued="true"/>
-  <field name="_src" type="string" indexed="false" stored="true" multiValued="true"/>
-
-  <copyField source="*" dest="_text"/>
-
-
-
 </schema>
