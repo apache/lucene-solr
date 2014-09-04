@@ -77,6 +77,12 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
     public void load(SolrQueryRequest req, SolrQueryResponse rsp,
         ContentStream stream, UpdateRequestProcessor processor) throws Exception {
 
+      ContentStreamLoader ldr = pathVsLoaders.get(req.getContext().get("path"));
+      if(ldr != null){
+        ldr.load(req,rsp,stream,processor);
+        return;
+      }
+
       String type = req.getParams().get(UpdateParams.ASSUME_CONTENT_TYPE);
       if(type == null) {
         type = stream.getContentType();
@@ -134,7 +140,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
       invariants = params;
     }
   }
-
+  private Map<String ,ContentStreamLoader> pathVsLoaders = new HashMap<>();
   protected Map<String,ContentStreamLoader> createDefaultLoaders(NamedList args) {
     SolrParams p = null;
     if(args!=null) {
@@ -147,7 +153,11 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
     registry.put("application/javabin", new JavabinLoader().init(p) );
     registry.put("text/csv", registry.get("application/csv") );
     registry.put("text/xml", registry.get("application/xml") );
-    registry.put("text/json", registry.get("application/json") );
+    registry.put("text/json", registry.get("application/json"));
+
+    pathVsLoaders.put(JSON_PATH,registry.get("application/json"));
+    pathVsLoaders.put(DOC_PATH,registry.get("application/json"));
+    pathVsLoaders.put(CSV_PATH,registry.get("application/csv"));
     return registry;
   }
 
@@ -171,16 +181,18 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
 
   public static void addImplicits(List<PluginInfo> implicits) {
     implicits.add(getPluginInfo("/update",Collections.emptyMap()));
-    implicits.add(getPluginInfo("/update/json", singletonMap("update.contentType", "application/json")));
-    implicits.add(getPluginInfo("/update/csv", singletonMap("update.contentType", "application/csv")));
-    implicits.add(getPluginInfo("/update/json/docs", makeMap("update.contentType", "application/json", "json.command","false")));
+    implicits.add(getPluginInfo(JSON_PATH, singletonMap("update.contentType", "application/json")));
+    implicits.add(getPluginInfo(CSV_PATH, singletonMap("update.contentType", "application/csv")));
+    implicits.add(getPluginInfo(DOC_PATH, makeMap("update.contentType", "application/json", "json.command","false")));
   }
 
   static PluginInfo getPluginInfo(String name, Map defaults){
     Map m = makeMap("name", name, "class", UpdateRequestHandler.class.getName());
     return new PluginInfo("requestHandler", m, new NamedList<>( singletonMap("defaults", new NamedList(defaults))) ,null);
-
   }
+  public static final String DOC_PATH = "/update/json/docs";
+  public static final String JSON_PATH = "/update/json";
+  public static final String CSV_PATH = "/update/csv";
 
 }
 
