@@ -161,6 +161,9 @@ Bug Fixes
 * SOLR-4406: Fix RawResponseWriter to respect 'base' writer
   (Steve Davids, hossman)
 
+* SOLR-6024: Fix StatsComponent when using docValues="true" multiValued="true"
+  (Vitaliy Zhovtyuk & Tomas Fernandez-Lobbe via hossman)
+
 Other Changes
 ---------------------
 
