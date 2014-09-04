@@ -887,6 +887,25 @@
         <property name="tests.iters" value="" />
         <property name="tests.dups"  value="1" />
 
+        <!-- turn on security manager? -->
+        <condition property="java.security.manager" value="org.apache.lucene.util.TestSecurityManager">
+          <or>
+            <not>
+              <isset property="tests.useSecurityManager"/>
+            </not>
+            <istrue value="${tests.useSecurityManager}"/>
+          </or>
+        </condition>
+
+        <loadresource property="tests.explicitclass">
+          <string value="${tests.class}" />
+          <filterchain>
+            <replaceregex pattern="\." replace="/" flags="g" />
+            <replaceregex pattern="\*" replace="**" flags="g" />
+            <replaceregex pattern="$" replace=".class" />
+          </filterchain>
+        </loadresource>
+
         <!-- Pick the random seed now (unless already set). -->
         <junit4:pickseed property="tests.seed" />
 
@@ -1006,7 +1025,9 @@
             <!-- Restrict access to certain Java features and install security manager: -->
             <sysproperty key="junit4.tempDir" file="@{workDir}/temp" />
             <sysproperty key="clover.db.dir" file="${clover.db.dir}" />
-            <sysproperty key="java.security.manager" value="org.apache.lucene.util.TestSecurityManager" />
+            <syspropertyset>
+                <propertyref prefix="java.security.manager"/>
+            </syspropertyset>
             <sysproperty key="java.security.policy" file="${common.dir}/tools/junit4/tests.policy" />
 
             <sysproperty key="tests.LUCENE_VERSION" value="${version.base}"/>
@@ -1138,6 +1159,7 @@
               <fileset dir="@{testsDir}">
                 <include name="**/Test*.class" />
                 <include name="**/*Test.class" />
+                <include name="${tests.explicitclass}" />
                 <exclude name="**/*$*" />
               </fileset>
             </junit4:duplicate>

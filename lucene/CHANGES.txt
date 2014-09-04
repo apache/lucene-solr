@@ -150,6 +150,8 @@ Build
 * LUCENE-5909: Smoke tester now has better command line parsing and
   optionally also runs on Java 8.  (Ryan Ernst, Uwe Schindler)
 
+* LUCENE-5902: Add bumpVersion.py script to manage version increase after release branch is cut.
+
 ======================= Lucene 4.10.0 ======================
 
 New Features

@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleDocValuesField;
@@ -74,53 +75,6 @@ import org.junit.BeforeClass;
   against it, and add documents to it.
 */
 public class TestBackwardsCompatibility extends LuceneTestCase {
-
-  // Uncomment these cases & run them on an older Lucene version,
-  // to generate indexes to test backwards compatibility.  These
-  // indexes will be created under directory /tmp/idx/.
-  //
-  // However, you must first disable the Lucene TestSecurityManager,
-  // which will otherwise disallow writing outside of the build/
-  // directory - to do this, comment out the "java.security.manager"
-  // <sysproperty> under the "test-macro" <macrodef>.
-  //
-  // Be sure to create the indexes with the actual format:
-  //  ant test -Dtestcase=TestBackwardsCompatibility -Dversion=x.y.z
-  //      -Dtests.codec=LuceneXY -Dtests.postingsformat=LuceneXY -Dtests.docvaluesformat=LuceneXY
-  //
-  // Zip up the generated indexes:
-  //
-  //    cd /tmp/idx/index.cfs   ; zip index.<VERSION>.cfs.zip *
-  //    cd /tmp/idx/index.nocfs ; zip index.<VERSION>.nocfs.zip *
-  //
-  // Then move those 2 zip files to your trunk checkout and add them
-  // to the oldNames array.
-
-  /*
-  public void testCreateCFS() throws IOException {
-    createIndex("index.cfs", true, false);
-  }
-
-  public void testCreateNoCFS() throws IOException {
-    createIndex("index.nocfs", false, false);
-  }
-  */
-
-/*
-  // These are only needed for the special upgrade test to verify
-  // that also single-segment indexes are correctly upgraded by IndexUpgrader.
-  // You don't need them to be build for non-4.0 (the test is happy with just one
-  // "old" segment format, version is unimportant:
-  
-  public void testCreateSingleSegmentCFS() throws IOException {
-    createIndex("index.singlesegment.cfs", true, true);
-  }
-
-  public void testCreateSingleSegmentNoCFS() throws IOException {
-    createIndex("index.singlesegment.nocfs", false, true);
-  }
-
-*/  
 
   /*
   public void testCreateMoreTermsIndex() throws Exception {
@@ -214,43 +168,45 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     dir.close();
   }*/
 
-  final static String[] oldNames = {"40.cfs",
-                                    "40.nocfs",
-                                    "41.cfs",
-                                    "41.nocfs",
-                                    "42.cfs",
-                                    "42.nocfs",
-                                    // TODO: these are on 4x, but something is wrong (they seem to be a too old DV format):
-                                    "45.cfs",
-                                    "45.nocfs",
-                                    "461.cfs",
-                                    "461.nocfs",
-                                    "49.cfs",
-                                    "49.nocfs"
+  final static String[] oldNames = {
+      "40.cfs",
+      "40.nocfs",
+      "41.cfs",
+      "41.nocfs",
+      "42.cfs",
+      "42.nocfs",
+      // TODO: these are on 4x, but something is wrong (they seem to be a too old DV format):
+      "45.cfs",
+      "45.nocfs",
+      "461.cfs",
+      "461.nocfs",
+      "49.cfs",
+      "49.nocfs"
   };
   
-  final String[] unsupportedNames = {"19.cfs",
-                                     "19.nocfs",
-                                     "20.cfs",
-                                     "20.nocfs",
-                                     "21.cfs",
-                                     "21.nocfs",
-                                     "22.cfs",
-                                     "22.nocfs",
-                                     "23.cfs",
-                                     "23.nocfs",
-                                     "24.cfs",
-                                     "24.nocfs",
-                                     "29.cfs",
-                                     "29.nocfs",
-                                     "30.cfs",
-                                     "30.nocfs",
-                                     "31.cfs",
-                                     "31.nocfs",
-                                     "32.cfs",
-                                     "32.nocfs",
-                                     "34.cfs",
-                                     "34.nocfs"
+  final String[] unsupportedNames = {
+      "19.cfs",
+      "19.nocfs",
+      "20.cfs",
+      "20.nocfs",
+      "21.cfs",
+      "21.nocfs",
+      "22.cfs",
+      "22.nocfs",
+      "23.cfs",
+      "23.nocfs",
+      "24.cfs",
+      "24.nocfs",
+      "29.cfs",
+      "29.nocfs",
+      "30.cfs",
+      "30.nocfs",
+      "31.cfs",
+      "31.nocfs",
+      "32.cfs",
+      "32.nocfs",
+      "34.cfs",
+      "34.nocfs"
   };
   
   final static String[] oldSingleSegmentNames = {"40.optimized.cfs",
@@ -672,8 +628,13 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     mp.setNoCFSRatio(doCFS ? 1.0 : 0.0);
     mp.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
     // TODO: remove randomness
+    String codecName = System.getProperty("tests.codec");
+    if (codecName == null || codecName.trim().isEmpty() || codecName.equals("random")) {
+      fail("Must provide 'tests.codec' property to create BWC index");
+    }
+    Codec codec = Codec.forName(codecName);
     IndexWriterConfig conf = new IndexWriterConfig(new MockAnalyzer(random()))
-      .setMaxBufferedDocs(10).setMergePolicy(mp);
+      .setMaxBufferedDocs(10).setMergePolicy(mp).setCodec(codec);
     IndexWriter writer = new IndexWriter(dir, conf);
     
     for(int i=0;i<35;i++) {
@@ -691,12 +652,14 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       mp.setNoCFSRatio(doCFS ? 1.0 : 0.0);
       // TODO: remove randomness
       conf = new IndexWriterConfig(new MockAnalyzer(random()))
-        .setMaxBufferedDocs(10).setMergePolicy(mp);
+        .setMaxBufferedDocs(10).setMergePolicy(mp).setCodec(codec);
       writer = new IndexWriter(dir, conf);
       addNoProxDoc(writer);
       writer.close();
 
-      writer = new IndexWriter(dir, conf.setMergePolicy(NoMergePolicy.INSTANCE));
+      conf = new IndexWriterConfig(new MockAnalyzer(random()))
+          .setMaxBufferedDocs(10).setMergePolicy(NoMergePolicy.INSTANCE).setCodec(codec);
+      writer = new IndexWriter(dir, conf);
       Term searchTerm = new Term("id", "7");
       writer.deleteDocuments(searchTerm);
       writer.close();
