@@ -17,10 +17,12 @@ package org.apache.solr.handler.component;
  * limitations under the License.
  */
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.solr.client.solrj.response.SpellCheckResponse;
@@ -39,5 +41,14 @@ public class SpellCheckMergeData {
   // alternative string -> corresponding SuggestWord object
   public Map<String, SuggestWord> suggestedVsWord = new HashMap<>();
   public Map<String, SpellCheckCollation> collations = new HashMap<>();
+  //The original terms from the user's query.
+  public Set<String> originalTerms = null;
   public int totalNumberShardResponses = 0;
+  
+  public boolean isOriginalToQuery(String term) {
+    if(originalTerms==null) {
+      return true;
+    }
+    return originalTerms.contains(term);
+  }
 }
