@@ -858,7 +858,6 @@
       <str name="echoParams">explicit</str>
       <str name="wt">json</str>
       <str name="indent">true</str>
-      <str name="df">text</str>
     </lst>
   </requestHandler>
 
@@ -900,7 +899,6 @@
         text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0 manu^1.1 cat^1.4
         title^10.0 description^5.0 keywords^5.0 author^2.0 resourcename^1.0
       </str>
-      <str name="df">text</str>
       <str name="mm">100%</str>
       <str name="q.alt">*:*</str>
       <str name="rows">10</str>
@@ -971,58 +969,17 @@
       <str>spellcheck</str>
     </arr>
   </requestHandler>
+  <paramSet path="/update/**,/query,/select,/tvrh,/elevate,/spell,/browse">
+    <lst name="defaults">
+      <str name="df">_text</str>
+    </lst>
+  </paramSet>
 
-
-  <!-- Update Request Handler.  
-       
-       http://wiki.apache.org/solr/UpdateXmlMessages
-
-       The canonical Request Handler for Modifying the Index through
-       commands specified using XML, JSON, CSV, or JAVABIN
-
-       Note: Since solr1.1 requestHandlers requires a valid content
-       type header if posted in the body. For example, curl now
-       requires: -H 'Content-type:text/xml; charset=utf-8'
-       
-       To override the request content type and force a specific 
-       Content-type, use the request parameter: 
-         ?update.contentType=text/csv
-       
-       This handler will pick a response format to match the input
-       if the 'wt' parameter is not explicit
-    -->
-  <requestHandler name="/update" class="solr.UpdateRequestHandler">
-    <!-- See below for information on defining 
-         updateRequestProcessorChains that can be used by name 
-         on each Update Request
-      -->
+  <paramSet path="/update/**">
     <lst name="defaults">
       <str name="update.chain">add-unknown-fields-to-the-schema</str>
     </lst>
-  </requestHandler>
-
-  <requestHandler name="/update/json" class="solr.UpdateRequestHandler">
-    <!-- See below for information on defining
-         updateRequestProcessorChains that can be used by name
-         on each Update Request
-      -->
-    <lst name="defaults">
-      <str name="update.contentType">application/json</str>
-      <str name="update.chain">add-unknown-fields-to-the-schema</str>
-    </lst>
-  </requestHandler>
-
-  <requestHandler name="/update/json/docs" class="solr.UpdateRequestHandler">
-    <!-- See below for information on defining
-         updateRequestProcessorChains that can be used by name
-         on each Update Request
-      -->
-    <lst name="defaults">
-      <str name="update.contentType">application/json</str>
-      <str name="update.chain">add-unknown-fields-to-the-schema</str>
-      <bool name="json.command">false</bool>
-    </lst>
-  </requestHandler>
+  </paramSet>
 
   <!-- Solr Cell Update Request Handler
 
@@ -1335,7 +1292,6 @@
     -->
   <requestHandler name="/spell" class="solr.SearchHandler" startup="lazy">
     <lst name="defaults">
-      <str name="df">text</str>
       <!-- Solr will use suggestions from both the 'default' spellchecker
            and from the 'wordbreak' spellchecker and combine them.
            collations (re-written queries) can include a combination of
@@ -1372,7 +1328,6 @@
     -->
   <requestHandler name="/tvrh" class="solr.SearchHandler" startup="lazy">
     <lst name="defaults">
-      <str name="df">text</str>
       <bool name="tv">true</bool>
     </lst>
     <arr name="last-components">
@@ -1421,7 +1376,6 @@
   <requestHandler name="/elevate" class="solr.SearchHandler" startup="lazy">
     <lst name="defaults">
       <str name="echoParams">explicit</str>
-      <str name="df">text</str>
     </lst>
     <arr name="last-components">
       <str>elevator</str>
