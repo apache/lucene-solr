@@ -167,6 +167,9 @@ Bug Fixes
 * SOLR-6297: Fix WordBreakSolrSpellChecker to not lose suggestions in shard/cloud 
   environments (James Dyer)
 
+* SOLR-5814: CoreContainer reports incorrect & missleading path for solrconfig.xml 
+  when there are loading problems (Pradeep via hossman)
+
 Other Changes
 ---------------------
 
@@ -186,6 +189,8 @@ Other Changes
 
 * SOLR-6073: Remove helper methods from CollectionsRequest (SolrJ) for CollectionsAPI
   calls and move to a builder design for the same. (Varun Thacker, Anshum Gupta)
+
+
 ==================  4.10.0 =================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
