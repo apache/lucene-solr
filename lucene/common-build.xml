@@ -1350,13 +1350,18 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       if (iters <= 1) {
         throw new BuildException("Please give -Dbeast.iters with an int value > 1.");
       }
+      
       def antcall = project.createTask('antcall');
-      antcall.target = '-test';
-      antcall.inheritAll = true;
-      antcall.inheritRefs = true;
-      def prop = antcall.createParam();
-      prop.name = "tests.isbeasting";
-      prop.value = "true";
+      antcall.with {
+        target = '-test';
+        inheritAll = true;
+        inheritRefs = true;
+        createParam().with {
+          name = "tests.isbeasting";
+          value = "true";
+        };
+      };
+      
       (1..iters).each { i ->
         task.log('Beast round: ' + i, Project.MSG_INFO);
         try {
