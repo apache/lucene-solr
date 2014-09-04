@@ -9,6 +9,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -941,9 +942,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       in.close();
 
       // Delete the temporary file, which is no longer needed.
-      if (!tmpfile.delete()) {
-        tmpfile.deleteOnExit();
-      }
+      Files.delete(tmpfile.toPath());
 
       return map;
     }

@@ -132,6 +132,5 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
         "*[count(//doc)=1]"
     );
     dir.close();
-    newDir.delete();
   }
 }

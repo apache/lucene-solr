@@ -26,6 +26,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -107,6 +108,6 @@ public class TestNeverDelete extends LuceneTestCase {
     w.close();
     d.close();
 
-    TestUtil.rm(tmpDir);
+    IOUtils.rm(tmpDir);
   }
 }

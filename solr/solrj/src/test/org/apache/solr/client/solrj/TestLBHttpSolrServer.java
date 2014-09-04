@@ -28,6 +28,7 @@ import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.http.client.HttpClient;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
@@ -305,7 +306,7 @@ public class TestLBHttpSolrServer extends SolrTestCaseJ4 {
 
     public void tearDown() throws Exception {
       if (jetty != null) jetty.stop();
-      TestUtil.rm(homeDir);
+      IOUtils.rm(homeDir);
     }
 
     public void startJetty() throws Exception {

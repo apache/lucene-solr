@@ -54,6 +54,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -203,6 +204,7 @@ public class Dictionary {
     OutputStream out = new BufferedOutputStream(new FileOutputStream(aff));
     InputStream aff1 = null;
     InputStream aff2 = null;
+    boolean success = false;
     try {
       // copy contents of affix stream to temp file
       final byte [] buffer = new byte [1024 * 8];
@@ -228,9 +230,14 @@ public class Dictionary {
       words = b.finish();
       aliases = null; // no longer needed
       morphAliases = null; // no longer needed
+      success = true;
     } finally {
       IOUtils.closeWhileHandlingException(out, aff1, aff2);
-      aff.delete();
+      if (success) {
+        Files.delete(aff.toPath());
+      } else {
+        IOUtils.deleteFilesIgnoringExceptions(aff);
+      }
     }
   }
 
@@ -857,90 +864,107 @@ public class Dictionary {
         }
       }
     });
-    sorter.sort(unsorted, sorted);
-    unsorted.delete();
-    
-    ByteSequencesReader reader = new ByteSequencesReader(sorted);
-    BytesRefBuilder scratchLine = new BytesRefBuilder();
-    
-    // TODO: the flags themselves can be double-chars (long) or also numeric
-    // either way the trick is to encode them as char... but they must be parsed differently
-    
-    String currentEntry = null;
-    IntsRefBuilder currentOrds = new IntsRefBuilder();
-    
-    String line;
-    while (reader.read(scratchLine)) {
-      line = scratchLine.get().utf8ToString();
-      String entry;
-      char wordForm[];
-      int end;
-
-      int flagSep = line.indexOf(FLAG_SEPARATOR);
-      if (flagSep == -1) {
-        wordForm = NOFLAGS;
-        end = line.indexOf(MORPH_SEPARATOR);
-        entry = line.substring(0, end);
+    boolean success = false;
+    try {
+      sorter.sort(unsorted, sorted);
+      success = true;
+    } finally {
+      if (success) {
+        Files.delete(unsorted.toPath());
       } else {
-        end = line.indexOf(MORPH_SEPARATOR);
-        String flagPart = line.substring(flagSep + 1, end);
-        if (aliasCount > 0) {
-          flagPart = getAliasValue(Integer.parseInt(flagPart));
-        } 
-        
-        wordForm = flagParsingStrategy.parseFlags(flagPart);
-        Arrays.sort(wordForm);
-        entry = line.substring(0, flagSep);
-      }
-      // we possibly have morphological data
-      int stemExceptionID = 0;
-      if (hasStemExceptions && end+1 < line.length()) {
-        String stemException = parseStemException(line.substring(end+1));
-        if (stemException != null) {
-          if (stemExceptionCount == stemExceptions.length) {
-            int newSize = ArrayUtil.oversize(stemExceptionCount+1, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
-            stemExceptions = Arrays.copyOf(stemExceptions, newSize);
-          }
-          stemExceptionID = stemExceptionCount+1; // we use '0' to indicate no exception for the form
-          stemExceptions[stemExceptionCount++] = stemException;
-        }
-      }
-
-      int cmp = currentEntry == null ? 1 : entry.compareTo(currentEntry);
-      if (cmp < 0) {
-        throw new IllegalArgumentException("out of order: " + entry + " < " + currentEntry);
-      } else {
-        encodeFlags(flagsScratch, wordForm);
-        int ord = flagLookup.add(flagsScratch.get());
-        if (ord < 0) {
-          // already exists in our hash
-          ord = (-ord)-1;
-        }
-        // finalize current entry, and switch "current" if necessary
-        if (cmp > 0 && currentEntry != null) {
-          Util.toUTF32(currentEntry, scratchInts);
-          words.add(scratchInts.get(), currentOrds.get());
-        }
-        // swap current
-        if (cmp > 0 || currentEntry == null) {
-          currentEntry = entry;
-          currentOrds = new IntsRefBuilder(); // must be this way
-        }
-        if (hasStemExceptions) {
-          currentOrds.append(ord);
-          currentOrds.append(stemExceptionID);
-        } else {
-          currentOrds.append(ord);
-        }
+        IOUtils.deleteFilesIgnoringExceptions(unsorted);
       }
     }
     
-    // finalize last entry
-    Util.toUTF32(currentEntry, scratchInts);
-    words.add(scratchInts.get(), currentOrds.get());
+    boolean success2 = false;
+    ByteSequencesReader reader = new ByteSequencesReader(sorted);
+    try {
+      BytesRefBuilder scratchLine = new BytesRefBuilder();
     
-    reader.close();
-    sorted.delete();
+      // TODO: the flags themselves can be double-chars (long) or also numeric
+      // either way the trick is to encode them as char... but they must be parsed differently
+    
+      String currentEntry = null;
+      IntsRefBuilder currentOrds = new IntsRefBuilder();
+    
+      String line;
+      while (reader.read(scratchLine)) {
+        line = scratchLine.get().utf8ToString();
+        String entry;
+        char wordForm[];
+        int end;
+
+        int flagSep = line.indexOf(FLAG_SEPARATOR);
+        if (flagSep == -1) {
+          wordForm = NOFLAGS;
+          end = line.indexOf(MORPH_SEPARATOR);
+          entry = line.substring(0, end);
+        } else {
+          end = line.indexOf(MORPH_SEPARATOR);
+          String flagPart = line.substring(flagSep + 1, end);
+          if (aliasCount > 0) {
+            flagPart = getAliasValue(Integer.parseInt(flagPart));
+          } 
+        
+          wordForm = flagParsingStrategy.parseFlags(flagPart);
+          Arrays.sort(wordForm);
+          entry = line.substring(0, flagSep);
+        }
+        // we possibly have morphological data
+        int stemExceptionID = 0;
+        if (hasStemExceptions && end+1 < line.length()) {
+          String stemException = parseStemException(line.substring(end+1));
+          if (stemException != null) {
+            if (stemExceptionCount == stemExceptions.length) {
+              int newSize = ArrayUtil.oversize(stemExceptionCount+1, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
+              stemExceptions = Arrays.copyOf(stemExceptions, newSize);
+            }
+            stemExceptionID = stemExceptionCount+1; // we use '0' to indicate no exception for the form
+            stemExceptions[stemExceptionCount++] = stemException;
+          }
+        }
+
+        int cmp = currentEntry == null ? 1 : entry.compareTo(currentEntry);
+        if (cmp < 0) {
+          throw new IllegalArgumentException("out of order: " + entry + " < " + currentEntry);
+        } else {
+          encodeFlags(flagsScratch, wordForm);
+          int ord = flagLookup.add(flagsScratch.get());
+          if (ord < 0) {
+            // already exists in our hash
+            ord = (-ord)-1;
+          }
+          // finalize current entry, and switch "current" if necessary
+          if (cmp > 0 && currentEntry != null) {
+            Util.toUTF32(currentEntry, scratchInts);
+            words.add(scratchInts.get(), currentOrds.get());
+          }
+          // swap current
+          if (cmp > 0 || currentEntry == null) {
+            currentEntry = entry;
+            currentOrds = new IntsRefBuilder(); // must be this way
+          }
+          if (hasStemExceptions) {
+            currentOrds.append(ord);
+            currentOrds.append(stemExceptionID);
+          } else {
+            currentOrds.append(ord);
+          }
+        }
+      }
+    
+      // finalize last entry
+      Util.toUTF32(currentEntry, scratchInts);
+      words.add(scratchInts.get(), currentOrds.get());
+      success2 = true;
+    } finally {
+      IOUtils.closeWhileHandlingException(reader);
+      if (success2) {
+        Files.delete(sorted.toPath());
+      } else {
+        IOUtils.deleteFilesIgnoringExceptions(sorted);
+      }
+    }
   }
   
   static char[] decodeFlags(BytesRef b) {

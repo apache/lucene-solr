@@ -355,7 +355,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertTrue(bos.toString(IOUtils.UTF_8).contains(IndexFormatTooOldException.class.getName()));
 
       dir.close();
-      TestUtil.rm(oldIndxeDir);
+      IOUtils.rm(oldIndxeDir);
     }
   }
   
@@ -666,7 +666,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   public File createIndex(String dirName, boolean doCFS, boolean fullyMerged) throws IOException {
     // we use a real directory name that is not cleaned up, because this method is only used to create backwards indexes:
     File indexDir = new File("/tmp/idx", dirName);
-    TestUtil.rm(indexDir);
+    IOUtils.rm(indexDir);
     Directory dir = newFSDirectory(indexDir);
     LogByteSizeMergePolicy mp = new LogByteSizeMergePolicy();
     mp.setNoCFSRatio(doCFS ? 1.0 : 0.0);

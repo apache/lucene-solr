@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.text.Collator;
 import java.util.List;
 import java.util.Locale;
@@ -444,7 +445,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     assertEquals(numLines + " lines were created but " + ir.numDocs() + " docs are in the index", numLines, ir.numDocs());
     ir.close();
 
-    lineFile.delete();
+    Files.delete(lineFile.toPath());
   }
   
   /**

@@ -28,6 +28,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.util.Map;
 
 public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
@@ -41,7 +42,7 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
     // test tests native and simple in the same jvm in the same exact directory:
     // the file will remain after the native test (it cannot safely be deleted without the risk of deleting another guys lock)
     // its ok, these aren't "compatible" anyway: really this test should not re-use the same directory at all.
-    new File(new File(initCoreDataDir, "index"), IndexWriter.WRITE_LOCK_NAME).delete();
+    Files.deleteIfExists(new File(new File(initCoreDataDir, "index"), IndexWriter.WRITE_LOCK_NAME).toPath());
   }
 
   @Test

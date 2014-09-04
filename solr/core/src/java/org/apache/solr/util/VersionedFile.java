@@ -21,7 +21,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -95,7 +97,12 @@ public class VersionedFile
       List<File> deleted = new ArrayList<>();
       for (File df : deleteList) {
         try {
-          df.delete();
+          try {
+            Files.deleteIfExists(df.toPath());
+          } catch (IOException cause) {
+            // TODO: should this class care if a file couldnt be deleted?
+            // this just emulates previous behavior, where only SecurityException would be handled.
+          }
           // deleteList.remove(df);
           deleted.add(df);
         } catch (SecurityException e) {

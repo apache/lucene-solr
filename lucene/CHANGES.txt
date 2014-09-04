@@ -110,6 +110,10 @@ New Features
   PushPostingsWriterBase for single-pass push of docs/positions to the
   postings format.  (Mike McCandless)
 
+* LUCENE-5906: Use Files.delete everywhere instead of File.delete, so that
+  when things go wrong, you get a real exception message why.
+  (Uwe Schindler, Robert Muir)
+
 API Changes:
 
 * LUCENE-5900: Deprecated more constructors taking Version in *InfixSuggester and

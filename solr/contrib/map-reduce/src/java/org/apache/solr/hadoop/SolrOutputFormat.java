@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
@@ -224,7 +225,7 @@ public class SolrOutputFormat<K, V> extends FileOutputFormat<K, V> {
                                    // to store in the zip file
     }
 
-    out.delete();
+    Files.deleteIfExists(out.toPath());
     int subst = dir.toString().length();
     ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(out));
     byte[] buf = new byte[1024];

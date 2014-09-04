@@ -19,6 +19,7 @@ package org.apache.lucene.search.suggest.fst;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -189,7 +190,7 @@ public class FSTCompletionLookup extends Lookup implements Accountable {
       // We don't know the distribution of scores and we need to bucket them, so we'll sort
       // and divide into equal buckets.
       SortInfo info = new OfflineSorter().sort(tempInput, tempSorted);
-      tempInput.delete();
+      Files.delete(tempInput.toPath());
       FSTCompletionBuilder builder = new FSTCompletionBuilder(
           buckets, sorter = new ExternalRefSorter(new OfflineSorter()), sharedTailLength);
 
@@ -231,13 +232,13 @@ public class FSTCompletionLookup extends Lookup implements Accountable {
       
       success = true;
     } finally {
-      if (success) 
-        IOUtils.close(reader, writer, sorter);
-      else 
-        IOUtils.closeWhileHandlingException(reader, writer, sorter);
+      IOUtils.closeWhileHandlingException(reader, writer, sorter);
 
-      tempInput.delete();
-      tempSorted.delete();
+      if (success) {
+        Files.delete(tempSorted.toPath());
+      } else {
+        IOUtils.deleteFilesIgnoringExceptions(tempInput, tempSorted);
+      }
     }
   }
   

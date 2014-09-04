@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -65,7 +66,7 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
   @Test
   public void testBiggerSmallerFiles() throws IOException {
     File tmpdir = File.createTempFile("test", "tmp", createTempDir());
-    tmpdir.delete();
+    Files.delete(tmpdir.toPath());
     tmpdir.mkdir();
 
     long minLength = Long.MAX_VALUE;
