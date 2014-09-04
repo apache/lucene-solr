@@ -146,9 +146,7 @@
   <!-- Max width for class name truncation.  -->
   <property name="tests.maxClassNameColumns" value="10000" />
   <!-- Show suite summaries for tests. -->
-  <condition property="tests.showSuiteSummary" value="false" else="true">
-    <isset property="beast.iters"/>
-  </condition>
+  <property name="tests.showSuiteSummary" value="true" />
   <!-- Show timestamps in console test reports. -->
   <property name="tests.timestamps" value="false" />
   <!-- Heartbeat in seconds for reporting long running tests or hung forked JVMs. -->
@@ -835,28 +833,16 @@
   </condition>
 
   <condition property="tests.showSuccess" value="true" else="false">
-    <and>
-      <or>
-        <isset property="tests.class" />
-        <isset property="tests.method" />
-      </or>
-      <not>
-        <isset property="beast.iters" />
-      </not>
-    </and>
+    <or>
+      <isset property="tests.class" />
+      <isset property="tests.method" />
+    </or>
   </condition>
 
   <condition property="tests.showOutput" value="always" else="onerror">
     <or>
-      <and>
-        <or>
-          <isset property="tests.class" />
-          <isset property="tests.method" />
-        </or>
-        <not>
-          <isset property="beast.iters" />
-        </not>
-      </and>
+      <isset property="tests.class" />
+      <isset property="tests.method" />
       <istrue value="${tests.showSuccess}"/>
     </or>
   </condition>
@@ -1161,13 +1147,19 @@
 
         <!-- Append the number of non-ignored (actually executed) tests. -->
         <echo file="${tests.totals.tmpfile}" append="true" encoding="UTF-8"># module: ${ant.project.name}&#x000a;${junit4.stats.nonIgnored}&#x000a;</echo>
+        
+        <fail message="Beasting executed no tests (a typo in the filter pattern maybe?)">
+          <condition>
+            <and>
+              <isset property="tests.isbeasting"/>
+              <equals arg1="${junit4.stats.nonIgnored}" arg2="0"/>
+            </and>
+          </condition>
+        </fail>
 
         <!-- Report the 5 slowest tests from this run to the console. -->
-        <local name="tests.showtophints"/>
-        <condition property="tests.showtophints" value="0" else="5">
-          <isset property="beast.iters"/>
-        </condition>
-        <junit4:tophints max="${tests.showtophints}" taskname="slow-tests">
+        <echo level="info">5 slowest tests:</echo>
+        <junit4:tophints max="5">
           <file file="${tests.cachedir}/${name}/timehints.txt" />
         </junit4:tophints>
     </sequential>
@@ -1353,6 +1345,8 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   <target name="-beast" depends="resolve-groovy">
     <groovy taskname="beaster"><![CDATA[
       import org.apache.tools.ant.BuildException;
+      import org.apache.tools.ant.BuildLogger;
+      import org.apache.tools.ant.Project;
       
       int iters = (properties['beast.iters'] ?: '1') as int;
       if (iters <= 1) {
@@ -1362,11 +1356,39 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       antcall.target = '-test';
       antcall.inheritAll = true;
       antcall.inheritRefs = true;
+      def prop = antcall.createParam();
+      prop.name = "tests.isbeasting";
+      prop.value = "true";
       (1..iters).each { i ->
-        task.log('Beast round: ' + i);
-        antcall.execute();
+        task.log('Beast round: ' + i, Project.MSG_INFO);
+        try {
+          // disable verbose build logging:
+          project.buildListeners.each { listener ->
+            if (listener instanceof BuildLogger) {
+              listener.messageOutputLevel = Project.MSG_WARN;
+            }
+          };
+          
+          antcall.execute();
+          
+        } catch (BuildException be) {
+          def logFile = new File(properties["junit.output.dir"], "tests-failures.txt");
+          if (logFile.exists()) {
+            logFile.eachLine("UTF-8", { line ->
+              task.log(line, Project.MSG_ERR);
+            });
+          }
+          throw be;
+        } finally {
+          // restore build logging (unfortunately there is no way to get the original logging level (write-only property):
+          project.buildListeners.each { listener ->
+            if (listener instanceof BuildLogger) {
+              listener.messageOutputLevel = Project.MSG_INFO;
+            }
+          };
+        }
       };
-      task.log('Beasting finished.');
+      task.log('Beasting finished.', Project.MSG_INFO);
     ]]></groovy>
   </target>
 
@@ -1385,7 +1407,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       statsFile.delete();
 
       if (total == 0) {
-        throw new BuildException("Not even a single test was executed (a typo in the filter pattern maybe)?");
+        throw new BuildException("Not even a single test was executed (a typo in the filter pattern maybe?).");
       }
 
       // Interesting but let's keep the build output quiet.
