@@ -85,6 +85,9 @@ Bug Fixes
 * SOLR-6297: Fix WordBreakSolrSpellChecker to not lose suggestions in shard/cloud 
   environments (James Dyer)
 
+* SOLR-5814: CoreContainer reports incorrect & missleading path for solrconfig.xml 
+  when there are loading problems (Pradeep via hossman)
+
 Other Changes
 ---------------------
 
@@ -101,6 +104,8 @@ Other Changes
   (Ryan Ernst)
 
 * SOLR-6445: Upgrade Noggit to verion 0.6 to support more flexible JSON input (Noble Paul , Yonik Seeley)
+
+
 
 
 ==================  4.10.0 =================

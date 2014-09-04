@@ -149,7 +149,7 @@ public class SolrConfig extends Config {
       return new SolrConfig(loader, name, null);
     }
     catch (Exception e) {
-      String resource = loader.getInstanceDir() + name;
+      String resource = loader.getConfigDir() + name;
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error loading solr config from " + resource, e);
     }
   }
