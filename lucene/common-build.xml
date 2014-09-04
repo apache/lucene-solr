@@ -1145,9 +1145,18 @@
 
         <!-- Append the number of non-ignored (actually executed) tests. -->
         <echo file="${tests.totals.tmpfile}" append="true" encoding="UTF-8"># module: ${ant.project.name}&#x000a;${junit4.stats.nonIgnored}&#x000a;</echo>
+        
+        <fail message="Beasting executed no tests (a typo in the filter pattern maybe?)">
+          <condition>
+            <and>
+              <isset property="tests.isbeasting"/>
+              <equals arg1="${junit4.stats.nonIgnored}" arg2="0"/>
+            </and>
+          </condition>
+        </fail>
 
         <!-- Report the 5 slowest tests from this run to the console. -->
-        <echo>5 slowest tests:</echo>
+        <echo level="info">5 slowest tests:</echo>
         <junit4:tophints max="5">
           <file file="${tests.cachedir}/${name}/timehints.txt" />
         </junit4:tophints>
@@ -1334,6 +1343,8 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   <target name="-beast" depends="resolve-groovy">
     <groovy taskname="beaster"><![CDATA[
       import org.apache.tools.ant.BuildException;
+      import org.apache.tools.ant.BuildLogger;
+      import org.apache.tools.ant.Project;
       
       int iters = (properties['beast.iters'] ?: '1') as int;
       if (iters <= 1) {
@@ -1343,11 +1354,39 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       antcall.target = '-test';
       antcall.inheritAll = true;
       antcall.inheritRefs = true;
+      def prop = antcall.createParam();
+      prop.name = "tests.isbeasting";
+      prop.value = "true";
       (1..iters).each { i ->
-        task.log('Beast round: ' + i);
-        antcall.execute();
+        task.log('Beast round: ' + i, Project.MSG_INFO);
+        try {
+          // disable verbose build logging:
+          project.buildListeners.each { listener ->
+            if (listener instanceof BuildLogger) {
+              listener.messageOutputLevel = Project.MSG_WARN;
+            }
+          };
+          
+          antcall.execute();
+          
+        } catch (BuildException be) {
+          def logFile = new File(properties["junit.output.dir"], "tests-failures.txt");
+          if (logFile.exists()) {
+            logFile.eachLine("UTF-8", { line ->
+              task.log(line, Project.MSG_ERR);
+            });
+          }
+          throw be;
+        } finally {
+          // restore build logging (unfortunately there is no way to get the original logging level (write-only property):
+          project.buildListeners.each { listener ->
+            if (listener instanceof BuildLogger) {
+              listener.messageOutputLevel = Project.MSG_INFO;
+            }
+          };
+        }
       };
-      task.log('Beasting finished.');
+      task.log('Beasting finished.', Project.MSG_INFO);
     ]]></groovy>
   </target>
 
@@ -1366,7 +1405,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       statsFile.delete();
 
       if (total == 0) {
-        throw new BuildException("Not even a single test was executed (a typo in the filter pattern maybe)?");
+        throw new BuildException("Not even a single test was executed (a typo in the filter pattern maybe?).");
       }
 
       // Interesting but let's keep the build output quiet.
