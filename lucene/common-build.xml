@@ -897,7 +897,7 @@
           </or>
         </condition>
 
-        <loadresource property="tests.explicitclass">
+        <loadresource property="tests.explicitclass" quiet="true">
           <string value="${tests.class}" />
           <filterchain>
             <replaceregex pattern="\." replace="/" flags="g" />
