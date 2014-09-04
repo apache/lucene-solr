@@ -18,6 +18,7 @@ package org.apache.solr.schema;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.nio.file.Files;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -163,7 +164,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     assertSchemaResource(collection, "managed-schema");
     deleteCore();
     File managedSchemaFile = new File(tmpConfDir, "managed-schema");
-    assertTrue(managedSchemaFile.delete()); // Delete managed-schema so it won't block parsing a new schema
+    Files.delete(managedSchemaFile.toPath()); // Delete managed-schema so it won't block parsing a new schema
 
     System.setProperty("managed.schema.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome.getPath());
@@ -192,7 +193,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     assertSchemaResource(collection, "managed-schema");
     deleteCore();
     File managedSchemaFile = new File(tmpConfDir, "managed-schema");
-    assertTrue(managedSchemaFile.delete()); // Delete managed-schema so it won't block parsing a new schema
+    Files.delete(managedSchemaFile.toPath()); // Delete managed-schema so it won't block parsing a new schema
     System.setProperty("managed.schema.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome.getPath());
 
@@ -239,7 +240,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   public void testAddFieldWhenItAlreadyExists() throws Exception{
     deleteCore();
     File managedSchemaFile = new File(tmpConfDir, "managed-schema");
-    assertTrue(managedSchemaFile.delete()); // Delete managed-schema so it won't block parsing a new schema
+    Files.delete(managedSchemaFile.toPath()); // Delete managed-schema so it won't block parsing a new schema
     System.setProperty("managed.schema.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome.getPath());
 
@@ -272,7 +273,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   public void testAddSameFieldTwice() throws Exception{
     deleteCore();
     File managedSchemaFile = new File(tmpConfDir, "managed-schema");
-    assertTrue(managedSchemaFile.delete()); // Delete managed-schema so it won't block parsing a new schema
+    Files.delete(managedSchemaFile.toPath()); // Delete managed-schema so it won't block parsing a new schema
     System.setProperty("managed.schema.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome.getPath());
 
@@ -307,7 +308,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   public void testAddDynamicField() throws Exception{
     deleteCore();
     File managedSchemaFile = new File(tmpConfDir, "managed-schema");
-    assertTrue(managedSchemaFile.delete()); // Delete managed-schema so it won't block parsing a new schema
+    Files.delete(managedSchemaFile.toPath()); // Delete managed-schema so it won't block parsing a new schema
     System.setProperty("managed.schema.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome.getPath());
 
@@ -340,7 +341,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   public void testAddWithSchemaCodecFactory() throws Exception {
     deleteCore();
     File managedSchemaFile = new File(tmpConfDir, "managed-schema");
-    assertTrue(managedSchemaFile.delete()); // Delete managed-schema so it won't block parsing a new schema
+    Files.delete(managedSchemaFile.toPath()); // Delete managed-schema so it won't block parsing a new schema
     System.setProperty("managed.schema.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema_codec.xml", tmpSolrHome.getPath());
 
@@ -368,7 +369,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   public void testAddWithSchemaSimilarityFactory() throws Exception {
     deleteCore();
     File managedSchemaFile = new File(tmpConfDir, "managed-schema");
-    assertTrue(managedSchemaFile.delete()); // Delete managed-schema so it won't block parsing a new schema
+    Files.delete(managedSchemaFile.toPath()); // Delete managed-schema so it won't block parsing a new schema
     System.setProperty("managed.schema.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-bm25.xml", tmpSolrHome.getPath());
 
@@ -397,7 +398,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     assertSchemaResource(collection, "managed-schema");
     deleteCore();
     File managedSchemaFile = new File(tmpConfDir, "managed-schema");
-    assertTrue(managedSchemaFile.delete()); // Delete managed-schema so it won't block parsing a new schema
+    Files.delete(managedSchemaFile.toPath()); // Delete managed-schema so it won't block parsing a new schema
     System.setProperty("managed.schema.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-one-field-no-dynamic-field-unique-key.xml", tmpSolrHome.getPath());
 
@@ -433,7 +434,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   public void testAddFieldThenReload() throws Exception {
     deleteCore();
     File managedSchemaFile = new File(tmpConfDir, "managed-schema");
-    assertTrue(managedSchemaFile.delete()); // Delete managed-schema so it won't block parsing a new schema
+    Files.delete(managedSchemaFile.toPath()); // Delete managed-schema so it won't block parsing a new schema
     System.setProperty("managed.schema.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome.getPath());
 

@@ -42,6 +42,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FailOnNonBulkMergesInfoStream;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
@@ -648,7 +649,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
 
     TestUtil.checkIndex(dir);
     dir.close();
-    TestUtil.rm(tempDir);
+    IOUtils.rm(tempDir);
 
     if (VERBOSE) {
       System.out.println("TEST: done [" + (System.currentTimeMillis()-t0) + " ms]");

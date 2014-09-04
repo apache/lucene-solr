@@ -122,7 +122,7 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
     // and leave them there.
     if (failureMarker.wasSuccessful()) {
       try {
-        TestUtil.rm(everything);
+        IOUtils.rm(everything);
       } catch (IOException e) {
         Class<?> suiteClass = RandomizedContext.current().getTargetClass();
         if (suiteClass.isAnnotationPresent(SuppressTempFileChecks.class)) {

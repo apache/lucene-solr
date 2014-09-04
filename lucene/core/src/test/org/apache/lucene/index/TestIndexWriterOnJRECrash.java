@@ -45,8 +45,6 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
   public void setUp() throws Exception {
     super.setUp();
     tempDir = createTempDir("jrecrash");
-    tempDir.delete();
-    tempDir.mkdir();
   }
   
   @Override @Nightly

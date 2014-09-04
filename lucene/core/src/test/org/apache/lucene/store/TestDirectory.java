@@ -24,6 +24,7 @@ import java.nio.file.NoSuchFileException;
 import java.util.Arrays;
 import java.util.Collections;
 
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 
 public class TestDirectory extends BaseDirectoryTestCase {
@@ -135,7 +136,7 @@ public class TestDirectory extends BaseDirectoryTestCase {
       assertFalse(dir.isOpen);
     }
     
-    TestUtil.rm(path);
+    IOUtils.rm(path);
   }
 
   // LUCENE-1468
@@ -147,7 +148,7 @@ public class TestDirectory extends BaseDirectoryTestCase {
       Directory fsDir = new SimpleFSDirectory(path, null);
       assertEquals(0, new RAMDirectory(fsDir, newIOContext(random())).listAll().length);
     } finally {
-      TestUtil.rm(path);
+      IOUtils.rm(path);
     }
   }
 
@@ -167,7 +168,7 @@ public class TestDirectory extends BaseDirectoryTestCase {
       }
     } finally {
       fsDir.close();
-      TestUtil.rm(path);
+      IOUtils.rm(path);
     }
   }
 }

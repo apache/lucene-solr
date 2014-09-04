@@ -30,6 +30,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.lucene.benchmark.BenchmarkTestCase;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -136,14 +137,14 @@ public class StreamUtilsTest extends BenchmarkTestCase {
   public void setUp() throws Exception {
     super.setUp();
     testDir = new File(getWorkDir(),"ContentSourceTest");
-    TestUtil.rm(testDir);
+    IOUtils.rm(testDir);
     assertTrue(testDir.mkdirs());
   }
 
   @Override
   @After
   public void tearDown() throws Exception {
-    TestUtil.rm(testDir);
+    IOUtils.rm(testDir);
     super.tearDown();
   }
 

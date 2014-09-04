@@ -214,7 +214,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
     } finally {
       if(!namedBackup) {
-        TestUtil.rm(snapDir);
+        org.apache.lucene.util.IOUtils.rm(snapDir);
       }
     }
   }

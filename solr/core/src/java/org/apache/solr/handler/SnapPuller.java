@@ -27,6 +27,7 @@ import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -1021,28 +1022,30 @@ public class SnapPuller {
     return nameVsFile.isEmpty() ? Collections.EMPTY_LIST : nameVsFile.values();
   }
   
-  static boolean delTree(File dir) {
-    boolean isSuccess = true;
-    File contents[] = dir.listFiles();
-    if (contents != null) {
-      for (File file : contents) {
-        if (file.isDirectory()) {
-          boolean success = delTree(file);
-          if (!success) {
-            LOG.warn("Unable to delete directory : " + file);
-            isSuccess = false;
-          }
-        } else {
-          boolean success = file.delete();
-          if (!success) {
-            LOG.warn("Unable to delete file : " + file);
-            isSuccess = false;
-            return false;
-          }
-        }
-      }
+  /** 
+   * This simulates File.delete exception-wise, since this class has some strange behavior with it.
+   * The only difference is it returns null on success, throws SecurityException on SecurityException, 
+   * otherwise returns Throwable preventing deletion (instead of false), for additional information.
+   */
+  static Throwable delete(File file) {
+    try {
+      Files.delete(file.toPath());
+      return null;
+    } catch (SecurityException e) {
+      throw e;
+    } catch (Throwable other) {
+      return other;
     }
-    return isSuccess && dir.delete();
+  }
+  
+  static boolean delTree(File dir) {
+    try {
+      org.apache.lucene.util.IOUtils.rm(dir);
+      return true;
+    } catch (IOException e) {
+      LOG.warn("Unable to delete directory : " + dir, e);
+      return false;
+    }
   }
 
   /**
@@ -1574,9 +1577,12 @@ public class SnapPuller {
         //if the download is not complete then
         //delete the file being downloaded
         try {
-          file.delete();
-        } catch (Exception e) {
+          Files.delete(file.toPath());
+        } catch (SecurityException e) {
           LOG.error("Error deleting file in cleanup" + e.getMessage());
+        } catch (Throwable other) {
+          // TODO: should this class care if a file couldnt be deleted?
+          // this just emulates previous behavior, where only SecurityException would be handled.
         }
         //if the failure is due to a user abort it is returned nomally else an exception is thrown
         if (!aborted)

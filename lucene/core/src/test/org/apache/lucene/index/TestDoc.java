@@ -26,6 +26,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -87,7 +88,7 @@ public class TestDoc extends LuceneTestCase {
 
         try {
             File f = new File(workDir, name);
-            if (f.exists()) f.delete();
+            Files.deleteIfExists(f.toPath());
 
             fw = new OutputStreamWriter(new FileOutputStream(f), StandardCharsets.UTF_8);
             pw = new PrintWriter(fw);

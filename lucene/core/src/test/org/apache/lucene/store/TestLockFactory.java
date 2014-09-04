@@ -19,6 +19,7 @@ package org.apache.lucene.store;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,6 +36,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TestUtil;
@@ -172,7 +174,7 @@ public class TestLockFactory extends LuceneTestCase {
 
         dir.close();
         // Cleanup
-        TestUtil.rm(indexDir);
+        IOUtils.rm(indexDir);
     }
 
     // Verify: NativeFSLockFactory works correctly
@@ -210,9 +212,7 @@ public class TestLockFactory extends LuceneTestCase {
       assertTrue("failed to obtain lock", l.obtain());
       l.close();
       assertFalse("failed to release lock", l.isLocked());
-      if (lockFile.exists()) {
-        lockFile.delete();
-      }
+      Files.deleteIfExists(lockFile.toPath());
     }
 
     // Verify: NativeFSLockFactory assigns null as lockPrefix if the lockDir is inside directory
@@ -232,8 +232,7 @@ public class TestLockFactory extends LuceneTestCase {
 
       dir1.close();
       dir2.close();
-      TestUtil.rm(fdir1);
-      TestUtil.rm(fdir2);
+      IOUtils.rm(fdir1, fdir2);
     }
 
     // Verify: default LockFactory has no prefix (ie
@@ -255,7 +254,7 @@ public class TestLockFactory extends LuceneTestCase {
       assertNull("Default lock prefix should be null", dir.getLockFactory().getLockPrefix());
       dir.close();
  
-      TestUtil.rm(dirName);
+      IOUtils.rm(dirName);
     }
 
     private class WriterThread extends Thread { 

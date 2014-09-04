@@ -1025,12 +1025,12 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   /**
-   * @see TestUtil#rm(File...)
+   * @see IOUtils#rm(File...)
    */
   @Deprecated()
   public static boolean recurseDelete(File f) {
     try {
-      TestUtil.rm(f);
+      IOUtils.rm(f);
       return true;
     } catch (IOException e) {
       System.err.println(e.toString());

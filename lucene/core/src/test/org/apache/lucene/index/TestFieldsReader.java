@@ -34,6 +34,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
@@ -253,7 +254,7 @@ public class TestFieldsReader extends LuceneTestCase {
       reader.close();
       dir.close();
     } finally {
-      TestUtil.rm(indexDir);
+      IOUtils.rm(indexDir);
     }
 
   }

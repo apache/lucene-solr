@@ -38,6 +38,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TestUtil;
@@ -282,7 +283,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         writer.close();
         reader.close();
       } finally {
-        TestUtil.rm(indexDir);
+        IOUtils.rm(indexDir);
       }
     }
 

@@ -26,6 +26,7 @@ import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.FilterOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -268,8 +269,7 @@ public abstract class FSDirectory extends BaseDirectory {
   public void deleteFile(String name) throws IOException {
     ensureOpen();
     File file = new File(directory, name);
-    if (!file.delete())
-      throw new IOException("Cannot delete " + file);
+    Files.delete(file.toPath());
     staleFiles.remove(name);
   }
 
@@ -288,8 +288,7 @@ public abstract class FSDirectory extends BaseDirectory {
         throw new IOException("Cannot create directory: " + directory);
 
     File file = new File(directory, name);
-    if (file.exists() && !file.delete())          // delete existing, if any
-      throw new IOException("Cannot overwrite: " + file);
+    Files.deleteIfExists(file.toPath()); // delete existing, if any
   }
 
   /**

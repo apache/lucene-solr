@@ -1379,7 +1379,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
 
     fieldsProducer.close();
     dir.close();
-    TestUtil.rm(path);
+    IOUtils.rm(path);
   }
 
   public void testDocsOnly() throws Exception {
@@ -1428,7 +1428,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
       fieldsProducer = null;
 
       dir.close();
-      TestUtil.rm(path);
+      IOUtils.rm(path);
     }
   }
   

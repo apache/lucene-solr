@@ -19,6 +19,7 @@ package org.apache.lucene.search.suggest.analyzing;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -500,7 +501,7 @@ public class AnalyzingSuggester extends Lookup {
       new OfflineSorter(new AnalyzingComparator(hasPayloads)).sort(tempInput, tempSorted);
 
       // Free disk space:
-      tempInput.delete();
+      Files.delete(tempInput.toPath());
 
       reader = new OfflineSorter.ByteSequencesReader(tempSorted);
      
@@ -593,14 +594,13 @@ public class AnalyzingSuggester extends Lookup {
       
       success = true;
     } finally {
-      if (success) {
-        IOUtils.close(reader, writer);
-      } else {
-        IOUtils.closeWhileHandlingException(reader, writer);
-      }
+      IOUtils.closeWhileHandlingException(reader, writer);
       
-      tempInput.delete();
-      tempSorted.delete();
+      if (success) {
+        IOUtils.deleteFilesIfExist(tempInput, tempSorted);
+      } else {
+        IOUtils.deleteFilesIgnoringExceptions(tempInput, tempSorted);
+      }
     }
   }
 

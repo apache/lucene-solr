@@ -28,10 +28,11 @@ import java.io.PrintStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.CharBuffer;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -99,48 +100,12 @@ public final class TestUtil {
     //
   }
 
-  /**
-   * Deletes one or more files or directories (and everything underneath it).
-   * 
-   * @throws IOException if any of the given files (or their subhierarchy files in case
-   * of directories) cannot be removed.
-   */
-  public static void rm(File... locations) throws IOException {
-    LinkedHashSet<File> unremoved = rm(new LinkedHashSet<File>(), locations);
-    if (!unremoved.isEmpty()) {
-      StringBuilder b = new StringBuilder("Could not remove the following files (in the order of attempts):\n");
-      for (File f : unremoved) {
-        b.append("   ")
-         .append(f.getAbsolutePath())
-         .append("\n");
-      }
-      throw new IOException(b.toString());
-    }
-  }
-
-  private static LinkedHashSet<File> rm(LinkedHashSet<File> unremoved, File... locations) {
-    if (locations != null) {
-      for (File location : locations) {
-        if (location != null && location.exists()) {
-          if (location.isDirectory()) {
-            rm(unremoved, location.listFiles());
-          }
-  
-          if (!location.delete()) {
-            unremoved.add(location);
-          }
-        }
-      }
-    }
-    return unremoved;
-  }
-
   /** 
    * Convenience method unzipping zipName into destDir, cleaning up 
    * destDir first. 
    */
   public static void unzip(File zipName, File destDir) throws IOException {
-    rm(destDir);
+    IOUtils.rm(destDir);
     destDir.mkdir();
 
     ZipFile zipFile = new ZipFile(zipName);

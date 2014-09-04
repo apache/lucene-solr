@@ -46,7 +46,7 @@ final class RemoveUponClose implements Closeable {
     if (failureMarker.wasSuccessful()) {
       if (file.exists()) {
         try {
-          TestUtil.rm(file);
+          IOUtils.rm(file);
         } catch (IOException e) {
           throw new IOException(
               "Could not remove temporary location '" 

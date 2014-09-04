@@ -34,6 +34,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Set;
 
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
@@ -1437,7 +1438,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     }
 
     public void tearDown() throws Exception {
-      TestUtil.rm(homeDir);
+      IOUtils.rm(homeDir);
     }
 
     public void copyConfigFile(String srcFile, String destFile) 

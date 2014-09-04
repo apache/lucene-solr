@@ -19,6 +19,7 @@ package org.apache.solr.morphlines.solr;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
 
 
 class FileUtils {
@@ -39,11 +40,7 @@ class FileUtils {
           cleanDirectory(directory);
       }
 
-      if (!directory.delete()) {
-          String message =
-              "Unable to delete directory " + directory + ".";
-          throw new IOException(message);
-      }
+      Files.delete(directory.toPath());
   }
 
   /**
@@ -136,15 +133,7 @@ class FileUtils {
       if (file.isDirectory()) {
           deleteDirectory(file);
       } else {
-          boolean filePresent = file.exists();
-          if (!file.delete()) {
-              if (!filePresent){
-                  throw new FileNotFoundException("File does not exist: " + file);
-              }
-              String message =
-                  "Unable to delete file: " + file;
-              throw new IOException(message);
-          }
+          Files.delete(file.toPath());
       }
   }
 

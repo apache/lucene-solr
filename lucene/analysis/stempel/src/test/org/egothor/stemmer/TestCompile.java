@@ -66,6 +66,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Locale;
 import java.util.StringTokenizer;
 
@@ -87,7 +88,7 @@ public class TestCompile extends LuceneTestCase {
     Trie trie = loadTrie(compiled);
     assertTrie(trie, path, true, true);
     assertTrie(trie, path, false, true);
-    new File(compiled).delete();
+    Files.delete(new File(compiled).toPath());
   }
   
   public void testCompileBackwards() throws Exception {
@@ -103,7 +104,7 @@ public class TestCompile extends LuceneTestCase {
     Trie trie = loadTrie(compiled);
     assertTrie(trie, path, true, true);
     assertTrie(trie, path, false, true);
-    new File(compiled).delete();
+    Files.delete(new File(compiled).toPath());
   }
   
   public void testCompileMulti() throws Exception {
@@ -119,7 +120,7 @@ public class TestCompile extends LuceneTestCase {
     Trie trie = loadTrie(compiled);
     assertTrie(trie, path, true, true);
     assertTrie(trie, path, false, true);
-    new File(compiled).delete();
+    Files.delete(new File(compiled).toPath());
   }
   
   static Trie loadTrie(String path) throws IOException {

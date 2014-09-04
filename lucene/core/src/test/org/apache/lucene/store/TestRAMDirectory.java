@@ -78,8 +78,8 @@ public class TestRAMDirectory extends BaseDirectoryTestCase {
       fsDir = newFSDirectory(path);
       assertEquals(0, new RAMDirectory(fsDir, newIOContext(random())).listAll().length);
     } finally {
-      TestUtil.rm(path);
       IOUtils.close(fsDir);
+      IOUtils.rm(path);
     }
   }
 

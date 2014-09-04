@@ -162,12 +162,16 @@ public class SortedTermFreqIteratorWrapper implements TermFreqIterator {
   }
   
   private void close() throws IOException {
-    IOUtils.close(reader);
-    if (tempInput != null) {
-      tempInput.delete();
-    }
-    if (tempSorted != null) {
-      tempSorted.delete();
+    boolean success = false;
+    try {
+      IOUtils.close(reader);
+      success = true;
+    } finally {
+      if (success) {
+        IOUtils.deleteFilesIfExist(tempInput, tempSorted);
+      } else {
+        IOUtils.deleteFilesIgnoringExceptions(tempInput, tempSorted);
+      }
     }
   }
   

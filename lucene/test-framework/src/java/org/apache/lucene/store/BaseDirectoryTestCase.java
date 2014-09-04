@@ -21,6 +21,7 @@ import java.io.EOFException;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -453,7 +454,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
    *  mkdir the underling directory in the filesystem. */
   public void testDontCreate() throws Throwable {
     File path = createTempDir("doesnotexist");
-    TestUtil.rm(path);
+    IOUtils.rm(path);
     assertTrue(!path.exists());
     Directory dir = getDirectory(path);
     assertTrue(!path.exists());
@@ -559,7 +560,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
   // LUCENE-3382 -- make sure we get exception if the directory really does not exist.
   public void testNoDir() throws Throwable {
     File tempDir = createTempDir("doesnotexist");
-    TestUtil.rm(tempDir);
+    IOUtils.rm(tempDir);
     Directory dir = getDirectory(tempDir);
     try {
       DirectoryReader.open(dir);
@@ -767,7 +768,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     out.close();
     
     // delete it
-    assertTrue(new File(path, "afile").delete());
+    Files.delete(new File(path, "afile").toPath());
     
     // directory is empty
     assertEquals(0, fsdir.listAll().length);

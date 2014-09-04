@@ -23,6 +23,7 @@ import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Date;
 
@@ -64,7 +65,7 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
     HttpResponse response = getClient().execute(m);
     assertEquals(200, response.getStatusLine().getStatusCode());
     checkVetoHeaders(response, true);
-    f.delete();
+    Files.delete(f.toPath());
   }
   
   @Test

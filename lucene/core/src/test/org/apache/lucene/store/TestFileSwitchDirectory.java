@@ -32,8 +32,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TestIndexWriterReader;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
 public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
@@ -105,8 +104,7 @@ public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
   public void testNoDir() throws Throwable {
     File primDir = createTempDir("foo");
     File secondDir = createTempDir("bar");
-    TestUtil.rm(primDir);
-    TestUtil.rm(secondDir);
+    IOUtils.rm(primDir, secondDir);
     Directory dir = newFSSwitchDirectory(primDir, secondDir, Collections.<String>emptySet());
     try {
       DirectoryReader.open(dir);

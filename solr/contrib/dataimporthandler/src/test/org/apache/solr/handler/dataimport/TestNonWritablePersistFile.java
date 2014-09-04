@@ -92,7 +92,7 @@ public class TestNonWritablePersistFile extends AbstractDataImportHandlerTestCas
       runFullImport(dataConfig_delta);
       assertQ(req("id:1"), "//*[@numFound='0']");
     } finally {
-      f.delete();
+      f.setWritable(true);
     }
   }  
 }

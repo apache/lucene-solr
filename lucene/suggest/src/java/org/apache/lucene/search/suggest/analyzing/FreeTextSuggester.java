@@ -373,23 +373,12 @@ public class FreeTextSuggester extends Lookup {
     } finally {
       try {
         if (success) {
-          IOUtils.close(writer, reader);
+          IOUtils.close(reader, writer, dir);
         } else {
-          IOUtils.closeWhileHandlingException(writer, reader);
+          IOUtils.closeWhileHandlingException(reader, writer, dir);
         }
       } finally {
-        for(String file : dir.listAll()) {
-          File path = new File(tempIndexPath, file);
-          if (path.delete() == false) {
-            throw new IllegalStateException("failed to remove " + path);
-          }
-        }
-
-        if (tempIndexPath.delete() == false) {
-          throw new IllegalStateException("failed to remove " + tempIndexPath);
-        }
-
-        dir.close();
+        IOUtils.rm(tempIndexPath);
       }
     }
   }

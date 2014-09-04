@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1444,10 +1445,8 @@ public class UpdateLog implements PluginInfoInitialized {
   public static void deleteFile(File file) {
     boolean success = false;
     try {
-      success = file.delete();
-      if (!success) {
-        log.error("Error deleting file: " + file);
-      }
+      Files.deleteIfExists(file.toPath());
+      success = true;
     } catch (Exception e) {
       log.error("Error deleting file: " + file, e);
     }
@@ -1489,9 +1488,11 @@ public class UpdateLog implements PluginInfoInitialized {
       String[] files = getLogList(tlogDir);
       for (String file : files) {
         File f = new File(tlogDir, file);
-        boolean s = f.delete();
-        if (!s) {
-          log.error("Could not remove tlog file:" + f);
+        try {
+          Files.delete(f.toPath());
+        } catch (IOException cause) {
+          // NOTE: still throws SecurityException as before.
+          log.error("Could not remove tlog file:" + f, cause);
         }
       }
     }

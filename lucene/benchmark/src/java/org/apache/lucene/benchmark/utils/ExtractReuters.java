@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,12 +38,12 @@ public class ExtractReuters {
   private File outputDir;
   private static final String LINE_SEPARATOR = System.getProperty("line.separator");
 
-  public ExtractReuters(File reutersDir, File outputDir) {
+  public ExtractReuters(File reutersDir, File outputDir) throws IOException {
     this.reutersDir = reutersDir;
     this.outputDir = outputDir;
     System.out.println("Deleting all files in " + outputDir);
     for (File f : outputDir.listFiles()) {
-      f.delete();
+      Files.delete(f.toPath());
     }
   }
 
@@ -122,7 +123,7 @@ public class ExtractReuters {
     }
   }
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws Exception {
     if (args.length != 2) {
       usage("Wrong number of arguments ("+args.length+")");
       return;
