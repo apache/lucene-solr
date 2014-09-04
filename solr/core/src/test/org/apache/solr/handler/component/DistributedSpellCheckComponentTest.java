@@ -187,6 +187,12 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
     query(buildRequest("lowerfilt:(+quock +redfox +jum +ped)", 
         false, reqHandlerWithWordbreak, random().nextBoolean(), extended, "true", count, "10", 
         collate, "true", maxCollationTries, "0", maxCollations, "1", collateExtended, "true"));
+    query(buildRequest("lowerfilt:(+rodfix)", 
+        false, reqHandlerWithWordbreak, random().nextBoolean(), extended, "true", count, "10", 
+        collate, "true", maxCollationTries, "0", maxCollations, "1", collateExtended, "true"));
+    query(buildRequest("lowerfilt:(+son +ata)", 
+        false, reqHandlerWithWordbreak, random().nextBoolean(), extended, "true", count, "10", 
+        collate, "true", maxCollationTries, "0", maxCollations, "1", collateExtended, "true"));
   }
   private Object[] buildRequest(String q, boolean useSpellcheckQ, String handlerName, boolean useGrouping, String... addlParams) {
     List<Object> params = new ArrayList<>();

@@ -100,9 +100,11 @@ public abstract class SolrSpellChecker {
     for (Map.Entry<String, HashSet<String>> entry : mergeData.origVsSuggested.entrySet()) {
       String original = entry.getKey();
       
-      //Only use this suggestion if all shards reported it as misspelled.
+      //Only use this suggestion if all shards reported it as misspelled, 
+      //unless it was not a term original to the user's query
+      //(WordBreakSolrSpellChecker can add new terms to the response, and we want to keep these)
       Integer numShards = mergeData.origVsShards.get(original);
-      if(numShards<mergeData.totalNumberShardResponses) {
+      if(numShards<mergeData.totalNumberShardResponses && mergeData.isOriginalToQuery(original)) {
         continue;
       }
       

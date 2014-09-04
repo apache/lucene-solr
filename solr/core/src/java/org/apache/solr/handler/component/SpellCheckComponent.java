@@ -191,17 +191,18 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         }
         boolean isCorrectlySpelled = hits > (maxResultsForSuggest==null ? 0 : maxResultsForSuggest);
         
-        NamedList response = new SimpleOrderedMap();
-        
+        NamedList response = new SimpleOrderedMap();        
         NamedList suggestions = toNamedList(shardRequest, spellingResult, q, extendedResults);
         response.add("suggestions", suggestions);
         
         if (extendedResults) {
           response.add("correctlySpelled", isCorrectlySpelled);
-        }
-        
+        }        
         if (collate) {
           addCollationsToResponse(params, spellingResult, rb, q, response, spellChecker.isSuggestionsMayOverlap());
+        }
+        if (shardRequest) {
+          addOriginalTermsToResponse(response, tokens);
         }
         
         rb.rsp.add("spellcheck", response);
@@ -259,6 +260,14 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       }
     }
     response.add("collations", collationList);
+  }
+  
+  private void addOriginalTermsToResponse(NamedList response, Collection<Token> originalTerms) {
+    List<String> originalTermStr = new ArrayList<String>();
+    for(Token t : originalTerms) {
+      originalTermStr.add(t.toString());
+    }
+    response.add("originalTerms", originalTermStr);
   }
 
   /**
@@ -392,8 +401,14 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     
   @SuppressWarnings("unchecked")
   private void collectShardSuggestions(NamedList nl, SpellCheckMergeData mergeData) {
-    System.out.println(nl);
-    SpellCheckResponse spellCheckResp = new SpellCheckResponse(nl);
+    SpellCheckResponse spellCheckResp = new SpellCheckResponse(nl);    
+    Iterable<Object> originalTermStrings = (Iterable<Object>) nl.get("originalTerms");
+    if(originalTermStrings!=null) {
+      mergeData.originalTerms = new HashSet<>();
+      for (Object originalTermObj : originalTermStrings) {
+        mergeData.originalTerms.add(originalTermObj.toString());
+      }
+    }
     for (SpellCheckResponse.Suggestion suggestion : spellCheckResp.getSuggestions()) {
       mergeData.origVsSuggestion.put(suggestion.getToken(), suggestion);
       HashSet<String> suggested = mergeData.origVsSuggested.get(suggestion.getToken());
@@ -615,8 +630,8 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         }
         
         if (hasFreqInfo) {
-          int tokenFrequency = spellingResult.getTokenFrequency(inputToken);
-          if (tokenFrequency == 0) {
+          Integer tokenFrequency = spellingResult.getTokenFrequency(inputToken);
+          if (tokenFrequency==null || tokenFrequency == 0) {
             hasZeroFrequencyToken = true;
           }
         }
