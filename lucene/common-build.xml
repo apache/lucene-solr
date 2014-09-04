@@ -146,9 +146,7 @@
   <!-- Max width for class name truncation.  -->
   <property name="tests.maxClassNameColumns" value="10000" />
   <!-- Show suite summaries for tests. -->
-  <condition property="tests.showSuiteSummary" value="false" else="true">
-    <isset property="beast.iters"/>
-  </condition>
+  <property name="tests.showSuiteSummary" value="true" />
   <!-- Show timestamps in console test reports. -->
   <property name="tests.timestamps" value="false" />
   <!-- Heartbeat in seconds for reporting long running tests or hung forked JVMs. -->
@@ -833,28 +831,16 @@
   </condition>
 
   <condition property="tests.showSuccess" value="true" else="false">
-    <and>
-      <or>
-        <isset property="tests.class" />
-        <isset property="tests.method" />
-      </or>
-      <not>
-        <isset property="beast.iters" />
-      </not>
-    </and>
+    <or>
+      <isset property="tests.class" />
+      <isset property="tests.method" />
+    </or>
   </condition>
 
   <condition property="tests.showOutput" value="always" else="onerror">
     <or>
-      <and>
-        <or>
-          <isset property="tests.class" />
-          <isset property="tests.method" />
-        </or>
-        <not>
-          <isset property="beast.iters" />
-        </not>
-      </and>
+      <isset property="tests.class" />
+      <isset property="tests.method" />
       <istrue value="${tests.showSuccess}"/>
     </or>
   </condition>
@@ -1161,11 +1147,8 @@
         <echo file="${tests.totals.tmpfile}" append="true" encoding="UTF-8"># module: ${ant.project.name}&#x000a;${junit4.stats.nonIgnored}&#x000a;</echo>
 
         <!-- Report the 5 slowest tests from this run to the console. -->
-        <local name="tests.showtophints"/>
-        <condition property="tests.showtophints" value="0" else="5">
-          <isset property="beast.iters"/>
-        </condition>
-        <junit4:tophints max="${tests.showtophints}" taskname="slow-tests">
+        <echo>5 slowest tests:</echo>
+        <junit4:tophints max="5">
           <file file="${tests.cachedir}/${name}/timehints.txt" />
         </junit4:tophints>
     </sequential>
