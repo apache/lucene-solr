@@ -1188,6 +1188,7 @@ public class TestIndexWriter extends LuceneTestCase {
         } catch (Throwable t) {
           log.println("thread " + id + " FAILED; unexpected exception");
           t.printStackTrace(log);
+          listIndexFiles(log, dir);
           failed = true;
           break;
         }
@@ -1216,6 +1217,7 @@ public class TestIndexWriter extends LuceneTestCase {
           failed = true;
           log.println("thread " + id + ": CheckIndex FAILED: unexpected exception");
           e.printStackTrace(log);
+          listIndexFiles(log, dir);
         }
         try {
           IndexReader r = DirectoryReader.open(dir);
@@ -1225,6 +1227,7 @@ public class TestIndexWriter extends LuceneTestCase {
           failed = true;
           log.println("thread " + id + ": DirectoryReader.open FAILED: unexpected exception");
           e.printStackTrace(log);
+          listIndexFiles(log, dir);
         }
       }
       try {
@@ -1238,6 +1241,16 @@ public class TestIndexWriter extends LuceneTestCase {
       } catch (IOException e) {
         failed = true;
         throw new RuntimeException("thread " + id, e);
+      }
+    }
+
+    private void listIndexFiles(PrintStream log, Directory dir) {
+      try {
+        log.println("index files: " + Arrays.toString(dir.listAll()));
+      } catch (IOException ioe) {
+        // Suppress
+        log.println("failed to index files:");
+        ioe.printStackTrace(log);
       }
     }
   }
