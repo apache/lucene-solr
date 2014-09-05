@@ -109,7 +109,9 @@ public class RestManager {
   public static class Registry {
     
     private Map<String,ManagedResourceRegistration> registered = new TreeMap<>();
-
+    
+    // maybe null until there is a restManager
+    private RestManager initializedRestManager = null;
 
     // REST API endpoints that need to be protected against dynamic endpoint creation
     private final Set<String> reservedEndpoints = new HashSet<>();
@@ -225,6 +227,11 @@ public class RestManager {
             new ManagedResourceRegistration(resourceId, implClass, observer));
         log.info("Registered ManagedResource impl {} for path {}", 
             implClass.getName(), resourceId);
+      }
+      
+      // there may be a RestManager, in which case, we want to add this new ManagedResource immediately
+      if (initializedRestManager != null) {
+        initializedRestManager.addRegisteredResource(registered.get(resourceId));
       }
     }    
   }  
@@ -605,6 +612,10 @@ public class RestManager {
       // keep track of this for lookups during request processing
       managed.put(reg.resourceId, createManagedResource(reg));
     }
+    
+    // this is for any new registrations that don't come through the API
+    // such as from adding a new fieldType to a managed schema that uses a ManagedResource
+    registry.initializedRestManager = this;
   }
 
   /**
@@ -617,23 +628,32 @@ public class RestManager {
     ManagedResourceRegistration existingReg = registry.registered.get(resourceId);
     if (existingReg == null) {
       registry.registerManagedResource(resourceId, clazz, null);
-      res = createManagedResource(registry.registered.get(resourceId));
-      managed.put(resourceId, res);
-      log.info("Registered new managed resource {}", resourceId);
-      
-      // attach this new resource to the Restlet router
-      Matcher resourceIdValidator = resourceIdRegex.matcher(resourceId);
-      boolean validated = resourceIdValidator.matches();
-      assert validated : "managed resourceId '" + resourceId
-                       + "' should already be validated by registerManagedResource()";
-      String routerPath = resourceIdValidator.group(1);      
-      String path = resourceIdValidator.group(2);
-      Router router = SCHEMA_BASE_PATH.equals(routerPath) ? schemaRouter : configRouter;
-      if (router != null) {
-        attachManagedResource(res, path, router);
-      }
+      addRegisteredResource(registry.registered.get(resourceId));
     } else {
       res = getManagedResource(resourceId);
+    }
+    return res;
+  }
+  
+  // used internally to create and attach a ManagedResource to the Restlet router
+  // the registry also uses this method directly, which is slightly hacky but necessary
+  // in order to support dynamic adding of new fieldTypes using the managed-schema API
+  private synchronized ManagedResource addRegisteredResource(ManagedResourceRegistration reg) {
+    String resourceId = reg.resourceId;
+    ManagedResource res = createManagedResource(reg);
+    managed.put(resourceId, res);
+    log.info("Registered new managed resource {}", resourceId);
+    
+    // attach this new resource to the Restlet router
+    Matcher resourceIdValidator = resourceIdRegex.matcher(resourceId);
+    boolean validated = resourceIdValidator.matches();
+    assert validated : "managed resourceId '" + resourceId
+                     + "' should already be validated by registerManagedResource()";
+    String routerPath = resourceIdValidator.group(1);      
+    String path = resourceIdValidator.group(2);
+    Router router = SCHEMA_BASE_PATH.equals(routerPath) ? schemaRouter : configRouter;
+    if (router != null) {
+      attachManagedResource(res, path, router);
     }
     return res;
   }

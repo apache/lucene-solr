@@ -845,10 +845,11 @@ public abstract class FieldType extends FieldProperties {
       for (String propertyName : FieldProperties.propertyNames) {
         fieldProperties.add(propertyName);
       }
+
       for (String key : args.keySet()) {
         if (fieldProperties.contains(key)) {
           namedPropertyValues.add(key, StrUtils.parseBool(args.get(key)));
-        } else if ( ! CLASS_NAME.equals(key) && ! TYPE_NAME.equals(key)) {
+        } else if (!CLASS_NAME.equals(key) && !TYPE_NAME.equals(key)) {
           namedPropertyValues.add(key, args.get(key));
         }
       }

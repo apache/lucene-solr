@@ -141,6 +141,9 @@ New Features
 * SOLR-5097: Schema API: Add REST support for adding dynamic fields to the schema.
   (Steve Rowe)
 
+* SOLR-5098: Schema API: Add REST support for adding field types to the schema.
+  (Timothy Potter)
+
 Bug Fixes
 ----------------------
 
