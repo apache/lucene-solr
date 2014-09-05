@@ -885,23 +885,23 @@
         <property name="tests.leaveTemporary" value="false" />
         <property name="tests.iters" value="" />
         <property name="tests.dups"  value="1" />
+        <property name="tests.useSecurityManager"  value="true" />
 
         <!-- turn on security manager? -->
         <condition property="java.security.manager" value="org.apache.lucene.util.TestSecurityManager">
-          <or>
-            <not>
-              <isset property="tests.useSecurityManager"/>
-            </not>
-            <istrue value="${tests.useSecurityManager}"/>
-          </or>
+          <istrue value="${tests.useSecurityManager}"/>
         </condition>
 
+        <!-- create a fileset pattern that matches ${tests.class}. -->
         <loadresource property="tests.explicitclass" quiet="true">
           <string value="${tests.class}" />
           <filterchain>
-            <replaceregex pattern="\." replace="/" flags="g" />
-            <replaceregex pattern="\*" replace="**" flags="g" />
-            <replaceregex pattern="$" replace=".class" />
+            <tokenfilter>
+              <filetokenizer/>
+              <replacestring from="." to="/"/>
+              <replacestring from="*" to="**"/>
+              <replaceregex pattern="$" replace=".class" />
+            </tokenfilter>
           </filterchain>
         </loadresource>
 
@@ -1158,7 +1158,7 @@
               <fileset dir="@{testsDir}">
                 <include name="**/Test*.class" />
                 <include name="**/*Test.class" />
-                <include name="${tests.explicitclass}" />
+                <include name="${tests.explicitclass}" if="tests.explicitclass" />
                 <exclude name="**/*$*" />
               </fileset>
             </junit4:duplicate>
