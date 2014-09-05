@@ -2049,7 +2049,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
         lastCommitChangeCount = changeCount;
         
-        deleter.refresh();
         deleter.close();
 
         IOUtils.close(writeLock);                     // release write lock
