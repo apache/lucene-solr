@@ -173,6 +173,9 @@ Bug Fixes
 * SOLR-5814: CoreContainer reports incorrect & missleading path for solrconfig.xml 
   when there are loading problems (Pradeep via hossman)
 
+* SOLR-6447: bin/solr script needs to pass -DnumShards=1 for boostrapping collection1
+  when starting Solr in cloud mode. (Timothy Potter)
+
 Other Changes
 ---------------------
 
