@@ -74,10 +74,19 @@
   </target>
 
   <target name="-run-maven-build" depends="install-maven-tasks">
+    <!-- we load all user properties from files again using a prefix, to only pass those down, not all of Ant: -->
+    <property file="${user.home}/lucene.build.properties" prefix="m2userprop."/>
+    <property file="${user.home}/build.properties" prefix="m2userprop."/>
+    <property file="${common.dir}/build.properties" prefix="m2userprop."/>
     <mvn xmlns="antlib:org.apache.maven.artifact.ant" pom="${maven-build-dir}/pom.xml"
       mavenVersion="${maven-version}" failonerror="true" fork="true">
       <arg value="-fae"/>
       <arg value="install"/>
+      <syspropertyset>
+        <propertyref prefix="m2userprop."/>
+        <mapper type="glob" from="m2userprop.*" to="*"/>
+      </syspropertyset>
+      <!-- order is important: later ones override previous ones (against common Ant behaviour): -->
       <syspropertyset>
         <propertyref builtin="commandline"/>
       </syspropertyset>
