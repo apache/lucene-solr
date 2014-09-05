@@ -77,27 +77,24 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
     public void load(SolrQueryRequest req, SolrQueryResponse rsp,
         ContentStream stream, UpdateRequestProcessor processor) throws Exception {
 
-      ContentStreamLoader ldr = pathVsLoaders.get(req.getContext().get("path"));
-      if(ldr != null){
-        ldr.load(req,rsp,stream,processor);
-        return;
-      }
-
-      String type = req.getParams().get(UpdateParams.ASSUME_CONTENT_TYPE);
-      if(type == null) {
-        type = stream.getContentType();
-      }
-      if( type == null ) { // Normal requests will not get here.
-        throw new SolrException(ErrorCode.UNSUPPORTED_MEDIA_TYPE, "Missing ContentType");
-      }
-      int idx = type.indexOf(';');
-      if(idx>0) {
-        type = type.substring(0,idx);
-      }
-      ContentStreamLoader loader = loaders.get(type);
-      if(loader==null) {
-        throw new SolrException(ErrorCode.UNSUPPORTED_MEDIA_TYPE, "Unsupported ContentType: "
-            +type+ "  Not in: "+loaders.keySet());
+      ContentStreamLoader loader = pathVsLoaders.get(req.getContext().get("path"));
+      if(loader == null) {
+        String type = req.getParams().get(UpdateParams.ASSUME_CONTENT_TYPE);
+        if (type == null) {
+          type = stream.getContentType();
+        }
+        if (type == null) { // Normal requests will not get here.
+          throw new SolrException(ErrorCode.UNSUPPORTED_MEDIA_TYPE, "Missing ContentType");
+        }
+        int idx = type.indexOf(';');
+        if (idx > 0) {
+          type = type.substring(0, idx);
+        }
+        loader = loaders.get(type);
+        if (loader == null) {
+          throw new SolrException(ErrorCode.UNSUPPORTED_MEDIA_TYPE, "Unsupported ContentType: "
+              + type + "  Not in: " + loaders.keySet());
+        }
       }
       if(loader.getDefaultWT()!=null) {
         setDefaultWT(req,loader);

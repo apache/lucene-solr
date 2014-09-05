@@ -1038,7 +1038,10 @@
       </analyzer>
     </fieldType>
 
-  
+  <!-- catchall field, containing all other searchable text fields (implemented
+   via copyField)  -->
+  <field name="_text" type="text_general" indexed="true" stored="false" multiValued="true"/>
+  <copyField source="*" dest="_text"/>
   <!-- Similarity is the scoring routine for each document vs. a query.
        A custom Similarity or SimilarityFactory may be specified here, but 
        the default is fine for most applications.  
