@@ -112,6 +112,8 @@ Other Changes
 * SOLR-6445: Upgrade Noggit to verion 0.6 to support more flexible JSON input (Noble Paul , Yonik Seeley)
 
 
+* SOLR-5322: core discovery can fail w/NPE and no explanation if a non-readable directory exists
+  (Said Chavkin, Erick Erickson)
 
 
 ==================  4.10.0 =================
