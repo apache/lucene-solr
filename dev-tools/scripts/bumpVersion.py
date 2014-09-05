@@ -209,17 +209,17 @@ def codec_exists(version):
   codec_file = '%(dir)s/lucene%(x)s%(y)s/Lucene%(x)s%(y)sCodec.java'
   return os.path.exists(codec_file % {'x': version.major, 'y': version.minor, 'dir': codecs_dir})
 
-def create_backcompat_indexes(version):
+def create_backcompat_indexes(version, on_trunk):
   majorminor = '%d%d' % (version.major, version.minor)
   codec = 'Lucene%s' % majorminor
+  backcompat_dir = 'lucene/backwards-codecs' if on_trunk else 'lucene/core'
 
-  create_index(codec, 'cfs', majorminor)
-  create_index(codec, 'nocfs', majorminor)
+  create_index(codec, backcompat_dir, 'cfs', majorminor)
+  create_index(codec, backcompat_dir, 'nocfs', majorminor)
 
-def create_index(codec, type, majorminor):
+def create_index(codec, codecs_dir, type, majorminor):
   filename = 'index.%s.%s.zip' % (majorminor, type)
   print('  creating %s...' % filename, end='')
-  codecs_dir = 'lucene/backwards-codecs'
   index_dir = 'src/test/org/apache/lucene/index'
   if os.path.exists(os.path.join(codecs_dir, index_dir, filename)):
     print('uptodate')
@@ -252,10 +252,11 @@ def create_index(codec, type, majorminor):
   if success:
     print('done')
 
-def update_backcompat_tests(version):
+def update_backcompat_tests(version, on_trunk):
   majorminor = '%d%d' % (version.major, version.minor)
   print('  adding new indexes to backcompat tests...', end='')
-  filename = 'lucene/backwards-codecs/src/test/org/apache/lucene/index/TestBackwardsCompatibility.java'
+  basedir = 'lucene/backwards-codecs' if on_trunk else 'lucene/core'
+  filename = '%s/src/test/org/apache/lucene/index/TestBackwardsCompatibility.java' % basedir
   matcher = re.compile(r'final static String\[\] oldNames = {|};')
   cfs_name = '%s.cfs' % majorminor
   nocfs_name = '%s.nocfs' % majorminor
@@ -306,10 +307,11 @@ def check_solr_version_tests():
   os.chdir(base_dir)
   print('ok')
 
-def check_backcompat_tests():
+def check_backcompat_tests(on_trunk):
   print('  checking backcompat tests...', end='')
   base_dir = os.getcwd()
-  os.chdir('lucene/backwards-codecs') 
+  basedir = 'lucene/backwards-codecs' if on_trunk else 'lucene/core'
+  os.chdir(basedir) 
   run('ant test -Dtestcase=TestBackwardsCompatibility')
   os.chdir(base_dir)
   print('ok')
