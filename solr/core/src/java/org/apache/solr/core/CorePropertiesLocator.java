@@ -120,15 +120,20 @@ public class CorePropertiesLocator implements CoresLocator {
   public List<CoreDescriptor> discover(CoreContainer cc) {
     logger.info("Looking for core definitions underneath {}", rootDirectory.getAbsolutePath());
     List<CoreDescriptor> cds = Lists.newArrayList();
+    if (rootDirectory.canRead() == false) {
+      throw new RuntimeException("Solr home '" + rootDirectory.getAbsolutePath() + "' doesn't have read permissions");
+    }
     discoverUnder(rootDirectory, cds, cc);
     logger.info("Found {} core definitions", cds.size());
     return cds;
   }
 
   private void discoverUnder(File root, List<CoreDescriptor> cds, CoreContainer cc) {
-    if (!root.exists())
-      return;
     for (File child : root.listFiles()) {
+      if (child.canRead() == false) {
+        logger.warn("Cannot read directory or file during core discovery '" +  child.getAbsolutePath() + "' during core discovery. Skipping");
+        continue;
+      }
       File propertiesFile = new File(child, PROPERTIES_FILENAME);
       if (propertiesFile.exists()) {
         CoreDescriptor cd = buildCoreDescriptor(propertiesFile, cc);

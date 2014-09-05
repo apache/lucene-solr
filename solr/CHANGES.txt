@@ -199,6 +199,9 @@ Other Changes
 * SOLR-6073: Remove helper methods from CollectionsRequest (SolrJ) for CollectionsAPI
   calls and move to a builder design for the same. (Varun Thacker, Anshum Gupta)
 
+* SOLR-5322: core discovery can fail w/NPE and no explanation if a non-readable directory exists
+  (Said Chavkin, Erick Erickson)
+
 
 ==================  4.10.0 =================
 
