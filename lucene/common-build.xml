@@ -310,7 +310,7 @@
 
   <!-- temporary for cleanup of java.specification.version, to be in format "x.y" -->
   <loadresource property="-cleaned.specification.version">
-    <string value="${java.specification.version}"/>
+    <propertyresource name="java.specification.version"/>
     <filterchain>
       <tokenfilter>
         <filetokenizer/>
@@ -894,7 +894,7 @@
 
         <!-- create a fileset pattern that matches ${tests.class}. -->
         <loadresource property="tests.explicitclass" quiet="true">
-          <string value="${tests.class}" />
+          <propertyresource name="tests.class" />
           <filterchain>
             <tokenfilter>
               <filetokenizer/>
