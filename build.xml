@@ -18,11 +18,11 @@
  -->
 
 <project name="lucene-solr" default="-projecthelp" basedir=".">
-  <!-- Look for property definition in various *build.properties files -->
+  <!-- Give user a chance to override without editing this file
+      (and without typing -D each time it compiles it -->
   <property file="${user.home}/lucene.build.properties"/>
   <property file="${user.home}/build.properties"/>
-  <property file="${basedir}/build.properties"/>
-  <property file="lucene/build.properties"/><!-- hack for Lucene users, clones Lucene's common-build.xml -->
+  <property file="lucene/build.properties"/><!-- ${common.dir} -->
 
   <!-- include version number from property file (includes "version.*" properties) -->
   <loadproperties srcFile="lucene/version.properties"/>
