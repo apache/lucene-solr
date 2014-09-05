@@ -78,7 +78,6 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
         ContentStream stream, UpdateRequestProcessor processor) throws Exception {
 
       ContentStreamLoader loader = pathVsLoaders.get(req.getContext().get("path"));
-      log.info("$$$$$$$ used the pathVsLoaders {} ",req.getContext().get("path"));
       if(loader == null) {
         String type = req.getParams().get(UpdateParams.ASSUME_CONTENT_TYPE);
         if (type == null) {
