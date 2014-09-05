@@ -459,7 +459,7 @@ IF "%FG%"=="1" (
     -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -jar start.jar
 ) ELSE (
   START "" "%JAVA%" -server -Xss256k %SOLR_JAVA_MEM% %START_OPTS% -DSTOP.PORT=%STOP_PORT% -DSTOP.KEY=%STOP_KEY% ^
-    -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -jar start.jar > "%SOLR_TIP%\bin\solr-%SOLR_PORT%-console.log"
+    -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -jar start.jar > "%SOLR_SERVER_DIR%\logs\solr-%SOLR_PORT%-console.log"
 )
 
 goto done

@@ -176,6 +176,9 @@ Bug Fixes
 * SOLR-6447: bin/solr script needs to pass -DnumShards=1 for boostrapping collection1
   when starting Solr in cloud mode. (Timothy Potter)
 
+* SOLR-6467: bin/solr script should direct stdout/stderr when starting in the background
+  to the solr-PORT-console.log in the logs directory instead of bin. (Timothy Potter)
+
 Other Changes
 ---------------------
 
