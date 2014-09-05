@@ -73,24 +73,36 @@
     <echo>You can find the merged Lucene/Solr Clover report in '${clover.report.dir}'.</echo>
   </target>
 
-  <target name="-run-maven-build" depends="install-maven-tasks">
+  <target name="-run-maven-build" depends="install-maven-tasks,resolve-groovy">
     <!-- we load all user properties from files again using a prefix, to only pass those down, not all of Ant: -->
     <property file="${user.home}/lucene.build.properties" prefix="m2userprop."/>
     <property file="${user.home}/build.properties" prefix="m2userprop."/>
     <property file="${common.dir}/build.properties" prefix="m2userprop."/>
-    <mvn xmlns="antlib:org.apache.maven.artifact.ant" pom="${maven-build-dir}/pom.xml"
-      mavenVersion="${maven-version}" failonerror="true" fork="true">
-      <arg value="-fae"/>
-      <arg value="install"/>
-      <syspropertyset>
+    <propertyset id="maven.exec.properties">
+      <propertyset>
         <propertyref prefix="m2userprop."/>
         <mapper type="glob" from="m2userprop.*" to="*"/>
-      </syspropertyset>
+      </propertyset>
       <!-- order is important: later ones override previous ones (against common Ant behaviour): -->
-      <syspropertyset>
+      <propertyset>
         <propertyref builtin="commandline"/>
-      </syspropertyset>
-    </mvn>
+      </propertyset>
+    </propertyset>
+    <!-- execute Maven using maven-ant-tasks, passing all collected properties as -D args: -->
+    <groovy><![CDATA[
+      import groovy.xml.NamespaceBuilder;
+      def pomFile = properties['maven-build-dir']+'/pom.xml';
+      def artifact = NamespaceBuilder.newInstance(ant, 'antlib:org.apache.maven.artifact.ant');
+      artifact.mvn(pom:pomFile, mavenVersion:properties['maven-version'], failonerror:true, fork:true) {
+        project.getReference('maven.exec.properties').properties.each { k, v ->
+          if (!k.startsWith('ant.')) { // filter internal ant properties
+            arg(value: '-D' + k + '=' + v);
+          }
+        };
+        arg(value:'-fae');
+        arg(value:'install');
+      };
+    ]]></groovy>
   </target>
 
   <target name="-check-svn-working-copy" depends="ivy-availability-check,ivy-fail,ivy-configure,resolve-groovy">
