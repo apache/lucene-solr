@@ -191,7 +191,7 @@ public class JsonLoader extends ContentStreamLoader {
 
     private void handleSplitMode(String split, String[] fields) throws IOException {
       if(split == null) split = "/";
-      if(fields == null || fields.length ==0) fields = new String[]{"/*"};
+      if(fields == null || fields.length ==0) fields = new String[]{"/**"};
       final boolean echo = "true".equals( req.getParams().get("echo"));
       JsonRecordReader jsonRecordReader = JsonRecordReader.getInst(split, Arrays.asList(fields));
       jsonRecordReader.streamRecords(parser,new JsonRecordReader.Handler() {
