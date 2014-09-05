@@ -349,10 +349,10 @@ def read_config():
   parser.add_argument('-r', '--downstream-repo', help='Path to downstream checkout for given changeid')
   c = parser.parse_args()
 
-  branch_type = find_branch_type()
-  c.matching_branch = c.version.is_bugfix_release() and branch_type == 'release' or \
-                      c.version.is_minor_release() and branch_type == 'stable' or \
-                      branch_type == 'major'
+  c.branch_type = find_branch_type()
+  c.matching_branch = c.version.is_bugfix_release() and c.branch_type == 'release' or \
+                      c.version.is_minor_release() and c.branch_type == 'stable' or \
+                      c.branch_type == 'major'
 
   if c.matching_branch:
     c.previous_version = Version.parse(find_previous_version())
@@ -390,10 +390,11 @@ def main():
     update_example_solrconfigs(c.version)
 
   run_backcompat_tests = False
+  on_trunk = c.branch_type == 'trunk'
   if not c.version.is_bugfix_release() and codec_exists(c.previous_version):
     print('\nCreating backwards compatibility tests')
-    create_backcompat_indexes(c.previous_version)
-    update_backcompat_tests(c.previous_version)
+    create_backcompat_indexes(c.previous_version, on_trunk)
+    update_backcompat_tests(c.previous_version, on_trunk)
     run_backcompat_tests = True
 
   if c.version.is_major_release():
@@ -406,7 +407,7 @@ def main():
     check_lucene_version_tests()
     check_solr_version_tests()
     if run_backcompat_tests: 
-      check_backcompat_tests()
+      check_backcompat_tests(on_trunk)
 
   print()
 
