@@ -74,33 +74,29 @@
   </target>
 
   <target name="-run-maven-build" depends="install-maven-tasks,resolve-groovy">
-    <!-- we load all user properties from files again using a prefix, to only pass those down, not all of Ant: -->
-    <property file="${user.home}/lucene.build.properties" prefix="m2userprop."/>
-    <property file="${user.home}/build.properties" prefix="m2userprop."/>
-    <property file="${common.dir}/build.properties" prefix="m2userprop."/>
-    <propertyset id="maven.exec.properties">
-      <propertyset>
-        <propertyref prefix="m2userprop."/>
-        <mapper type="glob" from="m2userprop.*" to="*"/>
-      </propertyset>
-      <!-- order is important: later ones override previous ones (against common Ant behaviour): -->
-      <propertyset>
-        <propertyref builtin="commandline"/>
-      </propertyset>
-    </propertyset>
-    <!-- execute Maven using maven-ant-tasks, passing all collected properties as -D args: -->
     <groovy><![CDATA[
       import groovy.xml.NamespaceBuilder;
-      def pomFile = properties['maven-build-dir']+'/pom.xml';
+      import org.apache.tools.ant.Project;
+      def userHome = properties['user.home'], commonDir = properties['common.dir'];
+      def propPrefix = '-mvn.inject.'; int propPrefixLen = propPrefix.length();
+      def subProject = project.createSubProject();
+      project.copyUserProperties(subProject);
+      subProject.initProperties();
+      new AntBuilder(subProject).sequential{
+        property(file: userHome+'/lucene.build.properties', prefix: propPrefix);
+        property(file: userHome+'/build.properties', prefix: propPrefix);
+        property(file: commonDir+'/build.properties', prefix: propPrefix);
+      };
+      def cmdlineProps = subProject.properties
+        .findAll{ k, v -> k.startsWith(propPrefix) }
+        .collectEntries{ k, v -> [k.substring(propPrefixLen), v] };
+      cmdlineProps << project.userProperties.findAll{ k, v -> !k.startsWith('ant.') };
       def artifact = NamespaceBuilder.newInstance(ant, 'antlib:org.apache.maven.artifact.ant');
-      artifact.mvn(pom:pomFile, mavenVersion:properties['maven-version'], failonerror:true, fork:true) {
-        project.getReference('maven.exec.properties').properties.each { k, v ->
-          if (!k.startsWith('ant.')) { // filter internal ant properties
-            arg(value: '-D' + k + '=' + v);
-          }
-        };
-        arg(value:'-fae');
-        arg(value:'install');
+      task.log('Running Maven with props: ' + cmdlineProps.toString(), Project.MSG_INFO);
+      artifact.mvn(pom: properties['maven-build-dir']+'/pom.xml', mavenVersion: properties['maven-version'], failonerror: true, fork: true) {
+        cmdlineProps.each{ k, v -> arg(value: '-D' + k + '=' + v) };
+        arg(value: '-fae');
+        arg(value: 'install');
       };
     ]]></groovy>
   </target>
