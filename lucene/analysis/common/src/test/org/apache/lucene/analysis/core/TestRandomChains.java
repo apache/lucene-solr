@@ -148,7 +148,9 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           CrankyTokenFilter.class,
           // Not broken: we forcefully add this, so we shouldn't
           // also randomly pick it:
-          ValidatingTokenFilter.class)) {
+          ValidatingTokenFilter.class, 
+          // TODO: needs to be a tokenizer, doesnt handle graph inputs properly (a shingle or similar following will then cause pain)
+          WordDelimiterFilter.class)) {
         for (Constructor<?> ctor : c.getConstructors()) {
           brokenConstructors.put(ctor, ALWAYS);
         }
@@ -175,9 +177,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           // TODO: LUCENE-4983
           CommonGramsFilter.class,
           // TODO: doesn't handle graph inputs
-          CommonGramsQueryFilter.class,
-          // TODO: probably doesnt handle graph inputs, too afraid to try
-          WordDelimiterFilter.class)) {
+          CommonGramsQueryFilter.class)) {
         for (Constructor<?> ctor : c.getConstructors()) {
           brokenOffsetsConstructors.put(ctor, ALWAYS);
         }
