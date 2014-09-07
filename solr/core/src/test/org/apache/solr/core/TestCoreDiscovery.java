@@ -241,7 +241,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
         new File(coreDir, "core2" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
 
     File toSet = new File(coreDir, "core1");
-    toSet.setReadable(false, false);
+    assumeTrue("Cannot make " + toSet + " non-readable. Test aborted.", toSet.setReadable(false, false));
     CoreContainer cc = init();
     try (SolrCore core1 = cc.getCore("core1");
          SolrCore core2 = cc.getCore("core2")) {
@@ -266,7 +266,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
     File toSet = new File(solrHomeDirectory, "cantReadDir");
     assertTrue("Should have been able to make directory '" + toSet.getAbsolutePath() + "' ", toSet.mkdirs());
-    toSet.setReadable(false, false);
+    assumeTrue("Cannot make " + toSet + " non-readable. Test aborted.", toSet.setReadable(false, false));
     CoreContainer cc = init();
     try (SolrCore core1 = cc.getCore("core1");
          SolrCore core2 = cc.getCore("core2")) {
@@ -289,7 +289,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
     File toSet = new File(solrHomeDirectory, "cantReadFile");
     assertTrue("Should have been able to make file '" + toSet.getAbsolutePath() + "' ", toSet.createNewFile());
-    toSet.setReadable(false, false);
+    assumeTrue("Cannot make " + toSet + " non-readable. Test aborted.", toSet.setReadable(false, false));
     CoreContainer cc = init();
     try (SolrCore core1 = cc.getCore("core1")) {
       assertNotNull(core1); // Should still be able to create core despite r/o file.
@@ -325,7 +325,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     addCoreWithProps(makeCorePropFile("core1", false, true),
         new File(homeDir, "core1" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
 
-    homeDir.setReadable(false, false);
+    assumeTrue("Cannot make " + homeDir + " non-readable. Test aborted.", homeDir.setReadable(false, false));
 
     CoreContainer cc = null;
     try {
