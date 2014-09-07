@@ -264,6 +264,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
               "fmap.language", "extractedLanguage",
               "literal.extractionLiteral", "one",
               "literal.extractionLiteral", "two",
+              "fmap.X-Parsed-By", "ignored_parser",
               "fmap.Last-Modified", "extractedDate"
       );
       // TODO: original author did not specify why an exception should be thrown... how to fix?
@@ -279,6 +280,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
             "literal.id", "three",
             "fmap.language", "extractedLanguage",
             "literal.extractionLiteral", "one",
+            "fmap.X-Parsed-By", "ignored_parser",
             "fmap.Last-Modified", "extractedDate"
     );
     assertU(commit());
@@ -297,6 +299,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
             "fmap.Author", "extractedAuthor",
             "literal.id", "one",
             "fmap.language", "extractedLanguage",
+            "fmap.X-Parsed-By", "ignored_parser",
             "fmap.content", "extractedContent",
             ExtractingParams.STREAM_TYPE, "text/plain"
     );
@@ -316,6 +319,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
             "fmap.Author", "extractedAuthor",
             "literal.id", "one",
             "fmap.language", "extractedLanguage",
+            "fmap.X-Parsed-By", "ignored_parser",
             "fmap.content", "extractedContent",
             ExtractingParams.RESOURCE_NAME, "extraction/version_control.txt"
     );
