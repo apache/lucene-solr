@@ -73,6 +73,9 @@ License: Common Development and Distribution License (CDDL) v1.0 (https://glassf
 The HdfsDirectory and BlockDirectory were derived from
 the Apache Blur incubating project and are Apache License 2.0.
 
+ASM (Java bytecode manipulation and analysis framework): http://asm.ow2.org/
+Copyright (c) 2000-2005 INRIA, France Telecom
+
 =========================================================================
 ==  Apache Lucene Notice                                               ==
 =========================================================================
@@ -336,8 +339,6 @@ Copyright (c) 2003-2005, www.fontbox.org
 
 Copyright (c) 1995-2005 International Business Machines Corporation and others
 
-Copyright (c) 2000-2005 INRIA, France Telecom
-
 Copyright 2001-2005 (C) MetaStuff, Ltd. All Rights Reserved.
 
 Copyright 2004 Sun Microsystems, Inc. (Rome JAR)
@@ -349,6 +350,12 @@ Copyright (C) 1994-2007 by the Xiph.org Foundation, http://www.xiph.org/ (OggVor
 Copyright 2012 Kohei Taketa juniversalchardet (http://code.google.com/p/juniversalchardet/)
 
 Lasse Collin and others, XZ for Java (http://tukaani.org/xz/java.html)
+
+java-libpst is a pure java library for the reading of Outlook PST and OST files.
+https://github.com/rjohnsondev/java-libpst
+
+JMatIO is a JAVA library to read/write/manipulate with Matlab binary MAT-files.
+http://www.sourceforge.net/projects/jmatio
 
 =========================================================================
 ==  Language Detection Notices                                         ==

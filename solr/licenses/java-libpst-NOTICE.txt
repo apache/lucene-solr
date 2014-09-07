@@ -1,0 +1,4 @@
+java-libpst is a pure java library for the reading of Outlook PST and OST files.
+https://github.com/rjohnsondev/java-libpst
+
+java-libpst is licensed under both the LGPL and Apache License v2.0
