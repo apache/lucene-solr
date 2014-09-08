@@ -179,6 +179,10 @@ Bug Fixes
 * SOLR-6467: bin/solr script should direct stdout/stderr when starting in the background
   to the solr-PORT-console.log in the logs directory instead of bin. (Timothy Potter)
 
+* SOLR-6187: SOLR-6154: facet.mincount ignored in range faceting using distributed search
+  NOTE: This does NOT fixed for the (deprecated) facet.date idiom, use facet.range
+  instead. (Erick Erickson, Zacchio Bagnati, Ronald Matamoros, Vamsee Yalargadda)
+
 Other Changes
 ---------------------
 
