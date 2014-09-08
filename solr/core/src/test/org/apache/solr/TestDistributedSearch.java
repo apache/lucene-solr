@@ -29,7 +29,9 @@ import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.RangeFacet;
 import org.apache.solr.cloud.ChaosMonkey;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -73,14 +75,14 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
 
     del("*:*");
-    indexr(id,1, i1, 100, tlong, 100,t1,"now is the time for all good men", 
+    indexr(id,1, i1, 100, tlong, 100,t1,"now is the time for all good men",
            tdate_a, "2010-04-20T11:00:00Z",
            tdate_b, "2009-08-20T11:00:00Z",
            "foo_f", 1.414f, "foo_b", "true", "foo_d", 1.414d);
-    indexr(id,2, i1, 50 , tlong, 50,t1,"to come to the aid of their country.", 
+    indexr(id,2, i1, 50 , tlong, 50,t1,"to come to the aid of their country.",
            tdate_a, "2010-05-02T11:00:00Z",
            tdate_b, "2009-11-02T11:00:00Z");
-    indexr(id,3, i1, 2, tlong, 2,t1,"how now brown cow", 
+    indexr(id,3, i1, 2, tlong, 2,t1,"how now brown cow",
            tdate_a, "2010-05-03T11:00:00Z");
     indexr(id,4, i1, -100 ,tlong, 101,
            t1,"the quick fox jumped over the lazy dog", 
@@ -182,13 +184,13 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
     // a facet query to test out chars out of the ascii range
     query("q","*:*", "rows",0, "facet","true", "facet.query","{!term f=foo_s}international\u00ff\u01ff\u2222\u3333");
-    
+
     // simple field facet on date fields
-    rsp = query("q","*:*", "rows", 0, 
+    rsp = query("q","*:*", "rows", 0,
                 "facet","true", "facet.limit", 1, // TODO: limit shouldn't be needed: SOLR-6386
                 "facet.field", tdate_a);
     assertEquals(1, rsp.getFacetFields().size());
-    rsp = query("q","*:*", "rows", 0, 
+    rsp = query("q","*:*", "rows", 0,
                 "facet","true", "facet.limit", 1, // TODO: limit shouldn't be needed: SOLR-6386
                 "facet.field", tdate_b, "facet.field", tdate_a);
     assertEquals(2, rsp.getFacetFields().size());
@@ -232,7 +234,85 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           "facet.range.start",200, 
           "facet.range.gap",100, 
           "f."+tlong+".facet.range.end",900);
-    
+
+    // Test mincounts. Do NOT want to go through all the stuff where with validateControlData in query() method
+    // Purposely packing a _bunch_ of stuff together here to insure that the proper level of mincount is used for
+    // each
+    ModifiableSolrParams minParams = new ModifiableSolrParams();
+    minParams.set("q","*:*");
+    minParams.set("rows", 1);
+    minParams.set("facet", "true");
+    minParams.set("facet.missing", "true");
+    minParams.set("facet.field", i1);
+    minParams.set("facet.missing", "true");
+    minParams.set("facet.mincount", 2);
+
+    // Return a separate section of ranges over i1. Should respect global range mincount
+    minParams.set("facet.range", i1);
+    minParams.set("f." + i1 + ".facet.range.start", 0);
+    minParams.set("f." + i1 + ".facet.range.gap", 200);
+    minParams.set("f." + i1 + ".facet.range.end", 1200);
+    minParams.set("f." + i1 + ".facet.mincount", 4);
+
+
+    // Return a separate section of ranges over tlong Should respect facet.mincount
+    minParams.add("facet.range", tlong);
+    minParams.set("f." + tlong + ".facet.range.start", 0);
+    minParams.set("f." + tlong + ".facet.range.gap", 100);
+    minParams.set("f." + tlong + ".facet.range.end", 1200);
+    // Repeat with a range type of date
+    minParams.add("facet.range", tdate_b);
+    minParams.set("f." + tdate_b + ".facet.range.start", "2009-02-01T00:00:00Z");
+    minParams.set("f." + tdate_b + ".facet.range.gap", "+1YEAR");
+    minParams.set("f." + tdate_b + ".facet.range.end", "2011-01-01T00:00:00Z");
+    minParams.set("f." + tdate_b + ".facet.mincount", 3);
+
+    // Insure that global mincount is respected for facet queries
+    minParams.set("facet.query", tdate_a + ":[2010-01-01T00:00:00Z TO 2011-01-01T00:00:00Z]"); // Should return some counts
+    //minParams.set("facet.query", tdate_a + ":[* TO *]"); // Should be removed
+    minParams.add("facet.query", tdate_b + ":[2008-01-01T00:00:00Z TO 2009-09-01T00:00:00Z]"); // Should be removed from response
+
+
+    setDistributedParams(minParams);
+    QueryResponse minResp = queryServer(minParams);
+
+    ModifiableSolrParams eParams = new ModifiableSolrParams();
+    eParams.set("q",tdate_b + ":[* TO *]");
+    eParams.set("rows", 1000);
+    eParams.set("fl", tdate_b);
+    setDistributedParams(eParams);
+    QueryResponse eResp = queryServer(eParams);
+
+    // Check that exactly the right numbers of counts came through
+    assertEquals("Should be exactly 2 range facets returned after minCounts taken into account ", 3, minResp.getFacetRanges().size());
+    assertEquals("Should only be 1 query facets returned after minCounts taken into account ", 1, minResp.getFacetQuery().size());
+
+    checkMinCountsField(minResp.getFacetField(i1).getValues(), new Object[]{null, 55L}); // Should just be the null entries for field
+
+    checkMinCountsRange(minResp.getFacetRanges().get(0).getCounts(), new Object[]{"0", 5L}); // range on i1
+    checkMinCountsRange(minResp.getFacetRanges().get(1).getCounts(), new Object[]{"0", 3L, "100", 3L}); // range on tlong
+    checkMinCountsRange(minResp.getFacetRanges().get(2).getCounts(), new Object[]{"2009-02-01T00:00:00Z",  3L}); // date (range) on tvh
+
+    assertTrue("Should have a facet for tdate_a", minResp.getFacetQuery().containsKey("a_n_tdt:[2010-01-01T00:00:00Z TO 2011-01-01T00:00:00Z]"));
+    int qCount = minResp.getFacetQuery().get("a_n_tdt:[2010-01-01T00:00:00Z TO 2011-01-01T00:00:00Z]");
+    assertEquals("tdate_a should be 5", qCount, 5);
+
+    // Now let's do some queries, the above is getting too complex
+    minParams = new ModifiableSolrParams();
+    minParams.set("q","*:*");
+    minParams.set("rows", 1);
+    minParams.set("facet", "true");
+    minParams.set("facet.mincount", 3);
+
+    minParams.set("facet.query", tdate_a + ":[2010-01-01T00:00:00Z TO 2010-05-04T00:00:00Z]");
+    minParams.add("facet.query", tdate_b + ":[2009-01-01T00:00:00Z TO 2010-01-01T00:00:00Z]"); // Should be removed
+    setDistributedParams(minParams);
+    minResp = queryServer(minParams);
+
+    assertEquals("Should only be 1 query facets returned after minCounts taken into account ", 1, minResp.getFacetQuery().size());
+    assertTrue("Should be an entry for a_n_tdt", minResp.getFacetQuery().containsKey("a_n_tdt:[2010-01-01T00:00:00Z TO 2010-05-04T00:00:00Z]"));
+    qCount = minResp.getFacetQuery().get("a_n_tdt:[2010-01-01T00:00:00Z TO 2010-05-04T00:00:00Z]");
+    assertEquals("a_n_tdt should have a count of 4 ", qCount, 4);
     //  variations of fl
     query("q","*:*", "fl","score","sort",i1 + " desc");
     query("q","*:*", "fl",i1 + ",score","sort",i1 + " desc");
@@ -463,7 +543,33 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       }
     }
   }
-  
+
+  protected void checkMinCountsField(List<FacetField.Count> counts, Object[] pairs) {
+    assertEquals("There should be exactly " + pairs.length / 2 + " returned counts. There were: " + counts.size(), counts.size(), pairs.length / 2);
+    assertTrue("Variable len param must be an even number, it was: " + pairs.length, (pairs.length % 2) == 0);
+    for (int pairs_idx = 0, counts_idx = 0; pairs_idx < pairs.length; pairs_idx += 2, counts_idx++) {
+      String act_name = counts.get(counts_idx).getName();
+      long act_count = counts.get(counts_idx).getCount();
+      String exp_name = (String) pairs[pairs_idx];
+      long exp_count = (long) pairs[pairs_idx + 1];
+      assertEquals("Expected ordered entry " + exp_name + " at position " + counts_idx + " got " + act_name, act_name, exp_name);
+      assertEquals("Expected count for entry: " + exp_name + " at position " + counts_idx + " got " + act_count, act_count, exp_count);
+    }
+  }
+
+  protected void checkMinCountsRange(List<RangeFacet.Count> counts, Object[] pairs) {
+    assertEquals("There should be exactly " + pairs.length / 2 + " returned counts. There were: " + counts.size(), counts.size(), pairs.length / 2);
+    assertTrue("Variable len param must be an even number, it was: " + pairs.length, (pairs.length % 2) == 0);
+    for (int pairs_idx = 0, counts_idx = 0; pairs_idx < pairs.length; pairs_idx += 2, counts_idx++) {
+      String act_name = counts.get(counts_idx).getValue();
+      long act_count = counts.get(counts_idx).getCount();
+      String exp_name = (String) pairs[pairs_idx];
+      long exp_count = (long) pairs[pairs_idx + 1];
+      assertEquals("Expected ordered entry " + exp_name + " at position " + counts_idx + " got " + act_name, act_name, exp_name);
+      assertEquals("Expected count for entry: " + exp_name + " at position " + counts_idx + " got " + act_count, act_count, exp_count);
+    }
+  }
+
   protected void queryPartialResults(final List<String> upShards,
                                      final List<SolrServer> upClients, 
                                      Object... q) throws Exception {
