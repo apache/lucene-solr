@@ -36,7 +36,6 @@
 
   <property name="dev-tools.dir" location="${common.dir}/../dev-tools"/>
   <property name="prettify.dir" location="${common.dir}/tools/prettify"/>
-  <property name="maven.build.dir" location="${build.dir}/maven"/>
   <property name="license.dir" location="${common.dir}/licenses"/>
 
   <tstamp>
@@ -137,8 +136,6 @@
 
   <property name="tests.heapdump.args" value=""/>
 
-  <property name="tests.workDir" location="${build.dir}/test"/>
-
   <!-- Override these in your local properties to your desire. -->
   <!-- Show simple class names (no package) in test suites. -->
   <property name="tests.useSimpleNames" value="false" />
@@ -232,6 +229,7 @@
   <property name="m2.repository.id" value="local"/>
   <property name="m2.credentials.prompt" value="true"/>
 
+  <property name="tests.workDir" location="${build.dir}/test"/>
   <property name="junit.output.dir" location="${build.dir}/test"/>
   <property name="junit.reports" location="${build.dir}/test/reports"/>
 
