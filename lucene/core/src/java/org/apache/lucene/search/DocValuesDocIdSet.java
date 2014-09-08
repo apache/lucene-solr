@@ -46,15 +46,6 @@ public abstract class DocValuesDocIdSet extends DocIdSet {
    */
   protected abstract boolean matchDoc(int doc);
 
-  /**
-   * this DocIdSet is always cacheable (does not go back
-   * to the reader for iteration)
-   */
-  @Override
-  public final boolean isCacheable() {
-    return true;
-  }
-
   @Override
   public long ramBytesUsed() {
     return 0L;

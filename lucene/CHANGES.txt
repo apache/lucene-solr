@@ -145,6 +145,9 @@ Bug Fixes
   possibly deleting a file that's still in use in the index, leading
   to corruption.  (Mike McCandless)
 
+* LUCENE-5922: DocValuesDocIdSet on 5.x and FieldCacheDocIdSet on 4.x
+  are not cacheable. (Adrien Grand)
+
 Build
 
 * LUCENE-5909: Smoke tester now has better command line parsing and
