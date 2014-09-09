@@ -186,6 +186,8 @@ Bug Fixes
 * SOLR-6457: LBHttpSolrServer: ArrayIndexOutOfBoundsException risk if counter overflows
   (longkey via Noble Paul)
 
+* SOLR-6493: Fix fq exclusion via "ex" local param in multivalued stats.field (hossman)
+
 Other Changes
 ---------------------
 

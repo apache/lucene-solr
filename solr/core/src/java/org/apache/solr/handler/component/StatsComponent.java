@@ -311,7 +311,7 @@ class SimpleStats {
 
         if (sf.multiValued() || ft.multiValuedFieldCache()) {
           // TODO: should this also be used for single-valued string fields? (should work fine)
-          stv = DocValuesStats.getCounts(searcher, sf.getName(), docs, calcDistinct, facets).getStatsValues();
+          stv = DocValuesStats.getCounts(searcher, sf.getName(), base, calcDistinct, facets).getStatsValues();
         } else {
           stv = getFieldCacheStats(statsField, calcDistinct, facets);
         }
