@@ -219,8 +219,12 @@ API Changes
   CoveredBy. The area requirement on the predicates was removed, and Overlaps' definition
   was fixed. (David Smiley)
 
-* LUCENE-5850: Made Version handling more robust and extensible. Deprecated Constants.LUCENE_MAIN_VERSION, Constants.LUCENE_VERSION and current Version constants of the form LUCENE_X_Y. Added version constants that include bugfix number of form LUCENE_X_Y_Z.  Changed Version.LUCENE_CURRENT to Version.LATEST. CheckIndex now prints the Lucene version used to write
-  each segment.  (Ryan Ernst, Uwe Schindler, Robert Muir, Mike McCandless)
+* LUCENE-5850: Made Version handling more robust and extensible. Deprecated
+  Constants.LUCENE_MAIN_VERSION, Constants.LUCENE_VERSION and current Version
+  constants of the form LUCENE_X_Y. Added version constants that include bugfix
+  number of form LUCENE_X_Y_Z.  Changed Version.LUCENE_CURRENT to Version.LATEST.
+  CheckIndex now prints the Lucene version used to write each segment.
+  (Ryan Ernst, Uwe Schindler, Robert Muir, Mike McCandless)
 
 * LUCENE-5836: BytesRef has been splitted into BytesRef, whose intended usage is
   to be just a reference to a section of a larger byte[] and BytesRefBuilder
