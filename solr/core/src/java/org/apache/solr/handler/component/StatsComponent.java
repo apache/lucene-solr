@@ -39,7 +39,6 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.DocValuesStats;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.UnInvertedField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
