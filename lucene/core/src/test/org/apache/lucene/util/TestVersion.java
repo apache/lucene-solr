@@ -19,6 +19,7 @@ package org.apache.lucene.util;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.Locale;
 import java.util.Random;
 
 public class TestVersion extends LuceneTestCase {
@@ -42,17 +43,29 @@ public class TestVersion extends LuceneTestCase {
     assertEquals("4.2.0", Version.LUCENE_4_2_0.toString());
     assertEquals("4.2.0", Version.LUCENE_4_2.toString());
     assertEquals("4.2.1", Version.LUCENE_4_2_1.toString());
-    assertEquals("4.0.0.1", Version.LUCENE_4_0_0_ALPHA.toString());
-    assertEquals("4.0.0.2", Version.LUCENE_4_0_0_BETA.toString());
+    assertEquals("4.0.0", Version.LUCENE_4_0_0_ALPHA.toString());
+    assertEquals("4.0.0.1", Version.LUCENE_4_0_0_BETA.toString());
+    assertEquals("4.0.0.2", Version.LUCENE_4_0_0.toString());
   }
 
   public void testParseLeniently() {
-    assertEquals(Version.LUCENE_4_0_0, Version.parseLeniently("4.0"));
-    assertEquals(Version.LUCENE_4_0_0, Version.parseLeniently("4.0.0"));
-    assertEquals(Version.LUCENE_4_0_0, Version.parseLeniently("LUCENE_40"));
-    assertEquals(Version.LUCENE_4_0_0, Version.parseLeniently("LUCENE_4_0"));
+    assertEquals(Version.LUCENE_4_9_0, Version.parseLeniently("LUCENE_49"));
+    assertEquals(Version.LUCENE_4_9_0, Version.parseLeniently("LUCENE_4_9"));
+    assertEquals(Version.LUCENE_4_9_0, Version.parseLeniently("LUCENE_4_9_0"));
+    assertEquals(Version.LUCENE_4_9_0, Version.parseLeniently("lucene_49"));
+    assertEquals(Version.LUCENE_4_9_0, Version.parseLeniently("Lucene_4_9"));
+    assertEquals(Version.LUCENE_4_9_0, Version.parseLeniently("Lucene_4_9_0"));
+    assertEquals(Version.LUCENE_4_10_0, Version.parseLeniently("LUCENE_4_10"));
+    assertEquals(Version.LUCENE_4_10_0, Version.parseLeniently("LUCENE_4_10_0"));
+    assertEquals(Version.LUCENE_4_0_0_ALPHA, Version.parseLeniently("4.0"));
+    assertEquals(Version.LUCENE_4_0_0_ALPHA, Version.parseLeniently("4.0.0"));
+    assertEquals(Version.LUCENE_4_0_0_ALPHA, Version.parseLeniently("LUCENE_40"));
+    assertEquals(Version.LUCENE_4_0_0_ALPHA, Version.parseLeniently("LUCENE_4_0"));
+    assertEquals(Version.LUCENE_4_0_0, Version.parseLeniently("LUCENE_4_0_0"));
     assertEquals(Version.LATEST, Version.parseLeniently("LATEST"));
+    assertEquals(Version.LATEST, Version.parseLeniently("latest"));
     assertEquals(Version.LATEST, Version.parseLeniently("LUCENE_CURRENT"));
+    assertEquals(Version.LATEST, Version.parseLeniently("lucene_current"));
   }
   
   public void testParseLenientlyExceptions() {
@@ -62,14 +75,41 @@ public class TestVersion extends LuceneTestCase {
     } catch (IllegalArgumentException iae) {
       // pass
     }
+    try {
+      Version.parseLeniently("LUCENE_410");
+      fail();
+    } catch (IllegalArgumentException iae) {
+      // pass
+    }
+    try {
+      Version.parseLeniently("LUCENE41");
+      fail();
+    } catch (IllegalArgumentException iae) {
+      // pass
+    }
+  }
+
+  public void testParseLenientlyOnAllConstants() throws Exception {
+    boolean atLeastOne = false;
+    for (Field field : Version.class.getDeclaredFields()) {
+      if (Modifier.isStatic(field.getModifiers()) && field.getType() == Version.class) {
+        atLeastOne = true;
+        Version v = (Version)field.get(Version.class);
+        assertEquals(v, Version.parseLeniently(v.toString()));
+        assertEquals(v, Version.parseLeniently(field.getName()));
+        assertEquals(v, Version.parseLeniently(field.getName().toLowerCase(Locale.ROOT)));
+      }
+    }
+    assertTrue(atLeastOne);
   }
 
   public void testParse() {
     assertEquals(Version.LUCENE_5_0_0, Version.parse("5.0.0"));
     assertEquals(Version.LUCENE_4_1_0, Version.parse("4.1"));
-    assertEquals(Version.LUCENE_4_1_0, Version.parseLeniently("4.1.0"));
-    assertEquals(Version.LUCENE_4_0_0_ALPHA, Version.parseLeniently("4.0.0.1"));
-    assertEquals(Version.LUCENE_4_0_0_BETA, Version.parseLeniently("4.0.0.2"));
+    assertEquals(Version.LUCENE_4_1_0, Version.parse("4.1.0"));
+    assertEquals(Version.LUCENE_4_0_0_ALPHA, Version.parse("4.0.0"));
+    assertEquals(Version.LUCENE_4_0_0_BETA, Version.parse("4.0.0.1"));
+    assertEquals(Version.LUCENE_4_0_0, Version.parse("4.0.0.2"));
   }
 
   public void testForwardsCompatibility() {
@@ -166,8 +206,10 @@ public class TestVersion extends LuceneTestCase {
   
   public void testDeprecations() throws Exception {
     // all but the latest version should be deprecated
+    boolean atLeastOne = false;
     for (Field field : Version.class.getDeclaredFields()) {
       if (Modifier.isStatic(field.getModifiers()) && field.getType() == Version.class) {
+        atLeastOne = true;
         Version v = (Version)field.get(Version.class);
         final boolean dep = field.isAnnotationPresent(Deprecated.class);
         if (v.equals(Version.LATEST) && field.getName().equals("LUCENE_CURRENT") == false) {
@@ -177,6 +219,7 @@ public class TestVersion extends LuceneTestCase {
         }
       }
     }
+    assertTrue(atLeastOne);
   }
 
   public void testLatestVersionCommonBuild() {

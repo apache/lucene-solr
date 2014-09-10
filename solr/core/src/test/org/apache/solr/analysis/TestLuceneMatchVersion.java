@@ -51,7 +51,7 @@ public class TestLuceneMatchVersion extends SolrTestCaseJ4 {
 
     type = schema.getFieldType("text40");
     ana = (TokenizerChain) type.getIndexAnalyzer();
-    assertEquals(Version.LUCENE_4_0_0, (ana.getTokenizerFactory()).getLuceneMatchVersion());
+    assertEquals(Version.LUCENE_4_0_0_ALPHA, (ana.getTokenizerFactory()).getLuceneMatchVersion());
     assertEquals(Version.LUCENE_5_0_0, (ana.getTokenFilterFactories()[2]).getLuceneMatchVersion());
 
     type = schema.getFieldType("textTurkishAnalyzerDefault");
@@ -62,6 +62,6 @@ public class TestLuceneMatchVersion extends SolrTestCaseJ4 {
     type = schema.getFieldType("textTurkishAnalyzer40");
     ana1 = type.getIndexAnalyzer();
     assertTrue(ana1 instanceof TurkishAnalyzer);
-    assertEquals(Version.LUCENE_4_0_0, ana1.getVersion());
+    assertEquals(Version.LUCENE_4_0_0_ALPHA, ana1.getVersion());
   }
 }
