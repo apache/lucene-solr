@@ -31,6 +31,8 @@ Bug Fixes
 * SOLR-6024: Fix StatsComponent when using docValues="true" multiValued="true"
   (Vitaliy Zhovtyuk & Tomas Fernandez-Lobbe via hossman)
 
+* SOLR-6493: Fix fq exclusion via "ex" local param in multivalued stats.field (hossman)
+
 Other Changes
 ---------------------
 
