@@ -21,8 +21,12 @@ See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
 Bug Fixes
 ----------------------
+
 * SOLR-6425: If using the new global hdfs block cache option, you can end up
   reading corrupt files on file name reuse. (Mark Miller, Gregory Chanan)
+
+* SOLR-5814: CoreContainer reports incorrect & missleading path for solrconfig.xml 
+  when there are loading problems (Pradeep via hossman)
 
 Other Changes
 ---------------------

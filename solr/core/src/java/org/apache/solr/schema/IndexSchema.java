@@ -591,11 +591,11 @@ public class IndexSchema {
       }
     } catch (SolrException e) {
       throw new SolrException(ErrorCode.getErrorCode(e.code()), e.getMessage() + ". Schema file is " +
-          loader.getInstanceDir() + resourceName, e);
+          loader.getConfigDir() + resourceName, e);
     } catch(Exception e) {
       // unexpected exception...
       throw new SolrException(ErrorCode.SERVER_ERROR,
-          "Schema Parsing Failed: " + e.getMessage() + ". Schema file is " + loader.getInstanceDir() + resourceName,
+          "Schema Parsing Failed: " + e.getMessage() + ". Schema file is " + loader.getConfigDir() + resourceName,
           e);
     }
 

@@ -17,6 +17,7 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -498,14 +499,10 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
       // Did we get the expected message for each of the cores that failed to load? Make sure we don't run afoul of
       // the dreaded slash/backslash difference on Windows and *nix machines.
-      testMessage(cc.getCoreInitFailures(),
-          "badConfig1" + File.separator + "solrconfig.xml");
-      testMessage(cc.getCoreInitFailures(),
-          "badConfig2" + File.separator + "solrconfig.xml");
-      testMessage(cc.getCoreInitFailures(),
-          "badSchema1" + File.separator + "schema.xml");
-      testMessage(cc.getCoreInitFailures(),
-          "badSchema2" + File.separator + "schema.xml");
+      testMessage(cc.getCoreInitFailures(), makePath("badConfig1", "conf", "solrconfig.xml"));
+      testMessage(cc.getCoreInitFailures(), makePath("badConfig2", "conf", "solrconfig.xml"));
+      testMessage(cc.getCoreInitFailures(), makePath("badSchema1", "conf", "schema.xml"));
+      testMessage(cc.getCoreInitFailures(), makePath("badSchema2", "conf", "schema.xml"));
 
       // Status should report that there are failure messages for the bad cores and none for the good cores.
       checkStatus(cc, true, "core1");
@@ -709,6 +706,10 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       entries[i / 2] = new NamedList.NamedListEntry<>(q[i], q[i + 1]);
     }
     return new LocalSolrQueryRequest(core, new NamedList<>(entries));
+  }
+
+  private static final String makePath(String... args) {
+    return StringUtils.join(args, File.separator);
   }
 
   private final static String LOTS_SOLR_XML = " <solr persistent=\"false\"> " +
