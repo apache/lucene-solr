@@ -181,6 +181,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
                                     "41.nocfs",
                                     "42.cfs",
                                     "42.nocfs",
+                                    "44.cfs",
+                                    "44.nocfs",
                                     "45.cfs",
                                     "45.nocfs",
                                     "451.cfs",
