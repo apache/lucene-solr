@@ -37,6 +37,7 @@ import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.request.DocValuesStats;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.UnInvertedField;
 import org.apache.solr.schema.FieldType;
@@ -312,11 +313,15 @@ class SimpleStats {
         SchemaField sf = schema.getField(statsField);
         FieldType ft = sf.getType();
         NamedList<?> stv;
-
+        
         if (sf.multiValued() || ft.multiValuedFieldCache()) {
-          //use UnInvertedField for multivalued fields
-          UnInvertedField uif = UnInvertedField.getUnInvertedField(statsField, searcher);
-          stv = uif.getStats(searcher, docs, calcDistinct, facets).getStatsValues();
+          if(sf.hasDocValues()) {
+            stv = DocValuesStats.getCounts(searcher, sf.getName(), docs, calcDistinct, facets).getStatsValues();
+          } else {
+            //use UnInvertedField for multivalued fields
+            UnInvertedField uif = UnInvertedField.getUnInvertedField(statsField, searcher);
+            stv = uif.getStats(searcher, docs, calcDistinct, facets).getStatsValues();
+          }
         } else {
           stv = getFieldCacheStats(statsField, calcDistinct, facets);
         }

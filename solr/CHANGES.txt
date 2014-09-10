@@ -28,6 +28,9 @@ Bug Fixes
 * SOLR-5814: CoreContainer reports incorrect & missleading path for solrconfig.xml 
   when there are loading problems (Pradeep via hossman)
 
+* SOLR-6024: Fix StatsComponent when using docValues="true" multiValued="true"
+  (Vitaliy Zhovtyuk & Tomas Fernandez-Lobbe via hossman)
+
 Other Changes
 ---------------------
 
