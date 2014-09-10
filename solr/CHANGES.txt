@@ -21,8 +21,17 @@ See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
 Bug Fixes
 ----------------------
-* SOLR-6425: If using the new global hdfs block cache option, you can end up reading corrupt 
-  files on file name reuse. (Mark Miller, Gregory Chanan)
+* SOLR-6425: If using the new global hdfs block cache option, you can end up
+  reading corrupt files on file name reuse. (Mark Miller, Gregory Chanan)
+
+Other Changes
+---------------------
+
+* SOLR-6503: Removed support for parsing netcdf files in Solr Cell because
+  of license issues. If you need support for this format, download the parser
+  JAR yourself (version 4.2) and add it to contrib/extraction/lib folder:
+  http://www.unidata.ucar.edu/software/thredds/current/netcdf-java/
+  (Uwe Schindler)
 
 ==================  4.10.0 =================
 
