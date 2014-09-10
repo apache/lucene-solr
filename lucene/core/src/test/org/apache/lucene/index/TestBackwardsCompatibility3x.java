@@ -115,6 +115,8 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
                              "301.nocfs",
                              "302.cfs",
                              "302.nocfs",
+                             "303.cfs",
+                             "303.nocfs",
                              "31.cfs",
                              "31.nocfs",
                              "32.cfs",
@@ -744,14 +746,16 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
   }
   
   public void testNumericFields() throws Exception {
+    boolean testedSomething = false;
     for (String name : oldNames) {
-      if (name.compareTo("index31") < 0) {
+      if (name.compareTo("31") < 0) {
         // we didn't have numeric fields in back compat indexes until 3.1
         // https://issues.apache.org/jira/browse/LUCENE-2352
         
         continue;
       }
       
+      testedSomething = true;
       Directory dir = oldIndexDirs.get(name);
       IndexReader reader = DirectoryReader.open(dir);
       IndexSearcher searcher = new IndexSearcher(reader);
@@ -791,6 +795,7 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
       
       reader.close();
     }
+    assertTrue("the conditional logic around numeric fields is broken, didnt test anything", testedSomething);
   }
   
   private int checkAllSegmentsUpgraded(Directory dir) throws IOException {
