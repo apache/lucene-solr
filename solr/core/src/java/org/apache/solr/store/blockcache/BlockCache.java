@@ -81,7 +81,7 @@ public class BlockCache {
   }
   
   public void release(BlockCacheKey key) {
-    releaseLocation(cache.get(key));
+    releaseLocation(cache.remove(key));
   }
   
   private void releaseLocation(BlockCacheLocation location) {

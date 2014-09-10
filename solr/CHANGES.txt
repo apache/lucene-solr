@@ -17,6 +17,12 @@ In this release, there is an example Solr server including a bundled
 servlet container in the directory named "example".
 See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
+==================  4.10.1 ==================
+
+Bug Fixes
+----------------------
+* SOLR-6425: If using the new global hdfs block cache option, you can end up reading corrupt 
+  files on file name reuse. (Mark Miller, Gregory Chanan)
 
 ==================  4.10.0 =================
 
