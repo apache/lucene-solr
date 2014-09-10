@@ -109,12 +109,28 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
 */  
   final static String[] oldNames = {"30.cfs",
                              "30.nocfs",
+                             "301.cfs",
+                             "301.nocfs",
+                             "302.cfs",
+                             "302.nocfs",
+                             "303.cfs",
+                             "303.nocfs",
                              "31.cfs",
                              "31.nocfs",
                              "32.cfs",
                              "32.nocfs",
+                             "33.cfs",
+                             "33.nocfs",
                              "34.cfs",
                              "34.nocfs",
+                             "35.cfs",
+                             "35.nocfs",
+                             "36.cfs",
+                             "36.nocfs",
+                             "361.cfs",
+                             "361.nocfs",
+                             "362.cfs",
+                             "362.nocfs"
   };
   
   final String[] unsupportedNames = {"19.cfs",
@@ -129,8 +145,18 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
                                      "23.nocfs",
                                      "24.cfs",
                                      "24.nocfs",
+                                     "241.cfs",
+                                     "241.nocfs",
                                      "29.cfs",
                                      "29.nocfs",
+                                     "291.cfs",
+                                     "291.nocfs",
+                                     "292.cfs",
+                                     "292.nocfs",
+                                     "293.cfs",
+                                     "293.nocfs",
+                                     "294.cfs",
+                                     "294.nocfs"
   };
   
   final static String[] oldSingleSegmentNames = {"31.optimized.cfs",
@@ -738,8 +764,16 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
   }
   
   public void testNumericFields() throws Exception {
+    boolean testedSomething = false;
     for (String name : oldNames) {
+      if (name.compareTo("31") < 0) {
+        // we didn't have numeric fields in back compat indexes until 3.1
+        // https://issues.apache.org/jira/browse/LUCENE-2352
+        
+        continue;
+      }
       
+      testedSomething = true;
       Directory dir = oldIndexDirs.get(name);
       IndexReader reader = DirectoryReader.open(dir);
       IndexSearcher searcher = new IndexSearcher(reader);
@@ -779,6 +813,7 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
       
       reader.close();
     }
+    assertTrue("the conditional logic around numeric fields is broken, didnt test anything", testedSomething);
   }
   
   private int checkAllSegmentsUpgraded(Directory dir) throws IOException {

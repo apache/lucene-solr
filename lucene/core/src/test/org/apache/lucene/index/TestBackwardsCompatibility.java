@@ -220,16 +220,42 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     dir.close();
   }*/
 
-  final static String[] oldNames = {"40.cfs",
+  final static String[] oldNames = {"40a.cfs",
+                                    "40a.nocfs",
+                                    "40b.cfs",
+                                    "40b.nocfs",
+                                    "40.cfs",
                                     "40.nocfs",
                                     "41.cfs",
                                     "41.nocfs",
                                     "42.cfs",
                                     "42.nocfs",
+                                    "421.cfs",
+                                    "421.nocfs",
+                                    "43.cfs",
+                                    "43.nocfs",
+                                    "431.cfs",
+                                    "431.nocfs",
+                                    "44.cfs",
+                                    "44.nocfs",
                                     "45.cfs",
                                     "45.nocfs",
+                                    "451.cfs",
+                                    "451.nocfs",
+                                    "46.cfs",
+                                    "46.nocfs",
                                     "461.cfs",
                                     "461.nocfs",
+                                    "47.cfs",
+                                    "47.nocfs",
+                                    "471.cfs",
+                                    "471.nocfs",
+                                    "472.cfs",
+                                    "472.nocfs",
+                                    "48.cfs",
+                                    "48.nocfs",
+                                    "481.cfs",
+                                    "481.nocfs",
                                     "49.cfs",
                                     "49.nocfs"
   };
@@ -250,8 +276,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
                                      "29.nocfs",
   };
   
-  final static String[] oldSingleSegmentNames = {"40.optimized.cfs",
-                                                 "40.optimized.nocfs",
+  final static String[] oldSingleSegmentNames = {"40a.optimized.cfs",
+                                                 "40a.optimized.nocfs",
   };
   
   static Map<String,Directory> oldIndexDirs;
