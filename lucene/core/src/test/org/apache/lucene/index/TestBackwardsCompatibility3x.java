@@ -147,8 +147,18 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
                                      "23.nocfs",
                                      "24.cfs",
                                      "24.nocfs",
+                                     "241.cfs",
+                                     "241.nocfs",
                                      "29.cfs",
                                      "29.nocfs",
+                                     "291.cfs",
+                                     "291.nocfs",
+                                     "292.cfs",
+                                     "292.nocfs",
+                                     "293.cfs",
+                                     "293.nocfs",
+                                     "294.cfs",
+                                     "294.nocfs"
   };
   
   final static String[] oldSingleSegmentNames = {"31.optimized.cfs",
