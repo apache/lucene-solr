@@ -173,7 +173,7 @@ public class SolrConfig extends Config {
     boolean hasDeprecatedIndexConfig = (getNode("indexDefaults", false) != null) || (getNode("mainIndex", false) != null);
     boolean hasNewIndexConfig = getNode("indexConfig", false) != null;
     if(hasDeprecatedIndexConfig){
-      if(luceneMatchVersion.onOrAfter(Version.LUCENE_4_0_0)) {
+      if(luceneMatchVersion.onOrAfter(Version.LUCENE_4_0_0_ALPHA)) {
         throw new SolrException(ErrorCode.FORBIDDEN, "<indexDefaults> and <mainIndex> configuration sections are discontinued. Use <indexConfig> instead.");
       } else {
         // Still allow the old sections for older LuceneMatchVersion's

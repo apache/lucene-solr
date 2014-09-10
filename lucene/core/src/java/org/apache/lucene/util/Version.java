@@ -85,21 +85,21 @@ public final class Version {
    * @deprecated (4.1) Use latest
    */
   @Deprecated
-  public static final Version LUCENE_4_0_0_ALPHA = new Version(4, 0, 0, 1);
+  public static final Version LUCENE_4_0_0_ALPHA = new Version(4, 0, 0, 0);
 
   /**
    * Match settings and bugs in Lucene's 4.0.0-BETA release.
    * @deprecated (4.1) Use latest
    */
   @Deprecated
-  public static final Version LUCENE_4_0_0_BETA = new Version(4, 0, 0, 2);
+  public static final Version LUCENE_4_0_0_BETA = new Version(4, 0, 0, 1);
 
   /**
    * Match settings and bugs in Lucene's 4.0.0 release.
    * @deprecated (4.1) Use latest
    */
   @Deprecated
-  public static final Version LUCENE_4_0_0 = new Version(4, 0, 0);
+  public static final Version LUCENE_4_0_0 = new Version(4, 0, 0, 2);
 
   /**
    * Match settings and bugs in Lucene's 4.1.0 release.
@@ -289,9 +289,9 @@ public final class Version {
   @Deprecated
   public static final Version LUCENE_36 = LUCENE_3_6_0;
   
-  /** @deprecated Bad naming of constant; use {@link #LUCENE_4_0_0} instead. */
+  /** @deprecated Bad naming of constant; use {@link #LUCENE_4_0_0} instead (this constant actually points to {@link #LUCENE_4_0_0_ALPHA} to match whole 4.0 series). */
   @Deprecated
-  public static final Version LUCENE_40 = LUCENE_4_0_0;
+  public static final Version LUCENE_40 = LUCENE_4_0_0_ALPHA;
   
   /** @deprecated Bad naming of constant; use {@link #LUCENE_4_1_0} instead. */
   @Deprecated
@@ -353,9 +353,9 @@ public final class Version {
   @Deprecated
   public static final Version LUCENE_3_6 = LUCENE_3_6_0;
 
-  /** @deprecated Bad naming of constant; use {@link #LUCENE_4_0_0} instead. */
+  /** @deprecated Bad naming of constant; use {@link #LUCENE_4_0_0} instead (this constant actually points to {@link #LUCENE_4_0_0_ALPHA} to match whole 4.0 series). */
   @Deprecated
-  public static final Version LUCENE_4_0 = LUCENE_4_0_0;
+  public static final Version LUCENE_4_0 = LUCENE_4_0_0_ALPHA;
 
   /** @deprecated Bad naming of constant; use {@link #LUCENE_4_1_0} instead. */
   @Deprecated
@@ -418,7 +418,7 @@ public final class Version {
     if (pieces.length > 3) {
       prerelease = Integer.parseInt(pieces[3]);
       if (prerelease == 0) {
-        throw new IllegalArgumentException("Invalid value " + prerelease + " for prelrease of version " + version +", should be 1 or 2");
+        throw new IllegalArgumentException("Invalid value " + prerelease + " for prerelease of version " + version +", should be 1 or 2");
       }
     }
 
@@ -431,13 +431,24 @@ public final class Version {
    * or version numbers in the format {@code "x.y.z"}.
    */
   public static Version parseLeniently(String version) {
-    if (version.equals("LATEST") || version.equals("LUCENE_CURRENT")) return LATEST;
-    final String parsedMatchVersion = version
-        .toUpperCase(Locale.ROOT)
-        .replaceFirst("^LUCENE_(\\d+)_(\\d+)_(\\d+)$", "$1.$2.$3")
-        .replaceFirst("^LUCENE_(\\d+)_(\\d+)$", "$1.$2.0")
-        .replaceFirst("^LUCENE_(\\d)(\\d)$", "$1.$2.0");
-    return parse(parsedMatchVersion);
+    version = version.toUpperCase(Locale.ROOT);
+    switch (version) {
+      case "LATEST":
+      case "LUCENE_CURRENT":
+        return LATEST;
+      case "LUCENE_4_0_0":
+        return LUCENE_4_0_0;
+      case "LUCENE_4_0_0_ALPHA":
+        return LUCENE_4_0_0_ALPHA;
+      case "LUCENE_4_0_0_BETA":
+        return LUCENE_4_0_0_BETA;
+      default:
+        version = version
+          .replaceFirst("^LUCENE_(\\d+)_(\\d+)_(\\d+)$", "$1.$2.$3")
+          .replaceFirst("^LUCENE_(\\d+)_(\\d+)$", "$1.$2.0")
+          .replaceFirst("^LUCENE_(\\d)(\\d)$", "$1.$2.0");
+        return parse(version);
+    }
   }
 
   // stores the version pieces, with most significant pieces in high bits
@@ -466,11 +477,6 @@ public final class Version {
       throw new IllegalArgumentException("Prerelease version only supported with major release");
     }
 
-    if (prerelease == 0) {
-      // final release should sort after alpha/beta
-      prerelease = 3;
-    }
-
     encodedValue = major << 18 | minor << 10 | bugfix << 2 | prerelease;
   }
 
@@ -487,7 +493,7 @@ public final class Version {
     int minor = (encodedValue >>> 10) & 0xFF;
     int bugfix = (encodedValue >>> 2) & 0xFF;
     int prerelease = encodedValue & 0x3;
-    if (prerelease == 3) { // ie unencoded value is 0
+    if (prerelease == 0) {
       return "" + major + "." + minor + "." + bugfix;
     }
     return "" + major + "." + minor + "." + bugfix + "." + prerelease;
