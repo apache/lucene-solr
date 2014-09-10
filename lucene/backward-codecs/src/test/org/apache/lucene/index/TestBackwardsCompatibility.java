@@ -187,8 +187,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       "431.nocfs",
       "44.cfs",
       "44.nocfs",
-      // nocommit: WTF IS THIS TODO?! this isnt a TODO, its a NORELEASE
-      // TODO: these are on 4x, but something is wrong (they seem to be a too old DV format):
       "45.cfs",
       "45.nocfs",
       "451.cfs",
