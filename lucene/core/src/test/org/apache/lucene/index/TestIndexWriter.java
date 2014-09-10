@@ -1100,6 +1100,7 @@ public class TestIndexWriter extends LuceneTestCase {
             }
             IndexWriterConfig conf = newIndexWriterConfig(random,
                                                           Version.LATEST, new MockAnalyzer(random)).setMaxBufferedDocs(2);
+            conf.setInfoStream(log);
             w = new IndexWriter(dir, conf);
 
             Document doc = new Document();
@@ -1122,6 +1123,7 @@ public class TestIndexWriter extends LuceneTestCase {
               doc.add(sortedSetDVField);
             }
             for(int i=0;i<100;i++) {
+              log.println("\nTEST: i=" + i);
               idField.setStringValue(Integer.toString(i));
               if (defaultCodecSupportsDocValues()) {
                 binaryDVField.setBytesValue(new BytesRef(idField.stringValue()));
