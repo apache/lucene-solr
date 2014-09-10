@@ -175,8 +175,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     dir.close();
   }*/
 
-  final static String[] oldNames = {"40.cfs",
-                                    "40.nocfs",
+  final static String[] oldNames = {"40a.cfs",
+                                    "40a.nocfs",
+                                    "40b.cfs",
+                                    "40b.nocfs",
                                     "41.cfs",
                                     "41.nocfs",
                                     "42.cfs",
@@ -229,8 +231,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
                                      "29.nocfs",
   };
   
-  final static String[] oldSingleSegmentNames = {"40.optimized.cfs",
-                                                 "40.optimized.nocfs",
+  final static String[] oldSingleSegmentNames = {"40a.optimized.cfs",
+                                                 "40a.optimized.nocfs",
   };
   
   static Map<String,Directory> oldIndexDirs;
