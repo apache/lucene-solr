@@ -316,11 +316,11 @@ class SimpleStats {
         
         if (sf.multiValued() || ft.multiValuedFieldCache()) {
           if(sf.hasDocValues()) {
-            stv = DocValuesStats.getCounts(searcher, sf.getName(), docs, calcDistinct, facets).getStatsValues();
+            stv = DocValuesStats.getCounts(searcher, sf.getName(), base, calcDistinct, facets).getStatsValues();
           } else {
             //use UnInvertedField for multivalued fields
             UnInvertedField uif = UnInvertedField.getUnInvertedField(statsField, searcher);
-            stv = uif.getStats(searcher, docs, calcDistinct, facets).getStatsValues();
+            stv = uif.getStats(searcher, base, calcDistinct, facets).getStatsValues();
           }
         } else {
           stv = getFieldCacheStats(statsField, calcDistinct, facets);

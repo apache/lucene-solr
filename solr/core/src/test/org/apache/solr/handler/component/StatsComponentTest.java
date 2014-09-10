@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.TimeZone;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.StatsParams;
@@ -66,10 +67,23 @@ public class StatsComponentTest extends AbstractSolrTestCase {
 //            , TODO: enable this test after SOLR-6452 is fixed
 //            "stats_ti_ni_dv","stats_tl_ni_dv","stats_tf_ni_dv","stats_td_ni_dv"
     }) {
-      doTestFieldStatisticsResult(f);
-      doTestFieldStatisticsMissingResult(f);
-      doTestFacetStatisticsResult(f);
-      doTestFacetStatisticsMissingResult(f);
+
+      // all of our checks should work with all of these params
+      // ie: with or w/o these excluded filters, results should be the same.
+      SolrParams[] baseParamsSet = new SolrParams[] {
+        params("stats.field", f, "stats", "true"),
+        params("stats.field", "{!ex=fq1,fq2}"+f, "stats", "true",
+               "fq", "{!tag=fq1}-id:[0 TO 2]", 
+               "fq", "{!tag=fq2}-id:[2 TO 1000]"), 
+        params("stats.field", "{!ex=fq1}"+f, "stats", "true",
+               "fq", "{!tag=fq1}id:1")
+      };
+
+      doTestFieldStatisticsResult(f, baseParamsSet);
+      doTestFieldStatisticsMissingResult(f, baseParamsSet);
+      doTestFacetStatisticsResult(f, baseParamsSet);
+      doTestFacetStatisticsMissingResult(f, baseParamsSet);
+      
       clearIndex();
       assertU(commit());
     }
@@ -81,14 +95,14 @@ public class StatsComponentTest extends AbstractSolrTestCase {
 //          , TODO: enable this test after SOLR-6452 is fixed
             //"stats_tis_ni_dv","stats_tfs_ni_dv","stats_tls_ni_dv","stats_tds_ni_dv"  // Doc Values Not indexed
                                   }) {
+
       doTestMVFieldStatisticsResult(f);
       clearIndex();
       assertU(commit());
     }
-    
   }
 
-  public void doTestFieldStatisticsResult(String f) throws Exception {
+  public void doTestFieldStatisticsResult(String f, SolrParams[] baseParamsSet) throws Exception {
     assertU(adoc("id", "1", f, "-10"));
     assertU(adoc("id", "2", f, "-20"));
     assertU(commit());
@@ -96,18 +110,39 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     assertU(adoc("id", "4", f, "-40"));
     assertU(commit());
 
-    assertQ("test statistics values", req("q", "*:*", "stats", "true", "stats.field", f, "stats.calcdistinct", "true")
-            , "//double[@name='min'][.='-40.0']"
-            , "//double[@name='max'][.='-10.0']"
-            , "//double[@name='sum'][.='-100.0']"
-            , "//long[@name='count'][.='4']"
-            , "//long[@name='missing'][.='0']"
-            , "//long[@name='countDistinct'][.='4']"
-            , "count(//arr[@name='distinctValues']/*)=4"
-            , "//double[@name='sumOfSquares'][.='3000.0']"
-            , "//double[@name='mean'][.='-25.0']"
-            , "//double[@name='stddev'][.='12.909944487358056']"
-    );    
+    // status should be the same regardless of baseParams
+    for (SolrParams baseParams : baseParamsSet) {
+
+      assertQ("test statistics values", 
+              req(baseParams, "q", "*:*", "stats.calcdistinct", "true")
+              , "//double[@name='min'][.='-40.0']"
+              , "//double[@name='max'][.='-10.0']"
+              , "//double[@name='sum'][.='-100.0']"
+              , "//long[@name='count'][.='4']"
+              , "//long[@name='missing'][.='0']"
+              , "//long[@name='countDistinct'][.='4']"
+              , "count(//arr[@name='distinctValues']/*)=4"
+              , "//double[@name='sumOfSquares'][.='3000.0']"
+              , "//double[@name='mean'][.='-25.0']"
+              , "//double[@name='stddev'][.='12.909944487358056']"
+              );  
+
+      assertQ("test statistics w/fq", 
+              req(baseParams, 
+                  "q", "*:*", "fq", "-id:4",
+                  "stats.calcdistinct", "true")
+              , "//double[@name='min'][.='-30.0']"
+              , "//double[@name='max'][.='-10.0']"
+              , "//double[@name='sum'][.='-60.0']"
+              , "//long[@name='count'][.='3']"
+              , "//long[@name='missing'][.='0']"
+              , "//long[@name='countDistinct'][.='3']"
+              , "count(//arr[@name='distinctValues']/*)=3"
+              , "//double[@name='sumOfSquares'][.='1400.0']"
+              , "//double[@name='mean'][.='-20.0']"
+              , "//double[@name='stddev'][.='10.0']"
+              );  
+    }
   }
 
 
@@ -120,59 +155,89 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     assertU(adoc("id", "5", "active_s", "false"));
     assertU(commit());
 
-    assertQ("test statistics values", req("q", "*:*", "stats", "true", "stats.field", f, "stats.calcdistinct", "true")
-            , "//double[@name='min'][.='-100.0']"
-            , "//double[@name='max'][.='200.0']"
-            , "//double[@name='sum'][.='9.0']"
-            , "//long[@name='count'][.='8']"
-            , "//long[@name='missing'][.='1']"
-            , "//long[@name='countDistinct'][.='8']"
-            , "count(//arr[@name='distinctValues']/*)=8"
-            , "//double[@name='sumOfSquares'][.='53101.0']"
-            , "//double[@name='mean'][.='1.125']"
-            , "//double[@name='stddev'][.='87.08852228787508']"
-    );
+    // with or w/o these excluded filters, results should be the same
+    for (SolrParams baseParams : new SolrParams[] {
+        params("stats.field", f, "stats", "true"),
+        params("stats.field", "{!ex=fq1}"+f, "stats", "true",
+               "fq", "{!tag=fq1}id:1"),
+        params("stats.field", "{!ex=fq1,fq2}"+f, "stats", "true",
+               "fq", "{!tag=fq1}-id:[0 TO 2]", 
+               "fq", "{!tag=fq2}-id:[2 TO 1000]")  }) {
+      
+      
+      assertQ("test statistics values", 
+              req(baseParams, "q", "*:*", "stats.calcdistinct", "true")
+              , "//double[@name='min'][.='-100.0']"
+              , "//double[@name='max'][.='200.0']"
+              , "//double[@name='sum'][.='9.0']"
+              , "//long[@name='count'][.='8']"
+              , "//long[@name='missing'][.='1']"
+              , "//long[@name='countDistinct'][.='8']"
+              , "count(//arr[@name='distinctValues']/*)=8"
+              , "//double[@name='sumOfSquares'][.='53101.0']"
+              , "//double[@name='mean'][.='1.125']"
+              , "//double[@name='stddev'][.='87.08852228787508']"
+              );
 
-    assertQ("test statistics values", req("q", "*:*", "stats", "true", "stats.field", f, "stats.facet", "active_s", "stats.calcdistinct", "true")
-            , "//double[@name='min'][.='-100.0']"
-            , "//double[@name='max'][.='200.0']"
-            , "//double[@name='sum'][.='9.0']"
-            , "//long[@name='count'][.='8']"
-            , "//long[@name='missing'][.='1']"
-            , "//long[@name='countDistinct'][.='8']"
-            , "count(//lst[@name='" + f + "']/arr[@name='distinctValues']/*)=8"
-            , "//double[@name='sumOfSquares'][.='53101.0']"
-            , "//double[@name='mean'][.='1.125']"
-            , "//double[@name='stddev'][.='87.08852228787508']"
-    );
-
-    assertQ("test value for active_s=true", req("q", "*:*", "stats", "true", "stats.field", f, "stats.facet", "active_s", "stats.calcdistinct", "true")
-            , "//lst[@name='true']/double[@name='min'][.='-100.0']"
-            , "//lst[@name='true']/double[@name='max'][.='200.0']"
-            , "//lst[@name='true']/double[@name='sum'][.='70.0']"
-            , "//lst[@name='true']/long[@name='count'][.='4']"
-            , "//lst[@name='true']/long[@name='missing'][.='0']"
-            , "//lst[@name='true']//long[@name='countDistinct'][.='4']"
-            , "count(//lst[@name='true']/arr[@name='distinctValues']/*)=4"
-            , "//lst[@name='true']/double[@name='sumOfSquares'][.='50500.0']"
-            , "//lst[@name='true']/double[@name='mean'][.='17.5']"
-            , "//lst[@name='true']/double[@name='stddev'][.='128.16005617976296']"
-    );
-
-    assertQ("test value for active_s=false", req("q", "*:*", "stats", "true", "stats.field", f, "stats.facet", "active_s", "stats.calcdistinct", "true", "indent", "true")
-            , "//lst[@name='false']/double[@name='min'][.='-40.0']"
-            , "//lst[@name='false']/double[@name='max'][.='10.0']"
-            , "//lst[@name='false']/double[@name='sum'][.='-61.0']"
-            , "//lst[@name='false']/long[@name='count'][.='4']"
-            , "//lst[@name='false']/long[@name='missing'][.='1']"
-            , "//lst[@name='true']//long[@name='countDistinct'][.='4']"
-            , "count(//lst[@name='true']/arr[@name='distinctValues']/*)=4"
-            , "//lst[@name='false']/double[@name='sumOfSquares'][.='2601.0']"
-            , "//lst[@name='false']/double[@name='mean'][.='-15.25']"
-            , "//lst[@name='false']/double[@name='stddev'][.='23.59908190304586']"
-    );
-
-
+      assertQ("test statistics values w/fq", 
+              req(baseParams, "fq", "-id:1",
+                  "q", "*:*", "stats.calcdistinct", "true")
+              , "//double[@name='min'][.='-40.0']"
+              , "//double[@name='max'][.='200.0']"
+              , "//double[@name='sum'][.='119.0']"
+              , "//long[@name='count'][.='6']"
+              , "//long[@name='missing'][.='1']"
+              , "//long[@name='countDistinct'][.='6']"
+              , "count(//arr[@name='distinctValues']/*)=6"
+              , "//double[@name='sumOfSquares'][.='43001.0']"
+              , "//double[@name='mean'][.='19.833333333333332']"
+              , "//double[@name='stddev'][.='90.15634568163611']"
+              );
+      
+      // TODO: why are there 3 identical requests below?
+      
+      assertQ("test statistics values", 
+              req(baseParams, "q", "*:*", "stats.calcdistinct", "true", "stats.facet", "active_s")
+              , "//double[@name='min'][.='-100.0']"
+              , "//double[@name='max'][.='200.0']"
+              , "//double[@name='sum'][.='9.0']"
+              , "//long[@name='count'][.='8']"
+              , "//long[@name='missing'][.='1']"
+              , "//long[@name='countDistinct'][.='8']"
+              , "count(//lst[@name='" + f + "']/arr[@name='distinctValues']/*)=8"
+              , "//double[@name='sumOfSquares'][.='53101.0']"
+              , "//double[@name='mean'][.='1.125']"
+              , "//double[@name='stddev'][.='87.08852228787508']"
+              );
+      
+      assertQ("test value for active_s=true", 
+              req(baseParams, "q", "*:*", "stats.calcdistinct", "true", "stats.facet", "active_s")
+              , "//lst[@name='true']/double[@name='min'][.='-100.0']"
+              , "//lst[@name='true']/double[@name='max'][.='200.0']"
+              , "//lst[@name='true']/double[@name='sum'][.='70.0']"
+              , "//lst[@name='true']/long[@name='count'][.='4']"
+              , "//lst[@name='true']/long[@name='missing'][.='0']"
+              , "//lst[@name='true']//long[@name='countDistinct'][.='4']"
+              , "count(//lst[@name='true']/arr[@name='distinctValues']/*)=4"
+              , "//lst[@name='true']/double[@name='sumOfSquares'][.='50500.0']"
+              , "//lst[@name='true']/double[@name='mean'][.='17.5']"
+              , "//lst[@name='true']/double[@name='stddev'][.='128.16005617976296']"
+              );
+      
+      assertQ("test value for active_s=false", 
+              req(baseParams, "q", "*:*", "stats.calcdistinct", "true", "stats.facet", "active_s")
+              , "//lst[@name='false']/double[@name='min'][.='-40.0']"
+              , "//lst[@name='false']/double[@name='max'][.='10.0']"
+              , "//lst[@name='false']/double[@name='sum'][.='-61.0']"
+              , "//lst[@name='false']/long[@name='count'][.='4']"
+              , "//lst[@name='false']/long[@name='missing'][.='1']"
+              , "//lst[@name='true']//long[@name='countDistinct'][.='4']"
+              , "count(//lst[@name='true']/arr[@name='distinctValues']/*)=4"
+              , "//lst[@name='false']/double[@name='sumOfSquares'][.='2601.0']"
+              , "//lst[@name='false']/double[@name='mean'][.='-15.25']"
+              , "//lst[@name='false']/double[@name='stddev'][.='23.59908190304586']"
+              );
+    }
   }
 
   public void testFieldStatisticsResultsStringField() throws Exception {
@@ -235,7 +300,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
   }
 
 
-  public void doTestFieldStatisticsMissingResult(String f) throws Exception {
+  public void doTestFieldStatisticsMissingResult(String f, SolrParams[] baseParamsSet) throws Exception {
     assertU(adoc("id", "1", f, "-10"));
     assertU(adoc("id", "2", f, "-20"));
     assertU(commit());
@@ -243,21 +308,27 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     assertU(adoc("id", "4", f, "-40"));
     assertU(commit());
 
-    assertQ("test statistics values", req("q", "*:*", "stats", "true", "stats.field", f, "stats.calcdistinct", "true")
-            , "//double[@name='min'][.='-40.0']"
-            , "//double[@name='max'][.='-10.0']"
-            , "//double[@name='sum'][.='-70.0']"
-            , "//long[@name='count'][.='3']"
-            , "//long[@name='missing'][.='1']"
-            , "//long[@name='countDistinct'][.='3']"
-            , "count(//arr[@name='distinctValues']/*)=3"
-            , "//double[@name='sumOfSquares'][.='2100.0']"
-            , "//double[@name='mean'][.='-23.333333333333332']"
-            , "//double[@name='stddev'][.='15.275252316519467']"
-    );
+    // status should be the same regardless of baseParams
+    for (SolrParams baseParams : baseParamsSet) {
+
+      SolrQueryRequest request = req(baseParams, "q", "*:*", "stats.calcdistinct", "true");
+
+      assertQ("test statistics values", request
+              , "//double[@name='min'][.='-40.0']"
+              , "//double[@name='max'][.='-10.0']"
+              , "//double[@name='sum'][.='-70.0']"
+              , "//long[@name='count'][.='3']"
+              , "//long[@name='missing'][.='1']"
+              , "//long[@name='countDistinct'][.='3']"
+              , "count(//arr[@name='distinctValues']/*)=3"
+              , "//double[@name='sumOfSquares'][.='2100.0']"
+              , "//double[@name='mean'][.='-23.333333333333332']"
+              , "//double[@name='stddev'][.='15.275252316519467']"
+              );
+    }
   }
 
-  public void doTestFacetStatisticsResult(String f) throws Exception {
+  public void doTestFacetStatisticsResult(String f, SolrParams[] baseParamsSet) throws Exception {
     assertU(adoc("id", "1", f, "10", "active_s", "true",  "other_s", "foo"));
     assertU(adoc("id", "2", f, "20", "active_s", "true",  "other_s", "bar"));
     assertU(commit());
@@ -267,43 +338,55 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     
     final String pre = "//lst[@name='stats_fields']/lst[@name='"+f+"']/lst[@name='facets']/lst[@name='active_s']";
 
-    assertQ("test value for active_s=true", req("q", "*:*", "stats", "true", "stats.field", f, "stats.facet", "active_s", "stats.facet", "other_s", "stats.calcdistinct", "true", "indent", "true")
-            , "*[count("+pre+")=1]"
-            , pre+"/lst[@name='true']/double[@name='min'][.='10.0']"
-            , pre+"/lst[@name='true']/double[@name='max'][.='20.0']"
-            , pre+"/lst[@name='true']/double[@name='sum'][.='30.0']"
-            , pre+"/lst[@name='true']/long[@name='count'][.='2']"
-            , pre+"/lst[@name='true']/long[@name='missing'][.='0']"
-            , pre + "/lst[@name='true']/long[@name='countDistinct'][.='2']"
-            , "count(" + pre + "/lst[@name='true']/arr[@name='distinctValues']/*)=2"
-            , pre+"/lst[@name='true']/double[@name='sumOfSquares'][.='500.0']"
-            , pre+"/lst[@name='true']/double[@name='mean'][.='15.0']"
-            , pre+"/lst[@name='true']/double[@name='stddev'][.='7.0710678118654755']"
-    );
+    // status should be the same regardless of baseParams
+    for (SolrParams baseParams : baseParamsSet) {
 
-    assertQ("test value for active_s=false", req("q", "*:*", "stats", "true", "stats.field", f, "stats.facet", "active_s", "stats.calcdistinct", "true")
-            , pre+"/lst[@name='false']/double[@name='min'][.='30.0']"
-            , pre+"/lst[@name='false']/double[@name='max'][.='40.0']"
-            , pre+"/lst[@name='false']/double[@name='sum'][.='70.0']"
-            , pre+"/lst[@name='false']/long[@name='count'][.='2']"
-            , pre+"/lst[@name='false']/long[@name='missing'][.='0']"
-            , pre + "/lst[@name='true']/long[@name='countDistinct'][.='2']"
-            , "count(" + pre + "/lst[@name='true']/arr[@name='distinctValues']/*)=2"
-            , pre+"/lst[@name='false']/double[@name='sumOfSquares'][.='2500.0']"
-            , pre+"/lst[@name='false']/double[@name='mean'][.='35.0']"
-            , pre+"/lst[@name='false']/double[@name='stddev'][.='7.0710678118654755']"
-    );
+      assertQ("test value for active_s=true", 
+              req(baseParams, 
+                  "q", "*:*", "stats.calcdistinct", "true",
+                  "stats.facet", "active_s", "stats.facet", "other_s")
+              , "*[count("+pre+")=1]"
+              , pre+"/lst[@name='true']/double[@name='min'][.='10.0']"
+              , pre+"/lst[@name='true']/double[@name='max'][.='20.0']"
+              , pre+"/lst[@name='true']/double[@name='sum'][.='30.0']"
+              , pre+"/lst[@name='true']/long[@name='count'][.='2']"
+              , pre+"/lst[@name='true']/long[@name='missing'][.='0']"
+              , pre + "/lst[@name='true']/long[@name='countDistinct'][.='2']"
+              , "count(" + pre + "/lst[@name='true']/arr[@name='distinctValues']/*)=2"
+              , pre+"/lst[@name='true']/double[@name='sumOfSquares'][.='500.0']"
+              , pre+"/lst[@name='true']/double[@name='mean'][.='15.0']"
+              , pre+"/lst[@name='true']/double[@name='stddev'][.='7.0710678118654755']"
+              );
+
+      assertQ("test value for active_s=false", 
+              req(baseParams, "q", "*:*", "stats.calcdistinct", "true", "stats.facet", "active_s")
+              , pre+"/lst[@name='false']/double[@name='min'][.='30.0']"
+              , pre+"/lst[@name='false']/double[@name='max'][.='40.0']"
+              , pre+"/lst[@name='false']/double[@name='sum'][.='70.0']"
+              , pre+"/lst[@name='false']/long[@name='count'][.='2']"
+              , pre+"/lst[@name='false']/long[@name='missing'][.='0']"
+              , pre + "/lst[@name='true']/long[@name='countDistinct'][.='2']"
+              , "count(" + pre + "/lst[@name='true']/arr[@name='distinctValues']/*)=2"
+              , pre+"/lst[@name='false']/double[@name='sumOfSquares'][.='2500.0']"
+              , pre+"/lst[@name='false']/double[@name='mean'][.='35.0']"
+              , pre+"/lst[@name='false']/double[@name='stddev'][.='7.0710678118654755']"
+              );
+    }
   }
   
-  public void doTestFacetStatisticsMissingResult(String f) throws Exception {
-      assertU(adoc("id", "1", f, "10", "active_s", "true"));
-      assertU(adoc("id", "2", f, "20", "active_s", "true"));
-      assertU(commit());
-      assertU(adoc("id", "3", "active_s", "false"));
-      assertU(adoc("id", "4", f, "40", "active_s", "false"));
-      assertU(commit());
-
-    assertQ("test value for active_s=true", req("q", "*:*", "stats", "true", "stats.field", f, "stats.facet", "active_s", "stats.calcdistinct", "true")
+  public void doTestFacetStatisticsMissingResult(String f, SolrParams[] baseParamsSet) throws Exception {
+    assertU(adoc("id", "1", f, "10", "active_s", "true"));
+    assertU(adoc("id", "2", f, "20", "active_s", "true"));
+    assertU(commit());
+    assertU(adoc("id", "3", "active_s", "false"));
+    assertU(adoc("id", "4", f, "40", "active_s", "false"));
+    assertU(commit());
+    
+    // status should be the same regardless of baseParams
+    for (SolrParams baseParams : baseParamsSet) {
+      
+      assertQ("test value for active_s=true", 
+              req(baseParams, "q", "*:*", "stats.calcdistinct", "true", "stats.facet", "active_s")
               , "//lst[@name='true']/double[@name='min'][.='10.0']"
               , "//lst[@name='true']/double[@name='max'][.='20.0']"
               , "//lst[@name='true']/double[@name='sum'][.='30.0']"
@@ -314,9 +397,10 @@ public class StatsComponentTest extends AbstractSolrTestCase {
               , "//lst[@name='true']/double[@name='sumOfSquares'][.='500.0']"
               , "//lst[@name='true']/double[@name='mean'][.='15.0']"
               , "//lst[@name='true']/double[@name='stddev'][.='7.0710678118654755']"
-      );
-
-    assertQ("test value for active_s=false", req("q", "*:*", "stats", "true", "stats.field", f, "stats.facet", "active_s", "stats.calcdistinct", "true")
+              );
+      
+      assertQ("test value for active_s=false", 
+              req(baseParams, "q", "*:*", "stats.facet", "active_s", "stats.calcdistinct", "true")
               , "//lst[@name='false']/double[@name='min'][.='40.0']"
               , "//lst[@name='false']/double[@name='max'][.='40.0']"
               , "//lst[@name='false']/double[@name='sum'][.='40.0']"
@@ -327,8 +411,9 @@ public class StatsComponentTest extends AbstractSolrTestCase {
               , "//lst[@name='false']/double[@name='sumOfSquares'][.='1600.0']"
               , "//lst[@name='false']/double[@name='mean'][.='40.0']"
               , "//lst[@name='false']/double[@name='stddev'][.='0.0']"
-      );
+              );
     }
+  }
 
   public void testFieldStatisticsResultsNumericFieldAlwaysMissing() throws Exception {
     SolrCore core = h.getCore();
