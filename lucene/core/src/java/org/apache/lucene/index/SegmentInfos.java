@@ -527,6 +527,12 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         Version version = si.getVersion();
         if (version == null || version.onOrAfter(Version.LUCENE_4_0_0_ALPHA) == false) {
 
+          // Defensive check: we are about to write this SI in 3.x format, dropping all codec information, etc.
+          // so it had better be a 3.x segment or you will get very confusing errors later.
+          if ((si.getCodec() instanceof Lucene3xCodec) == false) {
+            throw new IllegalStateException("cannot write 3x SegmentInfo unless codec is Lucene3x (got: " + si.getCodec() + ")");
+          }
+
           if (!segmentWasUpgraded(directory, si)) {
 
             String markerFileName = IndexFileNames.segmentFileName(si.name, "upgraded", Lucene3xSegmentInfoFormat.UPGRADED_SI_EXTENSION);
@@ -597,9 +603,14 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     return false;
   }
 
-
   @Deprecated
   public static String write3xInfo(Directory dir, SegmentInfo si, IOContext context) throws IOException {
+
+    // Defensive check: we are about to write this SI in 3.x format, dropping all codec information, etc.
+    // so it had better be a 3.x segment or you will get very confusing errors later.
+    if ((si.getCodec() instanceof Lucene3xCodec) == false) {
+      throw new IllegalStateException("cannot write 3x SegmentInfo unless codec is Lucene3x (got: " + si.getCodec() + ")");
+    }
 
     // NOTE: this is NOT how 3.x is really written...
     String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene3xSegmentInfoFormat.UPGRADED_SI_EXTENSION);
@@ -609,12 +620,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     boolean success = false;
     IndexOutput output = dir.createOutput(fileName, context);
     try {
-      // we are about to write this SI in 3.x format, dropping all codec information, etc.
-      // so it had better be a 3.x segment or you will get very confusing errors later.
-      if ((si.getCodec() instanceof Lucene3xCodec) == false) {
-        throw new IllegalStateException("cannot write 3x SegmentInfo unless codec is Lucene3x (got: " + si.getCodec() + ")");
-      }
-
       CodecUtil.writeHeader(output, Lucene3xSegmentInfoFormat.UPGRADED_SI_CODEC_NAME, 
                                     Lucene3xSegmentInfoFormat.UPGRADED_SI_VERSION_CURRENT);
       // Write the Lucene version that created this segment, since 3.1
