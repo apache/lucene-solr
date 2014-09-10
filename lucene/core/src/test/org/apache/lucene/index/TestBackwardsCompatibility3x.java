@@ -126,7 +126,9 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
                              "34.cfs",
                              "34.nocfs",
                              "35.cfs",
-                             "35.nocfs"
+                             "35.nocfs",
+                             "36.cfs",
+                             "36.nocfs"
   };
   
   final String[] unsupportedNames = {"19.cfs",
