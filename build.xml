@@ -81,14 +81,16 @@
     </subant>
   </target>
 
-  <target name="validate" description="Validate dependencies, licenses, etc." depends="-validate-source-patterns">
+  <target name="-validate">
     <subant target="validate" inheritall="false" failonerror="true">
       <fileset dir="lucene" includes="build.xml" />
       <fileset dir="solr" includes="build.xml" />
     </subant>
     <subant buildpath="lucene" target="check-lib-versions" inheritall="false" failonerror="true"/>
   </target>
-  
+
+  <target name="validate" description="Validate dependencies, licenses, etc." depends="-validate-source-patterns,-validate,check-svn-working-copy"/>
+
   <target name="-validate-source-patterns" unless="disable.source-patterns">
     <!-- check that there are no @author javadoc tags, tabs, svn keywords or nocommits: -->
     <property name="validate.currDir" location="."/>
