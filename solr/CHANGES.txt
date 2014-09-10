@@ -56,6 +56,9 @@ New Features
 * SOLR-6073: Remove helper methods from CollectionsRequest (SolrJ) for CollectionsAPI
   calls and move to a builder design for the same. (Varun Thacker, Anshum Gupta)
 
+* SOLR-5098: Schema API: Add REST support for adding field types to the schema.
+  (Timothy Potter)
+
 Bug Fixes
 ----------------------
 

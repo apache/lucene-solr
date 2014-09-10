@@ -470,16 +470,9 @@ public class IndexSchema {
       expression = stepsToPath(SCHEMA, AT + VERSION);
       version = schemaConf.getFloat(expression, 1.0f);
 
-
       // load the Field Types
-
       final FieldTypePluginLoader typeLoader = new FieldTypePluginLoader(this, fieldTypes, schemaAware);
-
-      //               /schema/fieldtype | /schema/fieldType | /schema/types/fieldtype | /schema/types/fieldType
-      expression = stepsToPath(SCHEMA, FIELD_TYPE.toLowerCase(Locale.ROOT)) // backcompat(?)
-          + XPATH_OR + stepsToPath(SCHEMA, FIELD_TYPE)
-          + XPATH_OR + stepsToPath(SCHEMA, TYPES, FIELD_TYPE.toLowerCase(Locale.ROOT))
-          + XPATH_OR + stepsToPath(SCHEMA, TYPES, FIELD_TYPE);
+      expression = getFieldTypeXPathExpressions();
       NodeList nodes = (NodeList) xpath.evaluate(expression, document, XPathConstants.NODESET);
       typeLoader.load(loader, nodes);
 
@@ -1657,5 +1650,61 @@ public class IndexSchema {
     String msg = "This IndexSchema is not mutable.";
     log.error(msg);
     throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+  }
+
+  /**
+   * Copies this schema, adds the given field type to the copy, then persists the
+   * new schema.  Requires synchronizing on the object returned by
+   * {@link #getSchemaUpdateLock()}.
+   *
+   * @param fieldType the FieldType to add
+   * @return a new IndexSchema based on this schema with the new FieldType added
+   * @see #newFieldType(String, String, Map)
+   */
+  public IndexSchema addFieldType(FieldType fieldType) {
+    String msg = "This IndexSchema is not mutable.";
+    log.error(msg);
+    throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+  }
+
+  /**
+   * Copies this schema, adds the given field type to the copy, then persists the
+   * new schema.  Requires synchronizing on the object returned by
+   * {@link #getSchemaUpdateLock()}.
+   *
+   * @param fieldTypeList a list of FieldTypes to add
+   * @return a new IndexSchema based on this schema with the new types added
+   * @see #newFieldType(String, String, Map)
+   */
+  public IndexSchema addFieldTypes(List<FieldType> fieldTypeList) {
+    String msg = "This IndexSchema is not mutable.";
+    log.error(msg);
+    throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+  }
+
+  /**
+   * Returns a FieldType if the given typeName does not already
+   * exist in this schema. The resulting FieldType can be used in a call
+   * to {@link #addFieldType(FieldType)}.
+   *
+   * @param typeName the name of the type to add
+   * @param className the name of the FieldType class
+   * @param options the options to use when creating the FieldType
+   * @return The created FieldType
+   * @see #addFieldType(FieldType)
+   */
+  public FieldType newFieldType(String typeName, String className, Map<String,?> options) {
+    String msg = "This IndexSchema is not mutable.";
+    log.error(msg);
+    throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+  }
+
+  protected String getFieldTypeXPathExpressions() {
+    //               /schema/fieldtype | /schema/fieldType | /schema/types/fieldtype | /schema/types/fieldType
+    String expression = stepsToPath(SCHEMA, FIELD_TYPE.toLowerCase(Locale.ROOT)) // backcompat(?)
+        + XPATH_OR + stepsToPath(SCHEMA, FIELD_TYPE)
+        + XPATH_OR + stepsToPath(SCHEMA, TYPES, FIELD_TYPE.toLowerCase(Locale.ROOT))
+        + XPATH_OR + stepsToPath(SCHEMA, TYPES, FIELD_TYPE);
+    return expression;
   }
 }
