@@ -184,6 +184,14 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
   }
 
   @Override
+  public void renameFile(String source, String dest) throws IOException {
+    // NOTE: uncache is unnecessary for lucene's usage, as we always sync() before renaming.
+    unCache(source);
+    in.renameFile(source, dest);
+  }
+
+
+  @Override
   public synchronized IndexInput openInput(String name, IOContext context) throws IOException {
     if (VERBOSE) {
       System.out.println("nrtdir.openInput name=" + name);
@@ -226,7 +234,7 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
       bytes = context.flushInfo.estimatedSegmentSize;
     }
 
-    return !name.equals(IndexFileNames.SEGMENTS_GEN) && (bytes <= maxMergeSizeBytes) && (bytes + cache.ramBytesUsed()) <= maxCachedBytes;
+    return (bytes <= maxMergeSizeBytes) && (bytes + cache.ramBytesUsed()) <= maxCachedBytes;
   }
 
   private final Object uncacheLock = new Object();

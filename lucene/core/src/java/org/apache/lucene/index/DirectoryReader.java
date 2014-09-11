@@ -284,7 +284,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> 
       final String fileName = files[i];
 
       if (fileName.startsWith(IndexFileNames.SEGMENTS) &&
-          !fileName.equals(IndexFileNames.SEGMENTS_GEN) &&
+          !fileName.equals(IndexFileNames.OLD_SEGMENTS_GEN) &&
           SegmentInfos.generationFromSegmentsFileName(fileName) < currentGen) {
 
         SegmentInfos sis = new SegmentInfos();
@@ -348,7 +348,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> 
     if (files != null) {
       String prefix = IndexFileNames.SEGMENTS + "_";
       for(String file : files) {
-        if (file.startsWith(prefix) || file.equals(IndexFileNames.SEGMENTS_GEN)) {
+        if (file.startsWith(prefix)) {
           return true;
         }
       }

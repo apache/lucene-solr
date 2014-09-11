@@ -112,6 +112,8 @@ public class RAMDirectory extends BaseDirectory implements Accountable {
   @Override
   public final String[] listAll() {
     ensureOpen();
+    // NOTE: this returns a "weakly consistent view". Unless we change Dir API, keep this,
+    // and do not synchronize or anything stronger. its great for testing!
     // NOTE: fileMap.keySet().toArray(new String[0]) is broken in non Sun JDKs,
     // and the code below is resilient to map changes during the array population.
     Set<String> fileNames = fileMap.keySet();
@@ -192,6 +194,17 @@ public class RAMDirectory extends BaseDirectory implements Accountable {
   public void sync(Collection<String> names) throws IOException {
   }
 
+  @Override
+  public void renameFile(String source, String dest) throws IOException {
+    ensureOpen();
+    RAMFile file = fileMap.get(source);
+    if (file == null) {
+      throw new FileNotFoundException(source);
+    }
+    fileMap.put(dest, file);
+    fileMap.remove(source);
+  }
+
   /** Returns a stream reading an existing file. */
   @Override
   public IndexInput openInput(String name, IOContext context) throws IOException {
@@ -209,5 +222,4 @@ public class RAMDirectory extends BaseDirectory implements Accountable {
     isOpen = false;
     fileMap.clear();
   }
-  
 }

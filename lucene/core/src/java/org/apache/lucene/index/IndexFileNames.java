@@ -46,31 +46,18 @@ public final class IndexFileNames {
 
   /** Name of the index segment file */
   public static final String SEGMENTS = "segments";
-
-  /** Extension of gen file */
-  public static final String GEN_EXTENSION = "gen";
   
+  /** Name of pending index segment file */
+  public static final String PENDING_SEGMENTS = "pending_segments";
+
   /** Name of the generation reference file name */
-  public static final String SEGMENTS_GEN = "segments." +  GEN_EXTENSION;
+  public static final String OLD_SEGMENTS_GEN = "segments.gen";
 
   /** Extension of compound file */
   public static final String COMPOUND_FILE_EXTENSION = "cfs";
   
   /** Extension of compound file entries */
   public static final String COMPOUND_FILE_ENTRIES_EXTENSION = "cfe";
-
-  /**
-   * This array contains all filename extensions used by
-   * Lucene's index files, with one exception, namely the
-   * extension made up from  <code>.s</code> + a number.
-   * Also note that Lucene's <code>segments_N</code> files
-   * do not have any filename extension.
-   */
-  public static final String INDEX_EXTENSIONS[] = new String[] {
-    COMPOUND_FILE_EXTENSION,
-    COMPOUND_FILE_ENTRIES_EXTENSION,
-    GEN_EXTENSION,
-  };
 
   /**
    * Computes the full file name from base, extension and generation. If the

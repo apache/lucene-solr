@@ -150,6 +150,11 @@ public class TestFieldsReader extends LuceneTestCase {
     }
 
     @Override
+    public void renameFile(String source, String dest) throws IOException {
+      fsDir.renameFile(source, dest);
+    }
+
+    @Override
     public void close() throws IOException {
       fsDir.close();
     }

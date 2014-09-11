@@ -126,7 +126,7 @@ public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
       assertEquals(2, sourceFiles.size());
       for (List<RevisionFile> files : sourceFiles.values()) {
         String lastFile = files.get(files.size() - 1).fileName;
-        assertTrue(lastFile.startsWith(IndexFileNames.SEGMENTS) && !lastFile.equals(IndexFileNames.SEGMENTS_GEN));
+        assertTrue(lastFile.startsWith(IndexFileNames.SEGMENTS));
       }
     } finally {
       IOUtils.close(indexWriter, taxoWriter, taxoDir, indexDir);

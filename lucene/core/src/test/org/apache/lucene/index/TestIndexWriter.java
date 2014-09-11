@@ -1405,8 +1405,7 @@ public class TestIndexWriter extends LuceneTestCase {
       if (iter == 1) {
         // we run a full commit so there should be a segments file etc.
         assertTrue(files.contains("segments_1"));
-        assertTrue(files.contains("segments.gen"));
-        assertEquals(files.toString(), files.size(), 5);
+        assertEquals(files.toString(), files.size(), 4);
       } else {
         // this is an NRT reopen - no segments files yet
 

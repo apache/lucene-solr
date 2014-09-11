@@ -113,7 +113,7 @@ public class IndexRevisionTest extends ReplicatorTestCase {
       assertEquals(1, sourceFiles.size());
       List<RevisionFile> files = sourceFiles.values().iterator().next();
       String lastFile = files.get(files.size() - 1).fileName;
-      assertTrue(lastFile.startsWith(IndexFileNames.SEGMENTS) && !lastFile.equals(IndexFileNames.SEGMENTS_GEN));
+      assertTrue(lastFile.startsWith(IndexFileNames.SEGMENTS));
     } finally {
       IOUtils.close(writer, dir);
     }

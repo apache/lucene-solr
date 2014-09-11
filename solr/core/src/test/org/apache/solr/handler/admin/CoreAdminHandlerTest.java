@@ -120,8 +120,6 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     // Should have segments in the directory pointed to by the ${DATA_TEST}.
     File test = new File(dataDir, "index");
     assertTrue("Should have found index dir at " + test.getAbsolutePath(), test.exists());
-    test = new File(test,"segments.gen");
-    assertTrue("Should have found segments.gen at " + test.getAbsolutePath(), test.exists());
   }
 
   @Test

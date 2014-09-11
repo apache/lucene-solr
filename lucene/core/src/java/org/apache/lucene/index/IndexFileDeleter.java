@@ -156,13 +156,12 @@ final class IndexFileDeleter implements Closeable {
       Matcher m = IndexFileNames.CODEC_FILE_PATTERN.matcher("");
       for (String fileName : files) {
         m.reset(fileName);
-        if (!fileName.endsWith("write.lock") && !fileName.equals(IndexFileNames.SEGMENTS_GEN)
-            && (m.matches() || fileName.startsWith(IndexFileNames.SEGMENTS))) {
+        if (!fileName.endsWith("write.lock") && (m.matches() || fileName.startsWith(IndexFileNames.SEGMENTS) || fileName.startsWith(IndexFileNames.PENDING_SEGMENTS))) {
           
           // Add this file to refCounts with initial count 0:
           getRefCount(fileName);
           
-          if (fileName.startsWith(IndexFileNames.SEGMENTS)) {
+          if (fileName.startsWith(IndexFileNames.SEGMENTS) && !fileName.equals(IndexFileNames.OLD_SEGMENTS_GEN)) {
             
             // This is a commit (segments or segments_N), and
             // it's valid (<= the max gen).  Load it, then
@@ -237,7 +236,7 @@ final class IndexFileDeleter implements Closeable {
     // We keep commits list in sorted order (oldest to newest):
     CollectionUtil.timSort(commits);
 
-    // refCounts only includes "normal" filenames (does not include segments.gen, write.lock)
+    // refCounts only includes "normal" filenames (does not include write.lock)
     inflateGens(segmentInfos, refCounts.keySet(), infoStream);
 
     // Now delete anything with ref count at 0.  These are
@@ -282,13 +281,19 @@ final class IndexFileDeleter implements Closeable {
     Map<String,Long> maxPerSegmentGen = new HashMap<>();
 
     for(String fileName : files) {
-      if (fileName.equals(IndexFileNames.SEGMENTS_GEN) || fileName.equals(IndexWriter.WRITE_LOCK_NAME)) {
+      if (fileName.equals(IndexFileNames.OLD_SEGMENTS_GEN) || fileName.equals(IndexWriter.WRITE_LOCK_NAME)) {
         // do nothing
       } else if (fileName.startsWith(IndexFileNames.SEGMENTS)) {
         try {
           maxSegmentGen = Math.max(SegmentInfos.generationFromSegmentsFileName(fileName), maxSegmentGen);
         } catch (NumberFormatException ignore) {
           // trash file: we have to handle this since we allow anything starting with 'segments' here
+        }
+      } else if (fileName.startsWith(IndexFileNames.PENDING_SEGMENTS)) {
+        try {
+          maxSegmentGen = Math.max(SegmentInfos.generationFromSegmentsFileName(fileName.substring(8)), maxSegmentGen);
+        } catch (NumberFormatException ignore) {
+          // trash file: we have to handle this since we allow anything starting with 'pending_segments' here
         }
       } else {
         String segmentName = IndexFileNames.parseSegmentName(fileName);
@@ -417,7 +422,7 @@ final class IndexFileDeleter implements Closeable {
    * is non-null, we will only delete files corresponding to
    * that segment.
    */
-  public void refresh(String segmentName) throws IOException {
+  void refresh(String segmentName) throws IOException {
     assert locked();
 
     String[] files = directory.listAll();
@@ -439,8 +444,11 @@ final class IndexFileDeleter implements Closeable {
       if ((segmentName == null || fileName.startsWith(segmentPrefix1) || fileName.startsWith(segmentPrefix2)) &&
           !fileName.endsWith("write.lock") &&
           !refCounts.containsKey(fileName) &&
-          !fileName.equals(IndexFileNames.SEGMENTS_GEN) &&
-          (m.matches() || fileName.startsWith(IndexFileNames.SEGMENTS))) {
+          (m.matches() || fileName.startsWith(IndexFileNames.SEGMENTS) 
+              // we only try to clear out pending_segments_N during rollback(), because we don't ref-count it
+              // TODO: this is sneaky, should we do this, or change TestIWExceptions? rollback closes anyway, and 
+              // any leftover file will be deleted/retried on next IW bootup anyway...
+              || (segmentName == null && fileName.startsWith(IndexFileNames.PENDING_SEGMENTS)))) {
         // Unreferenced file, so remove it
         if (infoStream.isEnabled("IFD")) {
           infoStream.message("IFD", "refresh [prefix=" + segmentName + "]: removing newly created unreferenced file \"" + fileName + "\"");
@@ -450,7 +458,7 @@ final class IndexFileDeleter implements Closeable {
     }
   }
 
-  public void refresh() throws IOException {
+  void refresh() throws IOException {
     // Set to null so that we regenerate the list of pending
     // files; else we can accumulate same file more than
     // once

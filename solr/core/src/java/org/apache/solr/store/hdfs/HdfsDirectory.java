@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -44,11 +45,11 @@ public class HdfsDirectory extends BaseDirectory {
   public static final int BUFFER_SIZE = 8192;
   
   private static final String LF_EXT = ".lf";
-  protected static final String SEGMENTS_GEN = "segments.gen";
   protected Path hdfsDirPath;
   protected Configuration configuration;
   
   private final FileSystem fileSystem;
+  private final FileContext fileContext;
   
   public HdfsDirectory(Path hdfsDirPath, Configuration configuration)
       throws IOException {
@@ -56,6 +57,7 @@ public class HdfsDirectory extends BaseDirectory {
     this.hdfsDirPath = hdfsDirPath;
     this.configuration = configuration;
     fileSystem = FileSystem.newInstance(hdfsDirPath.toUri(), configuration);
+    fileContext = FileContext.getFileContext(hdfsDirPath.toUri(), configuration);
     
     while (true) {
       try {
@@ -98,9 +100,6 @@ public class HdfsDirectory extends BaseDirectory {
   
   @Override
   public IndexOutput createOutput(String name, IOContext context) throws IOException {
-    if (SEGMENTS_GEN.equals(name)) {
-      return new NullIndexOutput();
-    }
     return new HdfsFileWriter(getFileSystem(), new Path(hdfsDirPath, name));
   }
   
@@ -143,6 +142,13 @@ public class HdfsDirectory extends BaseDirectory {
     return getFileSystem().exists(new Path(hdfsDirPath, name));
   }
   
+  @Override
+  public void renameFile(String source, String dest) throws IOException {
+    Path sourcePath = new Path(hdfsDirPath, source);
+    Path destPath = new Path(hdfsDirPath, dest);
+    fileContext.rename(sourcePath, destPath);
+  }
+
   @Override
   public long fileLength(String name) throws IOException {
     return HdfsFileReader.getLength(getFileSystem(),

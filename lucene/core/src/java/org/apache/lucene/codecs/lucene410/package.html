@@ -208,8 +208,8 @@ for the Segment info file, the Lock file, and Deleted documents file) are collap
 into a single .cfs file (see below for details)</p>
 <p>Typically, all segments in an index are stored in a single directory,
 although this is not required.</p>
-<p>As of version 2.1 (lock-less commits), file names are never re-used (there
-is one exception, "segments.gen", see below). That is, when any file is saved
+<p>As of version 2.1 (lock-less commits), file names are never re-used.
+That is, when any file is saved
 to the Directory it is given a never before used filename. This is achieved
 using a simple generations approach. For example, the first segments file is
 segments_1, then segments_2, etc. The generation is a sequential long integer
@@ -228,7 +228,7 @@ Lucene:</p>
 </tr>
 <tr>
 <td>{@link org.apache.lucene.index.SegmentInfos Segments File}</td>
-<td>segments.gen, segments_N</td>
+<td>segments_N</td>
 <td>Stores information about a commit point</td>
 </tr>
 <tr>

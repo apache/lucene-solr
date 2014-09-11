@@ -27,6 +27,7 @@ import java.io.FilenameFilter;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -309,13 +310,16 @@ public abstract class FSDirectory extends BaseDirectory {
       fsync(name);
     }
     
-    // fsync the directory itsself, but only if there was any file fsynced before
-    // (otherwise it can happen that the directory does not yet exist)!
-    if (!toSync.isEmpty()) {
-      IOUtils.fsync(directory, true);
-    }
-    
     staleFiles.removeAll(toSync);
+  }
+  
+  @Override
+  public void renameFile(String source, String dest) throws IOException {
+    ensureOpen();
+    Files.move(new File(directory, source).toPath(), new File(directory, dest).toPath(), StandardCopyOption.ATOMIC_MOVE);
+    // TODO: should we move directory fsync to a separate 'syncMetadata' method?
+    // for example, to improve listCommits(), IndexFileDeleter could also call that after deleting segments_Ns
+    IOUtils.fsync(directory, true);
   }
 
   @Override
