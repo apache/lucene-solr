@@ -48,6 +48,10 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
   @Test
   public void testReRankQueries() throws Exception {
+
+    assertU(delQ("*:*"));
+    assertU(commit());
+
     String[] doc = {"id","1", "term_s", "YYYY", "group_s", "group1", "test_ti", "5", "test_tl", "10", "test_tf", "2000"};
     assertU(adoc(doc));
     assertU(commit());
@@ -66,6 +70,9 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     String[] doc5 = {"id","6", "term_s","YYYY", "group_s", "group2", "test_ti", "10", "test_tl", "100", "test_tf", "200"};
     assertU(adoc(doc5));
     assertU(commit());
+
+
+
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=200}");
@@ -231,9 +238,78 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[6]/float[@name='id'][.='3.0']"
     );
 
+    params = new ModifiableSolrParams();
+    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=4 reRankWeight=2}");
+    params.add("q", "{!edismax bq=$bqq1}*:*");
+    params.add("bqq1", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
+    params.add("rqq", "test_ti:50^1000");
+    params.add("fl", "id,score");
+    params.add("start", "0");
+    params.add("rows", "10");
+    params.add("qt","/elevate");
+    params.add("elevateIds", "4,1");
+
+    assertQ(req(params), "*[count(//doc)=6]",
+        "//result/doc[1]/float[@name='id'][.='4.0']", //Elevated
+        "//result/doc[2]/float[@name='id'][.='1.0']", //Elevated
+        "//result/doc[3]/float[@name='id'][.='6.0']",
+        "//result/doc[4]/float[@name='id'][.='5.0']",
+        "//result/doc[5]/float[@name='id'][.='3.0']",
+        "//result/doc[6]/float[@name='id'][.='2.0']"  //Not in reRankeDocs
+    );
+
+    //Test Elevation with start beyond the rerank docs
+    params = new ModifiableSolrParams();
+    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=3 reRankWeight=2}");
+    params.add("q", "{!edismax bq=$bqq1}*:*");
+    params.add("bqq1", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
+    params.add("rqq", "test_ti:50^1000");
+    params.add("fl", "id,score");
+    params.add("start", "4");
+    params.add("rows", "10");
+    params.add("qt","/elevate");
+    params.add("elevateIds", "4,1");
+
+    assertQ(req(params), "*[count(//doc)=2]",
+        "//result/doc[1]/float[@name='id'][.='3.0']",
+        "//result/doc[2]/float[@name='id'][.='2.0']"  //Was not in reRankDocs
+    );
+
+    //Test Elevation with zero results
+    params = new ModifiableSolrParams();
+    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=3 reRankWeight=2}");
+    params.add("q", "{!edismax bq=$bqq1}nada");
+    params.add("bqq1", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
+    params.add("rqq", "test_ti:50^1000");
+    params.add("fl", "id,score");
+    params.add("start", "4");
+    params.add("rows", "10");
+    params.add("qt","/elevate");
+    params.add("elevateIds", "4,1");
+
+    assertQ(req(params), "*[count(//doc)=0]");
+
 
 
     //Pass in reRankDocs lower then the length being collected.
+    params = new ModifiableSolrParams();
+    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=1 reRankWeight=2}");
+    params.add("q", "{!edismax bq=$bqq1}*:*");
+    params.add("bqq1", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
+    params.add("rqq", "test_ti:50^1000");
+    params.add("fl", "id,score");
+    params.add("start", "0");
+    params.add("rows", "10");
+
+    assertQ(req(params), "*[count(//doc)=6]",
+        "//result/doc[1]/float[@name='id'][.='6.0']",
+        "//result/doc[2]/float[@name='id'][.='5.0']",
+        "//result/doc[3]/float[@name='id'][.='4.0']",
+        "//result/doc[4]/float[@name='id'][.='3.0']",
+        "//result/doc[5]/float[@name='id'][.='2.0']",
+        "//result/doc[6]/float[@name='id'][.='1.0']"
+    );
+
     params = new ModifiableSolrParams();
     params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=0 reRankWeight=2}");
     params.add("q", "{!edismax bq=$bqq1}*:*");
@@ -244,14 +320,31 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("rows", "10");
 
     assertQ(req(params), "*[count(//doc)=6]",
-        "//result/doc[1]/float[@name='id'][.='2.0']",
-        "//result/doc[2]/float[@name='id'][.='6.0']",
-        "//result/doc[3]/float[@name='id'][.='5.0']",
-        "//result/doc[4]/float[@name='id'][.='4.0']",
-        "//result/doc[5]/float[@name='id'][.='3.0']",
+        "//result/doc[1]/float[@name='id'][.='6.0']",
+        "//result/doc[2]/float[@name='id'][.='5.0']",
+        "//result/doc[3]/float[@name='id'][.='4.0']",
+        "//result/doc[4]/float[@name='id'][.='3.0']",
+        "//result/doc[5]/float[@name='id'][.='2.0']",
         "//result/doc[6]/float[@name='id'][.='1.0']"
     );
 
+    params = new ModifiableSolrParams();
+    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=2 reRankWeight=2}");
+    params.add("q", "{!edismax bq=$bqq1}*:*");
+    params.add("bqq1", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
+    params.add("rqq", "test_ti:4^1000");
+    params.add("fl", "id,score");
+    params.add("start", "0");
+    params.add("rows", "10");
+
+    assertQ(req(params), "*[count(//doc)=6]",
+        "//result/doc[1]/float[@name='id'][.='5.0']",
+        "//result/doc[2]/float[@name='id'][.='6.0']",
+        "//result/doc[3]/float[@name='id'][.='4.0']",
+        "//result/doc[4]/float[@name='id'][.='3.0']",
+        "//result/doc[5]/float[@name='id'][.='2.0']",
+        "//result/doc[6]/float[@name='id'][.='1.0']"
+    );
 
     //Test reRankWeight of 0, reranking will have no effect.
     params = new ModifiableSolrParams();
@@ -271,11 +364,49 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[5]/float[@name='id'][.='2.0']"
     );
 
+
+
+    //Test range query
+    params = new ModifiableSolrParams();
+    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=6}");
+    params.add("q", "test_ti:[0 TO 2000]");
+    params.add("rqq", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
+    params.add("fl", "id,score");
+    params.add("start", "0");
+    params.add("rows", "6");
+
+    assertQ(req(params), "*[count(//doc)=5]",
+        "//result/doc[1]/float[@name='id'][.='6.0']",
+        "//result/doc[2]/float[@name='id'][.='5.0']",
+        "//result/doc[3]/float[@name='id'][.='4.0']",
+        "//result/doc[4]/float[@name='id'][.='2.0']",
+        "//result/doc[5]/float[@name='id'][.='1.0']"
+    );
+
+    //Test range query embedded in larger query
+    params = new ModifiableSolrParams();
+    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=6}");
+    params.add("q", "*:* OR test_ti:[0 TO 2000]");
+    params.add("rqq", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
+    params.add("fl", "id,score");
+    params.add("start", "0");
+    params.add("rows", "6");
+
+    assertQ(req(params), "*[count(//doc)=6]",
+        "//result/doc[1]/float[@name='id'][.='6.0']",
+        "//result/doc[2]/float[@name='id'][.='5.0']",
+        "//result/doc[3]/float[@name='id'][.='4.0']",
+        "//result/doc[4]/float[@name='id'][.='2.0']",
+        "//result/doc[5]/float[@name='id'][.='1.0']",
+        "//result/doc[6]/float[@name='id'][.='3.0']"
+    );
+
+
     //Test with start beyond reRankDocs
     params = new ModifiableSolrParams();
     params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=3 reRankWeight=2}");
-    params.add("q", "*:*");
-    params.add("rqq", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
+    params.add("q", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
+    params.add("rqq", "id:1^1000");
     params.add("fl", "id,score");
     params.add("start", "4");
     params.add("rows", "5");
@@ -285,6 +416,110 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[2]/float[@name='id'][.='1.0']"
     );
 
+    //Test ReRankDocs > docs returned
+
+    params = new ModifiableSolrParams();
+    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=6 reRankWeight=2}");
+    params.add("q", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50");
+    params.add("rqq", "id:1^1000");
+    params.add("fl", "id,score");
+    params.add("start", "0");
+    params.add("rows", "1");
+
+    assertQ(req(params), "*[count(//doc)=1]",
+        "//result/doc[1]/float[@name='id'][.='1.0']"
+    );
+
+
+
+    //Test with zero results
+    params = new ModifiableSolrParams();
+    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=3 reRankWeight=2}");
+    params.add("q", "term_s:NNNN");
+    params.add("rqq", "id:1^1000");
+    params.add("fl", "id,score");
+    params.add("start", "4");
+    params.add("rows", "5");
+
+    assertQ(req(params), "*[count(//doc)=0]");
 
   }
+
+  @Test
+  public void testOverRank() throws Exception {
+
+    assertU(delQ("*:*"));
+    assertU(commit());
+
+    //Test the scenario that where we rank more documents then we return.
+
+    String[] doc = {"id","1", "term_s", "YYYY", "group_s", "group1", "test_ti", "5", "test_tl", "10", "test_tf", "2000"};
+    assertU(adoc(doc));
+    String[] doc1 = {"id","2", "term_s","YYYY", "group_s", "group1", "test_ti", "50", "test_tl", "100", "test_tf", "200"};
+    assertU(adoc(doc1));
+
+    String[] doc2 = {"id","3", "term_s", "YYYY", "test_ti", "5000", "test_tl", "100", "test_tf", "200"};
+    assertU(adoc(doc2));
+    String[] doc3 = {"id","4", "term_s", "YYYY", "test_ti", "500", "test_tl", "1000", "test_tf", "2000"};
+    assertU(adoc(doc3));
+
+
+    String[] doc4 = {"id","5", "term_s", "YYYY", "group_s", "group2", "test_ti", "4", "test_tl", "10", "test_tf", "2000"};
+    assertU(adoc(doc4));
+
+    String[] doc5 = {"id","6", "term_s","YYYY", "group_s", "group2", "test_ti", "10", "test_tl", "100", "test_tf", "200"};
+    assertU(adoc(doc5));
+
+    String[] doc6 = {"id","7", "term_s", "YYYY", "group_s", "group1", "test_ti", "5", "test_tl", "10", "test_tf", "2000"};
+    assertU(adoc(doc6));
+
+
+    String[] doc7 = {"id","8", "term_s","YYYY", "group_s", "group1", "test_ti", "50", "test_tl", "100", "test_tf", "200"};
+    assertU(adoc(doc7));
+
+    String[] doc8 = {"id","9", "term_s", "YYYY", "test_ti", "5000", "test_tl", "100", "test_tf", "200"};
+    assertU(adoc(doc8));
+    String[] doc9 = {"id","10", "term_s", "YYYY", "test_ti", "500", "test_tl", "1000", "test_tf", "2000"};
+    assertU(adoc(doc9));
+
+    String[] doc10 = {"id","11", "term_s", "YYYY", "group_s", "group2", "test_ti", "4", "test_tl", "10", "test_tf", "2000"};
+    assertU(adoc(doc10));
+    assertU(commit());
+
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=11 reRankWeight=2}");
+    params.add("q", "{!edismax bq=$bqq1}*:*");
+    params.add("bqq1", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60 id:7^70 id:8^80 id:9^90 id:10^100 id:11^110");
+    params.add("rqq", "test_ti:50^1000");
+    params.add("fl", "id,score");
+    params.add("start", "0");
+    params.add("rows", "2");
+
+    assertQ(req(params), "*[count(//doc)=2]",
+        "//result/doc[1]/float[@name='id'][.='8.0']",
+        "//result/doc[2]/float[@name='id'][.='2.0']"
+    );
+
+    //Test Elevation
+    params = new ModifiableSolrParams();
+    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=6 reRankWeight=2}");
+    params.add("q", "{!edismax bq=$bqq1}*:*");
+    params.add("bqq1", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60 id:7^70 id:8^80 id:9^90 id:10^100 id:11^110");
+    params.add("rqq", "test_ti:50^1000");
+    params.add("fl", "id,score");
+    params.add("start", "0");
+    params.add("rows", "3");
+    params.add("qt","/elevate");
+    params.add("elevateIds", "1,4");
+
+    assertQ(req(params), "*[count(//doc)=3]",
+        "//result/doc[1]/float[@name='id'][.='1.0']", //Elevated
+        "//result/doc[2]/float[@name='id'][.='4.0']", //Elevated
+        "//result/doc[3]/float[@name='id'][.='8.0']"); //Boosted during rerank.
+
+
+
+  }
+
 }
