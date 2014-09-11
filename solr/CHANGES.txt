@@ -33,6 +33,9 @@ Bug Fixes
 
 * SOLR-6493: Fix fq exclusion via "ex" local param in multivalued stats.field (hossman)
 
+* SOLR-6447: bin/solr script needs to pass -DnumShards=1 for boostrapping collection1
+  when starting Solr in cloud mode. (Timothy Potter)
+
 Other Changes
 ---------------------
 

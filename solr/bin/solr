@@ -47,6 +47,8 @@
 SOLR_SCRIPT="$0"
 verbose=false
 THIS_OS=`uname -s`
+hasLsof=$(which lsof)
+
 # for now, we don't support running this script from cygwin due to problems
 # like not having lsof, ps waux, curl, and awkward directory handling
 if [ "${THIS_OS:0:6}" == "CYGWIN" ]; then
@@ -251,7 +253,8 @@ function stop_solr() {
   if [ "$SOLR_PID" != "" ]; then
     echo -e "Sending stop command to Jetty stop port $STOP_PORT ... waiting 5 seconds to allow process $SOLR_PID to stop gracefully."
     $JAVA -jar $DIR/start.jar STOP.PORT=$STOP_PORT STOP.KEY=$STOP_KEY --stop || true
-    sleep 5
+    (sleep 5) &
+    spinner $!
   else
     echo -e "No Solr nodes found to stop."
     exit 0
@@ -543,13 +546,19 @@ if [ "$EXAMPLE" != "" ]; then
                   fi
                                   
                   # check to see if something is already bound to that port
-                  PORT_IN_USE=`lsof -i:$CLOUD_PORT | grep $CLOUD_PORT`
-                  if [ "$PORT_IN_USE" != "" ]; then
-                    read -e -p "Oops! Looks like port $CLOUD_PORT is already being used by another process. Please choose a different port. " USER_INPUT
+                  if [ "$hasLsof" != "" ]; then
+                    PORT_IN_USE=`lsof -i:$CLOUD_PORT | grep $CLOUD_PORT`
+                    if [ "$PORT_IN_USE" != "" ]; then
+                      read -e -p "Oops! Looks like port $CLOUD_PORT is already being used by another process. Please choose a different port. " USER_INPUT
+                    else
+                      CLOUD_PORTS[$s]=$CLOUD_PORT
+                      echo $CLOUD_PORT
+                      break;
+                    fi
                   else
                     CLOUD_PORTS[$s]=$CLOUD_PORT
                     echo $CLOUD_PORT
-                    break;                                      
+                    break;
                   fi
                 done
               done
@@ -683,7 +692,7 @@ if [ "$SOLR_MODE" == "solrcloud" ]; then
     
     # and if collection1 needs to be bootstrapped
     if [ -e "$SOLR_HOME/collection1/core.properties" ]; then
-      CLOUD_MODE_OPTS="$CLOUD_MODE_OPTS -Dbootstrap_confdir=./solr/collection1/conf -Dcollection.configName=myconf"
+      CLOUD_MODE_OPTS="$CLOUD_MODE_OPTS -Dbootstrap_confdir=./solr/collection1/conf -Dcollection.configName=myconf -DnumShards=1"
     fi
   fi
     
@@ -774,28 +783,34 @@ $SOLR_HOST_ARG -Djetty.port=$SOLR_PORT \
     nohup $JAVA $SOLR_START_OPTS $SOLR_ADDL_ARGS -XX:OnOutOfMemoryError="$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT" -jar start.jar 1>$SOLR_TIP/bin/solr-$SOLR_PORT-console.log 2>&1 &
   
     # no lsof on cygwin though
-    echo -n "Waiting to see Solr listening on port $SOLR_PORT"
-    # Launch in a subshell to show the spinner
-    (loops=0
-    while true
-    do
-      running=`lsof -i:$SOLR_PORT | grep $SOLR_PORT`
-      if [ "$running" == "" ]; then
-        if [ $loops -lt 6 ]; then
-          sleep 5
-          loops=$[$loops+1]      
+    if [ "$hasLsof" != "" ]; then
+      echo -n "Waiting to see Solr listening on port $SOLR_PORT"
+      # Launch in a subshell to show the spinner
+      (loops=0
+      while true
+      do
+        running=`lsof -i:$SOLR_PORT | grep $SOLR_PORT`
+        if [ "$running" == "" ]; then
+          if [ $loops -lt 6 ]; then
+            sleep 5
+            loops=$[$loops+1]
+          else
+            echo -e "Still not seeing Solr listening on $SOLR_PORT after 30 seconds!"
+            tail -30 $SOLR_TIP/node1/logs/solr.log
+            exit;
+          fi
         else
-          echo -e "Still not seeing Solr listening on $SOLR_PORT after 30 seconds!"
-          tail -30 $SOLR_TIP/node1/logs/solr.log
+          SOLR_PID=`ps waux | grep start.jar | grep $SOLR_PORT | grep -v grep | awk '{print $2}' | sort -r`
+          echo -e "\nStarted Solr server on port $SOLR_PORT (pid=$SOLR_PID). Happy searching!\n"
           exit;
-        fi    
-      else
-        SOLR_PID=`ps waux | grep start.jar | grep $SOLR_PORT | grep -v grep | awk '{print $2}' | sort -r`
-        echo -e "\nStarted Solr server on port $SOLR_PORT (pid=$SOLR_PID). Happy searching!\n"
-        exit;
-      fi
-    done) &
-    spinner $!
+        fi
+      done) &
+      spinner $!
+    else
+      SOLR_PID=`ps waux | grep start.jar | grep $SOLR_PORT | grep -v grep | awk '{print $2}' | sort -r`
+      echo -e "\nStarted Solr server on port $SOLR_PORT (pid=$SOLR_PID). Happy searching!\n"
+      exit;
+    fi
   fi
 }
 
