@@ -21,12 +21,17 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
@@ -63,7 +68,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
@@ -296,13 +300,132 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       oldIndexDirs.put(name, newFSDirectory(dir));
     }
   }
-  
+
   @AfterClass
   public static void afterClass() throws Exception {
     for (Directory d : oldIndexDirs.values()) {
       d.close();
     }
     oldIndexDirs = null;
+  }
+
+  public void testAllVersionHaveCfsAndNocfs() {
+    // ensure all tested versions with cfs also have nocfs
+    String[] files = new String[oldNames.length];
+    System.arraycopy(oldNames, 0, files, 0, oldNames.length);
+    Arrays.sort(files);
+    String prevFile = "";
+    for (String file : files) {
+      if (prevFile.endsWith(".cfs")) {
+        String prefix = prevFile.replace(".cfs", "");
+        assertEquals("Missing .nocfs for backcompat index " + prefix, prefix + ".nocfs", file);
+      }
+    }
+  }
+
+  public void testAllVersionsTested() throws Exception {
+    Pattern constantPattern = Pattern.compile("LUCENE_(\\d+)_(\\d+)_(\\d+)(_ALPHA|_BETA)?");
+    // find the unique versions according to Version.java
+    List<String> expectedVersions = new ArrayList<>();
+    int lastPrevMinorIndex = -1;
+    Version lastPrevMajorVersion = null;
+    for (java.lang.reflect.Field field : Version.class.getDeclaredFields()) {
+      if (Modifier.isStatic(field.getModifiers()) && field.getType() == Version.class) {
+        Version v = (Version)field.get(Version.class);
+        if (v.equals(Version.LATEST)) continue;
+
+        Matcher constant = constantPattern.matcher(field.getName());
+        if (constant.matches() == false) continue;
+
+        if (v.major == Version.LATEST.major - 1 &&
+            (lastPrevMajorVersion == null || v.onOrAfter(lastPrevMajorVersion))) {
+          lastPrevMajorVersion = v;
+          lastPrevMinorIndex = expectedVersions.size();
+        }
+
+        String major = constant.group(1);
+        String minor = constant.group(2);
+        String bugfix = constant.group(3);
+        if (bugfix.equals("0")) {
+          bugfix = "";
+        }
+        String prerelease = constant.group(4);
+        if (prerelease != null) {
+          if (prerelease.equals("_ALPHA")) {
+            prerelease = "a";
+          } else { // _BETA
+            prerelease = "b";
+          }
+        } else {
+          prerelease = "";
+        }
+        expectedVersions.add(major + minor + bugfix + prerelease + ".cfs");
+      }
+    }
+    if (Version.LATEST.minor == 0 && Version.LATEST.bugfix == 0 && Version.LATEST.prerelease == 0) {
+      // we are on trunk (latest is a first major release) so the last minor index
+      // for the previous major version is also not yet tested
+      assertNotNull(lastPrevMajorVersion);
+      expectedVersions.remove(lastPrevMinorIndex);
+    }
+    Collections.sort(expectedVersions);
+
+    // find what versions we are testing
+    List<String> testedVersions = new ArrayList<>();
+    for (String testedVersion : oldNames) {
+      if (testedVersion.endsWith(".cfs") == false) continue;
+      testedVersions.add(testedVersion);
+    }
+    Collections.sort(testedVersions);
+
+
+    int i = 0;
+    int j = 0;
+    List<String> missingFiles = new ArrayList<>();
+    List<String> extraFiles = new ArrayList<>();
+    while (i < expectedVersions.size() && j < testedVersions.size()) {
+      String expectedVersion = expectedVersions.get(i);
+      String testedVersion = testedVersions.get(j);
+      int compare = expectedVersion.compareTo(testedVersion);
+      if (compare == 0) { // equal, we can move on
+        ++i;
+        ++j;
+      } else if (compare < 0) { // didn't find test for version constant
+        missingFiles.add(expectedVersion);
+        ++i;
+      } else { // extra test file
+        extraFiles.add(testedVersion);
+        ++j;
+      }
+    }
+    while (i < expectedVersions.size()) {
+      missingFiles.add(expectedVersions.get(i));
+      ++i;
+    }
+    while (j < testedVersions.size()) {
+      missingFiles.add(testedVersions.get(j));
+      ++j;
+    }
+
+    if (missingFiles.isEmpty() && extraFiles.isEmpty()) {
+      // success
+      return;
+    }
+
+    StringBuffer msg = new StringBuffer();
+    if (missingFiles.isEmpty() == false) {
+      msg.append("Missing backcompat test files:\n");
+      for (String missingFile : missingFiles) {
+        msg.append("  " + missingFile + "\n");
+      }
+    }
+    if (extraFiles.isEmpty() == false) {
+      msg.append("Extra backcompat test files:\n");
+      for (String extraFile : extraFiles) {
+        msg.append("  " + extraFile + "\n");
+      }
+    }
+    fail(msg.toString());
   }
   
   /** This test checks that *only* IndexFormatTooOldExceptions are thrown when you open and operate on too old indexes! */

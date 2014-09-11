@@ -155,6 +155,11 @@ Bug Fixes
 * LUCENE-5934: Fix backwards compatibility for 4.0 indexes.
   (Ian Lea, Uwe Schindler, Robert Muir, Ryan Ernst)
 
+Tests
+
+* LUCENE-5936: Add backcompat checks to verify what is tested matches known versions
+  (Ryan Ernst)
+
 Build
 
 * LUCENE-5909: Smoke tester now has better command line parsing and
