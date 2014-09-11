@@ -503,7 +503,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
     //Test Elevation
     params = new ModifiableSolrParams();
-    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=6 reRankWeight=2}");
+    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=11 reRankWeight=2}");
     params.add("q", "{!edismax bq=$bqq1}*:*");
     params.add("bqq1", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60 id:7^70 id:8^80 id:9^90 id:10^100 id:11^110");
     params.add("rqq", "test_ti:50^1000");
