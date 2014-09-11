@@ -156,14 +156,6 @@ public class DataImportHandler extends RequestHandlerBase implements
       return;
     }
 
-    Map<String, DataImportHandler> requestHandlers = req.getCore().getRequestHandlers(DataImportHandler.class);
-    for (Map.Entry<String, DataImportHandler> entry : requestHandlers.entrySet()) {
-      if (this == entry.getValue()) {
-        DataImportHandler handler = entry.getValue();
-        System.out.println("This is me! = " + handler.getName());
-      }
-    }
-
     rsp.add("initArgs", initArgs);
     String message = "";
 
