@@ -36,6 +36,9 @@ Bug Fixes
 * SOLR-6447: bin/solr script needs to pass -DnumShards=1 for boostrapping collection1
   when starting Solr in cloud mode. (Timothy Potter)
 
+* SOLR-6501: Binary Response Writer does not return wildcard fields.
+  (Mike Hugo, Constantin Mitocaru, sarowe, shalin)
+
 Other Changes
 ---------------------
 
