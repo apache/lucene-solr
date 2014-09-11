@@ -628,6 +628,7 @@ def verifyUnpacked(java, project, artifact, unpackPath, svnRevision, version, te
 
   os.chdir(unpackPath)
   isSrc = artifact.find('-src') != -1
+  
   l = os.listdir(unpackPath)
   textFiles = ['LICENSE', 'NOTICE', 'README']
   if project == 'lucene':
@@ -636,7 +637,7 @@ def verifyUnpacked(java, project, artifact, unpackPath, svnRevision, version, te
       textFiles.append('BUILD')
   elif not isSrc:
     textFiles.append('SYSTEM_REQUIREMENTS')
-    
+
   for fileName in textFiles:
     fileName += '.txt'
     if fileName not in l:
@@ -760,7 +761,7 @@ def verifyUnpacked(java, project, artifact, unpackPath, svnRevision, version, te
   else:
 
     checkAllJARs(os.getcwd(), project, svnRevision, version, tmpDir, baseURL)
-    
+
     if project == 'lucene':
       testDemo(java.run_java7, isSrc, version, '1.7')
       if java.run_java8:
@@ -794,6 +795,11 @@ def verifyUnpacked(java, project, artifact, unpackPath, svnRevision, version, te
       os.chdir(unpackPath)
 
   testChangesText('.', version, project)
+
+  if project == 'lucene' and isSrc:
+    print('  confirm all releases have coverage in TestBackwardsCompatibility')
+    confirmAllReleasesAreTestedForBackCompat(unpackPath)
+    
 
 def testNotice(unpackPath):
   solrNotice = open('%s/NOTICE.txt' % unpackPath, encoding='UTF-8').read()
@@ -1290,7 +1296,7 @@ revision_re = re.compile(r'rev(\d+)')
 def parse_config():
   epilogue = textwrap.dedent('''
     Example usage:
-    python3.2 -u dev-tools/scripts/smokeTestRelease.py http://people.apache.org/~whoever/staging_area/lucene-solr-4.3.0-RC1-rev1469340')
+    python3.2 -u dev-tools/scripts/smokeTestRelease.py http://people.apache.org/~whoever/staging_area/lucene-solr-4.3.0-RC1-rev1469340
   ''')
   description = 'Utility to test a release.'
   parser = argparse.ArgumentParser(description=description, epilog=epilogue,
@@ -1339,11 +1345,112 @@ def parse_config():
 
   return c
 
+reVersion1 = re.compile(r'\>(\d+)\.(\d+)\.(\d+)(-alpha|-beta)?/\<', re.IGNORECASE)
+reVersion2 = re.compile(r'-(\d+)\.(\d+)\.(\d+)(-alpha|-beta)?\.', re.IGNORECASE)
+
+def getAllLuceneReleases():
+  s = urllib.request.urlopen('https://archive.apache.org/dist/lucene/java').read().decode('UTF-8')
+
+  releases = set()
+  for r in reVersion1, reVersion2:
+    for tup in r.findall(s):
+      if tup[-1].lower() == '-alpha':
+        tup = tup[:3] + ('0',)
+      elif tup[-1].lower() == '-beta':
+        tup = tup[:3] + ('1',)
+      elif tup[-1] == '':
+        tup = tup[:3]
+      else:
+        raise RuntimeError('failed to parse version: %s' % tup[-1])
+      releases.add(tuple(int(x) for x in tup))
+
+  l = list(releases)
+  l.sort()
+  return l
+
+def confirmAllReleasesAreTestedForBackCompat(unpackPath):
+
+  print('    find all past Lucene releases...')
+  allReleases = getAllLuceneReleases()
+  if False:
+    for tup in allReleases:
+      print('  %s' % '.'.join(str(x) for x in tup))
+
+  testedIndices = set()
+
+  os.chdir(unpackPath)
+
+  for suffix in '',:
+    print('    run TestBackwardsCompatibility%s..' % suffix)
+    command = 'ant test -Dtestcase=TestBackwardsCompatibility%s -Dtests.verbose=true' % suffix
+    p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    stdout, stderr = p.communicate()
+    if p.returncode is not 0:
+      # Not good: the test failed!
+      raise RuntimeError('%s failed:\n%s' % (command, stdout))
+    stdout = stdout.decode('utf-8')
+
+    if stderr is not None:
+      # Should not happen since we redirected stderr to stdout:
+      raise RuntimeError('stderr non-empty')
+
+    reIndexName = re.compile('TEST: index[= ](.*?)$', re.MULTILINE)
+
+    for s in reIndexName.findall(stdout):
+      # Fragile: decode the inconsistent naming schemes we've used in TestBWC's indices:
+      name = os.path.splitext(s)[0]
+      # print('parse name %s' % name)
+      if name == '410':
+        tup = 4, 10, 0
+      elif name == '40a':
+        tup = 4, 0, 0, 0
+      elif name == '40b':
+        tup = 4, 0, 0, 1
+      elif len(name) == 2:
+        tup = int(name[0]), int(name[1]), 0
+      elif len(name) == 3:
+        tup = int(name[0]), int(name[1]), int(name[2])
+      else:
+        raise RuntimeError('do not know how to parse index name %s' % name)
+      testedIndices.add(tup)
+
+  l = list(testedIndices)
+  l.sort()
+  if False:
+    for release in l:
+      print('  %s' % '.'.join(str(x) for x in release))
+
+  allReleases = set(allReleases)
+
+  for x in testedIndices:
+    if x not in allReleases:
+      # Curious: we test 1.9.0 index but it's not in the releases (I think it was pulled because of nasty bug?)
+      if x != (1, 9, 0):
+        raise RuntimeError('tested version=%s but it was not released?' % '.'.join(str(y) for y in x))
+
+  notTested = []
+  for x in allReleases:
+    if x not in testedIndices:
+      if '.'.join(str(y) for y in x) in ('1.4.3', '1.9.1', '2.3.1', '2.3.2'):
+        # Exempt the dark ages indices
+        continue
+      notTested.append(x)
+
+  if len(notTested) > 0:
+    notTested.sort()
+    print('Releases that don\'t seem to be tested:')
+    failed = True
+    for x in notTested:
+      print('  %s' % '.'.join(str(y) for y in x))
+    raise RuntimeError('some releases are not tested by TestBackwardsCompatibility?')
+  else:
+    print('    success!')
+
 def main():
   c = parse_config()
   print('NOTE: output encoding is %s' % sys.stdout.encoding)
   smokeTest(c.java, c.url, c.revision, c.version, c.tmp_dir, c.is_signed, ' '.join(c.test_args))
-
+  
 def smokeTest(java, baseURL, svnRevision, version, tmpDir, isSigned, testArgs):
 
   startTime = datetime.datetime.now()
