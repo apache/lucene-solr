@@ -113,6 +113,8 @@ New Features
 * LUCENE-5906: Use Files.delete everywhere instead of File.delete, so that
   when things go wrong, you get a real exception message why.
   (Uwe Schindler, Robert Muir)
+  
+* LUCENE-5933: Added FilterSpans for easier wrapping of Spans instance. (Shai Erera)
 
 * LUCENE-5925: Remove fallback logic from opening commits, instead use
   Directory.renameFile so that in-progress commits are never visible. 
