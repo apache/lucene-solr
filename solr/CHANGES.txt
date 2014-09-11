@@ -191,6 +191,9 @@ Bug Fixes
 * SOLR-6452: StatsComponent's stat 'missing' will work on fields with docValues=true and 
   indexed=false (Xu Zhang via Tomás Fernández Löbbe)
 
+* SOLR-6499: Log warning about multiple update request handlers
+  (Noble Paul, Andreas Hubold, hossman)
+
 Other Changes
 ---------------------
 
