@@ -96,6 +96,29 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     IOUtils.close(source, dest);
   }
   
+  public void testRename() throws Exception {
+    Directory dir = getDirectory(createTempDir("testRename"));
+    
+    IndexOutput output = dir.createOutput("foobar", newIOContext(random()));
+    int numBytes = random().nextInt(20000);
+    byte bytes[] = new byte[numBytes];
+    random().nextBytes(bytes);
+    output.writeBytes(bytes, bytes.length);
+    output.close();
+    
+    dir.renameFile("foobar", "foobaz");
+    
+    IndexInput input = dir.openInput("foobaz", newIOContext(random()));
+    byte bytes2[] = new byte[numBytes];
+    input.readBytes(bytes2, 0, bytes2.length);
+    assertEquals(input.length(), numBytes);
+    input.close();
+    
+    assertArrayEquals(bytes, bytes2);
+    
+    dir.close();
+  }
+  
   // TODO: are these semantics really needed by lucene? can we just throw exception?
   public void testCopyOverwrite() throws Exception {
     Directory source = getDirectory(createTempDir("testCopyOverwrite"));

@@ -1111,7 +1111,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
   // LUCENE-1044: Simulate checksum error in segments_N
   public void testSegmentsChecksumError() throws IOException {
-    Directory dir = newDirectory();
+    BaseDirectoryWrapper dir = newDirectory();
+    dir.setCheckIndexOnClose(false); // we corrupt the index
 
     IndexWriter writer = null;
 
@@ -1137,17 +1138,12 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     out.close();
     in.close();
 
-    IndexReader reader = null;
     try {
-      reader = DirectoryReader.open(dir);
-    } catch (IOException e) {
-      e.printStackTrace(System.out);
-      fail("segmentInfos failed to retry fallback to correct segments_N file");
+      DirectoryReader.open(dir);
+      fail("didn't get expected checksum error");
+    } catch (CorruptIndexException expected) {
     }
-    reader.close();
-    
-    // should remove the corrumpted segments_N
-    new IndexWriter(dir, newIndexWriterConfig(null)).close();
+
     dir.close();
   }
 
@@ -1258,73 +1254,6 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       reader.close();
     }
     dir.close();
-  }
-
-  // Simulate a writer that crashed while writing segments
-  // file: make sure we can still open the index (ie,
-  // gracefully fallback to the previous segments file),
-  // and that we can add to the index:
-  public void testSimulatedCrashedWriter() throws IOException {
-      Directory dir = newDirectory();
-      if (dir instanceof MockDirectoryWrapper) {
-        ((MockDirectoryWrapper)dir).setPreventDoubleWrite(false);
-      }
-
-      IndexWriter writer = null;
-
-      writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-
-      // add 100 documents
-      for (int i = 0; i < 100; i++) {
-          addDoc(writer);
-      }
-
-      // close
-      writer.close();
-
-      long gen = SegmentInfos.getLastCommitGeneration(dir);
-      assertTrue("segment generation should be > 0 but got " + gen, gen > 0);
-
-      // Make the next segments file, with last byte
-      // missing, to simulate a writer that crashed while
-      // writing segments file:
-      String fileNameIn = SegmentInfos.getLastCommitSegmentsFileName(dir);
-      String fileNameOut = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
-                                                                 "",
-                                                                 1+gen);
-      IndexInput in = dir.openInput(fileNameIn, newIOContext(random()));
-      IndexOutput out = dir.createOutput(fileNameOut, newIOContext(random()));
-      long length = in.length();
-      for(int i=0;i<length-1;i++) {
-        out.writeByte(in.readByte());
-      }
-      in.close();
-      out.close();
-
-      IndexReader reader = null;
-      try {
-        reader = DirectoryReader.open(dir);
-      } catch (Exception e) {
-        fail("reader failed to open on a crashed index");
-      }
-      reader.close();
-
-      try {
-        writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                         .setOpenMode(OpenMode.CREATE));
-      } catch (Exception e) {
-        e.printStackTrace(System.out);
-        fail("writer failed to open on a crashed index");
-      }
-
-      // add 100 documents
-      for (int i = 0; i < 100; i++) {
-          addDoc(writer);
-      }
-
-      // close
-      writer.close();
-      dir.close();
   }
 
   public void testTermVectorExceptions() throws IOException {

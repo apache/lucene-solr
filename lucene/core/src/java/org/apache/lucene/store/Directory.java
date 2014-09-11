@@ -89,7 +89,19 @@ public abstract class Directory implements Closeable {
    * reasons.
    */
   public abstract void sync(Collection<String> names) throws IOException;
-
+  
+  /**
+   * Renames {@code source} to {@code dest} as an atomic operation,
+   * where {@code dest} does not yet exist in the directory.
+   * <p>
+   * Notes: This method is used by IndexWriter to publish commits.
+   * It is ok if this operation is not truly atomic, for example
+   * both {@code source} and {@code dest} can be visible temporarily.
+   * It is just important that the contents of {@code dest} appear
+   * atomically, or an exception is thrown.
+   */
+  public abstract void renameFile(String source, String dest) throws IOException;
+  
   /** Returns a stream reading an existing file, with the
    * specified read buffer size.  The particular Directory
    * implementation may ignore the buffer size.  Currently

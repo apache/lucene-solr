@@ -18,6 +18,7 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
+import java.nio.file.AtomicMoveNotSupportedException;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -160,6 +161,17 @@ public class FileSwitchDirectory extends BaseDirectory {
 
     primaryDir.sync(primaryNames);
     secondaryDir.sync(secondaryNames);
+  }
+
+  @Override
+  public void renameFile(String source, String dest) throws IOException {
+    Directory sourceDir = getDirectory(source);
+    // won't happen with standard lucene index files since pending and commit will
+    // always have the same extension ("")
+    if (sourceDir != getDirectory(dest)) {
+      throw new AtomicMoveNotSupportedException(source, dest, "source and dest are in different directories");
+    }
+    sourceDir.renameFile(source, dest);
   }
 
   @Override

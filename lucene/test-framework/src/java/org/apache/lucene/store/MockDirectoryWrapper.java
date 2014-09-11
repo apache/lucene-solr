@@ -238,6 +238,39 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     }
   }
 
+  @Override
+  public synchronized void renameFile(String source, String dest) throws IOException {
+    maybeYield();
+    maybeThrowDeterministicException();
+
+    if (crashed) {
+      throw new IOException("cannot rename after crash");
+    }
+    
+    if (openFiles.containsKey(source)) {
+      if (assertNoDeleteOpenFile) {
+        throw (AssertionError) fillOpenTrace(new AssertionError("MockDirectoryWrapper: file \"" + source + "\" is still open: cannot rename"), source, true);
+      } else if (noDeleteOpenFile) {
+        throw (IOException) fillOpenTrace(new IOException("MockDirectoryWrapper: file \"" + source + "\" is still open: cannot rename"), source, true);
+      }
+    }
+
+    boolean success = false;
+    try {
+      in.renameFile(source, dest);
+      success = true;
+    } finally {
+      if (success) {
+        // we don't do this stuff with lucene's commit, but its just for completeness
+        if (unSyncedFiles.contains(source)) {
+          unSyncedFiles.remove(source);
+          unSyncedFiles.add(dest);
+        }
+        openFilesDeleted.remove(source);
+      }
+    }
+  }
+
   public synchronized final long sizeInBytes() throws IOException {
     if (in instanceof RAMDirectory)
       return ((RAMDirectory) in).ramBytesUsed();

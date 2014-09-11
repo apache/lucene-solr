@@ -70,6 +70,11 @@ public class FilterDirectory extends Directory {
   }
 
   @Override
+  public void renameFile(String source, String dest) throws IOException {
+    in.renameFile(source, dest);
+  }
+
+  @Override
   public IndexInput openInput(String name, IOContext context)
       throws IOException {
     return in.openInput(name, context);

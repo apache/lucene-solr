@@ -272,8 +272,6 @@ public class TestDeletionPolicy extends LuceneTestCase {
     String fileName = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                             "",
                                                             gen);
-    dir.deleteFile(IndexFileNames.SEGMENTS_GEN);
-
     boolean oneSecondResolution = true;
 
     while(gen > 0) {
@@ -377,7 +375,6 @@ public class TestDeletionPolicy extends LuceneTestCase {
 
       // Simplistic check: just verify all segments_N's still
       // exist, and, I can open a reader on each:
-      dir.deleteFile(IndexFileNames.SEGMENTS_GEN);
       long gen = SegmentInfos.getLastCommitGeneration(dir);
       while(gen > 0) {
         IndexReader reader = DirectoryReader.open(dir);
@@ -599,7 +596,6 @@ public class TestDeletionPolicy extends LuceneTestCase {
 
       // Simplistic check: just verify only the past N segments_N's still
       // exist, and, I can open a reader on each:
-      dir.deleteFile(IndexFileNames.SEGMENTS_GEN);
       long gen = SegmentInfos.getLastCommitGeneration(dir);
       for(int i=0;i<N+1;i++) {
         try {
@@ -702,7 +698,6 @@ public class TestDeletionPolicy extends LuceneTestCase {
       // exist, and, I can open a reader on each:
       long gen = SegmentInfos.getLastCommitGeneration(dir);
 
-      dir.deleteFile(IndexFileNames.SEGMENTS_GEN);
       int expectedCount = 0;
       
       rwReader.close();

@@ -114,6 +114,10 @@ New Features
   when things go wrong, you get a real exception message why.
   (Uwe Schindler, Robert Muir)
 
+* LUCENE-5925: Remove fallback logic from opening commits, instead use
+  Directory.renameFile so that in-progress commits are never visible. 
+  (Robert Muir)
+
 API Changes:
 
 * LUCENE-5900: Deprecated more constructors taking Version in *InfixSuggester and

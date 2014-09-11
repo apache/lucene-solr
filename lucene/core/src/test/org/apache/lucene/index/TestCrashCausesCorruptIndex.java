@@ -70,7 +70,7 @@ public class TestCrashCausesCorruptIndex extends LuceneTestCase  {
     // writes segments_1:
     indexWriter.commit();
             
-    crashAfterCreateOutput.setCrashAfterCreateOutput("segments_2");
+    crashAfterCreateOutput.setCrashAfterCreateOutput("pending_segments_2");
     indexWriter.addDocument(getDocument());
     try {
       // tries to write segments_2 but hits fake exc:

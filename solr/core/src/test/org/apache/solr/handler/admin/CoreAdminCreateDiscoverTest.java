@@ -141,9 +141,6 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
     // Should have segments in the directory pointed to by the ${DATA_TEST}.
     File test = new File(dataDir, "index");
     assertTrue("Should have found index dir at " + test.getAbsolutePath(), test.exists());
-    File gen = new File(test, "segments.gen");
-    assertTrue("Should be segments.gen in the dir at " + gen.getAbsolutePath(), gen.exists());
-
   }
 
   @Test
@@ -276,9 +273,6 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
     // Should have segments in the directory pointed to by the ${DATA_TEST}.
     File test = new File(data, "index");
     assertTrue("Should have found index dir at " + test.getAbsolutePath(), test.exists());
-    File gen = new File(test, "segments.gen");
-    assertTrue("Should be segments.gen in the dir at " + gen.getAbsolutePath(), gen.exists());
-
   }
 
 }

@@ -652,13 +652,11 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     // Fail when reopen tries to open the live docs file:
     dir.failOn(new MockDirectoryWrapper.Failure() {
 
-      int failCount;
+      boolean failed;
 
       @Override
       public void eval(MockDirectoryWrapper dir) throws IOException {
-        // Need to throw exc three times so the logic in
-        // SegmentInfos.FindSegmentsFile "really believes" us:
-        if (failCount >= 3) {
+        if (failed) {
           return;
         }
         //System.out.println("failOn: ");
@@ -670,7 +668,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
               System.out.println("TEST: now fail; exc:");
               new Throwable().printStackTrace(System.out);
             }
-            failCount++;
+            failed = true;
             throw new FakeIOException();
           }
         }

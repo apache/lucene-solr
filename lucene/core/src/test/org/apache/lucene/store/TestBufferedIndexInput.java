@@ -344,6 +344,12 @@ public class TestBufferedIndexInput extends LuceneTestCase {
       public void sync(Collection<String> names) throws IOException {
         dir.sync(names);
       }
+      
+      @Override
+      public void renameFile(String source, String dest) throws IOException {
+        dir.renameFile(source, dest);
+      }
+
       @Override
       public long fileLength(String name) throws IOException {
         return dir.fileLength(name);

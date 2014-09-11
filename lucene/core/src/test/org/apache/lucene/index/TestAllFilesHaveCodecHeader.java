@@ -78,9 +78,6 @@ public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
       if (file.equals(IndexWriter.WRITE_LOCK_NAME)) {
         continue; // write.lock has no header, thats ok
       }
-      if (file.equals(IndexFileNames.SEGMENTS_GEN)) {
-        continue; // segments.gen has no header, thats ok
-      }
       if (file.endsWith(IndexFileNames.COMPOUND_FILE_EXTENSION)) {
         CompoundFileDirectory cfsDir = new CompoundFileDirectory(dir, file, newIOContext(random()), false);
         checkHeaders(cfsDir); // recurse into cfs
