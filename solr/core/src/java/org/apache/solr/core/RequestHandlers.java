@@ -142,7 +142,12 @@ public final class RequestHandlers {
   void initHandlersFromConfig(SolrConfig config, List<PluginInfo> implicits){
     // use link map so we iterate in the same order
     Map<PluginInfo,SolrRequestHandler> handlers = new LinkedHashMap<>();
-    ArrayList<PluginInfo> infos = new ArrayList<>(implicits);
+    Map<String, PluginInfo> implicitInfoMap= new HashMap<>();
+    //deduping implicit and explicit requesthandlers
+    for (PluginInfo info : implicits) implicitInfoMap.put(info.name,info);
+    for (PluginInfo info : config.getPluginInfos(SolrRequestHandler.class.getName()))
+      if(implicitInfoMap.containsKey(info.name)) implicitInfoMap.remove(info.name);
+    ArrayList<PluginInfo> infos = new ArrayList<>(implicitInfoMap.values());
     infos.addAll(config.getPluginInfos(SolrRequestHandler.class.getName()));
     for (PluginInfo info : infos) {
       try {
