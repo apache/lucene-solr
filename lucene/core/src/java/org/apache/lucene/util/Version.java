@@ -451,6 +451,15 @@ public final class Version {
     }
   }
 
+  /** Major version, the difference between stable and trunk */
+  public final int major;
+  /** Minor version, incremented within the stable branch */
+  public final int minor;
+  /** Bugfix number, incremented on release branches */
+  public final int bugfix;
+  /** Prerelease version, currently 0 (alpha), 1 (beta), or 2 (final) */
+  public final int prerelease;
+
   // stores the version pieces, with most significant pieces in high bits
   // ie:  | 1 byte | 1 byte | 1 byte |   2 bits   |
   //         major   minor    bugfix   prerelease
@@ -461,6 +470,10 @@ public final class Version {
   }
 
   private Version(int major, int minor, int bugfix, int prerelease) {
+    this.major = major;
+    this.minor = minor;
+    this.bugfix = bugfix;
+    this.prerelease = prerelease;
     if (major > 4 || major < 3) {
       throw new IllegalArgumentException("Lucene 4.x only supports 4.x and 3.x versions");
     }
