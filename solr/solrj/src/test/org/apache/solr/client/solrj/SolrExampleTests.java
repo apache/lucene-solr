@@ -1396,6 +1396,64 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     }
   }
 
+  @Test
+  public void testFieldGlobbing() throws Exception  {
+    SolrServer server = getSolrServer();
+
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "testFieldGlobbing");
+    doc.addField("x_s", "x");
+    doc.addField("y_s", "y");
+    doc.addField("z_s", "z");
+    server.add(doc);
+    server.commit();
+
+    // id and glob
+    QueryResponse response = server.query(new SolrQuery("id:testFieldGlobbing").addField("id").addField("*_s"));
+    assertEquals("Document not found", 1, response.getResults().getNumFound());
+    assertEquals("All requested fields were not returned", 4, response.getResults().get(0).getFieldNames().size());
+
+    // just globs
+    response = server.query(new SolrQuery("id:testFieldGlobbing").addField("*_s"));
+    assertEquals("Document not found", 1, response.getResults().getNumFound());
+    assertEquals("All requested fields were not returned", 3, response.getResults().get(0).getFieldNames().size());
+
+    // just id
+    response = server.query(new SolrQuery("id:testFieldGlobbing").addField("id"));
+    assertEquals("Document not found", 1, response.getResults().getNumFound());
+    assertEquals("All requested fields were not returned", 1, response.getResults().get(0).getFieldNames().size());
+
+    // id and pseudo field and glob
+    response = server.query(new SolrQuery("id:testFieldGlobbing").addField("id").addField("[docid]").addField("*_s"));
+    assertEquals("Document not found", 1, response.getResults().getNumFound());
+    assertEquals("All requested fields were not returned", 5, response.getResults().get(0).getFieldNames().size());
+
+    // pseudo field and glob
+    response = server.query(new SolrQuery("id:testFieldGlobbing").addField("[docid]").addField("*_s"));
+    assertEquals("Document not found", 1, response.getResults().getNumFound());
+    assertEquals("All requested fields were not returned", 4, response.getResults().get(0).getFieldNames().size());
+
+    // just a pseudo field
+    response = server.query(new SolrQuery("id:testFieldGlobbing").addField("[docid]"));
+    assertEquals("Document not found", 1, response.getResults().getNumFound());
+    assertEquals("All requested fields were not returned", 1, response.getResults().get(0).getFieldNames().size());
+
+    // only score
+    response = server.query(new SolrQuery("id:testFieldGlobbing").addField("score"));
+    assertEquals("Document not found", 1, response.getResults().getNumFound());
+    assertEquals("All requested fields were not returned", 1, response.getResults().get(0).getFieldNames().size());
+
+    // pseudo field and score
+    response = server.query(new SolrQuery("id:testFieldGlobbing").addField("score").addField("[docid]"));
+    assertEquals("Document not found", 1, response.getResults().getNumFound());
+    assertEquals("All requested fields were not returned", 2, response.getResults().get(0).getFieldNames().size());
+
+    // score and globs
+    response = server.query(new SolrQuery("id:testFieldGlobbing").addField("score").addField("*_s"));
+    assertEquals("Document not found", 1, response.getResults().getNumFound());
+    assertEquals("All requested fields were not returned", 4, response.getResults().get(0).getFieldNames().size());
+  }
+
   /** 
    * Depth first search of a SolrInputDocument looking for a decendent by id, 
    * returns null if it's not a decendent 

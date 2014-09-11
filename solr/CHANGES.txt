@@ -194,6 +194,9 @@ Bug Fixes
 * SOLR-6499: Log warning about multiple update request handlers
   (Noble Paul, Andreas Hubold, hossman)
 
+* SOLR-6501: Binary Response Writer does not return wildcard fields.
+  (Mike Hugo, Constantin Mitocaru, sarowe, shalin)
+
 Other Changes
 ---------------------
 

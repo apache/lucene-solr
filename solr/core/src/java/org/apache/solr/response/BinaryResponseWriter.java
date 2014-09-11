@@ -142,7 +142,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       }
       
       Set<String> fnames = returnFields.getLuceneFieldNames();
-      boolean onlyPseudoFields = (fnames == null && !returnFields.wantsAllFields())
+      boolean onlyPseudoFields = (fnames == null && !returnFields.wantsAllFields() && !returnFields.hasPatternMatching())
           || (fnames != null && fnames.size() == 1 && SolrReturnFields.SCORE.equals(fnames.iterator().next()));
       context.iterator = ids.iterator();
       for (int i = 0; i < sz; i++) {
