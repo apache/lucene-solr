@@ -144,6 +144,13 @@ New Features
 * SOLR-5098: Schema API: Add REST support for adding field types to the schema.
   (Timothy Potter)
 
+* SOLR-5473 : Split clusterstate.json per collection and watch states selectively
+              (Noble Paul, Mark Miller, shalin, Jessica Cheng Mallet, Timothy Potter, Ashum Gupta)
+
+* SOLR-5474 : Support for SOLR-5473 in SolrJ (Timothy Potter, Noble Paul, Mark Miller)
+
+* SOLR-5810 : Support for SOLR-5473 in solr admin UI (Timothy Potter, Noble Paul)
+
 Bug Fixes
 ----------------------
 

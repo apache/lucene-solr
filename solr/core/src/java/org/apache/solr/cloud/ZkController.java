@@ -1165,6 +1165,19 @@ public final class ZkController {
     }
 
     CloudDescriptor cloudDescriptor = cd.getCloudDescriptor();
+    boolean removeWatch = true;
+    // if there is no SolrCore which is a member of this collection, remove the watch
+    for (SolrCore solrCore : cc.getCores()) {
+      CloudDescriptor cloudDesc = solrCore.getCoreDescriptor()
+          .getCloudDescriptor();
+      if (cloudDesc != null
+          && cloudDescriptor.getCollectionName().equals(
+              cloudDesc.getCollectionName())) {
+        removeWatch = false;
+        break;
+      }
+    }
+    if (removeWatch) zkStateReader.removeZKWatch(collection);
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
         Overseer.DELETECORE, ZkStateReader.CORE_NAME_PROP, coreName,
         ZkStateReader.NODE_NAME_PROP, getNodeName(),
@@ -1466,6 +1479,11 @@ public final class ZkController {
       }
 
       publish(cd, ZkStateReader.DOWN, false, true);
+      DocCollection collection = zkStateReader.getClusterState().getCollectionOrNull(cd.getCloudDescriptor().getCollectionName());
+      if(collection !=null && collection.getStateFormat()>1  ){
+        log.info("Registering watch for external collection {}",cd.getCloudDescriptor().getCollectionName());
+        zkStateReader.addCollectionWatch(cd.getCloudDescriptor().getCollectionName());
+      }
     } catch (KeeperException e) {
       log.error("", e);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);

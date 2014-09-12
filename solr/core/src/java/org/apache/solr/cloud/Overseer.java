@@ -108,6 +108,8 @@ public class Overseer implements Closeable {
     private Map clusterProps;
     private boolean isClosed = false;
 
+    private final Map<String, Object> updateNodes = new LinkedHashMap<>();
+    private boolean isClusterStateModified = false;
 
 
     public ClusterStateUpdater(final ZkStateReader reader, final String myId, Stats zkStats) {
@@ -261,6 +263,7 @@ public class Overseer implements Closeable {
                 stateUpdateQueue.poll();
 
                 if (isClosed || System.nanoTime() - lastUpdatedTime > TimeUnit.NANOSECONDS.convert(STATE_UPDATE_DELAY, TimeUnit.MILLISECONDS)) break;
+                if(!updateNodes.isEmpty()) break;
                 // if an event comes in the next 100ms batch it together
                 head = stateUpdateQueue.peek(100);
               }
@@ -300,8 +303,30 @@ public class Overseer implements Closeable {
       TimerContext timerContext = stats.time("update_state");
       boolean success = false;
       try {
-        zkClient.setData(ZkStateReader.CLUSTER_STATE, ZkStateReader.toJSON(clusterState), true);
-        lastUpdatedTime = System.nanoTime();
+        if (!updateNodes.isEmpty()) {
+          for (Entry<String,Object> e : updateNodes.entrySet()) {
+            if (e.getValue() == null) {
+              if (zkClient.exists(e.getKey(), true)) zkClient.delete(e.getKey(), 0, true);
+            } else {
+              byte[] data = ZkStateReader.toJSON(e.getValue());
+              if (zkClient.exists(e.getKey(), true)) {
+                log.info("going to update_collection {}", e.getKey());
+                zkClient.setData(e.getKey(), data, true);
+              } else {
+                log.info("going to create_collection {}", e.getKey(), new String(data));
+                zkClient.create(e.getKey(), data, CreateMode.PERSISTENT, true);
+              }
+            }
+          }
+          updateNodes.clear();
+        }
+        
+        if (isClusterStateModified) {
+          lastUpdatedTime = System.nanoTime();
+          zkClient.setData(ZkStateReader.CLUSTER_STATE,
+              ZkStateReader.toJSON(clusterState), true);
+          isClusterStateModified = false;
+        }
         success = true;
       } finally {
         timerContext.stop();
@@ -703,7 +728,7 @@ public class Overseer implements Closeable {
         }
 
         Slice slice = clusterState.getSlice(collection, sliceName);
-        
+
         Map<String,Object> replicaProps = new LinkedHashMap<>();
 
         replicaProps.putAll(message.getProperties());
@@ -721,7 +746,7 @@ public class Overseer implements Closeable {
           replicaProps.remove(ZkStateReader.SHARD_ID_PROP);
           replicaProps.remove(ZkStateReader.COLLECTION_PROP);
           replicaProps.remove(QUEUE_OPERATION);
-          
+
           // remove any props with null values
           Set<Entry<String,Object>> entrySet = replicaProps.entrySet();
           List<String> removeKeys = new ArrayList<>();
@@ -869,10 +894,22 @@ public class Overseer implements Closeable {
         }
         collectionProps.put(DocCollection.DOC_ROUTER, routerSpec);
 
-        if(message.getStr("fromApi") == null) collectionProps.put("autoCreated","true");
-        DocCollection newCollection = new DocCollection(collectionName, newSlices, collectionProps, router);
-        return newState(state, singletonMap(newCollection.getName(), newCollection));
+      if (message.getStr("fromApi") == null) {
+        collectionProps.put("autoCreated", "true");
       }
+      
+      String znode = message.getInt(DocCollection.STATE_FORMAT, 1) == 1 ? null
+          : ZkStateReader.getCollectionPath(collectionName);
+      
+      DocCollection newCollection = new DocCollection(collectionName,
+          newSlices, collectionProps, router, -1, znode);
+      
+      isClusterStateModified = true;
+      
+      log.info("state version {} {}", collectionName, newCollection.getStateFormat());
+      
+      return newState(state, singletonMap(newCollection.getName(), newCollection));
+    }
 
       /*
        * Return an already assigned id or null if not assigned
@@ -909,30 +946,28 @@ public class Overseer implements Closeable {
         }
         return null;
       }
-      
+
       private ClusterState updateSlice(ClusterState state, String collectionName, Slice slice) {
         // System.out.println("###!!!### OLD CLUSTERSTATE: " + JSONUtil.toJSON(state.getCollectionStates()));
         // System.out.println("Updating slice:" + slice);
-
+        DocCollection newCollection = null;
         DocCollection coll = state.getCollectionOrNull(collectionName) ;
         Map<String,Slice> slices;
-        Map<String,Object> props;
-        DocRouter router;
-
+        
         if (coll == null) {
           //  when updateSlice is called on a collection that doesn't exist, it's currently when a core is publishing itself
           // without explicitly creating a collection.  In this current case, we assume custom sharding with an "implicit" router.
-          slices = new HashMap<>(1);
-          props = new HashMap<>(1);
+          slices = new LinkedHashMap<>(1);
+          slices.put(slice.getName(), slice);
+          Map<String,Object> props = new HashMap<>(1);
           props.put(DocCollection.DOC_ROUTER, ZkNodeProps.makeMap("name",ImplicitDocRouter.NAME));
-          router = new ImplicitDocRouter();
+          newCollection = new DocCollection(collectionName, slices, props, new ImplicitDocRouter());
         } else {
-          props = coll.getProperties();
-          router = coll.getRouter();
           slices = new LinkedHashMap<>(coll.getSlicesMap()); // make a shallow copy
+          slices.put(slice.getName(), slice);
+          newCollection = coll.copyWithSlices(slices);
         }
-        slices.put(slice.getName(), slice);
-        DocCollection newCollection = new DocCollection(collectionName, slices, props, router);
+
 
         // System.out.println("###!!!### NEW CLUSTERSTATE: " + JSONUtil.toJSON(newCollections));
 
@@ -991,27 +1026,52 @@ public class Overseer implements Closeable {
         }
 
 
-        DocCollection newCollection = new DocCollection(coll.getName(), slices, coll.getProperties(), coll.getRouter());
+        DocCollection newCollection = coll.copyWithSlices(slices);
         return newState(state, singletonMap(collectionName, newCollection));
       }
 
-      private ClusterState newState(ClusterState state, Map<String, DocCollection> colls) {
-        return state.copyWith(colls);
-      }
-
-      /*
-       * Remove collection from cloudstate
-       */
-      private ClusterState removeCollection(final ClusterState clusterState, ZkNodeProps message) {
-        final String collection = message.getStr("name");
-        if (!checkKeyExistence(message, "name")) return clusterState;
-        DocCollection coll = clusterState.getCollectionOrNull(collection);
-        if(coll !=null) {
-          return clusterState.copyWith(singletonMap(collection,(DocCollection)null));
+    private ClusterState newState(ClusterState state, Map<String, DocCollection> colls) {
+      for (Entry<String, DocCollection> e : colls.entrySet()) {
+        DocCollection c = e.getValue();
+        if (c == null) {
+          isClusterStateModified = true;
+          state = state.copyWith(singletonMap(e.getKey(), (DocCollection) null));
+          updateNodes.put(ZkStateReader.getCollectionPath(e.getKey()) ,null);
+          continue;
         }
-        return clusterState;
-      }
 
+        if (c.getStateFormat() > 1) {
+          updateNodes.put(ZkStateReader.getCollectionPath(c.getName()),
+              new ClusterState(-1, Collections.<String>emptySet(), singletonMap(c.getName(), c)));
+        } else {
+          isClusterStateModified = true;
+        }
+        state = state.copyWith(singletonMap(e.getKey(), c));
+
+      }
+      return state;
+    }
+
+    /*
+     * Remove collection from cloudstate
+     */
+    private ClusterState removeCollection(final ClusterState clusterState, ZkNodeProps message) {
+      final String collection = message.getStr("name");
+      if (!checkKeyExistence(message, "name")) return clusterState;
+      DocCollection coll = clusterState.getCollectionOrNull(collection);
+      if(coll == null) return  clusterState;
+
+      isClusterStateModified = true;
+      if (coll.getStateFormat() > 1) {
+        try {
+          log.info("Deleting state for collection : {}", collection);
+          zkClient.delete(ZkStateReader.getCollectionPath(collection), -1, true);
+        } catch (Exception e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to remove collection state :" + collection);
+        }
+      }
+      return newState(clusterState, singletonMap(coll.getName(),(DocCollection) null));
+    }
     /*
      * Remove collection slice from cloudstate
      */
@@ -1027,7 +1087,7 @@ public class Overseer implements Closeable {
       Map<String, Slice> newSlices = new LinkedHashMap<>(coll.getSlicesMap());
       newSlices.remove(sliceId);
 
-      DocCollection newCollection = new DocCollection(coll.getName(), newSlices, coll.getProperties(), coll.getRouter());
+      DocCollection newCollection = coll.copyWithSlices(newSlices);
       return newState(clusterState, singletonMap(collection,newCollection));
     }
 
@@ -1039,8 +1099,6 @@ public class Overseer implements Closeable {
         final String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
         if (!checkCollectionKeyExistence(message)) return clusterState;
 
-//        final Map<String, DocCollection> newCollections = new LinkedHashMap<>(clusterState.getCollectionStates()); // shallow copy
-//        DocCollection coll = newCollections.get(collection);
         DocCollection coll = clusterState.getCollectionOrNull(collection) ;
         if (coll == null) {
           // TODO: log/error that we didn't find it?
@@ -1078,7 +1136,7 @@ public class Overseer implements Closeable {
             newSlices.put(slice.getName(), slice);
           }
         }
-        
+
         if (lastSlice) {
           // remove all empty pre allocated slices
           for (Slice slice : coll.getSlices()) {
@@ -1095,7 +1153,7 @@ public class Overseer implements Closeable {
           // but for tests (it's easier) it seems better for the moment to leave CoreContainer and/or
           // ZkController out of the Overseer.
           try {
-            zkClient.clean("/collections/" + collection);
+            zkClient.delete("/collections/" + collection, -1, true);
           } catch (InterruptedException e) {
             SolrException.log(log, "Cleaning up collection in zk was interrupted:" + collection, e);
             Thread.currentThread().interrupt();
@@ -1105,8 +1163,8 @@ public class Overseer implements Closeable {
           return newState(clusterState,singletonMap(collection, (DocCollection) null));
 
         } else {
-          DocCollection newCollection = new DocCollection(coll.getName(), newSlices, coll.getProperties(), coll.getRouter());
-           return newState(clusterState,singletonMap(collection,newCollection));
+          DocCollection newCollection = coll.copyWithSlices(newSlices);
+          return newState(clusterState,singletonMap(collection,newCollection));
         }
 
      }

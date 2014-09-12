@@ -20,7 +20,6 @@ package org.apache.solr.client.solrj.impl;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -42,7 +41,6 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
-import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -51,7 +49,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -62,7 +59,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,6 +121,7 @@ public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
   @Override
   public void doTest() throws Exception {
     allTests();
+    stateVersionParamTest();
   }
 
   private void allTests() throws Exception {
@@ -345,7 +342,77 @@ public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
     SolrInputDocument doc = getDoc(fields);
     indexDoc(doc);
   }
-  
+
+  private void stateVersionParamTest() throws Exception {
+    CloudSolrServer client = createCloudClient(null);
+    try {
+      String collectionName = "checkStateVerCol";
+      createCollection(collectionName, client, 2, 2);
+      waitForRecoveriesToFinish(collectionName, false);
+      DocCollection coll = client.getZkStateReader().getClusterState().getCollection(collectionName);
+      Replica r = coll.getSlices().iterator().next().getReplicas().iterator().next();
+
+      HttpSolrServer httpSolrServer = new HttpSolrServer(r.getStr(ZkStateReader.BASE_URL_PROP) + "/"+collectionName);
+
+
+      SolrQuery q = new SolrQuery().setQuery("*:*");
+
+      log.info("should work query, result {}", httpSolrServer.query(q));
+      //no problem
+      q.setParam(CloudSolrServer.STATE_VERSION, collectionName+":"+coll.getZNodeVersion());
+      log.info("2nd query , result {}", httpSolrServer.query(q));
+      //no error yet good
+
+      q.setParam(CloudSolrServer.STATE_VERSION, collectionName+":"+ (coll.getZNodeVersion() -1)); //an older version expect error
+
+      HttpSolrServer.RemoteSolrException sse = null;
+      try {
+        httpSolrServer.query(q);
+        log.info("expected query error");
+      } catch (HttpSolrServer.RemoteSolrException e) {
+        sse = e;
+      }
+      httpSolrServer.shutdown();
+      assertNotNull(sse);
+      assertEquals(" Error code should be ",  sse.code() , SolrException.ErrorCode.INVALID_STATE.code);
+
+      //now send the request to another node that does n ot serve the collection
+
+      Set<String> allNodesOfColl = new HashSet<>();
+      for (Slice slice : coll.getSlices()) {
+        for (Replica replica : slice.getReplicas()) {
+          allNodesOfColl.add(replica.getStr(ZkStateReader.BASE_URL_PROP));
+        }
+      }
+      String theNode = null;
+      for (String s : client.getZkStateReader().getClusterState().getLiveNodes()) {
+        String n = client.getZkStateReader().getBaseUrlForNodeName(s);
+        if(!allNodesOfColl.contains(s)){
+          theNode = n;
+          break;
+        }
+      }
+      log.info("thenode which does not serve this collection{} ",theNode);
+      assertNotNull(theNode);
+      httpSolrServer = new HttpSolrServer(theNode + "/"+collectionName);
+
+      q.setParam(CloudSolrServer.STATE_VERSION, collectionName+":"+coll.getZNodeVersion());
+
+      try {
+        httpSolrServer.query(q);
+        log.info("error was expected");
+      } catch (HttpSolrServer.RemoteSolrException e) {
+        sse = e;
+      }
+      httpSolrServer.shutdown();
+      assertNotNull(sse);
+      assertEquals(" Error code should be ",  sse.code() , SolrException.ErrorCode.INVALID_STATE.code);
+    } finally {
+      client.shutdown();
+    }
+
+  }
+
   public void testShutdown() throws MalformedURLException {
     CloudSolrServer server = new CloudSolrServer("[ff01::114]:33332");
     try {

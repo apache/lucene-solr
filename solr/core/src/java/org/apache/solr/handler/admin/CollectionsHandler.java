@@ -24,6 +24,7 @@ import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATESHARD;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.DELETEREPLICA;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.REQUESTID;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.ROUTER;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARDS_PROP;
@@ -59,6 +60,7 @@ import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -142,7 +144,7 @@ public class CollectionsHandler extends RequestHandlerBase {
     if (action == null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown action: " + a);
     }
-    
+
     switch (action) {
       case CREATE: {
         this.handleCreateAction(req, rsp);
@@ -468,15 +470,16 @@ public class CollectionsHandler extends RequestHandlerBase {
         Overseer.QUEUE_OPERATION,
         OverseerCollectionProcessor.CREATECOLLECTION,
         "fromApi","true");
-    copyIfNotNull(req.getParams(), props,
-         "name",
-         ZkStateReader.REPLICATION_FACTOR,
+    copyIfNotNull(req.getParams(),props,
+        "name",
+        REPLICATION_FACTOR,
          COLL_CONF,
          NUM_SLICES,
          MAX_SHARDS_PER_NODE,
          CREATE_NODE_SET,
          SHARDS_PROP,
          ASYNC,
+         DocCollection.STATE_FORMAT,
          AUTO_ADD_REPLICAS,
         "router.");
 
@@ -669,5 +672,10 @@ public class CollectionsHandler extends RequestHandlerBase {
   @Override
   public String getDescription() {
     return "Manage SolrCloud Collections";
+  }
+
+  @Override
+  public String getSource() {
+    return "$URL: https://svn.apache.org/repos/asf/lucene/dev/trunk/solr/core/src/java/org/apache/solr/handler/admin/CollectionHandler.java $";
   }
 }

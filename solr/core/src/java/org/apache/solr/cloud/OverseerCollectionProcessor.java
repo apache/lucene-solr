@@ -698,7 +698,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
 
     // convert cluster state into a map of writable types
     byte[] bytes = ZkStateReader.toJSON(clusterState);
-    Map<String, Object> stateMap = (Map<String, Object>) ZkStateReader.fromJSON(bytes);
+    Map<String, Object> stateMap = (Map<String,Object>) ZkStateReader.fromJSON(bytes);
 
     String shard = message.getStr(ZkStateReader.SHARD_ID_PROP);
     NamedList<Object> collectionProps = new SimpleOrderedMap<Object>();
@@ -706,7 +706,13 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       Set<String> collections = clusterState.getCollections();
       for (String name : collections) {
         Map<String, Object> collectionStatus = null;
-        collectionStatus = getCollectionStatus((Map<String, Object>) stateMap.get(name), name, shard);
+        if (clusterState.getCollection(name).getStateFormat() > 1) {
+          bytes = ZkStateReader.toJSON(clusterState.getCollection(name));
+          Map<String, Object> docCollection = (Map<String,Object>) ZkStateReader.fromJSON(bytes);
+          collectionStatus = getCollectionStatus(docCollection, name, shard);
+        } else  {
+          collectionStatus = getCollectionStatus((Map<String,Object>) stateMap.get(name), name, shard);
+        }
         if (collectionVsAliases.containsKey(name) && !collectionVsAliases.get(name).isEmpty())  {
           collectionStatus.put("aliases", collectionVsAliases.get(name));
         }
@@ -715,8 +721,12 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     } else {
       String routeKey = message.getStr(ShardParams._ROUTE_);
       Map<String, Object> docCollection = null;
-
-      docCollection = (Map<String, Object>) stateMap.get(collection);
+      if (clusterState.getCollection(collection).getStateFormat() > 1) {
+        bytes = ZkStateReader.toJSON(clusterState.getCollection(collection));
+        docCollection = (Map<String,Object>) ZkStateReader.fromJSON(bytes);
+      } else  {
+        docCollection = (Map<String,Object>) stateMap.get(collection);
+      }
       if (routeKey == null) {
         Map<String, Object> collectionStatus = getCollectionStatus(docCollection, collection, shard);
         if (collectionVsAliases.containsKey(collection) && !collectionVsAliases.get(collection).isEmpty())  {
@@ -2409,11 +2419,15 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
 
     }
 
-    if(configName!= null){
-      log.info("creating collections conf node {} ",ZkStateReader.COLLECTIONS_ZKNODE + "/" + coll);
-      zkStateReader.getZkClient().makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + coll,
-          ZkStateReader.toJSON(ZkNodeProps.makeMap(ZkController.CONFIGNAME_PROP,configName)),true );
-
+    if (configName != null) {
+      String collDir = ZkStateReader.COLLECTIONS_ZKNODE + "/" + coll;
+      log.info("creating collections conf node {} ", collDir);
+      byte[] data = ZkStateReader.toJSON(ZkNodeProps.makeMap(ZkController.CONFIGNAME_PROP, configName));
+      if (zkStateReader.getZkClient().exists(collDir, true)) {
+        zkStateReader.getZkClient().setData(collDir, data, true);
+      } else {
+        zkStateReader.getZkClient().makePath(collDir, data, true);
+      }
     } else {
       if(isLegacyCloud){
         log.warn("Could not obtain config name");
