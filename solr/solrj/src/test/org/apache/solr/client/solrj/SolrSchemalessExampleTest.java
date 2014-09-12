@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
@@ -24,7 +25,6 @@ import org.apache.http.entity.InputStreamEntity;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
-import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -32,16 +32,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 
-public class SolrSchemalessExampleTests extends SolrExampleTestsBase {
-  private static Logger log = LoggerFactory
-      .getLogger(SolrSchemalessExampleTests.class);
-  
+public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
+  private static Logger log = LoggerFactory.getLogger(SolrSchemalessExampleTest.class);
+
   @BeforeClass
-  public static void beforeTest() throws Exception {
-    createJetty(ExternalPaths.EXAMPLE_SCHEMALESS_HOME, null, null);
+  public static void beforeClass() throws Exception {
+    File tempSolrHome = createTempDir();
+    // Schemaless renames schema.xml -> schema.xml.bak, and creates + modifies conf/managed-schema,
+    // which violates the test security manager's rules, which disallow writes outside the build dir,
+    // so we copy the example/example-schemaless/solr/ directory to a new temp dir where writes are allowed. 
+    FileUtils.copyDirectory(new File(ExternalPaths.EXAMPLE_SCHEMALESS_HOME), tempSolrHome);
+    createJetty(tempSolrHome.getAbsolutePath(), null, null);
   }
-
   @Test
   public void testArbitraryJsonIndexing() throws Exception  {
     HttpSolrServer server = (HttpSolrServer) getSolrServer();
