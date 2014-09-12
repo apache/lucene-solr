@@ -162,6 +162,10 @@ Tests
 * LUCENE-5936: Add backcompat checks to verify what is tested matches known versions
   (Ryan Ernst)
 
+* LUCENE-5939: Regenerate old backcompat indexes to ensure they were built with
+  the exact release
+  (Ryan Ernst, Uwe Schindler)
+
 Build
 
 * LUCENE-5909: Smoke tester now has better command line parsing and
