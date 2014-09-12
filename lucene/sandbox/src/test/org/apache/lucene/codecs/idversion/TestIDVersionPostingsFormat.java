@@ -140,7 +140,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
       }
       ids = new IDSource() {
           final int radix = TestUtil.nextInt(random(), Character.MIN_RADIX, Character.MAX_RADIX);
-          final String zeroPad = String.format(Locale.ROOT, "%0" + TestUtil.nextInt(random(), 4, 20) + "d", 0);
+          final String zeroPad = String.format(Locale.ROOT, "%0" + TestUtil.nextInt(random(), 5, 20) + "d", 0);
           int upto;
           @Override
           public String next() {
