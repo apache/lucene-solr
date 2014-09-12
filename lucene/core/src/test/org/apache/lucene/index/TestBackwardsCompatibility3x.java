@@ -766,8 +766,8 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
   public void testNumericFields() throws Exception {
     boolean testedSomething = false;
     for (String name : oldNames) {
-      if (name.compareTo("31") < 0) {
-        // we didn't have numeric fields in back compat indexes until 3.1
+      if (name.compareTo("32") < 0) {
+        // we didn't have numeric fields in back compat indexes until 3.2
         // https://issues.apache.org/jira/browse/LUCENE-2352
         
         continue;
@@ -780,7 +780,7 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
       
       for (int id=10; id<15; id++) {
         ScoreDoc[] hits = searcher.search(NumericRangeQuery.newIntRange("trieInt", 4, Integer.valueOf(id), Integer.valueOf(id), true, true), 100).scoreDocs;
-        assertEquals("wrong number of hits", 1, hits.length);
+        assertEquals("wrong number of hits for index " + name, 1, hits.length);
         Document d = searcher.doc(hits[0].doc);
         assertEquals(String.valueOf(id), d.get("id"));
         
