@@ -674,8 +674,4 @@ public class CollectionsHandler extends RequestHandlerBase {
     return "Manage SolrCloud Collections";
   }
 
-  @Override
-  public String getSource() {
-    return "$URL: https://svn.apache.org/repos/asf/lucene/dev/trunk/solr/core/src/java/org/apache/solr/handler/admin/CollectionHandler.java $";
-  }
 }
