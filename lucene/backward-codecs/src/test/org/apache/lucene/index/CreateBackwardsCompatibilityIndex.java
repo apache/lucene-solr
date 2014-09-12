@@ -19,8 +19,11 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.junit.Ignore;
+
 // This class exists only so it has a name that the junit runner will not pickup,
 // so these index creation "tests" can only be run explicitly
+@Ignore("Force IDEs to ignore this test")
 public class CreateBackwardsCompatibilityIndex extends TestBackwardsCompatibility {
 
   // These indexes will be created under directory /tmp/idx/.

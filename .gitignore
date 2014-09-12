@@ -10,7 +10,9 @@
 /velocity.log
 /build.properties
 /.idea
-**/*.iml
+lucene/**/*.iml
+solr/**/*.iml
+parent.iml
 **/*.ipr
 **/*.iws
 /.project

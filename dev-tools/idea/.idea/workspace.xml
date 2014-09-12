@@ -67,6 +67,13 @@
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
+    <configuration default="false" name="Module backward-codecs" type="JUnit" factoryName="JUnit">
+      <module name="backward-codecs" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/lucene/backward-codecs" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
     <configuration default="false" name="Module benchmark" type="JUnit" factoryName="JUnit">
       <module name="benchmark" />
       <option name="TEST_OBJECT" value="package" />
@@ -235,6 +242,13 @@
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
+    <configuration default="false" name="Solr map-reduce contrib" type="JUnit" factoryName="JUnit">
+      <module name="map-reduce" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/solr/contrib/map-reduce" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
     <configuration default="false" name="Solr morphlines-cell contrib" type="JUnit" factoryName="JUnit">
       <module name="morphlines-cell" />
       <option name="TEST_OBJECT" value="package" />
@@ -246,13 +260,6 @@
       <module name="morphlines-core" />
       <option name="TEST_OBJECT" value="package" />
       <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/solr/contrib/morphlines-core" />
-      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
-      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
-    </configuration>
-    <configuration default="false" name="Solr mr (map-reduce) contrib" type="JUnit" factoryName="JUnit">
-      <module name="map-reduce" />
-      <option name="TEST_OBJECT" value="package" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/solr/contrib/map-reduce" />
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
@@ -270,7 +277,7 @@
       <option name="VM_PARAMETERS" value="-ea" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
-    <list size="38">
+    <list size="39">
       <item index="0" class="java.lang.String" itemvalue="JUnit.Lucene core" />
       <item index="1" class="java.lang.String" itemvalue="JUnit.Module analyzers-common" />
       <item index="2" class="java.lang.String" itemvalue="JUnit.Module analyzers-icu" />
@@ -280,35 +287,36 @@
       <item index="6" class="java.lang.String" itemvalue="JUnit.Module analyzers-smartcn" />
       <item index="7" class="java.lang.String" itemvalue="JUnit.Module analyzers-stempel" />
       <item index="8" class="java.lang.String" itemvalue="JUnit.Module analyzers-uima" />
-      <item index="9" class="java.lang.String" itemvalue="JUnit.Module benchmark" />
-      <item index="10" class="java.lang.String" itemvalue="JUnit.Module classification" />
-      <item index="11" class="java.lang.String" itemvalue="JUnit.Module codecs" />
-      <item index="12" class="java.lang.String" itemvalue="JUnit.Module expressions" />
-      <item index="13" class="java.lang.String" itemvalue="JUnit.Module facet" />
-      <item index="14" class="java.lang.String" itemvalue="JUnit.Module grouping" />
-      <item index="15" class="java.lang.String" itemvalue="JUnit.Module highlighter" />
-      <item index="16" class="java.lang.String" itemvalue="JUnit.Module join" />
-      <item index="17" class="java.lang.String" itemvalue="JUnit.Module memory" />
-      <item index="18" class="java.lang.String" itemvalue="JUnit.Module misc" />
-      <item index="19" class="java.lang.String" itemvalue="JUnit.Module queries" />
-      <item index="20" class="java.lang.String" itemvalue="JUnit.Module queryparser" />
-      <item index="21" class="java.lang.String" itemvalue="JUnit.Module replicator" />
-      <item index="22" class="java.lang.String" itemvalue="JUnit.Module sandbox" />
-      <item index="23" class="java.lang.String" itemvalue="JUnit.Module spatial" />
-      <item index="24" class="java.lang.String" itemvalue="JUnit.Module suggest" />
-      <item index="25" class="java.lang.String" itemvalue="JUnit.Solr core" />
-      <item index="26" class="java.lang.String" itemvalue="JUnit.Solr analysis-extras contrib" />
-      <item index="27" class="java.lang.String" itemvalue="JUnit.Solr clustering contrib" />
-      <item index="28" class="java.lang.String" itemvalue="JUnit.Solr dataimporthandler contrib" />
-      <item index="29" class="java.lang.String" itemvalue="JUnit.Solr dataimporthandler-extras contrib" />
-      <item index="30" class="java.lang.String" itemvalue="JUnit.Solr extraction contrib" />
-      <item index="31" class="java.lang.String" itemvalue="JUnit.Solr morphlines-cell contrib" />
-      <item index="32" class="java.lang.String" itemvalue="JUnit.Solr morphlines-core contrib" />
-      <item index="33" class="java.lang.String" itemvalue="JUnit.Solr mr (map-reduce) contrib" />
-      <item index="34" class="java.lang.String" itemvalue="JUnit.Solr langid contrib" />
-      <item index="35" class="java.lang.String" itemvalue="JUnit.Solr uima contrib" />
-      <item index="36" class="java.lang.String" itemvalue="JUnit.Solr velocity contrib" />
-      <item index="37" class="java.lang.String" itemvalue="JUnit.Solrj" />
+      <item index="9" class="java.lang.String" itemvalue="JUnit.Module backward-codecs" />
+      <item index="10" class="java.lang.String" itemvalue="JUnit.Module benchmark" />
+      <item index="11" class="java.lang.String" itemvalue="JUnit.Module classification" />
+      <item index="12" class="java.lang.String" itemvalue="JUnit.Module codecs" />
+      <item index="13" class="java.lang.String" itemvalue="JUnit.Module expressions" />
+      <item index="14" class="java.lang.String" itemvalue="JUnit.Module facet" />
+      <item index="15" class="java.lang.String" itemvalue="JUnit.Module grouping" />
+      <item index="16" class="java.lang.String" itemvalue="JUnit.Module highlighter" />
+      <item index="17" class="java.lang.String" itemvalue="JUnit.Module join" />
+      <item index="18" class="java.lang.String" itemvalue="JUnit.Module memory" />
+      <item index="19" class="java.lang.String" itemvalue="JUnit.Module misc" />
+      <item index="20" class="java.lang.String" itemvalue="JUnit.Module queries" />
+      <item index="21" class="java.lang.String" itemvalue="JUnit.Module queryparser" />
+      <item index="22" class="java.lang.String" itemvalue="JUnit.Module replicator" />
+      <item index="23" class="java.lang.String" itemvalue="JUnit.Module sandbox" />
+      <item index="24" class="java.lang.String" itemvalue="JUnit.Module spatial" />
+      <item index="25" class="java.lang.String" itemvalue="JUnit.Module suggest" />
+      <item index="26" class="java.lang.String" itemvalue="JUnit.Solr core" />
+      <item index="27" class="java.lang.String" itemvalue="JUnit.Solr analysis-extras contrib" />
+      <item index="28" class="java.lang.String" itemvalue="JUnit.Solr clustering contrib" />
+      <item index="29" class="java.lang.String" itemvalue="JUnit.Solr dataimporthandler contrib" />
+      <item index="30" class="java.lang.String" itemvalue="JUnit.Solr dataimporthandler-extras contrib" />
+      <item index="31" class="java.lang.String" itemvalue="JUnit.Solr extraction contrib" />
+      <item index="32" class="java.lang.String" itemvalue="JUnit.Solr map-reduce contrib" />
+      <item index="33" class="java.lang.String" itemvalue="JUnit.Solr morphlines-cell contrib" />
+      <item index="34" class="java.lang.String" itemvalue="JUnit.Solr morphlines-core contrib" />
+      <item index="35" class="java.lang.String" itemvalue="JUnit.Solr langid contrib" />
+      <item index="36" class="java.lang.String" itemvalue="JUnit.Solr uima contrib" />
+      <item index="37" class="java.lang.String" itemvalue="JUnit.Solr velocity contrib" />
+      <item index="38" class="java.lang.String" itemvalue="JUnit.Solrj" />
     </list>
   </component>
 </project>
