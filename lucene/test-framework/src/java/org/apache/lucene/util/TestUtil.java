@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
@@ -99,39 +99,33 @@ public final class TestUtil {
 
   /** 
    * Convenience method unzipping zipName into destDir, cleaning up 
-   * destDir first. 
+   * destDir first.
+   * Closes the given InputStream after extracting! 
    */
-  public static void unzip(Path zipName, Path destDir) throws IOException {
+  public static void unzip(InputStream in, Path destDir) throws IOException {
     IOUtils.rm(destDir);
     Files.createDirectory(destDir);
 
-    ZipFile zipFile = new ZipFile(zipName.toFile());
-    Enumeration<? extends ZipEntry> entries = zipFile.entries();
-
-    while (entries.hasMoreElements()) {
-      ZipEntry entry = entries.nextElement();
-      
-      InputStream in = zipFile.getInputStream(entry);
-      Path targetFile = destDir.resolve(entry.getName());
-      
-      // be on the safe side: do not rely on that directories are always extracted
-      // before their children (although this makes sense, but is it guaranteed?)
-      Files.createDirectories(targetFile.getParent());
-      if (!entry.isDirectory()) {
-        OutputStream out = Files.newOutputStream(targetFile);
+    try (ZipInputStream zipInput = new ZipInputStream(in)) {
+      ZipEntry entry;
+      while ((entry = zipInput.getNextEntry()) != null) {
+        Path targetFile = destDir.resolve(entry.getName());
         
-        byte[] buffer = new byte[8192];
-        int len;
-        while((len = in.read(buffer)) >= 0) {
-          out.write(buffer, 0, len);
+        // be on the safe side: do not rely on that directories are always extracted
+        // before their children (although this makes sense, but is it guaranteed?)
+        Files.createDirectories(targetFile.getParent());
+        if (!entry.isDirectory()) {
+          OutputStream out = Files.newOutputStream(targetFile);
+          byte[] buffer = new byte[8192];
+          int len;
+          while((len = zipInput.read(buffer)) >= 0) {
+            out.write(buffer, 0, len);
+          }
+          out.close();
         }
-        
-        in.close();
-        out.close();
+        zipInput.closeEntry();
       }
     }
-    
-    zipFile.close();
   }
   
   public static void syncConcurrentMerges(IndexWriter writer) {

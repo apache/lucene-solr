@@ -295,8 +295,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     oldIndexDirs = new HashMap<>();
     for (String name : names) {
       Path dir = createTempDir(name);
-      Path dataFile = Paths.get(TestBackwardsCompatibility.class.getResource("index." + name + ".zip").toURI());
-      TestUtil.unzip(dataFile, dir);
+      TestUtil.unzip(TestBackwardsCompatibility.class.getResourceAsStream("index." + name + ".zip"), dir);
       oldIndexDirs.put(name, newFSDirectory(dir));
     }
   }
@@ -435,7 +434,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         System.out.println("TEST: index " + unsupportedNames[i]);
       }
       Path oldIndexDir = createTempDir(unsupportedNames[i]);
-      TestUtil.unzip(getDataPath("unsupported." + unsupportedNames[i] + ".zip"), oldIndexDir);
+      TestUtil.unzip(getDataInputStream("unsupported." + unsupportedNames[i] + ".zip"), oldIndexDir);
       BaseDirectoryWrapper dir = newFSDirectory(oldIndexDir);
       // don't checkindex, these are intentionally not supported
       dir.setCheckIndexOnClose(false);
@@ -1086,8 +1085,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     try {
       for (String name : oldIndexDirs.keySet()) {
         Path dir = createTempDir(name);
-        Path dataFile = Paths.get(TestBackwardsCompatibility.class.getResource("index." + name + ".zip").toURI());
-        TestUtil.unzip(dataFile, dir);
+        TestUtil.unzip(getDataInputStream("index." + name + ".zip"), dir);
         
         String path = dir.toAbsolutePath().toString();
         
@@ -1197,7 +1195,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   public void testMoreTerms() throws Exception {
     Path oldIndexDir = createTempDir("moreterms");
-    TestUtil.unzip(getDataPath(moreTermsIndex), oldIndexDir);
+    TestUtil.unzip(getDataInputStream(moreTermsIndex), oldIndexDir);
     Directory dir = newFSDirectory(oldIndexDir);
     // TODO: more tests
     TestUtil.checkIndex(dir);
@@ -1236,7 +1234,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   
   public void testDocValuesUpdates() throws Exception {
     Path oldIndexDir = createTempDir("dvupdates");
-    TestUtil.unzip(getDataPath(dvUpdatesIndex), oldIndexDir);
+    TestUtil.unzip(getDataInputStream(dvUpdatesIndex), oldIndexDir);
     Directory dir = newFSDirectory(oldIndexDir);
     
     verifyDocValues(dir);

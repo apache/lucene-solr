@@ -20,6 +20,7 @@ package org.apache.lucene.util;
 import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -138,6 +139,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
+
 import com.carrotsearch.randomizedtesting.JUnit4MethodProvider;
 import com.carrotsearch.randomizedtesting.LifecycleScope;
 import com.carrotsearch.randomizedtesting.MixWithSuiteName;
@@ -1668,6 +1670,14 @@ public abstract class LuceneTestCase extends Assert {
   protected Path getDataPath(String name) throws IOException {
     try {
       return Paths.get(this.getClass().getResource(name).toURI());
+    } catch (Exception e) {
+      throw new IOException("Cannot find resource: " + name);
+    }
+  }
+
+  protected InputStream getDataInputStream(String name) throws IOException {
+    try {
+      return this.getClass().getResourceAsStream(name);
     } catch (Exception e) {
       throw new IOException("Cannot find resource: " + name);
     }

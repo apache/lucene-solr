@@ -344,7 +344,7 @@ public class TrecContentSourceTest extends LuceneTestCase {
    */
   public void testTrecFeedDirAllTypes() throws Exception {
     Path dataDir =  createTempDir("trecFeedAllTypes");
-    TestUtil.unzip(getDataPath("trecdocs.zip"), dataDir);
+    TestUtil.unzip(getDataInputStream("trecdocs.zip"), dataDir);
     TrecContentSource tcs = new TrecContentSource();
     Properties props = new Properties();
     props.setProperty("print.props", "false");
