@@ -39,7 +39,6 @@
   <!-- redefine the forbidden apis to be no-ops -->
   <target name="-check-forbidden-tests"/>
   <target name="-check-forbidden-sysout"/>
-  <target name="-check-forbidden-rue"/>
 
   <!--  
       Specialize compile-core to not depend on clover, to exclude a 
