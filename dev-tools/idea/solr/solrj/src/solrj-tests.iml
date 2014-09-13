@@ -23,11 +23,11 @@
       </library>
     </orderEntry>
     <orderEntry type="library" scope="TEST" name="Solr example library" level="project" />
-    <orderEntry type="module" scope="TEST" module-name="lucene-core" />
     <orderEntry type="module" scope="TEST" module-name="lucene-test-framework" />
     <orderEntry type="module" scope="TEST" module-name="solr-test-framework" />
     <orderEntry type="module" scope="TEST" module-name="solrj" />
     <orderEntry type="module" scope="TEST" module-name="solr-core" />
     <orderEntry type="module" scope="TEST" module-name="analysis-common" />
+    <orderEntry type="module" scope="TEST" module-name="lucene-core" />
   </component>
 </module>
