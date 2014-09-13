@@ -1663,9 +1663,9 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /**
-   * Gets a resource from the classpath as {@link Path}. This method should only
+   * Gets a resource from the test's classpath as {@link Path}. This method should only
    * be used, if a real file is needed. To get a stream, code should prefer
-   * {@link Class#getResourceAsStream} using {@code this.getClass()}.
+   * {@link #getDataInputStream(String)}.
    */
   protected Path getDataPath(String name) throws IOException {
     try {
@@ -1675,12 +1675,15 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
 
+  /**
+   * Gets a resource from the test's classpath as {@link InputStream}.
+   */
   protected InputStream getDataInputStream(String name) throws IOException {
-    try {
-      return this.getClass().getResourceAsStream(name);
-    } catch (Exception e) {
+    InputStream in = this.getClass().getResourceAsStream(name);
+    if (in == null) {
       throw new IOException("Cannot find resource: " + name);
     }
+    return in;
   }
 
   public void assertReaderEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {

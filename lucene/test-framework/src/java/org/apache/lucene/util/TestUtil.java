@@ -28,7 +28,6 @@ import java.nio.CharBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -108,6 +107,7 @@ public final class TestUtil {
 
     try (ZipInputStream zipInput = new ZipInputStream(in)) {
       ZipEntry entry;
+      byte[] buffer = new byte[8192];
       while ((entry = zipInput.getNextEntry()) != null) {
         Path targetFile = destDir.resolve(entry.getName());
         
@@ -116,7 +116,6 @@ public final class TestUtil {
         Files.createDirectories(targetFile.getParent());
         if (!entry.isDirectory()) {
           OutputStream out = Files.newOutputStream(targetFile);
-          byte[] buffer = new byte[8192];
           int len;
           while((len = zipInput.read(buffer)) >= 0) {
             out.write(buffer, 0, len);
