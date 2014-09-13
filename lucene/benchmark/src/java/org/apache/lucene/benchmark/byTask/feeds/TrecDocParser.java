@@ -17,8 +17,8 @@ package org.apache.lucene.benchmark.byTask.feeds;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -57,14 +57,14 @@ public abstract class TrecDocParser {
   /**
    * Compute the path type of a file by inspecting name of file and its parents
    */
-  public static ParsePathType pathType(File f) {
+  public static ParsePathType pathType(Path f) {
     int pathLength = 0;
     while (f != null && ++pathLength < MAX_PATH_LENGTH) {
-      ParsePathType ppt = pathName2Type.get(f.getName().toUpperCase(Locale.ROOT));
+      ParsePathType ppt = pathName2Type.get(f.getFileName().toString().toUpperCase(Locale.ROOT));
       if (ppt!=null) {
         return ppt;
       }
-      f = f.getParentFile();
+      f = f.getParent();
     }
     return DEFAULT_PATH_TYPE;
   }

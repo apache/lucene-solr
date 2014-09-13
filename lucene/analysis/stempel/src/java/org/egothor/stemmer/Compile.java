@@ -55,14 +55,11 @@
 package org.egothor.stemmer;
 
 import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
 import java.io.DataOutputStream;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.LineNumberReader;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.StringTokenizer;
 
@@ -126,8 +123,7 @@ public class Compile {
       allocTrie();
       
       System.out.println(args[i]);
-      in = new LineNumberReader(new BufferedReader(new InputStreamReader(
-          new FileInputStream(args[i]), charset)));
+      in = new LineNumberReader(Files.newBufferedReader(Paths.get(args[i]), Charset.forName(charset)));
       for (String line = in.readLine(); line != null; line = in.readLine()) {
         try {
           line = line.toLowerCase(Locale.ROOT);
@@ -186,7 +182,7 @@ public class Compile {
       }
       
       DataOutputStream os = new DataOutputStream(new BufferedOutputStream(
-          new FileOutputStream(args[i] + ".out")));
+          Files.newOutputStream(Paths.get(args[i] + ".out"))));
       os.writeUTF(args[0]);
       trie.store(os);
       os.close();

@@ -19,12 +19,11 @@ package org.apache.lucene.benchmark.byTask.utils;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -83,17 +82,17 @@ public class StreamUtils {
    * based on the file name (e.g., if it ends with .bz2 or .bzip, return a
    * 'bzip' {@link InputStream}).
    */
-  public static InputStream inputStream(File file) throws IOException {
+  public static InputStream inputStream(Path file) throws IOException {
     // First, create a FileInputStream, as this will be required by all types.
     // Wrap with BufferedInputStream for better performance
-    InputStream in = new BufferedInputStream(new FileInputStream(file), BUFFER_SIZE);
+    InputStream in = new BufferedInputStream(Files.newInputStream(file), BUFFER_SIZE);
     return fileType(file).inputStream(in);
   }
 
   /** Return the type of the file, or null if unknown */
-  private static Type fileType(File file) {
+  private static Type fileType(Path file) {
     Type type = null;
-    String fileName = file.getName();
+    String fileName = file.getFileName().toString();
     int idx = fileName.lastIndexOf('.');
     if (idx != -1) {
       type = extensionToType.get(fileName.substring(idx).toLowerCase(Locale.ROOT));
@@ -103,12 +102,12 @@ public class StreamUtils {
   
   /**
    * Returns an {@link OutputStream} over the requested file, identifying
-   * the appropriate {@link OutputStream} instance similar to {@link #inputStream(File)}.
+   * the appropriate {@link OutputStream} instance similar to {@link #inputStream(Path)}.
    */
-  public static OutputStream outputStream(File file) throws IOException {
+  public static OutputStream outputStream(Path file) throws IOException {
     // First, create a FileInputStream, as this will be required by all types.
     // Wrap with BufferedInputStream for better performance
-    OutputStream os = new BufferedOutputStream(new FileOutputStream(file), BUFFER_SIZE);
+    OutputStream os = new BufferedOutputStream(Files.newOutputStream(file), BUFFER_SIZE);
     return fileType(file).outputStream(os);
   }
 }

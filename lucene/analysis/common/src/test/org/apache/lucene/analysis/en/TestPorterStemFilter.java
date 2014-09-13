@@ -49,7 +49,7 @@ public class TestPorterStemFilter extends BaseTokenStreamTestCase {
    * The output should be the same as the string in output.txt
    */
   public void testPorterStemFilter() throws Exception {
-    assertVocabulary(a, getDataFile("porterTestData.zip"), "voc.txt", "output.txt");
+    assertVocabulary(a, getDataPath("porterTestData.zip"), "voc.txt", "output.txt");
   }
   
   public void testWithKeywordAttribute() throws IOException {

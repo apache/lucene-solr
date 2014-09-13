@@ -51,7 +51,7 @@ public class TestKStemmer extends BaseTokenStreamTestCase {
    * testCreateMap, commented out below).
    */
   public void testVocabulary() throws Exception {
-    assertVocabulary(a, getDataFile("kstemTestData.zip"), "kstem_examples.txt");
+    assertVocabulary(a, getDataPath("kstemTestData.zip"), "kstem_examples.txt");
   }
   
   public void testEmptyTerm() throws IOException {

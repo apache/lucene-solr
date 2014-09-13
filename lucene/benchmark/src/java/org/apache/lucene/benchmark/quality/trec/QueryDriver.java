@@ -26,12 +26,13 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.IOUtils;
 
-import java.io.BufferedReader;
-import java.io.File;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -52,10 +53,10 @@ public class QueryDriver {
       System.exit(1);
     }
     
-    File topicsFile = new File(args[0]);
-    File qrelsFile = new File(args[1]);
+    Path topicsFile = Paths.get(args[0]);
+    Path qrelsFile = Paths.get(args[1]);
     SubmissionReport submitLog = new SubmissionReport(new PrintWriter(args[2], IOUtils.UTF_8 /* huh, no nio.Charset ctor? */), "lucene");
-    FSDirectory dir = FSDirectory.open(new File(args[3]));
+    FSDirectory dir = FSDirectory.open(Paths.get(args[3]));
     String fieldSpec = args.length == 5 ? args[4] : "T"; // default to Title-only if not specified.
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = new IndexSearcher(reader);
@@ -67,10 +68,10 @@ public class QueryDriver {
 
     // use trec utilities to read trec topics into quality queries
     TrecTopicsReader qReader = new TrecTopicsReader();
-    QualityQuery qqs[] = qReader.readQueries(new BufferedReader(IOUtils.getDecodingReader(topicsFile, StandardCharsets.UTF_8)));
+    QualityQuery qqs[] = qReader.readQueries(Files.newBufferedReader(topicsFile, StandardCharsets.UTF_8));
 
     // prepare judge, with trec utilities that read from a QRels file
-    Judge judge = new TrecJudge(new BufferedReader(IOUtils.getDecodingReader(qrelsFile, StandardCharsets.UTF_8)));
+    Judge judge = new TrecJudge(Files.newBufferedReader(qrelsFile, StandardCharsets.UTF_8));
 
     // validate topics & judgments match each other
     judge.validateData(qqs, logger);

@@ -18,11 +18,11 @@ package org.apache.lucene.benchmark.byTask.feeds;
  */
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
@@ -50,24 +50,28 @@ public class ReutersContentSource extends ContentSource {
   }
 
   private ThreadLocal<DateFormatInfo> dateFormat = new ThreadLocal<>();
-  private File dataDir = null;
-  private ArrayList<File> inputFiles = new ArrayList<>();
+  private Path dataDir = null;
+  private ArrayList<Path> inputFiles = new ArrayList<>();
   private int nextFile = 0;
   private int iteration = 0;
   
   @Override
   public void setConfig(Config config) {
     super.setConfig(config);
-    File workDir = new File(config.get("work.dir", "work"));
+    Path workDir = Paths.get(config.get("work.dir", "work"));
     String d = config.get("docs.dir", "reuters-out");
-    dataDir = new File(d);
+    dataDir = Paths.get(d);
     if (!dataDir.isAbsolute()) {
-      dataDir = new File(workDir, d);
+      dataDir = workDir.resolve(d);
     }
     inputFiles.clear();
-    collectFiles(dataDir, inputFiles);
+    try {
+      collectFiles(dataDir, inputFiles);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
     if (inputFiles.size() == 0) {
-      throw new RuntimeException("No txt files in dataDir: "+dataDir.getAbsolutePath());
+      throw new RuntimeException("No txt files in dataDir: "+dataDir.toAbsolutePath());
     }
   }
 
@@ -99,7 +103,7 @@ public class ReutersContentSource extends ContentSource {
   
   @Override
   public DocData getNextDocData(DocData docData) throws NoMoreDataException, IOException {
-    File f = null;
+    Path f = null;
     String name = null;
     synchronized (this) {
       if (nextFile >= inputFiles.size()) {
@@ -111,11 +115,10 @@ public class ReutersContentSource extends ContentSource {
         iteration++;
       }
       f = inputFiles.get(nextFile++);
-      name = f.getCanonicalPath() + "_" + iteration;
+      name = f.toRealPath() + "_" + iteration;
     }
 
-    BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(f), StandardCharsets.UTF_8));
-    try {
+    try (BufferedReader reader = Files.newBufferedReader(f, StandardCharsets.UTF_8)) {
       // First line is the date, 3rd is the title, rest is body
       String dateStr = reader.readLine();
       reader.readLine();// skip an empty line
@@ -128,7 +131,7 @@ public class ReutersContentSource extends ContentSource {
       }
       reader.close();
       
-      addBytes(f.length());
+      addBytes(Files.size(f));
       
       Date date = parseDate(dateStr.trim());
       
@@ -138,8 +141,6 @@ public class ReutersContentSource extends ContentSource {
       docData.setTitle(title);
       docData.setDate(date);
       return docData;
-    } finally {
-      reader.close();
     }
   }
 

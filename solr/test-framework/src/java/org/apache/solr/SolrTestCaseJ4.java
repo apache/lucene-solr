@@ -91,6 +91,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -153,7 +154,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   @BeforeClass 
   @SuppressWarnings("unused")
   private static void beforeClass() {
-    initCoreDataDir = createTempDir("init-core-data");
+    initCoreDataDir = createTempDir("init-core-data").toFile();
 
     System.err.println("Creating dataDir: " + initCoreDataDir.getAbsolutePath());
 
@@ -1038,12 +1039,12 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   /**
-   * @see IOUtils#rm(File...)
+   * @see IOUtils#rm(Path...)
    */
   @Deprecated()
   public static boolean recurseDelete(File f) {
     try {
-      IOUtils.rm(f);
+      IOUtils.rm(f.toPath());
       return true;
     } catch (IOException e) {
       System.err.println(e.toString());

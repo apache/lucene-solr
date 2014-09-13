@@ -61,7 +61,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4
   }
 
   public void testEscapeInstanceDir() throws Exception {
-    File temp = createTempDir("testEscapeInstanceDir");
+    File temp = createTempDir("testEscapeInstanceDir").toFile();
     try {
       temp.mkdirs();
       new File(temp, "dummy.txt").createNewFile();
@@ -77,7 +77,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4
       }
       loader.close();
     } finally {
-      IOUtils.rm(temp);
+      IOUtils.rm(temp.toPath());
     }
   }
 
@@ -171,7 +171,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4
   }
 
   public void testClassLoaderLibs() throws Exception {
-    File tmpRoot = createTempDir("testClassLoaderLibs");
+    File tmpRoot = createTempDir("testClassLoaderLibs").toFile();
 
     File lib = new File(tmpRoot, "lib");
     lib.mkdirs();

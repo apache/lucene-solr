@@ -67,11 +67,11 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
     saveProp = System.getProperty("solr.directoryFactory");
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     super.setUp();
-    File dataDir1 = createTempDir();
+    File dataDir1 = createTempDir().toFile();
     // setup datadirs
     System.setProperty( "solr.core0.data.dir", dataDir1.getCanonicalPath() );
 
-    dataDir2 = createTempDir();
+    dataDir2 = createTempDir().toFile();
 
     System.setProperty( "solr.core1.data.dir", this.dataDir2.getCanonicalPath() );
 

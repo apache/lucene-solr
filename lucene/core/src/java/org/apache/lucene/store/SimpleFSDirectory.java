@@ -21,6 +21,7 @@ import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.file.Path;
 
 /** A straightforward implementation of {@link FSDirectory}
  *  using java.io.RandomAccessFile.  However, this class has
@@ -28,6 +29,8 @@ import java.io.RandomAccessFile;
  *  bottleneck) as it synchronizes when multiple threads
  *  read from the same file.  It's usually better to use
  *  {@link NIOFSDirectory} or {@link MMapDirectory} instead. */
+// TODO: we currently mandate .toFile to still use RandomAccessFile, to avoid ClosedByInterruptException.
+// should we change to SeekableByteChannel instead?
 public class SimpleFSDirectory extends FSDirectory {
     
   /** Create a new SimpleFSDirectory for the named location.
@@ -37,8 +40,9 @@ public class SimpleFSDirectory extends FSDirectory {
    * ({@link NativeFSLockFactory});
    * @throws IOException if there is a low-level I/O error
    */
-  public SimpleFSDirectory(File path, LockFactory lockFactory) throws IOException {
+  public SimpleFSDirectory(Path path, LockFactory lockFactory) throws IOException {
     super(path, lockFactory);
+    path.toFile(); // throw exception if we can't get a File for now
   }
   
   /** Create a new SimpleFSDirectory for the named location and {@link NativeFSLockFactory}.
@@ -46,15 +50,16 @@ public class SimpleFSDirectory extends FSDirectory {
    * @param path the path of the directory
    * @throws IOException if there is a low-level I/O error
    */
-  public SimpleFSDirectory(File path) throws IOException {
+  public SimpleFSDirectory(Path path) throws IOException {
     super(path, null);
+    path.toFile(); // throw exception if we can't get a File for now
   }
 
   /** Creates an IndexInput for the file with the given name. */
   @Override
   public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
-    final File path = new File(directory, name);
+    final File path = directory.resolve(name).toFile();
     RandomAccessFile raf = new RandomAccessFile(path, "r");
     return new SimpleFSIndexInput("SimpleFSIndexInput(path=\"" + path.getPath() + "\")", raf, context);
   }

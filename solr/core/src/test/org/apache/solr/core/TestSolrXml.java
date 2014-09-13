@@ -48,7 +48,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void setupLoader() throws Exception {
-    solrHome = createTempDir();
+    solrHome = createTempDir().toFile();
     loader = new SolrResourceLoader(solrHome.getAbsolutePath());
   }
 

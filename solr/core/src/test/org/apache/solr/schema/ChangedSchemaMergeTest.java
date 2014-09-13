@@ -40,7 +40,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
     initCore();
   }
 
-  private final File solrHomeDirectory = createTempDir();
+  private final File solrHomeDirectory = createTempDir().toFile();
   private File schemaFile = null;
 
   private void addDoc(SolrCore core, String... fieldValues) throws IOException {

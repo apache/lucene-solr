@@ -58,7 +58,7 @@ public class AlternateDirectoryTest extends SolrTestCaseJ4 {
     public Directory create(String path, DirContext dirContext) throws IOException {
       openCalled = true;
 
-      return dir = newFSDirectory(new File(path));
+      return dir = newFSDirectory(new File(path).toPath());
     }
 
   }

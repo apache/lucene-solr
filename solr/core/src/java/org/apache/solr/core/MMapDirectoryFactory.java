@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 
 /**
@@ -36,7 +37,7 @@ import java.io.IOException;
  * Can set the following parameters:
  * <ul>
  *  <li>unmap -- See {@link MMapDirectory#setUseUnmap(boolean)}</li>
- *  <li>maxChunkSize -- The Max chunk size.  See {@link MMapDirectory#MMapDirectory(File, LockFactory, int)}</li>
+ *  <li>maxChunkSize -- The Max chunk size.  See {@link MMapDirectory#MMapDirectory(Path, LockFactory, int)}</li>
  * </ul>
  *
  **/
@@ -58,7 +59,7 @@ public class MMapDirectoryFactory extends StandardDirectoryFactory {
 
   @Override
   protected Directory create(String path, DirContext dirContext) throws IOException {
-    MMapDirectory mapDirectory = new MMapDirectory(new File(path), null, maxChunk);
+    MMapDirectory mapDirectory = new MMapDirectory(new File(path).toPath(), null, maxChunk);
     try {
       mapDirectory.setUseUnmap(unmapHack);
     } catch (Exception e) {

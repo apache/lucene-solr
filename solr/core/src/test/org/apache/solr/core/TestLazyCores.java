@@ -62,7 +62,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   }
 
   private CoreContainer init() throws Exception {
-    solrHomeDirectory = createTempDir();
+    solrHomeDirectory = createTempDir().toFile();
     
     for (int idx = 1; idx < 10; ++idx) {
       copyMinConf(new File(solrHomeDirectory, "collection" + idx));
@@ -585,7 +585,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   private CoreContainer initGoodAndBad(List<String> goodCores,
                                        List<String> badSchemaCores,
                                        List<String> badConfigCores) throws Exception {
-    solrHomeDirectory = createTempDir();
+    solrHomeDirectory = createTempDir().toFile();
     
     // Don't pollute the log with exception traces when they're expected.
     ignoreException(Pattern.quote("SAXParseException"));

@@ -50,7 +50,7 @@ public abstract class MRUnitBase extends SolrTestCaseJ4 {
   
   protected void setupHadoopConfig(Configuration config) throws IOException {
     
-    String tempDir = createTempDir().getAbsolutePath();
+    String tempDir = createTempDir().toFile().getAbsolutePath();
 
     FileUtils.copyFile(new File(RESOURCES_DIR + "/custom-mimetypes.xml"), new File(tempDir + "/custom-mimetypes.xml"));
 

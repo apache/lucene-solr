@@ -45,7 +45,7 @@ public class TestSwedishLightStemFilter extends BaseTokenStreamTestCase {
   
   /** Test against a vocabulary from the reference impl */
   public void testVocabulary() throws IOException {
-    assertVocabulary(analyzer, getDataFile("svlighttestdata.zip"), "svlight.txt");
+    assertVocabulary(analyzer, getDataPath("svlighttestdata.zip"), "svlight.txt");
   }
   
   public void testKeyword() throws IOException {

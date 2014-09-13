@@ -17,8 +17,9 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -27,12 +28,12 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexNotFoundException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TestIndexWriterReader;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.TestUtil;
 
 public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
 
@@ -85,12 +86,12 @@ public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
   }
   
   private Directory newFSSwitchDirectory(Set<String> primaryExtensions) throws IOException {
-    File primDir = createTempDir("foo");
-    File secondDir = createTempDir("bar");
+    Path primDir = createTempDir("foo");
+    Path secondDir = createTempDir("bar");
     return newFSSwitchDirectory(primDir, secondDir, primaryExtensions);
   }
 
-  private Directory newFSSwitchDirectory(File aDir, File bDir, Set<String> primaryExtensions) throws IOException {
+  private Directory newFSSwitchDirectory(Path aDir, Path bDir, Set<String> primaryExtensions) throws IOException {
     Directory a = new SimpleFSDirectory(aDir);
     Directory b = new SimpleFSDirectory(bDir);
     return new FileSwitchDirectory(primaryExtensions, a, b, true);
@@ -98,21 +99,21 @@ public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
   
   // LUCENE-3380 -- make sure we get exception if the directory really does not exist.
   public void testNoDir() throws Throwable {
-    File primDir = createTempDir("foo");
-    File secondDir = createTempDir("bar");
+    Path primDir = createTempDir("foo");
+    Path secondDir = createTempDir("bar");
     IOUtils.rm(primDir, secondDir);
     Directory dir = newFSSwitchDirectory(primDir, secondDir, Collections.<String>emptySet());
     try {
       DirectoryReader.open(dir);
       fail("did not hit expected exception");
-    } catch (NoSuchDirectoryException nsde) {
+    } catch (IndexNotFoundException nsde) {
       // expected
     }
     dir.close();
   }
 
   @Override
-  protected Directory getDirectory(File path) throws IOException {
+  protected Directory getDirectory(Path path) throws IOException {
     Set<String> extensions = new HashSet<String>();
     if (random().nextBoolean()) {
       extensions.add("cfs");

@@ -29,7 +29,7 @@ import java.io.File;
 public class TestICUCollationFieldOptions extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    File testHome = createTempDir();
+    File testHome = createTempDir().toFile();
     FileUtils.copyDirectory(getFile("analysis-extras/solr"), testHome);
     initCore("solrconfig-icucollate.xml","schema-icucollateoptions.xml", testHome.getAbsolutePath());
     // add some docs

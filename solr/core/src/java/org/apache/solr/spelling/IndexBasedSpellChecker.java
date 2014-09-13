@@ -64,7 +64,7 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
   private void initSourceReader() {
     if (sourceLocation != null) {
       try {
-        FSDirectory luceneIndexDir = FSDirectory.open(new File(sourceLocation));
+        FSDirectory luceneIndexDir = FSDirectory.open(new File(sourceLocation).toPath());
         this.reader = DirectoryReader.open(luceneIndexDir);
       } catch (IOException e) {
         throw new RuntimeException(e);

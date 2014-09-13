@@ -62,7 +62,7 @@ public class TestPortugueseMinimalStemFilter extends BaseTokenStreamTestCase {
   
   /** Test against a vocabulary from the reference impl */
   public void testVocabulary() throws IOException {
-    assertVocabulary(analyzer, getDataFile("ptminimaltestdata.zip"), "ptminimal.txt");
+    assertVocabulary(analyzer, getDataPath("ptminimaltestdata.zip"), "ptminimal.txt");
   }
   
   public void testKeyword() throws IOException {

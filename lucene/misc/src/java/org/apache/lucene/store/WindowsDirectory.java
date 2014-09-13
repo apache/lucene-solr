@@ -17,9 +17,9 @@ package org.apache.lucene.store;
  * the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.io.EOFException;
+import java.nio.file.Path;
 
 import org.apache.lucene.store.Directory; // javadoc
 import org.apache.lucene.store.NativeFSLockFactory; // javadoc
@@ -56,7 +56,7 @@ public class WindowsDirectory extends FSDirectory {
    * ({@link NativeFSLockFactory});
    * @throws IOException If there is a low-level I/O error
    */
-  public WindowsDirectory(File path, LockFactory lockFactory) throws IOException {
+  public WindowsDirectory(Path path, LockFactory lockFactory) throws IOException {
     super(path, lockFactory);
   }
 
@@ -65,14 +65,14 @@ public class WindowsDirectory extends FSDirectory {
    * @param path the path of the directory
    * @throws IOException If there is a low-level I/O error
    */
-  public WindowsDirectory(File path) throws IOException {
+  public WindowsDirectory(Path path) throws IOException {
     super(path, null);
   }
 
   @Override
   public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
-    return new WindowsIndexInput(new File(getDirectory(), name), Math.max(BufferedIndexInput.bufferSize(context), DEFAULT_BUFFERSIZE));
+    return new WindowsIndexInput(getDirectory().resolve(name), Math.max(BufferedIndexInput.bufferSize(context), DEFAULT_BUFFERSIZE));
   }
   
   static class WindowsIndexInput extends BufferedIndexInput {
@@ -81,9 +81,9 @@ public class WindowsDirectory extends FSDirectory {
     boolean isClone;
     boolean isOpen;
     
-    public WindowsIndexInput(File file, int bufferSize) throws IOException {
-      super("WindowsIndexInput(path=\"" + file.getPath() + "\")", bufferSize);
-      fd = WindowsDirectory.open(file.getPath());
+    public WindowsIndexInput(Path file, int bufferSize) throws IOException {
+      super("WindowsIndexInput(path=\"" + file + "\")", bufferSize);
+      fd = WindowsDirectory.open(file.toString());
       length = WindowsDirectory.length(fd);
       isOpen = true;
     }

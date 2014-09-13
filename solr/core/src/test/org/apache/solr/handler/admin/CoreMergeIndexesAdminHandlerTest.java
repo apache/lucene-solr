@@ -71,7 +71,7 @@ public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMergeIndexesCoreAdminHandler() throws Exception {
-    final File workDir = createTempDir();
+    final File workDir = createTempDir().toFile();
 
     final CoreContainer cores = h.getCoreContainer();
 

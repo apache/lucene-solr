@@ -57,7 +57,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    dfsCluster = HdfsTestUtil.setupClass(createTempDir().getAbsolutePath());
+    dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
   }
   
   @AfterClass
@@ -73,7 +73,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
     Configuration conf = new Configuration();
     conf.set("dfs.permissions.enabled", "false");
     
-    directory = new HdfsDirectory(new Path(dfsCluster.getURI().toString() + createTempDir().getAbsolutePath() + "/hdfs"), conf);
+    directory = new HdfsDirectory(new Path(dfsCluster.getURI().toString() + createTempDir().toFile().getAbsolutePath() + "/hdfs"), conf);
     
     random = random();
   }

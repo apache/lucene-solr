@@ -44,7 +44,7 @@ public class TestManagedSchemaFieldTypeResource extends RestTestBase {
 
   @Before
   public void before() throws Exception {
-    tmpSolrHome = createTempDir();
+    tmpSolrHome = createTempDir().toFile();
     tmpConfDir = new File(tmpSolrHome, confDir);
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 

@@ -17,13 +17,12 @@ package org.apache.lucene.search.suggest.analyzing;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -921,16 +920,15 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(3, results.get(2).value);
 
     // Try again after save/load:
-    File tmpDir = createTempDir("AnalyzingSuggesterTest");
-    tmpDir.mkdir();
+    Path tmpDir = createTempDir("AnalyzingSuggesterTest");
 
-    File path = new File(tmpDir, "suggester");
+    Path path = tmpDir.resolve("suggester");
 
-    OutputStream os = new FileOutputStream(path);
+    OutputStream os = Files.newOutputStream(path);
     suggester.store(os);
     os.close();
 
-    InputStream is = new FileInputStream(path);
+    InputStream is = Files.newInputStream(path);
     suggester.load(is);
     is.close();
 
@@ -983,16 +981,15 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(5, results.get(1).value);
 
     // Try again after save/load:
-    File tmpDir = createTempDir("AnalyzingSuggesterTest");
-    tmpDir.mkdir();
+    Path tmpDir = createTempDir("AnalyzingSuggesterTest");
 
-    File path = new File(tmpDir, "suggester");
+    Path path = tmpDir.resolve("suggester");
 
-    OutputStream os = new FileOutputStream(path);
+    OutputStream os = Files.newOutputStream(path);
     suggester.store(os);
     os.close();
 
-    InputStream is = new FileInputStream(path);
+    InputStream is = Files.newInputStream(path);
     suggester.load(is);
     is.close();
 
@@ -1053,16 +1050,15 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(5, results.get(1).value);
 
     // Try again after save/load:
-    File tmpDir = createTempDir("AnalyzingSuggesterTest");
-    tmpDir.mkdir();
+    Path tmpDir = createTempDir("AnalyzingSuggesterTest");
 
-    File path = new File(tmpDir, "suggester");
+    Path path = tmpDir.resolve("suggester");
 
-    OutputStream os = new FileOutputStream(path);
+    OutputStream os = Files.newOutputStream(path);
     suggester.store(os);
     os.close();
 
-    InputStream is = new FileInputStream(path);
+    InputStream is = Files.newInputStream(path);
     suggester.load(is);
     is.close();
 

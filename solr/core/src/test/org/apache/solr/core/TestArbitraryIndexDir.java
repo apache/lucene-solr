@@ -73,7 +73,7 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
   public void setUp() throws Exception {
     super.setUp();
     
-    File tmpDataDir = createTempDir();
+    File tmpDataDir = createTempDir().toFile();
 
     solrConfig = TestHarness.createConfig(getSolrHome(), "solrconfig.xml");
     h = new TestHarness( tmpDataDir.getAbsolutePath(),
@@ -112,7 +112,7 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
     }
 
     //add a doc in the new index dir
-    Directory dir = newFSDirectory(newDir);
+    Directory dir = newFSDirectory(newDir.toPath());
     IndexWriter iw = new IndexWriter(
         dir,
         new IndexWriterConfig(new StandardAnalyzer())

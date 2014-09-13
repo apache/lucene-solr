@@ -18,7 +18,6 @@ package org.apache.lucene.util;
  */
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -32,6 +31,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1170,7 +1171,7 @@ public abstract class LuceneTestCase extends Assert {
     return (MockDirectoryWrapper) wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY), false);
   }
 
-  public static MockDirectoryWrapper newMockFSDirectory(File f) {
+  public static MockDirectoryWrapper newMockFSDirectory(Path f) {
     return (MockDirectoryWrapper) newFSDirectory(f, null, false);
   }
 
@@ -1184,16 +1185,16 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /** Returns a new FSDirectory instance over the given file, which must be a folder. */
-  public static BaseDirectoryWrapper newFSDirectory(File f) {
+  public static BaseDirectoryWrapper newFSDirectory(Path f) {
     return newFSDirectory(f, null);
   }
 
   /** Returns a new FSDirectory instance over the given file, which must be a folder. */
-  public static BaseDirectoryWrapper newFSDirectory(File f, LockFactory lf) {
+  public static BaseDirectoryWrapper newFSDirectory(Path f, LockFactory lf) {
     return newFSDirectory(f, lf, rarely());
   }
 
-  private static BaseDirectoryWrapper newFSDirectory(File f, LockFactory lf, boolean bare) {
+  private static BaseDirectoryWrapper newFSDirectory(Path f, LockFactory lf, boolean bare) {
     String fsdirClass = TEST_DIRECTORY;
     if (fsdirClass.equals("random")) {
       fsdirClass = RandomPicks.randomFrom(random(), FS_DIRECTORIES); 
@@ -1408,12 +1409,10 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
 
-  private static Directory newFSDirectoryImpl(
-      Class<? extends FSDirectory> clazz, File file)
-      throws IOException {
+  private static Directory newFSDirectoryImpl(Class<? extends FSDirectory> clazz, Path path) throws IOException {
     FSDirectory d = null;
     try {
-      d = CommandLineUtil.newFSDirectory(clazz, file);
+      d = CommandLineUtil.newFSDirectory(clazz, path);
     } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
       Rethrow.rethrow(e);
     }
@@ -1431,24 +1430,24 @@ public abstract class LuceneTestCase extends Assert {
 
     try {
       final Class<? extends Directory> clazz = CommandLineUtil.loadDirectoryClass(clazzName);
-      // If it is a FSDirectory type, try its ctor(File)
+      // If it is a FSDirectory type, try its ctor(Path)
       if (FSDirectory.class.isAssignableFrom(clazz)) {
-        final File dir = createTempDir("index-" + clazzName);
+        final Path dir = createTempDir("index-" + clazzName);
         return newFSDirectoryImpl(clazz.asSubclass(FSDirectory.class), dir);
       }
 
-      // See if it has a File ctor even though it's not an
+      // See if it has a Path ctor even though it's not an
       // FSDir subclass:
-      Constructor<? extends Directory> fileCtor = null;
+      Constructor<? extends Directory> pathCtor = null;
       try {
-        fileCtor = clazz.getConstructor(File.class);
+        pathCtor = clazz.getConstructor(Path.class);
       } catch (NoSuchMethodException nsme) {
         // Ignore
       }
 
-      if (fileCtor != null) {
-        final File dir = createTempDir("index");
-        return fileCtor.newInstance(dir);
+      if (pathCtor != null) {
+        final Path dir = createTempDir("index");
+        return pathCtor.newInstance(dir);
       }
 
       // try empty ctor
@@ -1662,13 +1661,13 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /**
-   * Gets a resource from the classpath as {@link File}. This method should only
+   * Gets a resource from the classpath as {@link Path}. This method should only
    * be used, if a real file is needed. To get a stream, code should prefer
    * {@link Class#getResourceAsStream} using {@code this.getClass()}.
    */
-  protected File getDataFile(String name) throws IOException {
+  protected Path getDataPath(String name) throws IOException {
     try {
-      return new File(this.getClass().getResource(name).toURI());
+      return Paths.get(this.getClass().getResource(name).toURI());
     } catch (Exception e) {
       throw new IOException("Cannot find resource: " + name);
     }
@@ -2364,7 +2363,7 @@ public abstract class LuceneTestCase extends Assert {
    * or {@link #createTempDir(String)} or {@link #createTempFile(String, String)}.
    */
   @Deprecated
-  public static File getBaseTempDirForTestClass() {
+  public static Path getBaseTempDirForTestClass() {
     return tempFilesCleanupRule.getPerTestClassTempDir();
   }
 
@@ -2374,7 +2373,7 @@ public abstract class LuceneTestCase extends Assert {
    * 
    * @see #createTempDir(String)
    */
-  public static File createTempDir() {
+  public static Path createTempDir() {
     return createTempDir("tempDir");
   }
 
@@ -2386,7 +2385,7 @@ public abstract class LuceneTestCase extends Assert {
    * test class completes successfully. The test should close any file handles that would prevent
    * the folder from being removed. 
    */
-  public static File createTempDir(String prefix) {
+  public static Path createTempDir(String prefix) {
     return tempFilesCleanupRule.createTempDir(prefix);
   }
   
@@ -2398,7 +2397,7 @@ public abstract class LuceneTestCase extends Assert {
    * test class completes successfully. The test should close any file handles that would prevent
    * the folder from being removed. 
    */
-  public static File createTempFile(String prefix, String suffix) throws IOException {
+  public static Path createTempFile(String prefix, String suffix) throws IOException {
     return tempFilesCleanupRule.createTempFile(prefix, suffix);
   }
 
@@ -2407,7 +2406,7 @@ public abstract class LuceneTestCase extends Assert {
    * 
    * @see #createTempFile(String, String) 
    */
-  public static File createTempFile() throws IOException {
+  public static Path createTempFile() throws IOException {
     return createTempFile("tempFile", ".tmp");
   }
 }

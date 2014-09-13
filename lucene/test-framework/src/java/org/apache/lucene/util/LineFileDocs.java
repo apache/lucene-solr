@@ -19,17 +19,17 @@ package org.apache.lucene.util;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.RandomAccessFile;
 import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
@@ -89,15 +89,15 @@ public class LineFileDocs implements Closeable {
     long size = 0L, seekTo = 0L;
     if (is == null) {
       // if its not in classpath, we load it as absolute filesystem path (e.g. Hudson's home dir)
-      File file = new File(path);
-      size = file.length();
+      Path file = Paths.get(path);
+      size = Files.size(file);
       if (path.endsWith(".gz")) {
         // if it is a gzip file, we need to use InputStream and slowly skipTo:
-        is = new FileInputStream(file);
+        is = Files.newInputStream(file);
       } else {
-        // optimized seek using RandomAccessFile:
+        // optimized seek using SeekableByteChannel
         seekTo = randomSeekPos(random, size);
-        final FileChannel channel = new RandomAccessFile(path, "r").getChannel();
+        final SeekableByteChannel channel = Files.newByteChannel(file);
         if (LuceneTestCase.VERBOSE) {
           System.out.println("TEST: LineFileDocs: file seek to fp=" + seekTo + " on open");
         }

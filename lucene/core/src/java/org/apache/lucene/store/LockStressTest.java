@@ -18,11 +18,12 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
-import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Random;
 
 /**
@@ -133,7 +134,7 @@ public class LockStressTest {
       throw new IOException("Cannot instantiate lock factory " + lockFactoryClassName);
     }
 
-    File lockDir = new File(lockDirName);
+    Path lockDir = Paths.get(lockDirName);
 
     if (lockFactory instanceof FSLockFactory) {
       ((FSLockFactory) lockFactory).setLockDir(lockDir);

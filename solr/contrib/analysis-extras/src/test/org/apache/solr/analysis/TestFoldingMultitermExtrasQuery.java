@@ -32,7 +32,7 @@ public class TestFoldingMultitermExtrasQuery extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    File testHome = createTempDir();
+    File testHome = createTempDir().toFile();
     FileUtils.copyDirectory(getFile("analysis-extras/solr"), testHome);
     initCore("solrconfig-icucollate.xml","schema-folding-extra.xml", testHome.getAbsolutePath());
 

@@ -17,8 +17,10 @@ package org.apache.lucene.analysis.ja.util;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.apache.lucene.analysis.ja.dict.TokenInfoDictionary;
 import org.apache.lucene.util.fst.FST;
@@ -41,8 +43,8 @@ public class TokenInfoDictionaryWriter extends BinaryDictionaryWriter {
   }
   
   protected void writeFST(String filename) throws IOException {
-    File f = new File(filename);
-    f.getParentFile().mkdirs();
-    fst.save(f);
+    Path p = Paths.get(filename);
+    Files.createDirectories(p.getParent());
+    fst.save(p);
   }  
 }

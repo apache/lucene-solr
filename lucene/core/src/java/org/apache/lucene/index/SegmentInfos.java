@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -41,7 +42,6 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.NoSuchDirectoryException;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 
@@ -176,9 +176,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
    * @param files -- array of file names to check
    */
   public static long getLastCommitGeneration(String[] files) {
-    if (files == null) {
-      return -1;
-    }
     long max = -1;
     for (String file : files) {
       if (file.startsWith(IndexFileNames.SEGMENTS) && !file.equals(IndexFileNames.OLD_SEGMENTS_GEN)) {
@@ -198,11 +195,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
    * @param directory -- directory to search for the latest segments_N file
    */
   public static long getLastCommitGeneration(Directory directory) throws IOException {
-    try {
-      return getLastCommitGeneration(directory.listAll());
-    } catch (NoSuchDirectoryException nsde) {
-      return -1;
-    }
+    return getLastCommitGeneration(directory.listAll());
   }
 
   /**

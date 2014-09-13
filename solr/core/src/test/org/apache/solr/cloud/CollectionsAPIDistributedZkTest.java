@@ -384,7 +384,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     Create createCmd = new Create();
     createCmd.setCoreName("halfdeletedcollection_shard1_replica1");
     createCmd.setCollection(collectionName);
-    String dataDir = createTempDir().getAbsolutePath();
+    String dataDir = createTempDir().toFile().getAbsolutePath();
     createCmd.setDataDir(dataDir);
     createCmd.setNumShards(2);
     if (secondConfigSet) {
@@ -574,7 +574,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     Create createCmd = new Create();
     createCmd.setCoreName("halfcollection_shard1_replica1");
     createCmd.setCollection("halfcollectionblocker");
-    String dataDir = createTempDir().getAbsolutePath();
+    String dataDir = createTempDir().toFile().getAbsolutePath();
     createCmd.setDataDir(dataDir);
     createCmd.setNumShards(1);
     if (secondConfigSet) {
@@ -585,7 +585,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     createCmd = new Create();
     createCmd.setCoreName("halfcollection_shard1_replica1");
     createCmd.setCollection("halfcollectionblocker2");
-    dataDir = createTempDir().getAbsolutePath();
+    dataDir = createTempDir().toFile().getAbsolutePath();
     createCmd.setDataDir(dataDir);
     createCmd.setNumShards(1);
     if (secondConfigSet) {
@@ -634,7 +634,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     Create createCmd = new Create();
     createCmd.setCoreName("corewithnocollection");
     createCmd.setCollection("");
-    String dataDir = createTempDir().getAbsolutePath();
+    String dataDir = createTempDir().toFile().getAbsolutePath();
     createCmd.setDataDir(dataDir);
     createCmd.setNumShards(1);
     if (secondConfigSet) {

@@ -18,12 +18,12 @@ package org.apache.lucene.benchmark.byTask.feeds;
  */
 
 import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Properties;
 
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
@@ -51,8 +51,8 @@ public class LineDocSourceTest extends BenchmarkTestCase {
 
   private static final CompressorStreamFactory csFactory = new CompressorStreamFactory();
 
-  private void createBZ2LineFile(File file, boolean addHeader) throws Exception {
-    OutputStream out = new FileOutputStream(file);
+  private void createBZ2LineFile(Path file, boolean addHeader) throws Exception {
+    OutputStream out = Files.newOutputStream(file);
     out = csFactory.createCompressorOutputStream("bzip2", out);
     BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8));
     writeDocsToFile(writer, addHeader, null);
@@ -89,15 +89,15 @@ public class LineDocSourceTest extends BenchmarkTestCase {
     writer.newLine();
   }
 
-  private void createRegularLineFile(File file, boolean addHeader) throws Exception {
-    OutputStream out = new FileOutputStream(file);
+  private void createRegularLineFile(Path file, boolean addHeader) throws Exception {
+    OutputStream out = Files.newOutputStream(file);
     BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8));
     writeDocsToFile(writer, addHeader, null);
     writer.close();
   }
 
-  private void createRegularLineFileWithMoreFields(File file, String...extraFields) throws Exception {
-    OutputStream out = new FileOutputStream(file);
+  private void createRegularLineFileWithMoreFields(Path file, String...extraFields) throws Exception {
+    OutputStream out = Files.newOutputStream(file);
     BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8));
     Properties p = new Properties();
     for (String f : extraFields) {
@@ -107,13 +107,13 @@ public class LineDocSourceTest extends BenchmarkTestCase {
     writer.close();
   }
   
-  private void doIndexAndSearchTest(File file, Class<? extends LineParser> lineParserClass, String storedField) throws Exception {
+  private void doIndexAndSearchTest(Path file, Class<? extends LineParser> lineParserClass, String storedField) throws Exception {
     doIndexAndSearchTestWithRepeats(file, lineParserClass, 1, storedField); // no extra repetitions
     doIndexAndSearchTestWithRepeats(file, lineParserClass, 2, storedField); // 1 extra repetition
     doIndexAndSearchTestWithRepeats(file, lineParserClass, 4, storedField); // 3 extra repetitions
   }
   
-  private void doIndexAndSearchTestWithRepeats(File file, 
+  private void doIndexAndSearchTestWithRepeats(Path file, 
       Class<? extends LineParser> lineParserClass, int numAdds, String storedField) throws Exception {
     
     IndexReader reader = null;
@@ -123,7 +123,7 @@ public class LineDocSourceTest extends BenchmarkTestCase {
       Properties props = new Properties();
       
       // LineDocSource specific settings.
-      props.setProperty("docs.file", file.getAbsolutePath());
+      props.setProperty("docs.file", file.toAbsolutePath().toString());
       if (lineParserClass != null) {
         props.setProperty("line.parser", lineParserClass.getName());
       }
@@ -169,31 +169,31 @@ public class LineDocSourceTest extends BenchmarkTestCase {
   
   /* Tests LineDocSource with a bzip2 input stream. */
   public void testBZip2() throws Exception {
-    File file = new File(getWorkDir(), "one-line.bz2");
+    Path file = getWorkDir().resolve("one-line.bz2");
     createBZ2LineFile(file,true);
     doIndexAndSearchTest(file, null, null);
   }
 
   public void testBZip2NoHeaderLine() throws Exception {
-    File file = new File(getWorkDir(), "one-line.bz2");
+    Path file = getWorkDir().resolve("one-line.bz2");
     createBZ2LineFile(file,false);
     doIndexAndSearchTest(file, null, null);
   }
   
   public void testRegularFile() throws Exception {
-    File file = new File(getWorkDir(), "one-line");
+    Path file = getWorkDir().resolve("one-line");
     createRegularLineFile(file,true);
     doIndexAndSearchTest(file, null, null);
   }
 
   public void testRegularFileSpecialHeader() throws Exception {
-    File file = new File(getWorkDir(), "one-line");
+    Path file = getWorkDir().resolve("one-line");
     createRegularLineFile(file,true);
     doIndexAndSearchTest(file, HeaderLineParser.class, null);
   }
 
   public void testRegularFileNoHeaderLine() throws Exception {
-    File file = new File(getWorkDir(), "one-line");
+    Path file = getWorkDir().resolve("one-line");
     createRegularLineFile(file,false);
     doIndexAndSearchTest(file, null, null);
   }
@@ -209,8 +209,8 @@ public class LineDocSourceTest extends BenchmarkTestCase {
     };
     
     for (int i = 0; i < testCases.length; i++) {
-      File file = new File(getWorkDir(), "one-line");
-      BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
+      Path file = getWorkDir().resolve("one-line");
+      BufferedWriter writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8);
       writer.write(testCases[i]);
       writer.newLine();
       writer.close();
@@ -225,14 +225,14 @@ public class LineDocSourceTest extends BenchmarkTestCase {
   
   /** Doc Name is not part of the default header */
   public void testWithDocsName()  throws Exception {
-    File file = new File(getWorkDir(), "one-line");
+    Path file = getWorkDir().resolve("one-line");
     createRegularLineFileWithMoreFields(file, DocMaker.NAME_FIELD);
     doIndexAndSearchTest(file, null, DocMaker.NAME_FIELD);
   }
 
   /** Use fields names that are not defined in Docmaker and so will go to Properties */
   public void testWithProperties()  throws Exception {
-    File file = new File(getWorkDir(), "one-line");
+    Path file = getWorkDir().resolve("one-line");
     String specialField = "mySpecialField";
     createRegularLineFileWithMoreFields(file, specialField);
     doIndexAndSearchTest(file, null, specialField);

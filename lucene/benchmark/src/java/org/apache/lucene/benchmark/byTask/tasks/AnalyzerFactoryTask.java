@@ -27,9 +27,11 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.utils.AnalyzerFactory;
 import org.apache.lucene.util.Version;
 
-import java.io.File;
 import java.io.StreamTokenizer;
 import java.io.StringReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -364,9 +366,9 @@ public class AnalyzerFactoryTask extends PerfTask {
         throw new RuntimeException("Line #" + lineno(stok) + ": ", e);
       }
       if (instance instanceof ResourceLoaderAware) {
-        File baseDir = new File(getRunData().getConfig().get("work.dir", "work")).getAbsoluteFile();
-        if ( ! baseDir.isDirectory()) {
-          baseDir = new File(".").getAbsoluteFile();
+        Path baseDir = Paths.get(getRunData().getConfig().get("work.dir", "work"));
+        if (!Files.isDirectory(baseDir)) {
+          baseDir = Paths.get(".");
         }
         ((ResourceLoaderAware)instance).inform(new FilesystemResourceLoader(baseDir));
       }

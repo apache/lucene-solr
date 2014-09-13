@@ -31,7 +31,7 @@ public class SimpleFSDirectoryFactory extends StandardDirectoryFactory {
 
   @Override
   protected Directory create(String path, DirContext dirContext) throws IOException {
-    return new SimpleFSDirectory(new File(path));
+    return new SimpleFSDirectory(new File(path).toPath());
   }
 
   @Override

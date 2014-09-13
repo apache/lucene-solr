@@ -43,8 +43,8 @@ public class TestMultiCoreConfBootstrap extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    dataDir1 = createTempDir();
-    dataDir2  = createTempDir();
+    dataDir1 = createTempDir().toFile();
+    dataDir2  = createTempDir().toFile();
 
     home = ExternalPaths.EXAMPLE_MULTICORE_HOME;
     System.setProperty("solr.solr.home", home);

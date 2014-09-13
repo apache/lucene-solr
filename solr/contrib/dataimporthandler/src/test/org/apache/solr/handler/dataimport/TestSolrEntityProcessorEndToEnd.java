@@ -317,7 +317,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     }
 
     public void setUp() throws Exception {
-      homeDir = createTempDir();
+      homeDir = createTempDir().toFile();
       initCoreDataDir = new File(homeDir + "/collection1", "data");
       confDir = new File(homeDir + "/collection1", "conf");
       
@@ -336,7 +336,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     }
 
     public void tearDown() throws Exception {
-      IOUtils.rm(homeDir);
+      IOUtils.rm(homeDir.toPath());
     }
   }
   

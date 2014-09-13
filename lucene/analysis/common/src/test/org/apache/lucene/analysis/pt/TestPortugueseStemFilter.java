@@ -62,7 +62,7 @@ public class TestPortugueseStemFilter extends BaseTokenStreamTestCase {
   
   /** Test against a vocabulary from the reference impl */
   public void testVocabulary() throws IOException {
-    assertVocabulary(analyzer, getDataFile("ptrslptestdata.zip"), "ptrslp.txt");
+    assertVocabulary(analyzer, getDataPath("ptrslptestdata.zip"), "ptrslp.txt");
   }
   
   public void testKeyword() throws IOException {

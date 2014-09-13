@@ -35,7 +35,7 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
   CoreContainer cc = null;
 
   private void init(final String dirSuffix) {
-    solrHome = createTempDir(dirSuffix);
+    solrHome = createTempDir(dirSuffix).toFile();
   }
 
   @After

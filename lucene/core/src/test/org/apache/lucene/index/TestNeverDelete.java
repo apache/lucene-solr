@@ -17,7 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -36,7 +36,7 @@ import org.apache.lucene.util.TestUtil;
 public class TestNeverDelete extends LuceneTestCase {
 
   public void testIndexing() throws Exception {
-    final File tmpDir = createTempDir("TestNeverDelete");
+    final Path tmpDir = createTempDir("TestNeverDelete");
     final BaseDirectoryWrapper d = newFSDirectory(tmpDir);
 
     // We want to "see" files removed if Lucene removed

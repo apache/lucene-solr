@@ -31,7 +31,7 @@ public class NIOFSDirectoryFactory extends StandardDirectoryFactory {
 
   @Override
   protected Directory create(String path, DirContext dirContext) throws IOException {
-    return new NIOFSDirectory(new File(path));
+    return new NIOFSDirectory(new File(path).toPath());
   }
   
   @Override

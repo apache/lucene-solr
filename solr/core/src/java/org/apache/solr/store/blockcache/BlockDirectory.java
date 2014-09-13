@@ -252,7 +252,7 @@ public class BlockDirectory extends Directory {
   
   private long getFileModified(String name) throws IOException {
     if (directory instanceof FSDirectory) {
-      File directory = ((FSDirectory) this.directory).getDirectory();
+      File directory = ((FSDirectory) this.directory).getDirectory().toFile();
       File file = new File(directory, name);
       if (!file.exists()) {
         throw new FileNotFoundException("File [" + name + "] not found");

@@ -63,7 +63,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     core.close();
 
     CoreDescriptor cd = new CoreDescriptor(cores, COLLECTION1, "collection1",
-                                            CoreDescriptor.CORE_DATADIR, createTempDir("dataDir2").getAbsolutePath());
+                                            CoreDescriptor.CORE_DATADIR, createTempDir("dataDir2").toFile().getAbsolutePath());
     
     cores.create(cd);
     

@@ -17,8 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -35,7 +35,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestCrashCausesCorruptIndex extends LuceneTestCase  {
 
-  File path;
+  Path path;
     
   /**
    * LUCENE-3627: This test fails.

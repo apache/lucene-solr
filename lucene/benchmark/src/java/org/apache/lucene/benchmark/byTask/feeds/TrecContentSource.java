@@ -18,11 +18,13 @@ package org.apache.lucene.benchmark.byTask.feeds;
  */
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
@@ -82,8 +84,8 @@ public class TrecContentSource extends ContentSource {
 
   private ThreadLocal<DateFormatInfo> dateFormats = new ThreadLocal<>();
   private ThreadLocal<StringBuilder> trecDocBuffer = new ThreadLocal<>();
-  private File dataDir = null;
-  private ArrayList<File> inputFiles = new ArrayList<>();
+  private Path dataDir = null;
+  private ArrayList<Path> inputFiles = new ArrayList<>();
   private int nextFile = 0;
   // Use to synchronize threads on reading from the TREC documents.
   private Object lock = new Object();
@@ -174,9 +176,9 @@ public class TrecContentSource extends ContentSource {
         nextFile = 0;
         iteration++;
       }
-      File f = inputFiles.get(nextFile++);
+      Path f = inputFiles.get(nextFile++);
       if (verbose) {
-        System.out.println("opening: " + f + " length: " + f.length());
+        System.out.println("opening: " + f + " length: " + Files.size(f));
       }
       try {
         InputStream inputStream = StreamUtils.inputStream(f); // support either gzip, bzip2, or regular text file, by extension  
@@ -185,7 +187,7 @@ public class TrecContentSource extends ContentSource {
         return;
       } catch (Exception e) {
         if (verbose) {
-          System.out.println("Skipping 'bad' file " + f.getAbsolutePath()+" due to "+e.getMessage());
+          System.out.println("Skipping 'bad' file " + f.toAbsolutePath()+" due to "+e.getMessage());
           continue;
         }
         throw new NoMoreDataException();
@@ -291,14 +293,18 @@ public class TrecContentSource extends ContentSource {
   public void setConfig(Config config) {
     super.setConfig(config);
     // dirs
-    File workDir = new File(config.get("work.dir", "work"));
+    Path workDir = Paths.get(config.get("work.dir", "work"));
     String d = config.get("docs.dir", "trec");
-    dataDir = new File(d);
+    dataDir = Paths.get(d);
     if (!dataDir.isAbsolute()) {
-      dataDir = new File(workDir, d);
+      dataDir = workDir.resolve(d);
     }
     // files
-    collectFiles(dataDir, inputFiles);
+    try {
+      collectFiles(dataDir, inputFiles);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
     if (inputFiles.size() == 0) {
       throw new IllegalArgumentException("No files in dataDir: " + dataDir);
     }

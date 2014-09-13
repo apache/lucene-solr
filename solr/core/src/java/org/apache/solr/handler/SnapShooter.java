@@ -67,7 +67,11 @@ public class SnapShooter {
       File dir = new File(snapDir);
       if (!dir.exists())  dir.mkdirs();
     }
-    lockFactory = new SimpleFSLockFactory(snapDir);
+    try {
+      lockFactory = new SimpleFSLockFactory(new File(snapDir).toPath());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
     this.snapshotName = snapshotName;
 
     if(snapshotName != null) {
@@ -250,7 +254,7 @@ public class SnapShooter {
         destDir.mkdirs();
       }
       
-      FSDirectory dir = FSDirectory.open(destDir);
+      FSDirectory dir = FSDirectory.open(destDir.toPath());
       try {
         for (String indexFile : files) {
           copyFile(sourceDir, indexFile, new File(destDir, indexFile), dir);

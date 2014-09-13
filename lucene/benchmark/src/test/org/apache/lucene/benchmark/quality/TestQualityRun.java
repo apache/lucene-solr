@@ -26,10 +26,8 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -73,7 +71,7 @@ public class TestQualityRun extends BenchmarkTestCase {
     // validate topics & judgments match each other
     judge.validateData(qqs, logger);
     
-    Directory dir = newFSDirectory(new File(getWorkDir(),"index"));
+    Directory dir = newFSDirectory(getWorkDir().resolve("index"));
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = new IndexSearcher(reader);
 

@@ -61,7 +61,7 @@ public class TestICUCollationFieldDocValues extends SolrTestCaseJ4 {
    * So its preferable to create this file on-the-fly.
    */
   public static String setupSolrHome() throws Exception {
-    File tmpFile = createTempDir();
+    File tmpFile = createTempDir().toFile();
     
     // make data and conf dirs
     new File(tmpFile + "/collection1", "data").mkdirs();

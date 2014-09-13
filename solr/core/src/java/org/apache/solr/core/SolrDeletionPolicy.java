@@ -211,7 +211,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
     // be the same, regardless of the Directory instance.
     if (dir instanceof FSDirectory) {
       FSDirectory fsd = (FSDirectory) dir;
-      File fdir = fsd.getDirectory();
+      File fdir = fsd.getDirectory().toFile();
       sb.append(fdir.getPath());
     } else {
       sb.append(dir);

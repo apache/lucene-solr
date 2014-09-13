@@ -17,10 +17,7 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -29,10 +26,10 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.CharBuffer;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -104,28 +101,24 @@ public final class TestUtil {
    * Convenience method unzipping zipName into destDir, cleaning up 
    * destDir first. 
    */
-  public static void unzip(File zipName, File destDir) throws IOException {
+  public static void unzip(Path zipName, Path destDir) throws IOException {
     IOUtils.rm(destDir);
-    destDir.mkdir();
+    Files.createDirectory(destDir);
 
-    ZipFile zipFile = new ZipFile(zipName);
+    ZipFile zipFile = new ZipFile(zipName.toFile());
     Enumeration<? extends ZipEntry> entries = zipFile.entries();
 
     while (entries.hasMoreElements()) {
       ZipEntry entry = entries.nextElement();
       
       InputStream in = zipFile.getInputStream(entry);
-      File targetFile = new File(destDir, entry.getName());
-      if (entry.isDirectory()) {
-        // allow unzipping with directory structure
-        targetFile.mkdirs();
-      } else {
-        if (targetFile.getParentFile()!=null) {
-          // be on the safe side: do not rely on that directories are always extracted
-          // before their children (although this makes sense, but is it guaranteed?)
-          targetFile.getParentFile().mkdirs();   
-        }
-        OutputStream out = new BufferedOutputStream(new FileOutputStream(targetFile));
+      Path targetFile = destDir.resolve(entry.getName());
+      
+      // be on the safe side: do not rely on that directories are always extracted
+      // before their children (although this makes sense, but is it guaranteed?)
+      Files.createDirectories(targetFile.getParent());
+      if (!entry.isDirectory()) {
+        OutputStream out = Files.newOutputStream(targetFile);
         
         byte[] buffer = new byte[8192];
         int len;

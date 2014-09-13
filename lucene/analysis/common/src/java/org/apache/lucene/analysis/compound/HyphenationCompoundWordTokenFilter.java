@@ -122,18 +122,6 @@ public class HyphenationCompoundWordTokenFilter extends
   /**
    * Create a hyphenator tree
    *
-   * @param hyphenationFile the file of the XML grammar to load
-   * @return An object representing the hyphenation patterns
-   * @throws java.io.IOException If there is a low-level I/O error.
-   */
-  public static HyphenationTree getHyphenationTree(File hyphenationFile)
-      throws IOException {
-    return getHyphenationTree(new InputSource(hyphenationFile.toURI().toASCIIString()));
-  }
-
-  /**
-   * Create a hyphenator tree
-   *
    * @param hyphenationSource the InputSource pointing to the XML grammar
    * @return An object representing the hyphenation patterns
    * @throws java.io.IOException If there is a low-level I/O error.

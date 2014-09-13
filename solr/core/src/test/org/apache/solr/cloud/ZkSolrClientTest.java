@@ -51,7 +51,7 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
     }
 
     ZkConnection(boolean makeRoot) throws Exception {
-      String zkDir = createTempDir("zkData").getAbsolutePath();
+      String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
       server = new ZkTestServer(zkDir);
       server.run();
 
@@ -109,7 +109,7 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
   }
 
   public void testReconnect() throws Exception {
-    String zkDir = createTempDir("zkData").getAbsolutePath();
+    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
     ZkTestServer server = null;
     SolrZkClient zkClient = null;
     try {
@@ -202,7 +202,7 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
   }
   
   public void testZkCmdExectutor() throws Exception {
-    String zkDir = createTempDir("zkData").getAbsolutePath();
+    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
     ZkTestServer server = null;
 
     try {

@@ -17,8 +17,9 @@ package org.apache.lucene.search.suggest;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
@@ -40,8 +41,8 @@ import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
 public class SortedInputIterator implements InputIterator {
   
   private final InputIterator source;
-  private File tempInput;
-  private File tempSorted;
+  private Path tempInput;
+  private Path tempSorted;
   private final ByteSequencesReader reader;
   private final Comparator<BytesRef> comparator;
   private final boolean hasPayloads;
@@ -168,9 +169,9 @@ public class SortedInputIterator implements InputIterator {
   
   private ByteSequencesReader sort() throws IOException {
     String prefix = getClass().getSimpleName();
-    File directory = OfflineSorter.defaultTempDir();
-    tempInput = File.createTempFile(prefix, ".input", directory);
-    tempSorted = File.createTempFile(prefix, ".sorted", directory);
+    Path directory = OfflineSorter.defaultTempDir();
+    tempInput = Files.createTempFile(directory, prefix, ".input");
+    tempSorted = Files.createTempFile(directory, prefix, ".sorted");
     
     final OfflineSorter.ByteSequencesWriter writer = new OfflineSorter.ByteSequencesWriter(tempInput);
     boolean success = false;

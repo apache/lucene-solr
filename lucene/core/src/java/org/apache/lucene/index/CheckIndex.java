@@ -17,9 +17,10 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -2046,11 +2047,12 @@ public class CheckIndex {
 
     System.out.println("\nOpening index @ " + indexPath + "\n");
     Directory dir = null;
+    Path path = Paths.get(indexPath);
     try {
       if (dirImpl == null) {
-        dir = FSDirectory.open(new File(indexPath));
+        dir = FSDirectory.open(path);
       } else {
-        dir = CommandLineUtil.newFSDirectory(dirImpl, new File(indexPath));
+        dir = CommandLineUtil.newFSDirectory(dirImpl, path);
       }
     } catch (Throwable t) {
       System.out.println("ERROR: could not open directory \"" + indexPath + "\"; exiting");

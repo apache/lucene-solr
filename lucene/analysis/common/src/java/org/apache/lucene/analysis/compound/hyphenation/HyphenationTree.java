@@ -17,7 +17,6 @@
 
 package org.apache.lucene.analysis.compound.hyphenation;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -102,17 +101,6 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer {
       v = vspace.get(k++);
     }
     return buf.toString();
-  }
-
-  /**
-   * Read hyphenation patterns from an XML file.
-   * 
-   * @param f the filename
-   * @throws IOException In case the parsing fails
-   */
-  public void loadPatterns(File f) throws IOException {
-    InputSource src = new InputSource(f.toURI().toASCIIString());
-    loadPatterns(src);
   }
 
   /**

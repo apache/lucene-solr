@@ -497,9 +497,9 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     
     if ("simple".equals(lockType)) {
       // multiple SimpleFSLockFactory instances should be OK
-      dir.setLockFactory(new SimpleFSLockFactory(lockPath));
+      dir.setLockFactory(new SimpleFSLockFactory(new File(lockPath).toPath()));
     } else if ("native".equals(lockType)) {
-      dir.setLockFactory(new NativeFSLockFactory(lockPath));
+      dir.setLockFactory(new NativeFSLockFactory(new File(lockPath).toPath()));
     } else if ("single".equals(lockType)) {
       if (!(dir.getLockFactory() instanceof SingleInstanceLockFactory)) dir
           .setLockFactory(new SingleInstanceLockFactory());

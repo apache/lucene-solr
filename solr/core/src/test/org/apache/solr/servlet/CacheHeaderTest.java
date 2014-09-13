@@ -44,7 +44,7 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
     
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrHomeDirectory = createTempDir();
+    solrHomeDirectory = createTempDir().toFile();
     setupJettyTestHome(solrHomeDirectory, "collection1");
     createJetty(solrHomeDirectory.getAbsolutePath(), null, null);
   }

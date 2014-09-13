@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1335,7 +1336,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
   /** Indexes all fields/terms at the specified
    *  IndexOptions, and fully tests at that IndexOptions. */
   private void testFull(IndexOptions options, boolean withPayloads) throws Exception {
-    File path = createTempDir("testPostingsFormat.testExact");
+    Path path = createTempDir("testPostingsFormat.testExact");
     Directory dir = newFSDirectory(path);
 
     // TODO test thread safety of buildIndex too
@@ -1388,7 +1389,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     int iters = 5;
 
     for(int iter=0;iter<iters;iter++) {
-      File path = createTempDir("testPostingsFormat");
+      Path path = createTempDir("testPostingsFormat");
       Directory dir = newFSDirectory(path);
 
       boolean indexPayloads = random().nextBoolean();

@@ -375,7 +375,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     Create createCmd = new Create();
     createCmd.setCoreName("core1");
     createCmd.setCollection("the_core_collection");
-    String coredataDir = createTempDir().getAbsolutePath();
+    String coredataDir = createTempDir().toFile().getAbsolutePath();
     createCmd.setDataDir(coredataDir);
     createCmd.setNumShards(1);
     createCmd.setSchemaName("nonexistent_schema.xml");
@@ -555,7 +555,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
           createCmd.setNumShards(numShards);
           try {
-            String core3dataDir = createTempDir(collection).getAbsolutePath();
+            String core3dataDir = createTempDir(collection).toFile().getAbsolutePath();
             createCmd.setDataDir(getDataDir(core3dataDir));
 
             server.request(createCmd);
@@ -967,7 +967,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
           if (shardId == null) {
             createCmd.setNumShards(2);
           }
-          createCmd.setDataDir(getDataDir(createTempDir(collection).getAbsolutePath()));
+          createCmd.setDataDir(getDataDir(createTempDir(collection).toFile().getAbsolutePath()));
           if (shardId != null) {
             createCmd.setShardId(shardId);
           }
@@ -1094,7 +1094,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
             server.setSoTimeout(60000);
             Create createCmd = new Create();
             createCmd.setCoreName(collection);
-            createCmd.setDataDir(getDataDir(createTempDir(collection).getAbsolutePath()));
+            createCmd.setDataDir(getDataDir(createTempDir(collection).toFile().getAbsolutePath()));
             server.request(createCmd);
           } catch (Exception e) {
             e.printStackTrace();

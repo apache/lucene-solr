@@ -77,7 +77,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    dfsCluster = HdfsTestUtil.setupClass(createTempDir().getAbsolutePath());
+    dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
     System.setProperty("solr.hdfs.home", dfsCluster.getURI().toString() + "/solr");
     hdfsUri = dfsCluster.getFileSystem().getUri().toString();
     

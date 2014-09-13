@@ -17,10 +17,11 @@ package org.apache.lucene.benchmark.byTask.feeds;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -280,7 +281,7 @@ public class EnwikiContentSource extends ContentSource {
     return val == null ? -1 : val.intValue();
   }
   
-  private File file;
+  private Path file;
   private boolean keepImages = true;
   private InputStream is;
   private Parser parser = new Parser();
@@ -324,7 +325,7 @@ public class EnwikiContentSource extends ContentSource {
     keepImages = config.get("keep.image.only.docs", true);
     String fileName = config.get("docs.file", null);
     if (fileName != null) {
-      file = new File(fileName).getAbsoluteFile();
+      file = Paths.get(fileName).toAbsolutePath();
     }
   }
   

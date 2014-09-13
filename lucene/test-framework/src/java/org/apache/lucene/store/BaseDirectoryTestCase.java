@@ -23,6 +23,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,7 +43,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
   /** Subclass returns the Directory to be tested; if it's
    *  an FS-based directory it should point to the specified
    *  path, else it can ignore it. */
-  protected abstract Directory getDirectory(File path) throws IOException;
+  protected abstract Directory getDirectory(Path path) throws IOException;
   
   // first some basic tests for the directory api
   
@@ -473,17 +474,6 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     dir.close();
   }
 
-  /** LUCENE-1464: just creating a Directory should not
-   *  mkdir the underling directory in the filesystem. */
-  public void testDontCreate() throws Throwable {
-    File path = createTempDir("doesnotexist");
-    IOUtils.rm(path);
-    assertTrue(!path.exists());
-    Directory dir = getDirectory(path);
-    assertTrue(!path.exists());
-    dir.close();
-  }
-
   /** LUCENE-1468: once we create an output, we should see
    *  it in the dir listing and be able to open it with
    *  openInput. */
@@ -582,13 +572,13 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
   
   // LUCENE-3382 -- make sure we get exception if the directory really does not exist.
   public void testNoDir() throws Throwable {
-    File tempDir = createTempDir("doesnotexist");
+    Path tempDir = createTempDir("doesnotexist");
     IOUtils.rm(tempDir);
     Directory dir = getDirectory(tempDir);
     try {
       DirectoryReader.open(dir);
       fail("did not hit expected exception");
-    } catch (NoSuchDirectoryException | IndexNotFoundException nsde) {
+    } catch (NoSuchFileException | IndexNotFoundException nsde) {
       // expected
     }
     dir.close();
@@ -774,7 +764,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
   // this test backdoors the directory via the filesystem. so it must actually use the filesystem
   // TODO: somehow change this test to 
   public void testFsyncDoesntCreateNewFiles() throws Exception {
-    File path = createTempDir("nocreate");
+    Path path = createTempDir("nocreate");
     Directory fsdir = getDirectory(path);
     
     // this test backdoors the directory via the filesystem. so it must be an FSDir (for now)
@@ -791,7 +781,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     out.close();
     
     // delete it
-    Files.delete(new File(path, "afile").toPath());
+    Files.delete(path.resolve("afile"));
     
     // directory is empty
     assertEquals(0, fsdir.listAll().length);

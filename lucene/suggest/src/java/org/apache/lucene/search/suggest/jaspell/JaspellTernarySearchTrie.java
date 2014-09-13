@@ -30,10 +30,10 @@ package org.apache.lucene.search.suggest.jaspell;
  */
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 import java.util.Vector;
@@ -198,16 +198,16 @@ public class JaspellTernarySearchTrie implements Accountable {
   }
 
   /**
-   * Constructs a Ternary Search Trie and loads data from a <code>File</code>
+   * Constructs a Ternary Search Trie and loads data from a <code>Path</code>
    * into the Trie. The file is a normal text document, where each line is of
    * the form word TAB float.
    * 
    *@param file
-   *          The <code>File</code> with the data to load into the Trie.
+   *          The <code>Path</code> with the data to load into the Trie.
    *@exception IOException
    *              A problem occured while reading the data.
    */
-  public JaspellTernarySearchTrie(File file) throws IOException {
+  public JaspellTernarySearchTrie(Path file) throws IOException {
     this(file, false);
   }
 
@@ -224,15 +224,14 @@ public class JaspellTernarySearchTrie implements Accountable {
    *@exception IOException
    *              A problem occured while reading the data.
    */
-  public JaspellTernarySearchTrie(File file, boolean compression)
+  public JaspellTernarySearchTrie(Path file, boolean compression)
           throws IOException {
     this();
     BufferedReader in;
     if (compression)
       in = new BufferedReader(IOUtils.getDecodingReader(new GZIPInputStream(
-              new FileInputStream(file)), StandardCharsets.UTF_8));
-    else in = new BufferedReader(IOUtils.getDecodingReader((new FileInputStream(
-            file)), StandardCharsets.UTF_8));
+              Files.newInputStream(file)), StandardCharsets.UTF_8));
+    else in = Files.newBufferedReader(file, StandardCharsets.UTF_8);
     String word;
     int pos;
     Float occur, one = new Float(1);

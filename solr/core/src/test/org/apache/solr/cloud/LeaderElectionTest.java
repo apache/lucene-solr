@@ -67,7 +67,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    String zkDir = createTempDir("zkData").getAbsolutePath();;
+    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();;
     
     server = new ZkTestServer(zkDir);
     server.setTheTickTime(1000);

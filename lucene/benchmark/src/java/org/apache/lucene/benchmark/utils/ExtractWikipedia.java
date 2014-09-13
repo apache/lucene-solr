@@ -17,13 +17,12 @@ package org.apache.lucene.benchmark.utils;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Properties;
 
 import org.apache.lucene.benchmark.byTask.feeds.ContentSource;
@@ -32,30 +31,28 @@ import org.apache.lucene.benchmark.byTask.feeds.EnwikiContentSource;
 import org.apache.lucene.benchmark.byTask.feeds.NoMoreDataException;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * Extract the downloaded Wikipedia dump into separate files for indexing.
  */
 public class ExtractWikipedia {
 
-  private File outputDir;
+  private Path outputDir;
 
   static public int count = 0;
 
   static final int BASE = 10;
   protected DocMaker docMaker;
 
-  public ExtractWikipedia(DocMaker docMaker, File outputDir) throws IOException {
+  public ExtractWikipedia(DocMaker docMaker, Path outputDir) throws IOException {
     this.outputDir = outputDir;
     this.docMaker = docMaker;
     System.out.println("Deleting all files in " + outputDir);
-    File[] files = outputDir.listFiles();
-    for (int i = 0; i < files.length; i++) {
-      Files.delete(files[i].toPath());
-    }
+    IOUtils.rm(outputDir);
   }
 
-  public File directory(int count, File directory) {
+  public Path directory(int count, Path directory) {
     if (directory == null) {
       directory = outputDir;
     }
@@ -66,16 +63,16 @@ public class ExtractWikipedia {
     if (count < BASE) {
       return directory;
     }
-    directory = new File(directory, (Integer.toString(base / BASE)));
-    directory = new File(directory, (Integer.toString(count / (base / BASE))));
+    directory = directory.resolve(Integer.toString(base / BASE));
+    directory = directory.resolve(Integer.toString(count / (base / BASE)));
     return directory(count % (base / BASE), directory);
   }
 
-  public void create(String id, String title, String time, String body) {
+  public void create(String id, String title, String time, String body) throws IOException {
 
-    File d = directory(count++, null);
-    d.mkdirs();
-    File f = new File(d, id + ".txt");
+    Path d = directory(count++, null);
+    Files.createDirectories(d);
+    Path f = d.resolve(id + ".txt");
 
     StringBuilder contents = new StringBuilder();
 
@@ -86,14 +83,9 @@ public class ExtractWikipedia {
     contents.append(body);
     contents.append("\n");
 
-    try {
-      Writer writer = new OutputStreamWriter(new FileOutputStream(f), StandardCharsets.UTF_8);
+    try (Writer writer = Files.newBufferedWriter(f, StandardCharsets.UTF_8)) {
       writer.write(contents.toString());
-      writer.close();
-    } catch (IOException ioe) {
-      throw new RuntimeException(ioe);
     }
-
   }
 
   public void extract() throws Exception {
@@ -114,16 +106,16 @@ public class ExtractWikipedia {
 
   public static void main(String[] args) throws Exception {
 
-    File wikipedia = null;
-    File outputDir = new File("./enwiki");
+    Path wikipedia = null;
+    Path outputDir = Paths.get("enwiki");
     boolean keepImageOnlyDocs = true;
     for (int i = 0; i < args.length; i++) {
       String arg = args[i];
       if (arg.equals("--input") || arg.equals("-i")) {
-        wikipedia = new File(args[i + 1]);
+        wikipedia = Paths.get(args[i + 1]);
         i++;
       } else if (arg.equals("--output") || arg.equals("-o")) {
-        outputDir = new File(args[i + 1]);
+        outputDir = Paths.get(args[i + 1]);
         i++;
       } else if (arg.equals("--discardImageOnlyDocs") || arg.equals("-d")) {
         keepImageOnlyDocs = false;
@@ -131,7 +123,7 @@ public class ExtractWikipedia {
     }
     
     Properties properties = new Properties();
-    properties.setProperty("docs.file", wikipedia.getAbsolutePath());
+    properties.setProperty("docs.file", wikipedia.toAbsolutePath().toString());
     properties.setProperty("content.source.forever", "false");
     properties.setProperty("keep.image.only.docs", String.valueOf(keepImageOnlyDocs));
     Config config = new Config(properties);
@@ -142,9 +134,9 @@ public class ExtractWikipedia {
     DocMaker docMaker = new DocMaker();
     docMaker.setConfig(config, source);
     docMaker.resetInputs();
-    if (wikipedia.exists()) {
+    if (Files.exists(wikipedia)) {
       System.out.println("Extracting Wikipedia to: " + outputDir + " using EnwikiContentSource");
-      outputDir.mkdirs();
+      Files.createDirectories(outputDir);
       ExtractWikipedia extractor = new ExtractWikipedia(docMaker, outputDir);
       extractor.extract();
     } else {

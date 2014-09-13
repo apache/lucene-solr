@@ -19,6 +19,7 @@ package org.apache.solr.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -28,13 +29,13 @@ import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
- * Opens a directory with {@link LuceneTestCase#newFSDirectory(File)}
+ * Opens a directory with {@link LuceneTestCase#newFSDirectory(Path)}
  */
 public class MockFSDirectoryFactory extends StandardDirectoryFactory {
 
   @Override
   public Directory create(String path, DirContext dirContext) throws IOException {
-    Directory dir = LuceneTestCase.newFSDirectory(new File(path));
+    Directory dir = LuceneTestCase.newFSDirectory(new File(path).toPath());
     // we can't currently do this check because of how
     // Solr has to reboot a new Directory sometimes when replicating
     // or rolling back - the old directory is closed and the following

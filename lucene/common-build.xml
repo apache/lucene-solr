@@ -2356,7 +2356,16 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
     </path>
   </target>  
 
-  <target name="check-forbidden-apis" depends="-check-forbidden-all,-check-forbidden-core,-check-forbidden-tests" description="Check forbidden API calls in compiled class files"/>
+  <condition property="islucene" value="true" else="false">
+    <not>
+      <or>
+        <matches pattern="^(solr)\b" string="${name}"/>
+        <matches pattern="tools" string="${name}"/>
+      </or>
+    </not>
+  </condition>
+
+  <target name="check-forbidden-apis" depends="-check-forbidden-all,-check-forbidden-core,-check-forbidden-tests,-check-forbidden-lucene" description="Check forbidden API calls in compiled class files"/>
   
   <!-- applies to both source and test code -->
   <target name="-check-forbidden-all" depends="-init-forbidden-apis,compile-core,compile-test">
@@ -2364,6 +2373,14 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
       <bundledSignatures name="jdk-unsafe-${javac.target}"/>
       <bundledSignatures name="jdk-deprecated-${javac.target}"/>
       <signaturesFileSet file="${common.dir}/tools/forbiddenApis/base.txt"/>
+      <fileset dir="${build.dir}/classes/java" excludes="${forbidden-base-excludes}"/>
+      <fileset dir="${build.dir}/classes/test" excludes="${forbidden-tests-excludes}" erroronmissingdir="false"/>
+    </forbidden-apis>
+  </target>
+
+  <!-- applies to only lucene API -->
+  <target name="-check-forbidden-lucene" depends="-init-forbidden-apis,compile-core,compile-test" if="${islucene}">
+    <forbidden-apis signaturesFile="${common.dir}/tools/forbiddenApis/lucene.txt" classpathref="forbidden-apis.allclasses.classpath"> 
       <fileset dir="${build.dir}/classes/java" excludes="${forbidden-base-excludes}"/>
       <fileset dir="${build.dir}/classes/test" excludes="${forbidden-tests-excludes}" erroronmissingdir="false"/>
     </forbidden-apis>

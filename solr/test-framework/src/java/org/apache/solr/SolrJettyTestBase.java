@@ -61,7 +61,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
 
     // this sets the property for jetty starting SolrDispatchFilter
     if (System.getProperty("solr.data.dir") == null && System.getProperty("solr.hdfs.home") == null) {
-      jetty.setDataDir(createTempDir().getCanonicalPath());
+      jetty.setDataDir(createTempDir().toFile().getCanonicalPath());
     }
     
     jetty.start();

@@ -18,10 +18,13 @@ package org.apache.lucene.benchmark.byTask.feeds;
  */
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.benchmark.byTask.utils.Format;
@@ -78,24 +81,19 @@ public abstract class ContentItemsSource implements Closeable {
 
   /**
    * A convenience method for collecting all the files of a content source from
-   * a given directory. The collected {@link File} instances are stored in the
+   * a given directory. The collected {@link Path} instances are stored in the
    * given <code>files</code>.
    */
-  protected final void collectFiles(File dir, ArrayList<File> files) {
-    if (!dir.canRead()) {
-      return;
-    }
-    
-    File[] dirFiles = dir.listFiles();
-    Arrays.sort(dirFiles);
-    for (int i = 0; i < dirFiles.length; i++) {
-      File file = dirFiles[i];
-      if (file.isDirectory()) {
-        collectFiles(file, files);
-      } else if (file.canRead()) {
-        files.add(file);
+  protected final void collectFiles(Path dir, final ArrayList<Path> files) throws IOException {
+    Files.walkFileTree(dir, new SimpleFileVisitor<Path>() {
+      @Override
+      public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+        if (Files.isReadable(file)) {
+          files.add(file.toRealPath());
+        }
+        return FileVisitResult.CONTINUE;
       }
-    }
+    });
   }
 
   /**

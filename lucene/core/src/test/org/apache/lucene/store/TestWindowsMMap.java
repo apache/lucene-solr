@@ -17,7 +17,7 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.apache.lucene.document.Field;
 import org.apache.lucene.util.LuceneTestCase;
@@ -64,7 +64,7 @@ public class TestWindowsMMap extends LuceneTestCase {
     // sometimes the directory is not cleaned by rmDir, because on Windows it
     // may take some time until the files are finally dereferenced. So clean the
     // directory up front, or otherwise new IndexWriter will fail.
-    File dirPath = createTempDir("testLuceneMmap");
+    Path dirPath = createTempDir("testLuceneMmap");
     MMapDirectory dir = new MMapDirectory(dirPath, null);
     
     // plan to add a set of useful stopwords, consider changing some of the

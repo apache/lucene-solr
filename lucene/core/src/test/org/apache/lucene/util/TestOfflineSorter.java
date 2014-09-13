@@ -18,10 +18,10 @@ package org.apache.lucene.util;
  */
 
 import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -32,13 +32,12 @@ import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.OfflineSorter.BufferSize;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
 import org.apache.lucene.util.OfflineSorter.SortInfo;
-import org.apache.lucene.util.TestUtil;
 
 /**
  * Tests for on-disk merge sorting.
  */
 public class TestOfflineSorter extends LuceneTestCase {
-  private File tempDir;
+  private Path tempDir;
 
   @Override
   public void setUp() throws Exception {
@@ -112,12 +111,12 @@ public class TestOfflineSorter extends LuceneTestCase {
    * Check sorting data on an instance of {@link OfflineSorter}.
    */
   private SortInfo checkSort(OfflineSorter sort, byte[][] data) throws IOException {
-    File unsorted = writeAll("unsorted", data);
+    Path unsorted = writeAll("unsorted", data);
 
     Arrays.sort(data, unsignedByteOrderComparator);
-    File golden = writeAll("golden", data);
+    Path golden = writeAll("golden", data);
 
-    File sorted = new File(tempDir, "sorted");
+    Path sorted = tempDir.resolve("sorted");
     SortInfo sortInfo = sort.sort(unsorted, sorted);
     //System.out.println("Input size [MB]: " + unsorted.length() / (1024 * 1024));
     //System.out.println(sortInfo);
@@ -129,14 +128,14 @@ public class TestOfflineSorter extends LuceneTestCase {
   /**
    * Make sure two files are byte-byte identical.
    */
-  private void assertFilesIdentical(File golden, File sorted) throws IOException {
-    assertEquals(golden.length(), sorted.length());
+  private void assertFilesIdentical(Path golden, Path sorted) throws IOException {
+    assertEquals(Files.size(golden), Files.size(sorted));
 
     byte [] buf1 = new byte [64 * 1024];
     byte [] buf2 = new byte [64 * 1024];
     int len;
-    DataInputStream is1 = new DataInputStream(new FileInputStream(golden));
-    DataInputStream is2 = new DataInputStream(new FileInputStream(sorted));
+    DataInputStream is1 = new DataInputStream(Files.newInputStream(golden));
+    DataInputStream is2 = new DataInputStream(Files.newInputStream(sorted));
     while ((len = is1.read(buf1)) > 0) {
       is2.readFully(buf2, 0, len);
       for (int i = 0; i < len; i++) {
@@ -146,8 +145,8 @@ public class TestOfflineSorter extends LuceneTestCase {
     IOUtils.close(is1, is2);
   }
 
-  private File writeAll(String name, byte[][] data) throws IOException {
-    File file = new File(tempDir, name);
+  private Path writeAll(String name, byte[][] data) throws IOException {
+    Path file = tempDir.resolve(name);
     ByteSequencesWriter w = new OfflineSorter.ByteSequencesWriter(file);
     for (byte [] datum : data) {
       w.write(datum);

@@ -19,26 +19,25 @@ package org.apache.lucene.benchmark.byTask.utils;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.lucene.benchmark.BenchmarkTestCase;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.TestUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 public class StreamUtilsTest extends BenchmarkTestCase {
   private static final String TEXT = "Some-Text..."; 
-  private File testDir;
+  private Path testDir;
   
   @Test
   public void testGetInputStreamPlainText() throws Exception {
@@ -86,31 +85,31 @@ public class StreamUtilsTest extends BenchmarkTestCase {
     assertReadText(autoOutFile("TEXT"));
   }
   
-  private File rawTextFile(String ext) throws Exception {
-    File f = new File(testDir,"testfile." +  ext);
-    BufferedWriter w = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(f), StandardCharsets.UTF_8));
+  private Path rawTextFile(String ext) throws Exception {
+    Path f = testDir.resolve("testfile." +  ext);
+    BufferedWriter w = Files.newBufferedWriter(f, StandardCharsets.UTF_8);
     w.write(TEXT);
     w.newLine();
     w.close();
     return f;
   }
   
-  private File rawGzipFile(String ext) throws Exception {
-    File f = new File(testDir,"testfile." +  ext);
-    OutputStream os = new CompressorStreamFactory().createCompressorOutputStream(CompressorStreamFactory.GZIP, new FileOutputStream(f));
+  private Path rawGzipFile(String ext) throws Exception {
+    Path f = testDir.resolve("testfile." +  ext);
+    OutputStream os = new CompressorStreamFactory().createCompressorOutputStream(CompressorStreamFactory.GZIP, Files.newOutputStream(f));
     writeText(os);
     return f;
   }
 
-  private File rawBzip2File(String ext) throws Exception {
-    File f = new File(testDir,"testfile." +  ext);
-    OutputStream os = new CompressorStreamFactory().createCompressorOutputStream(CompressorStreamFactory.BZIP2, new FileOutputStream(f));
+  private Path rawBzip2File(String ext) throws Exception {
+    Path f = testDir.resolve("testfile." +  ext);
+    OutputStream os = new CompressorStreamFactory().createCompressorOutputStream(CompressorStreamFactory.BZIP2, Files.newOutputStream(f));
     writeText(os);
     return f;
   }
 
-  private File autoOutFile(String ext) throws Exception {
-    File f = new File(testDir,"testfile." +  ext);
+  private Path autoOutFile(String ext) throws Exception {
+    Path f = testDir.resolve("testfile." +  ext);
     OutputStream os = StreamUtils.outputStream(f);
     writeText(os);
     return f;
@@ -123,12 +122,12 @@ public class StreamUtilsTest extends BenchmarkTestCase {
     w.close();
   }
 
-  private void assertReadText(File f) throws Exception {
+  private void assertReadText(Path f) throws Exception {
     InputStream ir = StreamUtils.inputStream(f);
     InputStreamReader in = new InputStreamReader(ir, StandardCharsets.UTF_8);
     BufferedReader r = new BufferedReader(in);
     String line = r.readLine();
-    assertEquals("Wrong text found in "+f.getName(), TEXT, line);
+    assertEquals("Wrong text found in "+f.getFileName(), TEXT, line);
     r.close();
   }
   
@@ -136,9 +135,9 @@ public class StreamUtilsTest extends BenchmarkTestCase {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    testDir = new File(getWorkDir(),"ContentSourceTest");
+    testDir = getWorkDir().resolve("ContentSourceTest");
     IOUtils.rm(testDir);
-    assertTrue(testDir.mkdirs());
+    Files.createDirectory(testDir);
   }
 
   @Override

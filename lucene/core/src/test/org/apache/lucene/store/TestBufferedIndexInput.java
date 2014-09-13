@@ -17,10 +17,8 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -45,21 +43,6 @@ import org.apache.lucene.util.ArrayUtil;
 
 public class TestBufferedIndexInput extends LuceneTestCase {
   
-  private static void writeBytes(File aFile, long size) throws IOException{
-    OutputStream stream = null;
-    try {
-      stream = new FileOutputStream(aFile);
-      for (int i = 0; i < size; i++) {
-        stream.write(byten(i));  
-      }
-      stream.flush();
-    } finally {
-      if (stream != null) {
-        stream.close();
-      }
-    }
-  }
-
   private static final long TEST_FILE_LENGTH = 100*1024;
  
   // Call readByte() repeatedly, past the buffer boundary, and see that it
@@ -228,7 +211,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
     }
 
     public void testSetBufferSize() throws IOException {
-      File indexDir = createTempDir("testSetBufferSize");
+      Path indexDir = createTempDir("testSetBufferSize");
       MockFSDirectory dir = new MockFSDirectory(indexDir, random());
       try {
         IndexWriter writer = new IndexWriter(
@@ -292,7 +275,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
 
       private Directory dir;
 
-      public MockFSDirectory(File path, Random rand) throws IOException {
+      public MockFSDirectory(Path path, Random rand) throws IOException {
         this.rand = rand;
         lockFactory = NoLockFactory.getNoLockFactory();
         dir = new SimpleFSDirectory(path, null);

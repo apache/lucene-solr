@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -436,7 +437,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
 
     Random random = new Random(random().nextLong());
     final LineFileDocs docs = new LineFileDocs(random, true);
-    final File tempDir = createTempDir(testName);
+    final Path tempDir = createTempDir(testName);
     dir = getDirectory(newMockFSDirectory(tempDir)); // some subclasses rely on this being MDW
     if (dir instanceof BaseDirectoryWrapper) {
       ((BaseDirectoryWrapper) dir).setCheckIndexOnClose(false); // don't double-checkIndex, we do it ourselves.

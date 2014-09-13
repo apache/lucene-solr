@@ -48,7 +48,7 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
   @Test
   public void testSimpleLockErrorOnStartup() throws Exception {
 
-    Directory directory = newFSDirectory(new File(initCoreDataDir, "index"), new SimpleFSLockFactory());
+    Directory directory = newFSDirectory(new File(initCoreDataDir, "index").toPath(), new SimpleFSLockFactory());
     //creates a new IndexWriter without releasing the lock yet
     IndexWriter indexWriter = new IndexWriter(directory, new IndexWriterConfig(null));
 
@@ -74,7 +74,7 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
 
     File indexDir = new File(initCoreDataDir, "index");
     log.info("Acquiring lock on {}", indexDir.getAbsolutePath());
-    Directory directory = newFSDirectory(indexDir, new NativeFSLockFactory());
+    Directory directory = newFSDirectory(indexDir.toPath(), new NativeFSLockFactory());
     //creates a new IndexWriter without releasing the lock yet
     IndexWriter indexWriter = new IndexWriter(directory, new IndexWriterConfig(null));
 

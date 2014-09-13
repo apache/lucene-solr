@@ -37,7 +37,7 @@ public class HdfsCollectionsAPIDistributedZkTest extends CollectionsAPIDistribut
   
   @BeforeClass
   public static void setupClass() throws Exception {
-    dfsCluster = HdfsTestUtil.setupClass(createTempDir().getAbsolutePath());
+    dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
     
     System.setProperty("solr.hdfs.home", dfsCluster.getURI().toString() + "/solr");
     System.setProperty("solr.hdfs.blockcache.enabled", "false");

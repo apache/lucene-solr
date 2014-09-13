@@ -71,7 +71,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
   private CoreContainer init(String dirName) throws Exception {
 
-    solrHomeDirectory = createTempDir(dirName);
+    solrHomeDirectory = createTempDir(dirName).toFile();
 
     FileUtils.copyDirectory(new File(SolrTestCaseJ4.TEST_HOME()), solrHomeDirectory);
     System.out.println("Using solrconfig from " + new File(SolrTestCaseJ4.TEST_HOME()).getAbsolutePath());
@@ -148,7 +148,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   @Test
   public void testNoCores() throws IOException, ParserConfigurationException, SAXException {
     //create solrHome
-    File solrHomeDirectory = createTempDir();
+    File solrHomeDirectory = createTempDir().toFile();
     
     boolean oldSolrXml = random().nextBoolean();
     
@@ -221,7 +221,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     MockCoresLocator cl = new MockCoresLocator();
 
-    solrHomeDirectory = createTempDir("_deleteBadCores");
+    solrHomeDirectory = createTempDir("_deleteBadCores").toFile();
     SolrResourceLoader resourceLoader = new SolrResourceLoader(solrHomeDirectory.getAbsolutePath());
     File instanceDir = new File(solrHomeDirectory, "_deleteBadCores");
     System.setProperty("configsets", getFile("solr/configsets").getAbsolutePath());
@@ -267,7 +267,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
   @Test
   public void testSharedLib() throws Exception {
-    File tmpRoot = createTempDir("testSharedLib");
+    File tmpRoot = createTempDir("testSharedLib").toFile();
 
     File lib = new File(tmpRoot, "lib");
     lib.mkdirs();
@@ -350,7 +350,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   @Test
   public void testCustomHandlers() throws Exception {
 
-    solrHomeDirectory = createTempDir("_customHandlers");
+    solrHomeDirectory = createTempDir("_customHandlers").toFile();
     SolrResourceLoader loader = new SolrResourceLoader(solrHomeDirectory.getAbsolutePath());
 
     ConfigSolr config = ConfigSolr.fromString(loader, CUSTOM_HANDLERS_SOLR_XML);

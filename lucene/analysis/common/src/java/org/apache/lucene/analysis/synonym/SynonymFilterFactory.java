@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.synonym;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -171,16 +170,10 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
       throw new RuntimeException(e);
     }
 
-    File synonymFile = new File(synonyms);
-    if (synonymFile.exists()) {
+    List<String> files = splitFileNames(synonyms);
+    for (String file : files) {
       decoder.reset();
-      parser.parse(new InputStreamReader(loader.openResource(synonyms), decoder));
-    } else {
-      List<String> files = splitFileNames(synonyms);
-      for (String file : files) {
-        decoder.reset();
-        parser.parse(new InputStreamReader(loader.openResource(file), decoder));
-      }
+      parser.parse(new InputStreamReader(loader.openResource(file), decoder));
     }
     return parser.build();
   }

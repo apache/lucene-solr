@@ -17,18 +17,16 @@
 
 package org.apache.lucene.analysis.cn.smart.hhmm;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.RandomAccessFile;
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.apache.lucene.analysis.cn.smart.AnalyzerProfile;
 
@@ -75,9 +73,9 @@ class BigramDictionary extends AbstractDictionary {
     return singleInstance;
   }
 
-  private boolean loadFromObj(File serialObj) {
+  private boolean loadFromObj(Path serialObj) {
     try {
-      loadFromInputStream(new FileInputStream(serialObj));
+      loadFromInputStream(Files.newInputStream(serialObj));
       return true;
     } catch (Exception e) {
       throw new RuntimeException(e);
@@ -93,9 +91,9 @@ class BigramDictionary extends AbstractDictionary {
     input.close();
   }
 
-  private void saveToObj(File serialObj) {
+  private void saveToObj(Path serialObj) {
     try {
-      ObjectOutputStream output = new ObjectOutputStream(new FileOutputStream(
+      ObjectOutputStream output = new ObjectOutputStream(Files.newOutputStream(
           serialObj));
       output.writeObject(bigramHashTable);
       output.writeObject(frequencyTable);
@@ -114,9 +112,9 @@ class BigramDictionary extends AbstractDictionary {
   private void load(String dictRoot) {
     String bigramDictPath = dictRoot + "/bigramdict.dct";
 
-    File serialObj = new File(dictRoot + "/bigramdict.mem");
+    Path serialObj = Paths.get(dictRoot + "/bigramdict.mem");
 
-    if (serialObj.exists() && loadFromObj(serialObj)) {
+    if (Files.exists(serialObj) && loadFromObj(serialObj)) {
 
     } else {
       try {
@@ -149,7 +147,7 @@ class BigramDictionary extends AbstractDictionary {
     int[] buffer = new int[3];
     byte[] intBuffer = new byte[4];
     String tmpword;
-    RandomAccessFile dctFile = new RandomAccessFile(dctFilePath, "r");
+    DataInputStream dctFile = new DataInputStream(Files.newInputStream(Paths.get(dctFilePath)));
 
     // GB2312 characters 0 - 6768
     for (i = GB2312_FIRST_CHAR; i < GB2312_FIRST_CHAR + CHAR_NUM_IN_FILE; i++) {

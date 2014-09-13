@@ -21,9 +21,6 @@ import org.apache.lucene.store.Directory;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -33,8 +30,12 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -154,34 +155,6 @@ public final class IOUtils {
         .onUnmappableCharacter(CodingErrorAction.REPORT);
     return new BufferedReader(new InputStreamReader(stream, charSetDecoder));
   }
-  
-  /**
-   * Opens a Reader for the given {@link File} using a {@link CharsetDecoder}.
-   * Unlike Java's defaults this reader will throw an exception if your it detects 
-   * the read charset doesn't match the expected {@link Charset}. 
-   * <p>
-   * Decoding readers are useful to load configuration files, stopword lists or synonym files
-   * to detect character set problems. However, its not recommended to use as a common purpose 
-   * reader.
-   * @param file the file to open a reader on
-   * @param charSet the expected charset
-   * @return a reader to read the given file
-   */
-  public static Reader getDecodingReader(File file, Charset charSet) throws IOException {
-    FileInputStream stream = null;
-    boolean success = false;
-    try {
-      stream = new FileInputStream(file);
-      final Reader reader = getDecodingReader(stream, charSet);
-      success = true;
-      return reader;
-
-    } finally {
-      if (!success) {
-        IOUtils.close(stream);
-      }
-    }
-  }
 
   /**
    * Opens a Reader for the given resource using a {@link CharsetDecoder}.
@@ -233,7 +206,7 @@ public final class IOUtils {
    * <p>
    * Some of the files may be null, if so they are ignored.
    */
-  public static void deleteFilesIgnoringExceptions(File... files) {
+  public static void deleteFilesIgnoringExceptions(Path... files) {
     deleteFilesIgnoringExceptions(Arrays.asList(files));
   }
   
@@ -242,11 +215,11 @@ public final class IOUtils {
    * <p>
    * Some of the files may be null, if so they are ignored.
    */
-  public static void deleteFilesIgnoringExceptions(Iterable<? extends File> files) {
-    for (File name : files) {
+  public static void deleteFilesIgnoringExceptions(Iterable<? extends Path> files) {
+    for (Path name : files) {
       if (name != null) {
         try {
-          Files.delete(name.toPath());
+          Files.delete(name);
         } catch (Throwable ignored) {
           // ignore
         }
@@ -255,7 +228,7 @@ public final class IOUtils {
   }
   
   /**
-   * Deletes all given <tt>File</tt>s, if they exist.  Some of the
+   * Deletes all given <tt>Path</tt>s, if they exist.  Some of the
    * <tt>File</tt>s may be null; they are
    * ignored.  After everything is deleted, the method either
    * throws the first exception it hit while deleting, or
@@ -263,12 +236,12 @@ public final class IOUtils {
    * 
    * @param files files to delete
    */
-  public static void deleteFilesIfExist(File... files) throws IOException {
+  public static void deleteFilesIfExist(Path... files) throws IOException {
     deleteFilesIfExist(Arrays.asList(files));
   }
   
   /**
-   * Deletes all given <tt>File</tt>s, if they exist.  Some of the
+   * Deletes all given <tt>Path</tt>s, if they exist.  Some of the
    * <tt>File</tt>s may be null; they are
    * ignored.  After everything is deleted, the method either
    * throws the first exception it hit while deleting, or
@@ -276,13 +249,13 @@ public final class IOUtils {
    * 
    * @param files files to delete
    */
-  public static void deleteFilesIfExist(Iterable<? extends File> files) throws IOException {
+  public static void deleteFilesIfExist(Iterable<? extends Path> files) throws IOException {
     Throwable th = null;
 
-    for (File file : files) {
+    for (Path file : files) {
       try {
         if (file != null) {
-          Files.deleteIfExists(file.toPath());
+          Files.deleteIfExists(file);
         }
       } catch (Throwable t) {
         addSuppressed(th, t);
@@ -301,13 +274,13 @@ public final class IOUtils {
    * @throws IOException if any of the given files (or their subhierarchy files in case
    * of directories) cannot be removed.
    */
-  public static void rm(File... locations) throws IOException {
-    LinkedHashMap<File,Throwable> unremoved = rm(new LinkedHashMap<File,Throwable>(), locations);
+  public static void rm(Path... locations) throws IOException {
+    LinkedHashMap<Path,Throwable> unremoved = rm(new LinkedHashMap<Path,Throwable>(), locations);
     if (!unremoved.isEmpty()) {
       StringBuilder b = new StringBuilder("Could not remove the following files (in the order of attempts):\n");
-      for (Map.Entry<File,Throwable> kv : unremoved.entrySet()) {
+      for (Map.Entry<Path,Throwable> kv : unremoved.entrySet()) {
         b.append("   ")
-         .append(kv.getKey().getAbsolutePath())
+         .append(kv.getKey().toAbsolutePath())
          .append(": ")
          .append(kv.getValue())
          .append("\n");
@@ -316,44 +289,55 @@ public final class IOUtils {
     }
   }
 
-  private static LinkedHashMap<File,Throwable> rm(LinkedHashMap<File,Throwable> unremoved, File... locations) {
+  private static LinkedHashMap<Path,Throwable> rm(final LinkedHashMap<Path,Throwable> unremoved, Path... locations) {
     if (locations != null) {
-      for (File location : locations) {
-        if (location != null && location.exists()) {
-          if (location.isDirectory()) {
-            rm(unremoved, location.listFiles());
-          }
-  
+      for (Path location : locations) {
+        // TODO: remove this leniency!
+        if (location != null && Files.exists(location)) {
           try {
-            Files.delete(location.toPath());
-          } catch (Throwable cause) {
-            unremoved.put(location, cause);
+            Files.walkFileTree(location, new FileVisitor<Path>() {            
+              @Override
+              public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                return FileVisitResult.CONTINUE;
+              }
+              
+              @Override
+              public FileVisitResult postVisitDirectory(Path dir, IOException impossible) throws IOException {
+                assert impossible == null;
+                
+                try {
+                  Files.delete(dir);
+                } catch (IOException e) {
+                  unremoved.put(dir, e);
+                }
+                return FileVisitResult.CONTINUE;
+              }
+              
+              @Override
+              public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                try {
+                  Files.delete(file);
+                } catch (IOException exc) {
+                  unremoved.put(file, exc);
+                }
+                return FileVisitResult.CONTINUE;
+              }
+              
+              @Override
+              public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+                if (exc != null) {
+                  unremoved.put(file, exc);
+                }
+                return FileVisitResult.CONTINUE;
+              }
+            });
+          } catch (IOException impossible) {
+            throw new AssertionError("visitor threw exception", impossible);
           }
         }
       }
     }
     return unremoved;
-  }
-
-  /**
-   * Copy one file's contents to another file. The target will be overwritten
-   * if it exists. The source must exist.
-   */
-  public static void copy(File source, File target) throws IOException {
-    FileInputStream fis = null;
-    FileOutputStream fos = null;
-    try {
-      fis = new FileInputStream(source);
-      fos = new FileOutputStream(target);
-      
-      final byte [] buffer = new byte [1024 * 8];
-      int len;
-      while ((len = fis.read(buffer)) > 0) {
-        fos.write(buffer, 0, len);
-      }
-    } finally {
-      close(fis, fos);
-    }
   }
 
   /**
@@ -394,12 +378,12 @@ public final class IOUtils {
    * @param isDir if true, the given file is a directory (we open for read and ignore IOExceptions,
    *  because not all file systems and operating systems allow to fsync on a directory)
    */
-  public static void fsync(File fileToSync, boolean isDir) throws IOException {
+  public static void fsync(Path fileToSync, boolean isDir) throws IOException {
     IOException exc = null;
     
     // If the file is a directory we have to open read-only, for regular files we must open r/w for the fsync to have an effect.
     // See http://blog.httrack.com/blog/2013/11/15/everything-you-always-wanted-to-know-about-fsync/
-    try (final FileChannel file = FileChannel.open(fileToSync.toPath(), isDir ? StandardOpenOption.READ : StandardOpenOption.WRITE)) {
+    try (final FileChannel file = FileChannel.open(fileToSync, isDir ? StandardOpenOption.READ : StandardOpenOption.WRITE)) {
       for (int retry = 0; retry < 5; retry++) {
         try {
           file.force(true);

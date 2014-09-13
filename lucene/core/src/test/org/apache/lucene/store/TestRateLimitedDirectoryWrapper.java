@@ -17,12 +17,12 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.io.File;
+import java.nio.file.Path;
 
 public class TestRateLimitedDirectoryWrapper extends BaseDirectoryTestCase {
 
   @Override
-  protected Directory getDirectory(File path) {
+  protected Directory getDirectory(Path path) {
     Directory in = newFSDirectory(path);
     if (in instanceof MockDirectoryWrapper) {
       // test manipulates directory directly

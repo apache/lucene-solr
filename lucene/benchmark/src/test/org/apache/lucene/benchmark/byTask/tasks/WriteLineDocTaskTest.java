@@ -18,11 +18,11 @@ package org.apache.lucene.benchmark.byTask.tasks;
  */
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
@@ -136,12 +136,12 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
 
   private static final CompressorStreamFactory csFactory = new CompressorStreamFactory();
 
-  private PerfRunData createPerfRunData(File file, 
+  private PerfRunData createPerfRunData(Path file, 
                                         boolean allowEmptyDocs,
                                         String docMakerName) throws Exception {
     Properties props = new Properties();
     props.setProperty("doc.maker", docMakerName);
-    props.setProperty("line.file.out", file.getAbsolutePath());
+    props.setProperty("line.file.out", file.toAbsolutePath().toString());
     props.setProperty("directory", "RAMDirectory"); // no accidental FS dir.
     if (allowEmptyDocs) {
       props.setProperty("sufficient.fields", ",");
@@ -154,9 +154,9 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     return new PerfRunData(config);
   }
   
-  private void doReadTest(File file, Type fileType, String expTitle,
+  private void doReadTest(Path file, Type fileType, String expTitle,
                           String expDate, String expBody) throws Exception {
-    InputStream in = new FileInputStream(file);
+    InputStream in = Files.newInputStream(file);
     switch(fileType) {
       case BZIP2:
         in = csFactory.createCompressorInputStream(CompressorStreamFactory.BZIP2, in);
@@ -169,8 +169,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
       default:
         assertFalse("Unknown file type!",true); //fail, should not happen
     }
-    BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-    try {
+    try (BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
       String line = br.readLine();
       assertHeaderLine(line);
       line = br.readLine();
@@ -184,8 +183,6 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
         assertEquals(expBody, parts[2]);
       }
       assertNull(br.readLine());
-    } finally {
-      br.close();
     }
   }
 
@@ -197,7 +194,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
   public void testBZip2() throws Exception {
     
     // Create a document in bz2 format.
-    File file = new File(getWorkDir(), "one-line.bz2");
+    Path file = getWorkDir().resolve("one-line.bz2");
     PerfRunData runData = createPerfRunData(file, false, WriteLineDocMaker.class.getName());
     WriteLineDocTask wldt = new WriteLineDocTask(runData);
     wldt.doLogic();
@@ -210,7 +207,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
   public void testGZip() throws Exception {
     
     // Create a document in gz format.
-    File file = new File(getWorkDir(), "one-line.gz");
+    Path file = getWorkDir().resolve("one-line.gz");
     PerfRunData runData = createPerfRunData(file, false, WriteLineDocMaker.class.getName());
     WriteLineDocTask wldt = new WriteLineDocTask(runData);
     wldt.doLogic();
@@ -222,7 +219,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
   public void testRegularFile() throws Exception {
     
     // Create a document in regular format.
-    File file = new File(getWorkDir(), "one-line");
+    Path file = getWorkDir().resolve("one-line");
     PerfRunData runData = createPerfRunData(file, false, WriteLineDocMaker.class.getName());
     WriteLineDocTask wldt = new WriteLineDocTask(runData);
     wldt.doLogic();
@@ -235,7 +232,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     // WriteLineDocTask replaced only \t characters w/ a space, since that's its
     // separator char. However, it didn't replace newline characters, which
     // resulted in errors in LineDocSource.
-    File file = new File(getWorkDir(), "one-line");
+    Path file = getWorkDir().resolve("one-line");
     PerfRunData runData = createPerfRunData(file, false, NewLinesDocMaker.class.getName());
     WriteLineDocTask wldt = new WriteLineDocTask(runData);
     wldt.doLogic();
@@ -248,7 +245,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     // WriteLineDocTask threw away documents w/ no BODY element, even if they
     // had a TITLE element (LUCENE-1755). It should throw away documents if they
     // don't have BODY nor TITLE
-    File file = new File(getWorkDir(), "one-line");
+    Path file = getWorkDir().resolve("one-line");
     PerfRunData runData = createPerfRunData(file, false, NoBodyDocMaker.class.getName());
     WriteLineDocTask wldt = new WriteLineDocTask(runData);
     wldt.doLogic();
@@ -258,7 +255,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
   }
   
   public void testEmptyTitle() throws Exception {
-    File file = new File(getWorkDir(), "one-line");
+    Path file = getWorkDir().resolve("one-line");
     PerfRunData runData = createPerfRunData(file, false, NoTitleDocMaker.class.getName());
     WriteLineDocTask wldt = new WriteLineDocTask(runData);
     wldt.doLogic();
@@ -269,61 +266,52 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
   
   /** Fail by default when there's only date */
   public void testJustDate() throws Exception {
-    File file = new File(getWorkDir(), "one-line");
+    Path file = getWorkDir().resolve("one-line");
     PerfRunData runData = createPerfRunData(file, false, JustDateDocMaker.class.getName());
     WriteLineDocTask wldt = new WriteLineDocTask(runData);
     wldt.doLogic();
     wldt.close();
     
-    BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
-    try {
+    try (BufferedReader br = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
       String line = br.readLine();
       assertHeaderLine(line);
       line = br.readLine();
       assertNull(line);
-    } finally {
-      br.close();
     }
   }
 
   public void testLegalJustDate() throws Exception {
-    File file = new File(getWorkDir(), "one-line");
+    Path file = getWorkDir().resolve("one-line");
     PerfRunData runData = createPerfRunData(file, false, LegalJustDateDocMaker.class.getName());
     WriteLineDocTask wldt = new WriteLineDocTask(runData);
     wldt.doLogic();
     wldt.close();
     
-    BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
-    try {
+    try (BufferedReader br = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
       String line = br.readLine();
       assertHeaderLine(line);
       line = br.readLine();
       assertNotNull(line);
-    } finally {
-      br.close();
     }
   }
 
   public void testEmptyDoc() throws Exception {
-    File file = new File(getWorkDir(), "one-line");
+    Path file = getWorkDir().resolve("one-line");
     PerfRunData runData = createPerfRunData(file, true, EmptyDocMaker.class.getName());
     WriteLineDocTask wldt = new WriteLineDocTask(runData);
     wldt.doLogic();
     wldt.close();
     
-    BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
-    try {
+    try (BufferedReader br = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
       String line = br.readLine();
       assertHeaderLine(line);
       line = br.readLine();
       assertNotNull(line);
-    } finally {
-      br.close();
     }
   }
 
   public void testMultiThreaded() throws Exception {
-    File file = new File(getWorkDir(), "one-line");
+    Path file = getWorkDir().resolve("one-line");
     PerfRunData runData = createPerfRunData(file, false, ThreadingDocMaker.class.getName());
     final WriteLineDocTask wldt = new WriteLineDocTask(runData);
     Thread[] threads = new Thread[10];
@@ -346,8 +334,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     wldt.close();
     
     Set<String> ids = new HashSet<>();
-    BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
-    try {
+    try (BufferedReader br = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
       String line = br.readLine();
       assertHeaderLine(line); // header line is written once, no matter how many threads there are
       for (int i = 0; i < threads.length; i++) {
@@ -363,9 +350,6 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
       // only threads.length lines should exist
       assertNull(br.readLine());
       assertEquals(threads.length, ids.size());
-    } finally {
-      br.close();
     }
   }
-
 }

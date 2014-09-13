@@ -1,7 +1,9 @@
 package org.apache.lucene.util;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -44,12 +46,12 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
   /**
    * Writeable temporary base folder. 
    */
-  private File javaTempDir;
+  private Path javaTempDir;
 
   /**
    * Per-test class temporary folder.
    */
-  private File tempDirBase;
+  private Path tempDirBase;
 
   /**
    * Suite failure marker.
@@ -59,9 +61,9 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
   /**
    * A queue of temporary resources to be removed after the
    * suite completes.
-   * @see #registerToRemoveAfterSuite(File)
+   * @see #registerToRemoveAfterSuite(Path)
    */
-  private final static List<File> cleanupQueue = new ArrayList<File>();
+  private final static List<Path> cleanupQueue = new ArrayList<Path>();
 
   public TestRuleTemporaryFilesCleanup(TestRuleMarkFailure failureMarker) {
     this.failureMarker = failureMarker;
@@ -70,11 +72,11 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
   /**
    * Register temporary folder for removal after the suite completes.
    */
-  void registerToRemoveAfterSuite(File f) {
+  void registerToRemoveAfterSuite(Path f) {
     assert f != null;
 
     if (LuceneTestCase.LEAVE_TEMPORARY) {
-      System.err.println("INFO: Will leave temporary file: " + f.getAbsolutePath());
+      System.err.println("INFO: Will leave temporary file: " + f.toAbsolutePath());
       return;
     }
 
@@ -91,28 +93,27 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
     javaTempDir = initializeJavaTempDir();
   }
 
-  private File initializeJavaTempDir() {
-    File javaTempDir = new File(System.getProperty("tempDir", System.getProperty("java.io.tmpdir")));
-    if (!javaTempDir.exists() && !javaTempDir.mkdirs()) {
-      throw new RuntimeException("Could not create temp dir: " + javaTempDir.getAbsolutePath());
-    }
-    assert javaTempDir.isDirectory() &&
-           javaTempDir.canWrite();
+  private Path initializeJavaTempDir() throws IOException {
+    Path javaTempDir = Paths.get(System.getProperty("tempDir", System.getProperty("java.io.tmpdir")));
+    Files.createDirectories(javaTempDir);
 
-    return javaTempDir.getAbsoluteFile();
+    assert Files.isDirectory(javaTempDir) &&
+           Files.isWritable(javaTempDir);
+
+    return javaTempDir.toRealPath();
   }
 
   @Override
   protected void afterAlways(List<Throwable> errors) throws Throwable {
     // Drain cleanup queue and clear it.
-    final File [] everything;
+    final Path [] everything;
     final String tempDirBasePath;
     synchronized (cleanupQueue) {
-      tempDirBasePath = (tempDirBase != null ? tempDirBase.getAbsolutePath() : null);
+      tempDirBasePath = (tempDirBase != null ? tempDirBase.toAbsolutePath().toString() : null);
       tempDirBase = null;
 
       Collections.reverse(cleanupQueue);
-      everything = new File [cleanupQueue.size()];
+      everything = new Path [cleanupQueue.size()];
       cleanupQueue.toArray(everything);
       cleanupQueue.clear();
     }
@@ -140,7 +141,7 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
     }
   }
   
-  final File getPerTestClassTempDir() {
+  final Path getPerTestClassTempDir() {
     if (tempDirBase == null) {
       RandomizedContext ctx = RandomizedContext.current();
       Class<?> clazz = ctx.getTargetClass();
@@ -149,16 +150,21 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
       prefix = prefix.replaceFirst("^org.apache.solr.", "solr.");
 
       int attempt = 0;
-      File f;
+      Path f;
+      boolean success = false;
       do {
         if (attempt++ >= TEMP_NAME_RETRY_THRESHOLD) {
           throw new RuntimeException(
               "Failed to get a temporary name too many times, check your temp directory and consider manually cleaning it: "
-                + javaTempDir.getAbsolutePath());            
+                + javaTempDir.toAbsolutePath());            
         }
-        f = new File(javaTempDir, prefix + "-" + ctx.getRunnerSeedAsString() 
+        f = javaTempDir.resolve(prefix + "-" + ctx.getRunnerSeedAsString() 
               + "-" + String.format(Locale.ENGLISH, "%03d", attempt));
-      } while (!f.mkdirs());
+        try {
+          Files.createDirectory(f);
+          success = true;
+        } catch (IOException ignore) {}
+      } while (!success);
 
       tempDirBase = f;
       registerToRemoveAfterSuite(tempDirBase);
@@ -169,19 +175,24 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
   /**
    * @see LuceneTestCase#createTempDir()
    */
-  public File createTempDir(String prefix) {
-    File base = getPerTestClassTempDir();
+  public Path createTempDir(String prefix) {
+    Path base = getPerTestClassTempDir();
 
     int attempt = 0;
-    File f;
+    Path f;
+    boolean success = false;
     do {
       if (attempt++ >= TEMP_NAME_RETRY_THRESHOLD) {
         throw new RuntimeException(
             "Failed to get a temporary name too many times, check your temp directory and consider manually cleaning it: "
-              + base.getAbsolutePath());            
+              + base.toAbsolutePath());            
       }
-      f = new File(base, prefix + "-" + String.format(Locale.ENGLISH, "%03d", attempt));
-    } while (!f.mkdirs());
+      f = base.resolve(prefix + "-" + String.format(Locale.ENGLISH, "%03d", attempt));
+      try {
+        Files.createDirectory(f);
+        success = true;
+      } catch (IOException ignore) {}
+    } while (!success);
 
     registerToRemoveAfterSuite(f);
     return f;
@@ -190,19 +201,24 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
   /**
    * @see LuceneTestCase#createTempFile()
    */
-  public File createTempFile(String prefix, String suffix) throws IOException {
-    File base = getPerTestClassTempDir();
+  public Path createTempFile(String prefix, String suffix) throws IOException {
+    Path base = getPerTestClassTempDir();
 
     int attempt = 0;
-    File f;
+    Path f;
+    boolean success = false;
     do {
       if (attempt++ >= TEMP_NAME_RETRY_THRESHOLD) {
         throw new RuntimeException(
             "Failed to get a temporary name too many times, check your temp directory and consider manually cleaning it: "
-              + base.getAbsolutePath());            
+              + base.toAbsolutePath());            
       }
-      f = new File(base, prefix + "-" + String.format(Locale.ENGLISH, "%03d", attempt) + suffix);
-    } while (!f.createNewFile());
+      f = base.resolve(prefix + "-" + String.format(Locale.ENGLISH, "%03d", attempt) + suffix);
+      try {
+        Files.createFile(f);
+        success = true;
+      } catch (IOException ignore) {}
+    } while (!success);
 
     registerToRemoveAfterSuite(f);
     return f;

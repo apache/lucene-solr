@@ -39,7 +39,7 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
 
   @Override
   protected Directory create(String path, DirContext dirContext) throws IOException {
-    return FSDirectory.open(new File(path));
+    return FSDirectory.open(new File(path).toPath());
   }
   
   @Override
@@ -96,8 +96,8 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
     Directory baseToDir = getBaseDir(toDir);
     
     if (baseFromDir instanceof FSDirectory && baseToDir instanceof FSDirectory) {
-      File dir1 = ((FSDirectory) baseFromDir).getDirectory();
-      File dir2 = ((FSDirectory) baseToDir).getDirectory();
+      File dir1 = ((FSDirectory) baseFromDir).getDirectory().toFile();
+      File dir2 = ((FSDirectory) baseToDir).getDirectory().toFile();
       File indexFileInTmpDir = new File(dir1, fileName);
       File indexFileInIndex = new File(dir2, fileName);
       boolean success = indexFileInTmpDir.renameTo(indexFileInIndex);

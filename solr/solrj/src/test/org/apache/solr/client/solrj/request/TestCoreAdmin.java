@@ -76,7 +76,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   public void testConfigSet() throws Exception {
 
     SolrServer server = getSolrAdmin();
-    File testDir = createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    File testDir = createTempDir(LuceneTestCase.getTestClass().getSimpleName()).toFile();
 
     File newCoreInstanceDir = new File(testDir, "newcore");
 
@@ -99,9 +99,9 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     
     SolrServer server = getSolrAdmin();
     
-    File dataDir = createTempDir("data");
+    File dataDir = createTempDir("data").toFile();
     
-    File newCoreInstanceDir = createTempDir("instance");
+    File newCoreInstanceDir = createTempDir("instance").toFile();
     
     File instanceDir = new File(cores.getSolrHome());
     FileUtils.copyDirectory(instanceDir, new File(newCoreInstanceDir,

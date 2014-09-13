@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.core;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
@@ -62,10 +63,10 @@ public final class StopAnalyzer extends StopwordAnalyzerBase {
     super(stopWords);
   }
 
-  /** Builds an analyzer with the stop words from the given file.
+  /** Builds an analyzer with the stop words from the given path.
    * @see WordlistLoader#getWordSet(Reader)
    * @param stopwordsFile File to load stop words from */
-  public StopAnalyzer(File stopwordsFile) throws IOException {
+  public StopAnalyzer(Path stopwordsFile) throws IOException {
     this(loadStopwordSet(stopwordsFile));
   }
 

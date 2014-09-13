@@ -49,7 +49,7 @@ public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
 
   @BeforeClass
   public static void dihZk_beforeClass() throws Exception {
-    zkDir = createTempDir("zkData").getAbsolutePath();
+    zkDir = createTempDir("zkData").toFile().getAbsolutePath();
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
 

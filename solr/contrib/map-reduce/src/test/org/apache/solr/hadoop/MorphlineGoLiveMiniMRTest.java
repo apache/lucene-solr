@@ -132,7 +132,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     System.setProperty("solr.hdfs.blockcache.enabled", Boolean.toString(LuceneTestCase.random().nextBoolean()));
     System.setProperty("solr.hdfs.blockcache.blocksperbank", "2048");
     
-    solrHomeDirectory = createTempDir();
+    solrHomeDirectory = createTempDir().toFile();
     assumeTrue(
             "Currently this test can only be run without the lucene test security policy in place",
             System.getProperty("java.security.manager", "").equals(""));
@@ -146,7 +146,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     
     AbstractZkTestCase.SOLRHOME = solrHomeDirectory;
     FileUtils.copyDirectory(MINIMR_INSTANCE_DIR, AbstractZkTestCase.SOLRHOME);
-    tempDir = createTempDir().getAbsolutePath();
+    tempDir = createTempDir().toFile().getAbsolutePath();
 
     new File(tempDir).mkdirs();
 

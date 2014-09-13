@@ -9,6 +9,9 @@ import org.apache.lucene.util.IOUtils;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,11 +61,11 @@ public class FileBasedQueryMaker extends AbstractQueryMaker implements QueryMake
     String fileName = config.get("file.query.maker.file", null);
     if (fileName != null)
     {
-      File file = new File(fileName);
+      Path path = Paths.get(fileName);
       Reader reader = null;
       // note: we use a decoding reader, so if your queries are screwed up you know
-      if (file.exists()) {
-        reader = IOUtils.getDecodingReader(file, StandardCharsets.UTF_8);
+      if (Files.exists(path)) {
+        reader = Files.newBufferedReader(path, StandardCharsets.UTF_8);
       } else {
         //see if we can find it as a resource
         InputStream asStream = FileBasedQueryMaker.class.getClassLoader().getResourceAsStream(fileName);

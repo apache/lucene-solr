@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.File;
+import java.nio.file.Path;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
@@ -174,7 +175,7 @@ public class TestAtomicUpdate extends LuceneTestCase {
     directory.close();
 
     // Second in an FSDirectory:
-    File dirPath = createTempDir("lucene.test.atomic");
+    Path dirPath = createTempDir("lucene.test.atomic");
     directory = newFSDirectory(dirPath);
     runTest(directory);
     directory.close();

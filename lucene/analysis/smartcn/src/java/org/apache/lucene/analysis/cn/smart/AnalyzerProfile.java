@@ -17,11 +17,12 @@
 
 package org.apache.lucene.analysis.cn.smart;
 
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Properties;
 
 /**
@@ -51,16 +52,18 @@ public class AnalyzerProfile {
     if (ANALYSIS_DATA_DIR.length() != 0)
       return;
 
-    File[] cadidateFiles = new File[] { new File("./" + dirName),
-        new File("./lib/" + dirName), new File("./" + propName),
-        new File("./lib/" + propName) };
-    for (int i = 0; i < cadidateFiles.length; i++) {
-      File file = cadidateFiles[i];
-      if (file.exists()) {
-        if (file.isDirectory()) {
-          ANALYSIS_DATA_DIR = file.getAbsolutePath();
-        } else if (file.isFile() && getAnalysisDataDir(file).length() != 0) {
-          ANALYSIS_DATA_DIR = getAnalysisDataDir(file);
+    Path[] candidateFiles = new Path[] {
+        Paths.get(dirName),
+        Paths.get("lib").resolve(dirName),
+        Paths.get(propName),
+        Paths.get("lib").resolve(propName)
+    };
+    for (Path file : candidateFiles) {
+      if (Files.exists(file)) {
+        if (Files.isDirectory(file)) {
+          ANALYSIS_DATA_DIR = file.toAbsolutePath().toString();
+        } else if (Files.isRegularFile(file) && getAnalysisDataDir(file).length() != 0) {
+          ANALYSIS_DATA_DIR = getAnalysisDataDir(file).toString();
         }
         break;
       }
@@ -75,14 +78,11 @@ public class AnalyzerProfile {
 
   }
 
-  private static String getAnalysisDataDir(File propFile) {
+  private static String getAnalysisDataDir(Path propFile) {
     Properties prop = new Properties();
-    try {
-      FileInputStream input = new FileInputStream(propFile);
-      prop.load(new InputStreamReader(input, StandardCharsets.UTF_8));
-      String dir = prop.getProperty("analysis.data.dir", "");
-      input.close();
-      return dir;
+    try (BufferedReader reader = Files.newBufferedReader(propFile, StandardCharsets.UTF_8)) {
+      prop.load(reader);
+      return prop.getProperty("analysis.data.dir", "");
     } catch (IOException e) {
       return "";
     }

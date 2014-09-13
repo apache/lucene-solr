@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.no;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.Reader;
+import java.nio.file.Files;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -49,7 +50,7 @@ public class TestNorwegianMinimalStemFilter extends BaseTokenStreamTestCase {
   
   /** Test against a Bokmål vocabulary file */
   public void testVocabulary() throws IOException {
-    assertVocabulary(analyzer, new FileInputStream(getDataFile("nb_minimal.txt")));
+    assertVocabulary(analyzer, Files.newInputStream(getDataPath("nb_minimal.txt")));
   }
   
   /** Test against a Nynorsk vocabulary file */
@@ -61,7 +62,7 @@ public class TestNorwegianMinimalStemFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(source, new NorwegianMinimalStemFilter(source, NYNORSK));
       }
     };
-    assertVocabulary(analyzer, new FileInputStream(getDataFile("nn_minimal.txt")));
+    assertVocabulary(analyzer, Files.newInputStream(getDataPath("nn_minimal.txt")));
   }
   
   public void testKeyword() throws IOException {

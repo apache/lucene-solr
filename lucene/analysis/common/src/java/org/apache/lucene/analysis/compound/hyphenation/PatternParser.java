@@ -26,7 +26,6 @@ import org.xml.sax.helpers.DefaultHandler;
 import org.xml.sax.Attributes;
 
 // Java
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -89,17 +88,6 @@ public class PatternParser extends DefaultHandler {
    */
   public void parse(String filename) throws IOException {
     parse(new InputSource(filename));
-  }
-
-  /**
-   * Parses a hyphenation pattern file.
-   * 
-   * @param file the pattern file
-   * @throws IOException In case of an exception while parsing
-   */
-  public void parse(File file) throws IOException {
-    InputSource src = new InputSource(file.toURI().toASCIIString());
-    parse(src);
   }
 
   /**

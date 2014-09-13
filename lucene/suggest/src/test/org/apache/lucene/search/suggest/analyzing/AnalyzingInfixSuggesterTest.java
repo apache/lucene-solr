@@ -17,9 +17,9 @@ package org.apache.lucene.search.suggest.analyzing;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -91,7 +91,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
       new Input("a penny saved is a penny earned", 10, new BytesRef("foobaz")),
     };
 
-    File tempDir = createTempDir("AnalyzingInfixSuggesterTest");
+    Path tempDir = createTempDir("AnalyzingInfixSuggesterTest");
 
     Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
     AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(newFSDirectory(tempDir), a, a, 3, false);
@@ -210,7 +210,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
       new Input("lend me your ear", 8, new BytesRef("foobar")),
       new Input("a penny saved is a penny earned", 10, new BytesRef("foobaz")),
     };
-    File tempDir = createTempDir("AnalyzingInfixSuggesterTest");
+    Path tempDir = createTempDir("AnalyzingInfixSuggesterTest");
 
     Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
     int minPrefixLength = random().nextInt(10);
@@ -471,7 +471,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
   }
 
   public void testRandomNRT() throws Exception {
-    final File tempDir = createTempDir("AnalyzingInfixSuggesterTest");
+    final Path tempDir = createTempDir("AnalyzingInfixSuggesterTest");
     Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
     int minPrefixChars = random().nextInt(7);
     if (VERBOSE) {
@@ -793,7 +793,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
   public void testNRTWithParallelAdds() throws IOException, InterruptedException {
     String[] keys = new String[] {"python", "java", "c", "scala", "ruby", "clojure", "erlang", "go", "swift", "lisp"};
     Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
-    File tempDir = createTempDir("AIS_NRT_PERSIST_TEST");
+    Path tempDir = createTempDir("AIS_NRT_PERSIST_TEST");
     AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(newFSDirectory(tempDir), a, a, 3, false);
     Thread[] multiAddThreads = new Thread[10];
     try {
@@ -865,7 +865,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
       new Input("a penny saved is a penny earned", 10, new BytesRef("foobaz"), asSet("foo", "baz"))
     };
 
-    File tempDir = createTempDir("analyzingInfixContext");
+    Path tempDir = createTempDir("analyzingInfixContext");
 
     for(int iter=0;iter<2;iter++) {
       AnalyzingInfixSuggester suggester;

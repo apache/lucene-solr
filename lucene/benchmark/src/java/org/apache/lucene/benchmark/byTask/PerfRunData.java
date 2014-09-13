@@ -18,8 +18,10 @@ package org.apache.lucene.benchmark.byTask;
  */
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
@@ -191,12 +193,12 @@ public class PerfRunData implements Closeable {
   private Directory createDirectory(boolean eraseIndex, String dirName,
       String dirParam) throws IOException {
     if ("FSDirectory".equals(config.get(dirParam,"RAMDirectory"))) {
-      File workDir = new File(config.get("work.dir","work"));
-      File indexDir = new File(workDir,dirName);
-      if (eraseIndex && indexDir.exists()) {
+      Path workDir = Paths.get(config.get("work.dir","work"));
+      Path indexDir = workDir.resolve(dirName);
+      if (eraseIndex && Files.exists(indexDir)) {
         IOUtils.rm(indexDir);
       }
-      indexDir.mkdirs();
+      Files.createDirectories(indexDir);
       return FSDirectory.open(indexDir);
     } 
 

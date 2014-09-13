@@ -46,7 +46,7 @@ public class TestGalicianStemFilter extends BaseTokenStreamTestCase {
  
   /** Test against a vocabulary from the reference impl */
   public void testVocabulary() throws IOException {
-    assertVocabulary(analyzer, getDataFile("gltestdata.zip"), "gl.txt");
+    assertVocabulary(analyzer, getDataPath("gltestdata.zip"), "gl.txt");
   }
   
   public void testEmptyTerm() throws IOException {

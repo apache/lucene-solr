@@ -37,7 +37,7 @@ public class HdfsRecoveryZkTest extends RecoveryZkTest {
   
   @BeforeClass
   public static void setupClass() throws Exception {
-    dfsCluster = HdfsTestUtil.setupClass(createTempDir().getAbsolutePath());
+    dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
     System.setProperty("solr.hdfs.blockcache.blocksperbank", "2048");
   }
   

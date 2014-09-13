@@ -228,7 +228,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
    */
   protected void initIndex() throws IOException {
     if (indexDir != null) {
-      index = FSDirectory.open(new File(indexDir));
+      index = FSDirectory.open(new File(indexDir).toPath());
     } else {
       index = new RAMDirectory();
     }

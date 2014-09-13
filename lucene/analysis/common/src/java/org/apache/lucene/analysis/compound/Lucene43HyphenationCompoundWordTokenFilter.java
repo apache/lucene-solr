@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.compound;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.TokenFilter;
@@ -118,18 +117,6 @@ public class Lucene43HyphenationCompoundWordTokenFilter extends
   public static HyphenationTree getHyphenationTree(String hyphenationFilename)
       throws IOException {
     return getHyphenationTree(new InputSource(hyphenationFilename));
-  }
-
-  /**
-   * Create a hyphenator tree
-   * 
-   * @param hyphenationFile the file of the XML grammar to load
-   * @return An object representing the hyphenation patterns
-   * @throws IOException If there is a low-level I/O error.
-   */
-  public static HyphenationTree getHyphenationTree(File hyphenationFile)
-      throws IOException {
-    return getHyphenationTree(new InputSource(hyphenationFile.toURI().toASCIIString()));
   }
 
   /**

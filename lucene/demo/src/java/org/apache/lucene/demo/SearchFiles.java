@@ -18,16 +18,15 @@ package org.apache.lucene.demo;
  */
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Date;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.StoredDocument;
@@ -88,13 +87,13 @@ public class SearchFiles {
       }
     }
     
-    IndexReader reader = DirectoryReader.open(FSDirectory.open(new File(index)));
+    IndexReader reader = DirectoryReader.open(FSDirectory.open(Paths.get(index)));
     IndexSearcher searcher = new IndexSearcher(reader);
     Analyzer analyzer = new StandardAnalyzer();
 
     BufferedReader in = null;
     if (queries != null) {
-      in = new BufferedReader(new InputStreamReader(new FileInputStream(queries), StandardCharsets.UTF_8));
+      in = Files.newBufferedReader(Paths.get(queries), StandardCharsets.UTF_8);
     } else {
       in = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
     }

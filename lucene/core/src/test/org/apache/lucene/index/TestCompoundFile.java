@@ -30,8 +30,8 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import static org.apache.lucene.store.TestHelper.isSimpleFSIndexInput;
 import static org.apache.lucene.store.TestHelper.isSimpleFSIndexInputOpen;
@@ -43,7 +43,7 @@ public class TestCompoundFile extends LuceneTestCase
     @Override
     public void setUp() throws Exception {
        super.setUp();
-       File file = createTempDir("testIndex");
+       Path file = createTempDir("testIndex");
        // use a simple FSDir here, to be sure to have SimpleFSInputs
        dir = new SimpleFSDirectory(file,null);
     }

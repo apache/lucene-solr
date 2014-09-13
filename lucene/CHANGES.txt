@@ -7,6 +7,8 @@ http://s.apache.org/luceneversions
 
 New Features
 
+* LUCENE-5945: All file handling converted to NIO.2 apis. (Robert Muir)
+
 * SOLR-3359: Added analyzer attribute/property to SynonymFilterFactory.
   (Ryo Onodera via Koji Sekiguchi)
 

@@ -26,7 +26,6 @@ import java.util.List;
 
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.NoSuchDirectoryException;
 
 /** DirectoryReader is an implementation of {@link CompositeReader}
  that can read indexes in a {@link Directory}. 
@@ -288,22 +287,12 @@ public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> 
     // corrupt indices.  This means that IndexWriter will
     // throw an exception on such indices and the app must
     // resolve the situation manually:
-    String[] files;
-    try {
-      files = directory.listAll();
-    } catch (NoSuchDirectoryException nsde) {
-      // Directory does not exist --> no index exists
-      return false;
-    }
+    String[] files = directory.listAll();
 
-    // Defensive: maybe a Directory impl returns null
-    // instead of throwing NoSuchDirectoryException:
-    if (files != null) {
-      String prefix = IndexFileNames.SEGMENTS + "_";
-      for(String file : files) {
-        if (file.startsWith(prefix)) {
-          return true;
-        }
+    String prefix = IndexFileNames.SEGMENTS + "_";
+    for(String file : files) {
+      if (file.startsWith(prefix)) {
+        return true;
       }
     }
     return false;

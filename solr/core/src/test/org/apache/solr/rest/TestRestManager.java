@@ -229,7 +229,7 @@ public class TestRestManager extends SolrRestletTestBase {
   @Test
   public void testReloadFromPersistentStorage() throws Exception {
     SolrResourceLoader loader = new SolrResourceLoader("./");
-    File unitTestStorageDir = createTempDir("testRestManager");
+    File unitTestStorageDir = createTempDir("testRestManager").toFile();
     assertTrue(unitTestStorageDir.getAbsolutePath()+" is not a directory!", 
         unitTestStorageDir.isDirectory());    
     assertTrue(unitTestStorageDir.canRead());

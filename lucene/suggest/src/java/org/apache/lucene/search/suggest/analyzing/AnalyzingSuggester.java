@@ -17,9 +17,9 @@ package org.apache.lucene.search.suggest.analyzing;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -416,9 +416,9 @@ public class AnalyzingSuggester extends Lookup {
       throw new IllegalArgumentException("this suggester doesn't support contexts");
     }
     String prefix = getClass().getSimpleName();
-    File directory = OfflineSorter.defaultTempDir();
-    File tempInput = File.createTempFile(prefix, ".input", directory);
-    File tempSorted = File.createTempFile(prefix, ".sorted", directory);
+    Path directory = OfflineSorter.defaultTempDir();
+    Path tempInput = Files.createTempFile(directory, prefix, ".input");
+    Path tempSorted = Files.createTempFile(directory, prefix, ".sorted");
 
     hasPayloads = iterator.hasPayloads();
 
@@ -501,7 +501,7 @@ public class AnalyzingSuggester extends Lookup {
       new OfflineSorter(new AnalyzingComparator(hasPayloads)).sort(tempInput, tempSorted);
 
       // Free disk space:
-      Files.delete(tempInput.toPath());
+      Files.delete(tempInput);
 
       reader = new OfflineSorter.ByteSequencesReader(tempSorted);
      

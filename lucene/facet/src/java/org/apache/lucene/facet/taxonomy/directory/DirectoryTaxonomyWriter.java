@@ -4,12 +4,9 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -891,14 +888,14 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * {@link OrdinalMap} maintained on file system
    */
   public static final class DiskOrdinalMap implements OrdinalMap {
-    File tmpfile;
+    Path tmpfile;
     DataOutputStream out;
 
     /** Sole constructor. */
-    public DiskOrdinalMap(File tmpfile) throws FileNotFoundException {
+    public DiskOrdinalMap(Path tmpfile) throws IOException {
       this.tmpfile = tmpfile;
       out = new DataOutputStream(new BufferedOutputStream(
-          new FileOutputStream(tmpfile)));
+          Files.newOutputStream(tmpfile)));
     }
 
     @Override
@@ -929,7 +926,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       }
       addDone(); // in case this wasn't previously called
       DataInputStream in = new DataInputStream(new BufferedInputStream(
-          new FileInputStream(tmpfile)));
+          Files.newInputStream(tmpfile)));
       map = new int[in.readInt()];
       // NOTE: The current code assumes here that the map is complete,
       // i.e., every ordinal gets one and exactly one value. Otherwise,
@@ -942,7 +939,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       in.close();
 
       // Delete the temporary file, which is no longer needed.
-      Files.delete(tmpfile.toPath());
+      Files.delete(tmpfile);
 
       return map;
     }

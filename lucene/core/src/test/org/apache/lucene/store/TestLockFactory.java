@@ -17,9 +17,9 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,7 +38,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 
 public class TestLockFactory extends LuceneTestCase {
 
@@ -126,11 +125,6 @@ public class TestLockFactory extends LuceneTestCase {
             writer2.close();
         }
     }
-    
-    public void testSimpleFSLockFactory() throws IOException {
-      // test string file instantiation
-      new SimpleFSLockFactory("test");
-    }
 
     // Verify: do stress test, by opening IndexReaders and
     // IndexWriters over & over in 2 threads and making sure
@@ -146,11 +140,11 @@ public class TestLockFactory extends LuceneTestCase {
     // NativeFSLockFactory:
     @Nightly
     public void testStressLocksNativeFSLockFactory() throws Exception {
-      File dir = createTempDir("index.TestLockFactory7");
+      Path dir = createTempDir("index.TestLockFactory7");
       _testStressLocks(new NativeFSLockFactory(dir), dir);
     }
 
-    public void _testStressLocks(LockFactory lockFactory, File indexDir) throws Exception {
+    public void _testStressLocks(LockFactory lockFactory, Path indexDir) throws Exception {
         Directory dir = newFSDirectory(indexDir, lockFactory);
 
         // First create a 1 doc index:
@@ -202,22 +196,22 @@ public class TestLockFactory extends LuceneTestCase {
     
     // Verify: NativeFSLockFactory works correctly if the lock file exists
     public void testNativeFSLockFactoryLockExists() throws IOException {
-      File tempDir = createTempDir(LuceneTestCase.getTestClass().getSimpleName());
-      File lockFile = new File(tempDir, "test.lock");
-      lockFile.createNewFile();
+      Path tempDir = createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+      Path lockFile = tempDir.resolve("test.lock");
+      Files.createFile(lockFile);
       
       Lock l = new NativeFSLockFactory(tempDir).makeLock("test.lock");
       assertTrue("failed to obtain lock", l.obtain());
       l.close();
       assertFalse("failed to release lock", l.isLocked());
-      Files.deleteIfExists(lockFile.toPath());
+      Files.deleteIfExists(lockFile);
     }
 
     // Verify: NativeFSLockFactory assigns null as lockPrefix if the lockDir is inside directory
     public void testNativeFSLockFactoryPrefix() throws IOException {
 
-      File fdir1 = createTempDir("TestLockFactory.8");
-      File fdir2 = createTempDir("TestLockFactory.8.Lockdir");
+      Path fdir1 = createTempDir("TestLockFactory.8");
+      Path fdir2 = createTempDir("TestLockFactory.8.Lockdir");
       Directory dir1 = newFSDirectory(fdir1, new NativeFSLockFactory(fdir1));
       // same directory, but locks are stored somewhere else. The prefix of the lock factory should != null
       Directory dir2 = newFSDirectory(fdir1, new NativeFSLockFactory(fdir2));
@@ -238,7 +232,7 @@ public class TestLockFactory extends LuceneTestCase {
     public void testDefaultFSLockFactoryPrefix() throws IOException {
 
       // Make sure we get null prefix, which wont happen if setLockFactory is ever called.
-      File dirName = createTempDir("TestLockFactory.10");
+      Path dirName = createTempDir("TestLockFactory.10");
 
       Directory dir = new SimpleFSDirectory(dirName);
       assertNull("Default lock prefix should be null", dir.getLockFactory().getLockPrefix());

@@ -24,8 +24,9 @@ import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.PrintStreamInfoStream;
 import org.apache.lucene.util.Version;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.Collection;
 
 /**
@@ -102,11 +103,12 @@ public final class IndexUpgrader {
       printUsage();
     }
     
+    Path p = Paths.get(path);
     Directory dir = null;
     if (dirImpl == null) {
-      dir = FSDirectory.open(new File(path));
+      dir = FSDirectory.open(p);
     } else {
-      dir = CommandLineUtil.newFSDirectory(dirImpl, new File(path));
+      dir = CommandLineUtil.newFSDirectory(dirImpl, p);
     }
     return new IndexUpgrader(dir, out, deletePriorCommits);
   }

@@ -43,7 +43,7 @@ import org.junit.rules.TestRule;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 public class ModifyConfFileTest extends SolrTestCaseJ4 {
-  private File solrHomeDirectory = createTempDir();
+  private File solrHomeDirectory = createTempDir().toFile();
 
   @Rule
   public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
@@ -52,7 +52,7 @@ public class ModifyConfFileTest extends SolrTestCaseJ4 {
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
 
-    solrHomeDirectory = createTempDir();
+    solrHomeDirectory = createTempDir().toFile();
 
     copySolrHomeToTemp(solrHomeDirectory, "core1", true);
     FileUtils.write(new File(new File(solrHomeDirectory, "core1"), "core.properties"), "", Charsets.UTF_8.toString());

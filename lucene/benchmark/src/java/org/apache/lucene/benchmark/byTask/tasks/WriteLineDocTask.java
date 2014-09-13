@@ -18,11 +18,11 @@ package org.apache.lucene.benchmark.byTask.tasks;
  */
 
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.regex.Matcher;
@@ -101,7 +101,7 @@ public class WriteLineDocTask extends PerfTask {
     if (fname == null) {
       throw new IllegalArgumentException("line.file.out must be set");
     }
-    OutputStream out = StreamUtils.outputStream(new File(fname));
+    OutputStream out = StreamUtils.outputStream(Paths.get(fname));
     lineFileOut = new PrintWriter(new BufferedWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8), StreamUtils.BUFFER_SIZE));
     docMaker = runData.getDocMaker();
     

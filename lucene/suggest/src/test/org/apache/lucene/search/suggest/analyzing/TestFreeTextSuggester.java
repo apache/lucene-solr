@@ -17,12 +17,11 @@ package org.apache.lucene.search.suggest.analyzing;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -82,16 +81,15 @@ public class TestFreeTextSuggester extends LuceneTestCase {
                    toString(sug.lookup("b", 10)));
 
       // Try again after save/load:
-      File tmpDir = createTempDir("FreeTextSuggesterTest");
-      tmpDir.mkdir();
+      Path tmpDir = createTempDir("FreeTextSuggesterTest");
 
-      File path = new File(tmpDir, "suggester");
+      Path path = tmpDir.resolve("suggester");
 
-      OutputStream os = new FileOutputStream(path);
+      OutputStream os = Files.newOutputStream(path);
       sug.store(os);
       os.close();
 
-      InputStream is = new FileInputStream(path);
+      InputStream is = Files.newInputStream(path);
       sug = new FreeTextSuggester(a, a, 2, (byte) 0x20);
       sug.load(is);
       is.close();

@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.hu;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -45,7 +44,7 @@ public class TestHungarianLightStemFilter extends BaseTokenStreamTestCase {
   
   /** Test against a vocabulary from the reference impl */
   public void testVocabulary() throws IOException {
-    assertVocabulary(analyzer, getDataFile("hulighttestdata.zip"), "hulight.txt");
+    assertVocabulary(analyzer, getDataPath("hulighttestdata.zip"), "hulight.txt");
   }
   
   public void testKeyword() throws IOException {

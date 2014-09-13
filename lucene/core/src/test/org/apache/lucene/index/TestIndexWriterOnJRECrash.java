@@ -18,15 +18,19 @@ package org.apache.lucene.index;
  *
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.util.Constants;
@@ -38,7 +42,7 @@ import com.carrotsearch.randomizedtesting.SeedUtils;
  * of execution, then runs checkindex to make sure its not corrupt.
  */
 public class TestIndexWriterOnJRECrash extends TestNRTThreads {
-  private File tempDir;
+  private Path tempDir;
   
   @Override
   public void setUp() throws Exception {
@@ -96,7 +100,7 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
     cmd.add("-Dtests.crashmode=true");
     // passing NIGHTLY to this test makes it run for much longer, easier to catch it in the act...
     cmd.add("-Dtests.nightly=true");
-    cmd.add("-DtempDir=" + tempDir.getPath());
+    cmd.add("-DtempDir=" + tempDir);
     cmd.add("-Dtests.seed=" + SeedUtils.formatSeed(random().nextLong()));
     cmd.add("-ea");
     cmd.add("-cp");
@@ -104,7 +108,7 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
     cmd.add("org.junit.runner.JUnitCore");
     cmd.add(getClass().getName());
     ProcessBuilder pb = new ProcessBuilder(cmd);
-    pb.directory(tempDir);
+    pb.directory(tempDir.toFile());
     pb.redirectErrorStream(true);
     Process p = pb.start();
 
@@ -147,30 +151,35 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
    * Recursively looks for indexes underneath <code>file</code>,
    * and runs checkindex on them. returns true if it found any indexes.
    */
-  public boolean checkIndexes(File file) throws IOException {
-    if (file.isDirectory()) {
-      BaseDirectoryWrapper dir = newFSDirectory(file);
-      dir.setCheckIndexOnClose(false); // don't double-checkindex
-      if (DirectoryReader.indexExists(dir)) {
-        if (VERBOSE) {
-          System.err.println("Checking index: " + file);
+  public boolean checkIndexes(Path path) throws IOException {
+    final AtomicBoolean found = new AtomicBoolean();
+    Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+      @Override
+      public FileVisitResult postVisitDirectory(Path dirPath, IOException exc) throws IOException {
+        if (exc != null) {
+          throw exc;
+        } else {
+          BaseDirectoryWrapper dir = newFSDirectory(dirPath);
+          dir.setCheckIndexOnClose(false); // don't double-checkindex
+          if (DirectoryReader.indexExists(dir)) {
+            if (VERBOSE) {
+              System.err.println("Checking index: " + dirPath);
+            }
+            // LUCENE-4738: if we crashed while writing first
+            // commit it's possible index will be corrupt (by
+            // design we don't try to be smart about this case
+            // since that too risky):
+            if (SegmentInfos.getLastCommitGeneration(dir) > 1) {
+              TestUtil.checkIndex(dir);
+            }
+            dir.close();
+            found.set(true);
+          }
+          return FileVisitResult.CONTINUE;
         }
-        // LUCENE-4738: if we crashed while writing first
-        // commit it's possible index will be corrupt (by
-        // design we don't try to be smart about this case
-        // since that too risky):
-        if (SegmentInfos.getLastCommitGeneration(dir) > 1) {
-          TestUtil.checkIndex(dir);
-        }
-        dir.close();
-        return true;
       }
-      dir.close();
-      for (File f : file.listFiles())
-        if (checkIndexes(f))
-          return true;
-    }
-    return false;
+    });
+    return found.get();
   }
 
   /**

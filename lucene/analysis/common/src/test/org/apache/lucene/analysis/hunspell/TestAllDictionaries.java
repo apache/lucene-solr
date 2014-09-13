@@ -17,9 +17,11 @@ package org.apache.lucene.analysis.hunspell;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -39,8 +41,8 @@ import org.junit.Ignore;
 public class TestAllDictionaries extends LuceneTestCase {
   
   // set this to the location of where you downloaded all the files
-  static final File DICTIONARY_HOME = 
-      new File("/data/archive.services.openoffice.org/pub/mirror/OpenOffice.org/contrib/dictionaries");
+  static final Path DICTIONARY_HOME = 
+      Paths.get("/data/archive.services.openoffice.org/pub/mirror/OpenOffice.org/contrib/dictionaries");
   
   final String tests[] = {
     /* zip file */               /* dictionary */       /* affix */
@@ -156,10 +158,10 @@ public class TestAllDictionaries extends LuceneTestCase {
   
   public void test() throws Exception {
     for (int i = 0; i < tests.length; i += 3) {
-      File f = new File(DICTIONARY_HOME, tests[i]);
-      assert f.exists();
+      Path f = DICTIONARY_HOME.resolve(tests[i]);
+      assert Files.exists(f);
       
-      try (ZipFile zip = new ZipFile(f, StandardCharsets.UTF_8)) {
+      try (ZipFile zip = new ZipFile(f.toFile(), StandardCharsets.UTF_8)) {
         ZipEntry dicEntry = zip.getEntry(tests[i+1]);
         assert dicEntry != null;
         ZipEntry affEntry = zip.getEntry(tests[i+2]);
@@ -185,10 +187,10 @@ public class TestAllDictionaries extends LuceneTestCase {
     String toTest = "zu_ZA.zip";
     for (int i = 0; i < tests.length; i++) {
       if (tests[i].equals(toTest)) {
-        File f = new File(DICTIONARY_HOME, tests[i]);
-        assert f.exists();
+        Path f = DICTIONARY_HOME.resolve(tests[i]);
+        assert Files.exists(f);
         
-        try (ZipFile zip = new ZipFile(f, StandardCharsets.UTF_8)) {
+        try (ZipFile zip = new ZipFile(f.toFile(), StandardCharsets.UTF_8)) {
           ZipEntry dicEntry = zip.getEntry(tests[i+1]);
           assert dicEntry != null;
           ZipEntry affEntry = zip.getEntry(tests[i+2]);

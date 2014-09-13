@@ -47,7 +47,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   
   @Before
   private void initManagedSchemaCore() throws Exception {
-    tmpSolrHome = createTempDir();
+    tmpSolrHome = createTempDir().toFile();
     tmpConfDir = new File(tmpSolrHome, confDir);
     File testHomeConfDir = new File(TEST_HOME(), confDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig-managed-schema.xml"), tmpConfDir);

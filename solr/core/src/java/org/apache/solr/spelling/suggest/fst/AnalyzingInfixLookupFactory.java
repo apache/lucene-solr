@@ -93,7 +93,7 @@ public class AnalyzingInfixLookupFactory extends LookupFactory {
 
     try {
       return new AnalyzingInfixSuggester(core.getSolrConfig().luceneMatchVersion, 
-                                         FSDirectory.open(new File(indexPath)), indexAnalyzer,
+                                         FSDirectory.open(new File(indexPath).toPath()), indexAnalyzer,
                                          queryAnalyzer, minPrefixChars, true);
     } catch (IOException e) {
       throw new RuntimeException();

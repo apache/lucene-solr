@@ -23,6 +23,8 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -56,26 +58,24 @@ public class WriteEnwikiLineDocTaskTest extends BenchmarkTestCase {
     
   }
   
-  private PerfRunData createPerfRunData(File file, String docMakerName) throws Exception {
+  private PerfRunData createPerfRunData(Path file, String docMakerName) throws Exception {
     Properties props = new Properties();
     props.setProperty("doc.maker", docMakerName);
-    props.setProperty("line.file.out", file.getAbsolutePath());
+    props.setProperty("line.file.out", file.toAbsolutePath().toString());
     props.setProperty("directory", "RAMDirectory"); // no accidental FS dir.
     Config config = new Config(props);
     return new PerfRunData(config);
   }
   
-  private void doReadTest(File file, String expTitle,
+  private void doReadTest(Path file, String expTitle,
                           String expDate, String expBody) throws Exception {
     doReadTest(2, file, expTitle, expDate, expBody);
-    File categoriesFile = WriteEnwikiLineDocTask.categoriesLineFile(file);
+    Path categoriesFile = WriteEnwikiLineDocTask.categoriesLineFile(file);
     doReadTest(2, categoriesFile, "Category:"+expTitle, expDate, expBody);
   }
   
-  private void doReadTest(int n, File file, String expTitle, String expDate, String expBody) throws Exception {
-    InputStream in = new FileInputStream(file);
-    BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-    try {
+  private void doReadTest(int n, Path file, String expTitle, String expDate, String expBody) throws Exception {
+    try (BufferedReader br = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
       String line = br.readLine();
       WriteLineDocTaskTest.assertHeaderLine(line);
       for (int i=0; i<n; i++) {
@@ -91,8 +91,6 @@ public class WriteEnwikiLineDocTaskTest extends BenchmarkTestCase {
         }
       }
       assertNull(br.readLine());
-    } finally {
-      br.close();
     }
   }
 
@@ -101,7 +99,7 @@ public class WriteEnwikiLineDocTaskTest extends BenchmarkTestCase {
     // WriteLineDocTask replaced only \t characters w/ a space, since that's its
     // separator char. However, it didn't replace newline characters, which
     // resulted in errors in LineDocSource.
-    File file = new File(getWorkDir(), "two-lines-each.txt");
+    Path file = getWorkDir().resolve("two-lines-each.txt");
     PerfRunData runData = createPerfRunData(file, WriteLineCategoryDocMaker.class.getName());
     WriteLineDocTask wldt = new WriteEnwikiLineDocTask(runData);
     for (int i=0; i<4; i++) { // four times so that each file should have 2 lines. 

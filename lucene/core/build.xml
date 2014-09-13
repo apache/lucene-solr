@@ -34,6 +34,11 @@
     org/apache/lucene/util/RamUsageEstimator.class
   "/>
 
+  <!-- TODO: maybe let people get closedchannel if they cancel(true) -->
+  <property name="forbidden-base-excludes" value="
+    org/apache/lucene/store/SimpleFSDirectory.class
+  "/>
+
   <import file="../common-build.xml"/>
 
   <property name="moman.commit-hash" value="5c5c2a1e4dea" />

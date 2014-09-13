@@ -18,9 +18,10 @@ package org.apache.lucene.benchmark.byTask.tasks;
  */
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Properties;
 
 import org.apache.lucene.benchmark.BenchmarkTestCase;
@@ -79,11 +80,11 @@ public class CreateIndexTaskTest extends BenchmarkTestCase {
 
   public void testInfoStream_File() throws Exception {
     
-    File outFile = new File(getWorkDir(), "infoStreamTest");
-    PerfRunData runData = createPerfRunData(outFile.getAbsolutePath());
+    Path outFile = getWorkDir().resolve("infoStreamTest");
+    PerfRunData runData = createPerfRunData(outFile.toAbsolutePath().toString());
     new CreateIndexTask(runData).doLogic();
     new CloseIndexTask(runData).doLogic();
-    assertTrue(outFile.length() > 0);
+    assertTrue(Files.size(outFile) > 0);
   }
 
   public void testNoMergePolicy() throws Exception {

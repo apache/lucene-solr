@@ -22,6 +22,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -38,8 +39,8 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.NoSuchDirectoryException;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -440,7 +441,7 @@ void assertTermDocsCount(String msg,
   
 public void testFilesOpenClose() throws IOException {
       // Create initial data set
-      File dirFile = createTempDir("TestIndexReader.testFilesOpenClose");
+      Path dirFile = createTempDir("TestIndexReader.testFilesOpenClose");
       Directory dir = newFSDirectory(dirFile);
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
       addDoc(writer, "test");
@@ -470,8 +471,11 @@ public void testFilesOpenClose() throws IOException {
   }
 
   public void testOpenReaderAfterDelete() throws IOException {
-    File dirFile = createTempDir("deletetest");
+    Path dirFile = createTempDir("deletetest");
     Directory dir = newFSDirectory(dirFile);
+    if (dir instanceof BaseDirectoryWrapper) {
+      ((BaseDirectoryWrapper)dir).setCheckIndexOnClose(false); // we will hit NoSuchFileException in MDW since we nuked it!
+    }
     try {
       DirectoryReader.open(dir);
       fail("expected FileNotFoundException/NoSuchFileException");
@@ -479,7 +483,7 @@ public void testFilesOpenClose() throws IOException {
       // expected
     }
 
-    Files.delete(dirFile.toPath());
+    Files.delete(dirFile);
 
     // Make sure we still get a CorruptIndexException (not NPE):
     try {
@@ -717,13 +721,13 @@ public void testFilesOpenClose() throws IOException {
   // DirectoryReader on a non-existent directory, you get a
   // good exception
   public void testNoDir() throws Throwable {
-    File tempDir = createTempDir("doesnotexist");
+    Path tempDir = createTempDir("doesnotexist");
     IOUtils.rm(tempDir);
     Directory dir = newFSDirectory(tempDir);
     try {
       DirectoryReader.open(dir);
       fail("did not hit expected exception");
-    } catch (NoSuchDirectoryException nsde) {
+    } catch (IndexNotFoundException nsde) {
       // expected
     }
     dir.close();
@@ -1053,8 +1057,8 @@ public void testFilesOpenClose() throws IOException {
   }
 
   public void testIndexExistsOnNonExistentDirectory() throws Exception {
-    File tempDir = createTempDir("testIndexExistsOnNonExistentDirectory");
-    Files.delete(tempDir.toPath());
+    Path tempDir = createTempDir("testIndexExistsOnNonExistentDirectory");
+    Files.delete(tempDir);
     Directory dir = newFSDirectory(tempDir);
     assertFalse(DirectoryReader.indexExists(dir));
     dir.close();

@@ -17,13 +17,13 @@
 
 package org.apache.lucene.benchmark.byTask;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 
 import org.apache.lucene.benchmark.byTask.feeds.AbstractQueryMaker;
@@ -114,22 +114,19 @@ public class TestPerfTasksParse extends LuceneTestCase {
   public void testParseExamples() throws Exception {
     // hackedy-hack-hack
     boolean foundFiles = false;
-    final File examplesDir = new File(ConfLoader.class.getResource(".").toURI());
-    for (File algFile : examplesDir.listFiles(new FileFilter() {
-      @Override
-      public boolean accept(File pathname) { return pathname.isFile() && pathname.getName().endsWith(".alg"); }
-    })) {
-      try {
-        Config config = new Config(new InputStreamReader(new FileInputStream(algFile), StandardCharsets.UTF_8));
+    final Path examplesDir = Paths.get(ConfLoader.class.getResource(".").toURI());
+    try (DirectoryStream<Path> stream = Files.newDirectoryStream(examplesDir, "*.alg")) {
+      for (Path path : stream) {
+        Config config = new Config(Files.newBufferedReader(path, StandardCharsets.UTF_8));
         String contentSource = config.get("content.source", null);
         if (contentSource != null) { Class.forName(contentSource); }
-        config.set("work.dir", createTempDir(LuceneTestCase.getTestClass().getSimpleName()).getAbsolutePath());
+        config.set("work.dir", createTempDir(LuceneTestCase.getTestClass().getSimpleName()).toAbsolutePath().toString());
         config.set("content.source", MockContentSource.class.getName());
         String dir = config.get("content.source", null);
         if (dir != null) { Class.forName(dir); }
         config.set("directory", RAMDirectory.class.getName());
         if (config.get("line.file.out", null) != null) {
-          config.set("line.file.out", createTempFile("linefile", ".txt").getAbsolutePath());
+          config.set("line.file.out", createTempFile("linefile", ".txt").toAbsolutePath().toString());
         }
         if (config.get("query.maker", null) != null) {
           Class.forName(config.get("query.maker", null));
@@ -137,14 +134,11 @@ public class TestPerfTasksParse extends LuceneTestCase {
         }
         PerfRunData data = new PerfRunData(config);
         new Algorithm(data);
-      } catch (Throwable t) {
-        throw new AssertionError("Could not parse sample file: " + algFile, t);
+        foundFiles = true;
       }
-      foundFiles = true;
     }
     if (!foundFiles) {
       fail("could not find any .alg files!");
     }
   }
-
 }

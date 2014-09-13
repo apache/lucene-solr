@@ -18,9 +18,9 @@ package org.apache.lucene.search.suggest.analyzing;
  */
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -222,7 +222,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
   /** Subclass can override to choose a specific {@link
    *  Directory} implementation. */
-  protected Directory getDirectory(File path) throws IOException {
+  protected Directory getDirectory(Path path) throws IOException {
     return FSDirectory.open(path);
   }
 

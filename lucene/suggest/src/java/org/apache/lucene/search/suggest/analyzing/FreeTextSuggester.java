@@ -68,6 +68,7 @@ import org.apache.lucene.util.fst.Util.TopResults;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -292,7 +293,7 @@ public class FreeTextSuggester extends Lookup {
     }
 
     String prefix = getClass().getSimpleName();
-    File tempIndexPath = Files.createTempDirectory(prefix + ".index.").toFile();
+    Path tempIndexPath = Files.createTempDirectory(prefix + ".index.");
 
     Directory dir = FSDirectory.open(tempIndexPath);
 

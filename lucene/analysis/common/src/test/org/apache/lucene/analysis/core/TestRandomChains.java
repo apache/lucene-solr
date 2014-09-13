@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.core;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -28,6 +27,10 @@ import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.net.URL;
 import java.nio.CharBuffer;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -271,23 +274,25 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       final URI uri = resources.nextElement().toURI();
       if (!"file".equalsIgnoreCase(uri.getScheme()))
         continue;
-      final File directory = new File(uri);
-      if (directory.exists()) {
-        String[] files = directory.list();
-        for (String file : files) {
-          if (new File(directory, file).isDirectory()) {
-            // recurse
-            String subPackage = pckgname + "." + file;
-            collectClassesForPackage(subPackage, classes);
-          }
-          if (file.endsWith(".class")) {
-            String clazzName = file.substring(0, file.length() - 6);
-            // exclude Test classes that happen to be in these packages.
-            // class.ForName'ing some of them can cause trouble.
-            if (!clazzName.endsWith("Test") && !clazzName.startsWith("Test")) {
-              // Don't run static initializers, as we won't use most of them.
-              // Java will do that automatically once accessed/instantiated.
-              classes.add(Class.forName(pckgname + '.' + clazzName, false, cld));
+      final Path directory = Paths.get(uri);
+      if (Files.exists(directory)) {
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(directory)) {
+          for (Path file : stream) {
+            if (Files.isDirectory(file)) {
+              // recurse
+              String subPackage = pckgname + "." + file.getFileName().toString();
+              collectClassesForPackage(subPackage, classes);
+            }
+            String fname = file.getFileName().toString();
+            if (fname.endsWith(".class")) {
+              String clazzName = fname.substring(0, fname.length() - 6);
+              // exclude Test classes that happen to be in these packages.
+              // class.ForName'ing some of them can cause trouble.
+              if (!clazzName.endsWith("Test") && !clazzName.startsWith("Test")) {
+                // Don't run static initializers, as we won't use most of them.
+                // Java will do that automatically once accessed/instantiated.
+                classes.add(Class.forName(pckgname + '.' + clazzName, false, cld));
+              }
             }
           }
         }

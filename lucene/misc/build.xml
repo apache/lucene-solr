@@ -23,6 +23,11 @@
     Index tools and other miscellaneous code
   </description>
 
+  <property name="forbidden-base-excludes" value="
+    org/apache/lucene/store/NativeUnixDirectory$NativeUnixIndexInput.class
+    org/apache/lucene/store/NativeUnixDirectory$NativeUnixIndexOutput.class
+  "/>
+
   <property name="forbidden-sysout-excludes" value="
     org/apache/lucene/index/CompoundFileExtractor.class
     org/apache/lucene/index/IndexSplitter.class

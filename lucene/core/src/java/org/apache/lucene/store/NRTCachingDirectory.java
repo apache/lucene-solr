@@ -18,11 +18,11 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.store.RAMDirectory;      // javadocs
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.IOUtils;
@@ -49,7 +49,7 @@ import org.apache.lucene.util.IOUtils;
  * <p>Here's a simple example usage:
  *
  * <pre class="prettyprint">
- *   Directory fsDir = FSDirectory.open(new File("/path/to/index"));
+ *   Directory fsDir = FSDirectory.open(new File("/path/to/index").toPath());
  *   NRTCachingDirectory cachedFSDir = new NRTCachingDirectory(fsDir, 5.0, 60.0);
  *   IndexWriterConfig conf = new IndexWriterConfig(analyzer);
  *   IndexWriter writer = new IndexWriter(cachedFSDir, conf);
@@ -96,22 +96,10 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
     for(String f : cache.listAll()) {
       files.add(f);
     }
-    // LUCENE-1468: our NRTCachingDirectory will actually exist (RAMDir!),
-    // but if the underlying delegate is an FSDir and mkdirs() has not
-    // yet been called, because so far everything is a cached write,
-    // in this case, we don't want to throw a NoSuchDirectoryException
-    try {
-      for(String f : in.listAll()) {
-        // Cannot do this -- if lucene calls createOutput but
-        // file already exists then this falsely trips:
-        //assert !files.contains(f): "file \"" + f + "\" is in both dirs";
-        files.add(f);
-      }
-    } catch (NoSuchDirectoryException ex) {
-      // however, if there are no cached files, then the directory truly
-      // does not "exist"
-      if (files.isEmpty()) {
-        throw ex;
+    for(String f : in.listAll()) {
+      if (!files.add(f)) {
+        throw new IllegalStateException("file: " + in + " appears both in delegate and in cache: " +
+                                        "cache=" + Arrays.toString(cache.listAll()) + ",delegate=" + Arrays.toString(in.listAll()));
       }
     }
     return files.toArray(new String[files.size()]);

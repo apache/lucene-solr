@@ -272,7 +272,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     
     try {
       
-      File controlJettyDir = createTempDir();
+      File controlJettyDir = createTempDir().toFile();
       setupJettySolrHome(controlJettyDir);
       
       controlJetty = createJetty(controlJettyDir, useJettyDataDir ? getDataDir(testDir
@@ -384,7 +384,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       if (sb.length() > 0) sb.append(',');
       int cnt = this.jettyIntCntr.incrementAndGet();
 
-      File jettyDir = createTempDir();
+      File jettyDir = createTempDir().toFile();
 
       jettyDir.mkdirs();
       setupJettySolrHome(jettyDir);
@@ -449,7 +449,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     int cnt = this.jettyIntCntr.incrementAndGet();
 
-      File jettyDir = createTempDir("jetty");
+      File jettyDir = createTempDir("jetty").toFile();
       jettyDir.mkdirs();
       org.apache.commons.io.FileUtils.copyDirectory(new File(getSolrHome()), jettyDir);
       JettySolrRunner j = createJetty(jettyDir, testDir + "/jetty" + cnt, shard, "solrconfig.xml", null);

@@ -18,9 +18,9 @@ package org.apache.lucene.benchmark.byTask.feeds;
  */
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
+import java.nio.file.Path;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Date;
@@ -31,7 +31,6 @@ import org.apache.lucene.benchmark.byTask.feeds.TrecDocParser.ParsePathType;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TestUtil;
 
 public class TrecContentSourceTest extends LuceneTestCase {
@@ -344,15 +343,15 @@ public class TrecContentSourceTest extends LuceneTestCase {
    * supported formats - bzip, gzip, txt. 
    */
   public void testTrecFeedDirAllTypes() throws Exception {
-    File dataDir =  createTempDir("trecFeedAllTypes");
-    TestUtil.unzip(getDataFile("trecdocs.zip"), dataDir);
+    Path dataDir =  createTempDir("trecFeedAllTypes");
+    TestUtil.unzip(getDataPath("trecdocs.zip"), dataDir);
     TrecContentSource tcs = new TrecContentSource();
     Properties props = new Properties();
     props.setProperty("print.props", "false");
     props.setProperty("content.source.verbose", "false");
     props.setProperty("content.source.excludeIteration", "true");
     props.setProperty("doc.maker.forever", "false");
-    props.setProperty("docs.dir", dataDir.getCanonicalPath().replace('\\','/')); 
+    props.setProperty("docs.dir", dataDir.toRealPath().toString().replace('\\','/')); 
     props.setProperty("trec.doc.parser", TrecParserByPath.class.getName());
     props.setProperty("content.source.forever", "false");
     tcs.setConfig(new Config(props));

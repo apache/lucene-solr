@@ -43,6 +43,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -96,7 +97,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
       addNumberToKeepInRequest = false;
       backupKeepParamName = ReplicationHandler.NUMBER_BACKUPS_TO_KEEP_INIT_PARAM;
     }
-    master = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance"), "master", null);
+    master = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "master", null);
     master.setUp();
     master.copyConfigFile(CONF_DIR + configFile, "solrconfig.xml");
 
@@ -193,7 +194,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
         }
         assertEquals(1, files.length);
         snapDir[i] = files[0];
-        Directory dir = new SimpleFSDirectory(snapDir[i].getAbsoluteFile());
+        Directory dir = new SimpleFSDirectory(snapDir[i].getAbsoluteFile().toPath());
         IndexReader reader = DirectoryReader.open(dir);
         IndexSearcher searcher = new IndexSearcher(reader);
         TopDocs hits = searcher.search(new MatchAllDocsQuery(), 1);
@@ -214,7 +215,11 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
     } finally {
       if(!namedBackup) {
-        org.apache.lucene.util.IOUtils.rm(snapDir);
+        Path toDelete[] = new Path[snapDir.length];
+        for (int i = 0; i < snapDir.length; i++) {
+          toDelete[i] = snapDir[i].toPath();
+        }
+        org.apache.lucene.util.IOUtils.rm(toDelete);
       }
     }
   }

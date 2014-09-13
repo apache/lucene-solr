@@ -25,9 +25,11 @@ package org.apache.lucene.index;
  * @param args Usage: org.apache.lucene.index.IndexReader [-extract] &lt;cfsfile&gt;
  */
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
@@ -75,13 +77,13 @@ public class CompoundFileExtractor {
     IOContext context = IOContext.READ;
 
     try {
-      File file = new File(filename);
-      String dirname = file.getAbsoluteFile().getParent();
-      filename = file.getName();
+      Path file = Paths.get(filename);
+      Path directory = file.toAbsolutePath().getParent();
+      filename = file.getFileName().toString();
       if (dirImpl == null) {
-        dir = FSDirectory.open(new File(dirname));
+        dir = FSDirectory.open(directory);
       } else {
-        dir = CommandLineUtil.newFSDirectory(dirImpl, new File(dirname));
+        dir = CommandLineUtil.newFSDirectory(dirImpl, directory);
       }
       
       cfr = new CompoundFileDirectory(dir, filename, IOContext.DEFAULT, false);
@@ -96,7 +98,7 @@ public class CompoundFileExtractor {
           System.out.println("extract " + files[i] + " with " + len + " bytes to local directory...");
           IndexInput ii = cfr.openInput(files[i], context);
 
-          FileOutputStream f = new FileOutputStream(files[i]);
+          OutputStream f = Files.newOutputStream(Paths.get(files[i]));
 
           // read and write with a small buffer, which is more effective than reading byte by byte
           byte[] buffer = new byte[1024];

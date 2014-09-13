@@ -17,7 +17,7 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
-import java.io.File;
+import java.nio.file.Paths;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.index.DirectoryReader;
@@ -54,7 +54,7 @@ public class AddIndexesTask extends PerfTask {
     if (inputDirProp == null) {
       throw new IllegalArgumentException("config parameter " + ADDINDEXES_INPUT_DIR + " not specified in configuration");
     }
-    inputDir = FSDirectory.open(new File(inputDirProp));
+    inputDir = FSDirectory.open(Paths.get(inputDirProp));
   }
   
   @Override

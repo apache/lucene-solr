@@ -31,7 +31,6 @@ import java.util.regex.Matcher;
 
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.NoSuchDirectoryException;
 import org.apache.lucene.util.CollectionUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
@@ -144,13 +143,7 @@ final class IndexFileDeleter implements Closeable {
     long currentGen = segmentInfos.getGeneration();
 
     CommitPoint currentCommitPoint = null;
-    String[] files = null;
-    try {
-      files = directory.listAll();
-    } catch (NoSuchDirectoryException e) {
-      // it means the directory is empty, so ignore it.
-      files = new String[0];
-    }
+    String[] files = directory.listAll();
 
     if (currentSegmentsFile != null) {
       Matcher m = IndexFileNames.CODEC_FILE_PATTERN.matcher("");

@@ -46,7 +46,7 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 
     System.out.println("Solr home: " + SOLR_HOME.getAbsolutePath());
 
     //The index is always stored within a temporary directory
-    tempDir = createTempDir();
+    tempDir = createTempDir().toFile();
     
     File dataDir = new File(tempDir,"data1");
     File dataDir2 = new File(tempDir,"data2");

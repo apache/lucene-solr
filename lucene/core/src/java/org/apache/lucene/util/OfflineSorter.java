@@ -25,13 +25,11 @@ import java.io.DataInputStream;
 import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.EOFException;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -45,7 +43,7 @@ import java.util.Locale;
  *   <li>exactly the above count of bytes for the sequence to be sorted.
  * </ul>
  * 
- * @see #sort(File, File)
+ * @see #sort(Path, Path)
  * @lucene.experimental
  * @lucene.internal
  */
@@ -167,7 +165,7 @@ public final class OfflineSorter {
   }
 
   private final BufferSize ramBufferSize;
-  private final File tempDirectory;
+  private final Path tempDirectory;
   
   private final Counter bufferBytesUsed = Counter.newCounter();
   private final BytesRefArray buffer = new BytesRefArray(bufferBytesUsed);
@@ -201,7 +199,7 @@ public final class OfflineSorter {
   /**
    * All-details constructor.
    */
-  public OfflineSorter(Comparator<BytesRef> comparator, BufferSize ramBufferSize, File tempDirectory, int maxTempfiles) {
+  public OfflineSorter(Comparator<BytesRef> comparator, BufferSize ramBufferSize, Path tempDirectory, int maxTempfiles) {
     if (ramBufferSize.bytes < ABSOLUTE_MIN_SORT_BUFFER_SIZE) {
       throw new IllegalArgumentException(MIN_BUFFER_SIZE_MSG + ": " + ramBufferSize.bytes);
     }
@@ -220,13 +218,13 @@ public final class OfflineSorter {
    * Sort input to output, explicit hint for the buffer size. The amount of allocated
    * memory may deviate from the hint (may be smaller or larger).  
    */
-  public SortInfo sort(File input, File output) throws IOException {
+  public SortInfo sort(Path input, Path output) throws IOException {
     sortInfo = new SortInfo();
     sortInfo.totalTime = System.currentTimeMillis();
 
-    Files.deleteIfExists(output.toPath());
+    Files.deleteIfExists(output);
 
-    ArrayList<File> merges = new ArrayList<>();
+    ArrayList<Path> merges = new ArrayList<>();
     boolean success3 = false;
     try {
       ByteSequencesReader is = new ByteSequencesReader(input);
@@ -240,7 +238,7 @@ public final class OfflineSorter {
 
           // Handle intermediate merges.
           if (merges.size() == maxTempFiles) {
-            File intermediate = File.createTempFile("sort", "intermediate", tempDirectory);
+            Path intermediate = Files.createTempFile(tempDirectory, "sort", "intermediate");
             boolean success2 = false;
             try {
               mergePartitions(merges, intermediate);
@@ -267,11 +265,13 @@ public final class OfflineSorter {
 
       // One partition, try to rename or copy if unsuccessful.
       if (merges.size() == 1) {     
-        File single = merges.get(0);
+        Path single = merges.get(0);
         // If simple rename doesn't work this means the output is
         // on a different volume or something. Copy the input then.
-        if (!single.renameTo(output)) {
-          copy(single, output);
+        try {
+          Files.move(single, output, StandardCopyOption.ATOMIC_MOVE);
+        } catch (IOException | UnsupportedOperationException e) {
+          Files.copy(single, output);
         }
       } else { 
         // otherwise merge the partitions with a priority queue.
@@ -295,43 +295,23 @@ public final class OfflineSorter {
    * Returns the default temporary directory. By default, java.io.tmpdir. If not accessible
    * or not available, an IOException is thrown
    */
-  public static File defaultTempDir() throws IOException {
+  public static Path defaultTempDir() throws IOException {
     String tempDirPath = System.getProperty("java.io.tmpdir");
     if (tempDirPath == null) 
       throw new IOException("Java has no temporary folder property (java.io.tmpdir)?");
 
-    File tempDirectory = new File(tempDirPath);
-    if (!tempDirectory.exists() || !tempDirectory.canWrite()) {
+    Path tempDirectory = Paths.get(tempDirPath);
+    if (!Files.isWritable(tempDirectory)) {
       throw new IOException("Java's temporary folder not present or writeable?: " 
-          + tempDirectory.getAbsolutePath());
+          + tempDirectory.toAbsolutePath());
     }
     return tempDirectory;
   }
 
-  /**
-   * Copies one file to another.
-   */
-  private static void copy(File file, File output) throws IOException {
-    // 64kb copy buffer (empirical pick).
-    byte [] buffer = new byte [16 * 1024];
-    InputStream is = null;
-    OutputStream os = null;
-    try {
-      is = new FileInputStream(file);
-      os = new FileOutputStream(output);
-      int length;
-      while ((length = is.read(buffer)) > 0) {
-        os.write(buffer, 0, length);
-      }
-    } finally {
-      IOUtils.close(is, os);
-    }
-  }
-
   /** Sort a single partition in-memory. */
-  protected File sortPartition(int len) throws IOException {
+  protected Path sortPartition(int len) throws IOException {
     BytesRefArray data = this.buffer;
-    File tempFile = File.createTempFile("sort", "partition", tempDirectory);
+    Path tempFile = Files.createTempFile(tempDirectory, "sort", "partition");
 
     long start = System.currentTimeMillis();
     sortInfo.sortTime += (System.currentTimeMillis() - start);
@@ -356,7 +336,7 @@ public final class OfflineSorter {
   }
 
   /** Merge a list of sorted temporary files (partitions) into an output file */
-  void mergePartitions(List<File> merges, File outputFile) throws IOException {
+  void mergePartitions(List<Path> merges, Path outputFile) throws IOException {
     long start = System.currentTimeMillis();
 
     ByteSequencesWriter out = new ByteSequencesWriter(outputFile);
@@ -441,11 +421,11 @@ public final class OfflineSorter {
   public static class ByteSequencesWriter implements Closeable {
     private final DataOutput os;
 
-    /** Constructs a ByteSequencesWriter to the provided File */
-    public ByteSequencesWriter(File file) throws IOException {
+    /** Constructs a ByteSequencesWriter to the provided Path */
+    public ByteSequencesWriter(Path path) throws IOException {
       this(new DataOutputStream(
           new BufferedOutputStream(
-              new FileOutputStream(file))));
+              Files.newOutputStream(path))));
     }
 
     /** Constructs a ByteSequencesWriter to the provided DataOutput */
@@ -505,11 +485,11 @@ public final class OfflineSorter {
   public static class ByteSequencesReader implements Closeable {
     private final DataInput is;
 
-    /** Constructs a ByteSequencesReader from the provided File */
-    public ByteSequencesReader(File file) throws IOException {
+    /** Constructs a ByteSequencesReader from the provided Path */
+    public ByteSequencesReader(Path path) throws IOException {
       this(new DataInputStream(
           new BufferedInputStream(
-              new FileInputStream(file))));
+              Files.newInputStream(path))));
     }
 
     /** Constructs a ByteSequencesReader from the provided DataInput */
