@@ -313,7 +313,7 @@ public class Overseer implements Closeable {
                 log.info("going to update_collection {}", e.getKey());
                 zkClient.setData(e.getKey(), data, true);
               } else {
-                log.info("going to create_collection {}", e.getKey(), new String(data));
+                log.info("going to create_collection {}", e.getKey());
                 zkClient.create(e.getKey(), data, CreateMode.PERSISTENT, true);
               }
             }
