@@ -182,7 +182,7 @@ public class CloudSolrServer extends SolrServer {
       this.lbServer.setParser(new BinaryResponseParser());
       this.updatesToLeaders = true;
       shutdownLBHttpSolrServer = true;
-      setupStateVerParamOnQueryString(lbServer);
+      lbServer.addQueryParams(STATE_VERSION);
 
   }
   
@@ -201,7 +201,7 @@ public class CloudSolrServer extends SolrServer {
     this.lbServer.setParser(new BinaryResponseParser());
     this.updatesToLeaders = updatesToLeaders;
     shutdownLBHttpSolrServer = true;
-    setupStateVerParamOnQueryString(lbServer);
+    lbServer.addQueryParams(STATE_VERSION);
   }
 
   /**Sets the cache ttl for DocCollection Objects cached  . This is only applicable for collections which are persisted outside of clusterstate.json
@@ -237,24 +237,10 @@ public class CloudSolrServer extends SolrServer {
     this.lbServer = lbServer;
     this.updatesToLeaders = updatesToLeaders;
     shutdownLBHttpSolrServer = false;
-    setupStateVerParamOnQueryString(lbServer);
+    lbServer.addQueryParams(STATE_VERSION);
 
   }
   
-  /**
-   * Used internally to setup the _stateVer_ param to be sent in the query string of requests
-   * coming from this instance.
-   */
-  protected void setupStateVerParamOnQueryString(LBHttpSolrServer lbServer) {
-    // setup the stateVer param to be passed in the query string of every request
-    Set<String> queryStringParams = lbServer.getQueryParams();
-    if (queryStringParams == null) {
-      queryStringParams = new HashSet<String>(2);
-      lbServer.setQueryParams(queryStringParams);
-    }
-    queryStringParams.add(STATE_VERSION);
-  }
-
   public ResponseParser getParser() {
     return lbServer.getParser();
   }
@@ -701,6 +687,7 @@ public class CloudSolrServer extends SolrServer {
 
       boolean stateWasStale = false;
       if (retryCount < MAX_STALE_RETRIES  &&
+          requestedCollections != null    &&
           !requestedCollections.isEmpty() &&
           SolrException.ErrorCode.getErrorCode(errorCode) == SolrException.ErrorCode.INVALID_STATE)
       {
@@ -883,9 +870,6 @@ public class CloudSolrServer extends SolrServer {
       
     }
     
-    // System.out.println("########################## MAKING REQUEST TO " +
-    // theUrlList);
-    
     LBHttpSolrServer.Req req = new LBHttpSolrServer.Req(request, theUrlList);
     LBHttpSolrServer.Rsp rsp = lbServer.request(req);
     return rsp.getResponse();
@@ -902,16 +886,13 @@ public class CloudSolrServer extends SolrServer {
         Aliases aliases = zkStateReader.getAliases();
         String alias = aliases.getCollectionAlias(collectionName);
         if (alias != null) {
-          List<String> aliasList = StrUtils.splitSmart(alias, ",", true); 
+          List<String> aliasList = StrUtils.splitSmart(alias, ",", true);
           collectionsList.addAll(aliasList);
           continue;
         }
 
-        DocCollection docCollection = getDocCollection(clusterState, collection);
-        if (docCollection == null) {
           throw new SolrException(ErrorCode.BAD_REQUEST, "Collection not found: " + collectionName);
         }
-      }
 
       collectionsList.add(collectionName);
     }
@@ -957,7 +938,7 @@ public class CloudSolrServer extends SolrServer {
 
     DocCollection col = clusterState.getCollectionOrNull(collection);
     if(col == null ) return  null;
-    collectionStateCache.put(collection, new ExpiringCachedDocCollection(col));
+    if(col.getStateFormat() >1) collectionStateCache.put(collection, new ExpiringCachedDocCollection(col));
     return col;
   }
 
