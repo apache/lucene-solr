@@ -28,6 +28,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.Version;
 
 /**
  * Lucene 4.0 implementation of {@link SegmentInfoWriter}.
@@ -52,8 +53,12 @@ public class Lucene46SegmentInfoWriter extends SegmentInfoWriter {
     boolean success = false;
     try {
       CodecUtil.writeHeader(output, Lucene46SegmentInfoFormat.CODEC_NAME, Lucene46SegmentInfoFormat.VERSION_CURRENT);
+      Version version = si.getVersion();
+      if (version.major < 4 || version.major > 5) {
+        throw new IllegalArgumentException("invalid major version: should be 4 or 5 but got: " + version.major + " segment=" + si);
+      }
       // Write the Lucene version that created this segment, since 3.1
-      output.writeString(si.getVersion().toString());
+      output.writeString(version.toString());
       output.writeInt(si.getDocCount());
 
       output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
