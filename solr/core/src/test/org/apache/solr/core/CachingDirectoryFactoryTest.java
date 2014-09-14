@@ -187,10 +187,10 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
             if (tracker == null) {
               tracker = new Tracker();
               tracker.path = path;
-              tracker.dir = df.get(path, DirContext.DEFAULT, null);
+              tracker.dir = df.get(path, DirContext.DEFAULT, "single");
               dirs.put(path, tracker);
             } else {
-              tracker.dir = df.get(path, DirContext.DEFAULT, null);
+              tracker.dir = df.get(path, DirContext.DEFAULT, "single");
             }
             tracker.refCnt.incrementAndGet();
           }
