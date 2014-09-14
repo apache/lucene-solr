@@ -93,7 +93,7 @@ import static java.util.Collections.synchronizedSet;
  *       
  *       Applications using {@link Thread#interrupt()} or
  *       {@link Future#cancel(boolean)} should use
- *       {@link SimpleFSDirectory} instead. See {@link MMapDirectory}
+ *       {@code RAFDirectory} instead. See {@link MMapDirectory}
  *       java doc for details.
  * </ul>
  *
