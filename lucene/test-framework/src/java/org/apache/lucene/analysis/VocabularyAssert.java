@@ -22,11 +22,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.zip.ZipFile;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.junit.Assert;
 
 /** Utility class for doing vocabulary-based stemming tests */
@@ -62,21 +64,24 @@ public class VocabularyAssert {
   
   /** Run a vocabulary test against two data files inside a zip file */
   public static void assertVocabulary(Analyzer a, Path zipFile, String voc, String out) throws IOException {
-    ZipFile zip = new ZipFile(zipFile.toFile());
-    InputStream v = zip.getInputStream(zip.getEntry(voc));
-    InputStream o = zip.getInputStream(zip.getEntry(out));
-    assertVocabulary(a, v, o);
-    v.close();
-    o.close();
-    zip.close();
+    Path tmp = LuceneTestCase.createTempDir();
+    try (InputStream in = Files.newInputStream(zipFile)) {
+      TestUtil.unzip(in, tmp);
+    }
+    try (InputStream v = Files.newInputStream(tmp.resolve(voc)); 
+         InputStream o = Files.newInputStream(tmp.resolve(out))) {
+      assertVocabulary(a, v, o);
+    }
   }
   
   /** Run a vocabulary test against a tab-separated data file inside a zip file */
   public static void assertVocabulary(Analyzer a, Path zipFile, String vocOut) throws IOException {
-    ZipFile zip = new ZipFile(zipFile.toFile());
-    InputStream vo = zip.getInputStream(zip.getEntry(vocOut));
-    assertVocabulary(a, vo);
-    vo.close();
-    zip.close();
+    Path tmp = LuceneTestCase.createTempDir();
+    try (InputStream in = Files.newInputStream(zipFile)) {
+      TestUtil.unzip(in, tmp);
+    }
+    try (InputStream in = Files.newInputStream(tmp.resolve(vocOut))) {
+      assertVocabulary(a, in);
+    }
   }
 }

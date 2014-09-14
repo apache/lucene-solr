@@ -30,13 +30,15 @@
     org/apache/lucene/util/PrintStreamInfoStream.class
   "/>
 
-  <property name="forbidden-rue-excludes" value="
-    org/apache/lucene/util/RamUsageEstimator.class
+  <!-- Needs to start a process --> 
+  <property name="forbidden-tests-excludes" value="
+    org/apache/lucene/index/TestIndexWriterOnJRECrash.class
   "/>
 
   <!-- TODO: maybe let people get closedchannel if they cancel(true) -->
   <property name="forbidden-base-excludes" value="
     org/apache/lucene/store/SimpleFSDirectory.class
+    org/apache/lucene/store/SimpleFSDirectory$SimpleFSIndexInput.class
   "/>
 
   <import file="../common-build.xml"/>

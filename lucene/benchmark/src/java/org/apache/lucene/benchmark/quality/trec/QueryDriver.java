@@ -24,7 +24,6 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.IOUtils;
 
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -55,7 +54,8 @@ public class QueryDriver {
     
     Path topicsFile = Paths.get(args[0]);
     Path qrelsFile = Paths.get(args[1]);
-    SubmissionReport submitLog = new SubmissionReport(new PrintWriter(args[2], IOUtils.UTF_8 /* huh, no nio.Charset ctor? */), "lucene");
+    Path submissionFile = Paths.get(args[2]);
+    SubmissionReport submitLog = new SubmissionReport(new PrintWriter(Files.newBufferedWriter(submissionFile, StandardCharsets.UTF_8)), "lucene");
     FSDirectory dir = FSDirectory.open(Paths.get(args[3]));
     String fieldSpec = args.length == 5 ? args[4] : "T"; // default to Title-only if not specified.
     IndexReader reader = DirectoryReader.open(dir);
