@@ -54,10 +54,8 @@ public class Lucene46SegmentInfoWriter extends SegmentInfoWriter {
     try {
       CodecUtil.writeHeader(output, Lucene46SegmentInfoFormat.CODEC_NAME, Lucene46SegmentInfoFormat.VERSION_CURRENT);
       Version version = si.getVersion();
-      String versionString = version.toString();
-      if (versionString.startsWith("3.") == false &&
-          versionString.startsWith("4.") == false) {
-        throw new IllegalArgumentException("invalid major version: should be 3 or 4 but got: " + version + " segment=" + si);
+      if (version.major < 3 || version.major > 4) {
+        throw new IllegalArgumentException("invalid major version: should be 3 or 4 but got: " + version.major + " segment=" + si);
       }
       // Write the Lucene version that created this segment, since 3.1
       output.writeString(version.toString());
