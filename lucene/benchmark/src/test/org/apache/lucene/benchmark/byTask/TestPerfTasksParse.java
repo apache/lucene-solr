@@ -133,7 +133,7 @@ public class TestPerfTasksParse extends LuceneTestCase {
           config.set("query.maker", MockQueryMaker.class.getName());
         }
         PerfRunData data = new PerfRunData(config);
-        new Algorithm(data);
+        try (Algorithm algo = new Algorithm(data)) {}
         foundFiles = true;
       }
     }
