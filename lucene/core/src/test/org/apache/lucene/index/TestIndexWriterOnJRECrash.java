@@ -159,21 +159,21 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
         if (exc != null) {
           throw exc;
         } else {
-          BaseDirectoryWrapper dir = newFSDirectory(dirPath);
-          dir.setCheckIndexOnClose(false); // don't double-checkindex
-          if (DirectoryReader.indexExists(dir)) {
-            if (VERBOSE) {
-              System.err.println("Checking index: " + dirPath);
+          try (BaseDirectoryWrapper dir = newFSDirectory(dirPath)) {
+            dir.setCheckIndexOnClose(false); // don't double-checkindex
+            if (DirectoryReader.indexExists(dir)) {
+              if (VERBOSE) {
+                System.err.println("Checking index: " + dirPath);
+              }
+              // LUCENE-4738: if we crashed while writing first
+              // commit it's possible index will be corrupt (by
+              // design we don't try to be smart about this case
+              // since that too risky):
+              if (SegmentInfos.getLastCommitGeneration(dir) > 1) {
+                TestUtil.checkIndex(dir);
+              }
+              found.set(true);
             }
-            // LUCENE-4738: if we crashed while writing first
-            // commit it's possible index will be corrupt (by
-            // design we don't try to be smart about this case
-            // since that too risky):
-            if (SegmentInfos.getLastCommitGeneration(dir) > 1) {
-              TestUtil.checkIndex(dir);
-            }
-            dir.close();
-            found.set(true);
           }
           return FileVisitResult.CONTINUE;
         }
