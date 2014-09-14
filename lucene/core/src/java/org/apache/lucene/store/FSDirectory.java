@@ -46,7 +46,7 @@ import static java.util.Collections.synchronizedSet;
  * <ul>
  *
  *  <li> {@link SimpleFSDirectory} is a straightforward
- *       implementation using java.io.RandomAccessFile.
+ *       implementation using Files.newByteChannel.
  *       However, it has poor concurrent performance
  *       (multiple threads will bottleneck) as it
  *       synchronizes when multiple threads read from the
@@ -61,7 +61,7 @@ import static java.util.Collections.synchronizedSet;
  *       on all other platforms this is the preferred
  *       choice. Applications using {@link Thread#interrupt()} or
  *       {@link Future#cancel(boolean)} should use
- *       {@link SimpleFSDirectory} instead. See {@link NIOFSDirectory} java doc
+ *       {@code RAFDirectory} instead. See {@link NIOFSDirectory} java doc
  *       for details.
  *        
  *        

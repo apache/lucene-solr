@@ -9,6 +9,11 @@ New Features
 
 * LUCENE-5945: All file handling converted to NIO.2 apis. (Robert Muir)
 
+* LUCENE-5946: SimpleFSDirectory now uses Files.newByteChannel, for 
+  portability with custom FileSystemProviders. If you want the old
+  non-interruptible behavior of RandomAccessFile, use RAFDirectory
+  in the misc/ module. (Uwe Schindler, Robert Muir)
+
 * SOLR-3359: Added analyzer attribute/property to SynonymFilterFactory.
   (Ryo Onodera via Koji Sekiguchi)
 

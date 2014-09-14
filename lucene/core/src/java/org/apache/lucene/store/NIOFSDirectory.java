@@ -47,7 +47,7 @@ import java.util.concurrent.Future; // javadoc
  * blocked on IO. The file descriptor will remain closed and subsequent access
  * to {@link NIOFSDirectory} will throw a {@link ClosedChannelException}. If
  * your application uses either {@link Thread#interrupt()} or
- * {@link Future#cancel(boolean)} you should use {@link SimpleFSDirectory} in
+ * {@link Future#cancel(boolean)} you should use {@code RAFDirectory} in
  * favor of {@link NIOFSDirectory}.</font>
  * </p>
  */

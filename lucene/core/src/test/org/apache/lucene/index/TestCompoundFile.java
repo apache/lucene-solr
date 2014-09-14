@@ -33,9 +33,6 @@ import org.apache.lucene.util.TestUtil;
 import java.io.IOException;
 import java.nio.file.Path;
 
-import static org.apache.lucene.store.TestHelper.isSimpleFSIndexInput;
-import static org.apache.lucene.store.TestHelper.isSimpleFSIndexInputOpen;
-
 public class TestCompoundFile extends LuceneTestCase
 {
     private Directory dir;
@@ -344,10 +341,6 @@ public class TestCompoundFile extends LuceneTestCase
 
         // basic clone
         IndexInput expected = dir.openInput("f11", newIOContext(random()));
-
-        // this test only works for FSIndexInput
-        assertTrue(isSimpleFSIndexInput(expected));
-        assertTrue(isSimpleFSIndexInputOpen(expected));
 
         IndexInput one = cr.openInput("f11", newIOContext(random()));
 

@@ -26,6 +26,9 @@
   <property name="forbidden-base-excludes" value="
     org/apache/lucene/store/NativeUnixDirectory$NativeUnixIndexInput.class
     org/apache/lucene/store/NativeUnixDirectory$NativeUnixIndexOutput.class
+    org/apache/lucene/store/RAFDirectory.class
+    org/apache/lucene/store/RAFDirectory$RAFIndexInput.class
+    org/apache/lucene/store/RAFDirectory$RAFIndexOutput.class
   "/>
 
   <property name="forbidden-sysout-excludes" value="
