@@ -32,7 +32,7 @@ import org.apache.lucene.benchmark.byTask.tasks.TaskSequence;
 /**
  * Test algorithm, as read from file
  */
-public class Algorithm {
+public class Algorithm implements AutoCloseable {
   
   private TaskSequence sequence;
   private final String[] taskPackages;
@@ -357,6 +357,11 @@ public class Algorithm {
         extrct.add(p);
       }
     }
+  }
+
+  @Override
+  public void close() throws Exception {
+    sequence.close();
   }
   
 }
