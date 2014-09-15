@@ -24,6 +24,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.NRTCachingDirectory;
+import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RateLimitedDirectoryWrapper;
 import org.apache.solr.core.CachingDirectoryFactory.CacheValue;
 
@@ -39,7 +40,8 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
 
   @Override
   protected Directory create(String path, DirContext dirContext) throws IOException {
-    return FSDirectory.open(new File(path).toPath());
+    // we pass NoLockFactory, because the real lock factory is set later by injectLockFactory:
+    return FSDirectory.open(new File(path).toPath(), NoLockFactory.getNoLockFactory());
   }
   
   @Override

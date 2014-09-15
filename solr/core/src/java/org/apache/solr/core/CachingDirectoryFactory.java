@@ -38,6 +38,7 @@ import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RateLimitedDirectoryWrapper;
 import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
@@ -347,18 +348,25 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         directory = cacheValue.directory;
       }
       
-      if (directory == null) { 
+      if (directory == null) {
         directory = create(fullPath, dirContext);
-        
-        directory = rateLimit(directory);
-        
-        CacheValue newCacheValue = new CacheValue(fullPath, directory);
-        
-        injectLockFactory(directory, fullPath, rawLockType);
-        
-        byDirectoryCache.put(directory, newCacheValue);
-        byPathCache.put(fullPath, newCacheValue);
-        log.info("return new directory for " + fullPath);
+        boolean success = false;
+        try {
+          directory = rateLimit(directory);
+          
+          CacheValue newCacheValue = new CacheValue(fullPath, directory);
+          
+          injectLockFactory(directory, fullPath, rawLockType);
+          
+          byDirectoryCache.put(directory, newCacheValue);
+          byPathCache.put(fullPath, newCacheValue);
+          log.info("return new directory for " + fullPath);
+          success = true;
+        } finally {
+          if (!success) {
+            IOUtils.closeWhileHandlingException(directory);
+          }
+        }
       } else {
         cacheValue.refCnt++;
         log.debug("Reusing cached directory: {}", cacheValue);

@@ -20,6 +20,7 @@ package org.apache.solr.core;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockFactory; // javadocs
 import org.apache.lucene.store.MMapDirectory;
+import org.apache.lucene.store.NoLockFactory;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory.DirContext;
@@ -59,7 +60,8 @@ public class MMapDirectoryFactory extends StandardDirectoryFactory {
 
   @Override
   protected Directory create(String path, DirContext dirContext) throws IOException {
-    MMapDirectory mapDirectory = new MMapDirectory(new File(path).toPath(), null, maxChunk);
+    // we pass NoLockFactory, because the real lock factory is set later by injectLockFactory:
+    MMapDirectory mapDirectory = new MMapDirectory(new File(path).toPath(), NoLockFactory.getNoLockFactory(), maxChunk);
     try {
       mapDirectory.setUseUnmap(unmapHack);
     } catch (Exception e) {
