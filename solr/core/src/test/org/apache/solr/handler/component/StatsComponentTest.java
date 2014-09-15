@@ -46,6 +46,8 @@ import org.junit.BeforeClass;
 @LuceneTestCase.SuppressCodecs({"Lucene40", "Lucene41", "Lucene42"})
 public class StatsComponentTest extends AbstractSolrTestCase {
 
+  final static String XPRE = "/response/lst[@name='stats']/";
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema11.xml");
@@ -70,6 +72,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
       // all of our checks should work with all of these params
       // ie: with or w/o these excluded filters, results should be the same.
       SolrParams[] baseParamsSet = new SolrParams[] {
+        // NOTE: doTestFieldStatisticsResult needs the full list of possible tags to exclude
         params("stats.field", f, "stats", "true"),
         params("stats.field", "{!ex=fq1,fq2}"+f, "stats", "true",
                "fq", "{!tag=fq1}-id:[0 TO 2]", 
@@ -100,6 +103,12 @@ public class StatsComponentTest extends AbstractSolrTestCase {
   }
 
   public void doTestFieldStatisticsResult(String f, SolrParams[] baseParamsSet) throws Exception {
+    // used when doing key overrides in conjunction with the baseParamsSet
+    //
+    // even when these aren't included in the request, using them helps us
+    // test the code path of an exclusion that refers to an fq that doesn't exist
+    final String all_possible_ex = "fq1,fq2";
+
     assertU(adoc("id", "1", f, "-10"));
     assertU(adoc("id", "2", f, "-20"));
     assertU(commit());
@@ -107,39 +116,80 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     assertU(adoc("id", "4", f, "-40"));
     assertU(commit());
 
+    final String fpre = XPRE + "lst[@name='stats_fields']/lst[@name='"+f+"']/";
+
+    final String key = "key_key";
+    final String kpre = XPRE + "lst[@name='stats_fields']/lst[@name='"+key+"']/";
+
     // status should be the same regardless of baseParams
     for (SolrParams baseParams : baseParamsSet) {
+      for (String ct : new String[] {"stats.calcdistinct", "f."+f+".stats.calcdistinct"}) {
+        assertQ("test statistics values using: " + ct, 
+                req(baseParams, "q", "*:*", ct, "true")
+                , fpre + "double[@name='min'][.='-40.0']"
+                , fpre + "double[@name='max'][.='-10.0']"
+                , fpre + "double[@name='sum'][.='-100.0']"
+                , fpre + "long[@name='count'][.='4']"
+                , fpre + "long[@name='missing'][.='0']"
+                , fpre + "long[@name='countDistinct'][.='4']"
+                , "count(" + fpre + "arr[@name='distinctValues']/*)=4"
+                , fpre + "double[@name='sumOfSquares'][.='3000.0']"
+                , fpre + "double[@name='mean'][.='-25.0']"
+                , fpre + "double[@name='stddev'][.='12.909944487358056']"
+                );  
+        
+        assertQ("test statistics w/fq using: " + ct, 
+                req(baseParams, "q", "*:*", "fq", "-id:4", ct, "true")
+                , fpre + "double[@name='min'][.='-30.0']"
+                , fpre + "double[@name='max'][.='-10.0']"
+                , fpre + "double[@name='sum'][.='-60.0']"
+                , fpre + "long[@name='count'][.='3']"
+                , fpre + "long[@name='missing'][.='0']"
+                , fpre + "long[@name='countDistinct'][.='3']"
+                , "count(" + fpre + "arr[@name='distinctValues']/*)=3"
+                , fpre + "double[@name='sumOfSquares'][.='1400.0']"
+                , fpre + "double[@name='mean'][.='-20.0']"
+                , fpre + "double[@name='stddev'][.='10.0']"
+                );  
+        
+        // now do both in a single query
 
-      assertQ("test statistics values", 
-              req(baseParams, "q", "*:*", "stats.calcdistinct", "true")
-              , "//double[@name='min'][.='-40.0']"
-              , "//double[@name='max'][.='-10.0']"
-              , "//double[@name='sum'][.='-100.0']"
-              , "//long[@name='count'][.='4']"
-              , "//long[@name='missing'][.='0']"
-              , "//long[@name='countDistinct'][.='4']"
-              , "count(//arr[@name='distinctValues']/*)=4"
-              , "//double[@name='sumOfSquares'][.='3000.0']"
-              , "//double[@name='mean'][.='-25.0']"
-              , "//double[@name='stddev'][.='12.909944487358056']"
-              );  
+        assertQ("test statistics w & w/fq via key override using: " + ct, 
+                req(baseParams, "q", "*:*", ct, "true",
+                    "fq", "{!tag=key_ex_tag}-id:4", 
+                    "stats.field", "{!key="+key+" ex=key_ex_tag,"+all_possible_ex+"}"+f)
 
-      assertQ("test statistics w/fq", 
-              req(baseParams, 
-                  "q", "*:*", "fq", "-id:4",
-                  "stats.calcdistinct", "true")
-              , "//double[@name='min'][.='-30.0']"
-              , "//double[@name='max'][.='-10.0']"
-              , "//double[@name='sum'][.='-60.0']"
-              , "//long[@name='count'][.='3']"
-              , "//long[@name='missing'][.='0']"
-              , "//long[@name='countDistinct'][.='3']"
-              , "count(//arr[@name='distinctValues']/*)=3"
-              , "//double[@name='sumOfSquares'][.='1400.0']"
-              , "//double[@name='mean'][.='-20.0']"
-              , "//double[@name='stddev'][.='10.0']"
-              );  
+                // field name key, fq is applied
+                , fpre + "double[@name='min'][.='-30.0']"
+                , fpre + "double[@name='max'][.='-10.0']"
+                , fpre + "double[@name='sum'][.='-60.0']"
+                , fpre + "long[@name='count'][.='3']"
+                , fpre + "long[@name='missing'][.='0']"
+                , fpre + "long[@name='countDistinct'][.='3']"
+                , "count(" + fpre + "arr[@name='distinctValues']/*)=3"
+                , fpre + "double[@name='sumOfSquares'][.='1400.0']"
+                , fpre + "double[@name='mean'][.='-20.0']"
+                , fpre + "double[@name='stddev'][.='10.0']"
+
+                // overridden key, fq is excluded
+                , kpre + "double[@name='min'][.='-40.0']"
+                , kpre + "double[@name='max'][.='-10.0']"
+                , kpre + "double[@name='sum'][.='-100.0']"
+                , kpre + "long[@name='count'][.='4']"
+                , kpre + "long[@name='missing'][.='0']"
+                , kpre + "long[@name='countDistinct'][.='4']"
+                , "count(" + kpre + "arr[@name='distinctValues']/*)=4"
+                , kpre + "double[@name='sumOfSquares'][.='3000.0']"
+                , kpre + "double[@name='mean'][.='-25.0']"
+                , kpre + "double[@name='stddev'][.='12.909944487358056']"
+
+                );  
+
+        
+
+      }
     }
+
   }
 
 

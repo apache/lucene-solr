@@ -19,8 +19,9 @@ package org.apache.solr.handler.component;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -33,6 +34,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -62,21 +64,31 @@ public class StatsComponent extends SearchComponent {
     if (rb.req.getParams().getBool(StatsParams.STATS,false)) {
       rb.setNeedDocSet( true );
       rb.doStats = true;
+      rb._statsInfo = new StatsInfo(rb);
     }
   }
 
   @Override
   public void process(ResponseBuilder rb) throws IOException {
-    if (rb.doStats) {
-      SolrParams params = rb.req.getParams();
-      SimpleStats s = new SimpleStats(rb.req,
-              rb.getResults().docSet,
-              params,
-              rb );
+    if (!rb.doStats) return;
 
-      // TODO ???? add this directly to the response, or to the builder?
-      rb.rsp.add( "stats", s.getStatsCounts() );
+    boolean isShard = rb.req.getParams().getBool(ShardParams.IS_SHARD, false);
+    NamedList<Object> out = new SimpleOrderedMap<>();
+    NamedList<Object> stats_fields = new SimpleOrderedMap<>();
+
+    for (StatsField statsField : rb._statsInfo.getStatsFields()) {
+      DocSet docs = statsField.computeBaseDocSet();
+      NamedList<?> stv = statsField.computeLocalStatsValues(docs).getStatsValues();
+      
+      if (isShard == true || (Long) stv.get("count") > 0) {
+        stats_fields.add(statsField.getOutputKey(), stv);
+      } else {
+        stats_fields.add(statsField.getOutputKey(), null);
+      }
     }
+    
+    out.add("stats_fields", stats_fields);
+    rb.rsp.add( "stats", out );
   }
 
   @Override
@@ -89,15 +101,7 @@ public class StatsComponent extends SearchComponent {
     if (!rb.doStats) return;
 
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_TOP_IDS) != 0) {
-        sreq.purpose |= ShardRequest.PURPOSE_GET_STATS;
-
-        StatsInfo si = rb._statsInfo;
-        if (si == null) {
-          rb._statsInfo = si = new StatsInfo();
-          si.parse(rb.req.getParams(), rb);
-          // should already be true...
-          // sreq.params.set(StatsParams.STATS, "true");
-        }
+      sreq.purpose |= ShardRequest.PURPOSE_GET_STATS;
     } else {
       // turn off stats on other requests
       sreq.params.set(StatsParams.STATS, "false");
@@ -109,7 +113,7 @@ public class StatsComponent extends SearchComponent {
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
     if (!rb.doStats || (sreq.purpose & ShardRequest.PURPOSE_GET_STATS) == 0) return;
 
-    StatsInfo si = rb._statsInfo;
+    Map<String, StatsValues> allStatsValues = rb._statsInfo.getAggregateStatsValues();
 
     for (ShardResponse srsp : sreq.responses) {
       NamedList stats = null;
@@ -126,9 +130,9 @@ public class StatsComponent extends SearchComponent {
       NamedList stats_fields = (NamedList) stats.get("stats_fields");
       if (stats_fields != null) {
         for (int i = 0; i < stats_fields.size(); i++) {
-          String field = stats_fields.getName(i);
-          StatsValues stv = si.statsFields.get(field);
-          NamedList shardStv = (NamedList) stats_fields.get(field);
+          String key = stats_fields.getName(i);
+          StatsValues stv = allStatsValues.get(key);
+          NamedList shardStv = (NamedList) stats_fields.get(key);
           stv.accumulate(shardStv);
         }
       }
@@ -141,23 +145,24 @@ public class StatsComponent extends SearchComponent {
     // wait until STAGE_GET_FIELDS
     // so that "result" is already stored in the response (for aesthetics)
 
-    StatsInfo si = rb._statsInfo;
+    Map<String, StatsValues> allStatsValues = rb._statsInfo.getAggregateStatsValues();
 
     NamedList<NamedList<Object>> stats = new SimpleOrderedMap<>();
     NamedList<Object> stats_fields = new SimpleOrderedMap<>();
     stats.add("stats_fields", stats_fields);
-    for (String field : si.statsFields.keySet()) {
-      NamedList stv = si.statsFields.get(field).getStatsValues();
+    
+    for (Map.Entry<String,StatsValues> entry : allStatsValues.entrySet()) {
+      String key = entry.getKey();
+      NamedList stv = entry.getValue().getStatsValues();
       if ((Long) stv.get("count") != 0) {
-        stats_fields.add(field, stv);
+        stats_fields.add(key, stv);
       } else {
-        stats_fields.add(field, null);
+        stats_fields.add(key, null);
       }
     }
 
     rb.rsp.add("stats", stats);
-
-    rb._statsInfo = null;
+    rb._statsInfo = null; // free some objects 
   }
 
 
@@ -171,167 +176,209 @@ public class StatsComponent extends SearchComponent {
   }
 }
 
+/**
+ * Models all of the information about stats needed for a single request
+ * @see StatsField
+ */
 class StatsInfo {
-  Map<String, StatsValues> statsFields;
 
-  void parse(SolrParams params, ResponseBuilder rb) {
-    statsFields = new HashMap<>();
+  private final ResponseBuilder rb;
+  private final List<StatsField> statsFields = new ArrayList<>(7);
+  private final Map<String, StatsValues> distribStatsValues = new LinkedHashMap<>();
 
-    String[] statsFs = params.getParams(StatsParams.STATS_FIELD);
-    if (statsFs != null) {
-      for (String field : statsFs) {
-        boolean calcDistinct = params.getFieldBool(field, StatsParams.STATS_CALC_DISTINCT, false);
-        SchemaField sf = rb.req.getSchema().getField(field);
-        statsFields.put(field, StatsValuesFactory.createStatsValues(sf, calcDistinct));
-      }
+  public StatsInfo(ResponseBuilder rb) { 
+    this.rb = rb;
+    SolrParams params = rb.req.getParams();
+    String[] statsParams = params.getParams(StatsParams.STATS_FIELD);
+    if (null == statsParams) {
+      // no stats.field params, nothing to parse.
+      return;
+    }
+
+    for (String paramValue : statsParams) {
+      StatsField current = new StatsField(rb, paramValue);
+      statsFields.add(current);
+      distribStatsValues.put(current.getOutputKey(), current.buildNewStatsValues());
     }
   }
-}
 
-
-class SimpleStats {
-
-  /** The main set of documents */
-  protected DocSet docs;
-  /** Configuration params behavior should be driven by */
-  protected SolrParams params;
-  /** Searcher to use for all calculations */
-  protected SolrIndexSearcher searcher;
-  protected SolrQueryRequest req;
-  protected ResponseBuilder rb;
-
-  // per-stats values
-  SolrParams localParams;
-  String statsField;
-  DocSet base;
-  String key;
-
-  public SimpleStats(SolrQueryRequest req,
-                      DocSet docs,
-                      SolrParams params,
-                      ResponseBuilder rb) {
-    this.req = req;
-    this.searcher = req.getSearcher();
-    this.docs = docs;
-    this.params = params;
-    this.rb = rb;
+  /**
+   * Returns an immutable list of {@link StatsField} instances
+   * modeling each of the {@link StatsParams#STATS_FIELD} params specified
+   * as part of this request
+   */
+  public List<StatsField> getStatsFields() {
+    return Collections.<StatsField>unmodifiableList(statsFields);
   }
 
-  protected void parseParams(String param) throws SyntaxError, IOException {
-    localParams = QueryParsing.getLocalParams(param, req.getParams());
-    base = docs;
-    statsField = param;
-    key = param;
+  /**
+   * Returns an immutable map of response key =&gt; {@link StatsValues}
+   * instances for the current distributed request.  
+   * Depending on where we are in the process of handling this request, 
+   * these {@link StatsValues} instances may not be complete -- but they 
+   * will never be null.
+   */
+  public Map<String, StatsValues> getAggregateStatsValues() {
+    return Collections.<String, StatsValues>unmodifiableMap(distribStatsValues);
+  }
 
-    if (localParams == null) return;
+}
 
-    statsField = localParams.get(CommonParams.VALUE);
+/**
+ * Models all of the information associated with a single {@link StatsParams#STATS_FIELD}
+ * instance.
+ */
+class StatsField {
 
-    // reset set the default key now that localParams have been removed
-    key = statsField;
+  private final SolrIndexSearcher searcher;
+  private final ResponseBuilder rb;
+  private final String originalParam; // for error messages
+  private final SolrParams localParams;
+  private final SchemaField sf;
+  private final String fieldName;
+  private final String key;
+  private final boolean calcDistinct;
+  private final String[] facets;
+  private final List<String> excludeTagList;
 
-    // allow explicit set of the key
-    key = localParams.get(CommonParams.OUTPUT_KEY, key);
+  /**
+   * @param rb the current request/response
+   * @param statsParam the raw {@link StatsParams#STATS_FIELD} string
+   */
+  public StatsField(ResponseBuilder rb, String statsParam) { 
+    this.rb = rb;
+    this.searcher = rb.req.getSearcher();
+    this.originalParam = statsParam;
 
+    SolrParams params = rb.req.getParams();
+
+    try {
+      SolrParams localParams = QueryParsing.getLocalParams(statsParam, params);
+      if (null == localParams) {
+        localParams = new ModifiableSolrParams();
+      }
+      this.localParams = localParams;
+    } catch (SyntaxError e) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to parse " + 
+                              StatsParams.STATS_FIELD + ": " + originalParam + " due to: "
+                              + e.getMessage(), e);
+    }
+
+    // pull fieldName out of localParams, or default to original param value
+    this.fieldName = localParams.get(CommonParams.VALUE, statsParam);
+    // allow explicit set of the key via localparams, default to fieldName
+    this.key = localParams.get(CommonParams.OUTPUT_KEY, fieldName);
+
+    calcDistinct = params.getFieldBool(fieldName, StatsParams.STATS_CALC_DISTINCT, false);
+
+    String[] facets = params.getFieldParams(key, StatsParams.STATS_FACET);
+    this.facets = (null == facets) ? new String[0] : facets;
 
     // figure out if we need a new base DocSet
     String excludeStr = localParams.get(CommonParams.EXCLUDE);
-    if (excludeStr == null) return;
+    this.excludeTagList = (null == excludeStr) 
+      ? Collections.<String>emptyList()
+      : StrUtils.splitSmart(excludeStr,',');
 
-    Map<?,?> tagMap = (Map<?,?>)req.getContext().get("tags");
-    if (tagMap != null && rb != null) {
-      List<String> excludeTagList = StrUtils.splitSmart(excludeStr,',');
+    this.sf = searcher.getSchema().getField(fieldName);
+  }
 
-      IdentityHashMap<Query,Boolean> excludeSet = new IdentityHashMap<Query,Boolean>();
-      for (String excludeTag : excludeTagList) {
-        Object olst = tagMap.get(excludeTag);
-        // tagMap has entries of List<String,List<QParser>>, but subject to change in the future
-        if (!(olst instanceof Collection)) continue;
-        for (Object o : (Collection<?>)olst) {
-          if (!(o instanceof QParser)) continue;
-          QParser qp = (QParser)o;
+  /** 
+   * The key to be used when refering to this {@link StatsField} instance in the 
+   * response tp clients.
+   */
+  public String getOutputKey() {
+    return key;
+  }
+
+  /**
+   * Returns a new, empty, {@link StatsValues} instance that can be used for
+   * accumulating the appropriate stats from this {@link StatsField}
+   */
+  public StatsValues buildNewStatsValues() {
+    return StatsValuesFactory.createStatsValues(sf, calcDistinct);
+  }
+
+  /**
+   * Computes a base {@link DocSet} for the current request to be used
+   * when computing global stats for the local index.
+   *
+   * This is typically the same as the main DocSet for the {@link ResponseBuilder}
+   * unless {@link CommonParams#TAG tag}ged filter queries have been excluded using 
+   * the {@link CommonParams#EXCLUDE ex} local param
+   */
+  public DocSet computeBaseDocSet() throws IOException {
+
+    DocSet docs = rb.getResults().docSet;
+    Map<?,?> tagMap = (Map<?,?>) rb.req.getContext().get("tags");
+
+    if (excludeTagList.isEmpty() || null == tagMap) {
+      // either the exclude list is empty, or there
+      // aren't any tagged filters to exclude anyway.
+      return docs;
+    }
+
+    IdentityHashMap<Query,Boolean> excludeSet = new IdentityHashMap<Query,Boolean>();
+    for (String excludeTag : excludeTagList) {
+      Object olst = tagMap.get(excludeTag);
+      // tagMap has entries of List<String,List<QParser>>, but subject to change in the future
+      if (!(olst instanceof Collection)) continue;
+      for (Object o : (Collection<?>)olst) {
+        if (!(o instanceof QParser)) continue;
+        QParser qp = (QParser)o;
+        try {
           excludeSet.put(qp.getQuery(), Boolean.TRUE);
-        }
-      }
-      if (excludeSet.size() == 0) return;
-
-      List<Query> qlist = new ArrayList<Query>();
-
-      // add the base query
-      if (!excludeSet.containsKey(rb.getQuery())) {
-        qlist.add(rb.getQuery());
-      }
-
-      // add the filters
-      if (rb.getFilters() != null) {
-        for (Query q : rb.getFilters()) {
-          if (!excludeSet.containsKey(q)) {
-            qlist.add(q);
-          }
-        }
-      }
-
-      // get the new base docset for this facet
-      this.base = searcher.getDocSet(qlist);
-    }
-
-  }
-
-  public NamedList<Object> getStatsCounts() throws IOException {
-    NamedList<Object> res = new SimpleOrderedMap<>();
-
-    try {
-      res.add("stats_fields", getStatsFields());
-    } catch (SyntaxError e) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, e);
-    }
-
-    return res;
-  }
-
-  public NamedList<Object> getStatsFields() throws IOException, SyntaxError {
-    NamedList<Object> res = new SimpleOrderedMap<>();
-    String[] statsFs = params.getParams(StatsParams.STATS_FIELD);
-    boolean isShard = params.getBool(ShardParams.IS_SHARD, false);
-    if (null != statsFs) {
-      final IndexSchema schema = searcher.getSchema();
-      for (String f : statsFs) {
-        boolean calcDistinct = params.getFieldBool(f, StatsParams.STATS_CALC_DISTINCT, false);
-
-        parseParams(f);
-
-        String[] facets = params.getFieldParams(key, StatsParams.STATS_FACET);
-        if (facets == null) {
-          facets = new String[0]; // make sure it is something...
-        }
-        SchemaField sf = schema.getField(statsField);
-        FieldType ft = sf.getType();
-        NamedList<?> stv;
-
-        if (sf.multiValued() || ft.multiValuedFieldCache()) {
-          // TODO: should this also be used for single-valued string fields? (should work fine)
-          stv = DocValuesStats.getCounts(searcher, sf.getName(), base, calcDistinct, facets).getStatsValues();
-        } else {
-          stv = getFieldCacheStats(statsField, calcDistinct, facets);
-        }
-        if (isShard == true || (Long) stv.get("count") > 0) {
-          res.add(key, stv);
-        } else {
-          res.add(key, null);
+        } catch (SyntaxError e) {
+          // this shouldn't be possible since the request should have already
+          // failed when attempting to execute the query, but just in case...
+          throw new SolrException(ErrorCode.BAD_REQUEST, "Excluded query can't be parsed: " + 
+                                  originalParam + " due to: " + e.getMessage(), e);
         }
       }
     }
-    return res;
+    if (excludeSet.size() == 0) return docs;
+    
+    List<Query> qlist = new ArrayList<Query>();
+    
+    // add the base query
+    if (!excludeSet.containsKey(rb.getQuery())) {
+      qlist.add(rb.getQuery());
+    }
+    
+    // add the filters
+    if (rb.getFilters() != null) {
+      for (Query q : rb.getFilters()) {
+        if (!excludeSet.containsKey(q)) {
+          qlist.add(q);
+        }
+      }
+    }
+    
+    // get the new base docset for this facet
+    return searcher.getDocSet(qlist);
   }
 
-  public NamedList<?> getFieldCacheStats(String fieldName, boolean calcDistinct, String[] facet) throws IOException {
+  /**
+   * Computes the {@link StatsValues} for this {@link StatsField} relative to the 
+   * specified {@link DocSet} 
+   * @see #computeBaseDocSet
+   */
+  public StatsValues computeLocalStatsValues(DocSet base) throws IOException {
+
+    if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
+      // TODO: should this also be used for single-valued string fields? (should work fine)
+      return DocValuesStats.getCounts(searcher, fieldName, base, calcDistinct, facets);
+    } else {
+      return getFieldCacheStats(base);
+    }
+  }
+
+  private StatsValues getFieldCacheStats(DocSet base) throws IOException {
     IndexSchema schema = searcher.getSchema();
-    final SchemaField sf = schema.getField(fieldName);
-
     final StatsValues allstats = StatsValuesFactory.createStatsValues(sf, calcDistinct);
 
     List<FieldFacetStats> facetStats = new ArrayList<>();
-    for( String facetField : facet ) {
+    for( String facetField : facets ) {
       SchemaField fsf = schema.getField(facetField);
 
       if ( fsf.multiValued()) {
@@ -370,7 +417,7 @@ class SimpleStats {
     for (FieldFacetStats f : facetStats) {
       allstats.addFacet(f.name, f.facetStatsValues);
     }
-    return allstats.getStatsValues();
+    return allstats;
   }
 
 }
