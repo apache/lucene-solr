@@ -369,7 +369,18 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     query("q","*:*", "sort",i1+" desc", "stats", "true", "stats.field", tdate_a);
     query("q","*:*", "sort",i1+" desc", "stats", "true", "stats.field", tdate_b);
 
-    handle.put("stats_fields", UNORDERED);
+    query("q","*:*", "sort",i1+" desc", "stats", "true", 
+          "fq", "{!tag=nothing}-*:*",
+          "stats.field", "{!key=special_key ex=nothing}stats_dt");
+    query("q","*:*", "sort",i1+" desc", "stats", "true", 
+          "f.stats_dt.stats.calcdistinct", "true",
+          "stats.field", "{!key=special_key}stats_dt");
+    query("q","*:*", "sort",i1+" desc", "stats", "true", 
+          "f.stats_dt.stats.calcdistinct", "true",
+          "fq", "{!tag=xxx}id:[3 TO 9]",
+          "stats.field", "{!key=special_key}stats_dt",
+          "stats.field", "{!ex=xxx}stats_dt");
+
     query("q","*:*", "sort",i1+" desc", "stats", "true",
           "stats.field", "stats_dt",
           "stats.field", i1,
