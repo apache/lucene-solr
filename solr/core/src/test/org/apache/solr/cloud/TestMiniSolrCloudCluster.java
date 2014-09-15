@@ -217,7 +217,7 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
     zkClient.makePath(ZkController.CONFIGS_ZKNODE + "/" + configName + "/" + nameInZk, file, false, true);
   }
 
-  protected NamedList<Object> createCollection(CloudSolrServer server, String name, int numShards,
+    protected NamedList<Object> createCollection(CloudSolrServer server, String name, int numShards,
       int replicationFactor, String configName) throws Exception {
     ModifiableSolrParams modParams = new ModifiableSolrParams();
     modParams.set(CoreAdminParams.ACTION, CollectionAction.CREATE.name());

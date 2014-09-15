@@ -102,6 +102,8 @@ public class ZkStateReader implements Closeable {
   public static final String LEADER_ELECT_ZKNODE = "/leader_elect";
 
   public static final String SHARD_LEADERS_ZKNODE = "leaders";
+  public static final String ONLY_IF_DOWN = "onlyIfDown";
+  
   private final Set<String> watchedCollections = new HashSet<String>();
 
   /**These are collections which are actively watched by this  instance .

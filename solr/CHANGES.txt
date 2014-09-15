@@ -151,6 +151,9 @@ New Features
 
 * SOLR-5810 : Support for SOLR-5473 in solr admin UI (Timothy Potter, Noble Paul)
 
+* SOLR-6482:  Add an onlyIfDown flag for DELETEREPLICA collections API command
+  (Erick Erickson)   
+
 Bug Fixes
 ----------------------
 
