@@ -21,6 +21,12 @@ Bug fixes
 * LUCENE-5922: DocValuesDocIdSet on 5.x and FieldCacheDocIdSet on 4.x
   are not cacheable. (Adrien Grand)
 
+* LUCENE-5843: Added IndexWriter.MAX_DOCS which is the maximum number
+  of documents allowed in a single index, and any operations that add
+  documents will now throw IllegalStateException if the max count
+  would be exceeded, instead of silently creating an unusable
+  index.  (Mike McCandless)
+
 ======================= Lucene 4.9.0 =======================
 
 Changes in Runtime Behavior

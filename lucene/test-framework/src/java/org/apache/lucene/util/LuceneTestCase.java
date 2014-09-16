@@ -29,6 +29,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
@@ -77,6 +78,7 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LiveIndexWriterConfig;
@@ -669,8 +671,34 @@ public abstract class LuceneTestCase extends Assert {
   public void tearDown() throws Exception {
     parentChainCallRule.teardownCalled = true;
     fieldToType.clear();
+
+    // Test is supposed to call this itself, but we do this defensively in case it forgot:
+    restoreIndexWriterMaxDocs();
   }
 
+  /** Tells {@link IndexWriter} to enforce the specified limit as the maximum number of documents in one index; call
+   *  {@link #restoreIndexWriterMaxDocs} once your test is done. */
+  public void setIndexWriterMaxDocs(int limit) {
+    Method m;
+    try {
+      m = IndexWriter.class.getDeclaredMethod("setMaxDocs", int.class);
+    } catch (NoSuchMethodException nsme) {
+      throw new RuntimeException(nsme);
+    }
+    m.setAccessible(true);
+    try {
+      m.invoke(IndexWriter.class, limit);
+    } catch (IllegalAccessException iae) {
+      throw new RuntimeException(iae);
+    } catch (InvocationTargetException ite) {
+      throw new RuntimeException(ite);
+    }
+  }
+
+  /** Returns the default {@link IndexWriter#MAX_DOCS} limit. */
+  public void restoreIndexWriterMaxDocs() {
+    setIndexWriterMaxDocs(IndexWriter.MAX_DOCS);
+  }
 
   // -----------------------------------------------------------------
   // Test facilities and facades for subclasses. 
@@ -2325,8 +2353,6 @@ public abstract class LuceneTestCase extends Assert {
           // numOrds
           assertEquals(info, leftValues.getValueCount(), rightValues.getValueCount());
           // ords
-          BytesRef scratchLeft = new BytesRef();
-          BytesRef scratchRight = new BytesRef();
           for (int i = 0; i < leftValues.getValueCount(); i++) {
             final BytesRef left = BytesRef.deepCopyOf(leftValues.lookupOrd(i));
             final BytesRef right = rightValues.lookupOrd(i);

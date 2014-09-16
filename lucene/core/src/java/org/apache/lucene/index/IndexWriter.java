@@ -32,11 +32,12 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
@@ -195,7 +196,31 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * keeps track of the last non commit checkpoint.
  */
 public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
-  
+
+  /** Hard limit on maximum number of documents that may be added to the
+   *  index.  If you try to add more than this you'll hit {@code IllegalStateException}. */
+  // We defensively subtract 128 to be well below the lowest
+  // ArrayUtil.MAX_ARRAY_LENGTH on "typical" JVMs.  We don't just use
+  // ArrayUtil.MAX_ARRAY_LENGTH here because this can vary across JVMs:
+  public static final int MAX_DOCS = Integer.MAX_VALUE - 128;
+
+  // Use package-private instance var to enforce the limit so testing
+  // can use less electricity:
+  private static int actualMaxDocs = MAX_DOCS;
+
+  /** Used only for testing. */
+  static void setMaxDocs(int maxDocs) {
+    if (maxDocs > MAX_DOCS) {
+      // Cannot go higher than the hard max:
+      throw new IllegalArgumentException("maxDocs must be <= IndexWriter.MAX_DOCS=" + MAX_DOCS + "; got: " + maxDocs);
+    }
+    IndexWriter.actualMaxDocs = maxDocs;
+  }
+
+  static int getActualMaxDocs() {
+    return IndexWriter.actualMaxDocs;
+  }
+
   private static final int UNBOUNDED_MAX_MERGE_SEGMENTS = -1;
   
   /**
@@ -289,6 +314,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   /** System.nanoTime() when commit started; used to write
    *  an infoStream message about how long commit took. */
   private long startCommitTime;
+
+  /** How many documents are in the index, or are in the process of being
+   *  added (reserved).  E.g., operations like addIndexes will first reserve
+   *  the right to add N docs, before they actually change the index,
+   *  much like how hotels place an "authorization hold" on your credit
+   *  card to make sure they can later charge you when you check out. */
+  final AtomicLong pendingNumDocs = new AtomicLong();
 
   DirectoryReader getReader() throws IOException {
     return getReader(true);
@@ -2543,6 +2575,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       flush(false, true);
 
       List<SegmentCommitInfo> infos = new ArrayList<>();
+
+      int totalDocCount = 0;
+
       boolean success = false;
       try {
         for (Directory dir : dirs) {
@@ -2551,9 +2586,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           }
           SegmentInfos sis = new SegmentInfos(); // read infos from dir
           sis.read(dir);
+
           final Set<String> dsFilesCopied = new HashSet<>();
           final Map<String, String> dsNames = new HashMap<>();
           final Set<String> copiedFiles = new HashSet<>();
+
+          totalDocCount += sis.totalDocCount();
+
           for (SegmentCommitInfo info : sis) {
             assert !infos.contains(info): "dup info dir=" + info.info.dir + " name=" + info.info.name;
 
@@ -2589,6 +2628,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         success = false;
         try {
           ensureOpen();
+          // Make sure adding the new documents to this index won't
+          // exceed the limit:
+          reserveDocs(totalDocCount);
           success = true;
         } finally {
           if (!success) {
@@ -2676,6 +2718,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           mergeReaders.add(ctx.reader());
         }
       }
+
+      // Make sure adding the new documents to this index won't
+      // exceed the limit:
+      reserveDocs(numDocs);
       
       final IOContext context = new IOContext(new MergeInfo(numDocs, -1, true, -1));
 
@@ -3288,6 +3334,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         // it once it's done:
         if (!mergingSegments.contains(info)) {
           segmentInfos.remove(info);
+          pendingNumDocs.addAndGet(-info.info.getDocCount());
           readerPool.drop(info);
         }
       }
@@ -3669,6 +3716,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     // merge:
     segmentInfos.applyMergeChanges(merge, dropSegment);
 
+    // Now deduct the deleted docs that we just reclaimed from this
+    // merge:
+    int delDocCount = merge.totalDocCount - merge.info.info.getDocCount();
+    assert delDocCount >= 0;
+    pendingNumDocs.addAndGet(-delDocCount);
+
     if (dropSegment) {
       assert !segmentInfos.contains(merge.info);
       readerPool.drop(merge.info);
@@ -3952,6 +4005,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
       for(SegmentCommitInfo info : result.allDeleted) {
         segmentInfos.remove(info);
+        pendingNumDocs.addAndGet(-info.info.getDocCount());
         if (merge.segments.contains(info)) {
           mergingSegments.remove(info);
           merge.segments.remove(info);
@@ -4824,6 +4878,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       return true;
     } catch (NoSuchFileException | FileNotFoundException e) {
       return false;
+    }
+  }
+
+  /** Anything that will add N docs to the index should reserve first to
+   *  make sure it's allowed.  This will throw {@code
+   *  IllegalStateException} if it's not allowed. */ 
+  private void reserveDocs(int numDocs) {
+    if (pendingNumDocs.addAndGet(numDocs) > actualMaxDocs) {
+      // Reserve failed
+      pendingNumDocs.addAndGet(-numDocs);
+      throw new IllegalStateException("number of documents in the index cannot exceed " + actualMaxDocs);
     }
   }
 }
