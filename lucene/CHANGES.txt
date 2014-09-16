@@ -27,6 +27,10 @@ Bug fixes
   would be exceeded, instead of silently creating an unusable
   index.  (Mike McCandless)
 
+* LUCENE-5844: ArrayUtil.grow/oversize now returns a maximum of
+  Integer.MAX_VALUE - 8 for the maximum array size.  (Robert Muir,
+  Mike McCandless)
+
 ======================= Lucene 4.9.0 =======================
 
 Changes in Runtime Behavior
