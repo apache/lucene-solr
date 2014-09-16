@@ -24,7 +24,7 @@
   </description>
 	
   <!-- just a list of words for testing suggesters -->
-  <property name="rat.excludes" value="**/Top50KWiki.utf8"/>
+  <property name="rat.excludes" value="**/Top50KWiki.utf8,**/stop-snowball.txt"/>
 
   <import file="../module-build.xml"/>
 

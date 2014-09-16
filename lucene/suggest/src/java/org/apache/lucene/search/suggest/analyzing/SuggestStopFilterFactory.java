@@ -73,7 +73,9 @@ import java.io.IOException;
  * </ul>
  */
   public class SuggestStopFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+  /** the default format, one word per line, whole line comments start with "#" */
   public static final String FORMAT_WORDSET = "wordset";
+  /** multiple words may be specified on each line, trailing comments start with "&#124;" */
   public static final String FORMAT_SNOWBALL = "snowball";
 
   private CharArraySet stopWords;
@@ -110,10 +112,12 @@ import java.io.IOException;
     }
   }
 
+  /** Whether or not to ignore case */
   public boolean isIgnoreCase() {
     return ignoreCase;
   }
 
+  /** Returns the configured stopword set */
   public CharArraySet getStopWords() {
     return stopWords;
   }
