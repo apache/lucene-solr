@@ -19,6 +19,7 @@ package org.apache.lucene.util;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
@@ -134,6 +135,16 @@ public final class PagedBytes implements Accountable {
       }
       return size;
     }
+    
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      return Collections.emptyList();
+    }
+
+    @Override
+    public String toString() {
+      return "PagedBytes(blocksize=" + blockSize + ")";
+    }
   }
 
   /** 1&lt;&lt;blockBits must be bigger than biggest single
@@ -245,6 +256,11 @@ public final class PagedBytes implements Accountable {
       size += RamUsageEstimator.sizeOf(currentBlock);
     }
     return size;
+  }
+  
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return Collections.emptyList();
   }
 
   /** Copy bytes in, writing the length as a 1 or 2 byte

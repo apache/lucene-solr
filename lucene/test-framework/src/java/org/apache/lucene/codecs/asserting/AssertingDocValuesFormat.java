@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.asserting;
 
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.NoSuchElementException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
@@ -34,10 +33,12 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LongBitSet;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Just like {@link Lucene410DocValuesFormat} but with additional asserts.
@@ -80,7 +81,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
         count++;
       }
       assert count == maxDoc;
-      checkIterator(values.iterator(), maxDoc, true);
+      TestUtil.checkIterator(values.iterator(), maxDoc, true);
       in.addNumericField(field, values);
     }
     
@@ -92,7 +93,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
         count++;
       }
       assert count == maxDoc;
-      checkIterator(values.iterator(), maxDoc, true);
+      TestUtil.checkIterator(values.iterator(), maxDoc, true);
       in.addBinaryField(field, values);
     }
     
@@ -126,8 +127,8 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
       
       assert count == maxDoc;
       assert seenOrds.cardinality() == valueCount;
-      checkIterator(values.iterator(), valueCount, false);
-      checkIterator(docToOrd.iterator(), maxDoc, false);
+      TestUtil.checkIterator(values.iterator(), valueCount, false);
+      TestUtil.checkIterator(docToOrd.iterator(), maxDoc, false);
       in.addSortedField(field, values, docToOrd);
     }
     
@@ -150,8 +151,8 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
         }
       }
       assert valueIterator.hasNext() == false;
-      checkIterator(docToValueCount.iterator(), maxDoc, false);
-      checkIterator(values.iterator(), valueCount, false);
+      TestUtil.checkIterator(docToValueCount.iterator(), maxDoc, false);
+      TestUtil.checkIterator(values.iterator(), valueCount, false);
       in.addSortedNumericField(field, docToValueCount, values);
     }
     
@@ -195,37 +196,15 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
       
       assert docCount == maxDoc;
       assert seenOrds.cardinality() == valueCount;
-      checkIterator(values.iterator(), valueCount, false);
-      checkIterator(docToOrdCount.iterator(), maxDoc, false);
-      checkIterator(ords.iterator(), ordCount, false);
+      TestUtil.checkIterator(values.iterator(), valueCount, false);
+      TestUtil.checkIterator(docToOrdCount.iterator(), maxDoc, false);
+      TestUtil.checkIterator(ords.iterator(), ordCount, false);
       in.addSortedSetField(field, values, docToOrdCount, ords);
     }
     
     @Override
     public void close() throws IOException {
       in.close();
-    }
-  }
-  
-  static <T> void checkIterator(Iterator<T> iterator, long expectedSize, boolean allowNull) {
-    for (long i = 0; i < expectedSize; i++) {
-      boolean hasNext = iterator.hasNext();
-      assert hasNext;
-      T v = iterator.next();
-      assert allowNull || v != null;
-      try {
-        iterator.remove();
-        throw new AssertionError("broken iterator (supports remove): " + iterator);
-      } catch (UnsupportedOperationException expected) {
-        // ok
-      }
-    }
-    assert !iterator.hasNext();
-    try {
-      iterator.next();
-      throw new AssertionError("broken iterator (allows next() when hasNext==false) " + iterator);
-    } catch (NoSuchElementException expected) {
-      // ok
     }
   }
   
@@ -236,6 +215,10 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
     AssertingDocValuesProducer(DocValuesProducer in, int maxDoc) {
       this.in = in;
       this.maxDoc = maxDoc;
+      // do a few simple checks on init
+      assert toString() != null;
+      assert ramBytesUsed() >= 0;
+      assert getChildResources() != null;
     }
 
     @Override
@@ -294,12 +277,26 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
 
     @Override
     public long ramBytesUsed() {
-      return in.ramBytesUsed();
+      long v = in.ramBytesUsed();
+      assert v >= 0;
+      return v;
+    }
+
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      Iterable<? extends Accountable> res = in.getChildResources();
+      TestUtil.checkIterator(res.iterator());
+      return res;
     }
 
     @Override
     public void checkIntegrity() throws IOException {
       in.checkIntegrity();
+    }
+    
+    @Override
+    public String toString() {
+      return getClass().getSimpleName() + "(" + in.toString() + ")";
     }
   }
 }

@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.perfield;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -37,6 +38,8 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -322,12 +325,22 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
       }
       return size;
     }
+    
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      return Accountables.namedAccountables("format", formats);
+    }
 
     @Override
     public void checkIntegrity() throws IOException {
       for (DocValuesProducer format : formats.values()) {
         format.checkIntegrity();
       }
+    }
+    
+    @Override
+    public String toString() {
+      return "PerFieldDocValues(formats=" + formats.size() + ")";
     }
   }
 

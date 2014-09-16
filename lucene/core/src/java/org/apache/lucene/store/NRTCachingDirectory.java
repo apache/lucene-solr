@@ -20,11 +20,13 @@ package org.apache.lucene.store;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.store.RAMDirectory;      // javadocs
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.IOUtils;
 
 // TODO
@@ -255,5 +257,10 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
   @Override
   public long ramBytesUsed() {
     return cache.ramBytesUsed();
+  }
+  
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return Collections.singleton(Accountables.namedAccountable("cache", cache));
   }
 }

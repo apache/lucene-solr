@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.blockterms;
  */
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 
 import org.apache.lucene.codecs.CodecUtil;
@@ -29,6 +30,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
@@ -42,7 +44,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
 
   private final PositiveIntOutputs fstOutputs = PositiveIntOutputs.getSingleton();
 
-  final HashMap<FieldInfo,FieldIndexData> fields = new HashMap<>();
+  final HashMap<String,FieldIndexData> fields = new HashMap<>();
   
   // start of the field info data
   private long dirOffset;
@@ -76,7 +78,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
         final int field = in.readVInt();
         final long indexStart = in.readVLong();
         final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
-        FieldIndexData previous = fields.put(fieldInfo, new FieldIndexData(in, fieldInfo, indexStart));
+        FieldIndexData previous = fields.put(fieldInfo.name, new FieldIndexData(in, fieldInfo, indexStart));
         if (previous != null) {
           throw new CorruptIndexException("duplicate field: " + fieldInfo.name + " (resource=" + in + ")");
         }
@@ -175,11 +177,25 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
     public long ramBytesUsed() {
       return fst == null ? 0 : fst.ramBytesUsed();
     }
+
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      if (fst == null) {
+        return Collections.emptyList();
+      } else {
+        return Collections.singletonList(Accountables.namedAccountable("index data", fst));
+      }
+    }
+    
+    @Override
+    public String toString() {
+      return "VarGapTermIndex";
+    }
   }
 
   @Override
   public FieldIndexEnum getFieldEnum(FieldInfo fieldInfo) {
-    final FieldIndexData fieldData = fields.get(fieldInfo);
+    final FieldIndexData fieldData = fields.get(fieldInfo.name);
     if (fieldData.fst == null) {
       return null;
     } else {
@@ -208,5 +224,15 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
       sizeInBytes += entry.ramBytesUsed();
     }
     return sizeInBytes;
+  }
+
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return Accountables.namedAccountables("field", fields);
+  }
+
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "(fields=" + fields.size() + ")";
   }
 }

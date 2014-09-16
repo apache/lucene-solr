@@ -29,8 +29,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -67,6 +69,7 @@ import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.index.FilterAtomicReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
@@ -74,6 +77,7 @@ import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
@@ -124,6 +128,66 @@ public final class TestUtil {
         }
         zipInput.closeEntry();
       }
+    }
+  }
+  
+  /** 
+   * Checks that the provided iterator is well-formed.
+   * <ul>
+   *   <li>is read-only: does not allow {@code remove}
+   *   <li>returns {@code expectedSize} number of elements
+   *   <li>does not return null elements, unless {@code allowNull} is true.
+   *   <li>throws NoSuchElementException if {@code next} is called
+   *       after {@code hasNext} returns false. 
+   * </ul>
+   */
+  public static <T> void checkIterator(Iterator<T> iterator, long expectedSize, boolean allowNull) {
+    for (long i = 0; i < expectedSize; i++) {
+      boolean hasNext = iterator.hasNext();
+      assert hasNext;
+      T v = iterator.next();
+      assert allowNull || v != null;
+      try {
+        iterator.remove();
+        throw new AssertionError("broken iterator (supports remove): " + iterator);
+      } catch (UnsupportedOperationException expected) {
+        // ok
+      }
+    }
+    assert !iterator.hasNext();
+    try {
+      iterator.next();
+      throw new AssertionError("broken iterator (allows next() when hasNext==false) " + iterator);
+    } catch (NoSuchElementException expected) {
+      // ok
+    }
+  }
+  
+  /** 
+   * Checks that the provided iterator is well-formed.
+   * <ul>
+   *   <li>is read-only: does not allow {@code remove}
+   *   <li>does not return null elements.
+   *   <li>throws NoSuchElementException if {@code next} is called
+   *       after {@code hasNext} returns false. 
+   * </ul>
+   */
+  public static <T> void checkIterator(Iterator<T> iterator) {
+    while (iterator.hasNext()) {
+      T v = iterator.next();
+      assert v != null;
+      try {
+        iterator.remove();
+        throw new AssertionError("broken iterator (supports remove): " + iterator);
+      } catch (UnsupportedOperationException expected) {
+        // ok
+      }
+    }
+    try {
+      iterator.next();
+      throw new AssertionError("broken iterator (allows next() when hasNext==false) " + iterator);
+    } catch (NoSuchElementException expected) {
+      // ok
     }
   }
   
@@ -189,6 +253,16 @@ public final class TestUtil {
     
     if (LuceneTestCase.INFOSTREAM) {
       System.out.println(bos.toString(IOUtils.UTF_8));
+    }
+    
+    AtomicReader unwrapped = FilterAtomicReader.unwrap(reader);
+    if (unwrapped instanceof SegmentReader) {
+      SegmentReader sr = (SegmentReader) unwrapped;
+      long bytesUsed = sr.ramBytesUsed(); 
+      if (sr.ramBytesUsed() < 0) {
+        throw new IllegalStateException("invalid ramBytesUsed for reader: " + bytesUsed);
+      }
+      assert Accountables.toString(sr) != null;
     }
   }
 

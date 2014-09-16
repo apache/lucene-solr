@@ -463,6 +463,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     ensureOpen();
     return docWriter.ramBytesUsed();
   }
+  
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return Collections.emptyList();
+  }
 
   /** Holds shared SegmentReader instances. IndexWriter uses
    *  SegmentReaders for 1) applying deletes, 2) doing

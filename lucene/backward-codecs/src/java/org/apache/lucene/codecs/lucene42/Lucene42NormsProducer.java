@@ -18,11 +18,13 @@ package org.apache.lucene.codecs.lucene42;
  */
 
 import java.io.IOException;
+import java.util.Collections;
 
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.util.Accountable;
 
 /**
  * Reads 4.2-4.8 norms.
@@ -51,9 +53,19 @@ class Lucene42NormsProducer extends NormsProducer {
   public long ramBytesUsed() {
     return impl.ramBytesUsed();
   }
+  
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return impl.getChildResources();
+  }
 
   @Override
   public void close() throws IOException {
     impl.close();
+  }
+
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "(" + impl + ")";
   }
 }

@@ -106,4 +106,9 @@ public final class NoOutputs extends Outputs<Object> {
   public long ramBytesUsed(Object output) {
     return 0;
   }
+
+  @Override
+  public String toString() {
+    return "NoOutputs";
+  }
 }

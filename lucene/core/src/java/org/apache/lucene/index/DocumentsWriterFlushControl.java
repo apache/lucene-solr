@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -435,6 +436,12 @@ final class DocumentsWriterFlushControl implements Accountable {
   @Override
   public long ramBytesUsed() {
     return getDeleteBytesUsed() + netBytes();
+  }
+
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    // TODO: improve this?
+    return Collections.emptyList();
   }
 
   synchronized int numFlushingDWPT() {

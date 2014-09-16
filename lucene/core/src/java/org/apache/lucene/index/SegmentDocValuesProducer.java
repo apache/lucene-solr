@@ -30,6 +30,8 @@ import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.Version;
@@ -185,5 +187,19 @@ class SegmentDocValuesProducer extends DocValuesProducer {
       ramBytesUsed += producer.ramBytesUsed();
     }
     return ramBytesUsed;
-  }  
+  }
+
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    List<Accountable> resources = new ArrayList<>();
+    for (Accountable producer : dvProducers) {
+      resources.add(Accountables.namedAccountable("delegate", producer));
+    }
+    return Collections.unmodifiableList(resources);
+  }
+
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "(producers=" + dvProducers.size() + ")";
+  }
 }

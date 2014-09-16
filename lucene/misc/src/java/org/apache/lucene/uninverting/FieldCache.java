@@ -19,6 +19,7 @@ package org.apache.lucene.uninverting;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Collections;
 
 import org.apache.lucene.analysis.NumericTokenStream;
 import org.apache.lucene.document.DoubleField;
@@ -62,6 +63,11 @@ interface FieldCache {
     public long ramBytesUsed() {
       // don't call on the in-progress value, might make things angry.
       return RamUsageEstimator.NUM_BYTES_OBJECT_REF;
+    }
+
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      return Collections.emptyList();
     }
   }
 

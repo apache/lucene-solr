@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.TreeMap;
 
 import org.apache.lucene.index.CorruptIndexException;
@@ -42,6 +43,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.automaton.ByteRunAutomaton;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -190,7 +192,25 @@ public class FSTTermsReader extends FieldsProducer {
 
     @Override
     public long ramBytesUsed() {
-      return BASE_RAM_BYTES_USED + dict.ramBytesUsed();
+      long bytesUsed = BASE_RAM_BYTES_USED;
+      if (dict != null) {
+        bytesUsed += dict.ramBytesUsed();
+      }
+      return bytesUsed;
+    }
+
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      if (dict == null) {
+        return Collections.emptyList();
+      } else {
+        return Collections.singletonList(Accountables.namedAccountable("terms", dict));
+      }
+    }
+    
+    @Override
+    public String toString() {
+      return "FSTTerms(terms=" + numTerms + ",postings=" + sumDocFreq + ",positions=" + sumTotalTermFreq + ",docs=" + docCount + ")";
     }
 
     @Override
@@ -751,6 +771,19 @@ public class FSTTermsReader extends FieldsProducer {
     return ramBytesUsed;
   }
   
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    List<Accountable> resources = new ArrayList<>();
+    resources.addAll(Accountables.namedAccountables("field", fields));
+    resources.add(Accountables.namedAccountable("delegate", postingsReader));
+    return Collections.unmodifiableCollection(resources);
+  }
+
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "(fields=" + fields.size() + ",delegate=" + postingsReader + ")";
+  }
+
   @Override
   public void checkIntegrity() throws IOException {
     postingsReader.checkIntegrity();

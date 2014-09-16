@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.lucene49;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.codecs.CodecUtil;
@@ -32,6 +33,8 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.BlockPackedReader;
@@ -49,15 +52,17 @@ import static org.apache.lucene.codecs.lucene49.Lucene49NormsConsumer.UNCOMPRESS
  */
 class Lucene49NormsProducer extends NormsProducer {
   // metadata maps (just file pointers and minimal stuff)
-  private final Map<Integer,NormsEntry> norms = new HashMap<>();
+  private final Map<String,NormsEntry> norms = new HashMap<>();
   private final IndexInput data;
   private final int version;
   
   // ram instances we have already loaded
-  final Map<Integer,NumericDocValues> instances = new HashMap<>();
+  final Map<String,NumericDocValues> instances = new HashMap<>();
+  final Map<String,Accountable> instancesInfo = new HashMap<>();
   
   private final int maxDoc;
   private final AtomicLong ramBytesUsed;
+  private final AtomicInteger activeCount = new AtomicInteger();
     
   Lucene49NormsProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     maxDoc = state.segmentInfo.getDocCount();
@@ -123,17 +128,18 @@ class Lucene49NormsProducer extends NormsProducer {
         default:
           throw new CorruptIndexException("Unknown format: " + entry.format + ", input=" + meta);
       }
-      norms.put(fieldNumber, entry);
+      norms.put(info.name, entry);
       fieldNumber = meta.readVInt();
     }
   }
 
   @Override
   public synchronized NumericDocValues getNorms(FieldInfo field) throws IOException {
-    NumericDocValues instance = instances.get(field.number);
+    NumericDocValues instance = instances.get(field.name);
     if (instance == null) {
       instance = loadNorms(field);
-      instances.put(field.number, instance);
+      instances.put(field.name, instance);
+      activeCount.incrementAndGet();
     }
     return instance;
   }
@@ -144,14 +150,21 @@ class Lucene49NormsProducer extends NormsProducer {
   }
   
   @Override
+  public synchronized Iterable<? extends Accountable> getChildResources() {
+    return Accountables.namedAccountables("field", instancesInfo);
+  }
+  
+  @Override
   public void checkIntegrity() throws IOException {
     CodecUtil.checksumEntireFile(data);
   }
 
   private NumericDocValues loadNorms(FieldInfo field) throws IOException {
-    NormsEntry entry = norms.get(field.number);
+    NormsEntry entry = norms.get(field.name);
     switch(entry.format) {
       case CONST_COMPRESSED:
+        instancesInfo.put(field.name, Accountables.namedAccountable("constant", 8));
+        ramBytesUsed.addAndGet(8);
         final long v = entry.offset;
         return new NumericDocValues() {
           @Override
@@ -164,6 +177,7 @@ class Lucene49NormsProducer extends NormsProducer {
         final byte bytes[] = new byte[maxDoc];
         data.readBytes(bytes, 0, bytes.length);
         ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(bytes));
+        instancesInfo.put(field.name, Accountables.namedAccountable("byte array", maxDoc));
         return new NumericDocValues() {
           @Override
           public long get(int docID) {
@@ -176,6 +190,7 @@ class Lucene49NormsProducer extends NormsProducer {
         int blockSize = data.readVInt();
         final BlockPackedReader reader = new BlockPackedReader(data, packedIntsVersion, blockSize, maxDoc, false);
         ramBytesUsed.addAndGet(reader.ramBytesUsed());
+        instancesInfo.put(field.name, Accountables.namedAccountable("delta compressed", reader));
         return reader;
       case TABLE_COMPRESSED:
         data.seek(entry.offset);
@@ -192,6 +207,7 @@ class Lucene49NormsProducer extends NormsProducer {
         final int bitsPerValue = data.readVInt();
         final PackedInts.Reader ordsReader = PackedInts.getReaderNoHeader(data, PackedInts.Format.byId(formatID), packedVersion, maxDoc, bitsPerValue);
         ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(decode) + ordsReader.ramBytesUsed());
+        instancesInfo.put(field.name, Accountables.namedAccountable("table compressed", ordsReader));
         return new NumericDocValues() {
           @Override
           public long get(int docID) {
@@ -211,5 +227,10 @@ class Lucene49NormsProducer extends NormsProducer {
   static class NormsEntry {
     byte format;
     long offset;
+  }
+
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "(fields=" + norms.size() + ",active=" + activeCount.get() + ")";
   }
 }

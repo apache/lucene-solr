@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 
 
 /**
@@ -150,6 +151,16 @@ public class RAMDirectory extends BaseDirectory implements Accountable {
     return sizeInBytes.get();
   }
   
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return Accountables.namedAccountables("file", fileMap);
+  }
+  
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "(id=" + getLockID() + ")";
+  }
+
   /** Removes an existing file in the directory.
    * @throws IOException if the file does not exist
    */

@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Queue;
 import java.util.Set;
@@ -668,6 +669,11 @@ final class DocumentsWriter implements Closeable, Accountable {
   @Override
   public long ramBytesUsed() {
     return flushControl.ramBytesUsed();
+  }
+  
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return Collections.emptyList();
   }
 
   static final class ApplyDeletesEvent implements Event {

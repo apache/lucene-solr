@@ -29,6 +29,7 @@ import java.util.WeakHashMap;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.WAH8DocIdSet;
 
@@ -146,5 +147,11 @@ public class CachingWrapperFilter extends Filter implements Accountable {
     }
 
     return total;
+  }
+
+  @Override
+  public synchronized Iterable<? extends Accountable> getChildResources() {
+    // Sync only to pull the current set of values:
+    return Accountables.namedAccountables("segment", cache);
   }
 }

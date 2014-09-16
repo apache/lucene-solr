@@ -47,6 +47,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -953,6 +954,20 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     public long ramBytesUsed() {
       return ((fst!=null) ? fst.ramBytesUsed() : 0);
     }
+    
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      if (fst == null) {
+        return Collections.emptyList();
+      } else {
+        return Collections.singletonList(Accountables.namedAccountable("terms", fst));
+      }
+    }
+    
+    @Override
+    public String toString() {
+      return "MemoryTerms(terms=" + termCount + ",postings=" + sumDocFreq + ",positions=" + sumTotalTermFreq + ",docs=" + docCount + ")";
+    }
   }
 
   @Override
@@ -1010,6 +1025,16 @@ public final class MemoryPostingsFormat extends PostingsFormat {
           sizeInBytes += entry.getValue().ramBytesUsed();
         }
         return sizeInBytes;
+      }
+
+      @Override
+      public Iterable<? extends Accountable> getChildResources() {
+        return Accountables.namedAccountables("field", fields);
+      }
+
+      @Override
+      public String toString() {
+        return "MemoryPostings(fields=" + fields.size() + ")";
       }
 
       @Override

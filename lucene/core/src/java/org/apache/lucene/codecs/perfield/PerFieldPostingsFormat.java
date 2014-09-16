@@ -38,6 +38,8 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -268,12 +270,22 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       }
       return ramBytesUsed;
     }
+    
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      return Accountables.namedAccountables("format", formats);
+    }
 
     @Override
     public void checkIntegrity() throws IOException {
       for (FieldsProducer producer : formats.values()) {
         producer.checkIntegrity();
       }
+    }
+
+    @Override
+    public String toString() {
+      return "PerFieldPostings(formats=" + formats.size() + ")";
     }
   }
 

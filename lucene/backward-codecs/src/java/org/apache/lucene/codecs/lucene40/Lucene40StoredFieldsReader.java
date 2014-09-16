@@ -31,11 +31,13 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
 import java.io.Closeable;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 
 /**
  * Class responsible for access to stored document fields.
@@ -258,7 +260,17 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
   public long ramBytesUsed() {
     return RAM_BYTES_USED;
   }
+  
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return Collections.emptyList();
+  }
 
   @Override
   public void checkIntegrity() throws IOException {}
+
+  @Override
+  public String toString() {
+    return getClass().getSimpleName();
+  }
 }

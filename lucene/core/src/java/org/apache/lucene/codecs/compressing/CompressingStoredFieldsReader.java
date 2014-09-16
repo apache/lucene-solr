@@ -38,6 +38,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collections;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.StoredFieldsReader;
@@ -55,6 +56,8 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -528,6 +531,11 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
   public long ramBytesUsed() {
     return indexReader.ramBytesUsed();
   }
+  
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return Collections.singleton(Accountables.namedAccountable("stored field index", indexReader));
+  }
 
   @Override
   public void checkIntegrity() throws IOException {
@@ -536,4 +544,8 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     }
   }
 
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "(mode=" + compressionMode + ",chunksize=" + chunkSize + ")";
+  }
 }

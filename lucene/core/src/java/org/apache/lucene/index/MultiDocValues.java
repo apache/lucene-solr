@@ -18,12 +18,15 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.index.MultiTermsEnum.TermsEnumIndex;
 import org.apache.lucene.index.MultiTermsEnum.TermsEnumWithSlice;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InPlaceMergeSorter;
@@ -429,6 +432,10 @@ public class MultiDocValues {
         return BASE_RAM_BYTES_USED + RamUsageEstimator.sizeOf(newToOld) + RamUsageEstimator.sizeOf(oldToNew);
       }
 
+      @Override
+      public Iterable<? extends Accountable> getChildResources() {
+        return Collections.emptyList();
+      }
     }
 
     /**
@@ -633,6 +640,16 @@ public class MultiDocValues {
     @Override
     public long ramBytesUsed() {
       return ramBytesUsed;
+    }
+
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      List<Accountable> resources = new ArrayList<>();
+      resources.add(Accountables.namedAccountable("global ord deltas", globalOrdDeltas));
+      resources.add(Accountables.namedAccountable("first segments", firstSegments));
+      resources.add(Accountables.namedAccountable("segment map", segmentMap));
+      // TODO: would be nice to return actual child segment deltas too, but the optimizations are confusing
+      return resources;
     }
   }
   

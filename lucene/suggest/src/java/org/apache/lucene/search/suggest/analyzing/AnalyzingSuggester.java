@@ -37,6 +37,8 @@ import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -256,6 +258,15 @@ public class AnalyzingSuggester extends Lookup {
   @Override
   public long ramBytesUsed() {
     return fst == null ? 0 : fst.ramBytesUsed();
+  }
+
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    if (fst == null) {
+      return Collections.emptyList();
+    } else {
+      return Collections.singletonList(Accountables.namedAccountable("fst", fst));
+    }
   }
 
   private int[] topoSortStates(Automaton a) {

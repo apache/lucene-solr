@@ -18,8 +18,10 @@ package org.apache.lucene.codecs.blockterms;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.TreeMap;
 
 import org.apache.lucene.codecs.BlockTermState;
@@ -42,6 +44,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -262,6 +265,11 @@ public class BlockTermsReader extends FieldsProducer {
     @Override
     public long ramBytesUsed() {
       return FIELD_READER_RAM_BYTES_USED;
+    }
+    
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      return Collections.emptyList();
     }
 
     @Override
@@ -876,6 +884,23 @@ public class BlockTermsReader extends FieldsProducer {
       ramBytesUsed += reader.ramBytesUsed();
     }
     return ramBytesUsed;
+  }
+  
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    List<Accountable> resources = new ArrayList<>();
+    if (indexReader != null) {
+      resources.add(Accountables.namedAccountable("term index", indexReader));
+    }
+    if (postingsReader != null) {
+      resources.add(Accountables.namedAccountable("delegate", postingsReader));
+    }
+    return Collections.unmodifiableList(resources);
+  }
+
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "(index=" + indexReader + ",delegate=" + postingsReader + ")";
   }
 
   @Override

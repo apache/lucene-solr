@@ -28,6 +28,8 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Just like {@link Lucene49NormsFormat} but with additional asserts.
@@ -67,7 +69,7 @@ public class AssertingNormsFormat extends NormsFormat {
         count++;
       }
       assert count == maxDoc;
-      AssertingDocValuesFormat.checkIterator(values.iterator(), maxDoc, false);
+      TestUtil.checkIterator(values.iterator(), maxDoc, false);
       in.addNormsField(field, values);
     }
     
@@ -84,6 +86,10 @@ public class AssertingNormsFormat extends NormsFormat {
     AssertingNormsProducer(NormsProducer in, int maxDoc) {
       this.in = in;
       this.maxDoc = maxDoc;
+      // do a few simple checks on init
+      assert toString() != null;
+      assert ramBytesUsed() >= 0;
+      assert getChildResources() != null;
     }
 
     @Override
@@ -101,12 +107,26 @@ public class AssertingNormsFormat extends NormsFormat {
 
     @Override
     public long ramBytesUsed() {
-      return in.ramBytesUsed();
+      long v = in.ramBytesUsed();
+      assert v >= 0;
+      return v;
+    }
+    
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      Iterable<? extends Accountable> res = in.getChildResources();
+      TestUtil.checkIterator(res.iterator());
+      return res;
     }
 
     @Override
     public void checkIntegrity() throws IOException {
       in.checkIntegrity();
+    }
+    
+    @Override
+    public String toString() {
+      return getClass().getSimpleName() + "(" + in.toString() + ")";
     }
   }
 }

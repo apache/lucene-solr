@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Iterator;
 
 import org.apache.lucene.store.IndexInput;
@@ -44,6 +45,11 @@ class PrefixCodedTerms implements Iterable<Term>, Accountable {
     return buffer.ramBytesUsed();
   }
   
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return Collections.emptyList();
+  }
+
   /** @return iterator over the bytes */
   @Override
   public Iterator<Term> iterator() {

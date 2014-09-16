@@ -33,6 +33,7 @@ import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -311,6 +312,18 @@ public class FSTCompletionLookup extends Lookup implements Accountable {
       mem += higherWeightsCompletion.getFST().ramBytesUsed();
     }
     return mem;
+  }
+
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    List<Accountable> resources = new ArrayList<>();
+    if (normalCompletion != null) {
+      resources.add(Accountables.namedAccountable("fst", normalCompletion.getFST()));
+    }
+    if (higherWeightsCompletion != null && (normalCompletion == null || normalCompletion.getFST() != higherWeightsCompletion.getFST())) {
+      resources.add(Accountables.namedAccountable("higher weights fst", higherWeightsCompletion.getFST()));
+    }
+    return resources;
   }
 
   @Override

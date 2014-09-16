@@ -25,13 +25,16 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.packed.MonotonicBlockPackedReader;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Comparator;
+import java.util.List;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexFileNames;
@@ -61,7 +64,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   // all fields share this single logical byte[]
   private final PagedBytes.Reader termBytesReader;
 
-  final HashMap<FieldInfo,FieldIndexData> fields = new HashMap<>();
+  final HashMap<String,FieldIndexData> fields = new HashMap<>();
   
   // start of the field info data
   private long dirOffset;
@@ -115,7 +118,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
           throw new CorruptIndexException("invalid packedIndexStart: " + packedIndexStart + " indexStart: " + indexStart + "numIndexTerms: " + numIndexTerms + " (resource=" + in + ")");
         }
         final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
-        FieldIndexData previous = fields.put(fieldInfo, new FieldIndexData(in, termBytes, indexStart, termsStart, packedIndexStart, packedOffsetsStart, numIndexTerms));
+        FieldIndexData previous = fields.put(fieldInfo.name, new FieldIndexData(in, termBytes, indexStart, termsStart, packedIndexStart, packedOffsetsStart, numIndexTerms));
         if (previous != null) {
           throw new CorruptIndexException("duplicate field: " + fieldInfo.name + " (resource=" + in + ")");
         }
@@ -270,11 +273,28 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       return ((termOffsets!=null)? termOffsets.ramBytesUsed() : 0) + 
           ((termsDictOffsets!=null)? termsDictOffsets.ramBytesUsed() : 0);
     }
+
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      List<Accountable> resources = new ArrayList<>();
+      if (termOffsets != null) {
+        resources.add(Accountables.namedAccountable("term lengths", termOffsets));
+      }
+      if (termsDictOffsets != null) {
+        resources.add(Accountables.namedAccountable("offsets", termsDictOffsets));
+      }
+      return resources;
+    }
+
+    @Override
+    public String toString() {
+      return "FixedGapTermIndex(indexterms=" + numIndexTerms + ")";
+    }
   }
 
   @Override
   public FieldIndexEnum getFieldEnum(FieldInfo fieldInfo) {
-    return new IndexEnum(fields.get(fieldInfo));
+    return new IndexEnum(fields.get(fieldInfo.name));
   }
 
   @Override
@@ -297,5 +317,15 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       sizeInBytes += entry.ramBytesUsed();
     }
     return sizeInBytes;
+  }
+
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return Accountables.namedAccountables("field", fields);
+  }
+
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "(fields=" + fields.size() + ",interval=" + indexInterval + ")";
   }
 }

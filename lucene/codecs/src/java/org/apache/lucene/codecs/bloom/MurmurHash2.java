@@ -98,5 +98,9 @@ public final class MurmurHash2 extends HashFunction{
   public final int hash(BytesRef br) {
     return hash32(br.bytes, br.offset, br.length);
   }
-  
+
+  @Override
+  public String toString() {
+    return getClass().getSimpleName();
+  }  
 }

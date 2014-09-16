@@ -78,6 +78,8 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.Version;
@@ -719,6 +721,29 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
         }
       }
       return mem;
+    } catch (IOException ioe) {
+      throw new RuntimeException(ioe);
+    }
+  }
+
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    List<Accountable> resources = new ArrayList<>();
+    try {
+      if (searcherMgr != null) {
+        IndexSearcher searcher = searcherMgr.acquire();
+        try {
+          for (AtomicReaderContext context : searcher.getIndexReader().leaves()) {
+            AtomicReader reader = FilterAtomicReader.unwrap(context.reader());
+            if (reader instanceof SegmentReader) {
+              resources.add(Accountables.namedAccountable("segment", (SegmentReader)reader));
+            }
+          }
+        } finally {
+          searcherMgr.release(searcher);
+        }
+      }
+      return resources;
     } catch (IOException ioe) {
       throw new RuntimeException(ioe);
     }

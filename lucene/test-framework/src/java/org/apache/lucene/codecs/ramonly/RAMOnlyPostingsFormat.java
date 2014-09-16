@@ -46,6 +46,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
@@ -95,6 +96,11 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
       }
       return sizeInBytes;
     }
+    
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      return Accountables.namedAccountables("field", fieldToTerms);
+    }
 
     @Override
     public void checkIntegrity() throws IOException {}
@@ -120,6 +126,11 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
         sizeInBytes += term.ramBytesUsed();
       }
       return sizeInBytes;
+    }
+
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      return Collections.emptyList();
     }
 
     @Override
@@ -184,6 +195,11 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
       }
       return sizeInBytes;
     }
+
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      return Collections.emptyList();
+    }
   }
 
   static class RAMDoc implements Accountable {
@@ -207,6 +223,11 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
         }
       }
       return sizeInBytes;
+    }
+    
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      return Collections.emptyList();
     }
   }
 

@@ -158,7 +158,7 @@ if __name__ == '__main__':
   @Override
   public String toString() {
     return getClass().getSimpleName() + "(bitsPerValue=" + bitsPerValue
-        + ", size=" + size() + ", elements.length=" + blocks.length + ")";
+        + ",size=" + size() + ",blocks=" + blocks.length + ")";
   }
 }
 """ %(MASKS[bpv], 2*bpv, MASKS[bpv], bpv, MASKS[bpv], MASKS[bpv], 2*bpv, MASKS[bpv], bpv, MASKS[bpv], CASTS[bpv], 2*bpv, CASTS[bpv], bpv, CASTS[bpv], CASTS[bpv],

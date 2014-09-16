@@ -130,6 +130,8 @@ New Features
 * LUCENE-5820: SuggestStopFilter should have a factory. 
   (Varun Thacker via Steve Rowe)
 
+* LUCENE-5949: Add Accountable.getChildResources(). (Robert Muir)
+
 API Changes:
 
 * LUCENE-5900: Deprecated more constructors taking Version in *InfixSuggester and

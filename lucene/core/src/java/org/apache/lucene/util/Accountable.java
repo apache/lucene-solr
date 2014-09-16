@@ -29,4 +29,12 @@ public interface Accountable {
    */
   long ramBytesUsed();
 
+  /**
+   * Returns nested resources of this class. 
+   * The result should be a point-in-time snapshot (to avoid race conditions).
+   * @see Accountables
+   */
+  // TODO: on java8 make this a default method returning emptyList
+  Iterable<? extends Accountable> getChildResources();
+
 }

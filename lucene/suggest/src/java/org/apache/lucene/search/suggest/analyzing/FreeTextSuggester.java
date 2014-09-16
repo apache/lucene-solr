@@ -49,6 +49,8 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRefBuilder;
@@ -208,6 +210,15 @@ public class FreeTextSuggester extends Lookup {
       return 0;
     }
     return fst.ramBytesUsed();
+  }
+
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    if (fst == null) {
+      return Collections.emptyList();
+    } else {
+      return Collections.singletonList(Accountables.namedAccountable("fst", fst));
+    }
   }
 
   private static class AnalyzingComparator implements Comparator<BytesRef> {

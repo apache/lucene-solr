@@ -32,6 +32,7 @@ package org.apache.lucene.search.suggest.jaspell;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -110,7 +111,11 @@ public class JaspellTernarySearchTrie implements Accountable {
       }
       return mem;
     }
-
+    
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      return Collections.emptyList();
+    }
   }
 
   /**
@@ -898,5 +903,9 @@ public class JaspellTernarySearchTrie implements Accountable {
     }
     return mem;
   }
-
+  
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return Collections.emptyList();
+  }
 }

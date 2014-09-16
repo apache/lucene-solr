@@ -18,14 +18,17 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldInfosFormat;
+import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
@@ -34,6 +37,7 @@ import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.IOUtils;
@@ -258,7 +262,7 @@ public final class SegmentReader extends AtomicReader implements Accountable {
   }
 
   @Override
-  public Fields fields() {
+  public FieldsProducer fields() {
     ensureOpen();
     return core.fields;
   }
@@ -537,6 +541,28 @@ public final class SegmentReader extends AtomicReader implements Accountable {
     return ramBytesUsed;
   }
   
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    ensureOpen();
+    List<Accountable> resources = new ArrayList<>();
+    if (core.fields != null) {
+      resources.add(Accountables.namedAccountable("postings", core.fields));
+    }
+    if (core.normsProducer != null) {
+      resources.add(Accountables.namedAccountable("norms", core.normsProducer));
+    }
+    if (docValuesProducer != null) {
+      resources.add(Accountables.namedAccountable("docvalues", docValuesProducer));
+    }
+    if (getFieldsReader() != null) {
+      resources.add(Accountables.namedAccountable("stored fields", getFieldsReader()));
+    }
+    if (getTermVectorsReader() != null) {
+      resources.add(Accountables.namedAccountable("term vectors", getTermVectorsReader()));
+    }
+    return resources;
+  }
+
   @Override
   public void checkIntegrity() throws IOException {
     ensureOpen();

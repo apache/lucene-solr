@@ -116,6 +116,11 @@ class BufferedUpdatesStream implements Accountable {
   public long ramBytesUsed() {
     return bytesUsed.get();
   }
+  
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return Collections.emptyList();
+  }
 
   public static class ApplyDeletesResult {
     

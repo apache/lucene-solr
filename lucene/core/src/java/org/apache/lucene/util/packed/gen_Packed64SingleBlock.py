@@ -222,7 +222,7 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
   @Override
   public String toString() {
     return getClass().getSimpleName() + "(bitsPerValue=" + bitsPerValue
-        + ", size=" + size() + ", elements.length=" + blocks.length + ")";
+        + ",size=" + size() + ",blocks=" + blocks.length + ")";
   }
 
   public static Packed64SingleBlock create(DataInput in,
