@@ -56,6 +56,7 @@
       <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/morphlines-core/morphlines-core.iml" />
       <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/uima/uima.iml" />
       <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/velocity/velocity.iml" />
+      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/analytics/analytics.iml" />
     </modules>
   </component>
 </project>
