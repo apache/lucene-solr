@@ -31,6 +31,9 @@ Bug fixes
   Integer.MAX_VALUE - 8 for the maximum array size.  (Robert Muir,
   Mike McCandless)
 
+* LUCENE-5827: Make all Directory implementations correctly fail with
+  IllegalArgumentException if slices are out of bounds.  (Uwe SChindler)
+
 ======================= Lucene 4.9.0 =======================
 
 Changes in Runtime Behavior

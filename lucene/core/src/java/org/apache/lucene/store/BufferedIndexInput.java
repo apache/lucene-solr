@@ -442,10 +442,9 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
     
     SlicedIndexInput(String sliceDescription, IndexInput base, long offset, long length) {
       super("SlicedIndexInput(" + sliceDescription + " in " + base + " slice=" + offset + ":" + (offset+length) + ")", BufferedIndexInput.BUFFER_SIZE);
-      if (offset < 0 || length < 0) {
-        throw new IllegalArgumentException();
+      if (offset < 0 || length < 0 || offset + length > base.length()) {
+        throw new IllegalArgumentException("slice() " + sliceDescription + " out of bounds: "  + base);
       }
-      assert offset + length <= base.length();
       this.base = base.clone();
       this.fileOffset = offset;
       this.length = length;
