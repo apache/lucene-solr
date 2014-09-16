@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.search.spell.Dictionary;
@@ -209,6 +210,11 @@ public class SolrSuggester implements Accountable {
   @Override
   public long ramBytesUsed() {
     return lookup.ramBytesUsed();
+  }
+  
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return lookup.getChildResources();
   }
   
   @Override

@@ -25,7 +25,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.codecs.CodecUtil;
@@ -36,6 +38,7 @@ import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
@@ -443,6 +446,23 @@ public final class FST<T> implements Accountable {
     size += cachedArcsBytesUsed;
     size += RamUsageEstimator.sizeOf(bytesPerArc);
     return size;
+  }
+
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    List<Accountable> resources = new ArrayList<>();
+    if (packed) {
+      resources.add(Accountables.namedAccountable("node ref to address", nodeRefToAddress));
+    } else if (nodeAddress != null) {
+      resources.add(Accountables.namedAccountable("node addresses", nodeAddress));
+      resources.add(Accountables.namedAccountable("in counts", inCounts));
+    }
+    return resources;
+  }
+
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "(input=" + inputType + ",output=" + outputs + ",packed=" + packed + ",nodes=" + nodeCount + ",arcs=" + arcCount + ")";
   }
 
   void finish(long newStartNode) throws IOException {

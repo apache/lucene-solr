@@ -222,6 +222,7 @@ final class SegmentCoreReaders implements Accountable {
     coreClosedListeners.remove(listener);
   }
 
+  // TODO: remove this, it can just be on SR
   @Override
   public long ramBytesUsed() {
     return BASE_RAM_BYTES_USED +
@@ -229,5 +230,10 @@ final class SegmentCoreReaders implements Accountable {
         ((fields!=null) ? fields.ramBytesUsed() : 0) + 
         ((fieldsReaderOrig!=null)? fieldsReaderOrig.ramBytesUsed() : 0) + 
         ((termVectorsReaderOrig!=null) ? termVectorsReaderOrig.ramBytesUsed() : 0);
+  }
+
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return Collections.emptyList();
   }
 }

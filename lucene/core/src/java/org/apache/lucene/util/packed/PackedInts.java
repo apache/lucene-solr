@@ -19,6 +19,7 @@ package org.apache.lucene.util.packed;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.NumericDocValues;
@@ -478,6 +479,10 @@ public class PackedInts {
      */
     public abstract int size();
 
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      return Collections.emptyList();
+    }
   }
 
   /**
@@ -627,7 +632,6 @@ public class PackedInts {
     public final int size() {
       return valueCount;
     }
-
   }
 
   static abstract class MutableImpl extends Mutable {
@@ -651,6 +655,10 @@ public class PackedInts {
       return valueCount;
     }
 
+    @Override
+    public String toString() {
+      return getClass().getSimpleName() + "(valueCount=" + valueCount + ",bitsPerValue=" + bitsPerValue + ")";
+    }
   }
 
   /** A {@link Reader} which has all its values equal to 0 (bitsPerValue = 0). */
@@ -686,7 +694,6 @@ public class PackedInts {
     public long ramBytesUsed() {
       return RamUsageEstimator.alignObjectSize(RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + RamUsageEstimator.NUM_BYTES_INT);
     }
-
   }
 
   /** A write-once Writer.

@@ -30,6 +30,8 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Just like {@link Lucene41StoredFieldsFormat} but with additional asserts.
@@ -54,6 +56,10 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
     AssertingStoredFieldsReader(StoredFieldsReader in, int maxDoc) {
       this.in = in;
       this.maxDoc = maxDoc;
+      // do a few simple checks on init
+      assert toString() != null;
+      assert ramBytesUsed() >= 0;
+      assert getChildResources() != null;
     }
     
     @Override
@@ -74,12 +80,26 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
 
     @Override
     public long ramBytesUsed() {
-      return in.ramBytesUsed();
+      long v = in.ramBytesUsed();
+      assert v >= 0;
+      return v;
+    }
+
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      Iterable<? extends Accountable> res = in.getChildResources();
+      TestUtil.checkIterator(res.iterator());
+      return res;
     }
 
     @Override
     public void checkIntegrity() throws IOException {
       in.checkIntegrity();
+    }
+
+    @Override
+    public String toString() {
+      return getClass().getSimpleName() + "(" + in.toString() + ")";
     }
   }
 

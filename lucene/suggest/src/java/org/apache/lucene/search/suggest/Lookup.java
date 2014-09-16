@@ -30,6 +30,7 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PriorityQueue;
@@ -268,4 +269,13 @@ public abstract class Lookup implements Accountable {
    */
   public abstract boolean load(DataInput input) throws IOException;
 
+  /**
+   * Returns nested resources of this class. 
+   * The result should be a point-in-time snapshot (to avoid race conditions).
+   * @see Accountables
+   */
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return null;
+  }
 }

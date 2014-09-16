@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.lucene40;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -27,6 +28,7 @@ import java.util.NoSuchElementException;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TermVectorsReader;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
@@ -39,6 +41,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -122,8 +125,12 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
       assert HEADER_LENGTH_INDEX == tvx.getFilePointer();
       assert HEADER_LENGTH_DOCS == tvd.getFilePointer();
       assert HEADER_LENGTH_FIELDS == tvf.getFilePointer();
-      assert tvxVersion == tvdVersion;
-      assert tvxVersion == tvfVersion;
+      if (tvxVersion != tvdVersion) {
+        throw new CorruptIndexException("version mismatch: tvx=" + tvxVersion + " != tvd=" + tvdVersion + " (resource=" + tvd + ")");
+      }
+      if (tvxVersion != tvfVersion) {
+        throw new CorruptIndexException("version mismatch: tvx=" + tvxVersion + " != tvf=" + tvfVersion + " (resource=" + tvf + ")");
+      }
 
       numTotalDocs = (int) (tvx.length()-HEADER_LENGTH_INDEX >> 4);
 
@@ -718,8 +725,18 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
   public long ramBytesUsed() {
     return 0;
   }
+  
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return Collections.emptyList();
+  }
 
   @Override
   public void checkIntegrity() throws IOException {}
+  
+  @Override
+  public String toString() {
+    return getClass().getSimpleName();
+  }
 }
 

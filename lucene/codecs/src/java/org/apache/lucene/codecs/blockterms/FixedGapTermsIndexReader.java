@@ -25,14 +25,18 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Comparator;
+import java.util.List;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexFileNames;
@@ -288,6 +292,20 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
     public long ramBytesUsed() {
       return FIELD_INDEX_DATA_BASE_RAM_BYTES_USED + coreIndex.ramBytesUsed();
     }
+    
+    @Override
+    public String toString() {
+      return "FixedGapTermIndex(indexterms=" + numIndexTerms + ")";
+    }
+    
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      if (coreIndex == null) {
+        return Collections.emptyList();
+      } else {
+        return Collections.singleton(Accountables.namedAccountable("term index", coreIndex));
+      }
+    }
 
     private void loadTermsIndex(PagedBytes termBytes) throws IOException {
       if (coreIndex == null) {
@@ -416,6 +434,23 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
         return ((termOffsets!=null)? termOffsets.ramBytesUsed() : 0) +
             ((termsDictOffsets!=null)? termsDictOffsets.ramBytesUsed() : 0);
       }
+      
+      @Override
+      public Iterable<? extends Accountable> getChildResources() {
+        List<Accountable> resources = new ArrayList<>();
+        if (termOffsets != null) {
+          resources.add(Accountables.namedAccountable("term lengths", termOffsets));
+        }
+        if (termsDictOffsets != null) {
+          resources.add(Accountables.namedAccountable("offsets", termsDictOffsets));
+        }
+        return Collections.unmodifiableList(resources);
+      }
+
+      @Override
+      public String toString() {
+        return getClass().getSimpleName() + "(indexterms="  + numIndexTerms + ")";
+      }
     }
   }
 
@@ -456,5 +491,15 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       sizeInBytes += entry.ramBytesUsed();
     }
     return sizeInBytes;
+  }
+  
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return Accountables.namedAccountables("field", fields);
+  }
+
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "(fields=" + fields.size() + ",interval=" + indexInterval + ")";
   }
 }

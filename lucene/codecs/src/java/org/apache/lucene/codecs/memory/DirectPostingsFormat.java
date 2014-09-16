@@ -42,6 +42,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -169,11 +170,21 @@ public final class DirectPostingsFormat extends PostingsFormat {
       }
       return sizeInBytes;
     }
+    
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      return Accountables.namedAccountables("field", fields);
+    }
 
     @Override
     public void checkIntegrity() throws IOException {
       // if we read entirely into ram, we already validated.
       // otherwise returned the raw postings reader
+    }
+
+    @Override
+    public String toString() {
+      return getClass().getSimpleName() + "(fields=" + fields.size() + ")";
     }
   }
 
@@ -206,6 +217,11 @@ public final class DirectPostingsFormat extends PostingsFormat {
         return BASE_RAM_BYTES_USED +
             ((postings!=null) ? RamUsageEstimator.sizeOf(postings) : 0) + 
             ((payloads!=null) ? RamUsageEstimator.sizeOf(payloads) : 0);
+      }
+
+      @Override
+      public Iterable<? extends Accountable> getChildResources() {
+        return Collections.emptyList();
       }
     }
 
@@ -254,6 +270,11 @@ public final class DirectPostingsFormat extends PostingsFormat {
          }
          
          return sizeInBytes;
+      }
+      
+      @Override
+      public Iterable<? extends Accountable> getChildResources() {
+        return Collections.emptyList();
       }
     }
 
@@ -531,6 +552,16 @@ public final class DirectPostingsFormat extends PostingsFormat {
       }
       
       return sizeInBytes;
+    }
+    
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      return Collections.emptyList();
+    }
+
+    @Override
+    public String toString() {
+      return "DirectTerms(terms=" + terms.length + ",postings=" + sumDocFreq + ",positions=" + sumTotalTermFreq + ",docs=" + docCount + ")";
     }
 
     // Compares in unicode (UTF8) order:

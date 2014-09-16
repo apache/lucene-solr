@@ -20,12 +20,16 @@ package org.apache.lucene.codecs.compressing;
 import static org.apache.lucene.util.BitUtil.zigZagDecode;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
@@ -184,4 +188,27 @@ public final class CompressingStoredFieldsIndexReader implements Cloneable, Acco
     return res;
   }
 
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    List<Accountable> resources = new ArrayList<>();
+    
+    long docBaseDeltaBytes = RamUsageEstimator.shallowSizeOf(docBasesDeltas);
+    for (PackedInts.Reader r : docBasesDeltas) {
+      docBaseDeltaBytes += r.ramBytesUsed();
+    }
+    resources.add(Accountables.namedAccountable("doc base deltas", docBaseDeltaBytes));
+    
+    long startPointerDeltaBytes = RamUsageEstimator.shallowSizeOf(startPointersDeltas);
+    for (PackedInts.Reader r : startPointersDeltas) {
+      startPointerDeltaBytes += r.ramBytesUsed();
+    }
+    resources.add(Accountables.namedAccountable("start pointer deltas", startPointerDeltaBytes));
+    
+    return resources;
+  }
+
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "(blocks=" + docBases.length + ")";
+  }
 }

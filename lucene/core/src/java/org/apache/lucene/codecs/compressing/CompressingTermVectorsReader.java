@@ -33,6 +33,7 @@ import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -54,6 +55,8 @@ import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -1081,10 +1084,19 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
   }
   
   @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return Collections.singleton(Accountables.namedAccountable("term vector index", indexReader));
+  }
+  
+  @Override
   public void checkIntegrity() throws IOException {
     if (version >= VERSION_CHECKSUM) {
       CodecUtil.checksumEntireFile(vectorsStream);
     }
   }
 
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "(mode=" + compressionMode + ",chunksize=" + chunkSize + ")";
+  }
 }

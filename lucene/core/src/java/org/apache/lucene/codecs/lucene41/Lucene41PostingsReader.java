@@ -24,6 +24,7 @@ import static org.apache.lucene.codecs.lucene41.Lucene41PostingsWriter.IntBlockT
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
@@ -39,6 +40,7 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -1580,6 +1582,11 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
   public long ramBytesUsed() {
     return BASE_RAM_BYTES_USED  + forUtil.ramBytesUsed();
   }
+  
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return Collections.emptyList();
+  }
 
   @Override
   public void checkIntegrity() throws IOException {
@@ -1594,5 +1601,10 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
         CodecUtil.checksumEntireFile(payIn);
       }
     }
+  }
+
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "(positions=" + (posIn != null) + ",payloads=" + (payIn != null) +")";
   }
 }

@@ -24,6 +24,7 @@ import java.util.BitSet;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 import java.util.TreeMap;
 
 import org.apache.lucene.codecs.BlockTermState;
@@ -47,6 +48,8 @@ import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -184,7 +187,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
     }
   }
 
-  final class TermsReader extends Terms {
+  final class TermsReader extends Terms implements Accountable {
     final FieldInfo fieldInfo;
     final long numTerms;
     final long sumTotalTermFreq;
@@ -282,6 +285,33 @@ public class FSTOrdTermsReader extends FieldsProducer {
     @Override
     public TermsEnum intersect(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
       return new IntersectTermsEnum(compiled, startTerm);
+    }
+
+    @Override
+    public long ramBytesUsed() {
+      long ramBytesUsed = 0;
+      if (index != null) {
+        ramBytesUsed += index.ramBytesUsed();
+        ramBytesUsed += RamUsageEstimator.sizeOf(metaBytesBlock);
+        ramBytesUsed += RamUsageEstimator.sizeOf(metaLongsBlock);
+        ramBytesUsed += RamUsageEstimator.sizeOf(skipInfo);
+        ramBytesUsed += RamUsageEstimator.sizeOf(statsBlock);
+      }
+      return ramBytesUsed;
+    }
+
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      if (index == null) {
+        return Collections.emptyList();
+      } else {
+        return Collections.singletonList(Accountables.namedAccountable("terms", index));
+      }
+    }
+    
+    @Override
+    public String toString() {
+      return "FSTOrdTerms(terms=" + numTerms + ",postings=" + sumDocFreq + ",positions=" + sumTotalTermFreq + ",docs=" + docCount + ")";
     }
 
     // Only wraps common operations for PBF interact
@@ -847,17 +877,24 @@ public class FSTOrdTermsReader extends FieldsProducer {
   public long ramBytesUsed() {
     long ramBytesUsed = postingsReader.ramBytesUsed();
     for (TermsReader r : fields.values()) {
-      if (r.index != null) {
-        ramBytesUsed += r.index.ramBytesUsed();
-        ramBytesUsed += RamUsageEstimator.sizeOf(r.metaBytesBlock);
-        ramBytesUsed += RamUsageEstimator.sizeOf(r.metaLongsBlock);
-        ramBytesUsed += RamUsageEstimator.sizeOf(r.skipInfo);
-        ramBytesUsed += RamUsageEstimator.sizeOf(r.statsBlock);
-      }
+      ramBytesUsed += r.ramBytesUsed();
     }
     return ramBytesUsed;
   }
   
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    List<Accountable> resources = new ArrayList<>();
+    resources.addAll(Accountables.namedAccountables("field", fields));
+    resources.add(Accountables.namedAccountable("delegate", postingsReader));
+    return Collections.unmodifiableList(resources);
+  }
+  
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "(fields=" + fields.size() + ",delegate=" + postingsReader + ")";
+  }
+
   @Override
   public void checkIntegrity() throws IOException {
     postingsReader.checkIntegrity();

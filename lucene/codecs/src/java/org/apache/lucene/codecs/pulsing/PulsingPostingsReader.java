@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.pulsing;
  */
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -35,6 +36,7 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
@@ -657,5 +659,10 @@ public class PulsingPostingsReader extends PostingsReaderBase {
   @Override
   public void checkIntegrity() throws IOException {
     wrappedPostingsReader.checkIntegrity();
+  }
+  
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return Collections.emptyList();
   }
 }

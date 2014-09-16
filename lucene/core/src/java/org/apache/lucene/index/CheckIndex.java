@@ -41,6 +41,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -547,7 +548,7 @@ public class CheckIndex {
 
       int toLoseDocCount = info.info.getDocCount();
 
-      AtomicReader reader = null;
+      SegmentReader reader = null;
 
       try {
         msg(infoStream, "    version=" + (version == null ? "3.0" : version));
@@ -678,6 +679,11 @@ public class CheckIndex {
         }
 
         msg(infoStream, "");
+        
+        if (verbose) {
+          msg(infoStream, "detailed segment RAM usage: ");
+          msg(infoStream, Accountables.toString(reader));
+        }
 
       } catch (Throwable t) {
         if (failFast) {

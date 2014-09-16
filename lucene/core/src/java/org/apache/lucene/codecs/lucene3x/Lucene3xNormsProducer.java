@@ -34,6 +34,8 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.Version;
@@ -159,10 +161,11 @@ class Lucene3xNormsProducer extends NormsProducer {
 
   // holds a file+offset pointing to a norms, and lazy-loads it
   // to a singleton NumericDocValues instance
-  private class NormsDocValues {
+  private class NormsDocValues implements Accountable {
     private final IndexInput file;
     private final long offset;
     private NumericDocValues instance;
+    private final AtomicLong bytesUsed = new AtomicLong(-1);
     
     public NormsDocValues(IndexInput normInput, long normSeek) {
       this.file = normInput;
@@ -182,7 +185,9 @@ class Lucene3xNormsProducer extends NormsProducer {
           openFiles.remove(file);
           file.close();
         }
-        ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(bytes));
+        long ram = RamUsageEstimator.sizeOf(bytes);
+        ramBytesUsed.addAndGet(ram);
+        bytesUsed.addAndGet(ram);
         instance = new NumericDocValues() {
           @Override
           public long get(int docID) {
@@ -191,7 +196,28 @@ class Lucene3xNormsProducer extends NormsProducer {
         };
       }
       return instance;
-    }    
+    }
+
+    @Override
+    public long ramBytesUsed() {
+      long v = bytesUsed.get();
+      return Math.max(v, 0);
+    }
+
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      long v = bytesUsed.get();
+      if (v < 0) {
+        return Collections.emptyList();
+      } else {
+        return Collections.singleton(Accountables.namedAccountable("byte array", v));
+      }
+    }
+
+    @Override
+    public String toString() {
+      return getClass().getSimpleName() + "(active=" + (bytesUsed.get() >= 0) + ")";
+    }
   }
 
   @Override
@@ -208,4 +234,14 @@ class Lucene3xNormsProducer extends NormsProducer {
   
   @Override
   public void checkIntegrity() throws IOException {}
+
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return Accountables.namedAccountables("field", norms);
+  }
+
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "(fields=" + norms.size() + ")";
+  }
 }

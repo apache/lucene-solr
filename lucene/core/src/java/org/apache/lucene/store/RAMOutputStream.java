@@ -18,10 +18,12 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
 
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 
 /**
  * A memory-resident {@link IndexOutput} implementation.
@@ -181,6 +183,11 @@ public class RAMOutputStream extends IndexOutput implements Accountable {
   @Override
   public long ramBytesUsed() {
     return (long) file.numBuffers() * (long) BUFFER_SIZE;
+  }
+  
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return Collections.singleton(Accountables.namedAccountable("file", file));
   }
 
   @Override

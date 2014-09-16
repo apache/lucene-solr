@@ -18,7 +18,10 @@ package org.apache.lucene.codecs.memory;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -28,6 +31,7 @@ import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomAccessOrds;
@@ -37,6 +41,8 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
@@ -49,25 +55,22 @@ import org.apache.lucene.util.RamUsageEstimator;
 
 class DirectDocValuesProducer extends DocValuesProducer {
   // metadata maps (just file pointers and minimal stuff)
-  private final Map<Integer,NumericEntry> numerics = new HashMap<>();
-  private final Map<Integer,BinaryEntry> binaries = new HashMap<>();
-  private final Map<Integer,SortedEntry> sorteds = new HashMap<>();
-  private final Map<Integer,SortedSetEntry> sortedSets = new HashMap<>();
-  private final Map<Integer,SortedNumericEntry> sortedNumerics = new HashMap<>();
+  private final Map<String,NumericEntry> numerics = new HashMap<>();
+  private final Map<String,BinaryEntry> binaries = new HashMap<>();
+  private final Map<String,SortedEntry> sorteds = new HashMap<>();
+  private final Map<String,SortedSetEntry> sortedSets = new HashMap<>();
+  private final Map<String,SortedNumericEntry> sortedNumerics = new HashMap<>();
   private final IndexInput data;
   
   // ram instances we have already loaded
-  private final Map<Integer,NumericDocValues> numericInstances = 
-      new HashMap<>();
-  private final Map<Integer,BinaryRawValues> binaryInstances =
-      new HashMap<>();
-  private final Map<Integer,SortedRawValues> sortedInstances =
-      new HashMap<>();
-  private final Map<Integer,SortedSetRawValues> sortedSetInstances =
-      new HashMap<>();
-  private final Map<Integer,SortedNumericRawValues> sortedNumericInstances =
-      new HashMap<>();
-  private final Map<Integer,Bits> docsWithFieldInstances = new HashMap<>();
+  private final Map<String,NumericRawValues> numericInstances = new HashMap<>();
+  private final Map<String,BinaryRawValues> binaryInstances = new HashMap<>();
+  private final Map<String,SortedRawValues> sortedInstances = new HashMap<>();
+  private final Map<String,SortedSetRawValues> sortedSetInstances = new HashMap<>();
+  private final Map<String,SortedNumericRawValues> sortedNumericInstances = new HashMap<>();
+  private final Map<String,FixedBitSet> docsWithFieldInstances = new HashMap<>();
+  
+  private final int numEntries;
   
   private final int maxDoc;
   private final AtomicLong ramBytesUsed;
@@ -95,7 +98,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
       version = CodecUtil.checkHeader(in, metaCodec, 
                                       VERSION_START,
                                       VERSION_CURRENT);
-      readFields(in);
+      numEntries = readFields(in, state.fieldInfos);
 
       CodecUtil.checkFooter(in);
       success = true;
@@ -188,37 +191,41 @@ class DirectDocValuesProducer extends DocValuesProducer {
     return entry;
   }
 
-  private void readFields(IndexInput meta) throws IOException {
+  private int readFields(IndexInput meta, FieldInfos infos) throws IOException {
+    int numEntries = 0;
     int fieldNumber = meta.readVInt();
     while (fieldNumber != -1) {
+      numEntries++;
+      FieldInfo info = infos.fieldInfo(fieldNumber);
       int fieldType = meta.readByte();
       if (fieldType == NUMBER) {
-        numerics.put(fieldNumber, readNumericEntry(meta));
+        numerics.put(info.name, readNumericEntry(meta));
       } else if (fieldType == BYTES) {
-        binaries.put(fieldNumber, readBinaryEntry(meta));
+        binaries.put(info.name, readBinaryEntry(meta));
       } else if (fieldType == SORTED) {
         SortedEntry entry = readSortedEntry(meta);
-        sorteds.put(fieldNumber, entry);
-        binaries.put(fieldNumber, entry.values);
+        sorteds.put(info.name, entry);
+        binaries.put(info.name, entry.values);
       } else if (fieldType == SORTED_SET) {
         SortedSetEntry entry = readSortedSetEntry(meta, false);
-        sortedSets.put(fieldNumber, entry);
-        binaries.put(fieldNumber, entry.values);
+        sortedSets.put(info.name, entry);
+        binaries.put(info.name, entry.values);
       } else if (fieldType == SORTED_SET_SINGLETON) {
         SortedSetEntry entry = readSortedSetEntry(meta, true);
-        sortedSets.put(fieldNumber, entry);
-        binaries.put(fieldNumber, entry.values);
+        sortedSets.put(info.name, entry);
+        binaries.put(info.name, entry.values);
       } else if (fieldType == SORTED_NUMERIC) {
         SortedNumericEntry entry = readSortedNumericEntry(meta, false);
-        sortedNumerics.put(fieldNumber, entry);
+        sortedNumerics.put(info.name, entry);
       } else if (fieldType == SORTED_NUMERIC_SINGLETON) {
         SortedNumericEntry entry = readSortedNumericEntry(meta, true);
-        sortedNumerics.put(fieldNumber, entry);
+        sortedNumerics.put(info.name, entry);
       } else {
-        throw new CorruptIndexException("invalid entry type: " + fieldType + ", input=" + meta);
+        throw new CorruptIndexException("invalid entry type: " + fieldType + ", field= " + info.name + ", input=" + meta);
       }
       fieldNumber = meta.readVInt();
     }
+    return numEntries;
   }
 
   @Override
@@ -227,35 +234,55 @@ class DirectDocValuesProducer extends DocValuesProducer {
   }
   
   @Override
+  public synchronized Iterable<? extends Accountable> getChildResources() {
+    List<Accountable> resources = new ArrayList<>();
+    resources.addAll(Accountables.namedAccountables("numeric field", numericInstances));
+    resources.addAll(Accountables.namedAccountables("binary field", binaryInstances));
+    resources.addAll(Accountables.namedAccountables("sorted field", sortedInstances));
+    resources.addAll(Accountables.namedAccountables("sorted set field", sortedSetInstances));
+    resources.addAll(Accountables.namedAccountables("sorted numeric field", sortedNumericInstances));
+    resources.addAll(Accountables.namedAccountables("missing bitset field", docsWithFieldInstances));
+    return Collections.unmodifiableList(resources);
+  }
+  
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "(entries=" + numEntries + ")";
+  }
+
+  @Override
   public void checkIntegrity() throws IOException {
     CodecUtil.checksumEntireFile(data);
   }
 
   @Override
   public synchronized NumericDocValues getNumeric(FieldInfo field) throws IOException {
-    NumericDocValues instance = numericInstances.get(field.number);
+    NumericRawValues instance = numericInstances.get(field.name);
     if (instance == null) {
       // Lazy load
-      instance = loadNumeric(numerics.get(field.number));
-      numericInstances.put(field.number, instance);
+      instance = loadNumeric(numerics.get(field.name));
+      numericInstances.put(field.name, instance);
     }
-    return instance;
+    return instance.numerics;
   }
   
-  private NumericDocValues loadNumeric(NumericEntry entry) throws IOException {
+  private NumericRawValues loadNumeric(NumericEntry entry) throws IOException {
+    NumericRawValues ret = new NumericRawValues();
     data.seek(entry.offset + entry.missingBytes);
     switch (entry.byteWidth) {
     case 1:
       {
         final byte[] values = new byte[entry.count];
         data.readBytes(values, 0, entry.count);
-        ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(values));
-        return new NumericDocValues() {
+        ret.bytesUsed = RamUsageEstimator.sizeOf(values);
+        ramBytesUsed.addAndGet(ret.bytesUsed);
+        ret.numerics = new NumericDocValues() {
           @Override
           public long get(int idx) {
             return values[idx];
           }
         };
+        return ret;
       }
 
     case 2:
@@ -264,13 +291,15 @@ class DirectDocValuesProducer extends DocValuesProducer {
         for(int i=0;i<entry.count;i++) {
           values[i] = data.readShort();
         }
-        ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(values));
-        return new NumericDocValues() {
+        ret.bytesUsed = RamUsageEstimator.sizeOf(values);
+        ramBytesUsed.addAndGet(ret.bytesUsed);
+        ret.numerics = new NumericDocValues() {
           @Override
           public long get(int idx) {
             return values[idx];
           }
         };
+        return ret;
       }
 
     case 4:
@@ -279,13 +308,15 @@ class DirectDocValuesProducer extends DocValuesProducer {
         for(int i=0;i<entry.count;i++) {
           values[i] = data.readInt();
         }
-        ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(values));
-        return new NumericDocValues() {
+        ret.bytesUsed = RamUsageEstimator.sizeOf(values);
+        ramBytesUsed.addAndGet(ret.bytesUsed);
+        ret.numerics = new NumericDocValues() {
           @Override
           public long get(int idx) {
             return values[idx];
           }
         };
+        return ret;
       }
 
     case 8:
@@ -294,13 +325,15 @@ class DirectDocValuesProducer extends DocValuesProducer {
         for(int i=0;i<entry.count;i++) {
           values[i] = data.readLong();
         }
-        ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(values));
-        return new NumericDocValues() {
+        ret.bytesUsed = RamUsageEstimator.sizeOf(values);
+        ramBytesUsed.addAndGet(ret.bytesUsed);
+        ret.numerics = new NumericDocValues() {
           @Override
           public long get(int idx) {
             return values[idx];
           }
         };
+        return ret;
       }
     
     default:
@@ -310,11 +343,11 @@ class DirectDocValuesProducer extends DocValuesProducer {
 
   @Override
   public synchronized BinaryDocValues getBinary(FieldInfo field) throws IOException {
-    BinaryRawValues instance = binaryInstances.get(field.number);
+    BinaryRawValues instance = binaryInstances.get(field.name);
     if (instance == null) {
       // Lazy load
-      instance = loadBinary(binaries.get(field.number));
-      binaryInstances.put(field.number, instance);
+      instance = loadBinary(binaries.get(field.name));
+      binaryInstances.put(field.name, instance);
     }
     final byte[] bytes = instance.bytes;
     final int[] address = instance.address;
@@ -354,17 +387,17 @@ class DirectDocValuesProducer extends DocValuesProducer {
   
   @Override
   public SortedDocValues getSorted(FieldInfo field) throws IOException {
-    final SortedEntry entry = sorteds.get(field.number);
+    final SortedEntry entry = sorteds.get(field.name);
     SortedRawValues instance;
     synchronized (this) {
-      instance = sortedInstances.get(field.number);
+      instance = sortedInstances.get(field.name);
       if (instance == null) {
         // Lazy load
         instance = loadSorted(field);
-        sortedInstances.put(field.number, instance);
+        sortedInstances.put(field.name, instance);
       }
     }
-    return newSortedInstance(instance.docToOrd, getBinary(field), entry.values.count);
+    return newSortedInstance(instance.docToOrd.numerics, getBinary(field), entry.values.count);
   }
   
   private SortedDocValues newSortedInstance(final NumericDocValues docToOrd, final BinaryDocValues values, final int count) {
@@ -392,8 +425,8 @@ class DirectDocValuesProducer extends DocValuesProducer {
   }
 
   private SortedRawValues loadSorted(FieldInfo field) throws IOException {
-    final SortedEntry entry = sorteds.get(field.number);
-    final NumericDocValues docToOrd = loadNumeric(entry.docToOrd);
+    final SortedEntry entry = sorteds.get(field.name);
+    final NumericRawValues docToOrd = loadNumeric(entry.docToOrd);
     final SortedRawValues values = new SortedRawValues();
     values.docToOrd = docToOrd;
     return values;
@@ -401,21 +434,21 @@ class DirectDocValuesProducer extends DocValuesProducer {
 
   @Override
   public synchronized SortedNumericDocValues getSortedNumeric(FieldInfo field) throws IOException {
-    SortedNumericRawValues instance = sortedNumericInstances.get(field.number);
-    final SortedNumericEntry entry = sortedNumerics.get(field.number);
+    SortedNumericRawValues instance = sortedNumericInstances.get(field.name);
+    final SortedNumericEntry entry = sortedNumerics.get(field.name);
     if (instance == null) {
       // Lazy load
       instance = loadSortedNumeric(entry);
-      sortedNumericInstances.put(field.number, instance);
+      sortedNumericInstances.put(field.name, instance);
     }
     
     if (entry.docToAddress == null) {
-      final NumericDocValues single = instance.values;
-      final Bits docsWithField = getMissingBits(field.number, entry.values.missingOffset, entry.values.missingBytes);
+      final NumericDocValues single = instance.values.numerics;
+      final Bits docsWithField = getMissingBits(field, entry.values.missingOffset, entry.values.missingBytes);
       return DocValues.singleton(single, docsWithField);
     } else {
-      final NumericDocValues docToAddress = instance.docToAddress;
-      final NumericDocValues values = instance.values;
+      final NumericDocValues docToAddress = instance.docToAddress.numerics;
+      final NumericDocValues values = instance.values.numerics;
       
       return new SortedNumericDocValues() {
         int valueStart;
@@ -451,20 +484,20 @@ class DirectDocValuesProducer extends DocValuesProducer {
 
   @Override
   public synchronized SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
-    SortedSetRawValues instance = sortedSetInstances.get(field.number);
-    final SortedSetEntry entry = sortedSets.get(field.number);
+    SortedSetRawValues instance = sortedSetInstances.get(field.name);
+    final SortedSetEntry entry = sortedSets.get(field.name);
     if (instance == null) {
       // Lazy load
       instance = loadSortedSet(entry);
-      sortedSetInstances.put(field.number, instance);
+      sortedSetInstances.put(field.name, instance);
     }
 
     if (instance.docToOrdAddress == null) {
-      SortedDocValues sorted = newSortedInstance(instance.ords, getBinary(field), entry.values.count);
+      SortedDocValues sorted = newSortedInstance(instance.ords.numerics, getBinary(field), entry.values.count);
       return DocValues.singleton(sorted);
     } else {
-      final NumericDocValues docToOrdAddress = instance.docToOrdAddress;
-      final NumericDocValues ords = instance.ords;
+      final NumericDocValues docToOrdAddress = instance.docToOrdAddress.numerics;
+      final NumericDocValues ords = instance.ords.numerics;
       final BinaryDocValues values = getBinary(field);
       
       // Must make a new instance since the iterator has state:
@@ -524,13 +557,13 @@ class DirectDocValuesProducer extends DocValuesProducer {
     return instance;
   }
 
-  private Bits getMissingBits(int fieldNumber, final long offset, final long length) throws IOException {
+  private Bits getMissingBits(FieldInfo field, final long offset, final long length) throws IOException {
     if (offset == -1) {
       return new Bits.MatchAllBits(maxDoc);
     } else {
-      Bits instance;
+      FixedBitSet instance;
       synchronized(this) {
-        instance = docsWithFieldInstances.get(fieldNumber);
+        instance = docsWithFieldInstances.get(field.name);
         if (instance == null) {
           IndexInput data = this.data.clone();
           data.seek(offset);
@@ -540,7 +573,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
             bits[i] = data.readLong();
           }
           instance = new FixedBitSet(bits, maxDoc);
-          docsWithFieldInstances.put(fieldNumber, instance);
+          docsWithFieldInstances.put(field.name, instance);
         }
       }
       return instance;
@@ -557,11 +590,11 @@ class DirectDocValuesProducer extends DocValuesProducer {
       case SORTED:
         return DocValues.docsWithValue(getSorted(field), maxDoc);
       case BINARY:
-        BinaryEntry be = binaries.get(field.number);
-        return getMissingBits(field.number, be.missingOffset, be.missingBytes);
+        BinaryEntry be = binaries.get(field.name);
+        return getMissingBits(field, be.missingOffset, be.missingBytes);
       case NUMERIC:
-        NumericEntry ne = numerics.get(field.number);
-        return getMissingBits(field.number, ne.missingOffset, ne.missingBytes);
+        NumericEntry ne = numerics.get(field.name);
+        return getMissingBits(field, ne.missingOffset, ne.missingBytes);
       default: 
         throw new AssertionError();
     }
@@ -572,23 +605,130 @@ class DirectDocValuesProducer extends DocValuesProducer {
     data.close();
   }
 
-  static class BinaryRawValues {
+  static class BinaryRawValues implements Accountable {
     byte[] bytes;
     int[] address;
-  }
+    
+    @Override
+    public long ramBytesUsed() {
+      long bytesUsed = RamUsageEstimator.sizeOf(bytes);
+      if (address != null) {
+        bytesUsed += RamUsageEstimator.sizeOf(address);
+      }
+      return bytesUsed;
+    }
+    
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      List<Accountable> resources = new ArrayList<>();
+      if (address != null) {
+        resources.add(Accountables.namedAccountable("addresses", RamUsageEstimator.sizeOf(address)));
+      }
+      resources.add(Accountables.namedAccountable("bytes", RamUsageEstimator.sizeOf(bytes)));
+      return Collections.unmodifiableList(resources);
+    }
 
-  static class SortedRawValues {
-    NumericDocValues docToOrd;
+    @Override
+    public String toString() {
+      return getClass().getSimpleName();
+    }
   }
   
-  static class SortedNumericRawValues {
-    NumericDocValues docToAddress;
-    NumericDocValues values;
+  static class NumericRawValues implements Accountable {
+    NumericDocValues numerics;
+    long bytesUsed;
+    
+    @Override
+    public long ramBytesUsed() {
+      return bytesUsed;
+    }
+    
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      return Collections.emptyList();
+    }
+    
+    @Override
+    public String toString() {
+      return getClass().getSimpleName();
+    }
   }
 
-  static class SortedSetRawValues {
-    NumericDocValues docToOrdAddress;
-    NumericDocValues ords;
+  static class SortedRawValues implements Accountable {
+    NumericRawValues docToOrd;
+
+    @Override
+    public long ramBytesUsed() {
+      return docToOrd.ramBytesUsed();
+    }
+
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      return docToOrd.getChildResources();
+    }
+    
+    @Override
+    public String toString() {
+      return getClass().getSimpleName();
+    }
+  }
+  
+  static class SortedNumericRawValues implements Accountable {
+    NumericRawValues docToAddress;
+    NumericRawValues values;
+    
+    @Override
+    public long ramBytesUsed() {
+      long bytesUsed = values.ramBytesUsed();
+      if (docToAddress != null) {
+        bytesUsed += docToAddress.ramBytesUsed();
+      }
+      return bytesUsed;
+    }
+    
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      List<Accountable> resources = new ArrayList<>();
+      if (docToAddress != null) {
+        resources.add(Accountables.namedAccountable("addresses", docToAddress));
+      }
+      resources.add(Accountables.namedAccountable("values", values));
+      return Collections.unmodifiableList(resources);
+    }
+    
+    @Override
+    public String toString() {
+      return getClass().getSimpleName();
+    }
+  }
+
+  static class SortedSetRawValues implements Accountable {
+    NumericRawValues docToOrdAddress;
+    NumericRawValues ords;
+
+    @Override
+    public long ramBytesUsed() {
+      long bytesUsed = ords.ramBytesUsed();
+      if (docToOrdAddress != null) {
+        bytesUsed += docToOrdAddress.ramBytesUsed();
+      }
+      return bytesUsed;
+    }
+
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      List<Accountable> resources = new ArrayList<>();
+      if (docToOrdAddress != null) {
+        resources.add(Accountables.namedAccountable("addresses", docToOrdAddress));
+      }
+      resources.add(Accountables.namedAccountable("ordinals", ords));
+      return Collections.unmodifiableList(resources);
+    }
+    
+    @Override
+    public String toString() {
+      return getClass().getSimpleName();
+    }
   }
 
   static class NumericEntry {

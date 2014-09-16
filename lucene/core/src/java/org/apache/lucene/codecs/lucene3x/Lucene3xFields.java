@@ -40,6 +40,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -246,6 +247,11 @@ class Lucene3xFields extends FieldsProducer {
     @Override
     public boolean hasPayloads() {
       return fieldInfo.hasPayloads();
+    }
+
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      return Collections.emptyList();
     }
   }
 
@@ -1097,4 +1103,18 @@ class Lucene3xFields extends FieldsProducer {
 
   @Override
   public void checkIntegrity() throws IOException {}
+
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    if (tis == null) {
+      return Collections.emptyList();
+    } else {
+      return Collections.singleton(Accountables.namedAccountable("terms", tis));
+    }
+  }
+
+  @Override
+  public String toString() {
+    return "Lucene3xFields(positions=" + (freqStream != null) + ")";
+  }
 }

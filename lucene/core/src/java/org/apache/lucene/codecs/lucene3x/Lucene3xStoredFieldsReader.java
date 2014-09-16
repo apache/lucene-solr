@@ -33,11 +33,13 @@ import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
 import java.io.Closeable;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 
 /**
  * Class responsible for access to stored document fields.
@@ -308,4 +310,14 @@ final class Lucene3xStoredFieldsReader extends StoredFieldsReader implements Clo
   
   @Override
   public void checkIntegrity() throws IOException {}
+
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return Collections.emptyList();
+  }
+
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "(docStoreOffset=" + docStoreOffset + ")";
+  }
 }

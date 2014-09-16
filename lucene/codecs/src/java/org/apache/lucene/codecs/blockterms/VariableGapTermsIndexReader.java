@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.blockterms;
  */
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 
 import org.apache.lucene.codecs.CodecUtil;
@@ -29,6 +30,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
@@ -223,6 +225,20 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
     public long ramBytesUsed() {
       return fst == null ? 0 : fst.ramBytesUsed();
     }
+    
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      if (fst == null) {
+        return Collections.emptyList();
+      } else {
+        return Collections.singletonList(Accountables.namedAccountable("index data", fst));
+      }
+    }
+    
+    @Override
+    public String toString() {
+      return "VarGapTermIndex";
+    }
   }
 
   @Override
@@ -260,5 +276,15 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
       sizeInBytes += entry.ramBytesUsed();
     }
     return sizeInBytes;
+  }
+  
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return Accountables.namedAccountables("field", fields);
+  }
+
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "(fields=" + fields.size() + ")";
   }
 }

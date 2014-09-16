@@ -238,8 +238,8 @@ class Packed64 extends PackedInts.MutableImpl {
 
   @Override
   public String toString() {
-    return "Packed64(bitsPerValue=" + bitsPerValue + ", size="
-            + size() + ", elements.length=" + blocks.length + ")";
+    return "Packed64(bitsPerValue=" + bitsPerValue + ",size="
+            + size() + ",blocks=" + blocks.length + ")";
   }
 
   @Override

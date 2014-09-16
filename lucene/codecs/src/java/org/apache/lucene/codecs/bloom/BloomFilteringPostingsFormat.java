@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.bloom;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -43,6 +44,8 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -424,8 +427,23 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
     }
 
     @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      List<Accountable> resources = new ArrayList<>();
+      resources.addAll(Accountables.namedAccountables("field", bloomsByFieldName));
+      if (delegateFieldsProducer != null) {
+        resources.add(Accountables.namedAccountable("delegate", delegateFieldsProducer));
+      }
+      return Collections.unmodifiableList(resources);
+    }
+
+    @Override
     public void checkIntegrity() throws IOException {
       delegateFieldsProducer.checkIntegrity();
+    }
+
+    @Override
+    public String toString() {
+      return getClass().getSimpleName() + "(fields=" + bloomsByFieldName.size() + ",delegate=" + delegateFieldsProducer + ")";
     }
   }
   

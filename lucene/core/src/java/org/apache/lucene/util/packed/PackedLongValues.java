@@ -20,6 +20,7 @@ package org.apache.lucene.util.packed;
 import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
@@ -114,6 +115,11 @@ public class PackedLongValues extends LongValues implements Accountable {
   public long ramBytesUsed() {
     return ramBytesUsed;
   }
+  
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return Collections.emptyList();
+  }
 
   /** Return an iterator over the values of this array. */
   public Iterator iterator() {
@@ -206,6 +212,11 @@ public class PackedLongValues extends LongValues implements Accountable {
     @Override
     public final long ramBytesUsed() {
       return ramBytesUsed;
+    }
+
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      return Collections.emptyList();
     }
 
     /** Return the number of elements that have been added to this builder. */
