@@ -45,15 +45,6 @@ public abstract class FieldCacheDocIdSet extends DocIdSet {
    */
   protected abstract boolean matchDoc(int doc);
 
-  /**
-   * this DocIdSet is always cacheable (does not go back
-   * to the reader for iteration)
-   */
-  @Override
-  public final boolean isCacheable() {
-    return true;
-  }
-
   @Override
   public final Bits bits() {
     return (acceptDocs == null) ? new Bits() {
