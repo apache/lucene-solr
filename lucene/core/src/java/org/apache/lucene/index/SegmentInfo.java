@@ -21,6 +21,7 @@ package org.apache.lucene.index;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -324,5 +325,22 @@ public final class SegmentInfo {
   @Deprecated
   public Map<String,String> attributes() {
     return attributes;
+  }
+
+  private static Map<String,String> cloneMap(Map<String,String> map) {
+    if (map != null) {
+      return new HashMap<String,String>(map);
+    } else {
+      return null;
+    }
+  }
+
+  @Override
+  public SegmentInfo clone() {
+    SegmentInfo other = new SegmentInfo(dir, version, name, docCount, isCompoundFile, codec, cloneMap(diagnostics), cloneMap(attributes));
+    if (setFiles != null) {
+      other.setFiles(new HashSet<>(setFiles));
+    }
+    return other;
   }
 }

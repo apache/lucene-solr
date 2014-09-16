@@ -324,7 +324,18 @@ public class SegmentCommitInfo {
 
   @Override
   public SegmentCommitInfo clone() {
-    SegmentCommitInfo other = new SegmentCommitInfo(info, delCount, delGen, fieldInfosGen, docValuesGen);
+    return clone(false);
+  }
+
+  /** Clones {@code this}, optionally also cloning the {@link SegmentInfo}. */
+  SegmentCommitInfo clone(boolean cloneSegmentInfo) {
+    SegmentInfo otherInfo;
+    if (cloneSegmentInfo) {
+      otherInfo = info.clone();
+    } else {
+      otherInfo = info;
+    }
+    SegmentCommitInfo other = new SegmentCommitInfo(otherInfo, delCount, delGen, fieldInfosGen, docValuesGen);
     // Not clear that we need to carry over nextWriteDelGen
     // (i.e. do we ever clone after a failed write and
     // before the next successful write?), but just do it to

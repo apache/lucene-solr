@@ -3,6 +3,16 @@ Lucene Change Log
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
+======================= Lucene 4.9.1 ======================
+
+Bug fixes
+
+* LUCENE-5907: Fix corruption case when opening a pre-4.x index with
+  IndexWriter, then opening an NRT reader from that writer, then
+  calling commit from the writer, then closing the NRT reader.  This
+  case would remove the wrong files from the index leading to a
+  corrupt index.  (Mike McCandless)
+
 ======================= Lucene 4.9.0 =======================
 
 Changes in Runtime Behavior

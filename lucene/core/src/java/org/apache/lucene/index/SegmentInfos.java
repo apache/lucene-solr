@@ -642,6 +642,11 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   
   @Override
   public SegmentInfos clone() {
+    return clone(false);
+  }
+
+  /** Deep clone of this {@code SegmentInfos}, optionally also fully cloning the {@link SegmentInfo}. */
+  SegmentInfos clone(boolean cloneSegmentInfo) {
     try {
       final SegmentInfos sis = (SegmentInfos) super.clone();
       // deep clone, first recreate all collections:
@@ -649,7 +654,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       for(final SegmentCommitInfo info : this) {
         assert info.info.getCodec() != null;
         // dont directly access segments, use add method!!!
-        sis.add(info.clone());
+        sis.add(info.clone(cloneSegmentInfo));
       }
       sis.userData = new HashMap<>(userData);
       return sis;
