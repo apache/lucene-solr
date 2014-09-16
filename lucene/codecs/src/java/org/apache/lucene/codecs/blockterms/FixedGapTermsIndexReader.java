@@ -32,6 +32,7 @@ import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.packed.MonotonicBlockPackedReader;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Comparator;
 import java.util.List;
@@ -283,7 +284,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       if (termsDictOffsets != null) {
         resources.add(Accountables.namedAccountable("offsets", termsDictOffsets));
       }
-      return resources;
+      return Collections.unmodifiableList(resources);
     }
 
     @Override

@@ -757,7 +757,8 @@ class FieldCacheImpl implements FieldCache {
     public Iterable<? extends Accountable> getChildResources() {
       List<Accountable> resources = new ArrayList<>();
       resources.add(Accountables.namedAccountable("term bytes", bytes));
-      return resources;
+      resources.add(Accountables.namedAccountable("addresses", docToOffset));
+      return Collections.unmodifiableList(resources);
     }
   }
 
