@@ -2137,9 +2137,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
         if (pendingCommit != null) {
           pendingCommit.rollbackCommit(directory);
-          deleter.decRef(pendingCommit);
-          pendingCommit = null;
-          notifyAll();
+          try {
+            deleter.decRef(pendingCommit);
+          } finally {
+            pendingCommit = null;
+            notifyAll();
+          }
         }
 
         // Don't bother saving any changes in our segmentInfos
@@ -2192,7 +2195,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             try {
               pendingCommit.rollbackCommit(directory);
               deleter.decRef(pendingCommit);
-            } catch (Throwable t) {}
+            } catch (Throwable t) {
+            }
+            pendingCommit = null;
           }
           
           // close all the closeables we can (but important is readerPool and writeLock to prevent leaks)
@@ -3018,7 +3023,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         if (!success) {
           synchronized (this) {
             if (filesToCommit != null) {
-              deleter.decRef(filesToCommit);
+              deleter.decRefWhileHandlingException(filesToCommit);
               filesToCommit = null;
             }
           }
@@ -3149,10 +3154,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         deleter.checkpoint(pendingCommit, true);
       } finally {
         // Matches the incRef done in prepareCommit:
-        deleter.decRef(filesToCommit);
-        filesToCommit = null;
-        pendingCommit = null;
-        notifyAll();
+        try {
+          deleter.decRef(filesToCommit);
+        } finally {
+          filesToCommit = null;
+          pendingCommit = null;
+          notifyAll();
+        }
       }
 
       if (infoStream.isEnabled("IW")) {
@@ -4461,8 +4469,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           if (infoStream.isEnabled("IW")) {
             infoStream.message("IW", "  skip startCommit(): no changes pending");
           }
-          deleter.decRef(filesToCommit);
-          filesToCommit = null;
+          try {
+            deleter.decRef(filesToCommit);
+          } finally {
+            filesToCommit = null;
+          }
           return;
         }
 
@@ -4533,7 +4544,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             }
 
             // Hit exception
-            deleter.decRef(filesToCommit);
+            deleter.decRefWhileHandlingException(filesToCommit);
             filesToCommit = null;
           }
         }

@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
@@ -200,5 +201,96 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     doc.add(newTextField("content", "aaa", Field.Store.NO));
     doc.add(newStringField("id", Integer.toString(id), Field.Store.NO));
     writer.addDocument(doc);
+  }
+
+  // LUCENE-5919
+  public void testExcInDecRef() throws Exception {
+    MockDirectoryWrapper dir = newMockDirectory();
+
+    // disable slow things: we don't rely upon sleeps here.
+    dir.setThrottling(MockDirectoryWrapper.Throttling.NEVER);
+    dir.setUseSlowOpenClosers(false);
+
+    final AtomicBoolean doFailExc = new AtomicBoolean();
+
+    dir.failOn(new MockDirectoryWrapper.Failure() {
+        @Override
+        public void eval(MockDirectoryWrapper dir) throws IOException {
+          if (doFailExc.get() && random().nextInt(4) == 1) {
+            Exception e = new Exception();
+            StackTraceElement stack[] = e.getStackTrace();
+            for (int i = 0; i < stack.length; i++) {
+              if (stack[i].getClassName().equals(IndexFileDeleter.class.getName()) && stack[i].getMethodName().equals("decRef")) {
+                throw new RuntimeException("fake fail");
+              }
+            }
+          }
+        }
+      });
+
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    //iwc.setMergeScheduler(new SerialMergeScheduler());
+    MergeScheduler ms = iwc.getMergeScheduler();
+    if (ms instanceof ConcurrentMergeScheduler) {
+      final ConcurrentMergeScheduler suppressFakeFail = new ConcurrentMergeScheduler() {
+          @Override
+          protected void handleMergeException(Throwable exc) {
+            // suppress only FakeIOException:
+            if (exc instanceof RuntimeException && exc.getMessage().equals("fake fail")) {
+              // ok to ignore
+            } else {
+              super.handleMergeException(exc);
+            }
+          }
+        };
+      final ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler) ms;
+      suppressFakeFail.setMaxMergesAndThreads(cms.getMaxMergeCount(), cms.getMaxThreadCount());
+      suppressFakeFail.setMergeThreadPriority(cms.getMergeThreadPriority());
+      iwc.setMergeScheduler(suppressFakeFail);
+    }
+
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+
+    // Since we hit exc during merging, a partial
+    // forceMerge can easily return when there are still
+    // too many segments in the index:
+    w.setDoRandomForceMergeAssert(false);
+
+    doFailExc.set(true);
+    int ITERS = atLeast(1000);
+    for(int iter=0;iter<ITERS;iter++) {
+      try {
+        if (random().nextInt(10) == 5) {
+          w.commit();
+        } else if (random().nextInt(10) == 7) {
+          w.getReader().close();
+        } else {
+          Document doc = new Document();
+          doc.add(newTextField("field", "some text", Field.Store.NO));
+          w.addDocument(doc);
+        }
+      } catch (IOException ioe) {
+        if (ioe.getMessage().contains("background merge hit exception")) {
+          Throwable cause = ioe.getCause();
+          if (cause != null && cause instanceof RuntimeException && ((RuntimeException) cause).getMessage().equals("fake fail")) {
+            // ok
+          } else {
+            throw ioe;
+          }
+        } else {
+          throw ioe;
+        }
+      } catch (RuntimeException re) {
+        if (re.getMessage().equals("fake fail")) {
+          // ok
+        } else {
+          throw re;
+        }
+      }
+    }
+
+    doFailExc.set(false);
+    w.close();
+    dir.close();
   }
 }

@@ -33,6 +33,7 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NoSuchDirectoryException;
 import org.apache.lucene.util.CollectionUtil;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 
 /*
@@ -287,16 +288,24 @@ final class IndexFileDeleter implements Closeable {
 
       // First decref all files that had been referred to by
       // the now-deleted commits:
+      Throwable firstThrowable = null;
       for(int i=0;i<size;i++) {
         CommitPoint commit = commitsToDelete.get(i);
         if (infoStream.isEnabled("IFD")) {
           infoStream.message("IFD", "deleteCommits: now decRef commit \"" + commit.getSegmentsFileName() + "\"");
         }
-        for (final String file : commit.files) {
-          decRef(file);
+        try {
+          decRef(commit.files);
+        } catch (Throwable t) {
+          if (firstThrowable == null) {
+            firstThrowable = t;
+          }
         }
       }
       commitsToDelete.clear();
+
+      // NOTE: does nothing if firstThrowable is null
+      IOUtils.reThrow(firstThrowable);
 
       // Now compact commits to remove deleted ones (preserving the sort):
       size = commits.size();
@@ -376,8 +385,11 @@ final class IndexFileDeleter implements Closeable {
     assert locked();
 
     if (!lastFiles.isEmpty()) {
-      decRef(lastFiles);
-      lastFiles.clear();
+      try {
+        decRef(lastFiles);
+      } finally {
+        lastFiles.clear();
+      }
     }
 
     deletePendingFiles();
@@ -467,8 +479,11 @@ final class IndexFileDeleter implements Closeable {
       deleteCommits();
     } else {
       // DecRef old files from the last checkpoint, if any:
-      decRef(lastFiles);
-      lastFiles.clear();
+      try {
+        decRef(lastFiles);
+      } finally {
+        lastFiles.clear();
+      }
 
       // Save files so we can decr on next checkpoint/commit:
       lastFiles.addAll(segmentInfos.files(directory, false));
@@ -506,10 +521,34 @@ final class IndexFileDeleter implements Closeable {
     rc.IncRef();
   }
 
+  /** Decrefs all provided files, even on exception; throws first exception hit, if any. */
   void decRef(Collection<String> files) throws IOException {
     assert locked();
+    Throwable firstThrowable = null;
     for(final String file : files) {
-      decRef(file);
+      try {
+        decRef(file);
+      } catch (Throwable t) {
+        if (firstThrowable == null) {
+          // Save first exception and throw it in the end, but be sure to finish decRef all files
+          firstThrowable = t;
+        }
+      }
+    }
+
+    // NOTE: does nothing if firstThrowable is null
+    IOUtils.reThrow(firstThrowable);
+  }
+
+  /** Decrefs all provided files, ignoring any exceptions hit; call this if
+   *  you are already handling an exception. */
+  void decRefWhileHandlingException(Collection<String> files) throws IOException {
+    assert locked();
+    for(final String file : files) {
+      try {
+        decRef(file);
+      } catch (Throwable t) {
+      }
     }
   }
 
@@ -524,16 +563,17 @@ final class IndexFileDeleter implements Closeable {
     if (0 == rc.DecRef()) {
       // This file is no longer referenced by any past
       // commit points nor by the in-memory SegmentInfos:
-      deleteFile(fileName);
-      refCounts.remove(fileName);
+      try {
+        deleteFile(fileName);
+      } finally {
+        refCounts.remove(fileName);
+      }
     }
   }
 
   void decRef(SegmentInfos segmentInfos) throws IOException {
     assert locked();
-    for (final String file : segmentInfos.files(directory, false)) {
-      decRef(file);
-    }
+    decRef(segmentInfos.files(directory, false));
   }
 
   public boolean exists(String fileName) {

@@ -13,6 +13,11 @@ Bug fixes
   case would remove the wrong files from the index leading to a
   corrupt index.  (Mike McCandless)
 
+* LUCENE-5919: Fix exception handling inside IndexWriter when
+  deleteFile throws an exception, to not over-decRef index files,
+  possibly deleting a file that's still in use in the index, leading
+  to corruption.  (Mike McCandless)
+
 ======================= Lucene 4.9.0 =======================
 
 Changes in Runtime Behavior
