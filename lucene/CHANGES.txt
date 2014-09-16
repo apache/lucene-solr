@@ -127,6 +127,9 @@ New Features
   Directory.renameFile so that in-progress commits are never visible. 
   (Robert Muir)
 
+* LUCENE-5820: SuggestStopFilter should have a factory. 
+  (Varun Thacker via Steve Rowe)
+
 API Changes:
 
 * LUCENE-5900: Deprecated more constructors taking Version in *InfixSuggester and
