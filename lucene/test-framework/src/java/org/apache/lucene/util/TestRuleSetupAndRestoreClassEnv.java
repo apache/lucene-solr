@@ -161,7 +161,9 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     
     savedCodec = Codec.getDefault();
     int randomVal = random.nextInt(12);
-    if ("Lucene3x".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) &&
+    if ("default".equals(TEST_CODEC)) {
+      codec = savedCodec; // just use the default, don't randomize
+    } else if ("Lucene3x".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) &&
                                           "random".equals(TEST_POSTINGSFORMAT) &&
                                           "random".equals(TEST_DOCVALUESFORMAT) &&
                                           randomVal == 10 &&
