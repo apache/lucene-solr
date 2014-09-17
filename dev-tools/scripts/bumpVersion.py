@@ -415,4 +415,4 @@ if __name__ == '__main__':
   try:
     main()
   except KeyboardInterrupt:
-    print('\nRecieved Ctrl-C, exiting early')
+    print('\nReceived Ctrl-C, exiting early')
