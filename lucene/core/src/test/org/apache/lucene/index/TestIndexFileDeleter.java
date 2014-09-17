@@ -26,6 +26,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -479,6 +480,8 @@ public class TestIndexFileDeleter extends LuceneTestCase {
       } catch (RuntimeException re) {
         if (re.getMessage().equals("fake fail")) {
           // ok
+        } else if (re instanceof AlreadyClosedException && re.getCause() != null && "fake fail".equals(re.getCause().getMessage())) {
+          break; // our test got unlucky, triggered our strange exception after successful finishCommit, caused a disaster!
         } else {
           throw re;
         }

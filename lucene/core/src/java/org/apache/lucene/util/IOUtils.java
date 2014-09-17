@@ -341,7 +341,7 @@ public final class IOUtils {
   }
 
   /**
-   * Simple utilty method that takes a previously caught
+   * Simple utility method that takes a previously caught
    * {@code Throwable} and rethrows either {@code
    * IOException} or an unchecked exception.  If the
    * argument is null then this method does nothing.
@@ -356,7 +356,7 @@ public final class IOUtils {
   }
 
   /**
-   * Simple utilty method that takes a previously caught
+   * Simple utility method that takes a previously caught
    * {@code Throwable} and rethrows it as an unchecked exception.
    * If the argument is null then this method does nothing.
    */
