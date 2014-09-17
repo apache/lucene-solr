@@ -117,6 +117,8 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory {
     switch (lockType) {
       case "hdfs":
         return new HdfsLockFactory(new Path(lockPath), getConf());
+      case "single":
+        return new SingleInstanceLockFactory();
       case "none":
         return NoLockFactory.getNoLockFactory();
       default:
