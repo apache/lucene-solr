@@ -1259,8 +1259,8 @@ ant test -Dtests.dups=N ...
 # master seed. You can combine beasting with any other parameter,
 # just replace "test" with "beast" and give -Dbeast.iters=P
 # (P >> 1).
-ant test -Dtests.dups=N -Dtests.iters=M -Dbeast.iters=P \
-  -Dtestcase=ClassName beast
+ant beast -Dtests.dups=N -Dtests.iters=M -Dbeast.iters=P \
+  -Dtestcase=ClassName
 
 #
 # Test groups. ----------------------------------------------------
