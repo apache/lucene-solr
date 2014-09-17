@@ -66,7 +66,8 @@
   </target>
 
   <target name="-jflex-StandardAnalyzer" depends="init,-install-jflex">
-    <run-jflex dir="src/java/org/apache/lucene/analysis/standard" name="StandardTokenizerImpl"/>
+    <run-jflex-and-disable-buffer-expansion
+        dir="src/java/org/apache/lucene/analysis/standard" name="StandardTokenizerImpl"/>
     <run-jflex dir="src/java/org/apache/lucene/analysis/standard" name="ClassicTokenizerImpl"/>
     <run-jflex dir="src/java/org/apache/lucene/analysis/standard/std31" name="StandardTokenizerImpl31"/>
     <run-jflex dir="src/java/org/apache/lucene/analysis/standard/std34" name="StandardTokenizerImpl34"/>
@@ -74,7 +75,8 @@
   </target>
 
   <target name="-jflex-UAX29URLEmailTokenizer" depends="init,-install-jflex">
-    <run-jflex dir="src/java/org/apache/lucene/analysis/standard" name="UAX29URLEmailTokenizerImpl"/>
+    <run-jflex-and-disable-buffer-expansion
+        dir="src/java/org/apache/lucene/analysis/standard" name="UAX29URLEmailTokenizerImpl"/>
     <run-jflex dir="src/java/org/apache/lucene/analysis/standard/std31" name="UAX29URLEmailTokenizerImpl31"/>
     <run-jflex dir="src/java/org/apache/lucene/analysis/standard/std34" name="UAX29URLEmailTokenizerImpl34"/>
     <run-jflex dir="src/java/org/apache/lucene/analysis/standard/std36" name="UAX29URLEmailTokenizerImpl36"/>
@@ -86,6 +88,25 @@
     <attribute name="name"/>
     <sequential>
       <jflex file="@{dir}/@{name}.jflex" outdir="@{dir}" nobak="on" inputstreamctor="false"/>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="run-jflex-and-disable-buffer-expansion">
+    <attribute name="dir"/>
+    <attribute name="name"/>
+    <sequential>
+      <jflex file="@{dir}/@{name}.jflex" outdir="@{dir}" nobak="on" inputstreamctor="false"/>
+      <!-- LUCENE-5897: Disallow scanner buffer expansion -->
+      <replaceregexp file="@{dir}/@{name}.java"
+                     match="[ \t]*/\* is the buffer big enough\? \*/\s+if \(zzCurrentPos >= zzBuffer\.length.*?\}[ \t]*\r?\n"
+                     replace="" flags="s" />
+      <replaceregexp file="@{dir}/@{name}.java"
+                     match="private static final int ZZ_BUFFERSIZE ="
+                     replace="private int ZZ_BUFFERSIZE ="/>
+      <replaceregexp file="@{dir}/@{name}.java"
+                     match="(// unlikely but not impossible:.*?if \(numRead == 0)"
+                     replace="\1 &amp;&amp; zzBuffer.length - zzEndRead > 0"
+                     flags="s" />
     </sequential>
   </macrodef>
 

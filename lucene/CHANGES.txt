@@ -34,6 +34,13 @@ Bug fixes
 * LUCENE-5827: Make all Directory implementations correctly fail with
   IllegalArgumentException if slices are out of bounds.  (Uwe SChindler)
 
+* LUCENE-5897, LUCENE-5400: JFlex-based tokenizers StandardTokenizer and
+  UAX29URLEmailTokenizer tokenize extremely slowly over long sequences of
+  text partially matching certain grammar rules.  The scanner default
+  buffer size was reduced, and scanner buffer growth was disabled, resulting
+  in much, much faster tokenization for these text sequences.  
+  (Chris Geeringh, Robert Muir, Steve Rowe)
+
 ======================= Lucene 4.9.0 =======================
 
 Changes in Runtime Behavior

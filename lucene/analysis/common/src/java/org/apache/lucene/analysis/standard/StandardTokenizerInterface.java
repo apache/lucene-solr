@@ -67,4 +67,8 @@ public interface StandardTokenizerInterface {
    */
   public int getNextToken() throws IOException;
 
+  /**
+   * Sets the scanner buffer size in chars
+   */
+  public void setBufferSize(int numChars);
 }

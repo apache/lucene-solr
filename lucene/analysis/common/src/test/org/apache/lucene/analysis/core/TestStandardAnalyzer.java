@@ -30,10 +30,76 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
 
 public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
-  
+
+  // LUCENE-5897: slow tokenization of strings of the form (\p{WB:ExtendNumLet}[\p{WB:Format}\p{WB:Extend}]*)+
+  public void testLargePartiallyMatchingToken() throws Exception {
+    // TODO: get these lists of chars matching a property from ICU4J
+    // http://www.unicode.org/Public/6.3.0/ucd/auxiliary/WordBreakProperty.txt
+    char[] WordBreak_ExtendNumLet_chars = "_\u203f\u2040\u2054\ufe33\ufe34\ufe4d\ufe4e\ufe4f\uff3f".toCharArray();
+    // http://www.unicode.org/Public/6.3.0/ucd/auxiliary/WordBreakProperty.txt
+    int[] WordBreak_Format_chars // only the first char in ranges 
+        = { 0xAD, 0x600, 0x61C, 0x6DD, 0x70F, 0x180E, 0x200E, 0x202A, 0x2060, 0x2066, 0xFEFF,
+            0xFFF9, 0x110BD, 0x1D173, 0xE0001, 0xE0020 };
+    // http://www.unicode.org/Public/6.3.0/ucd/auxiliary/WordBreakProperty.txt
+    int[] WordBreak_Extend_chars // only the first char in ranges
+        = { 0x300, 0x483, 0x591, 0x5bf, 0x5c1, 0x5c4, 0x5c7, 0x610, 0x64b, 0x670, 0x6d6, 0x6df,
+             0x6e7, 0x6ea, 0x711, 0x730, 0x7a6, 0x7eb, 0x816, 0x81b, 0x825, 0x829, 0x859, 0x8e4,
+             0x900, 0x93a, 0x93e, 0x951, 0x962, 0x981, 0x9bc, 0x9be, 0x9c7, 0x9cb, 0x9d7, 0x9e2,
+             0xa01, 0xa3c, 0xa3e, 0xa47, 0xa4b, 0xa51, 0xa70, 0xa75, 0xa81, 0xabc, 0xabe, 0xac7,
+             0xacb, 0xae2, 0xb01, 0xb3c, 0xb3e, 0xb47, 0xb4b, 0xb56, 0xb62, 0xb82, 0xbbe, 0xbc6,
+             0xbca, 0xbd7, 0xc01, 0xc3e, 0xc46, 0xc4a, 0xc55, 0xc62, 0xc82, 0xcbc, 0xcbe, 0xcc6,
+             0xcca, 0xcd5, 0xce2, 0xd02, 0xd3e, 0xd46, 0xd4a, 0xd57, 0xd62, 0xd82, 0xdca, 0xdcf,
+             0xdd6, 0xdd8, 0xdf2, 0xe31, 0xe34, 0xe47, 0xeb1, 0xeb4, 0xebb, 0xec8, 0xf18, 0xf35,
+             0xf37, 0xf39, 0xf3e, 0xf71, 0xf86, 0xf8d, 0xf99, 0xfc6, 0x102b, 0x1056, 0x105e, 0x1062,
+             0x1067, 0x1071, 0x1082, 0x108f, 0x109a, 0x135d, 0x1712, 0x1732, 0x1752, 0x1772, 0x17b4,
+             0x17dd, 0x180b, 0x18a9, 0x1920, 0x1930, 0x19b0, 0x19c8, 0x1a17, 0x1a55, 0x1a60, 0x1a7f,
+             0x1b00, 0x1b34, 0x1b6b, 0x1b80, 0x1ba1, 0x1be6, 0x1c24, 0x1cd0, 0x1cd4, 0x1ced, 0x1cf2,
+             0x1dc0, 0x1dfc, 0x200c, 0x20d0, 0x2cef, 0x2d7f, 0x2de0, 0x302a, 0x3099, 0xa66f, 0xa674,
+             0xa69f, 0xa6f0, 0xa802, 0xa806, 0xa80b, 0xa823, 0xa880, 0xa8b4, 0xa8e0, 0xa926, 0xa947,
+             0xa980, 0xa9b3, 0xaa29, 0xaa43, 0xaa4c, 0xaa7b, 0xaab0, 0xaab2, 0xaab7, 0xaabe, 0xaac1,
+             0xaaeb, 0xaaf5, 0xabe3, 0xabec, 0xfb1e, 0xfe00, 0xfe20, 0xff9e, 0x101fd, 0x10a01,
+             0x10a05, 0x10a0C, 0x10a38, 0x10a3F, 0x11000, 0x11001, 0x11038, 0x11080, 0x11082,
+             0x110b0, 0x110b3, 0x110b7, 0x110b9, 0x11100, 0x11127, 0x1112c, 0x11180, 0x11182,
+             0x111b3, 0x111b6, 0x111bF, 0x116ab, 0x116ac, 0x116b0, 0x116b6, 0x16f51, 0x16f8f,
+             0x1d165, 0x1d167, 0x1d16d, 0x1d17b, 0x1d185, 0x1d1aa, 0x1d242, 0xe0100 };
+    StringBuilder builder = new StringBuilder();
+    int numChars = TestUtil.nextInt(random(), 100 * 1024, 1024 * 1024);
+    for (int i = 0 ; i < numChars ; ) {
+      builder.append(WordBreak_ExtendNumLet_chars[random().nextInt(WordBreak_ExtendNumLet_chars.length)]);
+      ++i;
+      if (random().nextBoolean()) {
+        int numFormatExtendChars = TestUtil.nextInt(random(), 1, 8);
+        for (int j = 0; j < numFormatExtendChars; ++j) {
+          int codepoint;
+          if (random().nextBoolean()) {
+            codepoint = WordBreak_Format_chars[random().nextInt(WordBreak_Format_chars.length)];
+          } else {
+            codepoint = WordBreak_Extend_chars[random().nextInt(WordBreak_Extend_chars.length)];
+          }
+          char[] chars = Character.toChars(codepoint);
+          builder.append(chars);
+          i += chars.length;
+        }
+      }
+    }
+    StandardTokenizer ts = new StandardTokenizer(TEST_VERSION_CURRENT, new StringReader(builder.toString()));
+    ts.reset();
+    while (ts.incrementToken()) { }
+    ts.end();
+    ts.close();
+    int newBufferSize = TestUtil.nextInt(random(), 200, 8192);
+    ts.setMaxTokenLength(newBufferSize); // try a different buffer size
+    ts.setReader(new StringReader(builder.toString()));
+    ts.reset();
+    while (ts.incrementToken()) { }
+    ts.end();
+    ts.close();
+  }
+
   public void testHugeDoc() throws IOException {
     StringBuilder sb = new StringBuilder();
     char whitespace[] = new char[4094];
