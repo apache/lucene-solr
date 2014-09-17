@@ -67,6 +67,8 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
         return new SimpleFSLockFactory(new File(lockPath).toPath());
       case "native":
         return new NativeFSLockFactory(new File(lockPath).toPath());
+      case "single":
+        return new SingleInstanceLockFactory();
       case "none":
         return NoLockFactory.getNoLockFactory();
       default:
