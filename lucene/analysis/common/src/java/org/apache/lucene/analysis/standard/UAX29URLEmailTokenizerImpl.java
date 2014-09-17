@@ -9200,15 +9200,15 @@ public final class UAX29URLEmailTokenizerImpl implements StandardTokenizerInterf
 
 
     /* finally: fill the buffer with new input */
-    int numRead = zzReader.read(zzBuffer, zzEndRead,
-                                            zzBuffer.length-zzEndRead);
+    int numRead = 0, requested = zzBuffer.length - zzEndRead;
+    if (requested > 0) numRead = zzReader.read(zzBuffer, zzEndRead, requested);
 
     if (numRead > 0) {
       zzEndRead+= numRead;
       return false;
     }
     // unlikely but not impossible: read 0 characters, but not at end of stream    
-    if (numRead == 0 && zzBuffer.length - zzEndRead > 0) {
+    if (numRead == 0 && requested > 0) {
       int c = zzReader.read();
       if (c == -1) {
         return true;

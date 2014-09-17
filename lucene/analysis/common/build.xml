@@ -104,8 +104,11 @@
                      match="private static final int ZZ_BUFFERSIZE ="
                      replace="private int ZZ_BUFFERSIZE ="/>
       <replaceregexp file="@{dir}/@{name}.java"
+                     match="int numRead = zzReader.read\(zzBuffer, zzEndRead,\s+zzBuffer.length-zzEndRead\);"
+                     replace="int numRead = 0, requested = zzBuffer.length - zzEndRead;&#xA;    if (requested > 0) numRead = zzReader.read(zzBuffer, zzEndRead, requested);"/>
+      <replaceregexp file="@{dir}/@{name}.java"
                      match="(// unlikely but not impossible:.*?if \(numRead == 0)"
-                     replace="\1 &amp;&amp; zzBuffer.length - zzEndRead > 0"
+                     replace="\1 &amp;&amp; requested > 0"
                      flags="s" />
     </sequential>
   </macrodef>
