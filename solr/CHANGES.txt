@@ -25,6 +25,15 @@ $Id$
 
 ==================  4.9.1 ==================
 
+Other Changes
+---------------------
+
+* SOLR-6503: Removed support for parsing netcdf files in Solr Cell because
+  of license issues. If you need support for this format, download the parser
+  JAR yourself (version 4.2) and add it to contrib/extraction/lib folder:
+  http://www.unidata.ucar.edu/software/thredds/current/netcdf-java/
+  (Uwe Schindler)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
