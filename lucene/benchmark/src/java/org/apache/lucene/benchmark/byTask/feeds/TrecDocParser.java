@@ -59,7 +59,7 @@ public abstract class TrecDocParser {
    */
   public static ParsePathType pathType(Path f) {
     int pathLength = 0;
-    while (f != null && ++pathLength < MAX_PATH_LENGTH) {
+    while (f != null && f.getFileName() != null && ++pathLength < MAX_PATH_LENGTH) {
       ParsePathType ppt = pathName2Type.get(f.getFileName().toString().toUpperCase(Locale.ROOT));
       if (ppt!=null) {
         return ppt;
