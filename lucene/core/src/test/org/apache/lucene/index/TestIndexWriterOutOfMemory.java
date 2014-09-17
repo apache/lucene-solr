@@ -38,6 +38,7 @@ import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper.Failure;
 import org.apache.lucene.util.BytesRef;
@@ -143,17 +144,9 @@ public class TestIndexWriterOutOfMemory extends LuceneTestCase {
               } else if (thingToDo == 2 && defaultCodecSupportsFieldUpdates()) {
                 iw.updateBinaryDocValue(new Term("id", Integer.toString(i)), "dv2", new BytesRef(Integer.toString(i+1)));
               }
-            } catch (OutOfMemoryError e) {
-              if (e.getMessage() != null && e.getMessage().startsWith("Fake OutOfMemoryError")) {
-                exceptionStream.println("\nTEST: got expected fake exc:" + e.getMessage());
-                e.printStackTrace(exceptionStream);
-                try {
-                  iw.rollback();
-                } catch (Throwable t) {}
-                continue STARTOVER;
-              } else {
-                Rethrow.rethrow(e);
-              }
+            } catch (OutOfMemoryError | AlreadyClosedException disaster) {
+              getOOM(disaster, iw, exceptionStream);
+              continue STARTOVER;
             }
           } else {
             // block docs
@@ -170,16 +163,8 @@ public class TestIndexWriterOutOfMemory extends LuceneTestCase {
               if (random().nextBoolean()) {
                 iw.deleteDocuments(new Term("id", Integer.toString(i)), new Term("id", Integer.toString(-i)));
               }
-            } catch (OutOfMemoryError e) {
-              if (e.getMessage() != null && e.getMessage().startsWith("Fake OutOfMemoryError")) {
-                exceptionStream.println("\nTEST: got expected fake exc:" + e.getMessage());
-                e.printStackTrace(exceptionStream);
-              } else {
-                Rethrow.rethrow(e);
-              }
-              try {
-                iw.rollback();
-              } catch (Throwable t) {}
+            } catch (OutOfMemoryError | AlreadyClosedException disaster) {
+              getOOM(disaster, iw, exceptionStream);
               continue STARTOVER;
             }
           }
@@ -201,16 +186,8 @@ public class TestIndexWriterOutOfMemory extends LuceneTestCase {
               if (DirectoryReader.indexExists(dir)) {
                 TestUtil.checkIndex(dir);
               }
-            } catch (OutOfMemoryError e) {
-              if (e.getMessage() != null && e.getMessage().startsWith("Fake OutOfMemoryError")) {
-                exceptionStream.println("\nTEST: got expected fake exc:" + e.getMessage());
-                e.printStackTrace(exceptionStream);
-              } else {
-                Rethrow.rethrow(e);
-              }
-              try {
-                iw.rollback();
-              } catch (Throwable t) {}
+            } catch (OutOfMemoryError | AlreadyClosedException disaster) {
+              getOOM(disaster, iw, exceptionStream);
               continue STARTOVER;
             }
           }
@@ -218,17 +195,9 @@ public class TestIndexWriterOutOfMemory extends LuceneTestCase {
         
         try {
           iw.close();
-        } catch (OutOfMemoryError e) {
-          if (e.getMessage() != null && e.getMessage().startsWith("Fake OutOfMemoryError")) {
-            exceptionStream.println("\nTEST: got expected fake exc:" + e.getMessage());
-            e.printStackTrace(exceptionStream);
-            try {
-              iw.rollback();
-            } catch (Throwable t) {}
-            continue STARTOVER;
-          } else {
-            Rethrow.rethrow(e);
-          }
+        } catch (OutOfMemoryError | AlreadyClosedException disaster) {
+          getOOM(disaster, iw, exceptionStream);
+          continue STARTOVER;
         }
       } catch (Throwable t) {
         System.out.println("Unexpected exception: dumping fake-exception-log:...");
@@ -242,6 +211,27 @@ public class TestIndexWriterOutOfMemory extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST PASSED: dumping fake-exception-log:...");
       System.out.println(exceptionLog.toString("UTF-8"));
+    }
+  }
+  
+  private OutOfMemoryError getOOM(Throwable disaster, IndexWriter writer, PrintStream log) {
+    Throwable e = disaster;
+    if (e instanceof AlreadyClosedException) {
+      e = e.getCause();
+    }
+    
+    if (e instanceof OutOfMemoryError && e.getMessage() != null && e.getMessage().startsWith("Fake OutOfMemoryError")) {
+      log.println("\nTEST: got expected fake exc:" + e.getMessage());
+      e.printStackTrace(log);
+      // TODO: remove rollback here, and add this assert to ensure "full OOM protection" anywhere IW does writes
+      // assertTrue("hit OOM but writer is still open, WTF: ", writer.isClosed());
+      try {
+        writer.rollback();
+      } catch (Throwable t) {}
+      return (OutOfMemoryError) e;
+    } else {
+      Rethrow.rethrow(disaster);
+      return null; // dead
     }
   }
   
@@ -265,7 +255,6 @@ public class TestIndexWriterOutOfMemory extends LuceneTestCase {
     });
   }
   
-  @Ignore("LUCENE-5958: not yet")
   public void testCheckpoint() throws Exception {
     final Random r = new Random(random().nextLong());
     doTest(new Failure() {
