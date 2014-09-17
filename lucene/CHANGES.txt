@@ -178,6 +178,9 @@ Tests
   the exact release
   (Ryan Ernst, Uwe Schindler)
 
+* LUCENE-5957: Add option for tests to not randomize codec
+  (Ryan Ernst)
+
 Build
 
 * LUCENE-5909: Smoke tester now has better command line parsing and
