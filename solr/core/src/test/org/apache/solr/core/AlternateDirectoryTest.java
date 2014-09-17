@@ -22,10 +22,9 @@ import java.io.IOException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.NoLockFactory;
+import org.apache.lucene.store.LockFactory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 /**
  * test that configs can override the DirectoryFactory and 
@@ -56,11 +55,11 @@ public class AlternateDirectoryTest extends SolrTestCaseJ4 {
     public static volatile Directory dir;
     
     @Override
-    public Directory create(String path, DirContext dirContext) throws IOException {
+    public Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
       openCalled = true;
 
       // we pass NoLockFactory, because the real lock factory is set later by injectLockFactory:
-      return dir = newFSDirectory(new File(path).toPath(), NoLockFactory.getNoLockFactory());
+      return dir = newFSDirectory(new File(path).toPath(), lockFactory);
     }
 
   }

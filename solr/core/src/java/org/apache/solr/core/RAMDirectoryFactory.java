@@ -20,16 +20,35 @@ package org.apache.solr.core;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.SingleInstanceLockFactory;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Factory to instantiate {@link org.apache.lucene.store.RAMDirectory}
  */
 public class RAMDirectoryFactory extends EphemeralDirectoryFactory {
 
+  public static Logger LOG = LoggerFactory.getLogger(RAMDirectoryFactory.class);
+  
   @Override
-  protected Directory create(String path, DirContext dirContext) throws IOException {
-    return new RAMDirectory();
+  protected LockFactory createLockFactory(String lockPath, String rawLockType) throws IOException {
+    if (!(rawLockType == null || "single".equalsIgnoreCase(rawLockType.trim()))) {
+      throw new SolrException(ErrorCode.FORBIDDEN,
+          "RAMDirectory can only be used with the 'single' lock factory type.");
+    }
+    return new SingleInstanceLockFactory();
+  }
+
+  @Override
+  protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
+    final Directory dir = new RAMDirectory();
+    dir.setLockFactory(lockFactory); // more or less a no-op, just for completeness
+    return dir;
   }
 
 }

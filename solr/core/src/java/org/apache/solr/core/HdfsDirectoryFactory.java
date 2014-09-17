@@ -17,17 +17,26 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
+import java.util.Locale;
 
 import org.apache.hadoop.conf.Configuration;
+
 import static org.apache.hadoop.fs.CommonConfigurationKeys.HADOOP_SECURITY_AUTHENTICATION;
+
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.NRTCachingDirectory;
+import org.apache.lucene.store.NativeFSLockFactory;
+import org.apache.lucene.store.NoLockFactory;
+import org.apache.lucene.store.SimpleFSLockFactory;
+import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -40,6 +49,7 @@ import org.apache.solr.store.blockcache.BufferStore;
 import org.apache.solr.store.blockcache.Cache;
 import org.apache.solr.store.blockcache.Metrics;
 import org.apache.solr.store.hdfs.HdfsDirectory;
+import org.apache.solr.store.hdfs.HdfsLockFactory;
 import org.apache.solr.util.HdfsUtil;
 import org.apache.solr.util.IOUtils;
 import org.slf4j.Logger;
@@ -98,8 +108,25 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory {
   }
   
   @Override
-  protected Directory create(String path, DirContext dirContext)
-      throws IOException {
+  protected LockFactory createLockFactory(String lockPath, String rawLockType) throws IOException {
+    if (null == rawLockType) {
+      LOG.warn("No lockType configured, assuming 'hdfs'.");
+      rawLockType = "hdfs";
+    }
+    final String lockType = rawLockType.toLowerCase(Locale.ROOT).trim();
+    switch (lockType) {
+      case "hdfs":
+        return new HdfsLockFactory(new Path(lockPath), getConf());
+      case "none":
+        return NoLockFactory.getNoLockFactory();
+      default:
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Unrecognized lockType: " + rawLockType);
+    }
+  }
+
+  @Override
+  protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
     LOG.info("creating directory factory for path {}", path);
     Configuration conf = getConf();
     
@@ -115,8 +142,8 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory {
     if (blockCacheWriteEnabled) {
       LOG.warn("Using " + BLOCKCACHE_WRITE_ENABLED + " is currently buggy and can result in readers seeing a corrupted view of the index.");
     }
-    Directory dir = null;
     
+    final Directory dir;
     if (blockCacheEnabled && dirContext != DirContext.META_DATA) {
       int numberOfBlocksPerBank = params.getInt(NUMBEROFBLOCKSPERBANK, 16384);
       
@@ -144,11 +171,11 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory {
           bufferSize, bufferCount, blockCacheGlobal);
       
       Cache cache = new BlockDirectoryCache(blockCache, path, metrics, blockCacheGlobal);
-      HdfsDirectory hdfsDirectory = new HdfsDirectory(new Path(path), conf);
+      HdfsDirectory hdfsDirectory = new HdfsDirectory(new Path(path), lockFactory, conf);
       dir = new BlockDirectory(path, hdfsDirectory, cache, null,
           blockCacheReadEnabled, blockCacheWriteEnabled);
     } else {
-      dir = new HdfsDirectory(new Path(path), conf);
+      dir = new HdfsDirectory(new Path(path), lockFactory, conf);
     }
     
     boolean nrtCachingDirectory = params.getBool(NRTCACHINGDIRECTORY_ENABLE, true);

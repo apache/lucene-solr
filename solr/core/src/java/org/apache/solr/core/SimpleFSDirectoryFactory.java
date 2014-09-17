@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.SimpleFSDirectory;
 
@@ -31,9 +32,9 @@ import org.apache.lucene.store.SimpleFSDirectory;
 public class SimpleFSDirectoryFactory extends StandardDirectoryFactory {
 
   @Override
-  protected Directory create(String path, DirContext dirContext) throws IOException {
+  protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
     // we pass NoLockFactory, because the real lock factory is set later by injectLockFactory:
-    return new SimpleFSDirectory(new File(path).toPath(), NoLockFactory.getNoLockFactory());
+    return new SimpleFSDirectory(new File(path).toPath(), lockFactory);
   }
 
   @Override

@@ -32,6 +32,7 @@ import java.util.Set;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext.Context;
+import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.NativeFSLockFactory;
 import org.apache.lucene.store.NoLockFactory;
@@ -51,7 +52,7 @@ import org.slf4j.LoggerFactory;
 /**
  * A {@link DirectoryFactory} impl base class for caching Directory instances
  * per path. Most DirectoryFactory implementations will want to extend this
- * class and simply implement {@link DirectoryFactory#create(String, DirContext)}.
+ * class and simply implement {@link DirectoryFactory#create(String, LockFactory, DirContext)}.
  * 
  * This is an expert class and these API's are subject to change.
  * 
@@ -316,9 +317,6 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     
     return otherCacheValue.path.startsWith(cacheValue.path + "/") && two > one;
   }
-
-  @Override
-  protected abstract Directory create(String path, DirContext dirContext) throws IOException;
   
   @Override
   public boolean exists(String path) throws IOException {
@@ -349,15 +347,11 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       }
       
       if (directory == null) {
-        directory = create(fullPath, dirContext);
+        directory = create(fullPath, createLockFactory(fullPath, rawLockType), dirContext);
         boolean success = false;
         try {
           directory = rateLimit(directory);
-          
           CacheValue newCacheValue = new CacheValue(fullPath, directory);
-          
-          injectLockFactory(directory, fullPath, rawLockType);
-          
           byDirectoryCache.put(directory, newCacheValue);
           byPathCache.put(fullPath, newCacheValue);
           log.info("return new directory for " + fullPath);
@@ -492,52 +486,6 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       }
       val.setDeleteOnClose(true, deleteAfterCoreClose);
     }
-  }
-  
-  private static Directory injectLockFactory(Directory dir, String lockPath,
-      String rawLockType) throws IOException {
-    if (null == rawLockType) {
-      // we default to "simple" for backwards compatibility
-      log.warn("No lockType configured for " + dir + " assuming 'simple'");
-      rawLockType = "simple";
-    }
-    final String lockType = rawLockType.toLowerCase(Locale.ROOT).trim();
-    
-    if ("simple".equals(lockType)) {
-      // multiple SimpleFSLockFactory instances should be OK
-      dir.setLockFactory(new SimpleFSLockFactory(new File(lockPath).toPath()));
-    } else if ("native".equals(lockType)) {
-      dir.setLockFactory(new NativeFSLockFactory(new File(lockPath).toPath()));
-    } else if ("single".equals(lockType)) {
-      if (!(dir.getLockFactory() instanceof SingleInstanceLockFactory)) dir
-          .setLockFactory(new SingleInstanceLockFactory());
-    } else if ("hdfs".equals(lockType)) {
-      Directory del = dir;
-      
-      if (dir instanceof NRTCachingDirectory) {
-        del = ((NRTCachingDirectory) del).getDelegate();
-      }
-      
-      if (del instanceof BlockDirectory) {
-        del = ((BlockDirectory) del).getDirectory();
-      }
-      
-      if (!(del instanceof HdfsDirectory)) {
-        throw new SolrException(ErrorCode.FORBIDDEN, "Directory: "
-            + del.getClass().getName()
-            + ", but hdfs lock factory can only be used with HdfsDirectory");
-      }
-
-      dir.setLockFactory(new HdfsLockFactory(((HdfsDirectory)del).getHdfsDirPath(), ((HdfsDirectory)del).getConfiguration()));
-    } else if ("none".equals(lockType)) {
-      // Recipe for disaster
-      log.error("CONFIGURATION WARNING: locks are disabled on " + dir);
-      dir.setLockFactory(NoLockFactory.getNoLockFactory());
-    } else {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Unrecognized lockType: " + rawLockType);
-    }
-    return dir;
   }
   
   protected synchronized void removeDirectory(CacheValue cacheValue) throws IOException {

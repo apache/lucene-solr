@@ -105,6 +105,9 @@ Other Changes
 * SOLR-6073: Remove helper methods from CollectionsRequest (SolrJ) for CollectionsAPI
   calls and move to a builder design for the same. (Varun Thacker, Anshum Gupta)
 
+* SOLR-6519: Make DirectoryFactory#create() take LockFactory.
+  (Uwe Schindler)
+
 ==================  4.11.0 =================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

@@ -18,15 +18,23 @@ package org.apache.solr.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Locale;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.NRTCachingDirectory;
+import org.apache.lucene.store.NativeFSLockFactory;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RateLimitedDirectoryWrapper;
-import org.apache.solr.core.CachingDirectoryFactory.CacheValue;
+import org.apache.lucene.store.SimpleFSLockFactory;
+import org.apache.lucene.store.SingleInstanceLockFactory;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Directory provider which mimics original Solr 
@@ -38,10 +46,33 @@ import org.apache.solr.core.CachingDirectoryFactory.CacheValue;
  */
 public class StandardDirectoryFactory extends CachingDirectoryFactory {
 
+  private static final Logger log = LoggerFactory.getLogger(StandardDirectoryFactory.class);
+
   @Override
-  protected Directory create(String path, DirContext dirContext) throws IOException {
+  protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
     // we pass NoLockFactory, because the real lock factory is set later by injectLockFactory:
-    return FSDirectory.open(new File(path).toPath(), NoLockFactory.getNoLockFactory());
+    return FSDirectory.open(new File(path).toPath(), lockFactory);
+  }
+  
+  @Override
+  protected LockFactory createLockFactory(String lockPath, String rawLockType) throws IOException {
+    if (null == rawLockType) {
+      // we default to "native"
+      log.warn("No lockType configured, assuming 'native'.");
+      rawLockType = "native";
+    }
+    final String lockType = rawLockType.toLowerCase(Locale.ROOT).trim();
+    switch (lockType) {
+      case "simple":
+        return new SimpleFSLockFactory(new File(lockPath).toPath());
+      case "native":
+        return new NativeFSLockFactory(new File(lockPath).toPath());
+      case "none":
+        return NoLockFactory.getNoLockFactory();
+      default:
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Unrecognized lockType: " + rawLockType);
+    }
   }
   
   @Override

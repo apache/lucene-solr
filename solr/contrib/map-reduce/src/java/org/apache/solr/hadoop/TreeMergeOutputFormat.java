@@ -38,6 +38,7 @@ import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.misc.IndexMergeTool;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.NoLockFactory;
 import org.apache.solr.store.hdfs.HdfsDirectory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,7 +94,7 @@ public class TreeMergeOutputFormat extends FileOutputFormat<Text, NullWritable> 
       writeShardNumberFile(context);      
       heartBeater.needHeartBeat();
       try {
-        Directory mergedIndex = new HdfsDirectory(workDir, context.getConfiguration());
+        Directory mergedIndex = new HdfsDirectory(workDir, NoLockFactory.getNoLockFactory(), context.getConfiguration());
         
         // TODO: shouldn't we pull the Version from the solrconfig.xml?
         IndexWriterConfig writerConfig = new IndexWriterConfig(null)
@@ -127,7 +128,7 @@ public class TreeMergeOutputFormat extends FileOutputFormat<Text, NullWritable> 
         
         Directory[] indexes = new Directory[shards.size()];
         for (int i = 0; i < shards.size(); i++) {
-          indexes[i] = new HdfsDirectory(shards.get(i), context.getConfiguration());
+          indexes[i] = new HdfsDirectory(shards.get(i), NoLockFactory.getNoLockFactory(), context.getConfiguration());
         }
 
         context.setStatus("Logically merging " + shards.size() + " shards into one shard");

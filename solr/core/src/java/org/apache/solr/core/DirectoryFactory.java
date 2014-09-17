@@ -26,6 +26,7 @@ import java.nio.file.NoSuchFileException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.LockFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CachingDirectoryFactory.CloseListener;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
@@ -76,7 +77,15 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    * 
    * @throws IOException If there is a low-level I/O error.
    */
-  protected abstract Directory create(String path,  DirContext dirContext) throws IOException;
+  protected abstract Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException;
+  
+  /**
+   * Creates a new LockFactory for a given path.
+   * @param lockPath the path of the index directory
+   * @param rawLockType A string value as passed in config. Every factory should at least support 'none' to disable locking.
+   * @throws IOException If there is a low-level I/O error.
+   */
+  protected abstract LockFactory createLockFactory(String lockPath, String rawLockType) throws IOException;
   
   /**
    * Returns true if a Directory exists for a given path.

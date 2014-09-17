@@ -34,7 +34,7 @@ import org.apache.lucene.store.BaseDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.NoLockFactory;
+import org.apache.lucene.store.LockFactory;
 import org.apache.solr.store.blockcache.CustomBufferedIndexInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,9 +51,9 @@ public class HdfsDirectory extends BaseDirectory {
   private final FileSystem fileSystem;
   private final FileContext fileContext;
   
-  public HdfsDirectory(Path hdfsDirPath, Configuration configuration)
+  public HdfsDirectory(Path hdfsDirPath, LockFactory lockFactory, Configuration configuration)
       throws IOException {
-    setLockFactory(NoLockFactory.getNoLockFactory());
+    setLockFactory(lockFactory);
     this.hdfsDirPath = hdfsDirPath;
     this.configuration = configuration;
     fileSystem = FileSystem.newInstance(hdfsDirPath.toUri(), configuration);
