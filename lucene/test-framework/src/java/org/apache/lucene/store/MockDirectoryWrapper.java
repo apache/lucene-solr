@@ -41,6 +41,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.NoDeletionPolicy;
 import org.apache.lucene.index.SegmentInfos;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ThrottledIndexOutput;
@@ -953,7 +954,15 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   synchronized void maybeThrowDeterministicException() throws IOException {
     if (failures != null) {
       for(int i = 0; i < failures.size(); i++) {
-        failures.get(i).eval(this);
+        try {
+          failures.get(i).eval(this);
+        } catch (Throwable t) {
+          if (LuceneTestCase.VERBOSE) {
+            System.out.println("MockDirectoryWrapper: throw exc");
+            t.printStackTrace(System.out);
+          }
+          IOUtils.reThrow(t);
+        }
       }
     }
   }
