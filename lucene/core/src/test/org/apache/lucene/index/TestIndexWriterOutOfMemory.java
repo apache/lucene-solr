@@ -46,6 +46,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Rethrow;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.junit.Ignore;
 
 /** 
  * Causes a bunch of fake OOM and checks that no other exceptions are delivered instead,
@@ -55,7 +56,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 public class TestIndexWriterOutOfMemory extends LuceneTestCase {
   
   // just one thread, serial merge policy, hopefully debuggable
-  public void testBasics() throws Exception {   
+  private void doTest(MockDirectoryWrapper.Failure failOn) throws Exception {   
     // log all exceptions we hit, in case we fail (for debugging)
     ByteArrayOutputStream exceptionLog = new ByteArrayOutputStream();
     PrintStream exceptionStream = new PrintStream(exceptionLog, true, "UTF-8");
@@ -102,27 +103,7 @@ public class TestIndexWriterOutOfMemory extends LuceneTestCase {
         IndexWriter iw = new IndexWriter(dir, conf);
         iw.commit(); // ensure there is always a commit
 
-        final Random r = new Random(random().nextLong());
-        dir.failOn(new Failure() {
-          @Override
-          public void eval(MockDirectoryWrapper dir) throws IOException {
-            Exception e = new Exception();
-            StackTraceElement stack[] = e.getStackTrace();
-            boolean ok = false;
-            for (int i = 0; i < stack.length; i++) {
-              if (stack[i].getClassName().equals(IndexWriter.class.getName())) {
-                ok = true;
-                // don't make life difficult though
-                if (stack[i].getMethodName().equals("rollback")) {
-                  return;
-                }
-              }
-            }
-            if (ok && r.nextInt(3000) == 0) {
-              throw new OutOfMemoryError("Fake OutOfMemoryError");
-            }
-          }
-        });
+        dir.failOn(failOn);
         
         for (int i = 0; i < numDocs; i++) {
           Document doc = new Document();
@@ -262,5 +243,46 @@ public class TestIndexWriterOutOfMemory extends LuceneTestCase {
       System.out.println("TEST PASSED: dumping fake-exception-log:...");
       System.out.println(exceptionLog.toString("UTF-8"));
     }
+  }
+  
+  public void testBasics() throws Exception {
+    final Random r = new Random(random().nextLong());
+    doTest(new Failure() {
+      @Override
+      public void eval(MockDirectoryWrapper dir) throws IOException {
+        Exception e = new Exception();
+        StackTraceElement stack[] = e.getStackTrace();
+        boolean ok = false;
+        for (int i = 0; i < stack.length; i++) {
+          if (stack[i].getClassName().equals(IndexWriter.class.getName())) {
+            ok = true;
+          }
+        }
+        if (ok && r.nextInt(3000) == 0) {
+          throw new OutOfMemoryError("Fake OutOfMemoryError");
+        }
+      }
+    });
+  }
+  
+  @Ignore("LUCENE-5958: not yet")
+  public void testCheckpoint() throws Exception {
+    final Random r = new Random(random().nextLong());
+    doTest(new Failure() {
+      @Override
+      public void eval(MockDirectoryWrapper dir) throws IOException {
+        Exception e = new Exception();
+        StackTraceElement stack[] = e.getStackTrace();
+        boolean ok = false;
+        for (int i = 0; i < stack.length; i++) {
+          if (stack[i].getClassName().equals(IndexFileDeleter.class.getName()) && stack[i].getMethodName().equals("checkpoint")) {
+            ok = true;
+          }
+        }
+        if (ok && r.nextInt(4) == 0) {
+          throw new OutOfMemoryError("Fake OutOfMemoryError");
+        }
+      }
+    });
   }
 }
