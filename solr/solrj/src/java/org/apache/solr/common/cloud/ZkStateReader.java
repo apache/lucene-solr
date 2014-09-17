@@ -101,7 +101,7 @@ public class ZkStateReader implements Closeable {
 
   public static final String SHARD_LEADERS_ZKNODE = "leaders";
 
-
+  public static final String ONLY_IF_DOWN = "onlyIfDown";
   
   //
   // convenience methods... should these go somewhere else?

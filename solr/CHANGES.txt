@@ -59,6 +59,9 @@ New Features
 * SOLR-5098: Schema API: Add REST support for adding field types to the schema.
   (Timothy Potter)
 
+* SOLR-6482:  Add an onlyIfDown flag for DELETEREPLICA collections API command
+  (Erick Erickson)   
+
 Bug Fixes
 ----------------------
 
