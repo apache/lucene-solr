@@ -327,6 +327,9 @@ Optimizations
   Always use MethodHandles to create AttributeImpl classes.
   (Uwe Schindler)
 
+* LUCENE-5960: Use a more efficient bitset, not a Set<Integer>, to
+  track visited states.  (Markus Heiden via Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-5796: Fixes the Scorer.getChildren() method for two combinations 
