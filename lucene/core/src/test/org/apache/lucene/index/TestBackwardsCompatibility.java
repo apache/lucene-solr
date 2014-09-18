@@ -336,12 +336,14 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         expectedVersions.add(major + minor + bugfix + prerelease + ".cfs");
       }
     }
+    /* TODO: Add this back after 5.0.0 - how can this be handled better?
     if (Version.LATEST.minor == 0 && Version.LATEST.bugfix == 0 && Version.LATEST.prerelease == 0) {
       // we are on trunk (latest is a first major release) so the last minor index
       // for the previous major version is also not yet tested
       assertNotNull(lastPrevMajorVersion);
       expectedVersions.remove(lastPrevMinorIndex);
     }
+    */
     Collections.sort(expectedVersions);
 
     // find what versions we are testing
