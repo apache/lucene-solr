@@ -26,7 +26,7 @@ import org.junit.Test;
 
 import java.util.Arrays;
 
-public class TestParamSet  extends SolrTestCaseJ4 {
+public class TestInitParams extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-paramset.xml","schema.xml");
@@ -69,7 +69,7 @@ public class TestParamSet  extends SolrTestCaseJ4 {
     for (String s : Arrays.asList("/dump4")) {
       SolrRequestHandler handler = h.getCore().getRequestHandler(s);
       SolrQueryResponse rsp = new SolrQueryResponse();
-      handler.handleRequest(req("param", "a","param","b" ,"param","c", "paramSet","a"), rsp);
+      handler.handleRequest(req("param", "a","param","b" ,"param","c", "useParam","a"), rsp);
       NamedList def = (NamedList) rsp.getValues().get("params");
       assertEquals("A", def.get("a"));
       assertEquals("B", def.get("b"));

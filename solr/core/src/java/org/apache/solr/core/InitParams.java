@@ -26,16 +26,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 /**
- * An Object which represents a paramSet tag
+ * An Object which represents a <args> tag
  *
  */
-public class ParamSet {
-  public static final String TYPE = "paramSet";
+public class InitParams {
+  public static final String TYPE = "initParams";
   public final String name;
   public final Set<String> paths;
   public final NamedList defaults,invariants,appends;
 
-  public ParamSet(PluginInfo p) {
+  public InitParams(PluginInfo p) {
     this.name = p.attributes.get("name");
     Set<String> paths = null;
     String pathStr = p.attributes.get("path");
