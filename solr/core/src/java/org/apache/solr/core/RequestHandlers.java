@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -199,21 +198,21 @@ public final class RequestHandlers {
   }
 
   private PluginInfo applyParamSet(SolrConfig config, PluginInfo info) {
-    List<ParamSet> paramSets= new ArrayList<>();
-    String p = info.attributes.get("paramSet");
+    List<InitParams> ags = new ArrayList<>();
+    String p = info.attributes.get(InitParams.TYPE);
     if(p!=null) {
-      for (String paramSet : StrUtils.splitSmart(p, ',')) {
-        if(config.getParamSets().containsKey(paramSet)) paramSets.add(config.getParamSets().get(paramSet));
-        else log.warn("INVALID paramSet {} in requestHandler {}", paramSet, info.toString());
+      for (String arg : StrUtils.splitSmart(p, ',')) {
+        if(config.getInitParams().containsKey(arg)) ags.add(config.getInitParams().get(arg));
+        else log.warn("INVALID paramSet {} in requestHandler {}", arg, info.toString());
       }
     }
-    for (ParamSet paramSet : config.getParamSets().values()) {
-      if(paramSet.matchPath(info.name)) paramSets.add(paramSet);
+    for (InitParams args : config.getInitParams().values()) {
+      if(args.matchPath(info.name)) ags.add(args);
     }
-    if(!paramSets.isEmpty()){
+    if(!ags.isEmpty()){
       info = new PluginInfo(info.type, info.attributes, info.initArgs.clone(), info.children);
-      for (ParamSet paramSet : paramSets) {
-        paramSet.apply(info.initArgs);
+      for (InitParams args : ags) {
+        args.apply(info.initArgs);
       }
     }
     return info;

@@ -1052,11 +1052,11 @@
     -->
   <!--<requestHandler name="/update" class="solr.UpdateRequestHandler">
   </requestHandler>-->
-  <paramSet path="/update/**,/query,/select,/tvrh,/elevate,/spell,/browse">
+  <initParams path="/update/**,/query,/select,/tvrh,/elevate,/spell,/browse">
     <lst name="defaults">
       <str name="df">text</str>
     </lst>
-  </paramSet>
+  </initParams>
   <!-- The following are implicitly added
   <requestHandler name="/update/json" class="solr.UpdateRequestHandler">
         <lst name="defaults">

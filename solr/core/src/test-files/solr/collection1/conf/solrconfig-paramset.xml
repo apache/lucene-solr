@@ -26,7 +26,7 @@
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
   <requestHandler name="standard" class="solr.StandardRequestHandler"/>
   <requestHandler name="/update" class="solr.UpdateRequestHandler"/>
-  <paramSet name="a" path="/dump3,/dump6,/root/*,/root1/**">
+  <initParams name="a" path="/dump3,/dump6,/root/*,/root1/**">
     <lst name="defaults">
       <str name="a">A</str>
     </lst>
@@ -36,19 +36,19 @@
     <lst name="appends">
       <str name="c">C</str>
     </lst>
-  </paramSet>
-  <paramSet path="/dump6">
+  </initParams>
+  <initParams path="/dump6">
     <lst name="defaults">
       <str name="p">P</str>
     </lst>
-  </paramSet>
+  </initParams>
   <requestHandler name="/dump3" class="DumpRequestHandler"/>
   <requestHandler name="/dump6" class="DumpRequestHandler"/>
   <requestHandler name="/dump4" class="DumpRequestHandler"/>
   <requestHandler name="/root/dump5" class="DumpRequestHandler"/>
   <requestHandler name="/root1/anotherlevel/dump6" class="DumpRequestHandler"/>
-  <requestHandler name="/dump1" class="DumpRequestHandler" paramSet="a"/>
-  <requestHandler name="/dump2" class="DumpRequestHandler" paramSet="a">
+  <requestHandler name="/dump1" class="DumpRequestHandler" initParams="a"/>
+  <requestHandler name="/dump2" class="DumpRequestHandler" initParams="a">
     <lst name="defaults">
       <str name="a">A1</str>
     </lst>

@@ -969,17 +969,17 @@
       <str>spellcheck</str>
     </arr>
   </requestHandler>
-  <paramSet path="/update/**,/query,/select,/tvrh,/elevate,/spell,/browse">
+  <initParams path="/update/**,/query,/select,/tvrh,/elevate,/spell,/browse">
     <lst name="defaults">
       <str name="df">_text</str>
     </lst>
-  </paramSet>
+  </initParams>
 
-  <paramSet path="/update/**">
+  <initParams path="/update/**">
     <lst name="defaults">
       <str name="update.chain">add-unknown-fields-to-the-schema</str>
     </lst>
-  </paramSet>
+  </initParams>
 
   <!-- Solr Cell Update Request Handler
 
