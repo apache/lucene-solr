@@ -28,12 +28,11 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 
 /** Test that creates way, way, way too many fields */
 public class TestManyFields extends LuceneTestCase {
   private static final FieldType storedTextType = new FieldType(TextField.TYPE_NOT_STORED);
-
+  
   public void testManyFields() throws IOException {
     Directory dir = newDirectory();
     IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
@@ -64,7 +63,7 @@ public class TestManyFields extends LuceneTestCase {
     reader.close();
     dir.close();
   }
-  
+
   public void testDiverseDocs() throws IOException {
     Directory dir = newDirectory();
     IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
@@ -114,11 +113,11 @@ public class TestManyFields extends LuceneTestCase {
 
     dir.close();
   }
-
+  
   // LUCENE-4398
   public void testRotatingFieldNames() throws Exception {
     Directory dir = newFSDirectory(createTempDir("TestIndexWriter.testChangingFields"));
-    IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     iwc.setRAMBufferSizeMB(0.2);
     iwc.setMaxBufferedDocs(-1);
     IndexWriter w = new IndexWriter(dir, iwc);

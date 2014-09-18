@@ -31,7 +31,6 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 
@@ -69,9 +68,9 @@ public class DatasetSplitter {
                     Analyzer analyzer, String... fieldNames) throws IOException {
 
     // create IWs for train / test / cv IDXs
-    IndexWriter testWriter = new IndexWriter(testIndex, new IndexWriterConfig(Version.LATEST, analyzer));
-    IndexWriter cvWriter = new IndexWriter(crossValidationIndex, new IndexWriterConfig(Version.LATEST, analyzer));
-    IndexWriter trainingWriter = new IndexWriter(trainingIndex, new IndexWriterConfig(Version.LATEST, analyzer));
+    IndexWriter testWriter = new IndexWriter(testIndex, new IndexWriterConfig(analyzer));
+    IndexWriter cvWriter = new IndexWriter(crossValidationIndex, new IndexWriterConfig(analyzer));
+    IndexWriter trainingWriter = new IndexWriter(trainingIndex, new IndexWriterConfig(analyzer));
 
     try {
       int size = originalIndex.maxDoc();

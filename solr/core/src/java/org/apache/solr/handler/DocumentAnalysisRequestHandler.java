@@ -122,11 +122,6 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
     return "Provides a breakdown of the analysis process of provided documents";
   }
 
-  @Override
-  public String getSource() {
-    return null;
-  }
-
 
   //================================================ Helper Methods ==================================================
 

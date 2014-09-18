@@ -24,8 +24,9 @@ import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.PrintStreamInfoStream;
 import org.apache.lucene.util.Version;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.Collection;
 
 /**
@@ -41,7 +42,7 @@ import java.util.Collection;
   * refuses to run by default. Specify {@code -delete-prior-commits}
   * to override this, allowing the tool to delete all but the last commit.
   * From Java code this can be enabled by passing {@code true} to
-  * {@link #IndexUpgrader(Directory,Version,InfoStream,boolean)}.
+  * {@link #IndexUpgrader(Directory,InfoStream,boolean)}.
   * <p><b>Warning:</b> This tool may reorder documents if the index was partially
   * upgraded before execution (e.g., documents were added). If your application relies
   * on &quot;monotonicity&quot; of doc IDs (which means that the order in which the documents
@@ -102,13 +103,14 @@ public final class IndexUpgrader {
       printUsage();
     }
     
+    Path p = Paths.get(path);
     Directory dir = null;
     if (dirImpl == null) {
-      dir = FSDirectory.open(new File(path));
+      dir = FSDirectory.open(p);
     } else {
-      dir = CommandLineUtil.newFSDirectory(dirImpl, new File(path));
+      dir = CommandLineUtil.newFSDirectory(dirImpl, p);
     }
-    return new IndexUpgrader(dir, Version.LUCENE_CURRENT, out, deletePriorCommits);
+    return new IndexUpgrader(dir, out, deletePriorCommits);
   }
   
   private final Directory dir;
@@ -117,15 +119,15 @@ public final class IndexUpgrader {
   
   /** Creates index upgrader on the given directory, using an {@link IndexWriter} using the given
    * {@code matchVersion}. The tool refuses to upgrade indexes with multiple commit points. */
-  public IndexUpgrader(Directory dir, Version matchVersion) {
-    this(dir, new IndexWriterConfig(matchVersion, null), false);
+  public IndexUpgrader(Directory dir) {
+    this(dir, new IndexWriterConfig(null), false);
   }
   
   /** Creates index upgrader on the given directory, using an {@link IndexWriter} using the given
    * {@code matchVersion}. You have the possibility to upgrade indexes with multiple commit points by removing
    * all older ones. If {@code infoStream} is not {@code null}, all logging output will be sent to this stream. */
-  public IndexUpgrader(Directory dir, Version matchVersion, InfoStream infoStream, boolean deletePriorCommits) {
-    this(dir, new IndexWriterConfig(matchVersion, null), deletePriorCommits);
+  public IndexUpgrader(Directory dir, InfoStream infoStream, boolean deletePriorCommits) {
+    this(dir, new IndexWriterConfig(null), deletePriorCommits);
     if (null != infoStream) {
       this.iwc.setInfoStream(infoStream);
     }

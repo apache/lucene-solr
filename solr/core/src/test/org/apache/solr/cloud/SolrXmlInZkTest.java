@@ -17,7 +17,6 @@ package org.apache.solr.cloud;
  */
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
@@ -59,7 +58,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
   }
 
   private void setUpZkAndDiskXml(boolean toZk, boolean leaveOnLocal) throws Exception {
-    File tmpDir = createTempDir();
+    File tmpDir = createTempDir().toFile();
     File solrHome = new File(tmpDir, "home");
     copyMinConf(new File(solrHome, "myCollect"));
     if (leaveOnLocal) {
@@ -162,21 +161,6 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
           ite.getCause().getMessage().contains("solr.xml does not exist"));
     } finally {
       closeZK();
-    }
-  }
-  //TODO: Remove for 5.x, this should fail when we don't have a real solr.xml file after we take out the remove
-  // the hard-coded default from ConifgSolrXmlOld
-  @Test
-  public void testHardCodedSolrXml() throws IOException {
-    SolrResourceLoader loader = null;
-    final File solrHome = createTempDir("testHardCodedSolrXml");
-    try {
-      loader = new SolrResourceLoader(solrHome.getAbsolutePath());
-      ConfigSolr.fromSolrHome(loader, solrHome.getAbsolutePath());
-    } catch (Exception e) {
-      fail("Should NOT have thrown any exception here, solr.xml should have been received from the hard-coded string");
-    } finally {
-      loader.close();
     }
   }
 

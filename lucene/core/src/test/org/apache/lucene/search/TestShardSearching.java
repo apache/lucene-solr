@@ -219,7 +219,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
                 //sort = new Sort(SortField.FIELD_DOC);
                 sort = null;
               } else if (what == 2) {
-                sort = new Sort(new SortField[] {new SortField("docid", SortField.Type.INT, random().nextBoolean())});
+                sort = new Sort(new SortField[] {new SortField("docid_int", SortField.Type.INT, random().nextBoolean())});
               } else {
                 sort = new Sort(new SortField[] {new SortField("title", SortField.Type.STRING, random().nextBoolean())});
               }

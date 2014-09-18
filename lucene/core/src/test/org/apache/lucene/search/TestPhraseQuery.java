@@ -31,20 +31,11 @@ import org.apache.lucene.util.*;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import com.carrotsearch.randomizedtesting.annotations.Seed;
-
 /**
  * Tests {@link PhraseQuery}.
  *
  * @see TestPositionIncrement
  */ 
-/*
- * Remove ThreadLeaks and run with (Eclipse or command line):
- * -ea -Drt.seed=AFD1E7E84B35D2B1
- * to get leaked thread errors.
- */
-// @ThreadLeaks(linger = 1000, leakedThreadsBelongToSuite = true)
-@Seed("AFD1E7E84B35D2B1")
 public class TestPhraseQuery extends LuceneTestCase {
 
   /** threshold for comparing floats */
@@ -60,8 +51,8 @@ public class TestPhraseQuery extends LuceneTestCase {
     directory = newDirectory();
     Analyzer analyzer = new Analyzer() {
       @Override
-      public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        return new TokenStreamComponents(new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
+      public TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new MockTokenizer(MockTokenizer.WHITESPACE, false));
       }
 
       @Override
@@ -74,7 +65,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     Document doc = new Document();
     doc.add(newTextField("field", "one two three four five", Field.Store.YES));
     doc.add(newTextField("repeated", "this is a repeated field - first part", Field.Store.YES));
-    IndexableField repeatedField = newTextField("repeated", "second part of a repeated field", Field.Store.YES);
+    Field repeatedField = newTextField("repeated", "second part of a repeated field", Field.Store.YES);
     doc.add(repeatedField);
     doc.add(newTextField("palindrome", "one two three two one", Field.Store.YES));
     writer.addDocument(doc);

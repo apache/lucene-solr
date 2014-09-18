@@ -120,7 +120,7 @@ public abstract class LogWatcher<E> {
    *
    * @param config a LogWatcherConfig object, containing the configuration for this LogWatcher.
    * @param loader a SolrResourceLoader, to be used to load plugin LogWatcher implementations.
-   *               Can be null if one of the built-in implementations is being used.
+   *               Can be null if
    *
    * @return a LogWatcher configured for the container's logging framework
    */

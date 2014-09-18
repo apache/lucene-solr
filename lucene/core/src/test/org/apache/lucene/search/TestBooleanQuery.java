@@ -45,7 +45,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.Version;
 
 public class TestBooleanQuery extends LuceneTestCase {
   
@@ -299,7 +298,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     Directory directory = newDirectory();
     Analyzer indexerAnalyzer = new MockAnalyzer(random());
 
-    IndexWriterConfig config = new IndexWriterConfig(Version.LATEST, indexerAnalyzer);
+    IndexWriterConfig config = new IndexWriterConfig(indexerAnalyzer);
     IndexWriter writer = new IndexWriter(directory, config);
     String FIELD = "content";
     Document d = new Document();

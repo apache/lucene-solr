@@ -113,9 +113,9 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) {
-      super.setNextReader(context);
-      afterDoc = after.doc - docBase;
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+      super.doSetNextReader(context);
+      afterDoc = after.doc - context.docBase;
     }
 
     @Override
@@ -208,9 +208,9 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
     }
     
     @Override
-    public void setNextReader(AtomicReaderContext context) {
-      super.setNextReader(context);
-      afterDoc = after.doc - docBase;
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+      super.doSetNextReader(context);
+      afterDoc = after.doc - context.docBase;
     }
     
     @Override
@@ -300,7 +300,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
   }
   
   @Override
-  public void setNextReader(AtomicReaderContext context) {
+  protected void doSetNextReader(AtomicReaderContext context) throws IOException {
     docBase = context.docBase;
   }
   

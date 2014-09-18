@@ -59,7 +59,7 @@ import org.objectweb.asm.commons.GeneratorAdapter;
  * You can compile with an alternate set of functions via {@link #compile(String, Map, ClassLoader)}.
  * For example:
  * <pre class="prettyprint">
- *   Map&lt;String,Method&gt; functions = new HashMap&lt;String,Method&gt;();
+ *   Map&lt;String,Method&gt; functions = new HashMap&lt;&gt;();
  *   // add all the default functions
  *   functions.putAll(JavascriptCompiler.DEFAULT_FUNCTIONS);
  *   // add cbrt()
@@ -198,13 +198,7 @@ public class JavascriptCompiler {
         .define(COMPILED_EXPRESSION_CLASS, classWriter.toByteArray());
       Constructor<? extends Expression> constructor = evaluatorClass.getConstructor(String.class, String[].class);
       return constructor.newInstance(sourceText, externalsMap.keySet().toArray(new String[externalsMap.size()]));
-    } catch (InstantiationException exception) {
-      throw new IllegalStateException("An internal error occurred attempting to compile the expression (" + sourceText + ").", exception);
-    } catch (IllegalAccessException exception) {
-      throw new IllegalStateException("An internal error occurred attempting to compile the expression (" + sourceText + ").", exception);
-    } catch (NoSuchMethodException exception) {
-      throw new IllegalStateException("An internal error occurred attempting to compile the expression (" + sourceText + ").", exception);
-    } catch (InvocationTargetException exception) {
+    } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException exception) {
       throw new IllegalStateException("An internal error occurred attempting to compile the expression (" + sourceText + ").", exception);
     }
   }

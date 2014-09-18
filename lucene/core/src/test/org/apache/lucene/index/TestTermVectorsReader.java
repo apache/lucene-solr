@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.Arrays;
 
 import org.apache.lucene.analysis.*;
@@ -146,8 +145,8 @@ public class TestTermVectorsReader extends LuceneTestCase {
     private final PositionIncrementAttribute posIncrAtt;
     private final OffsetAttribute offsetAtt;
     
-    public MyTokenizer(Reader reader) {
-      super(reader);
+    public MyTokenizer() {
+      super();
       termAtt = addAttribute(CharTermAttribute.class);
       posIncrAtt = addAttribute(PositionIncrementAttribute.class);
       offsetAtt = addAttribute(OffsetAttribute.class);
@@ -180,8 +179,8 @@ public class TestTermVectorsReader extends LuceneTestCase {
 
   private class MyAnalyzer extends Analyzer {
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      return new TokenStreamComponents(new MyTokenizer(reader));
+    public TokenStreamComponents createComponents(String fieldName) {
+      return new TokenStreamComponents(new MyTokenizer());
     }
   }
 
@@ -454,6 +453,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     }
 
     w.close();
+    
     dir.close();
   }
 }

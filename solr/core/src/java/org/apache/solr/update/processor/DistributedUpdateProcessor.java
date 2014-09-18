@@ -36,7 +36,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.DistributedQueue;
@@ -238,7 +240,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private NamedList addsResponse = null;
   private NamedList deleteResponse = null;
   private NamedList deleteByQueryResponse = null;
-  private CharsRef scratch;
+  private CharsRefBuilder scratch;
   
   private final SchemaField idField;
   
@@ -747,7 +749,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         addsResponse = new NamedList<String>();
         rsp.add("adds",addsResponse);
       }
-      if (scratch == null) scratch = new CharsRef();
+      if (scratch == null) scratch = new CharsRefBuilder();
       idField.getType().indexedToReadable(cmd.getIndexedId(), scratch);
       addsResponse.add(scratch.toString(), cmd.getVersion());
     }
@@ -1121,9 +1123,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // TODO: fieldtype needs externalToObject?
       String oldValS = numericField.getFirstValue().toString();
       SchemaField sf = schema.getField(sif.getName());
-      BytesRef term = new BytesRef();
+      BytesRefBuilder term = new BytesRefBuilder();
       sf.getType().readableToIndexed(oldValS, term);
-      Object oldVal = sf.getType().toObject(sf, term);
+      Object oldVal = sf.getType().toObject(sf, term.get());
 
       String fieldValS = fieldVal.toString();
       Number result;
@@ -1233,7 +1235,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         deleteResponse = new NamedList<String>();
         rsp.add("deletes",deleteResponse);
       }
-      if (scratch == null) scratch = new CharsRef();
+      if (scratch == null) scratch = new CharsRefBuilder();
       idField.getType().indexedToReadable(cmd.getIndexedId(), scratch);
       deleteResponse.add(scratch.toString(), cmd.getVersion());  // we're returning the version of the delete.. not the version of the doc we deleted.
     }

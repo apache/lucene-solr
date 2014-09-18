@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -51,16 +50,10 @@ import org.apache.solr.common.util.NamedList;
 public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
   String t1="a_t";
-  String i1="a_si";
+  String i1="a_i1";
   String nint = "n_i";
   String tint = "n_ti";
-  String nfloat = "n_f";
-  String tfloat = "n_tf";
-  String ndouble = "n_d";
-  String tdouble = "n_td";
-  String nlong = "n_l";
   String tlong = "other_tl1";
-  String ndate = "n_dt";
   String tdate_a = "a_n_tdt";
   String tdate_b = "b_n_tdt";
   
@@ -534,8 +527,6 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     // query("q","matchesnothing","fl","*,score", "debugQuery", "true");
     
     // Thread.sleep(10000000000L);
-
-    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity
 
     del("*:*"); // delete all docs and test stats request
     commit();

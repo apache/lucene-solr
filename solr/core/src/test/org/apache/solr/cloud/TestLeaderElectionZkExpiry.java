@@ -35,8 +35,8 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
 
   @Test
   public void testLeaderElectionWithZkExpiry() throws Exception {
-    String zkDir = createTempDir("zkData").getAbsolutePath();
-    String ccDir = createTempDir("testLeaderElectionWithZkExpiry-solr").getAbsolutePath();
+    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+    String ccDir = createTempDir("testLeaderElectionWithZkExpiry-solr").toFile().getAbsolutePath();
     CoreContainer cc = createCoreContainer(ccDir, SOLRXML);
     final ZkTestServer server = new ZkTestServer(zkDir);
     server.setTheTickTime(1000);

@@ -91,7 +91,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  *     &lt;str name="fieldRegex"&gt;.*SKIP.*&lt;/str&gt;
  *   &lt;/lst&gt;
  *   &lt;lst name="exclude"&gt;
- *     &lt;str name="typeClass"&gt;solr.DateField&lt;/str&gt;
+ *     &lt;str name="typeClass"&gt;solr.TrieDateField&lt;/str&gt;
  *   &lt;/lst&gt;
  * &lt;/processor&gt;</pre>
  * 
@@ -241,76 +241,5 @@ public abstract class FieldMutatingUpdateProcessorFactory
 
     return FieldMutatingUpdateProcessor.SELECT_ALL_FIELDS;
 
-  }
-
-  /**
-   * Removes all instance of the key from NamedList, returning the Set of 
-   * Strings that key referred to.  Throws an error if the key didn't refer 
-   * to one or more strings (or arrays of strings)
-   * @exception SolrException invalid arr/str structure.
-   * @deprecated Replaced by {@link NamedList#removeConfigArgs(String)}.  Will be
-   * removed in version 5.0.
-   */
-  @Deprecated
-  public static Collection<String> oneOrMany(final NamedList args, final String key) {
-    List<String> result = new ArrayList<>(args.size() / 2);
-    final String err = "init arg '" + key + "' must be a string "
-      + "(ie: 'str'), or an array (ie: 'arr') containing strings; found: ";
-    
-    for (Object o = args.remove(key); null != o; o = args.remove(key)) {
-      if (o instanceof String) {
-        result.add((String)o);
-        continue;
-      }
-      
-      if (o instanceof Object[]) {
-        o = Arrays.asList((Object[]) o);
-      }
-      
-      if (o instanceof Collection) {
-        for (Object item : (Collection)o) {
-          if (! (item instanceof String)) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, err + item.getClass());
-          }
-          result.add((String)item);
-        }
-        continue;
-      }
-      
-      // who knows what the hell we have
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, err + o.getClass());
-    }
-    
-    return result;
-  }
-
-  /**
-   * Removes the first instance of the key from NamedList, returning the Boolean
-   * that key referred to, or null if the key is not specified.
-   * @exception SolrException invalid type or structure
-   * @deprecated Use {@link NamedList#removeBooleanArg} instead.  Will be
-   * removed in 5.0.
-   */
-  @Deprecated
-  public static Boolean getBooleanArg(final NamedList args, final String key) {
-    Boolean bool;
-    List values = args.getAll(key);
-    if (0 == values.size()) {
-      return null;
-    }
-    if (values.size() > 1) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Only one '" + key + "' is allowed");
-    }
-    Object o = args.remove(key);
-    if (o instanceof Boolean) {
-      bool = (Boolean)o;
-    } else if (o instanceof CharSequence) {
-      bool = Boolean.parseBoolean(o.toString());
-    } else {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "'" + key + "' must have type 'bool' or 'str'; found " + o.getClass());
-    }
-    return bool;
   }
 }

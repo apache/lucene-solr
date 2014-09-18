@@ -17,10 +17,6 @@ package org.apache.lucene.analysis.miscellaneous;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.*;
-import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.util.Version;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -34,20 +30,9 @@ import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.junit.Test;
 
 public class TestLengthFilter extends BaseTokenStreamTestCase {
-  
-  public void testFilterNoPosIncr() throws Exception {
-    TokenStream stream = new MockTokenizer(
-        new StringReader("short toolong evenmuchlongertext a ab toolong foo"), MockTokenizer.WHITESPACE, false);
-    LengthFilter filter = new LengthFilter(Version.LUCENE_4_3, false, stream, 2, 6);
-    assertTokenStreamContents(filter,
-      new String[]{"short", "ab", "foo"},
-      new int[]{1, 1, 1}
-    );
-  }
 
   public void testFilterWithPosIncr() throws Exception {
-    TokenStream stream = new MockTokenizer(
-        new StringReader("short toolong evenmuchlongertext a ab toolong foo"), MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer("short toolong evenmuchlongertext a ab toolong foo");
     LengthFilter filter = new LengthFilter(stream, 2, 6);
     assertTokenStreamContents(filter,
       new String[]{"short", "ab", "foo"},
@@ -58,8 +43,8 @@ public class TestLengthFilter extends BaseTokenStreamTestCase {
   public void testEmptyTerm() throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, new LengthFilter(tokenizer, 0, 5));
       }
     };
@@ -71,6 +56,6 @@ public class TestLengthFilter extends BaseTokenStreamTestCase {
    */
   @Test(expected = IllegalArgumentException.class)
   public void testIllegalArguments() throws Exception {
-    new LengthFilter(new MockTokenizer(new StringReader("accept only valid arguments")), -4, -1);
+    new LengthFilter(whitespaceMockTokenizer("accept only valid arguments"), -4, -1);
   }
 }

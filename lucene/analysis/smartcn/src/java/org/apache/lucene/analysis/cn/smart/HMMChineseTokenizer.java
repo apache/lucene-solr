@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.cn.smart;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.text.BreakIterator;
 import java.util.Iterator;
 import java.util.Locale;
@@ -48,13 +47,13 @@ public class HMMChineseTokenizer extends SegmentingTokenizerBase {
   private Iterator<SegToken> tokens;
 
   /** Creates a new HMMChineseTokenizer */
-  public HMMChineseTokenizer(Reader reader) {
-    this(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, reader);
+  public HMMChineseTokenizer() {
+    this(DEFAULT_TOKEN_ATTRIBUTE_FACTORY);
   }
       
   /** Creates a new HMMChineseTokenizer, supplying the AttributeFactory */
-  public HMMChineseTokenizer(AttributeFactory factory, Reader reader) {
-    super(factory, reader, (BreakIterator)sentenceProto.clone());
+  public HMMChineseTokenizer(AttributeFactory factory) {
+    super(factory, (BreakIterator)sentenceProto.clone());
   }
 
   @Override

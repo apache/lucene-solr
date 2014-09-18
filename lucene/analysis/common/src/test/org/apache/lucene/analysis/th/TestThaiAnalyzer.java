@@ -29,7 +29,6 @@ import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.StopAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.Version;
 
 /**
  * Test case for ThaiAnalyzer, modified from TestFrenchAnalyzer
@@ -37,13 +36,13 @@ import org.apache.lucene.util.Version;
  */
 
 public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
-
+  
   @Override
   public void setUp() throws Exception {
     super.setUp();
     assumeTrue("JRE does not support Thai dictionary-based BreakIterator", ThaiTokenizer.DBBI_AVAILABLE);
   }
-  /*
+  /* 
    * testcase for offsets
    */
   public void testOffsets() throws Exception {
@@ -52,7 +51,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
         new int[] { 0, 3, 6, 9, 13, 17, 20, 23 },
         new int[] { 3, 6, 9, 13, 17, 20, 23, 25 });
   }
-
+  
   public void testStopWords() throws Exception {
     assertAnalyzesTo(new ThaiAnalyzer(), "การที่ได้ต้องแสดงว่างานดี",
         new String[] { "แสดง", "งาน", "ดี" },
@@ -60,51 +59,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
         new int[] { 17, 23, 25 },
         new int[] { 5, 2, 1 });
   }
-
-  public void testBackwardsStopWords() throws Exception {
-     assertAnalyzesTo(new ThaiAnalyzer(Version.LUCENE_3_5), "การที่ได้ต้องแสดงว่างานดี",
-          new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี" },
-          new int[] { 0, 3, 6, 9, 13, 17, 20, 23 },
-          new int[] { 3, 6, 9, 13, 17, 20, 23, 25 });
-  }
-
-  /**
-   * Thai numeric tokens were typed as <ALPHANUM> instead of <NUM>.
-   * @deprecated (3.1) testing backwards behavior
-    */
-  @Deprecated
-  public void testBuggyTokenType30() throws Exception {
-    assertAnalyzesTo(new ThaiAnalyzer(Version.LUCENE_3_0), "การที่ได้ต้องแสดงว่างานดี ๑๒๓",
-                         new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี", "๑๒๓" },
-                         new String[] { "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>", 
-                                        "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>", 
-                                        "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>" });
-  }
-
-  /** @deprecated (3.1) testing backwards behavior */
-  @Deprecated
-    public void testAnalyzer30() throws Exception {
-        ThaiAnalyzer analyzer = new ThaiAnalyzer(Version.LUCENE_3_0);
-
-    assertAnalyzesTo(analyzer, "", new String[] {});
-
-    assertAnalyzesTo(
-      analyzer,
-      "การที่ได้ต้องแสดงว่างานดี",
-      new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี"});
-
-    assertAnalyzesTo(
-      analyzer,
-      "บริษัทชื่อ XY&Z - คุยกับ xyz@demo.com",
-      new String[] { "บริษัท", "ชื่อ", "xy&z", "คุย", "กับ", "xyz@demo.com" });
-
-    // English stop words
-    assertAnalyzesTo(
-      analyzer,
-      "ประโยคว่า The quick brown fox jumped over the lazy dogs",
-      new String[] { "ประโยค", "ว่า", "quick", "brown", "fox", "jumped", "over", "lazy", "dogs" });
-  }
-
+  
   /*
    * Test that position increments are adjusted correctly for stopwords.
    */
@@ -116,7 +71,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
         new int[] { 0, 3, 6, 9, 18, 22, 25, 28 },
         new int[] { 3, 6, 9, 13, 22, 25, 28, 30 },
         new int[] { 1, 1, 1, 1, 2, 1, 1, 1 });
-
+   
     // case that a stopword is adjacent to thai text, with no whitespace
     assertAnalyzesTo(analyzer, "การที่ได้ต้องthe แสดงว่างานดี", 
         new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี" },
@@ -124,7 +79,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
         new int[] { 3, 6, 9, 13, 21, 24, 27, 29 },
         new int[] { 1, 1, 1, 1, 2, 1, 1, 1 });
   }
-
+  
   public void testReusableTokenStream() throws Exception {
     ThaiAnalyzer analyzer = new ThaiAnalyzer(CharArraySet.EMPTY_SET);
     assertAnalyzesTo(analyzer, "", new String[] {});
@@ -139,24 +94,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
           "บริษัทชื่อ XY&Z - คุยกับ xyz@demo.com",
           new String[] { "บริษัท", "ชื่อ", "xy", "z", "คุย", "กับ", "xyz", "demo.com" });
   }
-
-  /** @deprecated (3.1) for version back compat */
-  @Deprecated
-  public void testReusableTokenStream30() throws Exception {
-      ThaiAnalyzer analyzer = new ThaiAnalyzer(Version.LUCENE_3_0);
-      assertAnalyzesTo(analyzer, "", new String[] {});
-
-      assertAnalyzesTo(
-            analyzer,
-            "การที่ได้ต้องแสดงว่างานดี",
-            new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี"});
-
-      assertAnalyzesTo(
-            analyzer,
-            "บริษัทชื่อ XY&Z - คุยกับ xyz@demo.com",
-            new String[] { "บริษัท", "ชื่อ", "xy&z", "คุย", "กับ", "xyz@demo.com" });
-  }
-
+  
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     checkRandomData(random(), new ThaiAnalyzer(), 1000*RANDOM_MULTIPLIER);
@@ -170,7 +108,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
   
   // LUCENE-3044
   public void testAttributeReuse() throws Exception {
-    ThaiAnalyzer analyzer = new ThaiAnalyzer(Version.LUCENE_3_0);
+    ThaiAnalyzer analyzer = new ThaiAnalyzer();
     // just consume
     TokenStream ts = analyzer.tokenStream("dummy", "ภาษาไทย");
     assertTokenStreamContents(ts, new String[] { "ภาษา", "ไทย" });

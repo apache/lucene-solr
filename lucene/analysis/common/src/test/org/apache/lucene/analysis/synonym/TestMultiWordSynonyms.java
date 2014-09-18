@@ -17,41 +17,22 @@ package org.apache.lucene.analysis.synonym;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.util.StringMockResourceLoader;
 import org.apache.lucene.util.Version;
 
-import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @since solr 1.4
  */
 public class TestMultiWordSynonyms extends BaseTokenStreamFactoryTestCase {
-
-  /**
-   * @deprecated Remove this test in 5.0
-   */
-  @Deprecated
-  public void testMultiWordSynonymsOld() throws IOException {
-    List<String> rules = new ArrayList<>();
-    rules.add("a b c,d");
-    SlowSynonymMap synMap = new SlowSynonymMap(true);
-    SlowSynonymFilterFactory.parseRules(rules, synMap, "=>", ",", true, null);
-
-    SlowSynonymFilter ts = new SlowSynonymFilter(new MockTokenizer(new StringReader("a e"), MockTokenizer.WHITESPACE, false), synMap);
-    // This fails because ["e","e"] is the value of the token stream
-    assertTokenStreamContents(ts, new String[] { "a", "e" });
-  }
   
   public void testMultiWordSynonyms() throws Exception {
     Reader reader = new StringReader("a e");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Synonym", Version.LATEST,
         new StringMockResourceLoader("a b c,d"),
         "synonyms", "synonyms.txt").create(stream);

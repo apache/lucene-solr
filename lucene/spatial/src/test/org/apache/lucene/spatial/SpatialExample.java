@@ -26,7 +26,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -46,7 +45,6 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 
@@ -104,7 +102,7 @@ public class SpatialExample extends LuceneTestCase {
   }
 
   private void indexPoints() throws Exception {
-    IndexWriterConfig iwConfig = new IndexWriterConfig(Version.LATEST,null);
+    IndexWriterConfig iwConfig = new IndexWriterConfig(null);
     IndexWriter indexWriter = new IndexWriter(directory, iwConfig);
 
     //Spatial4j is x-y order for arguments
@@ -127,7 +125,7 @@ public class SpatialExample extends LuceneTestCase {
     //Potentially more than one shape in this field is supported by some
     // strategies; see the javadocs of the SpatialStrategy impl to see.
     for (Shape shape : shapes) {
-      for (IndexableField f : strategy.createIndexableFields(shape)) {
+      for (Field f : strategy.createIndexableFields(shape)) {
         doc.add(f);
       }
       //store it too; the format is up to you

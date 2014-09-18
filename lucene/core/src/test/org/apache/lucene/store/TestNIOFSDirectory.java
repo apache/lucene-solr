@@ -17,8 +17,8 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 /**
  * Tests NIOFSDirectory
@@ -26,7 +26,7 @@ import java.io.IOException;
 public class TestNIOFSDirectory extends BaseDirectoryTestCase {
 
   @Override
-  protected Directory getDirectory(File path) throws IOException {
+  protected Directory getDirectory(Path path) throws IOException {
     return new NIOFSDirectory(path);
   }
 }

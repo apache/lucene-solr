@@ -40,7 +40,7 @@ public class SmartChineseSentenceTokenizerFactory extends TokenizerFactory {
   }
   
   @Override
-  public SentenceTokenizer create(AttributeFactory factory, Reader input) {
-    return new SentenceTokenizer(factory, input);
+  public SentenceTokenizer create(AttributeFactory factory) {
+    return new SentenceTokenizer(factory);
   }
 }

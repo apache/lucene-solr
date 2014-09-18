@@ -125,3 +125,4 @@ final class MappingMultiDocsEnum extends DocsEnum {
     return cost;
   }
 }
+

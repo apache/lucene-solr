@@ -29,11 +29,9 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-@SuppressCodecs("Lucene3x")
 public class TestSortRescorer extends LuceneTestCase {
   IndexSearcher searcher;
   DirectoryReader reader;

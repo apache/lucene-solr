@@ -107,7 +107,7 @@ public class SimpleTextSegmentInfoReader extends SegmentInfoReader {
       SimpleTextUtil.checkFooter(input);
 
       SegmentInfo info = new SegmentInfo(directory, version, segmentName, docCount,
-                                         isCompoundFile, null, diagnostics, null, id);
+                                         isCompoundFile, null, diagnostics, id);
       info.setFiles(files);
       success = true;
       return info;

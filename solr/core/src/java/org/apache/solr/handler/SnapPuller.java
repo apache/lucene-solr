@@ -1040,7 +1040,7 @@ public class SnapPuller {
   
   static boolean delTree(File dir) {
     try {
-      org.apache.lucene.util.IOUtils.rm(dir);
+      org.apache.lucene.util.IOUtils.rm(dir.toPath());
       return true;
     } catch (IOException e) {
       LOG.warn("Unable to delete directory : " + dir, e);

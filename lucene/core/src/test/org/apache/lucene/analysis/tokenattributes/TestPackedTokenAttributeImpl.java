@@ -59,7 +59,8 @@ public class TestPackedTokenAttributeImpl extends LuceneTestCase {
   }
   
   public void testPackedTokenAttributeFactory() throws Exception {
-    TokenStream ts = new MockTokenizer(TokenStream.DEFAULT_TOKEN_ATTRIBUTE_FACTORY, new StringReader("foo bar"), MockTokenizer.WHITESPACE, false, MockTokenizer.DEFAULT_MAX_TOKEN_LENGTH);
+    TokenStream ts = new MockTokenizer(TokenStream.DEFAULT_TOKEN_ATTRIBUTE_FACTORY, MockTokenizer.WHITESPACE, false, MockTokenizer.DEFAULT_MAX_TOKEN_LENGTH);
+    ((Tokenizer)ts).setReader(new StringReader("foo bar"));
     
     assertTrue("CharTermAttribute is not implemented by Token",
       ts.addAttribute(CharTermAttribute.class) instanceof PackedTokenAttributeImpl);

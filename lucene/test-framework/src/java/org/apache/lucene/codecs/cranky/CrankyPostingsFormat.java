@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.cranky;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.Random;
 
 import org.apache.lucene.codecs.FieldsConsumer;
@@ -27,7 +26,6 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.util.BytesRef;
 
 class CrankyPostingsFormat extends PostingsFormat {
   final PostingsFormat delegate;
@@ -77,11 +75,6 @@ class CrankyPostingsFormat extends PostingsFormat {
       if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from FieldsConsumer.close()");
       }  
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return delegate.getComparator();
     }
   }
 }

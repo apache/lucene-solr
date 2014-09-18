@@ -18,7 +18,6 @@
 package org.apache.lucene.analysis.cn.smart;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
 
@@ -89,8 +88,7 @@ public final class SmartChineseAnalyzer extends Analyzer {
       // make sure it is unmodifiable as we expose it in the outer class
       return CharArraySet.unmodifiableSet(WordlistLoader.getWordSet(IOUtils
           .getDecodingReader(SmartChineseAnalyzer.class, DEFAULT_STOPWORD_FILE,
-              StandardCharsets.UTF_8), STOPWORD_FILE_COMMENT,
-          Version.LATEST));
+              StandardCharsets.UTF_8), STOPWORD_FILE_COMMENT));
     }
   }
 
@@ -99,14 +97,6 @@ public final class SmartChineseAnalyzer extends Analyzer {
    */
   public SmartChineseAnalyzer() {
     this(true);
-  }
-
-  /**
-   * @deprecated Use {@link #SmartChineseAnalyzer()}
-   */
-  @Deprecated
-  public SmartChineseAnalyzer(Version matchVersion) {
-    this(matchVersion, true);
   }
 
   /**
@@ -122,17 +112,7 @@ public final class SmartChineseAnalyzer extends Analyzer {
    */
   public SmartChineseAnalyzer(boolean useDefaultStopWords) {
     stopWords = useDefaultStopWords ? DefaultSetHolder.DEFAULT_STOP_SET
-        : CharArraySet.EMPTY_SET;
-  }
-
-  /**
-   * @deprecated Use {@link #SmartChineseAnalyzer(boolean)}
-   */
-  @Deprecated
-  public SmartChineseAnalyzer(Version matchVersion, boolean useDefaultStopWords) {
-    stopWords = useDefaultStopWords ? DefaultSetHolder.DEFAULT_STOP_SET
       : CharArraySet.EMPTY_SET;
-    setVersion(matchVersion);
   }
 
   /**
@@ -145,27 +125,18 @@ public final class SmartChineseAnalyzer extends Analyzer {
    * @param stopWords {@link Set} of stopwords to use.
    */
   public SmartChineseAnalyzer(CharArraySet stopWords) {
-    this.stopWords = stopWords==null?CharArraySet.EMPTY_SET:stopWords;
-  }
-
-  /**
-   * @deprecated Use {@link #SmartChineseAnalyzer(CharArraySet)}
-   */
-  @Deprecated
-  public SmartChineseAnalyzer(Version matchVersion, CharArraySet stopWords) {
-    this.stopWords = stopWords==null?CharArraySet.EMPTY_SET:stopWords;
-    setVersion(matchVersion);
+    this.stopWords = stopWords == null ? CharArraySet.EMPTY_SET : stopWords;
   }
 
   @Override
-  public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+  public TokenStreamComponents createComponents(String fieldName) {
     final Tokenizer tokenizer;
     TokenStream result;
     if (getVersion().onOrAfter(Version.LUCENE_4_8_0)) {
-      tokenizer = new HMMChineseTokenizer(reader);
+      tokenizer = new HMMChineseTokenizer();
       result = tokenizer;
     } else {
-      tokenizer = new SentenceTokenizer(reader);
+      tokenizer = new SentenceTokenizer();
       result = new WordTokenFilter(tokenizer);
     }
     // result = new LowerCaseFilter(result);
@@ -173,7 +144,7 @@ public final class SmartChineseAnalyzer extends Analyzer {
     // The porter stemming is too strict, this is not a bug, this is a feature:)
     result = new PorterStemFilter(result);
     if (!stopWords.isEmpty()) {
-      result = new StopFilter(getVersion(), result, stopWords);
+      result = new StopFilter(result, stopWords);
     }
     return new TokenStreamComponents(tokenizer, result);
   }

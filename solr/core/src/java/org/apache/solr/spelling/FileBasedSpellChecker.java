@@ -71,7 +71,7 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
     // TODO: you should be able to specify the IWC params?
     // TODO: if we enable this, codec gets angry since field won't exist in the schema
     // config.setCodec(core.getCodec());
-    spellChecker.indexDictionary(dictionary, new IndexWriterConfig(core.getSolrConfig().luceneMatchVersion, null), false);
+    spellChecker.indexDictionary(dictionary, new IndexWriterConfig(null), false);
   }
 
   /**
@@ -96,7 +96,7 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
 
         IndexWriter writer = new IndexWriter(
             ramDir,
-            new IndexWriterConfig(core.getSolrConfig().luceneMatchVersion, fieldType.getIndexAnalyzer()).
+            new IndexWriterConfig(fieldType.getIndexAnalyzer()).
                 setMaxBufferedDocs(150).
                 setMergePolicy(mp).
                 setOpenMode(IndexWriterConfig.OpenMode.CREATE)

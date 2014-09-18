@@ -49,8 +49,8 @@ public class TestSolrSynonymParser extends BaseTokenStreamTestCase {
     
     Analyzer analyzer = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);
         return new TokenStreamComponents(tokenizer, new SynonymFilter(tokenizer, map, true));
       }
     };
@@ -122,8 +122,8 @@ public class TestSolrSynonymParser extends BaseTokenStreamTestCase {
     final SynonymMap map = parser.build();
     Analyzer analyzer = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.KEYWORD, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.KEYWORD, false);
         return new TokenStreamComponents(tokenizer, new SynonymFilter(tokenizer, map, false));
       }
     };

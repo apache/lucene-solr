@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.core;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
 
-import java.io.Reader;
 import java.util.Map;
 
 /**
@@ -43,10 +42,7 @@ public class WhitespaceTokenizerFactory extends TokenizerFactory {
   }
 
   @Override
-  public WhitespaceTokenizer create(AttributeFactory factory, Reader input) {
-    if (luceneMatchVersion == null) {
-      return new WhitespaceTokenizer(factory, input);
-    }
-    return new WhitespaceTokenizer(luceneMatchVersion, factory, input);
+  public WhitespaceTokenizer create(AttributeFactory factory) {
+    return new WhitespaceTokenizer(factory);
   }
 }

@@ -79,36 +79,6 @@ public class Token extends PackedTokenAttributeImpl implements FlagsAttribute, P
   public Token() {
   }
 
-  /** Constructs a Token with null text and start & end
-   *  offsets.
-   *  @param start start offset in the source text
-   *  @param end end offset in the source text */
-  public Token(int start, int end) {
-    setOffset(start, end);
-  }
-
-  /** Constructs a Token with null text and start & end
-   *  offsets plus the Token type.
-   *  @param start start offset in the source text
-   *  @param end end offset in the source text
-   *  @param typ the lexical type of this Token */
-  public Token(int start, int end, String typ) {
-    setOffset(start, end);
-    setType(typ);
-  }
-
-  /**
-   * Constructs a Token with null text and start & end
-   *  offsets plus flags. NOTE: flags is EXPERIMENTAL.
-   *  @param start start offset in the source text
-   *  @param end end offset in the source text
-   *  @param flags The bits to set for this token
-   */
-  public Token(int start, int end, int flags) {
-    setOffset(start, end);
-    setFlags(flags);
-  }
-
   /** Constructs a Token with the given term text, and start
    *  & end offsets.  The type defaults to "word."
    *  <b>NOTE:</b> for better indexing speed you should
@@ -120,52 +90,6 @@ public class Token extends PackedTokenAttributeImpl implements FlagsAttribute, P
    */
   public Token(CharSequence text, int start, int end) {
     append(text);
-    setOffset(start, end);
-  }
-
-  /** Constructs a Token with the given text, start and end
-   *  offsets, & type.  <b>NOTE:</b> for better indexing
-   *  speed you should instead use the char[] termBuffer
-   *  methods to set the term text.
-   *  @param text term text
-   *  @param start start offset in the source text
-   *  @param end end offset in the source text
-   *  @param typ token type
-   */
-  public Token(String text, int start, int end, String typ) {
-    append(text);
-    setOffset(start, end);
-    setType(typ);
-  }
-
-  /**
-   *  Constructs a Token with the given text, start and end
-   *  offsets, & type.  <b>NOTE:</b> for better indexing
-   *  speed you should instead use the char[] termBuffer
-   *  methods to set the term text.
-   * @param text term text
-   * @param start start offset in the source text
-   * @param end end offset in the source text
-   * @param flags token type bits
-   */
-  public Token(String text, int start, int end, int flags) {
-    append(text);
-    setOffset(start, end);
-    setFlags(flags);
-  }
-
-  /**
-   *  Constructs a Token with the given term buffer (offset
-   *  & length), start and end
-   *  offsets
-   * @param startTermBuffer buffer containing term text
-   * @param termBufferOffset the index in the buffer of the first character
-   * @param termBufferLength number of valid characters in the buffer
-   * @param start start offset in the source text
-   * @param end end offset in the source text
-   */
-  public Token(char[] startTermBuffer, int termBufferOffset, int termBufferLength, int start, int end) {
-    copyBuffer(startTermBuffer, termBufferOffset, termBufferLength);
     setOffset(start, end);
   }
 
@@ -216,16 +140,6 @@ public class Token extends PackedTokenAttributeImpl implements FlagsAttribute, P
   }
 
   @Override
-  public Token clone() {
-    Token t = (Token)super.clone();
-    // Do a deep clone
-    if (payload != null) {
-      t.payload = payload.clone();
-    }
-    return t;
-  }
-
-  @Override
   public boolean equals(Object obj) {
     if (obj == this)
       return true;
@@ -251,79 +165,13 @@ public class Token extends PackedTokenAttributeImpl implements FlagsAttribute, P
     return code;
   }
 
-  /** Shorthand for calling {@link #clear},
-   *  {@link #copyBuffer(char[], int, int)},
-   *  {@link #setOffset},
-   *  {@link #setType}
-   *  @return this Token instance */
-  public Token reinit(char[] newTermBuffer, int newTermOffset, int newTermLength, int newStartOffset, int newEndOffset, String newType) {
-    clear();
-    copyBuffer(newTermBuffer, newTermOffset, newTermLength);
-    setOffset(newStartOffset, newEndOffset);
-    setType(newType);
-    return this;
-  }
-
-  /** Shorthand for calling {@link #clear},
-   *  {@link #copyBuffer(char[], int, int)},
-   *  {@link #setOffset},
-   *  {@link #setType} on Token.DEFAULT_TYPE
-   *  @return this Token instance */
-  public Token reinit(char[] newTermBuffer, int newTermOffset, int newTermLength, int newStartOffset, int newEndOffset) {
-    clear();
-    copyBuffer(newTermBuffer, newTermOffset, newTermLength);
-    setOffset(newStartOffset, newEndOffset);
-    return this;
-  }
-
-  /** Shorthand for calling {@link #clear},
-   *  {@link #append(CharSequence)},
-   *  {@link #setOffset},
-   *  {@link #setType}
-   *  @return this Token instance */
-  public Token reinit(String newTerm, int newStartOffset, int newEndOffset, String newType) {
-    clear();
-    append(newTerm);
-    setOffset(newStartOffset, newEndOffset);
-    setType(newType);
-    return this;
-  }
-
-  /** Shorthand for calling {@link #clear},
-   *  {@link #append(CharSequence, int, int)},
-   *  {@link #setOffset},
-   *  {@link #setType}
-   *  @return this Token instance */
-  public Token reinit(String newTerm, int newTermOffset, int newTermLength, int newStartOffset, int newEndOffset, String newType) {
-    clear();
-    append(newTerm, newTermOffset, newTermOffset + newTermLength);
-    setOffset(newStartOffset, newEndOffset);
-    setType(newType);
-    return this;
-  }
-
-  /** Shorthand for calling {@link #clear},
-   *  {@link #append(CharSequence)},
-   *  {@link #setOffset},
-   *  {@link #setType} on Token.DEFAULT_TYPE
-   *  @return this Token instance */
-  public Token reinit(String newTerm, int newStartOffset, int newEndOffset) {
-    clear();
-    append(newTerm);
-    setOffset(newStartOffset, newEndOffset);
-    return this;
-  }
-
-  /** Shorthand for calling {@link #clear},
-   *  {@link #append(CharSequence, int, int)},
-   *  {@link #setOffset},
-   *  {@link #setType} on Token.DEFAULT_TYPE
-   *  @return this Token instance */
-  public Token reinit(String newTerm, int newTermOffset, int newTermLength, int newStartOffset, int newEndOffset) {
-    clear();
-    append(newTerm, newTermOffset, newTermOffset + newTermLength);
-    setOffset(newStartOffset, newEndOffset);
-    return this;
+  @Override
+  public Token clone() {
+    final Token t = (Token) super.clone();
+    if (payload != null) {
+      t.payload = payload.clone();
+    }
+    return t;
   }
 
   /**
@@ -339,28 +187,6 @@ public class Token extends PackedTokenAttributeImpl implements FlagsAttribute, P
     super.copyTo(target);
     ((FlagsAttribute) target).setFlags(flags);
     ((PayloadAttribute) target).setPayload(payload);
-  }
-  
-  /**
-   * Copy the prototype token's fields into this one, with a different term. Note: Payloads are shared.
-   * @param prototype existing Token
-   * @param newTerm new term text
-   */
-  public void reinit(Token prototype, String newTerm) {
-    reinit(prototype);
-    setEmpty().append(newTerm);
-  }
-
-  /**
-   * Copy the prototype token's fields into this one, with a different term. Note: Payloads are shared.
-   * @param prototype existing Token
-   * @param newTermBuffer buffer containing new term text
-   * @param offset the index in the buffer of the first character
-   * @param length number of valid characters in the buffer
-   */
-  public void reinit(Token prototype, char[] newTermBuffer, int offset, int length) {
-    reinit(prototype);
-    copyBuffer(newTermBuffer, offset, length);
   }
 
   @Override

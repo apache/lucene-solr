@@ -107,7 +107,7 @@ abstract public class BaseTestHarness {
     Document document = null;
     try {
       document = getXmlDocumentBuilder().parse(new ByteArrayInputStream
-          (xml.getBytes("UTF-8")));
+          (xml.getBytes(StandardCharsets.UTF_8)));
     } catch (UnsupportedEncodingException e1) {
       throw new RuntimeException("Totally weird UTF-8 exception", e1);
     } catch (IOException e2) {

@@ -25,7 +25,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.util.Version;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.JUnitCore;
@@ -43,7 +42,7 @@ public class TestFailIfUnreferencedFiles extends WithNestedTests {
     public void testDummy() throws Exception {
       MockDirectoryWrapper dir = newMockDirectory();
       dir.setAssertNoUnrefencedFilesOnClose(true);
-      IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, null));
+      IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(null));
       iw.addDocument(new Document());
       iw.close();
       IndexOutput output = dir.createOutput("_hello.world", IOContext.DEFAULT);

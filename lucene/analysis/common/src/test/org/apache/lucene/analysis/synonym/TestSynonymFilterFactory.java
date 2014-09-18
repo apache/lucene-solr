@@ -19,17 +19,12 @@ package org.apache.lucene.analysis.synonym;
 
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.pattern.PatternTokenizerFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
-import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 import org.apache.lucene.analysis.util.StringMockResourceLoader;
-import org.apache.lucene.util.Version;
+import org.apache.lucene.analysis.cjk.CJKAnalyzer;
 import org.apache.lucene.util.Version;
 
 public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
@@ -37,7 +32,7 @@ public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
   /** checks for synonyms of "GB" in synonyms.txt */
   private void checkSolrSynonyms(TokenFilterFactory factory) throws Exception {
     Reader reader = new StringReader("GB");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = factory.create(stream);
     assertTrue(stream instanceof SynonymFilter);
     assertTokenStreamContents(stream,
@@ -48,7 +43,7 @@ public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
   /** checks for synonyms of "second" in synonyms-wordnet.txt */
   private void checkWordnetSynonyms(TokenFilterFactory factory) throws Exception {
     Reader reader = new StringReader("second");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = factory.create(stream);
     assertTrue(stream instanceof SynonymFilter);
     assertTokenStreamContents(stream,
@@ -61,40 +56,10 @@ public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
     checkSolrSynonyms(tokenFilterFactory("Synonym", "synonyms", "synonyms.txt"));
   }
   
-  /** test that we can parse and use the solr syn file, with the old impl
-   * @deprecated Remove this test in Lucene 5.0 */
-  @Deprecated
-  public void testSynonymsOld() throws Exception {
-    Reader reader = new StringReader("GB");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    stream = tokenFilterFactory("Synonym", Version.LUCENE_3_3, new ClasspathResourceLoader(getClass()),
-        "synonyms", "synonyms.txt").create(stream);
-    assertTrue(stream instanceof SlowSynonymFilter);
-    assertTokenStreamContents(stream, 
-        new String[] { "GB", "gib", "gigabyte", "gigabytes" },
-        new int[] { 1, 0, 0, 0 });
-  }
-  
-  /** test multiword offsets with the old impl
-   * @deprecated Remove this test in Lucene 5.0 */
-  @Deprecated
-  public void testMultiwordOffsetsOld() throws Exception {
-    Reader reader = new StringReader("national hockey league");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    stream = tokenFilterFactory("Synonym", Version.LUCENE_3_3, new StringMockResourceLoader("national hockey league, nhl"),
-        "synonyms", "synonyms.txt").create(stream);
-    // WTF?
-    assertTokenStreamContents(stream, 
-        new String[] { "national", "nhl", "hockey", "league" },
-        new int[] { 0, 0, 0, 0 },
-        new int[] { 22, 22, 22, 22 },
-        new int[] { 1, 0, 1, 1 });
-  }
-  
   /** if the synonyms are completely empty, test that we still analyze correctly */
   public void testEmptySynonyms() throws Exception {
     Reader reader = new StringReader("GB");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Synonym", Version.LATEST,
         new StringMockResourceLoader(""), // empty file!
         "synonyms", "synonyms.txt").create(stream);
@@ -121,50 +86,54 @@ public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
     }
   }
 
+  /** Test that analyzer and tokenizerFactory is both specified */
+  public void testAnalyzer() throws Exception {
+    final String analyzer = CJKAnalyzer.class.getName();
+    final String tokenizerFactory = PatternTokenizerFactory.class.getName();
+    TokenFilterFactory factory = null;
+
+    factory = tokenFilterFactory("Synonym",
+        "synonyms", "synonyms2.txt",
+        "analyzer", analyzer);
+    assertNotNull(factory);
+
+    try {
+      tokenFilterFactory("Synonym",
+          "synonyms", "synonyms.txt",
+          "analyzer", analyzer,
+          "tokenizerFactory", tokenizerFactory);
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Analyzer and TokenizerFactory can't be specified both"));
+    }
+  }
+
   static final String TOK_SYN_ARG_VAL = "argument";
   static final String TOK_FOO_ARG_VAL = "foofoofoo";
 
   /** Test that we can parse TokenierFactory's arguments */
   public void testTokenizerFactoryArguments() throws Exception {
-    // diff versions produce diff delegator behavior,
-    // all should be (mostly) equivilent for our test purposes.
-    doTestTokenizerFactoryArguments(Version.LUCENE_3_3, 
-                                    SlowSynonymFilterFactory.class);
-    doTestTokenizerFactoryArguments(Version.LUCENE_3_4, 
-                                    FSTSynonymFilterFactory.class);
-    doTestTokenizerFactoryArguments(Version.LUCENE_3_5, 
-                                    FSTSynonymFilterFactory.class);
-
-    doTestTokenizerFactoryArguments(Version.LUCENE_CURRENT, 
-                                    FSTSynonymFilterFactory.class);
-  }
-
-  protected void doTestTokenizerFactoryArguments(final Version ver, 
-                                                 final Class delegatorClass) 
-    throws Exception {
-
     final String clazz = PatternTokenizerFactory.class.getName();
     TokenFilterFactory factory = null;
 
     // simple arg form
-    factory = tokenFilterFactory("Synonym", ver,
+    factory = tokenFilterFactory("Synonym", 
         "synonyms", "synonyms.txt", 
         "tokenizerFactory", clazz,
         "pattern", "(.*)",
         "group", "0");
-    assertDelegator(factory, delegatorClass);
-
+    assertNotNull(factory);
     // prefix
-    factory = tokenFilterFactory("Synonym", ver,
+    factory = tokenFilterFactory("Synonym", 
         "synonyms", "synonyms.txt", 
         "tokenizerFactory", clazz,
         "tokenizerFactory.pattern", "(.*)",
         "tokenizerFactory.group", "0");
-    assertDelegator(factory, delegatorClass);
+    assertNotNull(factory);
 
     // sanity check that sub-PatternTokenizerFactory fails w/o pattern
     try {
-      factory = tokenFilterFactory("Synonym", ver,
+      factory = tokenFilterFactory("Synonym", 
           "synonyms", "synonyms.txt", 
           "tokenizerFactory", clazz);
       fail("tokenizerFactory should have complained about missing pattern arg");
@@ -174,7 +143,7 @@ public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
 
     // sanity check that sub-PatternTokenizerFactory fails on unexpected
     try {
-      factory = tokenFilterFactory("Synonym", ver,
+      factory = tokenFilterFactory("Synonym", 
           "synonyms", "synonyms.txt", 
           "tokenizerFactory", clazz,
           "tokenizerFactory.pattern", "(.*)",
@@ -186,18 +155,7 @@ public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
     }
   }
 
-  private static void assertDelegator(final TokenFilterFactory factory,
-                                      final Class delegatorClass) {
-    assertNotNull(factory);
-    assertTrue("factory not expected class: " + factory.getClass(),
-               factory instanceof SynonymFilterFactory);
-    SynonymFilterFactory synFac = (SynonymFilterFactory) factory;
-    Object delegator = synFac.getDelegator();
-    assertNotNull(delegator);
-    assertTrue("delegator not expected class: " + delegator.getClass(),
-               delegatorClass.isInstance(delegator));
-    
-  }
+
 }
 
 

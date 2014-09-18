@@ -37,11 +37,12 @@ import org.apache.lucene.index.NoMergeScheduler;
 import org.apache.lucene.util.Version;
 
 import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Create an index. <br>
@@ -99,8 +100,7 @@ public class CreateIndexTask extends PerfTask {
   
   public static IndexWriterConfig createWriterConfig(Config config, PerfRunData runData, OpenMode mode, IndexCommit commit) {
     @SuppressWarnings("deprecation")
-    Version version = Version.parseLeniently(config.get("writer.version", Version.LUCENE_CURRENT.toString()));
-    IndexWriterConfig iwConf = new IndexWriterConfig(version, runData.getAnalyzer());
+    IndexWriterConfig iwConf = new IndexWriterConfig(runData.getAnalyzer());
     iwConf.setOpenMode(mode);
     IndexDeletionPolicy indexDeletionPolicy = getIndexDeletionPolicy(config);
     iwConf.setIndexDeletionPolicy(indexDeletionPolicy);
@@ -192,8 +192,8 @@ public class CreateIndexTask extends PerfTask {
       } else if (infoStreamVal.equals("SystemErr")) {
         iwc.setInfoStream(System.err);
       } else {
-        File f = new File(infoStreamVal).getAbsoluteFile();
-        iwc.setInfoStream(new PrintStream(new BufferedOutputStream(new FileOutputStream(f)), false, Charset.defaultCharset().name()));
+        Path f = Paths.get(infoStreamVal);
+        iwc.setInfoStream(new PrintStream(new BufferedOutputStream(Files.newOutputStream(f)), false, Charset.defaultCharset().name()));
       }
     }
     IndexWriter writer = new IndexWriter(runData.getDirectory(), iwc);

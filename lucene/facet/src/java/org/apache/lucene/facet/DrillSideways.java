@@ -26,6 +26,7 @@ import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetField;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
 import org.apache.lucene.facet.taxonomy.FastTaxonomyFacetCounts;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
@@ -238,7 +239,7 @@ public class DrillSideways {
    *  default is false.  Note that if you return true from
    *  this method (in a subclass) be sure your collector
    *  also returns false from {@link
-   *  Collector#acceptsDocsOutOfOrder}: this will trick
+   *  LeafCollector#acceptsDocsOutOfOrder}: this will trick
    *  {@code BooleanQuery} into also scoring all subDocs at
    *  once. */
   protected boolean scoreSubDocsAtOnce() {

@@ -129,9 +129,4 @@ public class ThreadDumpHandler extends RequestHandlerBase
   public String getDescription() {
     return "Thread Dump";
   }
-
-  @Override
-  public String getSource() {
-    return null;
-  }
 }

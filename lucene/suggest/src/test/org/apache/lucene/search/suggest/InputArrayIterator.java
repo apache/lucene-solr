@@ -18,7 +18,6 @@ package org.apache.lucene.search.suggest;
  */
 
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -83,11 +82,6 @@ public final class InputArrayIterator implements InputIterator {
   @Override
   public boolean hasPayloads() {
     return hasPayloads;
-  }
-  
-  @Override
-  public Comparator<BytesRef> getComparator() {
-    return null;
   }
 
   @Override

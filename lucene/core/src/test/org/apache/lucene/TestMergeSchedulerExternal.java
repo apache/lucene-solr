@@ -31,7 +31,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 
@@ -135,7 +134,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     // compiles. But ensure that it can be used as well, e.g., no other hidden
     // dependencies or something. Therefore, don't use any random API !
     Directory dir = new RAMDirectory();
-    IndexWriterConfig conf = new IndexWriterConfig(Version.LATEST, null);
+    IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setMergeScheduler(new ReportingMergeScheduler());
     IndexWriter writer = new IndexWriter(dir, conf);
     writer.addDocument(new Document());

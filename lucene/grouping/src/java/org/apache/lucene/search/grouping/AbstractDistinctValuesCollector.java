@@ -17,18 +17,18 @@ package org.apache.lucene.search.grouping;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.Scorer;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
-import java.io.IOException;
-import java.util.*;
+import org.apache.lucene.search.SimpleCollector;
 
 /**
  * A second pass grouping collector that keeps track of distinct values for a specified field for the top N group.
  *
  * @lucene.experimental
  */
-public abstract class AbstractDistinctValuesCollector<GC extends AbstractDistinctValuesCollector.GroupCount<?>> extends Collector {
+public abstract class AbstractDistinctValuesCollector<GC extends AbstractDistinctValuesCollector.GroupCount<?>> extends SimpleCollector {
 
   /**
    * Returns all unique values for each top N group.
@@ -40,10 +40,6 @@ public abstract class AbstractDistinctValuesCollector<GC extends AbstractDistinc
   @Override
   public boolean acceptsDocsOutOfOrder() {
     return true;
-  }
-
-  @Override
-  public void setScorer(Scorer scorer) throws IOException {
   }
 
   /**

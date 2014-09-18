@@ -32,10 +32,8 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 
-@SuppressCodecs("Lucene3x")
 public class TestExpressionRescorer extends LuceneTestCase {
   IndexSearcher searcher;
   DirectoryReader reader;

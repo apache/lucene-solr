@@ -265,7 +265,7 @@ public final class PagedBytes implements Accountable {
 
   /** Copy bytes in, writing the length as a 1 or 2 byte
    *  vInt prefix. */
-  // TODO: this really needs to be refactored into fieldcacheimpl
+  // TODO: this really needs to be refactored into fieldcacheimpl!
   public long copyUsingLengthPrefix(BytesRef bytes) {
     if (bytes.length >= 32768) {
       throw new IllegalArgumentException("max length is 32767 (got " + bytes.length + ")");

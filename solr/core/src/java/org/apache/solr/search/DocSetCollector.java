@@ -20,15 +20,16 @@ package org.apache.solr.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.util.FixedBitSet;
 
 /**
  *
  */
 
-public class DocSetCollector extends Collector {
+public class DocSetCollector extends SimpleCollector {
   int pos=0;
   FixedBitSet bits;
   final int maxDoc;
@@ -84,7 +85,7 @@ public class DocSetCollector extends Collector {
   }
 
   @Override
-  public void setNextReader(AtomicReaderContext context) throws IOException {
+  protected void doSetNextReader(AtomicReaderContext context) throws IOException {
     this.base = context.docBase;
   }
 

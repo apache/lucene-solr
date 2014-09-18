@@ -94,14 +94,6 @@ public class ExtendableQueryParser extends QueryParser {
   }
 
   /**
-   * @deprecated Use {@link #ExtendableQueryParser(String, Analyzer)}
-   */
-  @Deprecated
-  public ExtendableQueryParser(final Version matchVersion, final String f, final Analyzer a) {
-    this(matchVersion, f, a, DEFAULT_EXTENSION);
-  }
-
-  /**
    * Creates a new {@link ExtendableQueryParser} instance
    * 
    * @param f
@@ -111,16 +103,9 @@ public class ExtendableQueryParser extends QueryParser {
    * @param ext
    *          the query parser extensions
    */
-  public ExtendableQueryParser(final String f, final Analyzer a, final Extensions ext) {
-    this(Version.LATEST, f, a, ext);
-  }
-
-  /**
-   * @deprecated Use {@link #ExtendableQueryParser(String, Analyzer, Extensions)}
-   */
-  @Deprecated
-  public ExtendableQueryParser(final Version matchVersion, final String f, final Analyzer a, final Extensions ext) {
-    super(matchVersion, f, a);
+  public ExtendableQueryParser(final String f,
+      final Analyzer a, final Extensions ext) {
+    super(f, a);
     this.defaultField = f;
     this.extensions = ext;
   }

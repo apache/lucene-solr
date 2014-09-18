@@ -17,7 +17,7 @@ package org.apache.solr.handler.component;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -162,7 +162,7 @@ public class PivotFacetProcessor extends SimpleFacets
     String nextField = fnames.poll();
 
     // re-useable BytesRefBuilder for conversion of term values to Objects
-    BytesRef termval = new BytesRef(); 
+    BytesRefBuilder termval = new BytesRefBuilder(); 
 
     List<NamedList<Object>> values = new ArrayList<>( superFacets.size() );
     for (Map.Entry<String, Integer> kv : superFacets) {
@@ -176,7 +176,7 @@ public class PivotFacetProcessor extends SimpleFacets
           pivot.add( "value", null );
         } else {
           ftype.readableToIndexed(fieldValue, termval);
-          pivot.add( "value", ftype.toObject(sfield, termval) );
+          pivot.add( "value", ftype.toObject(sfield, termval.get()) );
         }
         pivot.add( "count", kv.getValue() );
 

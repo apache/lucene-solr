@@ -41,7 +41,7 @@ public class SerializedStrategyTest extends StrategyTestCase {
 
   @Override
   protected boolean needsDocValues() {
-    return true;
+    return (strategy instanceof SerializedDVStrategy);
   }
 
   //called by StrategyTestCase; we can't let it call our makeQuery which will UOE ex.

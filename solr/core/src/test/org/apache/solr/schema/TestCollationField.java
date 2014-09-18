@@ -27,15 +27,12 @@ import org.apache.lucene.util.TestUtil;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
 /**
  * Tests {@link CollationField} with TermQueries, RangeQueries, and sort order.
  */
-@SuppressCodecs("Lucene3x")
 public class TestCollationField extends SolrTestCaseJ4 {
   
   @BeforeClass
@@ -66,7 +63,7 @@ public class TestCollationField extends SolrTestCaseJ4 {
    */
   public static String setupSolrHome() throws Exception {
     // make a solr home underneath the test's TEMP_DIR
-    File tmpFile = createTempDir("collation1");
+    File tmpFile = createTempDir("collation1").toFile();
     
     // make data and conf dirs
     new File(tmpFile, "data").mkdir();

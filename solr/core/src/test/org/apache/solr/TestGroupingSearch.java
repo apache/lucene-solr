@@ -17,7 +17,6 @@
 
 package org.apache.solr;
 
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.noggit.JSONUtil;
 import org.noggit.ObjectBuilder;
@@ -72,11 +71,11 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
   @Test
   public void testGroupingGroupSortingScore_basic() {
-    assertU(add(doc("id", "1","name", "author1", "title", "a book title", "group_si", "1")));
-    assertU(add(doc("id", "2","name", "author1", "title", "the title", "group_si", "2")));
-    assertU(add(doc("id", "3","name", "author2", "title", "a book title", "group_si", "1")));
-    assertU(add(doc("id", "4","name", "author2", "title", "title", "group_si", "2")));
-    assertU(add(doc("id", "5","name", "author3", "title", "the title of a title", "group_si", "1")));
+    assertU(add(doc("id", "1","name", "author1", "title", "a book title", "group_i", "1")));
+    assertU(add(doc("id", "2","name", "author1", "title", "the title", "group_i", "2")));
+    assertU(add(doc("id", "3","name", "author2", "title", "a book title", "group_i", "1")));
+    assertU(add(doc("id", "4","name", "author2", "title", "title", "group_i", "2")));
+    assertU(add(doc("id", "5","name", "author3", "title", "the title of a title", "group_i", "1")));
     assertU(commit());
     
     assertQ(req("q","title:title", "group", "true", "group.field","name")
@@ -99,8 +98,8 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
             ,"//arr[@name='groups']/lst[3]/result/doc/*[@name='id'][.='5']"
             );
 
-    assertQ(req("q", "title:title", "group", "true", "group.field", "group_si")
-        , "//lst[@name='grouped']/lst[@name='group_si']"
+    assertQ(req("q", "title:title", "group", "true", "group.field", "group_i")
+        , "//lst[@name='grouped']/lst[@name='group_i']"
         , "*[count(//arr[@name='groups']/lst) = 2]"
 
         , "//arr[@name='groups']/lst[1]/int[@name='groupValue'][.='2']"
@@ -115,11 +114,11 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
   @Test
   public void testGroupingGroupSortingScore_withTotalGroupCount() {
-    assertU(add(doc("id", "1","name", "author1", "title", "a book title", "group_si", "1")));
-    assertU(add(doc("id", "2","name", "author1", "title", "the title", "group_si", "2")));
-    assertU(add(doc("id", "3","name", "author2", "title", "a book title", "group_si", "1")));
-    assertU(add(doc("id", "4","name", "author2", "title", "title", "group_si", "2")));
-    assertU(add(doc("id", "5","name", "author3", "title", "the title of a title", "group_si", "1")));
+    assertU(add(doc("id", "1","name", "author1", "title", "a book title", "group_i", "1")));
+    assertU(add(doc("id", "2","name", "author1", "title", "the title", "group_i", "2")));
+    assertU(add(doc("id", "3","name", "author2", "title", "a book title", "group_i", "1")));
+    assertU(add(doc("id", "4","name", "author2", "title", "title", "group_i", "2")));
+    assertU(add(doc("id", "5","name", "author3", "title", "the title of a title", "group_i", "1")));
     assertU(commit());
 
     assertQ(req("q","title:title", "group", "true", "group.field","name", "group.ngroups", "true")
@@ -141,9 +140,9 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
             ,"//arr[@name='groups']/lst[3]/result/doc/*[@name='id'][.='5']"
             );
 
-    assertQ(req("q", "title:title", "group", "true", "group.field", "group_si", "group.ngroups", "true")
-        , "//lst[@name='grouped']/lst[@name='group_si']/int[@name='matches'][.='5']"
-        , "//lst[@name='grouped']/lst[@name='group_si']/int[@name='ngroups'][.='2']"
+    assertQ(req("q", "title:title", "group", "true", "group.field", "group_i", "group.ngroups", "true")
+        , "//lst[@name='grouped']/lst[@name='group_i']/int[@name='matches'][.='5']"
+        , "//lst[@name='grouped']/lst[@name='group_i']/int[@name='ngroups'][.='2']"
         , "*[count(//arr[@name='groups']/lst) = 2]"
 
         , "//arr[@name='groups']/lst[1]/int[@name='groupValue'][.='2']"
@@ -518,7 +517,6 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
       ,"/grouped/"+f+"/matches==10"
       ,"/facet_counts/facet_fields/"+f+"==['1',3, '2',3, '3',2, '4',1, '5',1]"
     );
-    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity
 
     // test that grouping works with highlighting
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id"

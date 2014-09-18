@@ -90,7 +90,7 @@ public final class SegmentReader extends AtomicReader implements Accountable {
    * @throws IOException if there is a low-level IO error
    */
   // TODO: why is this public?
-  public SegmentReader(SegmentCommitInfo si, int termInfosIndexDivisor, IOContext context) throws IOException {
+  public SegmentReader(SegmentCommitInfo si, IOContext context) throws IOException {
     this.si = si;
     // TODO if the segment uses CFS, we may open the CFS file twice: once for
     // reading the FieldInfos (if they are not gen'd) and second time by
@@ -99,7 +99,7 @@ public final class SegmentReader extends AtomicReader implements Accountable {
     // Best if we could somehow read FieldInfos in SCR but not keep it there, but
     // constructors don't allow returning two things...
     fieldInfos = readFieldInfos(si);
-    core = new SegmentCoreReaders(this, si.info.dir, si, context, termInfosIndexDivisor);
+    core = new SegmentCoreReaders(this, si.info.dir, si, context);
     segDocValues = new SegmentDocValues();
     
     boolean success = false;
@@ -184,12 +184,11 @@ public final class SegmentReader extends AtomicReader implements Accountable {
     final Directory dir = core.cfsReader != null ? core.cfsReader : si.info.dir;
     final DocValuesFormat dvFormat = codec.docValuesFormat();
 
-    int termsIndexDivisor = getTermInfosIndexDivisor();
     if (!si.hasFieldUpdates()) {
       // simple case, no DocValues updates
-      return segDocValues.getDocValuesProducer(-1L, si, IOContext.READ, dir, dvFormat, fieldInfos, termsIndexDivisor);
+      return segDocValues.getDocValuesProducer(-1L, si, IOContext.READ, dir, dvFormat, fieldInfos);
     } else {
-      return new SegmentDocValuesProducer(si, dir, fieldInfos, segDocValues, dvFormat, termsIndexDivisor);
+      return new SegmentDocValuesProducer(si, dir, fieldInfos, segDocValues, dvFormat);
     }
   }
   
@@ -357,7 +356,7 @@ public final class SegmentReader extends AtomicReader implements Accountable {
 
   // This is necessary so that cloned SegmentReaders (which
   // share the underlying postings data) will map to the
-  // same entry in the FieldCache.  See LUCENE-1579.
+  // same entry for CachingWrapperFilter.  See LUCENE-1579.
   @Override
   public Object getCoreCacheKey() {
     // NOTE: if this ever changes, be sure to fix
@@ -369,12 +368,6 @@ public final class SegmentReader extends AtomicReader implements Accountable {
   @Override
   public Object getCombinedCoreAndDeletesKey() {
     return this;
-  }
-
-  /** Returns term infos index divisor originally passed to
-   *  {@link #SegmentReader(SegmentCommitInfo, int, IOContext)}. */
-  public int getTermInfosIndexDivisor() {
-    return core.termsIndexDivisor;
   }
 
   // returns the FieldInfo that corresponds to the given field and type, or

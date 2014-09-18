@@ -31,7 +31,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.Version;
 
 public class TestLimitTokenCountAnalyzer extends BaseTokenStreamTestCase {
 
@@ -68,8 +67,7 @@ public class TestLimitTokenCountAnalyzer extends BaseTokenStreamTestCase {
       mock.setEnableChecks(consumeAll);
       Analyzer a = new LimitTokenCountAnalyzer(mock, limit, consumeAll);
 
-      IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig
-                                           (Version.LATEST, a));
+      IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(a));
 
       Document doc = new Document();
       StringBuilder b = new StringBuilder();

@@ -26,7 +26,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.lucene3x.Lucene3xCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
@@ -34,8 +33,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.Version;
 
 /**
  * Simple test that adds numeric terms, where each term has the 
@@ -50,7 +47,7 @@ public class TestBagOfPostings extends LuceneTestCase {
 
     boolean isSimpleText = "SimpleText".equals(TestUtil.getPostingsFormat("field"));
 
-    IndexWriterConfig iwc = newIndexWriterConfig(random(), Version.LATEST, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), new MockAnalyzer(random()));
 
     if ((isSimpleText || iwc.getMergePolicy() instanceof MockRandomMergePolicy) && (TEST_NIGHTLY || RANDOM_MULTIPLIER > 1)) {
       // Otherwise test can take way too long (> 2 hours)
@@ -131,10 +128,7 @@ public class TestBagOfPostings extends LuceneTestCase {
     AtomicReader air = ir.leaves().get(0).reader();
     Terms terms = air.terms("field");
     // numTerms-1 because there cannot be a term 0 with 0 postings:
-    assertEquals(numTerms-1, air.fields().getUniqueTermCount());
-    if (iwc.getCodec() instanceof Lucene3xCodec == false) {
-      assertEquals(numTerms-1, terms.size());
-    }
+    assertEquals(numTerms-1, terms.size());
     TermsEnum termsEnum = terms.iterator(null);
     BytesRef term;
     while ((term = termsEnum.next()) != null) {

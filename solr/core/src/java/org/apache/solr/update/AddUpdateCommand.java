@@ -95,9 +95,9 @@ public class AddUpdateCommand extends UpdateCommand implements Iterable<Document
            } else if (count  > 1) {
              throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Document contains multiple values for uniqueKey field: " + field);
            } else {
-             BytesRef b = new BytesRef();
+             BytesRefBuilder b = new BytesRefBuilder();
              sf.getType().readableToIndexed(field.getFirstValue().toString(), b);
-             indexedId = b;
+             indexedId = b.get();
            }
          }
        }

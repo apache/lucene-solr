@@ -20,7 +20,6 @@ org.apache.lucene.analysis.bg.BulgarianStemFilterFactory
 org.apache.lucene.analysis.br.BrazilianStemFilterFactory
 org.apache.lucene.analysis.cjk.CJKBigramFilterFactory
 org.apache.lucene.analysis.cjk.CJKWidthFilterFactory
-org.apache.lucene.analysis.cn.ChineseFilterFactory
 org.apache.lucene.analysis.ckb.SoraniNormalizationFilterFactory
 org.apache.lucene.analysis.ckb.SoraniStemFilterFactory
 org.apache.lucene.analysis.commongrams.CommonGramsFilterFactory
@@ -85,7 +84,6 @@ org.apache.lucene.analysis.payloads.DelimitedPayloadTokenFilterFactory
 org.apache.lucene.analysis.payloads.NumericPayloadTokenFilterFactory
 org.apache.lucene.analysis.payloads.TokenOffsetPayloadTokenFilterFactory
 org.apache.lucene.analysis.payloads.TypeAsPayloadTokenFilterFactory
-org.apache.lucene.analysis.position.PositionFilterFactory
 org.apache.lucene.analysis.pt.PortugueseLightStemFilterFactory
 org.apache.lucene.analysis.pt.PortugueseMinimalStemFilterFactory
 org.apache.lucene.analysis.pt.PortugueseStemFilterFactory
@@ -100,4 +98,3 @@ org.apache.lucene.analysis.synonym.SynonymFilterFactory
 org.apache.lucene.analysis.th.ThaiWordFilterFactory
 org.apache.lucene.analysis.tr.TurkishLowerCaseFilterFactory
 org.apache.lucene.analysis.util.ElisionFilterFactory
-org.apache.lucene.collation.CollationKeyFilterFactory

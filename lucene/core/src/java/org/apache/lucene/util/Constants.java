@@ -92,19 +92,9 @@ public final class Constants {
     }
     JRE_IS_64BIT = is64Bit;
   }
-
+  
   public static final boolean JRE_IS_MINIMUM_JAVA8 = JVM_MAJOR_VERSION > 1 || (JVM_MAJOR_VERSION == 1 && JVM_MINOR_VERSION >= 8);
   public static final boolean JRE_IS_MINIMUM_JAVA9 = JVM_MAJOR_VERSION > 1 || (JVM_MAJOR_VERSION == 1 && JVM_MINOR_VERSION >= 9);
-  
-  /** @deprecated With Lucene 4.0, we are always on Java 6 */
-  @Deprecated
-  public static final boolean JRE_IS_MINIMUM_JAVA6 =
-    new Boolean(true).booleanValue(); // prevent inlining in foreign class files
-
-  /** @deprecated With Lucene 4.8, we are always on Java 7 */
-  @Deprecated
-  public static final boolean JRE_IS_MINIMUM_JAVA7 =
-    new Boolean(true).booleanValue(); // prevent inlining in foreign class files
 
   /**
    * This is the internal Lucene version, including bugfix versions, recorded into each segment.
@@ -112,7 +102,7 @@ public final class Constants {
    */
   @Deprecated
   public static final String LUCENE_MAIN_VERSION = Version.LATEST.toString();
-
+  
   /**
    * Don't use this constant because the name is not self-describing!
    * @deprecated Use {@link Version#LATEST}

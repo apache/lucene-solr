@@ -75,7 +75,7 @@ public class Lucene46SegmentInfoReader extends SegmentInfoReader {
         CodecUtil.checkEOF(input);
       }
 
-      final SegmentInfo si = new SegmentInfo(dir, version, segment, docCount, isCompoundFile, null, diagnostics, null, id);
+      final SegmentInfo si = new SegmentInfo(dir, version, segment, docCount, isCompoundFile, null, diagnostics, id);
       si.setFiles(files);
 
       success = true;

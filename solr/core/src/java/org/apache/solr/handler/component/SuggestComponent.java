@@ -322,11 +322,6 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
   }
 
   @Override
-  public String getSource() {
-    return null;
-  }
-  
-  @Override
   public NamedList getStatistics() {
     NamedList<String> stats = new SimpleOrderedMap<>();
     stats.add("totalSizeInBytes", String.valueOf(ramBytesUsed()));

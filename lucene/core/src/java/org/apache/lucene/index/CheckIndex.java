@@ -17,12 +17,12 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -32,7 +32,6 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.blocktree.FieldReader;
 import org.apache.lucene.codecs.blocktree.Stats;
-import org.apache.lucene.codecs.lucene3x.Lucene3xSegmentInfoFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -165,19 +164,6 @@ public class CheckIndex {
       /** Net size (MB) of the files referenced by this
        *  segment. */
       public double sizeMB;
-
-      /** Doc store offset, if this segment shares the doc
-       *  store files (stored fields and term vectors) with
-       *  other segments.  This is -1 if it does not share. */
-      public int docStoreOffset = -1;
-    
-      /** String of the shared doc store segment, or null if
-       *  this segment does not share the doc store files. */
-      public String docStoreSegment;
-
-      /** True if the shared doc store files are compound file
-       *  format. */
-      public boolean docStoreCompoundFile;
 
       /** True if this segment has pending deletions. */
       public boolean hasDeletions;
@@ -561,10 +547,7 @@ public class CheckIndex {
         msg(infoStream, "    numFiles=" + info.files().size());
         segInfoStat.numFiles = info.files().size();
         segInfoStat.sizeMB = info.sizeInBytes()/(1024.*1024.);
-        if (info.info.getAttribute(Lucene3xSegmentInfoFormat.DS_OFFSET_KEY) == null) {
-          // don't print size in bytes if its a 3.0 segment with shared docstores
-          msg(infoStream, "    size (MB)=" + nf.format(segInfoStat.sizeMB));
-        }
+        msg(infoStream, "    size (MB)=" + nf.format(segInfoStat.sizeMB));
         Map<String,String> diagnostics = info.info.getDiagnostics();
         segInfoStat.diagnostics = diagnostics;
         if (diagnostics.size() > 0) {
@@ -582,7 +565,7 @@ public class CheckIndex {
         }
         if (infoStream != null)
           infoStream.print("    test: open reader.........");
-        reader = new SegmentReader(info, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, IOContext.DEFAULT);
+        reader = new SegmentReader(info, IOContext.DEFAULT);
         msg(infoStream, "OK");
 
         segInfoStat.openReaderPassed = true;
@@ -740,11 +723,9 @@ public class CheckIndex {
       }
       for (FieldInfo info : reader.getFieldInfos()) {
         if (info.hasNorms()) {
-          assert reader.hasNorms(info.name); // deprecated path
           checkNorms(info, reader, infoStream);
           ++status.totFields;
         } else {
-          assert !reader.hasNorms(info.name); // deprecated path
           if (reader.getNormValues(info.name) != null) {
             throw new RuntimeException("field: " + info.name + " should omit norms but has them!");
           }
@@ -880,8 +861,6 @@ public class CheckIndex {
       
       BytesRefBuilder lastTerm = null;
       
-      Comparator<BytesRef> termComp = terms.getComparator();
-      
       long sumTotalTermFreq = 0;
       long sumDocFreq = 0;
       long upto = 0;
@@ -901,12 +880,12 @@ public class CheckIndex {
           lastTerm = new BytesRefBuilder();
           lastTerm.copyBytes(term);
         } else {
-          if (termComp.compare(lastTerm.get(), term) >= 0) {
+          if (lastTerm.get().compareTo(term) >= 0) {
             throw new RuntimeException("terms out of order: lastTerm=" + lastTerm + " term=" + term);
           }
           lastTerm.copyBytes(term);
         }
-
+        
         if (minTerm == null) {
           // We checked this above:
           assert maxTerm == null;
@@ -1167,11 +1146,11 @@ public class CheckIndex {
           }
         }
       }
-
+      
       if (minTerm != null && status.termCount + status.delTermCount == 0) {
         throw new RuntimeException("field=\"" + field + "\": minTerm is non-null yet we saw no terms: " + minTerm);
       }
-      
+
       final Terms fieldTerms = fields.terms(field);
       if (fieldTerms == null) {
         // Unusual: the FieldsEnum returned a field but
@@ -1308,15 +1287,6 @@ public class CheckIndex {
       if (fieldCount != computedFieldCount) {
         throw new RuntimeException("fieldCount mismatch " + fieldCount + " vs recomputed field count " + computedFieldCount);
       }
-    }
-    
-    // for most implementations, this is boring (just the sum across all fields)
-    // but codecs that don't work per-field like preflex actually implement this,
-    // but don't implement it on Terms, so the check isn't redundant.
-    long uniqueTermCountAllFields = fields.getUniqueTermCount();
-    
-    if (uniqueTermCountAllFields != -1 && status.termCount + status.delTermCount != uniqueTermCountAllFields) {
-      throw new RuntimeException("termCount mismatch " + uniqueTermCountAllFields + " vs " + (status.termCount + status.delTermCount));
     }
 
     if (doPrint) {
@@ -2084,11 +2054,12 @@ public class CheckIndex {
 
     System.out.println("\nOpening index @ " + indexPath + "\n");
     Directory dir = null;
+    Path path = Paths.get(indexPath);
     try {
       if (dirImpl == null) {
-        dir = FSDirectory.open(new File(indexPath));
+        dir = FSDirectory.open(path);
       } else {
-        dir = CommandLineUtil.newFSDirectory(dirImpl, new File(indexPath));
+        dir = CommandLineUtil.newFSDirectory(dirImpl, path);
       }
     } catch (Throwable t) {
       System.out.println("ERROR: could not open directory \"" + indexPath + "\"; exiting");

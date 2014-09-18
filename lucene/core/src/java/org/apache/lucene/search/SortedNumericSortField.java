@@ -137,55 +137,31 @@ public class SortedNumericSortField extends SortField {
   public FieldComparator<?> getComparator(int numHits, int sortPos) throws IOException {
     switch(type) {
       case INT:
-        return new FieldComparator.IntComparator(numHits, getField(), null, (Integer) missingValue) {
+        return new FieldComparator.IntComparator(numHits, getField(), (Integer) missingValue) {
           @Override
-          protected FieldCache.Ints getIntValues(AtomicReaderContext context, String field) throws IOException {
-            final NumericDocValues dv = SortedNumericSelector.wrap(DocValues.getSortedNumeric(context.reader(), field), selector, type);
-            return new FieldCache.Ints() {
-              @Override
-              public int get(int docID) {
-                return (int) dv.get(docID);
-              }
-            };
+          protected NumericDocValues getNumericDocValues(AtomicReaderContext context, String field) throws IOException {
+            return SortedNumericSelector.wrap(DocValues.getSortedNumeric(context.reader(), field), selector, type);
           } 
         };
       case FLOAT:
-        return new FieldComparator.FloatComparator(numHits, getField(), null, (Float) missingValue) {
+        return new FieldComparator.FloatComparator(numHits, getField(), (Float) missingValue) {
           @Override
-          protected FieldCache.Floats getFloatValues(AtomicReaderContext context, String field) throws IOException {
-            final NumericDocValues dv = SortedNumericSelector.wrap(DocValues.getSortedNumeric(context.reader(), field), selector, type);
-            return new FieldCache.Floats() {
-              @Override
-              public float get(int docID) {
-                return Float.intBitsToFloat((int)dv.get(docID)); 
-              }
-            };
+          protected NumericDocValues getNumericDocValues(AtomicReaderContext context, String field) throws IOException {
+            return SortedNumericSelector.wrap(DocValues.getSortedNumeric(context.reader(), field), selector, type);
           } 
         };
       case LONG:
-        return new FieldComparator.LongComparator(numHits, getField(), null, (Long) missingValue) {
+        return new FieldComparator.LongComparator(numHits, getField(), (Long) missingValue) {
           @Override
-          protected FieldCache.Longs getLongValues(AtomicReaderContext context, String field) throws IOException {
-            final NumericDocValues dv = SortedNumericSelector.wrap(DocValues.getSortedNumeric(context.reader(), field), selector, type);
-            return new FieldCache.Longs() {
-              @Override
-              public long get(int docID) {
-                return dv.get(docID);
-              }
-            };
+          protected NumericDocValues getNumericDocValues(AtomicReaderContext context, String field) throws IOException {
+            return SortedNumericSelector.wrap(DocValues.getSortedNumeric(context.reader(), field), selector, type);
           }
         };
       case DOUBLE:
-        return new FieldComparator.DoubleComparator(numHits, getField(), null, (Double) missingValue) {
+        return new FieldComparator.DoubleComparator(numHits, getField(), (Double) missingValue) {
           @Override
-          protected FieldCache.Doubles getDoubleValues(AtomicReaderContext context, String field) throws IOException {
-            final NumericDocValues dv = SortedNumericSelector.wrap(DocValues.getSortedNumeric(context.reader(), field), selector, type);
-            return new FieldCache.Doubles() {
-              @Override
-              public double get(int docID) {
-                return Double.longBitsToDouble(dv.get(docID));
-              }
-            };
+          protected NumericDocValues getNumericDocValues(AtomicReaderContext context, String field) throws IOException {
+            return SortedNumericSelector.wrap(DocValues.getSortedNumeric(context.reader(), field), selector, type);
           } 
         };
       default:

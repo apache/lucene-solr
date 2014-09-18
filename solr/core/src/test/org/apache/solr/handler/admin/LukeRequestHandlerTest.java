@@ -43,10 +43,6 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
   @Before
   public void before() {
     assertU(adoc("id","SOLR1000", "name","Apache Solr",
-        "solr_si", "10",
-        "solr_sl", "10",
-        "solr_sf", "10",
-        "solr_sd", "10",
         "solr_s", "10",
         "solr_sI", "10",
         "solr_sS", "10",
@@ -61,13 +57,8 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
         "solr_tl", "10",
         "solr_tf", "10",
         "solr_td", "10",
-        "solr_pi", "10",
-        "solr_pl", "10",
-        "solr_pf", "10",
-        "solr_pd", "10",
         "solr_dt", "2000-01-01T01:01:01Z",
-        "solr_tdt", "2000-01-01T01:01:01Z",
-        "solr_pdt", "2000-01-01T01:01:01Z"
+        "solr_tdt", "2000-01-01T01:01:01Z"
     ));
     assertU(commit());
 
@@ -112,7 +103,7 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
 
     // code should be the same for all fields, but just in case do several
     for (String f : Arrays.asList("solr_t","solr_s","solr_ti",
-        "solr_td","solr_pl","solr_dt","solr_b",
+        "solr_td","solr_dt","solr_b",
         "solr_sS","solr_sI")) {
 
       final String xp = getFieldXPathPrefix(f);
@@ -125,7 +116,7 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
     // diff loop for checking 'index' flags,
     // only valid for fields that are indexed & stored
     for (String f : Arrays.asList("solr_t","solr_s","solr_ti",
-        "solr_td","solr_pl","solr_dt","solr_b")) {
+        "solr_td","solr_dt","solr_b")) {
 
       final String xp = getFieldXPathPrefix(f);
       assertQ("Not as many index flags as expected ("+numFlags+") for " + f,
@@ -164,7 +155,7 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
 
       // Now test that the other fields are NOT there
       for (String f : Arrays.asList("solr_ti",
-          "solr_td", "solr_pl", "solr_dt", "solr_b")) {
+          "solr_td", "solr_dt", "solr_b")) {
 
         assertNotNull(TestHarness.validateXPath(response,
             getFieldXPathPrefix(f) + "[@name='index']"));
@@ -174,7 +165,7 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
       req = req("qt", "/admin/luke", "fl", "*");
       response = h.query(req);
       for (String f : Arrays.asList("solr_t", "solr_s", "solr_ti",
-          "solr_td", "solr_pl", "solr_dt", "solr_b")) {
+          "solr_td", "solr_dt", "solr_b")) {
 
         assertNull(TestHarness.validateXPath(response,
             getFieldXPathPrefix(f) + "[@name='index']"));

@@ -25,7 +25,6 @@ import java.util.Map;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
@@ -38,18 +37,13 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.IndexableBinaryStringTools;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.Version;
 
 /**
  * Base test class for testing Unicode collation.
@@ -62,30 +56,11 @@ public abstract class CollationTestBase extends LuceneTestCase {
   protected String secondRangeBeginningOriginal = "\u0633";
   protected String secondRangeEndOriginal = "\u0638";
   
-  /**
-   * Convenience method to perform the same function as CollationKeyFilter.
-   *  
-   * @param keyBits the result from 
-   *  collator.getCollationKey(original).toByteArray()
-   * @return The encoded collation key for the original String
-   * @deprecated only for testing deprecated filters
-   */
-  @Deprecated
-  protected String encodeCollationKey(byte[] keyBits) {
-    // Ensure that the backing char[] array is large enough to hold the encoded
-    // Binary String
-    int encodedLength = IndexableBinaryStringTools.getEncodedLength(keyBits, 0, keyBits.length);
-    char[] encodedBegArray = new char[encodedLength];
-    IndexableBinaryStringTools.encode(keyBits, 0, keyBits.length, encodedBegArray, 0, encodedLength);
-    return new String(encodedBegArray);
-  }
-  
   public void testFarsiRangeFilterCollating(Analyzer analyzer, BytesRef firstBeg, 
                                             BytesRef firstEnd, BytesRef secondBeg,
                                             BytesRef secondEnd) throws Exception {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        Version.LATEST, analyzer));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzer));
     Document doc = new Document();
     doc.add(new TextField("content", "\u0633\u0627\u0628", Field.Store.YES));
     doc.add(new StringField("body", "body", Field.Store.YES));
@@ -116,8 +91,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
                                             BytesRef firstEnd, BytesRef secondBeg,
                                             BytesRef secondEnd) throws Exception {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        Version.LATEST, analyzer));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzer));
     Document doc = new Document();
 
     // Unicode order would include U+0633 in [ U+062F - U+0698 ], but Farsi
@@ -145,8 +119,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
       BytesRef firstEnd, BytesRef secondBeg, BytesRef secondEnd) throws Exception {
 
     Directory farsiIndex = newDirectory();
-    IndexWriter writer = new IndexWriter(farsiIndex, new IndexWriterConfig(
-        Version.LATEST, analyzer));
+    IndexWriter writer = new IndexWriter(farsiIndex, new IndexWriterConfig(analyzer));
     Document doc = new Document();
     doc.add(new TextField("content", "\u0633\u0627\u0628", Field.Store.YES));
     doc.add(new StringField("body", "body", Field.Store.YES));
@@ -174,83 +147,6 @@ public abstract class CollationTestBase extends LuceneTestCase {
     farsiIndex.close();
   }
   
-  // Test using various international locales with accented characters (which
-  // sort differently depending on locale)
-  //
-  // Copied (and slightly modified) from 
-  // org.apache.lucene.search.TestSort.testInternationalSort()
-  //  
-  // TODO: this test is really fragile. there are already 3 different cases,
-  // depending upon unicode version.
-  public void testCollationKeySort(Analyzer usAnalyzer,
-                                   Analyzer franceAnalyzer,
-                                   Analyzer swedenAnalyzer,
-                                   Analyzer denmarkAnalyzer,
-                                   String usResult,
-                                   String frResult,
-                                   String svResult,
-                                   String dkResult) throws Exception {
-    Directory indexStore = newDirectory();
-    IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
-        Version.LATEST, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
-
-    // document data:
-    // the tracer field is used to determine which document was hit
-    String[][] sortData = new String[][] {
-      // tracer contents US                 France             Sweden (sv_SE)     Denmark (da_DK)
-      {  "A",   "x",     "p\u00EAche",      "p\u00EAche",      "p\u00EAche",      "p\u00EAche"      },
-      {  "B",   "y",     "HAT",             "HAT",             "HAT",             "HAT"             },
-      {  "C",   "x",     "p\u00E9ch\u00E9", "p\u00E9ch\u00E9", "p\u00E9ch\u00E9", "p\u00E9ch\u00E9" },
-      {  "D",   "y",     "HUT",             "HUT",             "HUT",             "HUT"             },
-      {  "E",   "x",     "peach",           "peach",           "peach",           "peach"           },
-      {  "F",   "y",     "H\u00C5T",        "H\u00C5T",        "H\u00C5T",        "H\u00C5T"        },
-      {  "G",   "x",     "sin",             "sin",             "sin",             "sin"             },
-      {  "H",   "y",     "H\u00D8T",        "H\u00D8T",        "H\u00D8T",        "H\u00D8T"        },
-      {  "I",   "x",     "s\u00EDn",        "s\u00EDn",        "s\u00EDn",        "s\u00EDn"        },
-      {  "J",   "y",     "HOT",             "HOT",             "HOT",             "HOT"             },
-    };
-
-    FieldType customType = new FieldType();
-    customType.setStored(true);
-    
-    for (int i = 0 ; i < sortData.length ; ++i) {
-      Document doc = new Document();
-      doc.add(new Field("tracer", sortData[i][0], customType));
-      doc.add(new TextField("contents", sortData[i][1], Field.Store.NO));
-      if (sortData[i][2] != null) 
-        doc.add(new TextField("US", usAnalyzer.tokenStream("US", sortData[i][2])));
-      if (sortData[i][3] != null) 
-        doc.add(new TextField("France", franceAnalyzer.tokenStream("France", sortData[i][3])));
-      if (sortData[i][4] != null)
-        doc.add(new TextField("Sweden", swedenAnalyzer.tokenStream("Sweden", sortData[i][4])));
-      if (sortData[i][5] != null) 
-        doc.add(new TextField("Denmark", denmarkAnalyzer.tokenStream("Denmark", sortData[i][5])));
-      writer.addDocument(doc);
-    }
-    writer.forceMerge(1);
-    writer.close();
-    IndexReader reader = DirectoryReader.open(indexStore);
-    IndexSearcher searcher = new IndexSearcher(reader);
-
-    Sort sort = new Sort();
-    Query queryX = new TermQuery(new Term ("contents", "x"));
-    Query queryY = new TermQuery(new Term ("contents", "y"));
-    
-    sort.setSort(new SortField("US", SortField.Type.STRING));
-    assertMatches(searcher, queryY, sort, usResult);
-
-    sort.setSort(new SortField("France", SortField.Type.STRING));
-    assertMatches(searcher, queryX, sort, frResult);
-
-    sort.setSort(new SortField("Sweden", SortField.Type.STRING));
-    assertMatches(searcher, queryY, sort, svResult);
-
-    sort.setSort(new SortField("Denmark", SortField.Type.STRING));
-    assertMatches(searcher, queryY, sort, dkResult);
-    reader.close();
-    indexStore.close();
-  }
-    
   // Make sure the documents returned by the search match the expected list
   // Copied from TestSort.java
   private void assertMatches(IndexSearcher searcher, Query query, Sort sort, 

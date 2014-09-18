@@ -20,10 +20,11 @@ package org.apache.lucene.store;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * <p>Implements {@link LockFactory} using {@link
- * File#createNewFile()}.</p>
+ * Files#createFile}.</p>
  *
  * <p><b>NOTE:</b> the {@linkplain File#createNewFile() javadocs
  * for <code>File.createNewFile()</code>} contain a vague
@@ -68,24 +69,16 @@ public class SimpleFSLockFactory extends FSLockFactory {
    * directory itself. Be sure to create one instance for each directory
    * your create!
    */
-  public SimpleFSLockFactory() {
-    this((File) null);
+  public SimpleFSLockFactory() throws IOException {
+    this((Path) null);
   }
 
   /**
-   * Instantiate using the provided directory (as a File instance).
+   * Instantiate using the provided directory (as a Path instance).
    * @param lockDir where lock files should be created.
    */
-  public SimpleFSLockFactory(File lockDir) {
+  public SimpleFSLockFactory(Path lockDir) throws IOException {
     setLockDir(lockDir);
-  }
-
-  /**
-   * Instantiate using the provided directory name (String).
-   * @param lockDirName where lock files should be created.
-   */
-  public SimpleFSLockFactory(String lockDirName) {
-    setLockDir(new File(lockDirName));
   }
 
   @Override
@@ -98,42 +91,29 @@ public class SimpleFSLockFactory extends FSLockFactory {
 
   @Override
   public void clearLock(String lockName) throws IOException {
-    if (lockDir.exists()) {
-      if (lockPrefix != null) {
-        lockName = lockPrefix + "-" + lockName;
-      }
-      File lockFile = new File(lockDir, lockName);
-      Files.deleteIfExists(lockFile.toPath());
+    if (lockPrefix != null) {
+      lockName = lockPrefix + "-" + lockName;
     }
+    Files.deleteIfExists(lockDir.resolve(lockName));
   }
 }
 
 class SimpleFSLock extends Lock {
 
-  File lockFile;
-  File lockDir;
+  Path lockFile;
+  Path lockDir;
 
-  public SimpleFSLock(File lockDir, String lockFileName) {
+  public SimpleFSLock(Path lockDir, String lockFileName) {
     this.lockDir = lockDir;
-    lockFile = new File(lockDir, lockFileName);
+    lockFile = lockDir.resolve(lockFileName);
   }
 
   @Override
   public boolean obtain() throws IOException {
-
-    // Ensure that lockDir exists and is a directory:
-    if (!lockDir.exists()) {
-      if (!lockDir.mkdirs())
-        throw new IOException("Cannot create directory: " +
-                              lockDir.getAbsolutePath());
-    } else if (!lockDir.isDirectory()) {
-      // TODO: NoSuchDirectoryException instead?
-      throw new IOException("Found regular file where directory expected: " + 
-                            lockDir.getAbsolutePath());
-    }
-    
     try {
-      return lockFile.createNewFile();
+      Files.createDirectories(lockDir);
+      Files.createFile(lockFile);
+      return true;
     } catch (IOException ioe) {
       // On Windows, on concurrent createNewFile, the 2nd process gets "access denied".
       // In that case, the lock was not aquired successfully, so return false.
@@ -148,7 +128,7 @@ class SimpleFSLock extends Lock {
   public void close() throws LockReleaseFailedException {
     // TODO: wierd that clearLock() throws the raw IOException...
     try {
-      Files.deleteIfExists(lockFile.toPath());
+      Files.deleteIfExists(lockFile);
     } catch (Throwable cause) {
       throw new LockReleaseFailedException("failed to delete " + lockFile, cause);
     }
@@ -156,7 +136,7 @@ class SimpleFSLock extends Lock {
 
   @Override
   public boolean isLocked() {
-    return lockFile.exists();
+    return Files.exists(lockFile);
   }
 
   @Override

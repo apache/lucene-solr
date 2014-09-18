@@ -18,11 +18,9 @@
 package org.apache.lucene.benchmark.byTask;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.Collator;
 import java.util.List;
 import java.util.Locale;
@@ -46,31 +44,23 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.LogMergePolicy;
-import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SerialMergeScheduler;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
-import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
-import org.apache.lucene.util.Version;
 
 /**
  * Test very simply that perf tasks - simple algorithms - are doing what they should.
  */
-@SuppressCodecs("Lucene3x")
 public class TestPerfTasksLogic extends BenchmarkTestCase {
 
   @Override
@@ -109,7 +99,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     assertTrue("Index does not exist?...!", DirectoryReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write. 
     IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(),
-        new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
+        new IndexWriterConfig(new MockAnalyzer(random()))
             .setOpenMode(OpenMode.APPEND));
     iw.close();
     IndexReader ir = DirectoryReader.open(benchmark.getRunData().getDirectory());
@@ -201,7 +191,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
 
     assertTrue("Index does not exist?...!", DirectoryReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write.
-    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
+    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
     iw.close();
     IndexReader ir = DirectoryReader.open(benchmark.getRunData().getDirectory());
     assertEquals("100 docs were added to the index, this is what we expect to find!",100,ir.numDocs());
@@ -241,7 +231,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
 
     assertTrue("Index does not exist?...!", DirectoryReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write.
-    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
+    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
     iw.close();
     IndexReader ir = DirectoryReader.open(benchmark.getRunData().getDirectory());
     assertEquals("1000 docs were added to the index, this is what we expect to find!",1000,ir.numDocs());
@@ -314,7 +304,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     assertEquals("TestSearchTask was supposed to be called!",139,CountingSearchTestTask.numSearches);
     assertTrue("Index does not exist?...!", DirectoryReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write. 
-    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
+    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
     iw.close();
     IndexReader ir = DirectoryReader.open(benchmark.getRunData().getDirectory());
     assertEquals("1 docs were added to the index, this is what we expect to find!",1,ir.numDocs());
@@ -332,7 +322,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
         "content.source.forever=true",
         "directory=RAMDirectory",
         "doc.reuse.fields=false",
-        "doc.stored=false",
+        "doc.stored=true",
         "doc.tokenized=false",
         "doc.index.props=true",
         "# ----- alg ",
@@ -348,11 +338,11 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     Benchmark benchmark = execBenchmark(algLines);
 
     DirectoryReader r = DirectoryReader.open(benchmark.getRunData().getDirectory());
-    SortedDocValues idx = FieldCache.DEFAULT.getTermsIndex(SlowCompositeReaderWrapper.wrap(r), "country");
+    
     final int maxDoc = r.maxDoc();
     assertEquals(1000, maxDoc);
     for(int i=0;i<1000;i++) {
-      assertTrue("doc " + i + " has null country", idx.getOrd(i) != -1);
+      assertNotNull("doc " + i + " has null country", r.document(i).getField("country"));
     }
     r.close();
   }
@@ -392,7 +382,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
    * Test WriteLineDoc and LineDocSource.
    */
   public void testLineDocFile() throws Exception {
-    File lineFile = createTempFile("test.reuters.lines", ".txt");
+    Path lineFile = createTempFile("test.reuters.lines", ".txt");
 
     // We will call WriteLineDocs this many times
     final int NUM_TRY_DOCS = 50;
@@ -402,7 +392,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
       "# ----- properties ",
       "content.source=org.apache.lucene.benchmark.byTask.feeds.SingleDocSource",
       "content.source.forever=true",
-      "line.file.out=" + lineFile.getAbsolutePath().replace('\\', '/'),
+      "line.file.out=" + lineFile.toAbsolutePath().toString().replace('\\', '/'),
       "# ----- alg ",
       "{WriteLineDoc()}:" + NUM_TRY_DOCS,
     };
@@ -410,9 +400,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     // Run algo
     Benchmark benchmark = execBenchmark(algLines1);
 
-    BufferedReader r = new BufferedReader(
-        new InputStreamReader(
-            new FileInputStream(lineFile), StandardCharsets.UTF_8));
+    BufferedReader r = Files.newBufferedReader(lineFile, StandardCharsets.UTF_8);
     int numLines = 0;
     String line;
     while((line = r.readLine()) != null) {
@@ -429,7 +417,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
       "# ----- properties ",
       "analyzer=org.apache.lucene.analysis.core.WhitespaceAnalyzer",
       "content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource",
-      "docs.file=" + lineFile.getAbsolutePath().replace('\\', '/'),
+      "docs.file=" + lineFile.toAbsolutePath().toString().replace('\\', '/'),
       "content.source.forever=false",
       "doc.reuse.fields=false",
       "ram.flush.mb=4",
@@ -445,7 +433,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
 
     // now we should be able to open the index for write. 
     IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(),
-        new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
+        new IndexWriterConfig(new MockAnalyzer(random()))
             .setOpenMode(OpenMode.APPEND));
     iw.close();
 
@@ -453,7 +441,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     assertEquals(numLines + " lines were created but " + ir.numDocs() + " docs are in the index", numLines, ir.numDocs());
     ir.close();
 
-    Files.delete(lineFile.toPath());
+    Files.delete(lineFile);
   }
   
   /**
@@ -1072,7 +1060,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     String algLines[] = {
         "content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource",
         "docs.file=" + getReuters20LinesFile(),
-        "work.dir=" + getWorkDir().getAbsolutePath().replaceAll("\\\\", "/"), // Fix Windows path
+        "work.dir=" + getWorkDir().toAbsolutePath().toString().replaceAll("\\\\", "/"), // Fix Windows path
         "content.source.forever=false",
         "directory=RAMDirectory",
         "AnalyzerFactory(name:'" + singleQuoteEscapedName + "', " + params + ")",

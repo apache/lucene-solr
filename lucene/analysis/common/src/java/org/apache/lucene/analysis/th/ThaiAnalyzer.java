@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
-import org.apache.lucene.analysis.core.StopAnalyzer;
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
@@ -33,13 +32,6 @@ import org.apache.lucene.util.Version;
 
 /**
  * {@link Analyzer} for Thai language. It uses {@link java.text.BreakIterator} to break words.
- * <p>
- * <a name="version"/>
- * <p>You must specify the required {@link Version}
- * compatibility when creating ThaiAnalyzer:
- * <ul>
- *   <li> As of 3.6, a set of Thai stopwords is used by default
- * </ul>
  */
 public final class ThaiAnalyzer extends StopwordAnalyzerBase {
   
@@ -84,14 +76,6 @@ public final class ThaiAnalyzer extends StopwordAnalyzerBase {
   public ThaiAnalyzer() {
     this(DefaultSetHolder.DEFAULT_STOP_SET);
   }
-
-  /**
-   * @deprecated Use {@link #ThaiAnalyzer()}
-   */
-  @Deprecated
-  public ThaiAnalyzer(Version matchVersion) {
-    this(matchVersion, matchVersion.onOrAfter(Version.LUCENE_3_6) ? DefaultSetHolder.DEFAULT_STOP_SET : StopAnalyzer.ENGLISH_STOP_WORDS_SET);
-  }
   
   /**
    * Builds an analyzer with the given stop words.
@@ -100,14 +84,6 @@ public final class ThaiAnalyzer extends StopwordAnalyzerBase {
    */
   public ThaiAnalyzer(CharArraySet stopwords) {
     super(stopwords);
-  }
-
-  /**
-   * @deprecated Use {@link #ThaiAnalyzer(CharArraySet)}
-   */
-  @Deprecated
-  public ThaiAnalyzer(Version matchVersion, CharArraySet stopwords) {
-    super(matchVersion, stopwords);
   }
 
   /**
@@ -121,21 +97,18 @@ public final class ThaiAnalyzer extends StopwordAnalyzerBase {
    *         {@link StopFilter}
    */
   @Override
-  protected TokenStreamComponents createComponents(String fieldName,
-      Reader reader) {
+  protected TokenStreamComponents createComponents(String fieldName) {
     if (getVersion().onOrAfter(Version.LUCENE_4_8_0)) {
-      final Tokenizer source = new ThaiTokenizer(reader);
-      TokenStream result = new LowerCaseFilter(getVersion(), source);
-      result = new StopFilter(getVersion(), result, stopwords);
+      final Tokenizer source = new ThaiTokenizer();
+      TokenStream result = new LowerCaseFilter(source);
+      result = new StopFilter(result, stopwords);
       return new TokenStreamComponents(source, result);
     } else {
-      final Tokenizer source = new StandardTokenizer(getVersion(), reader);
-      TokenStream result = new StandardFilter(getVersion(), source);
-      if (getVersion().onOrAfter(Version.LUCENE_3_1_0))
-        result = new LowerCaseFilter(getVersion(), result);
-      result = new ThaiWordFilter(getVersion(), result);
-      return new TokenStreamComponents(source, new StopFilter(getVersion(),
-        result, stopwords));
+      final Tokenizer source = new StandardTokenizer();
+      TokenStream result = new StandardFilter(source);
+      result = new LowerCaseFilter(result);
+      result = new ThaiWordFilter(result);
+      return new TokenStreamComponents(source, new StopFilter(result, stopwords));
     }
   }
 }

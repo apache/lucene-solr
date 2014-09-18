@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.blocktreeords;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.Collections;
 
 import org.apache.lucene.codecs.blocktreeords.FSTOrdsOutputs.Output;
@@ -114,11 +113,6 @@ final class OrdsFieldReader extends Terms implements Accountable {
     } else {
       return maxTerm;
     }
-  }
-
-  @Override
-  public Comparator<BytesRef> getComparator() {
-    return BytesRef.getUTF8SortedAsUnicodeComparator();
   }
 
   @Override

@@ -17,8 +17,10 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -95,9 +97,7 @@ public class MultiPassIndexSplitter {
           }
         }
       }
-      IndexWriter w = new IndexWriter(outputs[i], new IndexWriterConfig(
-          version,
-          null)
+      IndexWriter w = new IndexWriter(outputs[i], new IndexWriterConfig(null)
           .setOpenMode(OpenMode.CREATE));
       System.err.println("Writing part " + (i + 1) + " ...");
       // pass the subreaders directly, as our wrapper's numDocs/hasDeletetions are not up-to-date
@@ -130,12 +130,12 @@ public class MultiPassIndexSplitter {
       } else if (args[i].equals("-seq")) {
         seq = true;
       } else {
-        File file = new File(args[i]);
-        if (!file.exists() || !file.isDirectory()) {
+        Path file = Paths.get(args[i]);
+        if (!Files.isDirectory(file)) {
           System.err.println("Invalid input path - skipping: " + file);
           continue;
         }
-        Directory dir = FSDirectory.open(new File(args[i]));
+        Directory dir = FSDirectory.open(file);
         try {
           if (!DirectoryReader.indexExists(dir)) {
             System.err.println("Invalid input index - skipping: " + file);
@@ -157,13 +157,11 @@ public class MultiPassIndexSplitter {
     if (indexes.size() == 0) {
       throw new Exception("No input indexes to process");
     }
-    File out = new File(outDir);
-    if (!out.mkdirs()) {
-      throw new Exception("Can't create output directory: " + out);
-    }
+    Path out = Paths.get(outDir);
+    Files.createDirectories(out);
     Directory[] dirs = new Directory[numParts];
     for (int i = 0; i < numParts; i++) {
-      dirs[i] = FSDirectory.open(new File(out, "part-" + i));
+      dirs[i] = FSDirectory.open(out.resolve("part-" + i));
     }
     MultiPassIndexSplitter splitter = new MultiPassIndexSplitter();
     IndexReader input;

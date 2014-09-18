@@ -20,9 +20,9 @@ package org.apache.solr.handler.extraction;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.DateUtil;
-import org.apache.solr.schema.DateField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.TrieDateField;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.metadata.TikaMetadataKeys;
 import org.slf4j.Logger;
@@ -322,7 +322,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
    */
   protected String transformValue(String val, SchemaField schFld) {
     String result = val;
-    if (schFld != null && schFld.getType() instanceof DateField) {
+    if (schFld != null && schFld.getType() instanceof TrieDateField) {
       //try to transform the date
       try {
         Date date = DateUtil.parseDate(val, dateFormats);

@@ -35,7 +35,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -277,13 +276,12 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     super.setUp();
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
-    testDir = createTempDir();
+    testDir = createTempDir().toFile();
   }
 
   @Override
   public void tearDown() throws Exception {
     destroyServers();
-    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity
     super.tearDown();
   }
 

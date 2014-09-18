@@ -17,7 +17,6 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
@@ -27,11 +26,10 @@ import java.io.File;
 /**
  * Tests expert options of {@link ICUCollationField}.
  */
-@SuppressCodecs("Lucene3x")
 public class TestICUCollationFieldOptions extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    File testHome = createTempDir();
+    File testHome = createTempDir().toFile();
     FileUtils.copyDirectory(getFile("analysis-extras/solr"), testHome);
     initCore("solrconfig-icucollate.xml","schema-icucollateoptions.xml", testHome.getAbsolutePath());
     // add some docs

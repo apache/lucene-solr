@@ -77,8 +77,8 @@ public class BM25Similarity extends Similarity {
   }
   
   /** The default implementation computes the average as <code>sumTotalTermFreq / maxDoc</code>,
-   * or returns <code>1</code> if the index does not store sumTotalTermFreq (Lucene 3.x indexes
-   * or any field that omits frequency information). */
+   * or returns <code>1</code> if the index does not store sumTotalTermFreq:
+   * any field that omits frequency information). */
   protected float avgFieldLength(CollectionStatistics collectionStats) {
     final long sumTotalTermFreq = collectionStats.sumTotalTermFreq();
     if (sumTotalTermFreq <= 0) {

@@ -30,6 +30,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
@@ -107,11 +108,15 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
                 e.printStackTrace(System.out);
               }
               dir.setMaxSizeInBytes(0);
-              writer.close();
+              try {
+                writer.close();
+              } catch (AlreadyClosedException ace) {
+                // OK
+              }
             }
           }
 
-          //TestUtil.syncConcurrentMerges(ms);
+          //_TestUtil.syncConcurrentMerges(ms);
 
           if (TestUtil.anyFilesExceptWriteLock(dir)) {
             assertNoUnreferencedFiles(dir, "after disk full during addDocument");
@@ -125,7 +130,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
 
           diskFree += TEST_NIGHTLY ? TestUtil.nextInt(random(), 400, 600) : TestUtil.nextInt(random(), 3000, 5000);
         } else {
-          //TestUtil.syncConcurrentMerges(writer);
+          //_TestUtil.syncConcurrentMerges(writer);
           dir.setMaxSizeInBytes(0);
           writer.close();
           dir.close();
@@ -532,7 +537,8 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     MockDirectoryWrapper dir = newMockDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                                 .setMaxBufferedDocs(2)
-                                                .setMergeScheduler(new ConcurrentMergeScheduler()));
+                                                .setMergeScheduler(new ConcurrentMergeScheduler())
+                                                .setCommitOnClose(false));
     writer.commit(); // empty commit, to not create confusing situation with first commit
     dir.setMaxSizeInBytes(Math.max(1, dir.getRecomputedActualSizeInBytes()));
     final Document doc = new Document();
@@ -550,15 +556,17 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     } catch (IOException ioe) {
     }
     try {
-      writer.close(false);
+      writer.commit();
       fail("did not hit disk full");
     } catch (IOException ioe) {
+    } finally {
+      writer.close();
     }
 
     // Make sure once disk space is avail again, we can
     // cleanly close:
     dir.setMaxSizeInBytes(0);
-    writer.close(false);
+    writer.close();
     dir.close();
   }
   
@@ -568,9 +576,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
   {
       Document doc = new Document();
       doc.add(newTextField("content", "aaa", Field.Store.NO));
-      if (defaultCodecSupportsDocValues()) {
-        doc.add(new NumericDocValuesField("numericdv", 1));
-      }
+      doc.add(new NumericDocValuesField("numericdv", 1));
       writer.addDocument(doc);
   }
   
@@ -579,9 +585,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newTextField("content", "aaa " + index, Field.Store.NO));
       doc.add(newTextField("id", "" + index, Field.Store.NO));
-      if (defaultCodecSupportsDocValues()) {
-        doc.add(new NumericDocValuesField("numericdv", 1));
-      }
+      doc.add(new NumericDocValuesField("numericdv", 1));
       writer.addDocument(doc);
   }
 }

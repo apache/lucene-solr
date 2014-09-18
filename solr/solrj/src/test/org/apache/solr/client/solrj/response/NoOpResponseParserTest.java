@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.response;
  */
 
 import org.apache.commons.io.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -100,16 +101,13 @@ public class NoOpResponseParserTest extends SolrJettyTestBase {
   @Test
   public void testReaderResponse() throws Exception {
     NoOpResponseParser parser = new NoOpResponseParser();
-    final InputStream is = getResponse();
-    try {
+    try (final InputStream is = getResponse()) {
       assertNotNull(is);
       Reader in = new InputStreamReader(is, StandardCharsets.UTF_8);
       NamedList<Object> response = parser.processResponse(in);
       assertNotNull(response.get("response"));
       String expectedResponse = IOUtils.toString(getResponse(), "UTF-8");
       assertEquals(expectedResponse, response.get("response"));
-    } finally {
-      IOUtils.closeQuietly(is);
     }
 
   }
@@ -120,16 +118,13 @@ public class NoOpResponseParserTest extends SolrJettyTestBase {
   @Test
   public void testInputStreamResponse() throws Exception {
     NoOpResponseParser parser = new NoOpResponseParser();
-    final InputStream is = getResponse();
-    try {
+    try (final InputStream is = getResponse()) {
       assertNotNull(is);
       NamedList<Object> response = parser.processResponse(is, "UTF-8");
 
       assertNotNull(response.get("response"));
       String expectedResponse = IOUtils.toString(getResponse(), "UTF-8");
       assertEquals(expectedResponse, response.get("response"));
-    } finally {
-      IOUtils.closeQuietly(is);
     }
   }
 }

@@ -39,7 +39,7 @@ import org.apache.lucene.util.IOUtils;
  *  whether a given ID was previously indexed with version > N (see
  *  {@link IDVersionSegmentTermsEnum#seekExact(BytesRef,long)}.
  *
- *  This is most effective if the app assigns monotonically
+ *  <p>This is most effective if the app assigns monotonically
  *  increasing global version to each indexed doc.  Then, during
  *  indexing, use {@link
  *  IDVersionSegmentTermsEnum#seekExact(BytesRef,long)} (along with
@@ -53,9 +53,6 @@ import org.apache.lucene.util.IOUtils;
  *
  *  <p>NOTE: term vectors cannot be indexed with this field (not that
  *  you should really ever want to do this).
- *
- *  <p>NOTE: For a given identifier, if it is reindexed then its
- *  version must be higher than it was the last time it was indexed.
  *
  *  @lucene.experimental */
 

@@ -27,6 +27,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -227,7 +228,7 @@ class TermsIncludingScoreQuery extends Query {
     }
 
     @Override
-    public boolean score(Collector collector, int max) throws IOException {
+    public boolean score(LeafCollector collector, int max) throws IOException {
       FakeScorer fakeScorer = new FakeScorer();
       collector.setScorer(fakeScorer);
       if (doc == -1) {

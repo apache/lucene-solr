@@ -22,13 +22,13 @@ import java.util.Map;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.DocTermsIndexDocValues;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueStr;
 
@@ -44,11 +44,12 @@ public class BytesRefFieldSource extends FieldCacheSource {
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     final FieldInfo fieldInfo = readerContext.reader().getFieldInfos().fieldInfo(field);
+
     // To be sorted or not to be sorted, that is the question
     // TODO: do it cleaner?
     if (fieldInfo != null && fieldInfo.getDocValuesType() == DocValuesType.BINARY) {
-      final BinaryDocValues binaryValues = FieldCache.DEFAULT.getTerms(readerContext.reader(), field, true);
-      final Bits docsWithField = FieldCache.DEFAULT.getDocsWithField(readerContext.reader(), field);
+      final BinaryDocValues binaryValues = DocValues.getBinary(readerContext.reader(), field);
+      final Bits docsWithField = DocValues.getDocsWithField(readerContext.reader(), field);
       return new FunctionValues() {
 
         @Override
@@ -57,15 +58,15 @@ public class BytesRefFieldSource extends FieldCacheSource {
         }
 
         @Override
-        public boolean bytesVal(int doc, BytesRef target) {
+        public boolean bytesVal(int doc, BytesRefBuilder target) {
           target.copyBytes(binaryValues.get(doc));
-          return target.length > 0;
+          return target.length() > 0;
         }
 
         public String strVal(int doc) {
-          final BytesRef bytes = new BytesRef();
+          final BytesRefBuilder bytes = new BytesRefBuilder();
           return bytesVal(doc, bytes)
-              ? bytes.utf8ToString()
+              ? bytes.get().utf8ToString()
               : null;
         }
 
@@ -92,6 +93,7 @@ public class BytesRefFieldSource extends FieldCacheSource {
             @Override
             public void fillValue(int doc) {
               mval.exists = docsWithField.get(doc);
+              mval.value.clear();
               mval.value.copyBytes(binaryValues.get(doc));
             }
           };

@@ -21,15 +21,14 @@ import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.junit.BeforeClass;
+
 import java.io.IOException;
 
-@SuppressCodecs("Lucene3x")
 public class DocValuesTest extends SolrTestCaseJ4 {
 
   @BeforeClass

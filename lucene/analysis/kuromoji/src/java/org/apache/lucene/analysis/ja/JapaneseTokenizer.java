@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.ja;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -191,27 +190,25 @@ public final class JapaneseTokenizer extends Tokenizer {
    * <p>
    * Uses the default AttributeFactory.
    * 
-   * @param input Reader containing text
    * @param userDictionary Optional: if non-null, user dictionary.
    * @param discardPunctuation true if punctuation tokens should be dropped from the output.
    * @param mode tokenization mode.
    */
-  public JapaneseTokenizer(Reader input, UserDictionary userDictionary, boolean discardPunctuation, Mode mode) {
-    this(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, input, userDictionary, discardPunctuation, mode);
+  public JapaneseTokenizer(UserDictionary userDictionary, boolean discardPunctuation, Mode mode) {
+    this(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, userDictionary, discardPunctuation, mode);
   }
 
   /**
    * Create a new JapaneseTokenizer.
    *
    * @param factory the AttributeFactory to use
-   * @param input Reader containing text
    * @param userDictionary Optional: if non-null, user dictionary.
    * @param discardPunctuation true if punctuation tokens should be dropped from the output.
    * @param mode tokenization mode.
    */
   public JapaneseTokenizer
-      (AttributeFactory factory, Reader input, UserDictionary userDictionary, boolean discardPunctuation, Mode mode) {
-    super(factory, input);
+      (AttributeFactory factory, UserDictionary userDictionary, boolean discardPunctuation, Mode mode) {
+    super(factory);
     dictionary = TokenInfoDictionary.getInstance();
     fst = dictionary.getFST();
     unkDictionary = UnknownDictionary.getInstance();

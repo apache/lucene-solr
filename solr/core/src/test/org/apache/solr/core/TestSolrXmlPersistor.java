@@ -62,7 +62,7 @@ public class TestSolrXmlPersistor  extends SolrTestCaseJ4 {
     
     final String solrxml = "<solr><cores></cores></solr>";
     
-    final File solrHomeDirectory = createTempDir();
+    final File solrHomeDirectory = createTempDir().toFile();
     
     copyMinFullSetup(solrHomeDirectory);
     

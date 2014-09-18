@@ -981,7 +981,8 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
   }
   
   public void testReset() throws Exception {
-    Tokenizer wsTokenizer = new WhitespaceTokenizer(new StringReader("please divide this sentence"));
+    Tokenizer wsTokenizer = new WhitespaceTokenizer();
+    wsTokenizer.setReader(new StringReader("please divide this sentence"));
     TokenStream filter = new ShingleFilter(wsTokenizer, 2);
     assertTokenStreamContents(filter,
       new String[]{"please","please divide","divide","divide this","this","this sentence","sentence"},
@@ -1106,8 +1107,8 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
   public void testRandomStrings() throws Exception {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, new ShingleFilter(tokenizer));
       }
     };
@@ -1119,8 +1120,8 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
     Random random = random();
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, new ShingleFilter(tokenizer));
       }
     };
@@ -1130,8 +1131,8 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
   public void testEmptyTerm() throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, new ShingleFilter(tokenizer));
       }
     };

@@ -17,11 +17,10 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.apache.lucene.document.Field;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -31,7 +30,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.util.Version;
 
 public class TestWindowsMMap extends LuceneTestCase {
   
@@ -66,15 +64,14 @@ public class TestWindowsMMap extends LuceneTestCase {
     // sometimes the directory is not cleaned by rmDir, because on Windows it
     // may take some time until the files are finally dereferenced. So clean the
     // directory up front, or otherwise new IndexWriter will fail.
-    File dirPath = createTempDir("testLuceneMmap");
+    Path dirPath = createTempDir("testLuceneMmap");
     MMapDirectory dir = new MMapDirectory(dirPath, null);
     
     // plan to add a set of useful stopwords, consider changing some of the
     // interior filters.
     MockAnalyzer analyzer = new MockAnalyzer(random());
     // TODO: something about lock timeouts and leftover locks.
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        Version.LATEST, analyzer)
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzer)
         .setOpenMode(OpenMode.CREATE));
     writer.commit();
     IndexReader reader = DirectoryReader.open(dir);

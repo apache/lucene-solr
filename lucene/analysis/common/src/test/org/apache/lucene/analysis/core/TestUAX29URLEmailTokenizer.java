@@ -8,9 +8,9 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.UAX29URLEmailTokenizer;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.Version;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -52,8 +52,9 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
       builder.append(emailAtomChars[random().nextInt(emailAtomChars.length)]);
     }
     int tokenCount = 0;
+    UAX29URLEmailTokenizer ts = new UAX29URLEmailTokenizer();
     String text = builder.toString();
-    UAX29URLEmailTokenizer ts = new UAX29URLEmailTokenizer(new StringReader(text));
+    ts.setReader(new StringReader(text));
     ts.reset();
     while (ts.incrementToken()) {
       tokenCount++;
@@ -82,16 +83,16 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
     sb.append(whitespace);
     sb.append("testing 1234");
     String input = sb.toString();
-    UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(newAttributeFactory(), new StringReader(input));
+    UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(newAttributeFactory());
+    tokenizer.setReader(new StringReader(input));
     BaseTokenStreamTestCase.assertTokenStreamContents(tokenizer, new String[] { "testing", "1234" });
   }
 
   private Analyzer a = new Analyzer() {
     @Override
-    protected TokenStreamComponents createComponents
-      (String fieldName, Reader reader) {
+    protected TokenStreamComponents createComponents(String fieldName) {
 
-      Tokenizer tokenizer = new UAX29URLEmailTokenizer(newAttributeFactory(), reader);
+      Tokenizer tokenizer = new UAX29URLEmailTokenizer(newAttributeFactory());
       return new TokenStreamComponents(tokenizer);
     }
   };
@@ -137,8 +138,8 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
 
   private Analyzer urlAnalyzer = new Analyzer() {
     @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(newAttributeFactory(), reader);
+    protected TokenStreamComponents createComponents(String fieldName) {
+      UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(newAttributeFactory());
       tokenizer.setMaxTokenLength(Integer.MAX_VALUE);  // Tokenize arbitrary length URLs
       TokenFilter filter = new URLFilter(tokenizer);
       return new TokenStreamComponents(tokenizer, filter);
@@ -147,8 +148,8 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
 
   private Analyzer emailAnalyzer = new Analyzer() {
     @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(newAttributeFactory(), reader);
+    protected TokenStreamComponents createComponents(String fieldName) {
+      UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(newAttributeFactory());
       TokenFilter filter = new EmailFilter(tokenizer);
       return new TokenStreamComponents(tokenizer, filter);
     }
@@ -537,68 +538,6 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
     BaseTokenStreamTestCase.assertAnalyzesTo(a, "3_1.,2", new String[] { "3_1", "2" });
   }
 
-  /** @deprecated remove this and sophisticated backwards layer in 5.0 */
-  @Deprecated
-  public void testCombiningMarksBackwards() throws Exception {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents
-        (String fieldName, Reader reader) {
-
-        Tokenizer tokenizer = new UAX29URLEmailTokenizer(Version.LUCENE_3_1, reader);
-        return new TokenStreamComponents(tokenizer);
-      }
-    };
-    checkOneTerm(a, "ざ", "さ"); // hiragana Bug
-    checkOneTerm(a, "ザ", "ザ"); // katakana Works
-    checkOneTerm(a, "壹゙", "壹"); // ideographic Bug
-    checkOneTerm(a, "아゙",  "아゙"); // hangul Works
-  }
-  
-  // LUCENE-3880
-  /** @deprecated remove this and sophisticated backwards layer in 5.0 */
-  @Deprecated
-  public void testMailtoBackwards()  throws Exception {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new UAX29URLEmailTokenizer(Version.LUCENE_3_4, reader);
-        return new TokenStreamComponents(tokenizer);
-      }
-    };
-    assertAnalyzesTo(a, "mailto:test@example.org",
-        new String[] { "mailto:test", "example.org" });
-  }
-
-  /** @deprecated uses older unicode (6.0). simple test to make sure its basically working */
-  @Deprecated
-  public void testVersion36() throws Exception {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new UAX29URLEmailTokenizer(Version.LUCENE_3_6, reader);
-        return new TokenStreamComponents(tokenizer);
-      }
-    };
-    assertAnalyzesTo(a, "this is just a t\u08E6st lucene@apache.org", // new combining mark in 6.1
-        new String[] { "this", "is", "just", "a", "t", "st", "lucene@apache.org" });
-  };
-
-  /** @deprecated uses older unicode (6.1). simple test to make sure its basically working */
-  @Deprecated
-  public void testVersion40() throws Exception {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new UAX29URLEmailTokenizer(Version.LUCENE_4_0, reader);
-        return new TokenStreamComponents(tokenizer);
-      }
-    };
-    // U+061C is a new combining mark in 6.3, found using "[[\p{WB:Format}\p{WB:Extend}]&[^\p{Age:6.2}]]"
-    // on the online UnicodeSet utility: <http://unicode.org/cldr/utility/list-unicodeset.jsp>
-    assertAnalyzesTo(a, "this is just a t\u061Cst lucene@apache.org",
-        new String[] { "this", "is", "just", "a", "t", "st", "lucene@apache.org" });
-  };
 
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {

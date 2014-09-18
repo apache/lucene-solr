@@ -17,16 +17,13 @@ package org.apache.lucene.analysis.ngram;
  * limitations under the License.
  */
 
-import static org.apache.lucene.analysis.ngram.NGramTokenizerTest.isTokenChar;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 import java.util.Arrays;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -35,7 +32,6 @@ import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.util.TestUtil;
 
 import com.carrotsearch.randomizedtesting.generators.RandomStrings;
-import org.apache.lucene.util.Version;
 
 /**
  * Tests {@link NGramTokenizer} for correctness.
@@ -52,7 +48,8 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
   public void testInvalidInput() throws Exception {
     boolean gotException = false;
     try {
-      NGramTokenizer tok = new NGramTokenizer(input, 2, 1);
+      NGramTokenizer tok = new NGramTokenizer(2, 1);
+      tok.setReader(input);
     } catch (IllegalArgumentException e) {
       gotException = true;
     }
@@ -62,7 +59,8 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
   public void testInvalidInput2() throws Exception {
     boolean gotException = false;
     try {
-      NGramTokenizer tok = new NGramTokenizer(input, 0, 1);
+      NGramTokenizer tok = new NGramTokenizer(0, 1);
+      tok.setReader(input);
     } catch (IllegalArgumentException e) {
       gotException = true;
     }
@@ -70,17 +68,20 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
   }
   
   public void testUnigrams() throws Exception {
-    NGramTokenizer tokenizer = new NGramTokenizer(input, 1, 1);
+    NGramTokenizer tokenizer = new NGramTokenizer(1, 1);
+    tokenizer.setReader(input);
     assertTokenStreamContents(tokenizer, new String[]{"a","b","c","d","e"}, new int[]{0,1,2,3,4}, new int[]{1,2,3,4,5}, 5 /* abcde */);
   }
   
   public void testBigrams() throws Exception {
-    NGramTokenizer tokenizer = new NGramTokenizer(input, 2, 2);
+    NGramTokenizer tokenizer = new NGramTokenizer(2, 2);
+    tokenizer.setReader(input);
     assertTokenStreamContents(tokenizer, new String[]{"ab","bc","cd","de"}, new int[]{0,1,2,3}, new int[]{2,3,4,5}, 5 /* abcde */);
   }
   
   public void testNgrams() throws Exception {
-    NGramTokenizer tokenizer = new NGramTokenizer(input, 1, 3);
+    NGramTokenizer tokenizer = new NGramTokenizer(1, 3);
+    tokenizer.setReader(input);
     assertTokenStreamContents(tokenizer,
         new String[]{"a","ab", "abc", "b", "bc", "bcd", "c", "cd", "cde", "d", "de", "e"},
         new int[]{0,0,0,1,1,1,2,2,2,3,3,4},
@@ -94,12 +95,14 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
   }
   
   public void testOversizedNgrams() throws Exception {
-    NGramTokenizer tokenizer = new NGramTokenizer(input, 6, 7);
+    NGramTokenizer tokenizer = new NGramTokenizer(6, 7);
+    tokenizer.setReader(input);
     assertTokenStreamContents(tokenizer, new String[0], new int[0], new int[0], 5 /* abcde */);
   }
   
   public void testReset() throws Exception {
-    NGramTokenizer tokenizer = new NGramTokenizer(input, 1, 1);
+    NGramTokenizer tokenizer = new NGramTokenizer(1, 1);
+    tokenizer.setReader(input);
     assertTokenStreamContents(tokenizer, new String[]{"a","b","c","d","e"}, new int[]{0,1,2,3,4}, new int[]{1,2,3,4,5}, 5 /* abcde */);
     tokenizer.setReader(new StringReader("abcde"));
     assertTokenStreamContents(tokenizer, new String[]{"a","b","c","d","e"}, new int[]{0,1,2,3,4}, new int[]{1,2,3,4,5}, 5 /* abcde */);
@@ -112,8 +115,8 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
       final int max = TestUtil.nextInt(random(), min, 20);
       Analyzer a = new Analyzer() {
         @Override
-        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          Tokenizer tokenizer = new NGramTokenizer(reader, min, max);
+        protected TokenStreamComponents createComponents(String fieldName) {
+          Tokenizer tokenizer = new NGramTokenizer(min, max);
           return new TokenStreamComponents(tokenizer, tokenizer);
         }    
       };
@@ -158,12 +161,13 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
     for (int i = 0; i < codePoints.length; ++i) {
       offsets[i+1] = offsets[i] + Character.charCount(codePoints[i]);
     }
-    final TokenStream grams = new NGramTokenizer(Version.LATEST, new StringReader(s), minGram, maxGram, edgesOnly) {
+    final Tokenizer grams = new NGramTokenizer(minGram, maxGram, edgesOnly) {
       @Override
       protected boolean isTokenChar(int chr) {
         return nonTokenChars.indexOf(chr) < 0;
       }
     };
+    grams.setReader(new StringReader(s));
     final CharTermAttribute termAtt = grams.addAttribute(CharTermAttribute.class);
     final PositionIncrementAttribute posIncAtt = grams.addAttribute(PositionIncrementAttribute.class);
     final PositionLengthAttribute posLenAtt = grams.addAttribute(PositionLengthAttribute.class);
@@ -244,7 +248,7 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
 
   public void test43Tokenizer() {
     // TODO: do more than instantiate (ie check the old broken behavior)
-    new Lucene43NGramTokenizer(input, 1, 1);
+    new Lucene43NGramTokenizer(1, 1);
   }
 
 }

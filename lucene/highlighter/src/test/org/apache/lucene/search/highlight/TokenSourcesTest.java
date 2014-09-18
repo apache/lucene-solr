@@ -45,10 +45,8 @@ import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 // LUCENE-2874
-@SuppressCodecs("Lucene3x")
 public class TokenSourcesTest extends LuceneTestCase {
   private static final String FIELD = "text";
 

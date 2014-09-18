@@ -17,16 +17,15 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.lang.reflect.Constructor;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 
@@ -535,12 +534,15 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
           throw new RuntimeException("some thread(s) failed");
         }
       }
+      if (iw != null) {
+        iw.close();
+      }
       success = true;
     } finally {
       if (success) {
-        IOUtils.close(iw, dir);
+        IOUtils.close(dir);
       } else {
-        IOUtils.closeWhileHandlingException(iw, dir); // checkindex
+        IOUtils.closeWhileHandlingException(dir); // checkindex
       }
     }
   }
@@ -558,21 +560,19 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         ft.setStoreTermVectors(true);
         ft.setStoreTermVectorOffsets(random.nextBoolean());
         ft.setStoreTermVectorPositions(random.nextBoolean());
-        if (ft.storeTermVectorPositions() && !OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
+        if (ft.storeTermVectorPositions()) {
           ft.setStoreTermVectorPayloads(random.nextBoolean());
         }
       }
       if (random.nextBoolean()) {
         ft.setOmitNorms(true);
       }
-      String pf = TestUtil.getPostingsFormat("dummy");
-      boolean supportsOffsets = !doesntSupportOffsets.contains(pf);
       switch(random.nextInt(4)) {
         case 0: ft.setIndexOptions(IndexOptions.DOCS_ONLY); break;
         case 1: ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS); break;
         case 2: ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS); break;
         default:
-                if (supportsOffsets && offsetsAreCorrect) {
+                if (offsetsAreCorrect) {
                   ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
                 } else {
                   ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
@@ -895,7 +895,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   }
 
   protected void toDotFile(Analyzer a, String inputText, String localFileName) throws IOException {
-    Writer w = new OutputStreamWriter(new FileOutputStream(localFileName), StandardCharsets.UTF_8);
+    Writer w = Files.newBufferedWriter(Paths.get(localFileName), StandardCharsets.UTF_8);
     final TokenStream ts = a.tokenStream("field", inputText);
     ts.reset();
     new TokenStreamToDot(inputText, ts, new PrintWriter(w)).toDot();
@@ -912,19 +912,27 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   }
 
   protected static MockTokenizer whitespaceMockTokenizer(Reader input) throws IOException {
-    return new MockTokenizer(input, MockTokenizer.WHITESPACE, false);
+    MockTokenizer mockTokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    mockTokenizer.setReader(input);
+    return mockTokenizer;
   }
 
   protected static MockTokenizer whitespaceMockTokenizer(String input) throws IOException {
-    return whitespaceMockTokenizer(new StringReader(input));
+    MockTokenizer mockTokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    mockTokenizer.setReader(new StringReader(input));
+    return mockTokenizer;
   }
 
   protected static MockTokenizer keywordMockTokenizer(Reader input) throws IOException {
-    return new MockTokenizer(input, MockTokenizer.KEYWORD, false);
+    MockTokenizer mockTokenizer = new MockTokenizer(MockTokenizer.KEYWORD, false);
+    mockTokenizer.setReader(input);
+    return mockTokenizer;
   }
 
   protected static MockTokenizer keywordMockTokenizer(String input) throws IOException {
-    return keywordMockTokenizer(new StringReader(input));
+    MockTokenizer mockTokenizer = new MockTokenizer(MockTokenizer.KEYWORD, false);
+    mockTokenizer.setReader(new StringReader(input));
+    return mockTokenizer;
   }
   
   /** Returns a random AttributeFactory impl */

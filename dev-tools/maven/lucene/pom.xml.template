@@ -41,6 +41,7 @@
   </scm>
   <modules>
     <module>core</module>
+    <module>backward-codecs</module>
     <module>codecs</module>
     <module>test-framework</module>
     <module>analysis</module>

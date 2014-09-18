@@ -660,11 +660,6 @@ public class LukeRequestHandler extends RequestHandlerBase
   }
 
   @Override
-  public String getSource() {
-    return null;
-  }
-
-  @Override
   public URL[] getDocs() {
     try {
       return new URL[] { new URL("http://wiki.apache.org/solr/LukeRequestHandler") };

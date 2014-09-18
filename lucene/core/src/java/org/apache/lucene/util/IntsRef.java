@@ -1,5 +1,7 @@
 package org.apache.lucene.util;
 
+import java.util.Arrays;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -132,33 +134,6 @@ public final class IntsRef implements Comparable<IntsRef>, Cloneable {
     return this.length - other.length;
   }
 
-  /**
-   * @deprecated {@link IntsRef} should not be used as a buffer, use {@link IntsRefBuilder} instead
-   */
-  @Deprecated
-  public void copyInts(IntsRef other) {
-    if (ints.length - offset < other.length) {
-      ints = new int[other.length];
-      offset = 0;
-    }
-    System.arraycopy(other.ints, other.offset, ints, offset, other.length);
-    length = other.length;
-  }
-
-  /** 
-   * Used to grow the reference array. 
-   * 
-   * In general this should not be used as it does not take the offset into account.
-   * @deprecated {@link IntsRef} should not be used as a buffer, use {@link IntsRefBuilder} instead
-   * @lucene.internal */
-  @Deprecated
-  public void grow(int newLength) {
-    assert offset == 0;
-    if (ints.length < newLength) {
-      ints = ArrayUtil.grow(ints, newLength);
-    }
-  }
-
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
@@ -182,9 +157,7 @@ public final class IntsRef implements Comparable<IntsRef>, Cloneable {
    * and an offset of zero.
    */
   public static IntsRef deepCopyOf(IntsRef other) {
-    IntsRef clone = new IntsRef();
-    clone.copyInts(other);
-    return clone;
+    return new IntsRef(Arrays.copyOfRange(other.ints, other.offset, other.offset + other.length), 0, other.length);
   }
   
   /** 

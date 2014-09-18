@@ -39,7 +39,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Version;
 
 /** Shows simple usage of faceted indexing and search,
  *  using {@link SortedSetDocValuesFacetField} and {@link
@@ -56,7 +55,7 @@ public class SimpleSortedSetFacetsExample {
 
   /** Build the example index. */
   private void index() throws IOException {
-    IndexWriter indexWriter = new IndexWriter(indexDir, new IndexWriterConfig(Version.LATEST,
+    IndexWriter indexWriter = new IndexWriter(indexDir, new IndexWriterConfig(
         new WhitespaceAnalyzer()));
     Document doc = new Document();
     doc.add(new SortedSetDocValuesFacetField("Author", "Bob"));

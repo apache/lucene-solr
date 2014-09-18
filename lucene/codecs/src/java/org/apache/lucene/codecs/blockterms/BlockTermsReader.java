@@ -20,7 +20,6 @@ package org.apache.lucene.codecs.blockterms;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.TreeMap;
@@ -66,9 +65,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * @lucene.experimental */
 
 public class BlockTermsReader extends FieldsProducer {
-
   private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(BlockTermsReader.class);
-
   // Open input to the main terms dict file (_X.tis)
   private final IndexInput in;
 
@@ -276,11 +273,6 @@ public class BlockTermsReader extends FieldsProducer {
     }
 
     @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
-    }
-
-    @Override
     public TermsEnum iterator(TermsEnum reuse) throws IOException {
       return new SegmentTermsEnum();
     }
@@ -352,11 +344,6 @@ public class BlockTermsReader extends FieldsProducer {
          calls next() (which is not "typical"), then we'll do the real seek */
       private boolean seekPending;
 
-      /* How many blocks we've read since last seek.  Once this
-         is >= indexEnum.getDivisor() we set indexIsCurrent to false (since
-         the index can no long bracket seek-within-block). */
-      private int blocksSinceSeek;
-
       private byte[] termSuffixes;
       private ByteArrayDataInput termSuffixesReader = new ByteArrayDataInput();
 
@@ -388,11 +375,6 @@ public class BlockTermsReader extends FieldsProducer {
         docFreqBytes = new byte[64];
         //System.out.println("BTR.enum init this=" + this + " postingsReader=" + postingsReader);
         longs = new long[longsSize];
-      }
-
-      @Override
-      public Comparator<BytesRef> getComparator() {
-        return BytesRef.getUTF8SortedAsUnicodeComparator();
       }
 
       // TODO: we may want an alternate mode here which is
@@ -465,7 +447,6 @@ public class BlockTermsReader extends FieldsProducer {
 
           indexIsCurrent = true;
           didIndexNext = false;
-          blocksSinceSeek = 0;          
 
           if (doOrd) {
             state.ord = indexEnum.ord()-1;
@@ -761,7 +742,6 @@ public class BlockTermsReader extends FieldsProducer {
 
         indexIsCurrent = true;
         didIndexNext = false;
-        blocksSinceSeek = 0;
         seekPending = false;
 
         state.ord = indexEnum.ord()-1;
@@ -843,8 +823,7 @@ public class BlockTermsReader extends FieldsProducer {
         metaDataUpto = 0;
         state.termBlockOrd = 0;
 
-        blocksSinceSeek++;
-        indexIsCurrent = indexIsCurrent && (blocksSinceSeek < indexReader.getDivisor());
+        indexIsCurrent = false;
         //System.out.println("  indexIsCurrent=" + indexIsCurrent);
 
         return true;

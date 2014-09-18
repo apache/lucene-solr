@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.memory;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
@@ -146,15 +145,6 @@ public final class DirectPostingsFormat extends PostingsFormat {
     @Override
     public int size() {
       return fields.size();
-    }
-
-    @Override
-    public long getUniqueTermCount() {
-      long numTerms = 0;      
-      for(DirectField field : fields.values()) {
-        numTerms += field.terms.length;
-      }
-      return numTerms;
     }
 
     @Override
@@ -718,11 +708,6 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
-    }
-
-    @Override
     public boolean hasFreqs() {
       return hasFreq;
     }
@@ -760,11 +745,6 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
       public void reset() {
         termOrd = -1;
-      }
-
-      @Override
-      public Comparator<BytesRef> getComparator() {
-        return BytesRef.getUTF8SortedAsUnicodeComparator();
       }
 
       @Override
@@ -890,7 +870,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
       @Override
       public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) {
-        // TODO: implement reuse, something like Pulsing:
+        // TODO: implement reuse
         // it's hairy!
 
         if (terms[termOrd] instanceof LowFreqTerm) {
@@ -967,7 +947,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
           return null;
         }
 
-        // TODO: implement reuse, something like Pulsing:
+        // TODO: implement reuse
         // it's hairy!
 
         if (terms[termOrd] instanceof LowFreqTerm) {
@@ -1160,11 +1140,6 @@ public final class DirectPostingsFormat extends PostingsFormat {
           //   System.out.println("  loop end; return termOrd=" + termOrd + " stateUpto=" + stateUpto);
           // }
         }
-      }
-
-      @Override
-      public Comparator<BytesRef> getComparator() {
-        return BytesRef.getUTF8SortedAsUnicodeComparator();
       }
 
       private void grow() {
@@ -1493,7 +1468,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
       @Override
       public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) {
-        // TODO: implement reuse, something like Pulsing:
+        // TODO: implement reuse
         // it's hairy!
 
         if (terms[termOrd] instanceof LowFreqTerm) {
@@ -1529,7 +1504,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
           return null;
         }
 
-        // TODO: implement reuse, something like Pulsing:
+        // TODO: implement reuse
         // it's hairy!
 
         if (terms[termOrd] instanceof LowFreqTerm) {

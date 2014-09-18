@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.util.CharArrayMap;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.Version;
 
 /**
  * Test the Dutch Stem Filter, which only modifies the term text.
@@ -113,17 +112,6 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
    check("ophouden", "ophoud");
   }
   
-  /**
-   * @deprecated (3.1) remove this test in Lucene 5.0
-   */
-  @Deprecated
-  public void testOldBuggyStemmer() throws Exception {
-    Analyzer a = new DutchAnalyzer(Version.LUCENE_3_0);
-    checkOneTerm(a, "opheffen", "ophef"); // versus snowball 'opheff'
-    checkOneTerm(a, "opheffende", "ophef"); // versus snowball 'opheff'
-    checkOneTerm(a, "opheffing", "ophef"); // versus snowball 'opheff'
-  }
-  
   public void testSnowballCorrectness() throws Exception {
     Analyzer a = new DutchAnalyzer();
     checkOneTerm(a, "opheffen", "opheff");
@@ -140,7 +128,7 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
   }
   
   public void testExclusionTableViaCtor() throws IOException {
-    CharArraySet set = new CharArraySet(Version.LUCENE_3_0, 1, true);
+    CharArraySet set = new CharArraySet( 1, true);
     set.add("lichamelijk");
     DutchAnalyzer a = new DutchAnalyzer( CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(a, "lichamelijk lichamelijke", new String[] { "lichamelijk", "licham" });
@@ -158,18 +146,7 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
     DutchAnalyzer a = new DutchAnalyzer( CharArraySet.EMPTY_SET);
     checkOneTerm(a, "fiets", "fiets");
   }
-  /**
-   * 3.0 still uses the chararraymap internally check if that works as well
-   * @deprecated (4.3) remove this test in Lucene 5.0
-   */
-  @Deprecated
-  public void test30StemOverrides() throws IOException {
-    DutchAnalyzer a = new DutchAnalyzer(Version.LUCENE_3_0);
-    checkOneTerm(a, "fiets", "fiets");
-    a = new DutchAnalyzer(Version.LUCENE_3_0, CharArraySet.EMPTY_SET);
-    checkOneTerm(a, "fiets", "fiet"); // only the default ctor populates the dict
-  }
-
+  
   public void testEmptyStemDictionary() throws IOException {
     DutchAnalyzer a = new DutchAnalyzer( CharArraySet.EMPTY_SET, 
         CharArraySet.EMPTY_SET, CharArrayMap.<String>emptyMap());
@@ -177,32 +154,10 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
   }
   
   /**
-   * prior to 3.6, this confusingly did not happen if 
-   * you specified your own stoplist!!!!
-   * @deprecated (3.6) Remove this test in Lucene 5.0
-   */
-  @Deprecated
-  public void testBuggyStemOverrides() throws IOException {
-    DutchAnalyzer a = new DutchAnalyzer(Version.LUCENE_3_5, CharArraySet.EMPTY_SET);
-    checkOneTerm(a, "fiets", "fiet");
-  }
-  
-  /**
-   * Prior to 3.1, this analyzer had no lowercase filter.
-   * stopwords were case sensitive. Preserve this for back compat.
-   * @deprecated (3.1) Remove this test in Lucene 5.0
-   */
-  @Deprecated
-  public void testBuggyStopwordsCasing() throws IOException {
-    DutchAnalyzer a = new DutchAnalyzer(Version.LUCENE_3_0);
-    assertAnalyzesTo(a, "Zelf", new String[] { "zelf" });
-  }
-  
-  /**
    * Test that stopwords are not case sensitive
    */
   public void testStopwordsCasing() throws IOException {
-    DutchAnalyzer a = new DutchAnalyzer(Version.LUCENE_3_1);
+    DutchAnalyzer a = new DutchAnalyzer();
     assertAnalyzesTo(a, "Zelf", new String[] { });
   }
   

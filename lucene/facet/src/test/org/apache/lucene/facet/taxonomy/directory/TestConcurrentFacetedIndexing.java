@@ -35,6 +35,7 @@ import org.apache.lucene.util.IOUtils;
  * limitations under the License.
  */
 
+/** Tests concurrent indexing with facets. */
 public class TestConcurrentFacetedIndexing extends FacetTestCase {
 
   // A No-Op TaxonomyWriterCache which always discards all given categories, and
@@ -152,7 +153,8 @@ public class TestConcurrentFacetedIndexing extends FacetTestCase {
       }
     }
 
-    IOUtils.close(tw, iw, tr, taxoDir, indexDir);
+    iw.close();
+    IOUtils.close(tw, tr, taxoDir, indexDir);
   }
 
 }

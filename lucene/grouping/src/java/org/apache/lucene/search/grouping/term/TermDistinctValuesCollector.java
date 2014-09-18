@@ -17,16 +17,19 @@ package org.apache.lucene.search.grouping.term;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.*;
-
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.grouping.AbstractDistinctValuesCollector;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SentinelIntSet;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * A term based implementation of {@link org.apache.lucene.search.grouping.AbstractDistinctValuesCollector} that relies
@@ -103,9 +106,9 @@ public class TermDistinctValuesCollector extends AbstractDistinctValuesCollector
   }
 
   @Override
-  public void setNextReader(AtomicReaderContext context) throws IOException {
-    groupFieldTermIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), groupField);
-    countFieldTermIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), countField);
+  protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+    groupFieldTermIndex = DocValues.getSorted(context.reader(), groupField);
+    countFieldTermIndex = DocValues.getSorted(context.reader(), countField);
     ordSet.clear();
     for (GroupCount group : groups) {
       int groupOrd = group.groupValue == null ? -1 : groupFieldTermIndex.lookupTerm(group.groupValue);

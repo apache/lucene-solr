@@ -35,7 +35,6 @@ import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.Version;
 import org.egothor.stemmer.Trie;
 
 /**
@@ -100,14 +99,6 @@ public final class PolishAnalyzer extends StopwordAnalyzerBase {
   public PolishAnalyzer() {
     this(DefaultsHolder.DEFAULT_STOP_SET);
   }
-
-  /**
-   * @deprecated Use {@link #PolishAnalyzer()}
-   */
-  @Deprecated
-  public PolishAnalyzer(Version matchVersion) {
-    this(matchVersion, DefaultsHolder.DEFAULT_STOP_SET);
-  }
   
   /**
    * Builds an analyzer with the given stop words.
@@ -116,14 +107,6 @@ public final class PolishAnalyzer extends StopwordAnalyzerBase {
    */
   public PolishAnalyzer(CharArraySet stopwords) {
     this(stopwords, CharArraySet.EMPTY_SET);
-  }
-
-  /**
-   * @deprecated Use {@link #PolishAnalyzer(CharArraySet)}
-   */
-  @Deprecated
-  public PolishAnalyzer(Version matchVersion, CharArraySet stopwords) {
-    this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
   }
 
   /**
@@ -141,17 +124,6 @@ public final class PolishAnalyzer extends StopwordAnalyzerBase {
   }
 
   /**
-   * @deprecated Use {@link #PolishAnalyzer(CharArraySet,CharArraySet)}
-   */
-  @Deprecated
-  public PolishAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet) {
-    super(matchVersion, stopwords);
-    this.stemTable = DefaultsHolder.DEFAULT_TABLE;
-    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(
-        matchVersion, stemExclusionSet));
-  }
-
-  /**
    * Creates a
    * {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    * which tokenizes all the text in the provided {@link Reader}.
@@ -164,12 +136,11 @@ public final class PolishAnalyzer extends StopwordAnalyzerBase {
    *         provided and {@link StempelFilter}.
    */
   @Override
-  protected TokenStreamComponents createComponents(String fieldName,
-      Reader reader) {
-    final Tokenizer source = new StandardTokenizer(getVersion(), reader);
-    TokenStream result = new StandardFilter(getVersion(), source);
-    result = new LowerCaseFilter(getVersion(), result);
-    result = new StopFilter(getVersion(), result, stopwords);
+  protected TokenStreamComponents createComponents(String fieldName) {
+    final Tokenizer source = new StandardTokenizer();
+    TokenStream result = new StandardFilter(source);
+    result = new LowerCaseFilter(result);
+    result = new StopFilter(result, stopwords);
     if(!stemExclusionSet.isEmpty())
       result = new SetKeywordMarkerFilter(result, stemExclusionSet);
     result = new StempelFilter(result, new StempelStemmer(stemTable));

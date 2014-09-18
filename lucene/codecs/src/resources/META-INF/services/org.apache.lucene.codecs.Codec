@@ -14,4 +14,3 @@
 #  limitations under the License.
 
 org.apache.lucene.codecs.simpletext.SimpleTextCodec
-org.apache.lucene.codecs.appending.AppendingCodec

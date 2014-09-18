@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.cjk;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -28,7 +27,6 @@ import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
-import org.apache.lucene.util.Version;
 
 /**
  * An {@link Analyzer} that tokenizes text with {@link StandardTokenizer},
@@ -74,14 +72,6 @@ public final class CJKAnalyzer extends StopwordAnalyzerBase {
   public CJKAnalyzer() {
     this(DefaultSetHolder.DEFAULT_STOP_SET);
   }
-
-  /**
-   * @deprecated Use {@link #CJKAnalyzer()}
-   */
-  @Deprecated
-  public CJKAnalyzer(Version matchVersion) {
-    this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
-  }
   
   /**
    * Builds an analyzer with the given stop words
@@ -93,27 +83,13 @@ public final class CJKAnalyzer extends StopwordAnalyzerBase {
     super(stopwords);
   }
 
-  /**
-   * @deprecated Use {@link #CJKAnalyzer(CharArraySet)}
-   */
-  @Deprecated
-  public CJKAnalyzer(Version matchVersion, CharArraySet stopwords){
-    super(matchVersion, stopwords);
-  }
-
   @Override
-  protected TokenStreamComponents createComponents(String fieldName,
-      Reader reader) {
-    if (getVersion().onOrAfter(Version.LUCENE_3_6_0)) {
-      final Tokenizer source = new StandardTokenizer(getVersion(), reader);
-      // run the widthfilter first before bigramming, it sometimes combines characters.
-      TokenStream result = new CJKWidthFilter(source);
-      result = new LowerCaseFilter(getVersion(), result);
-      result = new CJKBigramFilter(result);
-      return new TokenStreamComponents(source, new StopFilter(getVersion(), result, stopwords));
-    } else {
-      final Tokenizer source = new CJKTokenizer(reader);
-      return new TokenStreamComponents(source, new StopFilter(getVersion(), source, stopwords));
-    }
+  protected TokenStreamComponents createComponents(String fieldName) {
+    final Tokenizer source = new StandardTokenizer();
+    // run the widthfilter first before bigramming, it sometimes combines characters.
+    TokenStream result = new CJKWidthFilter(source);
+    result = new LowerCaseFilter(result);
+    result = new CJKBigramFilter(result);
+    return new TokenStreamComponents(source, new StopFilter(result, stopwords));
   }
 }

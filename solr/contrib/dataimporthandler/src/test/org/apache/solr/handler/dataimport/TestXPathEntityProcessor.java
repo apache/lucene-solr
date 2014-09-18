@@ -43,7 +43,7 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
   
   @Test
   public void withFieldsAndXpath() throws Exception {
-    File tmpdir = createTempDir();
+    File tmpdir = createTempDir().toFile();
     
     createFile(tmpdir, "x.xsl", xsl.getBytes(StandardCharsets.UTF_8), false);
     Map entityAttrs = createMap("name", "e", "url", "cd.xml",
@@ -332,7 +332,7 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
   
   @Test
   public void withDefaultSolrAndXsl() throws Exception {
-    File tmpdir = createTempDir();
+    File tmpdir = createTempDir().toFile();
     AbstractDataImportHandlerTestCase.createFile(tmpdir, "x.xsl", xsl.getBytes(StandardCharsets.UTF_8),
             false);
 

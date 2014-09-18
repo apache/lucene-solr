@@ -17,7 +17,6 @@
 
 package org.apache.lucene.analysis.cn.smart;
 
-import java.io.Reader;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Tokenizer;
@@ -44,7 +43,7 @@ public final class HMMChineseTokenizerFactory extends TokenizerFactory {
   }
 
   @Override
-  public Tokenizer create(AttributeFactory factory, Reader reader) {
-    return new HMMChineseTokenizer(factory, reader);
+  public Tokenizer create(AttributeFactory factory) {
+    return new HMMChineseTokenizer(factory);
   }
 }

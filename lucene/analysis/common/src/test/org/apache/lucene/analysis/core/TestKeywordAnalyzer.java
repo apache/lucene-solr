@@ -37,9 +37,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.Version;
 
 public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   
@@ -51,7 +49,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(Version.LATEST, new SimpleAnalyzer()));
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(new SimpleAnalyzer()));
 
     Document doc = new Document();
     doc.add(new StringField("partnum", "Q36", Field.Store.YES));
@@ -88,7 +86,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
 
   public void testMutipleDocument() throws Exception {
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, new KeywordAnalyzer()));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new KeywordAnalyzer()));
     Document doc = new Document();
     doc.add(new TextField("partnum", "Q36", Field.Store.YES));
     writer.addDocument(doc);
@@ -99,27 +97,26 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
 
     IndexReader reader = DirectoryReader.open(dir);
     DocsEnum td = TestUtil.docs(random(),
-                                 reader,
-                                 "partnum",
-                                 new BytesRef("Q36"),
-                                 MultiFields.getLiveDocs(reader),
-                                 null,
-                                 0);
+        reader,
+        "partnum",
+        new BytesRef("Q36"),
+        MultiFields.getLiveDocs(reader),
+        null,
+        0);
     assertTrue(td.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     td = TestUtil.docs(random(),
-                        reader,
-                        "partnum",
-                        new BytesRef("Q37"),
-                        MultiFields.getLiveDocs(reader),
-                        null,
-                        0);
+        reader,
+        "partnum",
+        new BytesRef("Q37"),
+        MultiFields.getLiveDocs(reader),
+        null,
+        0);
     assertTrue(td.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
   }
 
   // LUCENE-1441
   public void testOffsets() throws Exception {
-    TokenStream stream = new KeywordAnalyzer().tokenStream("field", new StringReader("abcd"));
-    try {
+    try (TokenStream stream = new KeywordAnalyzer().tokenStream("field", new StringReader("abcd"))) {
       OffsetAttribute offsetAtt = stream.addAttribute(OffsetAttribute.class);
       stream.reset();
       assertTrue(stream.incrementToken());
@@ -127,8 +124,6 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
       assertEquals(4, offsetAtt.endOffset());
       assertFalse(stream.incrementToken());
       stream.end();
-    } finally {
-      IOUtils.closeWhileHandlingException(stream);
     }
   }
   

@@ -24,12 +24,10 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /**
  * Tests the Terms.docCount statistic
  */
-@SuppressCodecs("Lucene3x")
 public class TestDocCount extends LuceneTestCase {
   public void testSimple() throws Exception {
     Directory dir = newDirectory();

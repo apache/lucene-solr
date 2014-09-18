@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -75,13 +74,6 @@ public abstract class Terms {
       };
     }
   }
-
-  /** Return the BytesRef Comparator used to sort terms
-   *  provided by the iterator.  This method may return null
-   *  if there are no terms.  This method may be invoked
-   *  many times; it's best to cache a single instance &
-   *  reuse it. */
-  public abstract Comparator<BytesRef> getComparator();
 
   /** Returns the number of terms for this field, or -1 if this 
    *  measure isn't stored by the codec. Note that, just like 

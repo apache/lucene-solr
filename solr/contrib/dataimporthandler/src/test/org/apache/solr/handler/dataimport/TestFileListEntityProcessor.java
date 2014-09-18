@@ -41,7 +41,7 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
   @Test
   @SuppressWarnings("unchecked")
   public void testSimple() throws IOException {
-    File tmpdir = createTempDir();
+    File tmpdir = createTempDir().toFile();
 
     createFile(tmpdir, "a.xml", "a.xml".getBytes(StandardCharsets.UTF_8), false);
     createFile(tmpdir, "b.xml", "b.xml".getBytes(StandardCharsets.UTF_8), false);
@@ -65,7 +65,7 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
   
   @Test
   public void testBiggerSmallerFiles() throws IOException {
-    File tmpdir = File.createTempFile("test", "tmp", createTempDir());
+    File tmpdir = File.createTempFile("test", "tmp", createTempDir().toFile());
     Files.delete(tmpdir.toPath());
     tmpdir.mkdir();
 
@@ -135,7 +135,7 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
 
   @Test
   public void testNTOT() throws IOException {
-    File tmpdir = createTempDir();
+    File tmpdir = createTempDir().toFile();
 
     createFile(tmpdir, "a.xml", "a.xml".getBytes(StandardCharsets.UTF_8), true);
     createFile(tmpdir, "b.xml", "b.xml".getBytes(StandardCharsets.UTF_8), true);
@@ -169,7 +169,7 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
 
   @Test
   public void testRECURSION() throws IOException {
-    File tmpdir = createTempDir();
+    File tmpdir = createTempDir().toFile();
     File childdir = new File(tmpdir + "/child" );
     childdir.mkdir();
     createFile(childdir, "a.xml", "a.xml".getBytes(StandardCharsets.UTF_8), true);

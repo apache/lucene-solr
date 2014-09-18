@@ -115,50 +115,6 @@ NOTE: Tests expect every field in this schema to be sortable.
     <!-- <field name="enum_dv_last" type="enum_dv_last" />         -->
     <!-- <field name="enum_dv_first" type="enum_dv_first" />       -->
 
-    <field name="bcd_int" type="bcd_int" />
-    <field name="bcd_int_last" type="bcd_int_last" />
-    <field name="bcd_int_first" type="bcd_int_first" />
-
-    <field name="bcd_long" type="bcd_long" />
-    <field name="bcd_long_last" type="bcd_long_last" />
-    <field name="bcd_long_first" type="bcd_long_first" />
-
-    <field name="bcd_str" type="bcd_str" />
-    <field name="bcd_str_last" type="bcd_str_last" />
-    <field name="bcd_str_first" type="bcd_str_first" />
-
-    <!-- IntField doesn't support sortMissingFirst or sortMissingLast variants -->
-    <field name="legacy_int" type="legacy_int" />
-
-    <field name="legacy_sortable_int" type="legacy_sortable_int" />
-    <field name="legacy_sortable_int_last" type="legacy_sortable_int_last" />
-    <field name="legacy_sortable_int_first" type="legacy_sortable_int_first" />
-
-    <!-- LongField doesn't support sortMissingFirst or sortMissingLast variants -->
-    <field name="legacy_long" type="legacy_long" />
-
-    <field name="legacy_sortable_long" type="legacy_sortable_long" />
-    <field name="legacy_sortable_long_last" type="legacy_sortable_long_last" />
-    <field name="legacy_sortable_long_first" type="legacy_sortable_long_first" />
-
-    <!-- FloatField doesn't support sortMissingFirst or sortMissingLast variants -->
-    <field name="legacy_float" type="legacy_float" />
-
-    <field name="legacy_sortable_float" type="legacy_sortable_float" />
-    <field name="legacy_sortable_float_last" type="legacy_sortable_float_last" />
-    <field name="legacy_sortable_float_first" type="legacy_sortable_float_first" />
-
-    <!-- DoubleField doesn't support sortMissingFirst or sortMissingLast variants -->
-    <field name="legacy_double" type="legacy_double" />
-
-    <field name="legacy_sortable_double" type="legacy_sortable_double" />
-    <field name="legacy_sortable_double_last" type="legacy_sortable_double_last" />
-    <field name="legacy_sortable_double_first" type="legacy_sortable_double_first" />
-
-    <field name="legacy_date" type="legacy_date" />
-    <field name="legacy_date_last" type="legacy_date_last" />
-    <field name="legacy_date_first" type="legacy_date_first" />
-
     <!-- ensure function sorts don't mistakenly get interpreted as field sorts
          https://issues.apache.org/jira/browse/SOLR-5354?focusedCommentId=13835891&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-13835891
     -->
@@ -192,57 +148,30 @@ NOTE: Tests expect every field in this schema to be sortable.
   <copyField source="int" dest="int_dv" />
   <copyField source="int" dest="int_dv_last" />
   <copyField source="int" dest="int_dv_first" />
-  <copyField source="int" dest="bcd_int" />
-  <copyField source="int" dest="bcd_int_last" />
-  <copyField source="int" dest="bcd_int_first" />
-  <copyField source="int" dest="bcd_str" />
-  <copyField source="int" dest="bcd_str_last" />
-  <copyField source="int" dest="bcd_str_first" />
-  <copyField source="int" dest="legacy_int" />
-  <copyField source="int" dest="legacy_sortable_int" />
-  <copyField source="int" dest="legacy_sortable_int_last" />
-  <copyField source="int" dest="legacy_sortable_int_first" />
 
   <copyField source="long" dest="long_last" />
   <copyField source="long" dest="long_first" />
   <copyField source="long" dest="long_dv" />
   <copyField source="long" dest="long_dv_last" />
   <copyField source="long" dest="long_dv_first" />
-  <copyField source="long" dest="bcd_long" />
-  <copyField source="long" dest="bcd_long_last" />
-  <copyField source="long" dest="bcd_long_first" />
-  <copyField source="long" dest="legacy_long" />
-  <copyField source="long" dest="legacy_sortable_long" />
-  <copyField source="long" dest="legacy_sortable_long_last" />
-  <copyField source="long" dest="legacy_sortable_long_first" />
 
   <copyField source="float" dest="float_last" />
   <copyField source="float" dest="float_first" />
   <copyField source="float" dest="float_dv" />
   <copyField source="float" dest="float_dv_last" />
   <copyField source="float" dest="float_dv_first" />
-  <copyField source="float" dest="legacy_float" />
-  <copyField source="float" dest="legacy_sortable_float" />
-  <copyField source="float" dest="legacy_sortable_float_last" />
-  <copyField source="float" dest="legacy_sortable_float_first" />
 
   <copyField source="double" dest="double_last" />
   <copyField source="double" dest="double_first" />
   <copyField source="double" dest="double_dv" />
   <copyField source="double" dest="double_dv_last" />
   <copyField source="double" dest="double_dv_first" />
-  <copyField source="double" dest="legacy_double" />
-  <copyField source="double" dest="legacy_sortable_double" />
-  <copyField source="double" dest="legacy_sortable_double_last" />
-  <copyField source="double" dest="legacy_sortable_double_first" />
 
   <copyField source="date" dest="date_last" />
   <copyField source="date" dest="date_first" />
   <copyField source="date" dest="date_dv" />
   <copyField source="date" dest="date_dv_last" />
   <copyField source="date" dest="date_dv_first" />
-  <copyField source="date" dest="legacy_date_last" />
-  <copyField source="date" dest="legacy_date_first" />
 
   <copyField source="uuid" dest="uuid_last" />
   <copyField source="uuid" dest="uuid_first" />
@@ -351,50 +280,6 @@ NOTE: Tests expect every field in this schema to be sortable.
     <!-- <fieldType name="enum_dv" class="solr.EnumField" enumsConfig="enumsConfig.xml" enumName="severity" docValues="true"/> -->
     <!-- <fieldType name="enum_dv_last" class="solr.EnumField" enumsConfig="enumsConfig.xml" enumName="severity" docValues="true" sortMissingLast="true"/> -->
     <!-- <fieldType name="enum_dv_first" class="solr.EnumField" enumsConfig="enumsConfig.xml" enumName="severity" docValues="true" sortMissingFirst="true"/> -->
-
-    <fieldtype name="bcd_int" class="solr.BCDIntField" stored="true" indexed="true" />
-    <fieldtype name="bcd_int_last" class="solr.BCDIntField" stored="true" indexed="true" sortMissingLast="true"/>
-    <fieldtype name="bcd_int_first" class="solr.BCDIntField" stored="true" indexed="true" sortMissingFirst="true"/>
-
-    <fieldtype name="bcd_long" class="solr.BCDLongField" stored="true" indexed="true" />
-    <fieldtype name="bcd_long_last" class="solr.BCDLongField" stored="true" indexed="true" sortMissingLast="true"/>
-    <fieldtype name="bcd_long_first" class="solr.BCDLongField" stored="true" indexed="true" sortMissingFirst="true"/>
-
-    <fieldtype name="bcd_str" class="solr.BCDStrField" stored="true" indexed="true" />
-    <fieldtype name="bcd_str_last" class="solr.BCDStrField" stored="true" indexed="true" sortMissingLast="true"/>
-    <fieldtype name="bcd_str_first" class="solr.BCDStrField" stored="true" indexed="true" sortMissingFirst="true"/>
-
-    <!-- IntField doesn't support sortMissingFirst or sortMissingLast variants -->
-    <fieldtype name="legacy_int" class="solr.IntField" stored="true" indexed="true" />
-
-    <fieldtype name="legacy_sortable_int" class="solr.SortableIntField" stored="true" indexed="true" />
-    <fieldtype name="legacy_sortable_int_last" class="solr.SortableIntField" stored="true" indexed="true" sortMissingLast="true"/>
-    <fieldtype name="legacy_sortable_int_first" class="solr.SortableIntField" stored="true" indexed="true" sortMissingFirst="true"/>
-
-    <!-- LongField doesn't support sortMissingFirst or sortMissingLast variants -->
-    <fieldtype name="legacy_long" class="solr.LongField" stored="true" indexed="true" />
-
-    <fieldtype name="legacy_sortable_long" class="solr.SortableLongField" stored="true" indexed="true" />
-    <fieldtype name="legacy_sortable_long_last" class="solr.SortableLongField" stored="true" indexed="true" sortMissingLast="true"/>
-    <fieldtype name="legacy_sortable_long_first" class="solr.SortableLongField" stored="true" indexed="true" sortMissingFirst="true"/>
-
-    <!-- FloatField doesn't support sortMissingFirst or sortMissingLast variants -->
-    <fieldtype name="legacy_float" class="solr.FloatField" stored="true" indexed="true" />
-
-    <fieldtype name="legacy_sortable_float" class="solr.SortableFloatField" stored="true" indexed="true" />
-    <fieldtype name="legacy_sortable_float_last" class="solr.SortableFloatField" stored="true" indexed="true" sortMissingLast="true"/>
-    <fieldtype name="legacy_sortable_float_first" class="solr.SortableFloatField" stored="true" indexed="true" sortMissingFirst="true"/>
-
-    <!-- DoubleField doesn't support sortMissingFirst or sortMissingLast variants -->
-    <fieldtype name="legacy_double" class="solr.DoubleField" stored="true" indexed="true" />
-
-    <fieldtype name="legacy_sortable_double" class="solr.SortableDoubleField" stored="true" indexed="true" />
-    <fieldtype name="legacy_sortable_double_last" class="solr.SortableDoubleField" stored="true" indexed="true" sortMissingLast="true"/>
-    <fieldtype name="legacy_sortable_double_first" class="solr.SortableDoubleField" stored="true" indexed="true" sortMissingFirst="true"/>
-
-    <fieldtype name="legacy_date" class="solr.DateField" stored="true" indexed="true" />
-    <fieldtype name="legacy_date_last" class="solr.DateField" stored="true" indexed="true" sortMissingLast="true"/>
-    <fieldtype name="legacy_date_first" class="solr.DateField" stored="true" indexed="true" sortMissingFirst="true"/>
   </types>
 
 </schema>

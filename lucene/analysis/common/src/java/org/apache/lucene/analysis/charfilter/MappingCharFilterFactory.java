@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.charfilter;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
@@ -59,21 +58,15 @@ public class MappingCharFilterFactory extends CharFilterFactory implements
     }
   }
 
-  // TODO: this should use inputstreams from the loader, not File!
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     if (mapping != null) {
       List<String> wlist = null;
-      File mappingFile = new File(mapping);
-      if (mappingFile.exists()) {
-        wlist = getLines(loader, mapping);
-      } else {
-        List<String> files = splitFileNames(mapping);
-        wlist = new ArrayList<>();
-        for (String file : files) {
-          List<String> lines = getLines(loader, file.trim());
-          wlist.addAll(lines);
-        }
+      List<String> files = splitFileNames(mapping);
+      wlist = new ArrayList<>();
+      for (String file : files) {
+        List<String> lines = getLines(loader, file.trim());
+        wlist.addAll(lines);
       }
       final NormalizeCharMap.Builder builder = new NormalizeCharMap.Builder();
       parseRules(wlist, builder);

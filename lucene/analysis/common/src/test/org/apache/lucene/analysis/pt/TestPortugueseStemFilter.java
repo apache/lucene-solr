@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.pt;
 import static org.apache.lucene.analysis.VocabularyAssert.assertVocabulary;
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -37,8 +36,8 @@ import org.apache.lucene.analysis.util.CharArraySet;
 public class TestPortugueseStemFilter extends BaseTokenStreamTestCase {
   private Analyzer analyzer = new Analyzer() {
     @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer source = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+    protected TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer source = new MockTokenizer(MockTokenizer.SIMPLE, true);
       return new TokenStreamComponents(source, new PortugueseStemFilter(source));
     }
   };
@@ -63,15 +62,15 @@ public class TestPortugueseStemFilter extends BaseTokenStreamTestCase {
   
   /** Test against a vocabulary from the reference impl */
   public void testVocabulary() throws IOException {
-    assertVocabulary(analyzer, getDataFile("ptrslptestdata.zip"), "ptrslp.txt");
+    assertVocabulary(analyzer, getDataPath("ptrslptestdata.zip"), "ptrslp.txt");
   }
   
   public void testKeyword() throws IOException {
     final CharArraySet exclusionSet = new CharArraySet( asSet("quilométricas"), false);
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer source = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         TokenStream sink = new SetKeywordMarkerFilter(source, exclusionSet);
         return new TokenStreamComponents(source, new PortugueseStemFilter(sink));
       }
@@ -87,8 +86,8 @@ public class TestPortugueseStemFilter extends BaseTokenStreamTestCase {
   public void testEmptyTerm() throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, new PortugueseStemFilter(tokenizer));
       }
     };

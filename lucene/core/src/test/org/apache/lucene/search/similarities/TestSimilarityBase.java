@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -559,9 +558,6 @@ public class TestSimilarityBase extends LuceneTestCase {
   
   /** Test whether all similarities return document 3 before documents 7 and 8. */
   public void testHeartRanking() throws IOException {
-    assumeFalse("PreFlex codec does not support the stats necessary for this test!", 
-        "Lucene3x".equals(Codec.getDefault().getName()));
-
     Query q = new TermQuery(new Term(FIELD_BODY, "heart"));
     
     for (SimilarityBase sim : sims) {

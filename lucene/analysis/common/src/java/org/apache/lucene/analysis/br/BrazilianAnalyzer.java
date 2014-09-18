@@ -34,7 +34,6 @@ import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.Version;
 
 /**
  * {@link Analyzer} for Brazilian Portuguese language. 
@@ -44,7 +43,7 @@ import org.apache.lucene.util.Version;
  * not be stemmed, but indexed).
  * </p>
  *
- * <p><b>NOTE</b>: This class uses the same {@link Version}
+ * <p><b>NOTE</b>: This class uses the same {@link org.apache.lucene.util.Version}
  * dependent settings as {@link StandardAnalyzer}.</p>
  */
 public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
@@ -88,14 +87,6 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
   }
 
   /**
-   * @deprecated Use {@link #BrazilianAnalyzer()}
-   */
-  @Deprecated
-  public BrazilianAnalyzer(Version matchVersion) {
-    this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
-  }
-
-  /**
    * Builds an analyzer with the given stop words
    * 
    * @param stopwords
@@ -103,14 +94,6 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
    */
   public BrazilianAnalyzer(CharArraySet stopwords) {
      super(stopwords);
-  }
-
-  /**
-   * @deprecated Use {@link #BrazilianAnalyzer(CharArraySet)}
-   */
-  @Deprecated
-  public BrazilianAnalyzer(Version matchVersion, CharArraySet stopwords) {
-    super(matchVersion, stopwords);
   }
 
   /**
@@ -125,15 +108,6 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
   }
 
   /**
-   * @deprecated Use {@link #BrazilianAnalyzer(CharArraySet,CharArraySet)}
-   */
-  @Deprecated
-  public BrazilianAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet) {
-    this(matchVersion, stopwords);
-    excltable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stemExclusionSet));
-  }
-
-  /**
    * Creates
    * {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    * used to tokenize all the text in the provided {@link Reader}.
@@ -144,12 +118,11 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
    *         , and {@link BrazilianStemFilter}.
    */
   @Override
-  protected TokenStreamComponents createComponents(String fieldName,
-      Reader reader) {
-    Tokenizer source = new StandardTokenizer(getVersion(), reader);
-    TokenStream result = new LowerCaseFilter(getVersion(), source);
-    result = new StandardFilter(getVersion(), result);
-    result = new StopFilter(getVersion(), result, stopwords);
+  protected TokenStreamComponents createComponents(String fieldName) {
+    Tokenizer source = new StandardTokenizer();
+    TokenStream result = new LowerCaseFilter(source);
+    result = new StandardFilter(result);
+    result = new StopFilter(result, stopwords);
     if(excltable != null && !excltable.isEmpty())
       result = new SetKeywordMarkerFilter(result, excltable);
     return new TokenStreamComponents(source, new BrazilianStemFilter(result));

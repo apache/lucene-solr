@@ -76,7 +76,7 @@ public class TestSimilarity extends LuceneTestCase {
     Term b = new Term("field", "b");
     Term c = new Term("field", "c");
 
-    searcher.search(new TermQuery(b), new Collector() {
+    searcher.search(new TermQuery(b), new SimpleCollector() {
          private Scorer scorer;
          @Override
         public void setScorer(Scorer scorer) {
@@ -86,9 +86,6 @@ public class TestSimilarity extends LuceneTestCase {
         public final void collect(int doc) throws IOException {
            assertEquals(1.0f, scorer.score(), 0);
          }
-         @Override
-        public void setNextReader(AtomicReaderContext context) {}
-         @Override
         public boolean acceptsDocsOutOfOrder() {
            return true;
          }
@@ -98,7 +95,7 @@ public class TestSimilarity extends LuceneTestCase {
     bq.add(new TermQuery(a), BooleanClause.Occur.SHOULD);
     bq.add(new TermQuery(b), BooleanClause.Occur.SHOULD);
     //System.out.println(bq.toString("field"));
-    searcher.search(bq, new Collector() {
+    searcher.search(bq, new SimpleCollector() {
          private int base = 0;
          private Scorer scorer;
          @Override
@@ -111,7 +108,7 @@ public class TestSimilarity extends LuceneTestCase {
            assertEquals((float)doc+base+1, scorer.score(), 0);
          }
          @Override
-        public void setNextReader(AtomicReaderContext context) {
+         protected void doSetNextReader(AtomicReaderContext context) throws IOException {
            base = context.docBase;
          }
          @Override
@@ -125,7 +122,7 @@ public class TestSimilarity extends LuceneTestCase {
     pq.add(c);
     //System.out.println(pq.toString("field"));
     searcher.search(pq,
-       new Collector() {
+       new SimpleCollector() {
          private Scorer scorer;
          @Override
          public void setScorer(Scorer scorer) {
@@ -137,8 +134,6 @@ public class TestSimilarity extends LuceneTestCase {
            assertEquals(1.0f, scorer.score(), 0);
          }
          @Override
-         public void setNextReader(AtomicReaderContext context) {}
-         @Override
          public boolean acceptsDocsOutOfOrder() {
            return true;
          }
@@ -146,7 +141,7 @@ public class TestSimilarity extends LuceneTestCase {
 
     pq.setSlop(2);
     //System.out.println(pq.toString("field"));
-    searcher.search(pq, new Collector() {
+    searcher.search(pq, new SimpleCollector() {
       private Scorer scorer;
       @Override
       public void setScorer(Scorer scorer) {
@@ -157,8 +152,6 @@ public class TestSimilarity extends LuceneTestCase {
         //System.out.println("Doc=" + doc + " score=" + score);
         assertEquals(2.0f, scorer.score(), 0);
       }
-      @Override
-      public void setNextReader(AtomicReaderContext context) {}
       @Override
       public boolean acceptsDocsOutOfOrder() {
         return true;

@@ -109,6 +109,11 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
     }
 
     @Override
+    public String toString() {
+      return "FSTTermOutputs$TermData longs=" + Arrays.toString(longs) + " bytes=" + Arrays.toString(bytes) + " docFreq=" + docFreq + " totalTermFreq=" + totalTermFreq;
+    }
+
+    @Override
     public boolean equals(Object other_) {
       if (other_ == this) {
         return true;
@@ -246,6 +251,7 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
 
   @Override
   public void write(TermData data, DataOutput out) throws IOException {
+    assert hasPos || data.totalTermFreq == -1;
     int bit0 = allZero(data.longs) ? 0 : 1;
     int bit1 = ((data.bytes == null || data.bytes.length == 0) ? 0 : 1) << 1;
     int bit2 = ((data.docFreq == 0)  ? 0 : 1) << 2;

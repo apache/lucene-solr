@@ -20,11 +20,9 @@ package org.apache.lucene.demo.facet;
 import java.util.List;
 
 import org.apache.lucene.facet.FacetResult;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
-@SuppressCodecs("Lucene3x")
 public class TestMultiCategoryListsFacetsExample extends LuceneTestCase {
 
   @Test

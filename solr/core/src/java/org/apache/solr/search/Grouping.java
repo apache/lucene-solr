@@ -342,12 +342,12 @@ public class Grouping {
       }
     }
 
-    Collector allCollectors = MultiCollector.wrap(collectors.toArray(new Collector[collectors.size()]));
     DocSetCollector setCollector = null;
     if (getDocSet && allGroupHeadsCollector == null) {
-      setCollector = new DocSetDelegateCollector(maxDoc >> 6, maxDoc, allCollectors);
-      allCollectors = setCollector;
+      setCollector = new DocSetCollector(maxDoc >> 6, maxDoc);
+      collectors.add(setCollector);
     }
+    Collector allCollectors = MultiCollector.wrap(collectors);
 
     CachingCollector cachedCollector = null;
     if (cacheSecondPassSearch && allCollectors != null) {

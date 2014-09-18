@@ -56,9 +56,9 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
     super.setUp();
     clearIndex();
     assertU(commit());
-    indexDir1 = createTempDir("_testSplit1");
-    indexDir2 = createTempDir("_testSplit2");
-    indexDir3 = createTempDir("_testSplit3");
+    indexDir1 = createTempDir("_testSplit1").toFile();
+    indexDir2 = createTempDir("_testSplit2").toFile();
+    indexDir3 = createTempDir("_testSplit3").toFile();
   }
 
   @Test
@@ -241,7 +241,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSplitByRouteKey() throws Exception  {
-    File indexDir = createTempDir();
+    File indexDir = createTempDir().toFile();
 
     CompositeIdRouter r1 = new CompositeIdRouter();
     String splitKey = "sea-line!";

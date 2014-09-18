@@ -34,7 +34,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-@SuppressCodecs({"SimpleText","Lucene3x"})
+@SuppressCodecs("SimpleText")
 public class TestTaxonomyCombined extends FacetTestCase {
 
   /**  The following categories will be added to the taxonomy by

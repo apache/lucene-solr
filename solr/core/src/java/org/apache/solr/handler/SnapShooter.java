@@ -62,12 +62,16 @@ public class SnapShooter {
     solrCore = core;
     if (location == null) snapDir = core.getDataDir();
     else  {
-      File base = new File(core.getCoreDescriptor().getRawInstanceDir());
+      File base = new File(core.getCoreDescriptor().getInstanceDir());
       snapDir = org.apache.solr.util.FileUtils.resolvePath(base, location).getAbsolutePath();
       File dir = new File(snapDir);
       if (!dir.exists())  dir.mkdirs();
     }
-    lockFactory = new SimpleFSLockFactory(snapDir);
+    try {
+      lockFactory = new SimpleFSLockFactory(new File(snapDir).toPath());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
     this.snapshotName = snapshotName;
 
     if(snapshotName != null) {
@@ -153,9 +157,7 @@ public class SnapShooter {
 
       details.add("fileCount", files.size());
       details.add("status", "success");
-      String date = new Date().toString();
-      details.add("snapshotCompletedAt", date);
-      LOG.info("Done creating backup snapshot, completed at: " + date);
+      details.add("snapshotCompletedAt", new Date().toString());
       details.add("snapshotName", snapshotName);
       LOG.info("Done creating backup snapshot: " + (snapshotName == null ? "<not named>" : snapshotName));
     } catch (Exception e) {
@@ -252,7 +254,7 @@ public class SnapShooter {
         destDir.mkdirs();
       }
       
-      FSDirectory dir = FSDirectory.open(destDir);
+      FSDirectory dir = FSDirectory.open(destDir.toPath());
       try {
         for (String indexFile : files) {
           copyFile(sourceDir, indexFile, new File(destDir, indexFile), dir);

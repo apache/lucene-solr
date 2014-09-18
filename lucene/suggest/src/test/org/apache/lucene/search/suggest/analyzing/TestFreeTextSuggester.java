@@ -17,13 +17,11 @@ package org.apache.lucene.search.suggest.analyzing;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Reader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -48,11 +46,9 @@ import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Ignore;
 
-@SuppressCodecs("Lucene3x")
 public class TestFreeTextSuggester extends LuceneTestCase {
 
   public void testBasic() throws Exception {
@@ -85,16 +81,15 @@ public class TestFreeTextSuggester extends LuceneTestCase {
                    toString(sug.lookup("b", 10)));
 
       // Try again after save/load:
-      File tmpDir = createTempDir("FreeTextSuggesterTest");
-      tmpDir.mkdir();
+      Path tmpDir = createTempDir("FreeTextSuggesterTest");
 
-      File path = new File(tmpDir, "suggester");
+      Path path = tmpDir.resolve("suggester");
 
-      OutputStream os = new FileOutputStream(path);
+      OutputStream os = Files.newOutputStream(path);
       sug.store(os);
       os.close();
 
-      InputStream is = new FileInputStream(path);
+      InputStream is = Files.newInputStream(path);
       sug = new FreeTextSuggester(a, a, 2, (byte) 0x20);
       sug.load(is);
       is.close();
@@ -147,11 +142,6 @@ public class TestFreeTextSuggester extends LuceneTestCase {
         @Override
         public long weight() {
           return 1;
-        }
-
-        @Override
-        public Comparator<BytesRef> getComparator() {
-          return null;
         }
 
         @Override
@@ -250,8 +240,8 @@ public class TestFreeTextSuggester extends LuceneTestCase {
     // Just deletes "of"
     Analyzer a = new Analyzer() {
         @Override
-        public TokenStreamComponents createComponents(String field, Reader reader) {
-          Tokenizer tokenizer = new MockTokenizer(reader);
+        public TokenStreamComponents createComponents(String field) {
+          Tokenizer tokenizer = new MockTokenizer();
           CharArraySet stopSet = StopFilter.makeStopSet("of");
           return new TokenStreamComponents(tokenizer, new StopFilter(tokenizer, stopSet));
         }
@@ -278,8 +268,8 @@ public class TestFreeTextSuggester extends LuceneTestCase {
     // Just deletes "of"
     Analyzer a = new Analyzer() {
         @Override
-        public TokenStreamComponents createComponents(String field, Reader reader) {
-          Tokenizer tokenizer = new MockTokenizer(reader);
+        public TokenStreamComponents createComponents(String field) {
+          Tokenizer tokenizer = new MockTokenizer();
           CharArraySet stopSet = StopFilter.makeStopSet("of");
           return new TokenStreamComponents(tokenizer, new StopFilter(tokenizer, stopSet));
         }
@@ -351,11 +341,6 @@ public class TestFreeTextSuggester extends LuceneTestCase {
     FreeTextSuggester sug = new FreeTextSuggester(a, a, grams, (byte) 0x20);
     sug.build(new InputIterator() {
         int upto;
-
-        @Override
-        public Comparator<BytesRef> getComparator() {
-          return null;
-        }
 
         @Override
         public BytesRef next() {
@@ -444,7 +429,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
       } else {
         trimStart = 0;
       }
-      int trimAt = TestUtil.nextInt(random(), trimStart, tokens[tokens.length-1].length());
+      int trimAt = TestUtil.nextInt(random(), trimStart, tokens[tokens.length - 1].length());
       tokens[tokens.length-1] = tokens[tokens.length-1].substring(0, trimAt);
 
       int num = TestUtil.nextInt(random(), 1, 100);

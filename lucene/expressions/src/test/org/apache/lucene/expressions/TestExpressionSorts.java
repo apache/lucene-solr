@@ -48,13 +48,11 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /**
  * Tests some basic expressions against different queries,
  * and fieldcache/docvalues fields against an equivalent sort.
  */
-@SuppressCodecs("Lucene3x")
 public class TestExpressionSorts extends LuceneTestCase {
   private Directory dir;
   private IndexReader reader;

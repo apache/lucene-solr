@@ -24,7 +24,7 @@
       <tokenizer class="solr.StandardTokenizerFactory" luceneMatchVersion="LUCENE_40"/>
       <filter class="solr.StandardFilterFactory"/>
       <filter class="solr.LowerCaseFilterFactory"/>
-      <filter class="solr.StopFilterFactory" luceneMatchVersion="4.3.0"/>
+      <filter class="solr.StopFilterFactory" luceneMatchVersion="5.0"/>
       <filter class="solr.PorterStemFilterFactory"/>
     </analyzer>
   </fieldtype>

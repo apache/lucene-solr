@@ -15,15 +15,6 @@
  */
 package org.apache.lucene.queries.mlt;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -42,9 +33,19 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.UnicodeUtil;
+
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -588,18 +589,6 @@ public final class MoreLikeThis {
   }
 
   /**
-   * Return a query that will return docs like the passed Reader.
-   *
-   * @return a query that will return docs like the passed Reader.
-   * @deprecated use MoreLikeThis#like(String, Reader...) instead
-   */
-  @Deprecated
-  public Query like(Reader r, String fieldName) throws IOException {
-    return like(fieldName, r);
-  }
-
-
-  /**
    * Return a query that will return docs like the passed Readers.
    * This was added in order to treat multi-value fields.
    *
@@ -737,7 +726,7 @@ public final class MoreLikeThis {
       // field does not store term vector info
       if (vector == null) {
         Document d = ir.document(docNum);
-        IndexableField fields[] = d.getFields(fieldName);
+        IndexableField[] fields = d.getFields(fieldName);
         for (IndexableField field : fields) {
           final String stringValue = field.stringValue();
           if (stringValue != null) {
@@ -795,8 +784,7 @@ public final class MoreLikeThis {
       throw new UnsupportedOperationException("To use MoreLikeThis without " +
           "term vectors, you must provide an Analyzer");
     }
-    TokenStream ts = analyzer.tokenStream(fieldName, r);
-    try {
+    try (TokenStream ts = analyzer.tokenStream(fieldName, r)) {
       int tokenCount = 0;
       // for every token
       CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
@@ -820,8 +808,6 @@ public final class MoreLikeThis {
         }
       }
       ts.end();
-    } finally {
-      IOUtils.closeWhileHandlingException(ts);
     }
   }
 

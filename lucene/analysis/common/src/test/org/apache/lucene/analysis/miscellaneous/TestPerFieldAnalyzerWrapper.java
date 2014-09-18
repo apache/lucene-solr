@@ -15,7 +15,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.SimpleAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Rethrow;
 
 /*
@@ -45,8 +44,7 @@ public class TestPerFieldAnalyzerWrapper extends BaseTokenStreamTestCase {
     PerFieldAnalyzerWrapper analyzer =
               new PerFieldAnalyzerWrapper(new WhitespaceAnalyzer(), analyzerPerField);
 
-    TokenStream tokenStream = analyzer.tokenStream("field", text);
-    try {
+    try (TokenStream tokenStream = analyzer.tokenStream("field", text)) {
       CharTermAttribute termAtt = tokenStream.getAttribute(CharTermAttribute.class);
       tokenStream.reset();
 
@@ -56,12 +54,9 @@ public class TestPerFieldAnalyzerWrapper extends BaseTokenStreamTestCase {
                  termAtt.toString());
       assertFalse(tokenStream.incrementToken());
       tokenStream.end();
-    } finally {
-      IOUtils.closeWhileHandlingException(tokenStream);
     }
 
-    tokenStream = analyzer.tokenStream("special", text);
-    try {
+    try (TokenStream tokenStream = analyzer.tokenStream("special", text)) {
       CharTermAttribute termAtt = tokenStream.getAttribute(CharTermAttribute.class);
       tokenStream.reset();
 
@@ -71,8 +66,6 @@ public class TestPerFieldAnalyzerWrapper extends BaseTokenStreamTestCase {
                  termAtt.toString());
       assertFalse(tokenStream.incrementToken());
       tokenStream.end();
-    } finally {
-      IOUtils.closeWhileHandlingException(tokenStream);
     }
   }
   
@@ -136,8 +129,8 @@ public class TestPerFieldAnalyzerWrapper extends BaseTokenStreamTestCase {
   public void testCharFilters() throws Exception {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        return new TokenStreamComponents(new MockTokenizer(reader));
+      protected TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new MockTokenizer());
       }
 
       @Override

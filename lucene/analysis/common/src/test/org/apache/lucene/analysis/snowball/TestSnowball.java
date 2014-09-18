@@ -18,16 +18,14 @@ package org.apache.lucene.analysis.snowball;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -35,68 +33,21 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Version;
+
 
 public class TestSnowball extends BaseTokenStreamTestCase {
 
   public void testEnglish() throws Exception {
-    Analyzer a = new SnowballAnalyzer(Version.LATEST, "English");
-    assertAnalyzesTo(a, "he abhorred accents",
-        new String[]{"he", "abhor", "accent"});
-  }
-  
-  public void testStopwords() throws Exception {
-    Analyzer a = new SnowballAnalyzer(Version.LATEST, "English",
-        StandardAnalyzer.STOP_WORDS_SET);
-    assertAnalyzesTo(a, "the quick brown fox jumped",
-        new String[]{"quick", "brown", "fox", "jump"});
-  }
-
-  /**
-   * Test english lowercasing. Test both cases (pre-3.1 and post-3.1) to ensure
-   * we lowercase I correct for non-Turkish languages in either case.
-   */
-  public void testEnglishLowerCase() throws Exception {
-    Analyzer a = new SnowballAnalyzer(Version.LATEST, "English");
-    assertAnalyzesTo(a, "cryogenic", new String[] { "cryogen" });
-    assertAnalyzesTo(a, "CRYOGENIC", new String[] { "cryogen" });
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer();
+        return new TokenStreamComponents(tokenizer, new SnowballFilter(tokenizer, "English"));
+      }
+    };
     
-    Analyzer b = new SnowballAnalyzer(Version.LUCENE_3_0, "English");
-    assertAnalyzesTo(b, "cryogenic", new String[] { "cryogen" });
-    assertAnalyzesTo(b, "CRYOGENIC", new String[] { "cryogen" });
-  }
-  
-  /**
-   * Test turkish lowercasing
-   */
-  public void testTurkish() throws Exception {
-    Analyzer a = new SnowballAnalyzer(Version.LATEST, "Turkish");
-
-    assertAnalyzesTo(a, "ağacı", new String[] { "ağaç" });
-    assertAnalyzesTo(a, "AĞACI", new String[] { "ağaç" });
-  }
-  
-  /**
-   * Test turkish lowercasing (old buggy behavior)
-   * @deprecated (3.1) Remove this when support for 3.0 indexes is no longer required (5.0)
-   */
-  @Deprecated
-  public void testTurkishBWComp() throws Exception {
-    Analyzer a = new SnowballAnalyzer(Version.LUCENE_3_0, "Turkish");
-    // AĞACI in turkish lowercases to ağacı, but with lowercase filter ağaci.
-    // this fails due to wrong casing, because the stemmer
-    // will only remove -ı, not -i
-    assertAnalyzesTo(a, "ağacı", new String[] { "ağaç" });
-    assertAnalyzesTo(a, "AĞACI", new String[] { "ağaci" });
-  }
-
-  
-  public void testReusableTokenStream() throws Exception {
-    Analyzer a = new SnowballAnalyzer(Version.LATEST, "English");
     assertAnalyzesTo(a, "he abhorred accents",
         new String[]{"he", "abhor", "accent"});
-    assertAnalyzesTo(a, "she abhorred him",
-        new String[]{"she", "abhor", "him"});
   }
   
   public void testFilterTokens() throws Exception {
@@ -156,8 +107,8 @@ public class TestSnowball extends BaseTokenStreamTestCase {
     for (final String lang : SNOWBALL_LANGS) {
       Analyzer a = new Analyzer() {
         @Override
-        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          Tokenizer tokenizer = new KeywordTokenizer(reader);
+        protected TokenStreamComponents createComponents(String fieldName) {
+          Tokenizer tokenizer = new KeywordTokenizer();
           return new TokenStreamComponents(tokenizer, new SnowballFilter(tokenizer, lang));
         }
       };
@@ -174,8 +125,8 @@ public class TestSnowball extends BaseTokenStreamTestCase {
   public void checkRandomStrings(final String snowballLanguage) throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer t = new MockTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer t = new MockTokenizer();
         return new TokenStreamComponents(t, new SnowballFilter(t, snowballLanguage));
       }  
     };

@@ -380,9 +380,4 @@ public class ShowFileRequestHandler extends RequestHandlerBase
   public String getDescription() {
     return "Admin Config File -- view or update config files directly";
   }
-
-  @Override
-  public String getSource() {
-    return null;
-  }
 }

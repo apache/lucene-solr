@@ -19,11 +19,11 @@ package org.apache.lucene.search.join;
 
 import java.util.Collection;
 
-import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 
-/** Passed to {@link Collector#setScorer} during join collection. */
+/** Passed to {@link LeafCollector#setScorer} during join collection. */
 final class FakeScorer extends Scorer {
   float score;
   int doc = -1;

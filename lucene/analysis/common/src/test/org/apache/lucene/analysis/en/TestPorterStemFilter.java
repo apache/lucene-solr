@@ -38,9 +38,8 @@ import static org.apache.lucene.analysis.VocabularyAssert.*;
 public class TestPorterStemFilter extends BaseTokenStreamTestCase {
   Analyzer a = new Analyzer() {
     @Override
-    protected TokenStreamComponents createComponents(String fieldName,
-        Reader reader) {
-      Tokenizer t = new MockTokenizer(reader, MockTokenizer.KEYWORD, false);
+    protected TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer t = new MockTokenizer( MockTokenizer.KEYWORD, false);
       return new TokenStreamComponents(t, new PorterStemFilter(t));
     }
   };
@@ -50,13 +49,14 @@ public class TestPorterStemFilter extends BaseTokenStreamTestCase {
    * The output should be the same as the string in output.txt
    */
   public void testPorterStemFilter() throws Exception {
-    assertVocabulary(a, getDataFile("porterTestData.zip"), "voc.txt", "output.txt");
+    assertVocabulary(a, getDataPath("porterTestData.zip"), "voc.txt", "output.txt");
   }
   
   public void testWithKeywordAttribute() throws IOException {
     CharArraySet set = new CharArraySet( 1, true);
     set.add("yourselves");
-    Tokenizer tokenizer = new MockTokenizer(new StringReader("yourselves yours"), MockTokenizer.WHITESPACE, false);
+    Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    tokenizer.setReader(new StringReader("yourselves yours"));
     TokenStream filter = new PorterStemFilter(new SetKeywordMarkerFilter(tokenizer, set));   
     assertTokenStreamContents(filter, new String[] {"yourselves", "your"});
   }
@@ -69,8 +69,8 @@ public class TestPorterStemFilter extends BaseTokenStreamTestCase {
   public void testEmptyTerm() throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, new PorterStemFilter(tokenizer));
       }
     };

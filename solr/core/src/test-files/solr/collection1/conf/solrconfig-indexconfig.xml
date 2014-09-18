@@ -24,7 +24,7 @@
   <indexConfig>
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
     <maxIndexingThreads>123</maxIndexingThreads>
-    <infoStream file="${infostream.dir:}/infostream.txt">true</infoStream>
+    <infoStream>true</infoStream>
     <mergePolicy class="org.apache.solr.util.RandomMergePolicy" />
     <checkIntegrityAtMerge>true</checkIntegrityAtMerge>
   </indexConfig>

@@ -49,8 +49,6 @@ public class TestJdbcDataSourceConvertType extends AbstractDataImportHandlerTest
   }
 
   private void convertTypeTest(String convertType, Class resultClass) throws Throwable {
-    assumeTrue("XXX", "US".equals(Locale.getDefault().getCountry()));
-
     JdbcDataSource dataSource = new JdbcDataSource();
     Properties p = new Properties();
     p.put("driver", "org.apache.derby.jdbc.EmbeddedDriver");

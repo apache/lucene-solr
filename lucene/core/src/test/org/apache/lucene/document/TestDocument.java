@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.Fields;
@@ -321,9 +322,11 @@ public class TestDocument extends LuceneTestCase {
   }
   
   // LUCENE-3616
-  public void testInvalidFields() {
+  public void testInvalidFields() throws Exception {
     try {
-      new Field("foo", new MockTokenizer(new StringReader("")), StringField.TYPE_STORED);
+      Tokenizer tok = new MockTokenizer();
+      tok.setReader(new StringReader(""));
+      new Field("foo", tok, StringField.TYPE_STORED);
       fail("did not hit expected exc");
     } catch (IllegalArgumentException iae) {
       // expected

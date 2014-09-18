@@ -214,12 +214,7 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
   public String getDescription() {
     return "Highlighting";
   }
-
-  @Override
-  public String getSource() {
-    return null;
-  }
-
+  
   @Override
   public URL[] getDocs() {
     return null;

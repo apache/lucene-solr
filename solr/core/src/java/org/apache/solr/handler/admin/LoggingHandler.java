@@ -155,9 +155,4 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
   public String getDescription() {
     return "Logging Handler";
   }
-
-  @Override
-  public String getSource() {
-    return null;
-  }
 }

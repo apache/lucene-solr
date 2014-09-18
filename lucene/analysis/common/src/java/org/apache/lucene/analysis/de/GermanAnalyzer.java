@@ -21,7 +21,6 @@ package org.apache.lucene.analysis.de;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
@@ -37,8 +36,6 @@ import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.Version;
-import org.tartarus.snowball.ext.German2Stemmer;
 
 /**
  * {@link Analyzer} for German language. 
@@ -50,36 +47,10 @@ import org.tartarus.snowball.ext.German2Stemmer;
  * exclusion list is empty by default.
  * </p>
  * 
- * <a name="version"/>
- * <p>You may specify the {@link Version}
- * compatibility when creating GermanAnalyzer:
- * <ul>
- *   <li> As of 3.6, GermanLightStemFilter is used for less aggressive stemming.
- *   <li> As of 3.1, Snowball stemming is done with SnowballFilter, and 
- *        Snowball stopwords are used by default.
- * </ul>
- * 
- * <p><b>NOTE</b>: This class uses the same {@link Version}
+ * <p><b>NOTE</b>: This class uses the same {@link org.apache.lucene.util.Version}
  * dependent settings as {@link StandardAnalyzer}.</p>
  */
 public final class GermanAnalyzer extends StopwordAnalyzerBase {
-  
-  /** @deprecated in 3.1, remove in Lucene 5.0 (index bw compat) */
-  @Deprecated
-  private final static String[] GERMAN_STOP_WORDS = {
-    "einer", "eine", "eines", "einem", "einen",
-    "der", "die", "das", "dass", "daß",
-    "du", "er", "sie", "es",
-    "was", "wer", "wie", "wir",
-    "und", "oder", "ohne", "mit",
-    "am", "im", "in", "aus", "auf",
-    "ist", "sein", "war", "wird",
-    "ihr", "ihre", "ihres",
-    "als", "für", "von", "mit",
-    "dich", "dir", "mich", "mir",
-    "mein", "sein", "kein",
-    "durch", "wegen", "wird"
-  };
   
   /** File containing default German stopwords. */
   public final static String DEFAULT_STOPWORD_FILE = "german_stop.txt";
@@ -93,10 +64,6 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
   }
   
   private static class DefaultSetHolder {
-    /** @deprecated in 3.1, remove in Lucene 5.0 (index bw compat) */
-    @Deprecated
-    private static final CharArraySet DEFAULT_SET_30 = CharArraySet.unmodifiableSet(new CharArraySet(
-        Version.LUCENE_CURRENT, Arrays.asList(GERMAN_STOP_WORDS), false));
     private static final CharArraySet DEFAULT_SET;
     static {
       try {
@@ -126,16 +93,6 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
   public GermanAnalyzer() {
     this(DefaultSetHolder.DEFAULT_SET);
   }
-
-  /**
-   * @deprecated {@link #GermanAnalyzer()}
-   */
-  @Deprecated
-  public GermanAnalyzer(Version matchVersion) {
-    this(matchVersion,
-        matchVersion.onOrAfter(Version.LUCENE_3_1) ? DefaultSetHolder.DEFAULT_SET
-            : DefaultSetHolder.DEFAULT_SET_30);
-  }
   
   /**
    * Builds an analyzer with the given stop words 
@@ -145,14 +102,6 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
    */
   public GermanAnalyzer(CharArraySet stopwords) {
     this(stopwords, CharArraySet.EMPTY_SET);
-  }
-
-  /**
-   * @deprecated {@link #GermanAnalyzer(CharArraySet)}
-   */
-  @Deprecated
-  public GermanAnalyzer(Version matchVersion, CharArraySet stopwords) {
-    this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
   }
   
   /**
@@ -169,15 +118,6 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
   }
 
   /**
-   * @deprecated {@link #GermanAnalyzer(CharArraySet,CharArraySet)}
-   */
-  @Deprecated
-  public GermanAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet) {
-    super(matchVersion, stopwords);
-    exclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stemExclusionSet));
-  }
-
-  /**
    * Creates
    * {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    * used to tokenize all the text in the provided {@link Reader}.
@@ -189,21 +129,14 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
    *         provided, {@link GermanNormalizationFilter} and {@link GermanLightStemFilter}
    */
   @Override
-  protected TokenStreamComponents createComponents(String fieldName,
-      Reader reader) {
-    final Tokenizer source = new StandardTokenizer(getVersion(), reader);
-    TokenStream result = new StandardFilter(getVersion(), source);
-    result = new LowerCaseFilter(getVersion(), result);
-    result = new StopFilter(getVersion(), result, stopwords);
+  protected TokenStreamComponents createComponents(String fieldName) {
+    final Tokenizer source = new StandardTokenizer();
+    TokenStream result = new StandardFilter(source);
+    result = new LowerCaseFilter(result);
+    result = new StopFilter(result, stopwords);
     result = new SetKeywordMarkerFilter(result, exclusionSet);
-    if (getVersion().onOrAfter(Version.LUCENE_3_6)) {
-      result = new GermanNormalizationFilter(result);
-      result = new GermanLightStemFilter(result);
-    } else if (getVersion().onOrAfter(Version.LUCENE_3_1)) {
-      result = new SnowballFilter(result, new German2Stemmer());
-    } else {
-      result = new GermanStemFilter(result);
-    }
+    result = new GermanNormalizationFilter(result);
+    result = new GermanLightStemFilter(result);
     return new TokenStreamComponents(source, result);
   }
 }

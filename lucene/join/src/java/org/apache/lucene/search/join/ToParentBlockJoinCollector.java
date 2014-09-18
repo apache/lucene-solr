@@ -74,7 +74,7 @@ import java.util.*;
  *
  * @lucene.experimental
  */
-public class ToParentBlockJoinCollector extends Collector {
+public class ToParentBlockJoinCollector extends SimpleCollector {
 
   private final Sort sort;
 
@@ -140,7 +140,7 @@ public class ToParentBlockJoinCollector extends Collector {
     int[][] docs;
     float[][] scores;
     int[] counts;
-  };
+  }
 
   @Override
   public void collect(int parentDoc) throws IOException {
@@ -269,7 +269,7 @@ public class ToParentBlockJoinCollector extends Collector {
   }
 
   @Override
-  public void setNextReader(AtomicReaderContext context) throws IOException {
+  protected void doSetNextReader(AtomicReaderContext context) throws IOException {
     currentReaderContext = context;
     docBase = context.docBase;
     for (int compIDX = 0; compIDX < comparators.length; compIDX++) {
@@ -421,7 +421,7 @@ public class ToParentBlockJoinCollector extends Collector {
       }
 
       collector.setScorer(fakeScorer);
-      collector.setNextReader(og.readerContext);
+      collector.getLeafCollector(og.readerContext);
       for(int docIDX=0;docIDX<numChildDocs;docIDX++) {
         //System.out.println("docIDX=" + docIDX + " vs " + og.docs[slot].length);
         final int doc = og.docs[slot][docIDX];
@@ -455,8 +455,8 @@ public class ToParentBlockJoinCollector extends Collector {
     }
 
     return new TopGroups<>(new TopGroups<>(sort.getSort(),
-                                                         withinGroupSort == null ? null : withinGroupSort.getSort(),
-                                                         0, totalGroupedHitCount, groups, maxScore),
+                                                       withinGroupSort == null ? null : withinGroupSort.getSort(),
+                                                       0, totalGroupedHitCount, groups, maxScore),
                                   totalHitCount);
   }
 

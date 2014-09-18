@@ -23,6 +23,7 @@
     <fieldType name="tfloat" class="solr.TrieFloatField" precisionStep="8"/>
     <fieldType name="tlong" class="solr.TrieLongField" precisionStep="8"/>
     <fieldType name="tdouble" class="solr.TrieDoubleField" precisionStep="8"/>
+    <fieldType name="tdoubleDV" class="solr.TrieDoubleField" precisionStep="8" docValues="true"/>
 
     <fieldType name="boolean" class="solr.BoolField"/>
 
@@ -50,8 +51,7 @@
                geo="false" distCalculator="cartesian^2" worldBounds="0 0 1000 1000" units="degrees"/>
 
     <fieldType name="bbox" class="solr.BBoxField"
-               geo="true" units="degrees" numberType="_bbox_coord" />
-    <fieldType name="_bbox_coord" class="solr.TrieDoubleField" precisionStep="8" docValues="true" stored="false"/>
+               numberType="tdoubleDV" units="degrees"/>
   </types>
 
 

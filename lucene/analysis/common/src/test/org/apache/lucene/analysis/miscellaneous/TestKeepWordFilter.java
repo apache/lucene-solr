@@ -17,8 +17,6 @@
 
 package org.apache.lucene.analysis.miscellaneous;
 
-import java.io.Reader;
-import java.io.StringReader;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -28,7 +26,6 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.Version;
 
 /** Test {@link KeepWordFilter} */
 public class TestKeepWordFilter extends BaseTokenStreamTestCase {
@@ -42,24 +39,14 @@ public class TestKeepWordFilter extends BaseTokenStreamTestCase {
     String input = "xxx yyy aaa zzz BBB ccc ddd EEE";
     
     // Test Stopwords
-    TokenStream stream = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(input);
     stream = new KeepWordFilter(stream, new CharArraySet( words, true));
     assertTokenStreamContents(stream, new String[] { "aaa", "BBB" }, new int[] { 3, 2 });
        
     // Now force case
-    stream = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
+    stream = whitespaceMockTokenizer(input);
     stream = new KeepWordFilter(stream, new CharArraySet(words, false));
     assertTokenStreamContents(stream, new String[] { "aaa" }, new int[] { 3 });
-    
-    // Test Stopwords
-    stream = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
-    stream = new KeepWordFilter(Version.LUCENE_4_3, false, stream, new CharArraySet(Version.LATEST, words, true));
-    assertTokenStreamContents(stream, new String[] { "aaa", "BBB" }, new int[] { 1, 1 });
-       
-    // Now force case
-    stream = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
-    stream = new KeepWordFilter(Version.LUCENE_4_3, false, stream, new CharArraySet(Version.LATEST,words, false));
-    assertTokenStreamContents(stream, new String[] { "aaa" }, new int[] { 1 });
   }
   
   /** blast some random strings through the analyzer */
@@ -71,8 +58,8 @@ public class TestKeepWordFilter extends BaseTokenStreamTestCase {
     Analyzer a = new Analyzer() {
 
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         TokenStream stream = new KeepWordFilter(tokenizer, new CharArraySet( words, true));
         return new TokenStreamComponents(tokenizer, stream);
       }

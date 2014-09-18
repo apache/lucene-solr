@@ -123,7 +123,7 @@ public class CheckHits {
   /**
    * Just collects document ids into a set.
    */
-  public static class SetCollector extends Collector {
+  public static class SetCollector extends SimpleCollector {
     final Set<Integer> bag;
     public SetCollector(Set<Integer> bag) {
       this.bag = bag;
@@ -136,7 +136,7 @@ public class CheckHits {
       bag.add(Integer.valueOf(doc + base));
     }
     @Override
-    public void setNextReader(AtomicReaderContext context) {
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
       base = context.docBase;
     }
     @Override
@@ -464,7 +464,7 @@ public class CheckHits {
    *
    * @see CheckHits#verifyExplanation
    */
-  public static class ExplanationAsserter extends Collector {
+  public static class ExplanationAsserter extends SimpleCollector {
 
     Query q;
     IndexSearcher s;
@@ -508,7 +508,7 @@ public class CheckHits {
                         exp.isMatch());
     }
     @Override
-    public void setNextReader(AtomicReaderContext context) {
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
       base = context.docBase;
     }
     @Override

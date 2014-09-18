@@ -37,7 +37,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.Version;
 
 /*
   Verify we can read the pre-2.1 file format, do searches
@@ -664,7 +663,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
         }
         // this is a commit
         writer.close();
-        conf = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
+        conf = new IndexWriterConfig(new MockAnalyzer(random()))
           .setIndexDeletionPolicy(policy)
           .setMergePolicy(NoMergePolicy.INSTANCE);
         writer = new IndexWriter(dir, conf);

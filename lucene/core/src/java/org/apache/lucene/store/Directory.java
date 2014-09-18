@@ -46,18 +46,9 @@ public abstract class Directory implements Closeable {
   /**
    * Returns an array of strings, one for each file in the directory.
    * 
-   * @throws NoSuchDirectoryException if the directory is not prepared for any
-   *         write operations (such as {@link #createOutput(String, IOContext)}).
-   * @throws IOException in case of other IO errors
+   * @throws IOException in case of IO error
    */
   public abstract String[] listAll() throws IOException;
-
-  /** Returns true iff a file with the given name exists.
-   *
-   *  @deprecated This method will be removed in 5.0 */
-  @Deprecated
-  public abstract boolean fileExists(String name)
-       throws IOException;
 
   /** Removes an existing file in the directory. */
   public abstract void deleteFile(String name)
@@ -222,5 +213,4 @@ public abstract class Directory implements Closeable {
    * @throws AlreadyClosedException if this Directory is closed
    */
   protected void ensureOpen() throws AlreadyClosedException {}
-
 }

@@ -278,11 +278,6 @@
     <!--
     <unlockOnStartup>false</unlockOnStartup>
       -->
-    
-    <!-- Expert: Controls how often Lucene loads terms into memory
-         Default is 128 and is likely good for most everyone.
-      -->
-    <!-- <termIndexInterval>128</termIndexInterval> -->
 
     <!-- If true, IndexReaders will be opened/reopened from the IndexWriter
          instead of from the Directory. Hosts in a master/slave setup
@@ -464,15 +459,6 @@
     <str name="someArg">Some Value</str>
   </indexReaderFactory >
   -->
-  <!-- By explicitly declaring the Factory, the termIndexDivisor can
-       be specified.
-    -->
-  <!--
-     <indexReaderFactory name="IndexReaderFactory" 
-                         class="solr.StandardIndexReaderFactory">
-       <int name="setTermIndexDivisor">12</int>
-     </indexReaderFactory >
-    -->
 
   <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
        Query section - these settings control query time things like caches
@@ -1142,6 +1128,14 @@
     Enabling this request handler (which is NOT a default part of the admin handler) will allow the Solr UI to edit
     all the config files. This is intended for secure/development use ONLY! Leaving available and publically
     accessible is a security vulnerability and should be done with extreme caution!
+  -->
+  <!--
+  <requestHandler name="/admin/fileedit" class="solr.admin.EditFileRequestHandler" >
+    <lst name="invariants">
+         <str name="hidden">synonyms.txt</str>
+         <str name="hidden">anotherfile.txt</str>
+    </lst>
+  </requestHandler>
   -->
   <!-- ping/healthcheck -->
   <requestHandler name="/admin/ping" class="solr.PingRequestHandler">

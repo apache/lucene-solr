@@ -42,7 +42,7 @@ public class TestSegmentReader extends LuceneTestCase {
     dir = newDirectory();
     DocHelper.setupDoc(testDoc);
     SegmentCommitInfo info = DocHelper.writeDoc(random(), dir, testDoc);
-    reader = new SegmentReader(info, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, IOContext.READ);
+    reader = new SegmentReader(info, IOContext.READ);
   }
   
   @Override

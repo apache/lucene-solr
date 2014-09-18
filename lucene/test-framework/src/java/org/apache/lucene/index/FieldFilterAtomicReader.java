@@ -174,7 +174,7 @@ public final class FieldFilterAtomicReader extends FilterAtomicReader {
 
     @Override
     public Iterator<String> iterator() {
-      return new FilterIterator<String>(super.iterator()) {
+      return new FilterIterator<String, String>(super.iterator()) {
         @Override
         protected boolean predicateFunction(String field) {
           return hasField(field);

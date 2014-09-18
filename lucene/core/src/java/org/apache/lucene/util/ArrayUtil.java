@@ -620,8 +620,7 @@ public final class ArrayUtil {
     }
   }
 
-  @SuppressWarnings("rawtypes")
-  private static final Comparator<?> NATURAL_COMPARATOR = new NaturalComparator();
+  private static final Comparator<?> NATURAL_COMPARATOR = new NaturalComparator<>();
 
   /** Get the natural {@link Comparator} for the provided object class. */
   @SuppressWarnings("unchecked")

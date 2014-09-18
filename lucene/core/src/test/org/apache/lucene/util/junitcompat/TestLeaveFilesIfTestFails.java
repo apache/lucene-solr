@@ -17,15 +17,15 @@ package org.apache.lucene.util.junitcompat;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.JUnitCore;
@@ -39,7 +39,7 @@ public class TestLeaveFilesIfTestFails extends WithNestedTests {
   }
   
   public static class Nested1 extends WithNestedTests.AbstractNestedTest {
-    static File file;
+    static Path file;
     public void testDummy() {
       file = createTempDir("leftover");
       fail();
@@ -50,19 +50,19 @@ public class TestLeaveFilesIfTestFails extends WithNestedTests {
   public void testLeaveFilesIfTestFails() throws IOException {
     Result r = JUnitCore.runClasses(Nested1.class);
     Assert.assertEquals(1, r.getFailureCount());
-    Assert.assertTrue(Nested1.file != null && Nested1.file.exists());
-    Files.delete(Nested1.file.toPath());
+    Assert.assertTrue(Nested1.file != null && Files.exists(Nested1.file));
+    Files.delete(Nested1.file);
   }
   
   public static class Nested2 extends WithNestedTests.AbstractNestedTest {
-    static File file;
-    static File parent;
-    static RandomAccessFile openFile;
+    static Path file;
+    static Path parent;
+    static SeekableByteChannel openFile;
 
     @SuppressWarnings("deprecation")
     public void testDummy() throws Exception {
-      file = new File(createTempDir("leftover"), "child.locked");
-      openFile = new RandomAccessFile(file, "rw");
+      file = createTempDir("leftover").resolve("child.locked");
+      openFile = Files.newByteChannel(file, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
 
       parent = LuceneTestCase.getBaseTempDirForTestClass();
     }

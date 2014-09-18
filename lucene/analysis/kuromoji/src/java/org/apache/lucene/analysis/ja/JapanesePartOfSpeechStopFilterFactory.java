@@ -27,7 +27,6 @@ import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.apache.lucene.util.Version;
 
 /**
  * Factory for {@link org.apache.lucene.analysis.ja.JapanesePartOfSpeechStopFilter}.
@@ -36,26 +35,19 @@ import org.apache.lucene.util.Version;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.JapaneseTokenizerFactory"/&gt;
  *     &lt;filter class="solr.JapanesePartOfSpeechStopFilterFactory"
- *             tags="stopTags.txt" 
- *             enablePositionIncrements="true"/&gt;
+ *             tags="stopTags.txt"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;
  * </pre>
  */
 public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   private final String stopTagFiles;
-  private final boolean enablePositionIncrements;
   private Set<String> stopTags;
 
   /** Creates a new JapanesePartOfSpeechStopFilterFactory */
   public JapanesePartOfSpeechStopFilterFactory(Map<String,String> args) {
     super(args);
     stopTagFiles = get(args, "tags");
-    enablePositionIncrements = getBoolean(args, "enablePositionIncrements", true);
-    if (enablePositionIncrements == false &&
-        (luceneMatchVersion == null || luceneMatchVersion.onOrAfter(Version.LUCENE_4_4_0))) {
-      throw new IllegalArgumentException("enablePositionIncrements=false is not supported anymore as of Lucene 4.4");
-    }
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -78,11 +70,7 @@ public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory im
   public TokenStream create(TokenStream stream) {
     // if stoptags is null, it means the file is empty
     if (stopTags != null) {
-      if (luceneMatchVersion == null) {
-        return new JapanesePartOfSpeechStopFilter(stream, stopTags);
-      }
-      @SuppressWarnings("deprecation")
-      final TokenStream filter = new JapanesePartOfSpeechStopFilter(luceneMatchVersion, enablePositionIncrements, stream, stopTags);
+      final TokenStream filter = new JapanesePartOfSpeechStopFilter(stream, stopTags);
       return filter;
     } else {
       return stream;

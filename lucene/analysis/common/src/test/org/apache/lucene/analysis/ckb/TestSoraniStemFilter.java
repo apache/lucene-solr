@@ -84,8 +84,8 @@ public class TestSoraniStemFilter extends BaseTokenStreamTestCase {
   public void testEmptyTerm() throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, new SoraniStemFilter(tokenizer));
       }
     };
@@ -95,6 +95,6 @@ public class TestSoraniStemFilter extends BaseTokenStreamTestCase {
   /** test against a basic vocabulary file */
   public void testVocabulary() throws Exception {
     // top 8k words or so: freq > 1000
-    assertVocabulary(a, getDataFile("ckbtestdata.zip"), "testdata.txt");
+    assertVocabulary(a, getDataPath("ckbtestdata.zip"), "testdata.txt");
   }
 }

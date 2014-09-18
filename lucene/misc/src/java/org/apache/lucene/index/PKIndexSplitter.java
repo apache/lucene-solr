@@ -29,7 +29,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.Version;
 
 /**
  * Split an index based on a {@link Filter}.
@@ -47,12 +46,12 @@ public class PKIndexSplitter {
    * Split an index based on a {@link Filter}. All documents that match the filter
    * are sent to dir1, remaining ones to dir2.
    */
-  public PKIndexSplitter(Version version, Directory input, Directory dir1, Directory dir2, Filter docsInFirstIndex) {
-    this(input, dir1, dir2, docsInFirstIndex, newDefaultConfig(version), newDefaultConfig(version));
+  public PKIndexSplitter(Directory input, Directory dir1, Directory dir2, Filter docsInFirstIndex) {
+    this(input, dir1, dir2, docsInFirstIndex, newDefaultConfig(), newDefaultConfig());
   }
   
-  private static IndexWriterConfig newDefaultConfig(Version version) {
-    return  new IndexWriterConfig(version, null).setOpenMode(OpenMode.CREATE);
+  private static IndexWriterConfig newDefaultConfig() {
+    return  new IndexWriterConfig(null).setOpenMode(OpenMode.CREATE);
   }
   
   public PKIndexSplitter(Directory input, Directory dir1, 
@@ -70,8 +69,8 @@ public class PKIndexSplitter {
    * and a 'middle' term.  If the middle term is present, it's
    * sent to dir2.
    */
-  public PKIndexSplitter(Version version, Directory input, Directory dir1, Directory dir2, Term midTerm) {
-    this(version, input, dir1, dir2,
+  public PKIndexSplitter(Directory input, Directory dir1, Directory dir2, Term midTerm) {
+    this(input, dir1, dir2,
       new TermRangeFilter(midTerm.field(), null, midTerm.bytes(), true, false));
   }
   
@@ -112,7 +111,7 @@ public class PKIndexSplitter {
       success = true;
     } finally {
       if (success) {
-        IOUtils.close(w);
+        w.close();
       } else {
         IOUtils.closeWhileHandlingException(w);
       }

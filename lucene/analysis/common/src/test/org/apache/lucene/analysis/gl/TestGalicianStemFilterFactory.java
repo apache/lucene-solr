@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 public class TestGalicianStemFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testStemming() throws Exception {
     Reader reader = new StringReader("cariñosa");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("GalicianStem").create(stream);
     assertTokenStreamContents(stream, new String[] { "cariñ" });
   }

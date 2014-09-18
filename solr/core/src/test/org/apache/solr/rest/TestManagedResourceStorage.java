@@ -70,7 +70,7 @@ public class TestManagedResourceStorage extends AbstractZkTestCase {
    */
   @Test
   public void testFileBasedJsonStorage() throws Exception {
-    File instanceDir = createTempDir("json-storage");
+    File instanceDir = createTempDir("json-storage").toFile();
     SolrResourceLoader loader = new SolrResourceLoader(instanceDir.getAbsolutePath());
     try {
       NamedList<String> initArgs = new NamedList<>();

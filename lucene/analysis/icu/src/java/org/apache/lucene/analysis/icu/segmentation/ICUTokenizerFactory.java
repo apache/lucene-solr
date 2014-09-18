@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.icu.segmentation;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
@@ -145,8 +144,8 @@ public class ICUTokenizerFactory extends TokenizerFactory implements ResourceLoa
   }
 
   @Override
-  public ICUTokenizer create(AttributeFactory factory, Reader input) {
+  public ICUTokenizer create(AttributeFactory factory) {
     assert config != null : "inform must be called first!";
-    return new ICUTokenizer(factory, input, config);
+    return new ICUTokenizer(factory, config);
   }
 }

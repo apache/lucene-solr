@@ -17,48 +17,43 @@ package org.apache.lucene.benchmark.utils;
 
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileFilter;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.lucene.util.IOUtils;
 
 
 /**
  * Split the Reuters SGML documents into Simple Text files containing: Title, Date, Dateline, Body
  */
 public class ExtractReuters {
-  private File reutersDir;
-  private File outputDir;
-  private static final String LINE_SEPARATOR = System.getProperty("line.separator");
+  private Path reutersDir;
+  private Path outputDir;
 
-  public ExtractReuters(File reutersDir, File outputDir) throws IOException {
+  public ExtractReuters(Path reutersDir, Path outputDir) throws IOException {
     this.reutersDir = reutersDir;
     this.outputDir = outputDir;
     System.out.println("Deleting all files in " + outputDir);
-    for (File f : outputDir.listFiles()) {
-      Files.delete(f.toPath());
-    }
+    IOUtils.rm(outputDir);
   }
 
-  public void extract() {
-    File[] sgmFiles = reutersDir.listFiles(new FileFilter() {
-      @Override
-      public boolean accept(File file) {
-        return file.getName().endsWith(".sgm");
-      }
-    });
-    if (sgmFiles != null && sgmFiles.length > 0) {
-      for (File sgmFile : sgmFiles) {
+  public void extract() throws IOException {
+    long count = 0;
+    try (DirectoryStream<Path> stream = Files.newDirectoryStream(reutersDir, "*.sgm")) {
+      for (Path sgmFile : stream) {
         extractFile(sgmFile);
+        count++;
       }
-    } else {
+    }
+    if (count == 0) {
       System.err.println("No .sgm files in " + reutersDir);
     }
   }
@@ -74,10 +69,8 @@ public class ExtractReuters {
   /**
    * Override if you wish to change what is extracted
    */
-  protected void extractFile(File sgmFile) {
-    try {
-      BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(sgmFile), StandardCharsets.UTF_8));
-
+  protected void extractFile(Path sgmFile) {
+    try (BufferedReader reader = Files.newBufferedReader(sgmFile, StandardCharsets.UTF_8)) {
       StringBuilder buffer = new StringBuilder(1024);
       StringBuilder outBuffer = new StringBuilder(1024);
 
@@ -101,23 +94,21 @@ public class ExtractReuters {
                 outBuffer.append(matcher.group(i));
               }
             }
-            outBuffer.append(LINE_SEPARATOR).append(LINE_SEPARATOR);
+            outBuffer.append(System.lineSeparator()).append(System.lineSeparator());
           }
           String out = outBuffer.toString();
           for (int i = 0; i < META_CHARS_SERIALIZATIONS.length; i++) {
             out = out.replaceAll(META_CHARS_SERIALIZATIONS[i], META_CHARS[i]);
           }
-          File outFile = new File(outputDir, sgmFile.getName() + "-"
-              + (docNumber++) + ".txt");
+          Path outFile = outputDir.resolve(sgmFile.getFileName() + "-" + (docNumber++) + ".txt");
           // System.out.println("Writing " + outFile);
-          OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(outFile), StandardCharsets.UTF_8);
-          writer.write(out);
-          writer.close();
+          try (BufferedWriter writer = Files.newBufferedWriter(outFile, StandardCharsets.UTF_8)) {
+            writer.write(out);
+          }
           outBuffer.setLength(0);
           buffer.setLength(0);
         }
       }
-      reader.close();
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -128,21 +119,20 @@ public class ExtractReuters {
       usage("Wrong number of arguments ("+args.length+")");
       return;
     }
-    File reutersDir = new File(args[0]);
-    if (!reutersDir.exists()) {
+    Path reutersDir = Paths.get(args[0]);
+    if (!Files.exists(reutersDir)) {
       usage("Cannot find Path to Reuters SGM files ("+reutersDir+")");
       return;
     }
     
     // First, extract to a tmp directory and only if everything succeeds, rename
     // to output directory.
-    File outputDir = new File(args[1]);
-    outputDir = new File(outputDir.getAbsolutePath() + "-tmp");
-    outputDir.mkdirs();
+    Path outputDir = Paths.get(args[1] + "-tmp");
+    Files.createDirectories(outputDir);
     ExtractReuters extractor = new ExtractReuters(reutersDir, outputDir);
     extractor.extract();
     // Now rename to requested output dir
-    outputDir.renameTo(new File(args[1]));
+    Files.move(outputDir, Paths.get(args[1]), StandardCopyOption.ATOMIC_MOVE);
   }
 
   private static void usage(String msg) {

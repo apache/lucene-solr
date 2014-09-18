@@ -71,7 +71,7 @@ public abstract class AbstractSolrMorphlineZkTestBase extends AbstractFullDistri
   public static void setupClass() throws Exception {
     assumeFalse("This test fails on UNIX with Turkish default locale (https://issues.apache.org/jira/browse/SOLR-6387)",
         new Locale("tr").getLanguage().equals(Locale.getDefault().getLanguage()));
-    solrHomeDirectory = createTempDir();
+    solrHomeDirectory = createTempDir().toFile();
     AbstractZkTestCase.SOLRHOME = solrHomeDirectory;
     FileUtils.copyDirectory(SOLR_INSTANCE_DIR, solrHomeDirectory);
   }

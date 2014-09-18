@@ -32,9 +32,7 @@ import org.apache.lucene.queryparser.flexible.standard.CommonQueryParserConfigur
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanQuery.TooManyClauses;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.QueryBuilder;
-import org.apache.lucene.util.Version;
 
 /** This class is overridden by QueryParser in QueryParser.jj
  * and acts to separate the majority of the Java code from the .jj grammar file. 
@@ -90,17 +88,9 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
   }
 
   /** Initializes a query parser.  Called by the QueryParser constructor
-   *  @param matchVersion  Lucene version to match. See <a href="QueryParser.html#version">here</a>.
    *  @param f  the default field for query terms.
    *  @param a   used to find terms in the query text.
    */
-  public void init(Version matchVersion, String f, Analyzer a) {
-    init(f, a);
-    if (matchVersion.onOrAfter(Version.LUCENE_3_1) == false) {
-      setAutoGeneratePhraseQueries(true);
-    }
-  }
-
   public void init(String f, Analyzer a) {
     setAnalyzer(a);
     field = f;
@@ -591,9 +581,7 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
   protected BytesRef analyzeMultitermTerm(String field, String part, Analyzer analyzerIn) {
     if (analyzerIn == null) analyzerIn = getAnalyzer();
 
-    TokenStream source = null;
-    try {
-      source = analyzerIn.tokenStream(field, part);
+    try (TokenStream source = analyzerIn.tokenStream(field, part)) {
       source.reset();
       
       TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
@@ -608,8 +596,6 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
       return BytesRef.deepCopyOf(bytes);
     } catch (IOException e) {
       throw new RuntimeException("Error analyzing multiTerm term: " + part, e);
-    } finally {
-      IOUtils.closeWhileHandlingException(source);
     }
   }
 

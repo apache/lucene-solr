@@ -68,8 +68,8 @@ public class TestDuelingAnalyzers extends BaseTokenStreamTestCase {
     Analyzer left = new MockAnalyzer(random, jvmLetter, false);
     Analyzer right = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new LetterTokenizer(newAttributeFactory(), reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new LetterTokenizer(newAttributeFactory());
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
@@ -88,8 +88,8 @@ public class TestDuelingAnalyzers extends BaseTokenStreamTestCase {
     left.setMaxTokenLength(255); // match CharTokenizer's max token length
     Analyzer right = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new LetterTokenizer(newAttributeFactory(), reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new LetterTokenizer(newAttributeFactory());
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
@@ -106,8 +106,8 @@ public class TestDuelingAnalyzers extends BaseTokenStreamTestCase {
     Analyzer left = new MockAnalyzer(random, jvmLetter, false);
     Analyzer right = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new LetterTokenizer(newAttributeFactory(), reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new LetterTokenizer(newAttributeFactory());
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
@@ -125,8 +125,8 @@ public class TestDuelingAnalyzers extends BaseTokenStreamTestCase {
     left.setMaxTokenLength(255); // match CharTokenizer's max token length
     Analyzer right = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new LetterTokenizer(newAttributeFactory(), reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new LetterTokenizer(newAttributeFactory());
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
@@ -143,8 +143,8 @@ public class TestDuelingAnalyzers extends BaseTokenStreamTestCase {
     Analyzer left = new MockAnalyzer(random(), jvmLetter, false);
     Analyzer right = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new LetterTokenizer(newAttributeFactory(), reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new LetterTokenizer(newAttributeFactory());
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
@@ -162,8 +162,8 @@ public class TestDuelingAnalyzers extends BaseTokenStreamTestCase {
     left.setMaxTokenLength(255); // match CharTokenizer's max token length
     Analyzer right = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new LetterTokenizer(newAttributeFactory(), reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new LetterTokenizer(newAttributeFactory());
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
@@ -202,7 +202,7 @@ public class TestDuelingAnalyzers extends BaseTokenStreamTestCase {
     right.close();
   }
   
-  // TODO: maybe push this out to TestUtil or LuceneTestCase and always use it instead?
+  // TODO: maybe push this out to _TestUtil or LuceneTestCase and always use it instead?
   private static Reader newStringReader(String s) {
     Random random = random();
     Reader r = new StringReader(s);

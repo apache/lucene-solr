@@ -104,7 +104,7 @@ public class TestCompiledAutomaton extends LuceneTestCase {
   }
 
   private String randomString() {
-    // return TestUtil.randomSimpleString(random);
+    // return _TestUtil.randomSimpleString(random);
     return TestUtil.randomRealisticUnicodeString(random());
   }
 

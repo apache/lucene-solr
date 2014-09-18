@@ -30,14 +30,12 @@ import org.apache.solr.schema.CopyField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 
+
 import com.google.common.collect.Sets;
 
 /**
  *
  */
-
-
-// Not thread safe - by design.  Create a new builder for each thread.
 public class DocumentBuilder {
 
   private static void addField(Document doc, SchemaField field, Object val, float boost) {

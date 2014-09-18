@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.util.ByteBlockPool;
@@ -94,8 +93,8 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
 
   /** Collapse the hash table & sort in-place; also sets
    * this.sortedTermIDs to the results */
-  public int[] sortPostings(Comparator<BytesRef> comparator) {
-    sortedTermIDs = bytesHash.sort(comparator);
+  public int[] sortPostings() {
+    sortedTermIDs = bytesHash.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
     return sortedTermIDs;
   }
 

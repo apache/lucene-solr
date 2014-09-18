@@ -33,7 +33,7 @@ public abstract class AbstractClusteringTestCase extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    File testHome = createTempDir();
+    File testHome = createTempDir().toFile();
     FileUtils.copyDirectory(getFile("clustering/solr"), testHome);
     initCore("solrconfig.xml", "schema.xml", testHome.getAbsolutePath());
     numberOfDocs = 0;

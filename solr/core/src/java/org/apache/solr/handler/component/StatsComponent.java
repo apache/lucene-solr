@@ -41,7 +41,6 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.DocValuesStats;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.UnInvertedField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -174,11 +173,6 @@ public class StatsComponent extends SearchComponent {
   @Override
   public String getDescription() {
     return "Calculate Statistics";
-  }
-
-  @Override
-  public String getSource() {
-    return null;
   }
 }
 
@@ -323,7 +317,7 @@ class StatsField {
       // aren't any tagged filters to exclude anyway.
       return docs;
     }
-        
+
     IdentityHashMap<Query,Boolean> excludeSet = new IdentityHashMap<Query,Boolean>();
     for (String excludeTag : excludeTagList) {
       Object olst = tagMap.get(excludeTag);
@@ -373,13 +367,7 @@ class StatsField {
 
     if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
       // TODO: should this also be used for single-valued string fields? (should work fine)
-      if(sf.hasDocValues()) {
-        return DocValuesStats.getCounts(searcher, fieldName, base, calcDistinct, facets);
-      } else {
-        //use UnInvertedField for multivalued fields
-        UnInvertedField uif = UnInvertedField.getUnInvertedField(fieldName, searcher);
-        return uif.getStats(searcher, base, calcDistinct, facets);
-      }
+      return DocValuesStats.getCounts(searcher, fieldName, base, calcDistinct, facets);
     } else {
       return getFieldCacheStats(base);
     }

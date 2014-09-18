@@ -60,8 +60,8 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
     
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer t = new MockTokenizer(new TestRandomChains.CheckThatYouDidntReadAnythingReaderWrapper(reader), MockTokenFilter.ENGLISH_STOPSET, false, -65);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer t = new MockTokenizer(MockTokenFilter.ENGLISH_STOPSET, false, -65);
         TokenFilter f = new CommonGramsFilter(t, cas);
         return new TokenStreamComponents(t, f);
       }
@@ -70,6 +70,7 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
       protected Reader initReader(String fieldName, Reader reader) {
         reader = new MockCharFilter(reader, 0);
         reader = new MappingCharFilter(map, reader);
+        reader = new TestRandomChains.CheckThatYouDidntReadAnythingReaderWrapper(reader);
         return reader;
       }
     };
@@ -248,8 +249,8 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
   public void testUnicodeShinglesAndNgrams() throws Exception {
     Analyzer analyzer = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new EdgeNGramTokenizer(reader, 2, 94);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new EdgeNGramTokenizer(2, 94);
         //TokenStream stream = new SopTokenFilter(tokenizer);
         TokenStream stream = new ShingleFilter(tokenizer, 5);
         //stream = new SopTokenFilter(stream);
@@ -274,8 +275,8 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
     };
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new WikipediaTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new WikipediaTokenizer();
         TokenStream stream = new SopTokenFilter(tokenizer);
         stream = new WordDelimiterFilter(stream, table, -50, protWords);
         stream = new SopTokenFilter(stream);

@@ -25,8 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import junit.framework.Assert;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Document;
@@ -129,6 +127,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
   static Term idTerm = new Term("id","");
   IndexingThread[] threads;
   static Comparator<IndexableField> fieldNameComparator = new Comparator<IndexableField>() {
+    @Override
     public int compare(IndexableField o1, IndexableField o2) {
       return o1.name().compareTo(o2.name());
     }
@@ -179,7 +178,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     }
 
     // w.forceMerge(1);
-    //w.close();    
+    //w.close();
 
     for (int i=0; i<threads.length; i++) {
       IndexingThread th = threads[i];
@@ -227,7 +226,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     }
 
     //w.forceMerge(1);
-    w.close();    
+    w.close();
 
     for (int i=0; i<threads.length; i++) {
       IndexingThread th = threads[i];
@@ -244,7 +243,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
   
   public static void indexSerial(Random random, Map<String,Document> docs, Directory dir) throws IOException {
-    IndexWriter w = new IndexWriter(dir, LuceneTestCase.newIndexWriterConfig(random, Version.LATEST, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+    IndexWriter w = new IndexWriter(dir, LuceneTestCase.newIndexWriterConfig(random, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
 
     // index all docs in a single thread
     Iterator<Document> iter = docs.values().iterator();
@@ -694,7 +693,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     int base;
     int range;
     int iterations;
-    Map<String,Document> docs = new HashMap<>();  
+    Map<String,Document> docs = new HashMap<>();
     Random r;
 
     public int nextInt(int lim) {
@@ -772,7 +771,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       customType1.setTokenized(false);
       customType1.setOmitNorms(true);
       
-      ArrayList<Field> fields = new ArrayList<>();      
+      ArrayList<Field> fields = new ArrayList<>();
       String idString = getIdString();
       Field idField =  newField("id", idString, customType1);
       fields.add(idField);

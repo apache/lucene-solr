@@ -6,8 +6,8 @@ import org.apache.lucene.analysis.standard.ClassicAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -16,7 +16,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -138,7 +137,7 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
 
     // 2.4 should not show the bug. But, alas, it's also obsolete,
     // so we check latest released (Robert's gonna break this on 4.0 soon :) )
-    a2 = new ClassicAnalyzer(Version.LUCENE_3_1);
+    a2 = new ClassicAnalyzer();
     assertAnalyzesTo(a2, "www.nutch.org.", new String[]{ "www.nutch.org" }, new String[] { "<HOST>" });
   }
 
@@ -245,7 +244,7 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
   }
 
   public void testJava14BWCompatibility() throws Exception {
-    ClassicAnalyzer sa = new ClassicAnalyzer(Version.LUCENE_3_0);
+    ClassicAnalyzer sa = new ClassicAnalyzer();
     assertAnalyzesTo(sa, "test\u02C6test", new String[] { "test", "test" });
   }
 
@@ -254,7 +253,7 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
   */
   public void testWickedLongTerm() throws IOException {
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, new ClassicAnalyzer()));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new ClassicAnalyzer()));
 
     char[] chars = new char[IndexWriter.MAX_TERM_LENGTH];
     Arrays.fill(chars, 'x');
@@ -272,7 +271,7 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
     writer.addDocument(doc);
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
 
     // Make sure all terms < max size were indexed
     assertEquals(2, reader.docFreq(new Term("content", "abc")));
@@ -302,10 +301,10 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
     doc.add(new TextField("content", bigTerm, Field.Store.NO));
     ClassicAnalyzer sa = new ClassicAnalyzer();
     sa.setMaxTokenLength(100000);
-    writer  = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, sa));
+    writer  = new IndexWriter(dir, new IndexWriterConfig(sa));
     writer.addDocument(doc);
     writer.close();
-    reader = IndexReader.open(dir);
+    reader = DirectoryReader.open(dir);
     assertEquals(1, reader.docFreq(new Term("content", bigTerm)));
     reader.close();
 

@@ -23,9 +23,9 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.util.Version;
 
 /**
  * Test the Arabic Normalization Filter
@@ -89,7 +89,8 @@ public class TestArabicNormalizationFilter extends BaseTokenStreamTestCase {
   }  
   
   private void check(final String input, final String expected) throws IOException {
-    ArabicLetterTokenizer tokenStream = new ArabicLetterTokenizer(Version.LATEST, new StringReader(input));
+    MockTokenizer tokenStream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    tokenStream.setReader(new StringReader(input));
     ArabicNormalizationFilter filter = new ArabicNormalizationFilter(tokenStream);
     assertTokenStreamContents(filter, new String[]{expected});
   }
@@ -97,8 +98,8 @@ public class TestArabicNormalizationFilter extends BaseTokenStreamTestCase {
   public void testEmptyTerm() throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, new ArabicNormalizationFilter(tokenizer));
       }
     };

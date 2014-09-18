@@ -16,7 +16,6 @@ package org.apache.lucene.search.payloads;
  * limitations under the License.
  */
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
@@ -55,8 +54,8 @@ public class TestPayloadNearQuery extends LuceneTestCase {
 
   private static class PayloadAnalyzer extends Analyzer {
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer result = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+    public TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer result = new MockTokenizer(MockTokenizer.SIMPLE, true);
       return new TokenStreamComponents(result, new PayloadFilter(result, fieldName));
     }
   }

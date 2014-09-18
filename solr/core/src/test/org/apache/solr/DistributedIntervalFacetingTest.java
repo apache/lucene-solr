@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.response.IntervalFacet.Count;
@@ -29,7 +28,6 @@ import org.junit.BeforeClass;
  * limitations under the License.
  */
 @Slow
-@LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40", "Lucene41", "Lucene42", "Lucene43"})
 public class DistributedIntervalFacetingTest extends
     BaseDistributedSearchTestCase {
 

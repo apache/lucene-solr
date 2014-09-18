@@ -32,7 +32,7 @@ public final class RemoveDuplicatesTokenFilter extends TokenFilter {
 
   private final CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
   private final PositionIncrementAttribute posIncAttribute =  addAttribute(PositionIncrementAttribute.class);
-
+  
   private final CharArraySet previous = new CharArraySet(8, false);
 
   /**

@@ -17,8 +17,8 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -37,10 +37,9 @@ import org.apache.lucene.util.TestUtil;
  * Integer.MAX_VALUE in size using multiple byte buffers.
  */
 public class TestMultiMMap extends BaseDirectoryTestCase {
-  File workDir;
 
   @Override
-  protected Directory getDirectory(File path) throws IOException {
+  protected Directory getDirectory(Path path) throws IOException {
     return new MMapDirectory(path, null, 1<<TestUtil.nextInt(random(), 10, 28));
   }
   
@@ -335,7 +334,7 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
   }
   
   private void assertChunking(Random random, int chunkSize) throws Exception {
-    File path = createTempDir("mmap" + chunkSize);
+    Path path = createTempDir("mmap" + chunkSize);
     MMapDirectory mmapDir = new MMapDirectory(path, null, chunkSize);
     // we will map a lot, try to turn on the unmap hack
     if (MMapDirectory.UNMAP_SUPPORTED)
@@ -363,7 +362,6 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
       assertEquals("" + docID, reader.document(docID).get("docid"));
     }
     reader.close();
-    writer.close();
     dir.close();
   }
   

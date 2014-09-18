@@ -17,25 +17,34 @@ package org.apache.lucene.search.grouping;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -48,21 +57,7 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
 public class AllGroupHeadsCollectorTest extends LuceneTestCase {
-
-  private static final DocValuesType[] vts = new DocValuesType[]{
-      DocValuesType.BINARY, DocValuesType.SORTED
-  };
 
   public void testBasic() throws Exception {
     final String groupField = "author";
@@ -71,70 +66,69 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
         random(),
         dir,
         newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
-    boolean canUseIDV = !"Lucene3x".equals(w.w.getConfig().getCodec().getName());
-    DocValuesType valueType = vts[random().nextInt(vts.length)];
+    DocValuesType valueType = DocValuesType.SORTED;
 
     // 0
     Document doc = new Document();
-    addGroupField(doc, groupField, "author1", canUseIDV, valueType);
+    addGroupField(doc, groupField, "author1", valueType);
     doc.add(newTextField("content", "random text", Field.Store.NO));
-    doc.add(newStringField("id_1", "1", Field.Store.NO));
-    doc.add(newStringField("id_2", "1", Field.Store.NO));
+    doc.add(new NumericDocValuesField("id_1", 1));
+    doc.add(new SortedDocValuesField("id_2", new BytesRef("1")));
     w.addDocument(doc);
 
     // 1
     doc = new Document();
-    addGroupField(doc, groupField, "author1", canUseIDV, valueType);
+    addGroupField(doc, groupField, "author1", valueType);
     doc.add(newTextField("content", "some more random text blob", Field.Store.NO));
-    doc.add(newStringField("id_1", "2", Field.Store.NO));
-    doc.add(newStringField("id_2", "2", Field.Store.NO));
+    doc.add(new NumericDocValuesField("id_1", 2));
+    doc.add(new SortedDocValuesField("id_2", new BytesRef("2")));
     w.addDocument(doc);
 
     // 2
     doc = new Document();
-    addGroupField(doc, groupField, "author1", canUseIDV, valueType);
+    addGroupField(doc, groupField, "author1", valueType);
     doc.add(newTextField("content", "some more random textual data", Field.Store.NO));
-    doc.add(newStringField("id_1", "3", Field.Store.NO));
-    doc.add(newStringField("id_2", "3", Field.Store.NO));
+    doc.add(new NumericDocValuesField("id_1", 3));
+    doc.add(new SortedDocValuesField("id_2", new BytesRef("3")));
     w.addDocument(doc);
     w.commit(); // To ensure a second segment
 
     // 3
     doc = new Document();
-    addGroupField(doc, groupField, "author2", canUseIDV, valueType);
+    addGroupField(doc, groupField, "author2", valueType);
     doc.add(newTextField("content", "some random text", Field.Store.NO));
-    doc.add(newStringField("id_1", "4", Field.Store.NO));
-    doc.add(newStringField("id_2", "4", Field.Store.NO));
+    doc.add(new NumericDocValuesField("id_1", 4));
+    doc.add(new SortedDocValuesField("id_2", new BytesRef("4")));
     w.addDocument(doc);
 
     // 4
     doc = new Document();
-    addGroupField(doc, groupField, "author3", canUseIDV, valueType);
+    addGroupField(doc, groupField, "author3", valueType);
     doc.add(newTextField("content", "some more random text", Field.Store.NO));
-    doc.add(newStringField("id_1", "5", Field.Store.NO));
-    doc.add(newStringField("id_2", "5", Field.Store.NO));
+    doc.add(new NumericDocValuesField("id_1", 5));
+    doc.add(new SortedDocValuesField("id_2", new BytesRef("5")));
     w.addDocument(doc);
 
     // 5
     doc = new Document();
-    addGroupField(doc, groupField, "author3", canUseIDV, valueType);
+    addGroupField(doc, groupField, "author3", valueType);
     doc.add(newTextField("content", "random blob", Field.Store.NO));
-    doc.add(newStringField("id_1", "6", Field.Store.NO));
-    doc.add(newStringField("id_2", "6", Field.Store.NO));
+    doc.add(new NumericDocValuesField("id_1", 6));
+    doc.add(new SortedDocValuesField("id_2", new BytesRef("6")));
     w.addDocument(doc);
 
     // 6 -- no author field
     doc = new Document();
     doc.add(newTextField("content", "random word stuck in alot of other text", Field.Store.NO));
-    doc.add(newStringField("id_1", "6", Field.Store.NO));
-    doc.add(newStringField("id_2", "6", Field.Store.NO));
+    doc.add(new NumericDocValuesField("id_1", 6));
+    doc.add(new SortedDocValuesField("id_2", new BytesRef("6")));
     w.addDocument(doc);
 
     // 7 -- no author field
     doc = new Document();
     doc.add(newTextField("content", "random word stuck in alot of other text", Field.Store.NO));
-    doc.add(newStringField("id_1", "7", Field.Store.NO));
-    doc.add(newStringField("id_2", "7", Field.Store.NO));
+    doc.add(new NumericDocValuesField("id_1", 7));
+    doc.add(new SortedDocValuesField("id_2", new BytesRef("7")));
     w.addDocument(doc);
 
     IndexReader reader = w.getReader();
@@ -144,30 +138,30 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     int maxDoc = reader.maxDoc();
 
     Sort sortWithinGroup = new Sort(new SortField("id_1", SortField.Type.INT, true));
-    AbstractAllGroupHeadsCollector<?> allGroupHeadsCollector = createRandomCollector(groupField, sortWithinGroup, canUseIDV, valueType);
+    AbstractAllGroupHeadsCollector<?> allGroupHeadsCollector = createRandomCollector(groupField, sortWithinGroup);
     indexSearcher.search(new TermQuery(new Term("content", "random")), allGroupHeadsCollector);
     assertTrue(arrayContains(new int[]{2, 3, 5, 7}, allGroupHeadsCollector.retrieveGroupHeads()));
     assertTrue(openBitSetContains(new int[]{2, 3, 5, 7}, allGroupHeadsCollector.retrieveGroupHeads(maxDoc), maxDoc));
 
-    allGroupHeadsCollector = createRandomCollector(groupField, sortWithinGroup, canUseIDV, valueType);
+    allGroupHeadsCollector = createRandomCollector(groupField, sortWithinGroup);
     indexSearcher.search(new TermQuery(new Term("content", "some")), allGroupHeadsCollector);
     assertTrue(arrayContains(new int[]{2, 3, 4}, allGroupHeadsCollector.retrieveGroupHeads()));
     assertTrue(openBitSetContains(new int[]{2, 3, 4}, allGroupHeadsCollector.retrieveGroupHeads(maxDoc), maxDoc));
 
-    allGroupHeadsCollector = createRandomCollector(groupField, sortWithinGroup, canUseIDV, valueType);
+    allGroupHeadsCollector = createRandomCollector(groupField, sortWithinGroup);
     indexSearcher.search(new TermQuery(new Term("content", "blob")), allGroupHeadsCollector);
     assertTrue(arrayContains(new int[]{1, 5}, allGroupHeadsCollector.retrieveGroupHeads()));
     assertTrue(openBitSetContains(new int[]{1, 5}, allGroupHeadsCollector.retrieveGroupHeads(maxDoc), maxDoc));
 
     // STRING sort type triggers different implementation
     Sort sortWithinGroup2 = new Sort(new SortField("id_2", SortField.Type.STRING, true));
-    allGroupHeadsCollector = createRandomCollector(groupField, sortWithinGroup2, canUseIDV, valueType);
+    allGroupHeadsCollector = createRandomCollector(groupField, sortWithinGroup2);
     indexSearcher.search(new TermQuery(new Term("content", "random")), allGroupHeadsCollector);
     assertTrue(arrayContains(new int[]{2, 3, 5, 7}, allGroupHeadsCollector.retrieveGroupHeads()));
     assertTrue(openBitSetContains(new int[]{2, 3, 5, 7}, allGroupHeadsCollector.retrieveGroupHeads(maxDoc), maxDoc));
 
     Sort sortWithinGroup3 = new Sort(new SortField("id_2", SortField.Type.STRING, false));
-    allGroupHeadsCollector = createRandomCollector(groupField, sortWithinGroup3, canUseIDV, valueType);
+    allGroupHeadsCollector = createRandomCollector(groupField, sortWithinGroup3);
     indexSearcher.search(new TermQuery(new Term("content", "random")), allGroupHeadsCollector);
     // 7 b/c higher doc id wins, even if order of field is in not in reverse.
     assertTrue(arrayContains(new int[]{0, 3, 4, 6}, allGroupHeadsCollector.retrieveGroupHeads()));
@@ -198,6 +192,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
           // B/c of DV based impl we can't see the difference between an empty string and a null value.
           // For that reason we don't generate empty string groups.
           randomValue = TestUtil.randomRealisticUnicodeString(random());
+          //randomValue = TestUtil.randomSimpleString(random());
         } while ("".equals(randomValue));
         groups.add(new BytesRef(randomValue));
       }
@@ -223,35 +218,20 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
           random(),
           dir,
           newIndexWriterConfig(new MockAnalyzer(random())));
-      boolean preFlex = "Lucene3x".equals(w.w.getConfig().getCodec().getName());
-      boolean canUseIDV = !preFlex;
-      DocValuesType valueType = vts[random().nextInt(vts.length)];
+      DocValuesType valueType = DocValuesType.SORTED;
 
       Document doc = new Document();
       Document docNoGroup = new Document();
-      Field group = newStringField("group", "", Field.Store.NO);
-      doc.add(group);
       Field valuesField = null;
-      if (canUseIDV) {
-        switch(valueType) {
-        case BINARY:
-          valuesField = new BinaryDocValuesField("group_dv", new BytesRef());
-          break;
-        case SORTED:
-          valuesField = new SortedDocValuesField("group_dv", new BytesRef());
-          break;
-        default:
-          fail("unhandled type");
-        }
-        doc.add(valuesField);
-      }
-      Field sort1 = newStringField("sort1", "", Field.Store.NO);
+      valuesField = new SortedDocValuesField("group", new BytesRef());
+      doc.add(valuesField);
+      Field sort1 = new SortedDocValuesField("sort1", new BytesRef());
       doc.add(sort1);
       docNoGroup.add(sort1);
-      Field sort2 = newStringField("sort2", "", Field.Store.NO);
+      Field sort2 = new SortedDocValuesField("sort2", new BytesRef());
       doc.add(sort2);
       docNoGroup.add(sort2);
-      Field sort3 = newStringField("sort3", "", Field.Store.NO);
+      Field sort3 = new SortedDocValuesField("sort3", new BytesRef());
       doc.add(sort3);
       docNoGroup.add(sort3);
       Field content = newTextField("content", "", Field.Store.NO);
@@ -260,6 +240,9 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
       IntField id = new IntField("id", 0, Field.Store.NO);
       doc.add(id);
       docNoGroup.add(id);
+      NumericDocValuesField idDV = new NumericDocValuesField("id", 0);
+      doc.add(idDV);
+      docNoGroup.add(idDV);
       final GroupDoc[] groupDocs = new GroupDoc[numDocs];
       for (int i = 0; i < numDocs; i++) {
         final BytesRef groupValue;
@@ -286,16 +269,14 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
 
         groupDocs[i] = groupDoc;
         if (groupDoc.group != null) {
-          group.setStringValue(groupDoc.group.utf8ToString());
-          if (canUseIDV) {
-            valuesField.setBytesValue(new BytesRef(groupDoc.group.utf8ToString()));
-          }
+          valuesField.setBytesValue(new BytesRef(groupDoc.group.utf8ToString()));
         }
-        sort1.setStringValue(groupDoc.sort1.utf8ToString());
-        sort2.setStringValue(groupDoc.sort2.utf8ToString());
-        sort3.setStringValue(groupDoc.sort3.utf8ToString());
+        sort1.setBytesValue(groupDoc.sort1);
+        sort2.setBytesValue(groupDoc.sort2);
+        sort3.setBytesValue(groupDoc.sort3);
         content.setStringValue(groupDoc.content);
         id.setIntValue(groupDoc.id);
+        idDV.setLongValue(groupDoc.id);
         if (groupDoc.group == null) {
           w.addDocument(docNoGroup);
         } else {
@@ -306,96 +287,86 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
       final DirectoryReader r = w.getReader();
       w.close();
 
-      // NOTE: intentional but temporary field cache insanity!
-      final FieldCache.Ints docIdToFieldId = FieldCache.DEFAULT.getInts(SlowCompositeReaderWrapper.wrap(r), "id", false);
+      final NumericDocValues docIdToFieldId = MultiDocValues.getNumericValues(r, "id");
       final int[] fieldIdToDocID = new int[numDocs];
       for (int i = 0; i < numDocs; i++) {
-        int fieldId = docIdToFieldId.get(i);
+        int fieldId = (int) docIdToFieldId.get(i);
         fieldIdToDocID[fieldId] = i;
       }
 
-      try {
-        final IndexSearcher s = newSearcher(r);
-        if (SlowCompositeReaderWrapper.class.isAssignableFrom(s.getIndexReader().getClass())) {
-          canUseIDV = false;
-        } else {
-          canUseIDV = !preFlex;
+      final IndexSearcher s = newSearcher(r);
+      
+      for (int contentID = 0; contentID < 3; contentID++) {
+        final ScoreDoc[] hits = s.search(new TermQuery(new Term("content", "real" + contentID)), numDocs).scoreDocs;
+        for (ScoreDoc hit : hits) {
+          final GroupDoc gd = groupDocs[(int) docIdToFieldId.get(hit.doc)];
+          assertTrue(gd.score == 0.0);
+          gd.score = hit.score;
+          int docId = gd.id;
+          assertEquals(docId, docIdToFieldId.get(hit.doc));
         }
-
-        for (int contentID = 0; contentID < 3; contentID++) {
-          final ScoreDoc[] hits = s.search(new TermQuery(new Term("content", "real" + contentID)), numDocs).scoreDocs;
-          for (ScoreDoc hit : hits) {
-            final GroupDoc gd = groupDocs[docIdToFieldId.get(hit.doc)];
-            assertTrue(gd.score == 0.0);
-            gd.score = hit.score;
-            int docId = gd.id;
-            assertEquals(docId, docIdToFieldId.get(hit.doc));
-          }
-        }
-
-        for (GroupDoc gd : groupDocs) {
-          assertTrue(gd.score != 0.0);
-        }
-
-        for (int searchIter = 0; searchIter < 100; searchIter++) {
-
-          if (VERBOSE) {
-            System.out.println("TEST: searchIter=" + searchIter);
-          }
-
-          final String searchTerm = "real" + random().nextInt(3);
-          boolean sortByScoreOnly = random().nextBoolean();
-          Sort sortWithinGroup = getRandomSort(sortByScoreOnly);
-          AbstractAllGroupHeadsCollector<?> allGroupHeadsCollector = createRandomCollector("group", sortWithinGroup, canUseIDV, valueType);
-          s.search(new TermQuery(new Term("content", searchTerm)), allGroupHeadsCollector);
-          int[] expectedGroupHeads = createExpectedGroupHeads(searchTerm, groupDocs, sortWithinGroup, sortByScoreOnly, fieldIdToDocID);
-          int[] actualGroupHeads = allGroupHeadsCollector.retrieveGroupHeads();
-          // The actual group heads contains Lucene ids. Need to change them into our id value.
-          for (int i = 0; i < actualGroupHeads.length; i++) {
-            actualGroupHeads[i] = docIdToFieldId.get(actualGroupHeads[i]);
-          }
-          // Allows us the easily iterate and assert the actual and expected results.
-          Arrays.sort(expectedGroupHeads);
-          Arrays.sort(actualGroupHeads);
-
-          if (VERBOSE) {
-            System.out.println("Collector: " + allGroupHeadsCollector.getClass().getSimpleName());
-            System.out.println("Sort within group: " + sortWithinGroup);
-            System.out.println("Num group: " + numGroups);
-            System.out.println("Num doc: " + numDocs);
-            System.out.println("\n=== Expected: \n");
-            for (int expectedDocId : expectedGroupHeads) {
-              GroupDoc expectedGroupDoc = groupDocs[expectedDocId];
-              String expectedGroup = expectedGroupDoc.group == null ? null : expectedGroupDoc.group.utf8ToString();
-              System.out.println(
-                  String.format(Locale.ROOT,
-                      "Group:%10s score%5f Sort1:%10s Sort2:%10s Sort3:%10s doc:%5d",
-                      expectedGroup, expectedGroupDoc.score, expectedGroupDoc.sort1.utf8ToString(),
-                      expectedGroupDoc.sort2.utf8ToString(), expectedGroupDoc.sort3.utf8ToString(), expectedDocId
-                  )
-              );
-            }
-            System.out.println("\n=== Actual: \n");
-            for (int actualDocId : actualGroupHeads) {
-              GroupDoc actualGroupDoc = groupDocs[actualDocId];
-              String actualGroup = actualGroupDoc.group == null ? null : actualGroupDoc.group.utf8ToString();
-              System.out.println(
-                  String.format(Locale.ROOT,
-                      "Group:%10s score%5f Sort1:%10s Sort2:%10s Sort3:%10s doc:%5d",
-                      actualGroup, actualGroupDoc.score, actualGroupDoc.sort1.utf8ToString(),
-                      actualGroupDoc.sort2.utf8ToString(), actualGroupDoc.sort3.utf8ToString(), actualDocId
-                  )
-              );
-            }
-            System.out.println("\n===================================================================================");
-          }
-
-          assertArrayEquals(expectedGroupHeads, actualGroupHeads);
-        }
-      } finally {
-        QueryUtils.purgeFieldCache(r);
       }
-
+      
+      for (GroupDoc gd : groupDocs) {
+        assertTrue(gd.score != 0.0);
+      }
+      
+      for (int searchIter = 0; searchIter < 100; searchIter++) {
+        
+        if (VERBOSE) {
+          System.out.println("TEST: searchIter=" + searchIter);
+        }
+        
+        final String searchTerm = "real" + random().nextInt(3);
+        boolean sortByScoreOnly = random().nextBoolean();
+        Sort sortWithinGroup = getRandomSort(sortByScoreOnly);
+        AbstractAllGroupHeadsCollector<?> allGroupHeadsCollector = createRandomCollector("group", sortWithinGroup);
+        s.search(new TermQuery(new Term("content", searchTerm)), allGroupHeadsCollector);
+        int[] expectedGroupHeads = createExpectedGroupHeads(searchTerm, groupDocs, sortWithinGroup, sortByScoreOnly, fieldIdToDocID);
+        int[] actualGroupHeads = allGroupHeadsCollector.retrieveGroupHeads();
+        // The actual group heads contains Lucene ids. Need to change them into our id value.
+        for (int i = 0; i < actualGroupHeads.length; i++) {
+          actualGroupHeads[i] = (int) docIdToFieldId.get(actualGroupHeads[i]);
+        }
+        // Allows us the easily iterate and assert the actual and expected results.
+        Arrays.sort(expectedGroupHeads);
+        Arrays.sort(actualGroupHeads);
+        
+        if (VERBOSE) {
+          System.out.println("Collector: " + allGroupHeadsCollector.getClass().getSimpleName());
+          System.out.println("Sort within group: " + sortWithinGroup);
+          System.out.println("Num group: " + numGroups);
+          System.out.println("Num doc: " + numDocs);
+          System.out.println("\n=== Expected: \n");
+          for (int expectedDocId : expectedGroupHeads) {
+            GroupDoc expectedGroupDoc = groupDocs[expectedDocId];
+            String expectedGroup = expectedGroupDoc.group == null ? null : expectedGroupDoc.group.utf8ToString();
+            System.out.println(
+                String.format(Locale.ROOT,
+                    "Group:%10s score%5f Sort1:%10s Sort2:%10s Sort3:%10s doc:%5d",
+                    expectedGroup, expectedGroupDoc.score, expectedGroupDoc.sort1.utf8ToString(),
+                    expectedGroupDoc.sort2.utf8ToString(), expectedGroupDoc.sort3.utf8ToString(), expectedDocId
+                    )
+                );
+          }
+          System.out.println("\n=== Actual: \n");
+          for (int actualDocId : actualGroupHeads) {
+            GroupDoc actualGroupDoc = groupDocs[actualDocId];
+            String actualGroup = actualGroupDoc.group == null ? null : actualGroupDoc.group.utf8ToString();
+            System.out.println(
+                String.format(Locale.ROOT,
+                    "Group:%10s score%5f Sort1:%10s Sort2:%10s Sort3:%10s doc:%5d",
+                    actualGroup, actualGroupDoc.score, actualGroupDoc.sort1.utf8ToString(),
+                    actualGroupDoc.sort2.utf8ToString(), actualGroupDoc.sort3.utf8ToString(), actualDocId
+                    )
+                );
+          }
+          System.out.println("\n===================================================================================");
+        }
+        
+        assertArrayEquals(expectedGroupHeads, actualGroupHeads);
+      }
+      
       r.close();
       dir.close();
     }
@@ -535,7 +506,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
   }
 
   @SuppressWarnings({"unchecked","rawtypes"})
-  private AbstractAllGroupHeadsCollector<?> createRandomCollector(String groupField, Sort sortWithinGroup, boolean canUseIDV, DocValuesType valueType) {
+  private AbstractAllGroupHeadsCollector<?> createRandomCollector(String groupField, Sort sortWithinGroup) {
     AbstractAllGroupHeadsCollector<? extends AbstractAllGroupHeadsCollector.GroupHead> collector;
     if (random().nextBoolean()) {
       ValueSource vs = new BytesRefFieldSource(groupField);
@@ -551,22 +522,19 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     return collector;
   }
 
-  private void addGroupField(Document doc, String groupField, String value, boolean canUseIDV, DocValuesType valueType) {
-    doc.add(new TextField(groupField, value, Field.Store.YES));
-    if (canUseIDV) {
-      Field valuesField = null;
-      switch(valueType) {
+  private void addGroupField(Document doc, String groupField, String value, DocValuesType valueType) {
+    Field valuesField = null;
+    switch(valueType) {
       case BINARY:
-        valuesField = new BinaryDocValuesField(groupField + "_dv", new BytesRef(value));
+        valuesField = new BinaryDocValuesField(groupField, new BytesRef(value));
         break;
       case SORTED:
-        valuesField = new SortedDocValuesField(groupField + "_dv", new BytesRef(value));
+        valuesField = new SortedDocValuesField(groupField, new BytesRef(value));
         break;
       default:
         fail("unhandled type");
-      }
-      doc.add(valuesField);
     }
+    doc.add(valuesField);
   }
 
   private static class GroupDoc {

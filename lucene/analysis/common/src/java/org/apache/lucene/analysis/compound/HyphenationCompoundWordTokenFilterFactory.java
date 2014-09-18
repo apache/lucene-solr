@@ -34,7 +34,7 @@ import org.apache.lucene.util.Version;
 import org.xml.sax.InputSource;
 
 /**
- * Factory for {@link HyphenationCompoundWordTokenFilter}.
+ * Factory for {@link Lucene43HyphenationCompoundWordTokenFilter}.
  * <p>
  * This factory accepts the following parameters:
  * <ul>
@@ -58,7 +58,7 @@ import org.xml.sax.InputSource;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  *
- * @see HyphenationCompoundWordTokenFilter
+ * @see Lucene43HyphenationCompoundWordTokenFilter
  */
 public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   private CharArraySet dictionary;
@@ -78,9 +78,9 @@ public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactor
     dictFile = get(args, "dictionary");
     encoding = get(args, "encoding");
     hypFile = require(args, "hyphenator");
-    minWordSize = getInt(args, "minWordSize", CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE);
-    minSubwordSize = getInt(args, "minSubwordSize", CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE);
-    maxSubwordSize = getInt(args, "maxSubwordSize", CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE);
+    minWordSize = getInt(args, "minWordSize", Lucene43CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE);
+    minSubwordSize = getInt(args, "minSubwordSize", Lucene43CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE);
+    maxSubwordSize = getInt(args, "maxSubwordSize", Lucene43CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE);
     onlyLongestMatch = getBoolean(args, "onlyLongestMatch", false);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
@@ -115,6 +115,5 @@ public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactor
       return new HyphenationCompoundWordTokenFilter(input, hyphenator, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);
     }
     return new Lucene43HyphenationCompoundWordTokenFilter(input, hyphenator, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);
-
   }
 }

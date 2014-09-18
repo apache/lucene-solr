@@ -32,20 +32,16 @@ import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.apache.lucene.util.Version;
 
 /**
  * 
  * Tests DocValues integration into IndexWriter
  * 
  */
-@SuppressCodecs("Lucene3x")
 public class TestDocValuesIndexing extends LuceneTestCase {
   /*
    * - add test for multi segment case with deletes
@@ -112,7 +108,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
     DirectoryReader r = w.getReader();
     w.close();
-    assertEquals(17, FieldCache.DEFAULT.getInts(getOnlySegmentReader(r), "field", false).get(0));
+    assertEquals(17, DocValues.getNumeric(getOnlySegmentReader(r), "field").get(0));
     r.close();
     d.close();
   }
@@ -136,7 +132,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
     DirectoryReader r = w.getReader();
     w.close();
-    assertEquals(17, FieldCache.DEFAULT.getInts(getOnlySegmentReader(r), "field", false).get(0));
+    assertEquals(17, DocValues.getNumeric(getOnlySegmentReader(r), "field").get(0));
     r.close();
     d.close();
   }
@@ -167,7 +163,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   // LUCENE-3870
   public void testLengthPrefixAcrossTwoPages() throws Exception {
     Directory d = newDirectory();
-    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())));
+    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random())));
     Document doc = new Document();
     byte[] bytes = new byte[32764];
     BytesRef b = new BytesRef();
@@ -179,7 +175,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     w.addDocument(doc);
     w.forceMerge(1);
     DirectoryReader r = w.getReader();
-    BinaryDocValues s = FieldCache.DEFAULT.getTerms(getOnlySegmentReader(r), "field", false);
+    BinaryDocValues s = DocValues.getSorted(getOnlySegmentReader(r), "field");
 
     BytesRef bytes1 = s.get(0);
     assertEquals(bytes.length, bytes1.length);
@@ -382,7 +378,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   }
   
   public void testTooLargeTermSortedSetBytes() throws IOException {
-    assumeTrue("codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();
@@ -792,7 +787,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     AtomicReader subR = r.leaves().get(0).reader();
     assertEquals(2, subR.numDocs());
 
-    Bits bits = FieldCache.DEFAULT.getDocsWithField(subR, "dv");
+    Bits bits = DocValues.getDocsWithField(subR, "dv");
     assertTrue(bits.get(0));
     assertTrue(bits.get(1));
     r.close();

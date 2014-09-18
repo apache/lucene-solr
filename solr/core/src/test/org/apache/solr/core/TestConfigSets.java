@@ -41,7 +41,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
   public static String solrxml = "<solr><str name=\"configSetBaseDir\">${configsets:configsets}</str></solr>";
 
   public CoreContainer setupContainer(String configSetsBaseDir) {
-    File testDirectory = createTempDir();
+    File testDirectory = createTempDir().toFile();
 
     System.setProperty("configsets", configSetsBaseDir);
 

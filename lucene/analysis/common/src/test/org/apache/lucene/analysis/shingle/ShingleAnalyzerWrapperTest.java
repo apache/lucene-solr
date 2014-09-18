@@ -38,10 +38,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.Version;
-
-import java.io.Reader;
 
 /**
  * A test class for ShingleAnalyzerWrapper as regards queries and scoring.
@@ -62,7 +58,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
     super.setUp();
     analyzer = new ShingleAnalyzerWrapper(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false), 2);
     directory = newDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(Version.LATEST, analyzer));
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(analyzer));
 
     Document doc;
     doc = new Document();
@@ -103,8 +99,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
   public void testShingleAnalyzerWrapperPhraseQuery() throws Exception {
     PhraseQuery q = new PhraseQuery();
 
-    TokenStream ts = analyzer.tokenStream("content", "this sentence");
-    try {
+    try (TokenStream ts = analyzer.tokenStream("content", "this sentence")) {
       int j = -1;
     
       PositionIncrementAttribute posIncrAtt = ts.addAttribute(PositionIncrementAttribute.class);
@@ -117,8 +112,6 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
         q.add(new Term("content", termText), j);
       }
       ts.end();
-    } finally {
-      IOUtils.closeWhileHandlingException(ts);
     }
 
     ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
@@ -134,8 +127,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
   public void testShingleAnalyzerWrapperBooleanQuery() throws Exception {
     BooleanQuery q = new BooleanQuery();
 
-    TokenStream ts = analyzer.tokenStream("content", "test sentence");
-    try {
+    try (TokenStream ts = analyzer.tokenStream("content", "test sentence")) {
       CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
     
       ts.reset();
@@ -145,8 +137,6 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
             BooleanClause.Occur.SHOULD);
       }
       ts.end();
-    } finally {
-      IOUtils.closeWhileHandlingException(ts);
     }
 
     ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
@@ -318,9 +308,9 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
   public void testAltFillerToken() throws Exception {
     Analyzer delegate = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      protected TokenStreamComponents createComponents(String fieldName) {
         CharArraySet stopSet = StopFilter.makeStopSet("into");
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         TokenFilter filter = new StopFilter(tokenizer, stopSet);
         return new TokenStreamComponents(tokenizer, filter);
       }

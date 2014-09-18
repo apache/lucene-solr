@@ -31,12 +31,6 @@ import java.io.IOException;
  */
 public abstract class IndexOutput extends DataOutput implements Closeable {
 
-  /** Forces any buffered output to be written. 
-   * @deprecated Lucene never calls this method.
-   */
-  @Deprecated
-  public abstract void flush() throws IOException;
-
   /** Closes this stream to further operations. */
   @Override
   public abstract void close() throws IOException;
@@ -48,15 +42,4 @@ public abstract class IndexOutput extends DataOutput implements Closeable {
 
   /** Returns the current checksum of bytes written so far */
   public abstract long getChecksum() throws IOException;
-
-  /** The number of bytes in the file.
-   * 
-   * @deprecated Use {@link #getFilePointer} instead; this
-   * method will be removed in Lucene5.0.
-   */
-  @Deprecated
-  public long length() throws IOException {
-    return getFilePointer();
-  }
-
 }

@@ -24,7 +24,6 @@ import java.util.Set;
 
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
-import org.apache.lucene.search.suggest.UnsortedInputIterator;
 import org.apache.lucene.search.suggest.jaspell.JaspellTernarySearchTrie.TSTNode;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
@@ -57,16 +56,11 @@ public class JaspellLookup extends Lookup implements Accountable {
   public JaspellLookup() {}
 
   @Override
-  public void build(InputIterator tfit) throws IOException {
-    if (tfit.hasPayloads()) {
+  public void build(InputIterator iterator) throws IOException {
+    if (iterator.hasPayloads()) {
       throw new IllegalArgumentException("this suggester doesn't support payloads");
     }
-    if (tfit.getComparator() != null) {
-      // make sure it's unsorted
-      // WTF - this could result in yet another sorted iteration....
-      tfit = new UnsortedInputIterator(tfit);
-    }
-    if (tfit.hasContexts()) {
+    if (iterator.hasContexts()) {
       throw new IllegalArgumentException("this suggester doesn't support contexts");
     }
     count = 0;
@@ -75,13 +69,14 @@ public class JaspellLookup extends Lookup implements Accountable {
     BytesRef spare;
     final CharsRefBuilder charsSpare = new CharsRefBuilder();
 
-    while ((spare = tfit.next()) != null) {
-      final long weight = tfit.weight();
+    while ((spare = iterator.next()) != null) {
+      final long weight = iterator.weight();
       if (spare.length == 0) {
         continue;
       }
       charsSpare.copyUTF8Bytes(spare);
       trie.put(charsSpare.toString(), Long.valueOf(weight));
+      count++;
     }
   }
 

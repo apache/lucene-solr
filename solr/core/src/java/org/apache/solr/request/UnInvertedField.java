@@ -23,15 +23,16 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.DocTermOrds;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.uninverting.DocTermOrds;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.SolrException;
@@ -345,7 +346,7 @@ public class UnInvertedField extends DocTermOrds {
           }
         }
       }
-      final CharsRef charsRef = new CharsRef();
+      final CharsRefBuilder charsRef = new CharsRefBuilder();
 
       int off=offset;
       int lim=limit>=0 ? limit : Integer.MAX_VALUE;
@@ -625,7 +626,7 @@ public class UnInvertedField extends DocTermOrds {
 
   }
 
-  String getReadableValue(BytesRef termval, FieldType ft, CharsRef charsRef) {
+  String getReadableValue(BytesRef termval, FieldType ft, CharsRefBuilder charsRef) {
     return ft.indexedToReadable(termval, charsRef).toString();
   }
 

@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.util;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.text.BreakIterator;
 import java.util.Arrays;
 import java.util.Locale;
@@ -33,15 +32,15 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 public class TestSegmentingTokenizerBase extends BaseTokenStreamTestCase {
   private Analyzer sentence = new Analyzer() {
     @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      return new TokenStreamComponents(new WholeSentenceTokenizer(reader));
+    protected TokenStreamComponents createComponents(String fieldName) {
+      return new TokenStreamComponents(new WholeSentenceTokenizer());
     }
   };
   
   private Analyzer sentenceAndWord = new Analyzer() {
     @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      return new TokenStreamComponents(new SentenceAndWordTokenizer(reader));
+    protected TokenStreamComponents createComponents(String fieldName) {
+      return new TokenStreamComponents(new SentenceAndWordTokenizer());
     }
   };
   
@@ -140,8 +139,8 @@ public class TestSegmentingTokenizerBase extends BaseTokenStreamTestCase {
     private CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     private OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
     
-    public WholeSentenceTokenizer(Reader reader) {
-      super(newAttributeFactory(), reader, BreakIterator.getSentenceInstance(Locale.ROOT));
+    public WholeSentenceTokenizer() {
+      super(newAttributeFactory(), BreakIterator.getSentenceInstance(Locale.ROOT));
     }
 
     @Override
@@ -178,8 +177,8 @@ public class TestSegmentingTokenizerBase extends BaseTokenStreamTestCase {
     private OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
     private PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
     
-    public SentenceAndWordTokenizer(Reader reader) {
-      super(newAttributeFactory(), reader, BreakIterator.getSentenceInstance(Locale.ROOT));
+    public SentenceAndWordTokenizer() {
+      super(newAttributeFactory(), BreakIterator.getSentenceInstance(Locale.ROOT));
     }
 
     @Override

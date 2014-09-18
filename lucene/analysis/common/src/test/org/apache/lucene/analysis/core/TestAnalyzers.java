@@ -27,7 +27,6 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Version;
 
 public class TestAnalyzers extends BaseTokenStreamTestCase {
 
@@ -95,11 +94,13 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   public void testPayloadCopy() throws IOException {
     String s = "how now brown cow";
     TokenStream ts;
-    ts = new WhitespaceTokenizer(new StringReader(s));
+    ts = new WhitespaceTokenizer();
+    ((Tokenizer)ts).setReader(new StringReader(s));
     ts = new PayloadSetter(ts);
     verifyPayload(ts);
 
-    ts = new WhitespaceTokenizer(new StringReader(s));
+    ts = new WhitespaceTokenizer();
+    ((Tokenizer)ts).setReader(new StringReader(s));
     ts = new PayloadSetter(ts);
     verifyPayload(ts);
   }
@@ -122,8 +123,8 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   private static class LowerCaseWhitespaceAnalyzer extends Analyzer {
 
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new WhitespaceTokenizer(reader);
+    public TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer tokenizer = new WhitespaceTokenizer();
       return new TokenStreamComponents(tokenizer, new LowerCaseFilter(tokenizer));
     }
     
@@ -132,8 +133,8 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   private static class UpperCaseWhitespaceAnalyzer extends Analyzer {
 
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new WhitespaceTokenizer(reader);
+    public TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer tokenizer = new WhitespaceTokenizer();
       return new TokenStreamComponents(tokenizer, new UpperCaseFilter(tokenizer));
     }
     
@@ -189,8 +190,8 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   public void testLowerCaseFilterLowSurrogateLeftover() throws IOException {
     // test if the limit of the termbuffer is correctly used with supplementary
     // chars
-    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(
-        new StringReader("BogustermBogusterm\udc16"));
+    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer();
+    tokenizer.setReader(new StringReader("BogustermBogusterm\udc16"));
     LowerCaseFilter filter = new LowerCaseFilter(tokenizer);
     assertTokenStreamContents(filter, new String[] {"bogustermbogusterm\udc16"});
     filter.reset();
@@ -206,34 +207,16 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   
   public void testLowerCaseTokenizer() throws IOException {
     StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
-    LowerCaseTokenizer tokenizer = new LowerCaseTokenizer(reader);
+    LowerCaseTokenizer tokenizer = new LowerCaseTokenizer();
+    tokenizer.setReader(reader);
     assertTokenStreamContents(tokenizer, new String[] { "tokenizer",
         "\ud801\udc44test" });
   }
 
-  /** @deprecated (3.1) */
-  @Deprecated
-  public void testLowerCaseTokenizerBWCompat() throws IOException {
-    StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
-    LowerCaseTokenizer tokenizer = new LowerCaseTokenizer(Version.LUCENE_3_0,
-        reader);
-    assertTokenStreamContents(tokenizer, new String[] { "tokenizer", "test" });
-  }
-
   public void testWhitespaceTokenizer() throws IOException {
     StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
-    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(
-        reader);
-    assertTokenStreamContents(tokenizer, new String[] { "Tokenizer",
-        "\ud801\udc1ctest" });
-  }
-
-  /** @deprecated (3.1) */
-  @Deprecated
-  public void testWhitespaceTokenizerBWCompat() throws IOException {
-    StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
-    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(Version.LUCENE_3_0,
-        reader);
+    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer();
+    tokenizer.setReader(reader);
     assertTokenStreamContents(tokenizer, new String[] { "Tokenizer",
         "\ud801\udc1ctest" });
   }

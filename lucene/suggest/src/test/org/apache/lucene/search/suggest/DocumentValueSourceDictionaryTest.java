@@ -45,11 +45,9 @@ import org.apache.lucene.queries.function.valuesource.SumFloatFunction;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
-@SuppressCodecs("Lucene3x")
 public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
   
   static final String FIELD_NAME = "f1";

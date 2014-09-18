@@ -44,8 +44,8 @@ public class UIMATypeAwareAnnotationsTokenizerFactory extends TokenizerFactory {
   }
 
   @Override
-  public UIMATypeAwareAnnotationsTokenizer create(AttributeFactory factory, Reader input) {
+  public UIMATypeAwareAnnotationsTokenizer create(AttributeFactory factory) {
     return new UIMATypeAwareAnnotationsTokenizer
-        (descriptorPath, tokenType, featurePath, configurationParameters, factory, input);
+        (descriptorPath, tokenType, featurePath, configurationParameters, factory);
   }
 }

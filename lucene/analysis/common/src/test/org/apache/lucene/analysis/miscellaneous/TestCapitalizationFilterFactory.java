@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.miscellaneous;
 import java.io.Reader;
 import java.io.StringReader;
 
-import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
@@ -28,7 +27,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenStreamFactoryTestC
   
   public void testCapitalization() throws Exception {
     Reader reader = new StringReader("kiTTEN");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Capitalization",
         "keep", "and the it BIG",
         "onlyFirstWord", "true").create(stream);
@@ -37,7 +36,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenStreamFactoryTestC
   
   public void testCapitalization2() throws Exception {
     Reader reader = new StringReader("and");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Capitalization",
         "keep", "and the it BIG",
         "onlyFirstWord", "true",
@@ -48,7 +47,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenStreamFactoryTestC
   /** first is forced, but it's not a keep word, either */
   public void testCapitalization3() throws Exception {
     Reader reader = new StringReader("AnD");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Capitalization",
         "keep", "and the it BIG",
         "onlyFirstWord", "true",
@@ -58,7 +57,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenStreamFactoryTestC
   
   public void testCapitalization4() throws Exception {
     Reader reader = new StringReader("AnD");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Capitalization",
         "keep", "and the it BIG",
         "onlyFirstWord", "true",
@@ -68,7 +67,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenStreamFactoryTestC
   
   public void testCapitalization5() throws Exception {
     Reader reader = new StringReader("big");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Capitalization",
         "keep", "and the it BIG",
         "onlyFirstWord", "true",
@@ -78,7 +77,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenStreamFactoryTestC
   
   public void testCapitalization6() throws Exception {
     Reader reader = new StringReader("BIG");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Capitalization",
         "keep", "and the it BIG",
         "onlyFirstWord", "true",
@@ -88,7 +87,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenStreamFactoryTestC
   
   public void testCapitalization7() throws Exception {
     Reader reader = new StringReader("Hello thEre my Name is Ryan");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.KEYWORD, false);
+    TokenStream stream = keywordMockTokenizer(reader);
     stream = tokenFilterFactory("Capitalization",
         "keep", "and the it BIG",
         "onlyFirstWord", "true",
@@ -98,7 +97,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenStreamFactoryTestC
   
   public void testCapitalization8() throws Exception {
     Reader reader = new StringReader("Hello thEre my Name is Ryan");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Capitalization",
         "keep", "and the it BIG",
         "onlyFirstWord", "false",
@@ -108,7 +107,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenStreamFactoryTestC
   
   public void testCapitalization9() throws Exception {
     Reader reader = new StringReader("Hello thEre my Name is Ryan");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Capitalization",
         "keep", "and the it BIG",
         "onlyFirstWord", "false",
@@ -119,7 +118,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenStreamFactoryTestC
   
   public void testCapitalization10() throws Exception {
     Reader reader = new StringReader("McKinley");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Capitalization",
         "keep", "and the it BIG",
         "onlyFirstWord", "false",
@@ -131,7 +130,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenStreamFactoryTestC
   /** using "McK" as okPrefix */
   public void testCapitalization11() throws Exception {
     Reader reader = new StringReader("McKinley");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Capitalization",
         "keep", "and the it BIG",
         "onlyFirstWord", "false",
@@ -144,7 +143,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenStreamFactoryTestC
   /** test with numbers */
   public void testCapitalization12() throws Exception {
     Reader reader = new StringReader("1st 2nd third");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Capitalization",
         "keep", "and the it BIG",
         "onlyFirstWord", "false",
@@ -156,7 +155,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenStreamFactoryTestC
   
   public void testCapitalization13() throws Exception {
     Reader reader = new StringReader("the The the");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.KEYWORD, false);
+    TokenStream stream = keywordMockTokenizer(reader);
     stream = tokenFilterFactory("Capitalization",
         "keep", "and the it BIG",
         "onlyFirstWord", "false",
@@ -168,7 +167,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenStreamFactoryTestC
 
   public void testKeepIgnoreCase() throws Exception {
     Reader reader = new StringReader("kiTTEN");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.KEYWORD, false);
+    TokenStream stream = keywordMockTokenizer(reader);
     stream = tokenFilterFactory("Capitalization",
         "keep", "kitten",
         "keepIgnoreCase", "true",
@@ -180,7 +179,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenStreamFactoryTestC
   
   public void testKeepIgnoreCase2() throws Exception {
     Reader reader = new StringReader("kiTTEN");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.KEYWORD, false);
+    TokenStream stream = keywordMockTokenizer(reader);
     stream = tokenFilterFactory("Capitalization",
         "keep", "kitten",
         "keepIgnoreCase", "true",
@@ -192,7 +191,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenStreamFactoryTestC
   
   public void testKeepIgnoreCase3() throws Exception {
     Reader reader = new StringReader("kiTTEN");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.KEYWORD, false);
+    TokenStream stream = keywordMockTokenizer(reader);
     stream = tokenFilterFactory("Capitalization",
         "keepIgnoreCase", "true",
         "onlyFirstWord", "true",
@@ -208,7 +207,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenStreamFactoryTestC
    */
   public void testMinWordLength() throws Exception {
     Reader reader = new StringReader("helo testing");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Capitalization",
         "onlyFirstWord", "true",
         "minWordLength", "5").create(stream);
@@ -221,7 +220,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenStreamFactoryTestC
    */
   public void testMaxWordCount() throws Exception {
     Reader reader = new StringReader("one two three four");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Capitalization",
         "maxWordCount", "2").create(stream);
     assertTokenStreamContents(stream, new String[] { "One", "Two", "Three", "Four" });
@@ -232,7 +231,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenStreamFactoryTestC
    */
   public void testMaxWordCount2() throws Exception {
     Reader reader = new StringReader("one two three four");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.KEYWORD, false);
+    TokenStream stream = keywordMockTokenizer(reader);
     stream = tokenFilterFactory("Capitalization",
         "maxWordCount", "2").create(stream);
     assertTokenStreamContents(stream, new String[] { "one two three four" });
@@ -245,7 +244,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenStreamFactoryTestC
    */
   public void testMaxTokenLength() throws Exception {
     Reader reader = new StringReader("this is a test");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Capitalization",
         "maxTokenLength", "2").create(stream);
     assertTokenStreamContents(stream, new String[] { "this", "is", "A", "test" });
@@ -256,7 +255,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenStreamFactoryTestC
    */
   public void testForceFirstLetterWithKeep() throws Exception {
     Reader reader = new StringReader("kitten");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Capitalization",
         "keep", "kitten",
         "forceFirstLetter", "true").create(stream);
@@ -280,7 +279,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenStreamFactoryTestC
     for (final String arg : new String[]{"minWordLength", "maxTokenLength", "maxWordCount"}) {
       try {
         Reader reader = new StringReader("foo foobar super-duper-trooper");
-        TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        TokenStream stream = whitespaceMockTokenizer(reader);
 
         tokenFilterFactory("Capitalization",
             "keep", "and the it BIG",

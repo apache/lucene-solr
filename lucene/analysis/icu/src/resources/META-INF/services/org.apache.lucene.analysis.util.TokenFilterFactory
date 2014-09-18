@@ -16,4 +16,3 @@
 org.apache.lucene.analysis.icu.ICUFoldingFilterFactory
 org.apache.lucene.analysis.icu.ICUNormalizer2FilterFactory
 org.apache.lucene.analysis.icu.ICUTransformFilterFactory
-org.apache.lucene.collation.ICUCollationKeyFilterFactory

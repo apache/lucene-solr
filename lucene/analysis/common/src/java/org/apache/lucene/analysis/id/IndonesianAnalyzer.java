@@ -29,7 +29,6 @@ import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
-import org.apache.lucene.util.Version;
 
 /**
  * Analyzer for Indonesian (Bahasa)
@@ -72,14 +71,6 @@ public final class IndonesianAnalyzer extends StopwordAnalyzerBase {
   public IndonesianAnalyzer() {
     this(DefaultSetHolder.DEFAULT_STOP_SET);
   }
-
-  /**
-   * @deprecated Use {@link #IndonesianAnalyzer()}
-   */
-  @Deprecated
-  public IndonesianAnalyzer(Version matchVersion) {
-    this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
-  }
   
   /**
    * Builds an analyzer with the given stop words
@@ -89,14 +80,6 @@ public final class IndonesianAnalyzer extends StopwordAnalyzerBase {
    */
   public IndonesianAnalyzer(CharArraySet stopwords){
     this(stopwords, CharArraySet.EMPTY_SET);
-  }
-
-  /**
-   * @deprecated Use {@link #IndonesianAnalyzer(CharArraySet)}
-   */
-  @Deprecated
-  public IndonesianAnalyzer(Version matchVersion, CharArraySet stopwords) {
-    this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
   }
 
   /**
@@ -115,16 +98,6 @@ public final class IndonesianAnalyzer extends StopwordAnalyzerBase {
   }
 
   /**
-   * @deprecated Use {@link #IndonesianAnalyzer(CharArraySet, CharArraySet)}
-   */
-  @Deprecated
-  public IndonesianAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet){
-    super(matchVersion, stopwords);
-    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(
-        matchVersion, stemExclusionSet));
-  }
-
-  /**
    * Creates
    * {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    * used to tokenize all the text in the provided {@link Reader}.
@@ -136,12 +109,11 @@ public final class IndonesianAnalyzer extends StopwordAnalyzerBase {
    *         if a stem exclusion set is provided and {@link IndonesianStemFilter}.
    */
   @Override
-  protected TokenStreamComponents createComponents(String fieldName,
-      Reader reader) {
-    final Tokenizer source = new StandardTokenizer(getVersion(), reader);
-    TokenStream result = new StandardFilter(getVersion(), source);
-    result = new LowerCaseFilter(getVersion(), result);
-    result = new StopFilter(getVersion(), result, stopwords);
+  protected TokenStreamComponents createComponents(String fieldName) {
+    final Tokenizer source = new StandardTokenizer();
+    TokenStream result = new StandardFilter(source);
+    result = new LowerCaseFilter(result);
+    result = new StopFilter(result, stopwords);
     if (!stemExclusionSet.isEmpty()) {
       result = new SetKeywordMarkerFilter(result, stemExclusionSet);
     }

@@ -50,7 +50,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Version;
 
 /**
  * Example servlet that uses the XML queryparser.
@@ -133,7 +132,7 @@ public class FormBasedXmlQueryDemo extends HttpServlet {
   private void openExampleIndex() throws IOException {
     //Create a RAM-based index from our test data file
     RAMDirectory rd = new RAMDirectory();
-    IndexWriterConfig iwConfig = new IndexWriterConfig(Version.LUCENE_CURRENT, analyzer);
+    IndexWriterConfig iwConfig = new IndexWriterConfig(analyzer);
     IndexWriter writer = new IndexWriter(rd, iwConfig);
     InputStream dataIn = getServletContext().getResourceAsStream("/WEB-INF/data.tsv");
     BufferedReader br = new BufferedReader(new InputStreamReader(dataIn, StandardCharsets.UTF_8));

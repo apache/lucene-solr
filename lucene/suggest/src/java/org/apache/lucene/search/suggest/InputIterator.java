@@ -18,7 +18,6 @@ package org.apache.lucene.search.suggest;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.Set;
 
 import org.apache.lucene.search.suggest.Lookup.LookupResult; // javadocs
@@ -92,11 +91,6 @@ public interface InputIterator extends BytesRefIterator {
     @Override
     public boolean hasPayloads() {
       return false;
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return wrapped.getComparator();
     }
 
     @Override

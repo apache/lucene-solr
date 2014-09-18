@@ -267,8 +267,8 @@ public class ReRankQParserPlugin extends QParserPlugin {
       mainCollector.setScorer(scorer);
     }
 
-    public void setNextReader(AtomicReaderContext context) throws IOException{
-      mainCollector.setNextReader(context);
+    public void doSetNextReader(AtomicReaderContext context) throws IOException{
+      mainCollector.getLeafCollector(context);
     }
 
     public int getTotalHits() {

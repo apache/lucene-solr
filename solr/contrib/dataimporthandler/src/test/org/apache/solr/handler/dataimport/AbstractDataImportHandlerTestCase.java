@@ -55,7 +55,7 @@ public abstract class AbstractDataImportHandlerTestCase extends
 
   // note, a little twisted that we shadow this static method
   public static void initCore(String config, String schema) throws Exception {
-    File testHome = createTempDir("core-home");
+    File testHome = createTempDir("core-home").toFile();
     FileUtils.copyDirectory(getFile("dih/solr"), testHome);
     initCore(config, schema, testHome.getAbsolutePath());
   }
@@ -64,7 +64,7 @@ public abstract class AbstractDataImportHandlerTestCase extends
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    File home = createTempDir("dih-properties");
+    File home = createTempDir("dih-properties").toFile();
     System.setProperty("solr.solr.home", home.getAbsolutePath());    
   }
 
@@ -99,7 +99,7 @@ public abstract class AbstractDataImportHandlerTestCase extends
    */
   protected File redirectTempProperties(DataImporter di) {
     try {
-      File tempFile = createTempFile();
+      File tempFile = createTempFile().toFile();
       di.getConfig().getPropertyWriter().getParameters()
         .put(SimplePropertiesWriter.FILENAME, tempFile.getAbsolutePath());
       return tempFile;

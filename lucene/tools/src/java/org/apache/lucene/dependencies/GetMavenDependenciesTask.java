@@ -105,10 +105,6 @@ public class GetMavenDependenciesTask extends Task {
     // Format is "groupId:artifactId"
     globalOptionalExternalDependencies.addAll(Arrays.asList
         ("org.slf4j:jcl-over-slf4j", "org.slf4j:jul-to-slf4j", "org.slf4j:slf4j-log4j12"));
-
-    // Add per-module optional external dependencies here.
-    Set<String> optionalDeps = new HashSet<>(Arrays.asList("org.slf4j:slf4j-api"));
-    perModuleOptionalExternalDependencies.put("solr-webapp", optionalDeps);
   }
 
   private final XPath xpath = XPathFactory.newInstance().newXPath();
@@ -264,7 +260,7 @@ public class GetMavenDependenciesTask extends Task {
     // so dependency sharing is limited to a depth of one.
     Map<String,SortedSet<ExternalDependency>> sharedDependencies = new HashMap<>();
     for (String module : interModuleExternalCompileScopeDependencies.keySet()) {
-      TreeSet<ExternalDependency> deps = new TreeSet<ExternalDependency>();
+      TreeSet<ExternalDependency> deps = new TreeSet<>();
       sharedDependencies.put(module, deps);
       Set<String> moduleDependencies = interModuleExternalCompileScopeDependencies.get(module);
       if (null != moduleDependencies) {
@@ -694,7 +690,7 @@ public class GetMavenDependenciesTask extends Task {
       String dependencyCoordinate = groupId + ':' + artifactId;
       Set<String> classifiers = dependencyClassifiers.get(dependencyCoordinate);
       if (null == classifiers) {
-        classifiers = new HashSet<String>();
+        classifiers = new HashSet<>();
         dependencyClassifiers.put(dependencyCoordinate, classifiers);
       }
       String conf = dependency.getAttribute("conf");

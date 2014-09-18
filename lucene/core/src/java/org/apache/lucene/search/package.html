@@ -173,7 +173,7 @@ instances. See the <a href="#algorithm">Algorithm</a> section for more notes on 
     {@link org.apache.lucene.index.Term Term}
     and an upper
     {@link org.apache.lucene.index.Term Term}
-    according to {@link org.apache.lucene.index.TermsEnum#getComparator TermsEnum.getComparator()}. It is not intended
+    according to {@link org.apache.lucene.util.BytesRef#compareTo BytesRef.compareTo()}. It is not intended
     for numerical ranges; use {@link org.apache.lucene.search.NumericRangeQuery NumericRangeQuery} instead.
 
     For example, one could find all documents
@@ -337,8 +337,8 @@ extend by plugging in a different component (e.g. term frequency normalizer).
 <p>
 Finally, you can extend the low level {@link org.apache.lucene.search.similarities.Similarity Similarity} directly
 to implement a new retrieval model, or to use external scoring factors particular to your application. For example,
-a custom Similarity can access per-document values via {@link org.apache.lucene.search.FieldCache FieldCache} or
-{@link org.apache.lucene.index.NumericDocValues} and integrate them into the score.
+a custom Similarity can access per-document values via {@link org.apache.lucene.index.NumericDocValues} and 
+integrate them into the score.
 </p>
 <p>
 See the {@link org.apache.lucene.search.similarities} package documentation for information
@@ -508,7 +508,7 @@ on the built-in available scoring models and extending or changing Similarity.
         abstract method:
         <ol>
             <li>
-                {@link org.apache.lucene.search.BulkScorer#score(org.apache.lucene.search.Collector,int) score(Collector,int)} &mdash;
+                {@link org.apache.lucene.search.BulkScorer#score(org.apache.lucene.search.LeafCollector,int) score(LeafCollector,int)} &mdash;
 		Score all documents up to but not including the specified max document.
 	    </li>
         </ol>
@@ -563,7 +563,7 @@ on the built-in available scoring models and extending or changing Similarity.
 <p>If a Filter is being used, some initial setup is done to determine which docs to include. 
    Otherwise, we ask the Weight for a {@link org.apache.lucene.search.Scorer Scorer} for each
    {@link org.apache.lucene.index.IndexReader IndexReader} segment and proceed by calling
-   {@link org.apache.lucene.search.BulkScorer#score(org.apache.lucene.search.Collector) BulkScorer.score(Collector)}.
+   {@link org.apache.lucene.search.BulkScorer#score(org.apache.lucene.search.LeafCollector) BulkScorer.score(LeafCollector)}.
 </p>
 <p>At last, we are actually going to score some documents. The score method takes in the Collector
    (most likely the TopScoreDocCollector or TopFieldCollector) and does its business.Of course, here 

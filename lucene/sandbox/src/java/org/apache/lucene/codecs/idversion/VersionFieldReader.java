@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.idversion;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.Collections;
 
 import org.apache.lucene.index.FieldInfo;
@@ -161,11 +160,6 @@ final class VersionFieldReader extends Terms implements Accountable {
   @Override
   public long ramBytesUsed() {
     return ((index!=null)? index.ramBytesUsed() : 0);
-  }
-
-  @Override
-  public Comparator<BytesRef> getComparator() {
-    return BytesRef.getUTF8SortedAsUnicodeComparator();
   }
   
   @Override

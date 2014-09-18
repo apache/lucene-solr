@@ -20,14 +20,14 @@ package org.apache.lucene.queries.function.docvalues;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.ValueSourceScorer;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueStr;
@@ -40,16 +40,15 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
   protected final SortedDocValues termsIndex;
   protected final ValueSource vs;
   protected final MutableValueStr val = new MutableValueStr();
-  protected final CharsRefBuilder spareCharsBuilder = new CharsRefBuilder();
-  protected final CharsRef spareChars = new CharsRef();
+  protected final CharsRefBuilder spareChars = new CharsRefBuilder();
 
   public DocTermsIndexDocValues(ValueSource vs, AtomicReaderContext context, String field) throws IOException {
-    try {
-      termsIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), field);
-    } catch (RuntimeException e) {
-      throw new DocTermsIndexException(field, e);
-    }
+    this(vs, open(context, field));
+  }
+  
+  protected DocTermsIndexDocValues(ValueSource vs, SortedDocValues termsIndex) {
     this.vs = vs;
+    this.termsIndex = termsIndex;
   }
 
   protected abstract String toTerm(String readableValue);
@@ -70,9 +69,10 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
   }
 
   @Override
-  public boolean bytesVal(int doc, BytesRef target) {
+  public boolean bytesVal(int doc, BytesRefBuilder target) {
+    target.clear();
     target.copyBytes(termsIndex.get(doc));
-    return target.length > 0;
+    return target.length() > 0;
   }
 
   @Override
@@ -81,8 +81,8 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
     if (term.length == 0) {
       return null;
     }
-    spareCharsBuilder.copyUTF8Bytes(term);
-    return spareCharsBuilder.toString();
+    spareChars.copyUTF8Bytes(term);
+    return spareChars.toString();
   }
 
   @Override
@@ -149,7 +149,7 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
       @Override
       public void fillValue(int doc) {
         int ord = termsIndex.getOrd(doc);
-        mval.value.length = 0;
+        mval.value.clear();
         mval.exists = ord >= 0;
         if (mval.exists) {
           mval.value.copyBytes(termsIndex.lookupOrd(ord));
@@ -158,6 +158,15 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
     };
   }
 
+  // TODO: why?
+  static SortedDocValues open(AtomicReaderContext context, String field) throws IOException {
+    try {
+      return DocValues.getSorted(context.reader(), field);
+    } catch (RuntimeException e) {
+      throw new DocTermsIndexException(field, e);
+    }
+  }
+  
   /**
    * Custom Exception to be thrown when the DocTermsIndex for a field cannot be generated
    */

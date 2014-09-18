@@ -28,8 +28,8 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.BytesRef;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.Locale;
 
@@ -56,7 +56,7 @@ public class HighFreqTerms {
       System.exit(1);
     }     
 
-    Directory dir = FSDirectory.open(new File(args[0]));
+    Directory dir = FSDirectory.open(Paths.get(args[0]));
     
     Comparator<TermStats> comparator = new DocFreqComparator();
    

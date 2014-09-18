@@ -1,18 +1,17 @@
 package org.apache.lucene.facet.taxonomy.writercache;
 
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
-import org.apache.lucene.util.TestUtil;
 
 import org.junit.Test;
 
@@ -69,15 +68,15 @@ public class TestCompactLabelToOrdinal extends FacetTestCase {
       }
     }
 
-    File tmpDir = createTempDir("testLableToOrdinal");
-    File f = new File(tmpDir, "CompactLabelToOrdinalTest.tmp");
+    Path tmpDir = createTempDir("testLableToOrdinal");
+    Path f = tmpDir.resolve("CompactLabelToOrdinalTest.tmp");
     int flushInterval = 10;
 
     for (int i = 0; i < n; i++) {
       if (i > 0 && i % flushInterval == 0) {
         compact.flush(f);    
         compact = CompactLabelToOrdinal.open(f, 0.15f, 3);
-        Files.delete(f.toPath());
+        Files.delete(f);
         if (flushInterval < (n / 10)) {
           flushInterval *= 10;
         }

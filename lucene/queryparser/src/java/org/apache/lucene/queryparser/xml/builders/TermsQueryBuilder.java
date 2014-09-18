@@ -9,7 +9,6 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
@@ -52,9 +51,7 @@ public class TermsQueryBuilder implements QueryBuilder {
 
     BooleanQuery bq = new BooleanQuery(DOMUtils.getAttribute(e, "disableCoord", false));
     bq.setMinimumNumberShouldMatch(DOMUtils.getAttribute(e, "minimumNumberShouldMatch", 0));
-    TokenStream ts = null;
-    try {
-      ts = analyzer.tokenStream(fieldName, text);
+    try (TokenStream ts = analyzer.tokenStream(fieldName, text)) {
       TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
       Term term = null;
       BytesRef bytes = termAtt.getBytesRef();
@@ -68,8 +65,6 @@ public class TermsQueryBuilder implements QueryBuilder {
     }
     catch (IOException ioe) {
       throw new RuntimeException("Error constructing terms from index:" + ioe);
-    } finally {
-      IOUtils.closeWhileHandlingException(ts);
     }
 
     bq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));

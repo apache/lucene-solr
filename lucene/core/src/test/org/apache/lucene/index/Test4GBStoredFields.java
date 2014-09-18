@@ -25,14 +25,11 @@ import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
-import org.apache.lucene.util.Version;
 
 /**
  * This test creates an index with one segment that is a little larger than 4GB.
@@ -47,7 +44,7 @@ public class Test4GBStoredFields extends LuceneTestCase {
     dir.setThrottling(MockDirectoryWrapper.Throttling.NEVER);
 
     IndexWriter w = new IndexWriter(dir,
-        new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
+        new IndexWriterConfig(new MockAnalyzer(random()))
         .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
         .setRAMBufferSizeMB(256.0)
         .setMergeScheduler(new ConcurrentMergeScheduler())

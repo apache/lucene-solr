@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.simpletext;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -215,10 +214,5 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
         out = null;
       }
     }
-  }
-
-  @Override
-  public Comparator<BytesRef> getComparator() {
-    return BytesRef.getUTF8SortedAsUnicodeComparator();
   }
 }

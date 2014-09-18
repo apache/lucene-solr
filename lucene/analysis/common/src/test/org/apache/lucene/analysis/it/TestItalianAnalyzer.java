@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.Version;
 
 public class TestItalianAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
@@ -60,12 +59,5 @@ public class TestItalianAnalyzer extends BaseTokenStreamTestCase {
     Analyzer a = new ItalianAnalyzer();
     assertAnalyzesTo(a, "dell'Italia", new String[] { "ital" });
     assertAnalyzesTo(a, "l'Italiano", new String[] { "italian" });
-  }
-  
-  /** test that we don't enable this before 3.2*/
-  public void testContractionsBackwards() throws IOException {
-    Analyzer a = new ItalianAnalyzer(Version.LUCENE_3_1);
-    assertAnalyzesTo(a, "dell'Italia", new String[] { "dell'ital" });
-    assertAnalyzesTo(a, "l'Italiano", new String[] { "l'ital" });
   }
 }

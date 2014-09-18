@@ -29,7 +29,6 @@ import java.util.Set;
 import org.apache.lucene.analysis.util.CharArrayMap;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.OpenStringBuilder;
-import org.apache.lucene.util.Version;
 
 /**
  * A CharFilter that wraps another Reader and attempts to strip out HTML constructs.
@@ -29840,7 +29839,7 @@ public final class HTMLStripCharFilter extends BaseCharFilter {
     upperCaseVariantsAccepted.put("amp", "AMP");
   }
   private static final CharArrayMap<Character> entityValues
-      = new CharArrayMap<>(Version.LUCENE_CURRENT, 253, false);
+      = new CharArrayMap<>(253, false);
   static {
     String[] entities = {
       "AElig", "\u00C6", "Aacute", "\u00C1", "Acirc", "\u00C2",

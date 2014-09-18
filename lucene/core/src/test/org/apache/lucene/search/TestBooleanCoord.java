@@ -33,7 +33,6 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -48,7 +47,7 @@ public class TestBooleanCoord extends LuceneTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, null));
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(null));
     
     // we only add two documents for testing:
     // the first document has 3 terms A,B,C (for positive matching). we test scores against this.
@@ -718,7 +717,7 @@ public class TestBooleanCoord extends LuceneTestCase {
       final AtomicBoolean seen = new AtomicBoolean(false);
       BulkScorer bulkScorer = weight.bulkScorer(reader.leaves().get(0), false, null);
       assertNotNull(bulkScorer);
-      bulkScorer.score(new Collector() {
+      bulkScorer.score(new LeafCollector() {
         Scorer scorer;
         
         @Override
@@ -726,9 +725,6 @@ public class TestBooleanCoord extends LuceneTestCase {
           this.scorer = scorer;
         }
         
-        @Override
-        public void setNextReader(AtomicReaderContext context) throws IOException {}
-
         @Override
         public void collect(int doc) throws IOException {
           assertFalse(seen.get());

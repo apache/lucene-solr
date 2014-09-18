@@ -40,7 +40,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
-import org.apache.lucene.util.Version;
 
 /**
  * Spell checker test case
@@ -56,8 +55,7 @@ public class TestSpellChecker extends LuceneTestCase {
     
     //create a user index
     userindex = newDirectory();
-    IndexWriter writer = new IndexWriter(userindex, new IndexWriterConfig(
-        Version.LATEST, new MockAnalyzer(random())));
+    IndexWriter writer = new IndexWriter(userindex, new IndexWriterConfig(new MockAnalyzer(random())));
 
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();

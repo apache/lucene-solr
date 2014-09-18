@@ -124,46 +124,45 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     return collector.docCounts;
   }
   
-  static class MyCollector extends Collector {
-    
-    private TopDocsCollector<ScoreDoc> collector;
-    private int docBase;
+  static class MyCollector extends FilterCollector {
 
     public final Map<Integer,Integer> docCounts = new HashMap<>();
     private final Set<Scorer> tqsSet = new HashSet<>();
     
     MyCollector() {
-      collector = TopScoreDocCollector.create(10, true);
+      super(TopScoreDocCollector.create(10, true));
     }
 
-    @Override
-    public boolean acceptsDocsOutOfOrder() {
-      return false;
-    }
-
-    @Override
-    public void collect(int doc) throws IOException {
-      int freq = 0;
-      for(Scorer scorer : tqsSet) {
-        if (doc == scorer.docID()) {
-          freq += scorer.freq();
+    public LeafCollector getLeafCollector(AtomicReaderContext context)
+        throws IOException {
+      final int docBase = context.docBase;
+      return new FilterLeafCollector(super.getLeafCollector(context)) {
+        
+        @Override
+        public boolean acceptsDocsOutOfOrder() {
+          return false;
         }
-      }
-      docCounts.put(doc + docBase, freq);
-      collector.collect(doc);
-    }
-
-    @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
-      this.docBase = context.docBase;
-      collector.setNextReader(context);
-    }
-
-    @Override
-    public void setScorer(Scorer scorer) throws IOException {
-      collector.setScorer(scorer);
-      tqsSet.clear();
-      fillLeaves(scorer, tqsSet);
+        
+        @Override
+        public void setScorer(Scorer scorer) throws IOException {
+          super.setScorer(scorer);
+          tqsSet.clear();
+          fillLeaves(scorer, tqsSet);
+        }
+        
+        @Override
+        public void collect(int doc) throws IOException {
+          int freq = 0;
+          for(Scorer scorer : tqsSet) {
+            if (doc == scorer.docID()) {
+              freq += scorer.freq();
+            }
+          }
+          docCounts.put(doc + docBase, freq);
+          super.collect(doc);
+        }
+        
+      };
     }
     
     private void fillLeaves(Scorer scorer, Set<Scorer> set) {
@@ -177,12 +176,13 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     }
     
     public TopDocs topDocs(){
-      return collector.topDocs();
+      return ((TopDocsCollector<?>) in).topDocs();
     }
     
     public int freq(int doc) throws IOException {
       return docCounts.get(doc);
     }
+    
   }
 
   public void testGetChildrenMinShouldMatchSumScorer() throws IOException {
@@ -219,37 +219,39 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     }
   }
 
-  private static class ScorerSummarizingCollector extends Collector {
+  private static class ScorerSummarizingCollector implements Collector {
     private final List<String> summaries = new ArrayList<>();
-    private int numHits;
+    private int numHits[] = new int[1];
 
     public int getNumHits() {
-      return numHits;
+      return numHits[0];
     }
 
     public List<String> getSummaries() {
       return summaries;
     }
-    
+
     @Override
-    public void setScorer(Scorer scorer) throws IOException {
-      final StringBuilder builder = new StringBuilder();
-      summarizeScorer(builder, scorer, 0);
-      summaries.add(builder.toString());
-    }
-    
-    @Override
-    public void collect(int doc) throws IOException {
-      numHits++;
-    }
-    
-    @Override
-    public boolean acceptsDocsOutOfOrder() {
-      return false;
-    }
-    
-    @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
+    public LeafCollector getLeafCollector(AtomicReaderContext context) throws IOException {
+      return new LeafCollector() {
+
+        @Override
+        public void setScorer(Scorer scorer) throws IOException {
+          final StringBuilder builder = new StringBuilder();
+          summarizeScorer(builder, scorer, 0);
+          summaries.add(builder.toString());
+        }
+
+        @Override
+        public void collect(int doc) throws IOException {
+          numHits[0]++;
+        }
+
+        @Override
+        public boolean acceptsDocsOutOfOrder() {
+          return false;
+        }
+      };
     }
 
     private static void summarizeScorer(final StringBuilder builder, final Scorer scorer, final int indent) {

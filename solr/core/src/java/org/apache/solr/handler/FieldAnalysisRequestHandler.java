@@ -107,11 +107,6 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
     return "Provide a breakdown of the analysis process of field/query text";
   }
 
-  @Override
-  public String getSource() {
-    return null;
-  }
-
   // ================================================= Helper methods ================================================
 
   /**

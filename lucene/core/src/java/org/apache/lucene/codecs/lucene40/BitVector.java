@@ -340,8 +340,8 @@ final class BitVector implements Cloneable, MutableBits {
         version = CodecUtil.checkHeader(input, CODEC, VERSION_START, VERSION_CURRENT);
         size = input.readInt();
       } else {
-        version = VERSION_PRE;
-        size = firstInt;
+        // we started writing full header well before 4.0
+        throw new IndexFormatTooOldException(input.toString(), Integer.toString(firstInt));
       }
       if (size == -1) {
         if (version >= VERSION_DGAPS_CLEARED) {

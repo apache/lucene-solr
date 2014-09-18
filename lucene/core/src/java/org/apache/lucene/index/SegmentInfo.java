@@ -20,16 +20,14 @@ package org.apache.lucene.index;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene3x.Lucene3xSegmentInfoFormat;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
 
 /**
@@ -66,10 +64,6 @@ public final class SegmentInfo {
 
   private Map<String,String> diagnostics;
 
-  /** @deprecated not used anymore */
-  @Deprecated
-  private Map<String,String> attributes;
-
   // Tracks the Lucene version this segment was created with, since 3.1. Null
   // indicates an older than 3.0 index, and it's used to detect a too old index.
   // The format expected is "x.y" - "2.x" for pre-3.0 indexes (or null), and
@@ -86,33 +80,14 @@ public final class SegmentInfo {
   public Map<String, String> getDiagnostics() {
     return diagnostics;
   }
-  
-  /**
-   * Construct a new complete SegmentInfo instance from input.
-   * <p>Note: this is public only to allow access from
-   * the codecs package.</p>
-   */
-  public SegmentInfo(Directory dir, Version version, String name, int docCount,
-      boolean isCompoundFile, Codec codec, Map<String,String> diagnostics) {
-    this(dir, version, name, docCount, isCompoundFile, codec, diagnostics, null, null);
-  }
 
   /**
-   * @deprecated Use {@link #SegmentInfo(Directory, Version, String, int, boolean, Codec, Map)}
+   * Construct a new complete SegmentInfo instance from
+   * input, with a newly generated random id.
    */
-  @Deprecated
-  public SegmentInfo(Directory dir, String version, String name, int docCount,
+  public SegmentInfo(Directory dir, Version version, String name, int docCount,
                      boolean isCompoundFile, Codec codec, Map<String,String> diagnostics) {
-    this(dir, Version.parse(version), name, docCount, isCompoundFile, codec, diagnostics, null, null);
-  }
-
-  /**
-   * @deprecated Use {@link #SegmentInfo(Directory, Version, String, int, boolean, Codec, Map, Map, String)}
-   */
-  @Deprecated
-  public SegmentInfo(Directory dir, String version, String name, int docCount,
-                     boolean isCompoundFile, Codec codec, Map<String,String> diagnostics, Map<String,String> attributes) {
-    this(dir, Version.parse(version), name, docCount, isCompoundFile, codec, diagnostics, attributes, null);
+    this(dir, version, name, docCount, isCompoundFile, codec, diagnostics, null);
   }
 
   /**
@@ -121,7 +96,7 @@ public final class SegmentInfo {
    * the codecs package.</p>
    */
   public SegmentInfo(Directory dir, Version version, String name, int docCount,
-                     boolean isCompoundFile, Codec codec, Map<String,String> diagnostics, Map<String,String> attributes,
+                     boolean isCompoundFile, Codec codec, Map<String,String> diagnostics,
                      String id) {
     assert !(dir instanceof TrackingDirectoryWrapper);
     this.dir = dir;
@@ -131,16 +106,7 @@ public final class SegmentInfo {
     this.isCompoundFile = isCompoundFile;
     this.codec = codec;
     this.diagnostics = diagnostics;
-    this.attributes = attributes;
     this.id = id;
-  }
-
-  /**
-   * @deprecated separate norms are not supported in >= 4.0
-   */
-  @Deprecated
-  boolean hasSeparateNorms() {
-    return getAttribute(Lucene3xSegmentInfoFormat.NORMGEN_KEY) != null;
   }
 
   /**
@@ -253,22 +219,8 @@ public final class SegmentInfo {
     return dir.hashCode() + name.hashCode();
   }
 
-  /**
-   * Used by DefaultSegmentInfosReader to upgrade a 3.0 segment to record its
-   * version is "3.0". This method can be removed when we're not required to
-   * support 3x indexes anymore, e.g. in 5.0.
-   * <p>
-   * <b>NOTE:</b> this method is used for internal purposes only - you should
-   * not modify the version of a SegmentInfo, or it may result in unexpected
-   * exceptions thrown when you attempt to open the index.
-   *
-   * @lucene.internal
+  /** Returns the version of the code which wrote the segment.
    */
-  public void setVersion(Version version) {
-    this.version = version;
-  }
-
-  /** Returns the version of the code which wrote the segment. */
   public Version getVersion() {
     return version;
   }
@@ -310,66 +262,4 @@ public final class SegmentInfo {
     }
   }
     
-  /**
-   * Get a codec attribute value, or null if it does not exist
-   * 
-   * @deprecated no longer supported
-   */
-  @Deprecated
-  public String getAttribute(String key) {
-    if (attributes == null) {
-      return null;
-    } else {
-      return attributes.get(key);
-    }
-  }
-  
-  /**
-   * Puts a codec attribute value.
-   * <p>
-   * This is a key-value mapping for the field that the codec can use to store
-   * additional metadata, and will be available to the codec when reading the
-   * segment via {@link #getAttribute(String)}
-   * <p>
-   * If a value already exists for the field, it will be replaced with the new
-   * value.
-   * 
-   * @deprecated no longer supported
-   */
-  @Deprecated
-  public String putAttribute(String key, String value) {
-    if (attributes == null) {
-      attributes = new HashMap<>();
-    }
-    return attributes.put(key, value);
-  }
-  
-  /**
-   * Returns the internal codec attributes map.
-   *
-   * @return internal codec attributes map. May be null if no mappings exist.
-   * 
-   * @deprecated no longer supported
-   */
-  @Deprecated
-  public Map<String,String> attributes() {
-    return attributes;
-  }
-
-  private static Map<String,String> cloneMap(Map<String,String> map) {
-    if (map != null) {
-      return new HashMap<String,String>(map);
-    } else {
-      return null;
-    }
-  }
-
-  @Override
-  public SegmentInfo clone() {
-    SegmentInfo other = new SegmentInfo(dir, version, name, docCount, isCompoundFile, codec, cloneMap(diagnostics), cloneMap(attributes), id);
-    if (setFiles != null) {
-      other.setFiles(new HashSet<>(setFiles));
-    }
-    return other;
-  }
 }

@@ -20,10 +20,9 @@ package org.apache.lucene.analysis.ngram;
 import java.io.Reader;
 import java.io.StringReader;
 
-import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
-import org.apache.lucene.util.Version;
 
 /**
  * Simple tests to ensure the NGram filter factories are working.
@@ -34,9 +33,10 @@ public class TestNGramFilters extends BaseTokenStreamFactoryTestCase {
    */
   public void testNGramTokenizer() throws Exception {
     Reader reader = new StringReader("test");
-    TokenStream stream = tokenizerFactory("NGram").create(reader);
-    assertTokenStreamContents(stream, 
-        new String[] { "t", "te", "e", "es", "s", "st", "t" });
+    TokenStream stream = tokenizerFactory("NGram").create();
+    ((Tokenizer)stream).setReader(reader);
+    assertTokenStreamContents(stream,
+        new String[]{"t", "te", "e", "es", "s", "st", "t"});
   }
 
   /**
@@ -46,7 +46,8 @@ public class TestNGramFilters extends BaseTokenStreamFactoryTestCase {
     Reader reader = new StringReader("test");
     TokenStream stream = tokenizerFactory("NGram",
         "minGramSize", "2",
-        "maxGramSize", "3").create(reader);
+        "maxGramSize", "3").create();
+    ((Tokenizer)stream).setReader(reader);
     assertTokenStreamContents(stream, 
         new String[] { "te", "tes", "es", "est", "st" });
   }
@@ -56,7 +57,7 @@ public class TestNGramFilters extends BaseTokenStreamFactoryTestCase {
    */
   public void testNGramFilter() throws Exception {
     Reader reader = new StringReader("test");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("NGram").create(stream);
     assertTokenStreamContents(stream, 
         new String[] { "t", "te", "e", "es", "s", "st", "t" });
@@ -67,7 +68,7 @@ public class TestNGramFilters extends BaseTokenStreamFactoryTestCase {
    */
   public void testNGramFilter2() throws Exception {
     Reader reader = new StringReader("test");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("NGram",
         "minGramSize", "2",
         "maxGramSize", "3").create(stream);
@@ -80,7 +81,8 @@ public class TestNGramFilters extends BaseTokenStreamFactoryTestCase {
    */
   public void testEdgeNGramTokenizer() throws Exception {
     Reader reader = new StringReader("test");
-    TokenStream stream = tokenizerFactory("EdgeNGram").create(reader);
+    TokenStream stream = tokenizerFactory("EdgeNGram").create();
+    ((Tokenizer)stream).setReader(reader);
     assertTokenStreamContents(stream, 
         new String[] { "t" });
   }
@@ -92,20 +94,10 @@ public class TestNGramFilters extends BaseTokenStreamFactoryTestCase {
     Reader reader = new StringReader("test");
     TokenStream stream = tokenizerFactory("EdgeNGram",
         "minGramSize", "1",
-        "maxGramSize", "2").create(reader);
+        "maxGramSize", "2").create();
+    ((Tokenizer)stream).setReader(reader);
     assertTokenStreamContents(stream, 
         new String[] { "t", "te" });
-  }
-
-  /**
-   * Test EdgeNGramTokenizerFactory with side option
-   */
-  public void testEdgeNGramTokenizer3() throws Exception {
-    Reader reader = new StringReader("ready");
-    TokenStream stream = tokenizerFactory("EdgeNGram", Version.LUCENE_4_3,
-        "side", "back").create(reader);
-    assertTokenStreamContents(stream, 
-        new String[] { "y" });
   }
 
   /**
@@ -113,7 +105,7 @@ public class TestNGramFilters extends BaseTokenStreamFactoryTestCase {
    */
   public void testEdgeNGramFilter() throws Exception {
     Reader reader = new StringReader("test");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("EdgeNGram").create(stream);
     assertTokenStreamContents(stream, 
         new String[] { "t" });
@@ -124,24 +116,12 @@ public class TestNGramFilters extends BaseTokenStreamFactoryTestCase {
    */
   public void testEdgeNGramFilter2() throws Exception {
     Reader reader = new StringReader("test");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("EdgeNGram",
         "minGramSize", "1",
         "maxGramSize", "2").create(stream);
     assertTokenStreamContents(stream, 
         new String[] { "t", "te" });
-  }
-
-  /**
-   * Test EdgeNGramFilterFactory with side option
-   */
-  public void testEdgeNGramFilter3() throws Exception {
-    Reader reader = new StringReader("ready");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    stream = tokenFilterFactory("EdgeNGram", Version.LUCENE_4_3,
-        "side", "back").create(stream);
-    assertTokenStreamContents(stream, 
-        new String[] { "y" });
   }
   
   /** Test that bogus arguments result in exception */

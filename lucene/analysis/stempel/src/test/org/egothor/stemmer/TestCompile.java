@@ -56,77 +56,66 @@ package org.egothor.stemmer;
  */
 
 import java.io.BufferedInputStream;
-import java.io.BufferedReader;
 import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Locale;
 import java.util.StringTokenizer;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 
 public class TestCompile extends LuceneTestCase {
   
   public void testCompile() throws Exception {
-    File dir = createTempDir("testCompile");
-    dir.mkdirs();
-    InputStream input = getClass().getResourceAsStream("testRules.txt");
-    File output = new File(dir, "testRules.txt");
-    copy(input, output);
-    input.close();
-    String path = output.getAbsolutePath();
+    Path dir = createTempDir("testCompile");
+    Path output = dir.resolve("testRules.txt");
+    try (InputStream input = getClass().getResourceAsStream("testRules.txt")) {
+      Files.copy(input, output);
+    }
+    String path = output.toAbsolutePath().toString();
     Compile.main(new String[] {"test", path});
-    String compiled = path + ".out";
+    Path compiled = dir.resolve("testRules.txt.out");
     Trie trie = loadTrie(compiled);
-    assertTrie(trie, path, true, true);
-    assertTrie(trie, path, false, true);
-    Files.delete(new File(compiled).toPath());
+    assertTrie(trie, output, true, true);
+    assertTrie(trie, output, false, true);
   }
   
   public void testCompileBackwards() throws Exception {
-    File dir = createTempDir("testCompile");
-    dir.mkdirs();
-    InputStream input = getClass().getResourceAsStream("testRules.txt");
-    File output = new File(dir, "testRules.txt");
-    copy(input, output);
-    input.close();
-    String path = output.getAbsolutePath();
+    Path dir = createTempDir("testCompile");
+    Path output = dir.resolve("testRules.txt");
+    try (InputStream input = getClass().getResourceAsStream("testRules.txt")) {
+      Files.copy(input, output);
+    }
+    String path = output.toAbsolutePath().toString();
     Compile.main(new String[] {"-test", path});
-    String compiled = path + ".out";
+    Path compiled = dir.resolve("testRules.txt.out");
     Trie trie = loadTrie(compiled);
-    assertTrie(trie, path, true, true);
-    assertTrie(trie, path, false, true);
-    Files.delete(new File(compiled).toPath());
+    assertTrie(trie, output, true, true);
+    assertTrie(trie, output, false, true);
   }
   
   public void testCompileMulti() throws Exception {
-    File dir = createTempDir("testCompile");
-    dir.mkdirs();
-    InputStream input = getClass().getResourceAsStream("testRules.txt");
-    File output = new File(dir, "testRules.txt");
-    copy(input, output);
-    input.close();
-    String path = output.getAbsolutePath();
+    Path dir = createTempDir("testCompile");
+    Path output = dir.resolve("testRules.txt");
+    try (InputStream input = getClass().getResourceAsStream("testRules.txt")) {
+      Files.copy(input, output);
+    }
+    String path = output.toAbsolutePath().toString();
     Compile.main(new String[] {"Mtest", path});
-    String compiled = path + ".out";
+    Path compiled = dir.resolve("testRules.txt.out");
     Trie trie = loadTrie(compiled);
-    assertTrie(trie, path, true, true);
-    assertTrie(trie, path, false, true);
-    Files.delete(new File(compiled).toPath());
+    assertTrie(trie, output, true, true);
+    assertTrie(trie, output, false, true);
   }
   
-  static Trie loadTrie(String path) throws IOException {
+  static Trie loadTrie(Path path) throws IOException {
     Trie trie;
     DataInputStream is = new DataInputStream(new BufferedInputStream(
-        new FileInputStream(path)));
+        Files.newInputStream(path)));
     String method = is.readUTF().toUpperCase(Locale.ROOT);
     if (method.indexOf('M') < 0) {
       trie = new Trie(is);
@@ -137,10 +126,9 @@ public class TestCompile extends LuceneTestCase {
     return trie;
   }
   
-  private static void assertTrie(Trie trie, String file, boolean usefull,
+  private static void assertTrie(Trie trie, Path file, boolean usefull,
       boolean storeorig) throws Exception {
-    LineNumberReader in = new LineNumberReader(new BufferedReader(
-        new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)));
+    LineNumberReader in = new LineNumberReader(Files.newBufferedReader(file, StandardCharsets.UTF_8));
     
     for (String line = in.readLine(); line != null; line = in.readLine()) {
       try {
@@ -171,18 +159,5 @@ public class TestCompile extends LuceneTestCase {
     }
     
     in.close();
-  }
-  
-  private static void copy(InputStream input, File output) throws IOException {
-    FileOutputStream os = new FileOutputStream(output);
-    try {
-      byte buffer[] = new byte[1024];
-      int len;
-      while ((len = input.read(buffer)) > 0) {
-        os.write(buffer, 0, len);
-      }
-    } finally {
-      os.close();
-    }
   }
 }

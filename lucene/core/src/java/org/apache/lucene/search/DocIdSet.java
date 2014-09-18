@@ -95,11 +95,6 @@ public abstract class DocIdSet implements Accountable {
   }
 
   @Override
-  public long ramBytesUsed() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
   public Iterable<? extends Accountable> getChildResources() {
     return Collections.emptyList();
   }

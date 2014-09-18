@@ -22,7 +22,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.store.Directory;
 import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -30,7 +29,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.util.IOUtils;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,10 +68,11 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         closer.closeWriter(indexWriter);
       } else if (indexWriter != null) {
         log.info("closing IndexWriter...");
+        indexWriter.close();
       }
       indexWriter = null;
     } catch (Exception e) {
-      log.error("Error during shutdown of writer.", e);
+      log.error("Error during close of writer.", e);
     } 
   }
   
@@ -160,9 +159,21 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       try {
         if (indexWriter != null) {
           if (!rollback) {
-            closeIndexWriter(coreName);
+            try {
+              log.info("Closing old IndexWriter... core=" + coreName);
+              indexWriter.close();
+            } catch (Exception e) {
+              SolrException.log(log, "Error closing old IndexWriter. core="
+                  + coreName, e);
+            }
           } else {
-            rollbackIndexWriter(coreName);
+            try {
+              log.info("Rollback old IndexWriter... core=" + coreName);
+              indexWriter.rollback();
+            } catch (Exception e) {
+              SolrException.log(log, "Error rolling back old IndexWriter. core="
+                  + coreName, e);
+            }
           }
         }
         indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2");
@@ -174,41 +185,6 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         pauseWriter = false;
         writerPauseLock.notifyAll();
       }
-    }
-  }
-
-  private void closeIndexWriter(String coreName) {
-    try {
-      log.info("Closing old IndexWriter... core=" + coreName);
-      Directory dir = indexWriter.getDirectory();
-      try {
-        IOUtils.closeQuietly(indexWriter);
-      } finally {
-        if (IndexWriter.isLocked(dir)) {
-          IndexWriter.unlock(dir);
-        }
-      }
-    } catch (Exception e) {
-      SolrException.log(log, "Error closing old IndexWriter. core="
-          + coreName, e);
-    }
-  }
-
-  private void rollbackIndexWriter(String coreName) {
-    try {
-      log.info("Rollback old IndexWriter... core=" + coreName);
-      Directory dir = indexWriter.getDirectory();
-      try {
-        
-        indexWriter.rollback();
-      } finally {
-        if (IndexWriter.isLocked(dir)) {
-          IndexWriter.unlock(dir);
-        }
-      }
-    } catch (Exception e) {
-      SolrException.log(log, "Error rolling back old IndexWriter. core="
-          + coreName, e);
     }
   }
   
@@ -241,9 +217,21 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       
       if (indexWriter != null) {
         if (!rollback) {
-          closeIndexWriter(coreName);
+          try {
+            log.info("Closing old IndexWriter... core=" + coreName);
+            indexWriter.close();
+          } catch (Exception e) {
+            SolrException.log(log, "Error closing old IndexWriter. core="
+                + coreName, e);
+          }
         } else {
-          rollbackIndexWriter(coreName);
+          try {
+            log.info("Rollback old IndexWriter... core=" + coreName);
+            indexWriter.rollback();
+          } catch (Exception e) {
+            SolrException.log(log, "Error rolling back old IndexWriter. core="
+                + coreName, e);
+          }
         }
       }
       
@@ -295,14 +283,14 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     
     // check before we grab the lock
     if (cc.isShutDown()) {
-      log.warn("Skipping recovery because Solr is shutdown");
+      log.warn("Skipping recovery because Solr is close");
       return;
     }
     
     synchronized (recoveryLock) {
       // to be air tight we must also check after lock
       if (cc.isShutDown()) {
-        log.warn("Skipping recovery because Solr is shutdown");
+        log.warn("Skipping recovery because Solr is close");
         return;
       }
       log.info("Running recovery - first canceling any ongoing recovery");
@@ -316,7 +304,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         }
         // check again for those that were waiting
         if (cc.isShutDown()) {
-          log.warn("Skipping recovery because Solr is shutdown");
+          log.warn("Skipping recovery because Solr is close");
           return;
         }
         if (closed) return;

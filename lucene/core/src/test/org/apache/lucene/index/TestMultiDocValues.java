@@ -31,12 +31,8 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.apache.lucene.util.Version;
 
 /** Tests MultiDocValues versus ordinary segment merging */
-@SuppressCodecs("Lucene3x")
 public class TestMultiDocValues extends LuceneTestCase {
   
   public void testNumerics() throws Exception {
@@ -45,7 +41,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     Field field = new NumericDocValuesField("numbers", 0);
     doc.add(field);
     
-    IndexWriterConfig iwc = newIndexWriterConfig(random(), Version.LATEST, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
@@ -79,7 +75,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     Field field = new BinaryDocValuesField("bytes", new BytesRef());
     doc.add(field);
     
-    IndexWriterConfig iwc = newIndexWriterConfig(random(), Version.LATEST, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
@@ -116,7 +112,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     Field field = new SortedDocValuesField("bytes", new BytesRef());
     doc.add(field);
     
-    IndexWriterConfig iwc = newIndexWriterConfig(random(), Version.LATEST, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
@@ -124,7 +120,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     for (int i = 0; i < numDocs; i++) {
       BytesRef ref = new BytesRef(TestUtil.randomUnicodeString(random()));
       field.setBytesValue(ref);
-      if (defaultCodecSupportsDocsWithField() && random().nextInt(7) == 0) {
+      if (random().nextInt(7) == 0) {
         iw.addDocument(new Document());
       }
       iw.addDocument(doc);
@@ -161,7 +157,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     Field field = new SortedDocValuesField("bytes", new BytesRef());
     doc.add(field);
     
-    IndexWriterConfig iwc = newIndexWriterConfig(random(), Version.LATEST, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
@@ -197,10 +193,9 @@ public class TestMultiDocValues extends LuceneTestCase {
   }
   
   public void testSortedSet() throws Exception {
-    assumeTrue("codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
     
-    IndexWriterConfig iwc = newIndexWriterConfig(random(), Version.LATEST, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
@@ -260,10 +255,9 @@ public class TestMultiDocValues extends LuceneTestCase {
   
   // tries to make more dups than testSortedSet
   public void testSortedSetWithDups() throws Exception {
-    assumeTrue("codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
     
-    IndexWriterConfig iwc = newIndexWriterConfig(random(), Version.LATEST, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
@@ -322,10 +316,9 @@ public class TestMultiDocValues extends LuceneTestCase {
   }
   
   public void testSortedNumeric() throws Exception {
-    assumeTrue("codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
     Directory dir = newDirectory();
     
-    IndexWriterConfig iwc = newIndexWriterConfig(random(), Version.LATEST, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
@@ -374,10 +367,9 @@ public class TestMultiDocValues extends LuceneTestCase {
   }
   
   public void testDocsWithField() throws Exception {
-    assumeTrue("codec does not support docsWithField", defaultCodecSupportsDocsWithField());
     Directory dir = newDirectory();
     
-    IndexWriterConfig iwc = newIndexWriterConfig(random(), Version.LATEST, null);
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 

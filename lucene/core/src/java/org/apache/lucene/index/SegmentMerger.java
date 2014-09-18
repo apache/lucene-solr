@@ -18,13 +18,12 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.FieldsConsumer;
-import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.codecs.TermVectorsWriter;
@@ -42,7 +41,6 @@ import org.apache.lucene.util.InfoStream;
  */
 final class SegmentMerger {
   private final Directory directory;
-  private final int termIndexInterval;
 
   private final Codec codec;
   
@@ -52,7 +50,7 @@ final class SegmentMerger {
   private final FieldInfos.Builder fieldInfosBuilder;
 
   // note, just like in codec apis Directory 'dir' is NOT the same as segmentInfo.dir!!
-  SegmentMerger(List<AtomicReader> readers, SegmentInfo segmentInfo, InfoStream infoStream, Directory dir, int termIndexInterval,
+  SegmentMerger(List<AtomicReader> readers, SegmentInfo segmentInfo, InfoStream infoStream, Directory dir,
                 MergeState.CheckAbort checkAbort, FieldInfos.FieldNumbers fieldNumbers, IOContext context, boolean validate) throws IOException {
     // validate incoming readers
     if (validate) {
@@ -62,7 +60,6 @@ final class SegmentMerger {
     }
     mergeState = new MergeState(readers, segmentInfo, infoStream, checkAbort);
     directory = dir;
-    this.termIndexInterval = termIndexInterval;
     this.codec = segmentInfo.getCodec();
     this.context = context;
     this.fieldInfosBuilder = new FieldInfos.Builder(fieldNumbers);
@@ -103,7 +100,7 @@ final class SegmentMerger {
     assert numMerged == mergeState.segmentInfo.getDocCount();
 
     final SegmentWriteState segmentWriteState = new SegmentWriteState(mergeState.infoStream, directory, mergeState.segmentInfo,
-                                                                      mergeState.fieldInfos, termIndexInterval, null, context);
+                                                                      mergeState.fieldInfos, null, context);
     if (mergeState.infoStream.isEnabled("SM")) {
       t0 = System.nanoTime();
     }
@@ -267,7 +264,7 @@ final class SegmentMerger {
   }
 
   private void mergeTerms(SegmentWriteState segmentWriteState) throws IOException {
-    final FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(segmentWriteState);
+    FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(segmentWriteState);
     boolean success = false;
     try {
       consumer.merge(mergeState);

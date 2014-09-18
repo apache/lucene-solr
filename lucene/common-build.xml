@@ -48,7 +48,7 @@
 
   <property name="Name" value="Lucene"/>
   <property name="name" value="${ant.project.name}"/>
-
+  
   <!-- include version number from property file (includes "version.*" properties) -->
   <loadproperties srcFile="${common.dir}/version.properties"/>
   
@@ -525,10 +525,9 @@
   <property name="lucene.tgz.file" location="${common.dir}/dist/lucene-${version}.tgz"/>
   <available file="${lucene.tgz.file}" property="lucene.tgz.exists"/>
   <property name="lucene.tgz.unpack.dir" location="${common.build.dir}/lucene.tgz.unpacked"/>
-  <patternset id="patternset.lucene.solr.archives">
+  <patternset id="patternset.lucene.solr.jars">
     <include name="**/lucene-*.jar"/>
     <include name="**/solr-*.jar"/>
-    <include name="**/solr-*.war"/>
   </patternset>
   <available type="dir" file="${lucene.tgz.unpack.dir}" property="lucene.tgz.unpack.dir.exists"/>
   <target name="-ensure-lucene-tgz-exists" unless="lucene.tgz.exists">
@@ -538,7 +537,7 @@
     <antcall target="-ensure-lucene-tgz-exists" inheritall="false"/>
     <mkdir dir="${lucene.tgz.unpack.dir}"/>
     <untar compression="gzip" src="${lucene.tgz.file}" dest="${lucene.tgz.unpack.dir}">
-      <patternset refid="patternset.lucene.solr.archives"/>
+      <patternset refid="patternset.lucene.solr.jars"/>
     </untar>
   </target>
   <property name="dist.jar.dir.prefix" value="${lucene.tgz.unpack.dir}/lucene"/>
@@ -782,10 +781,9 @@
   </target>
 
   <target name="compile-test" depends="compile-core,compile-test-framework">
-  	<compile-test-macro srcdir="${tests.src.dir}" destdir="${build.dir}/classes/test"
-  						test.classpath="test.classpath"/>
+    <compile-test-macro srcdir="${tests.src.dir}" destdir="${build.dir}/classes/test" test.classpath="test.classpath"/>
   </target>
-	
+
   <macrodef name="compile-test-macro" description="Compiles junit tests.">
   	<attribute name="srcdir"/>
   	<attribute name="destdir"/>
@@ -1962,6 +1960,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
          <nested/>
          <parameter name="input-encoding" value="UTF-8" />
          <parameter name="only-errors" value="true" />
+         <parameter name="show-warnings" value="false" />
       </tidy>
       <delete dir="${common.dir}/build/jtidy_tmp" quiet="true"/>
     </sequential>
@@ -2357,6 +2356,15 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
     </path>
   </target>  
 
+  <condition property="forbidden-isLucene">
+    <not>
+      <or>
+        <matches pattern="^(solr)\b" string="${name}"/>
+        <matches pattern="tools" string="${name}"/>
+      </or>
+    </not>
+  </condition>
+
   <target name="check-forbidden-apis" depends="-check-forbidden-all,-check-forbidden-core,-check-forbidden-tests" description="Check forbidden API calls in compiled class files"/>
   
   <!-- applies to both source and test code -->
@@ -2364,12 +2372,15 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
     <forbidden-apis internalRuntimeForbidden="true" classpathref="forbidden-apis.allclasses.classpath">
       <bundledSignatures name="jdk-unsafe-${javac.target}"/>
       <bundledSignatures name="jdk-deprecated-${javac.target}"/>
-      <signaturesFileSet file="${common.dir}/tools/forbiddenApis/base.txt"/>
+      <signaturesFileSet dir="${common.dir}/tools/forbiddenApis">
+        <include name="base.txt"/>
+        <include name="lucene.txt" if="forbidden-isLucene"/>
+      </signaturesFileSet>
       <fileset dir="${build.dir}/classes/java" excludes="${forbidden-base-excludes}"/>
       <fileset dir="${build.dir}/classes/test" excludes="${forbidden-tests-excludes}" erroronmissingdir="false"/>
     </forbidden-apis>
   </target>
-  
+
   <!-- applies to only test code -->
   <target name="-check-forbidden-tests" depends="-init-forbidden-apis,compile-test">
     <forbidden-apis signaturesFile="${common.dir}/tools/forbiddenApis/tests.txt" classpathref="forbidden-apis.allclasses.classpath"> 

@@ -78,7 +78,7 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
     TermVectorsPostingsArray postings = termVectorsPostingsArray;
     final TermVectorsWriter tv = termsWriter.writer;
 
-    final int[] termIDs = sortPostings(tv.getComparator());
+    final int[] termIDs = sortPostings();
 
     tv.startField(fieldInfo, numPostings, doVectorPositions, doVectorOffsets, hasPayloads);
     

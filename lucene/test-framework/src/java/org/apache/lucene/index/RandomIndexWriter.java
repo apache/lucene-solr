@@ -33,7 +33,6 @@ import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NullInfoStream;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.Version;
 
 /** Silly class that randomizes the indexing experience.  EG
  *  it may swap in a different merge policy/scheduler; may
@@ -69,19 +68,14 @@ public class RandomIndexWriter implements Closeable {
     return new IndexWriter(dir, conf);
   }
 
-  /** create a RandomIndexWriter with a random config: Uses Version.LATEST and MockAnalyzer */
+  /** create a RandomIndexWriter with a random config: Uses MockAnalyzer */
   public RandomIndexWriter(Random r, Directory dir) throws IOException {
-    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, Version.LATEST, new MockAnalyzer(r)));
-  }
-  
-  /** create a RandomIndexWriter with a random config: Uses Version.LATEST */
-  public RandomIndexWriter(Random r, Directory dir, Analyzer a) throws IOException {
-    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, Version.LATEST, a));
+    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, new MockAnalyzer(r)));
   }
   
   /** create a RandomIndexWriter with a random config */
-  public RandomIndexWriter(Random r, Directory dir, Version v, Analyzer a) throws IOException {
-    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, v, a));
+  public RandomIndexWriter(Random r, Directory dir, Analyzer a) throws IOException {
+    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, a));
   }
   
   /** create a RandomIndexWriter with the provided config */
@@ -330,10 +324,7 @@ public class RandomIndexWriter implements Closeable {
     if (r.nextInt(20) == 2) {
       doRandomForceMerge();
     }
-    // If we are writing with PreFlexRW, force a full
-    // IndexReader.open so terms are sorted in codepoint
-    // order during searching:
-    if (!applyDeletions || !codec.getName().equals("Lucene3x") && r.nextBoolean()) {
+    if (!applyDeletions || r.nextBoolean()) {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("RIW.getReader: use NRT reader");
       }
@@ -347,7 +338,7 @@ public class RandomIndexWriter implements Closeable {
       }
       w.commit();
       if (r.nextBoolean()) {
-        return DirectoryReader.open(w.getDirectory(), TestUtil.nextInt(r, 1, 10));
+        return DirectoryReader.open(w.getDirectory());
       } else {
         return w.getReader(applyDeletions);
       }
@@ -360,15 +351,17 @@ public class RandomIndexWriter implements Closeable {
    */
   @Override
   public void close() throws IOException {
-    if (!w.isClosed()) {
+    if (w.isClosed() == false) {
       LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
     }
     // if someone isn't using getReader() API, we want to be sure to
     // forceMerge since presumably they might open a reader on the dir.
     if (getReaderCalled == false && r.nextInt(8) == 2 && w.isClosed() == false) {
       doRandomForceMerge();
-      // index may have changed, must commit the changes, or otherwise they are discarded by the call to close()
-      w.commit();
+      if (w.getConfig().getCommitOnClose() == false) {
+        // index may have changed, must commit the changes, or otherwise they are discarded by the call to close()
+        w.commit();
+      }
     }
     w.close();
   }

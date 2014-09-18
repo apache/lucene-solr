@@ -19,7 +19,6 @@ package org.apache.lucene.search.suggest;
 
 
 import java.io.*;
-import java.util.Comparator;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
 
@@ -196,11 +195,6 @@ public class FileDictionary implements Dictionary {
     }
 
     @Override
-    public Comparator<BytesRef> getComparator() {
-      return null;
-    }
-
-    @Override
     public BytesRef payload() {
       return (hasPayloads) ? curPayload.get() : null;
     }
@@ -229,5 +223,4 @@ public class FileDictionary implements Dictionary {
       return false;
     }
   }
-
 }

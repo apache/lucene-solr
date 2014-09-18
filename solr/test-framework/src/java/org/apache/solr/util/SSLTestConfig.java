@@ -97,13 +97,8 @@ public class SSLTestConfig extends SSLConfig {
       registry.unregister("http");
       try {
         registry.register(new Scheme("https", 443, new SSLSocketFactory(buildSSLContext())));
-      } catch (KeyManagementException ex) {
-        throw new IllegalStateException("Unable to setup https scheme for HTTPClient to test SSL.", ex);
-      } catch (UnrecoverableKeyException ex) {
-        throw new IllegalStateException("Unable to setup https scheme for HTTPClient to test SSL.", ex);
-      } catch (NoSuchAlgorithmException ex) {
-        throw new IllegalStateException("Unable to setup https scheme for HTTPClient to test SSL.", ex);
-      } catch (KeyStoreException ex) {
+      } catch (KeyManagementException | UnrecoverableKeyException
+          | NoSuchAlgorithmException | KeyStoreException ex) {
         throw new IllegalStateException("Unable to setup https scheme for HTTPClient to test SSL.", ex);
       }
     }

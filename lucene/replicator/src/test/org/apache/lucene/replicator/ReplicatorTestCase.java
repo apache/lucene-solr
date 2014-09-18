@@ -22,7 +22,6 @@ import java.util.Random;
 import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -35,7 +34,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.AfterClass;
 
-@SuppressCodecs("Lucene3x")
 public abstract class ReplicatorTestCase extends LuceneTestCase {
   
   private static HttpClientConnectionManager clientConnectionManager;
@@ -147,7 +145,7 @@ public abstract class ReplicatorTestCase extends LuceneTestCase {
    * Returns a {@link HttpClientConnectionManager}.
    * <p>
    * <b>NOTE:</b> do not {@link HttpClientConnectionManager#shutdown()} this
-   * connection manager, it will be shutdown automatically after all tests have
+   * connection manager, it will be close automatically after all tests have
    * finished.
    */
   public static synchronized HttpClientConnectionManager getClientConnectionManager() {

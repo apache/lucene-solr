@@ -122,11 +122,6 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
   public String getDescription() {
     return "Add/Update Rich document";
   }
-
-  @Override
-  public String getSource() {
-    return null;
-  }
 }
 
 

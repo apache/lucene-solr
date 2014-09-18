@@ -51,11 +51,8 @@ public abstract class HighlightingPluginBase implements SolrInfoMBean
 
   @Override
   public abstract String getDescription();
-
   @Override
-  public String getSource() {
-    return null;
-  }
+  public String getSource() { return null; }
   
   @Override
   public String getVersion() {

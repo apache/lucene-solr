@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -65,7 +64,7 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
     }
   }
   
-  private static final class ScoreCachingCollector extends Collector {
+  private static final class ScoreCachingCollector extends SimpleCollector {
 
     private int idx = 0;
     private Scorer scorer;
@@ -86,9 +85,6 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
       mscores[idx] = scorer.score();
       mscores[idx] = scorer.score();
       ++idx;
-    }
-
-    @Override public void setNextReader(AtomicReaderContext context) {
     }
 
     @Override public void setScorer(Scorer scorer) {

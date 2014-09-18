@@ -42,7 +42,6 @@ import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 
 public class TestSpans extends LuceneTestCase {
   private IndexSearcher searcher;
@@ -476,8 +475,7 @@ public class TestSpans extends LuceneTestCase {
   // LUCENE-1404
   public void testNPESpanQuery() throws Throwable {
     final Directory dir = newDirectory();
-    final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        Version.LATEST, new MockAnalyzer(random())));
+    final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
 
     // Add documents
     addDoc(writer, "1", "the big dogs went running to the market");

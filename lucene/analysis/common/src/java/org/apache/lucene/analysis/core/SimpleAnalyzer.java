@@ -17,42 +17,21 @@ package org.apache.lucene.analysis.core;
  * limitations under the License.
  */
 
-import java.io.Reader;
-
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.util.CharTokenizer;
-import org.apache.lucene.util.Version;
 
 /** An {@link Analyzer} that filters {@link LetterTokenizer} 
  *  with {@link LowerCaseFilter} 
- * <p>
- * <a name="version">You may specify the {@link Version} compatibility
- * when creating {@link SimpleAnalyzer}:
- * <ul>
- * <li>As of 3.1, {@link LowerCaseTokenizer} uses an int based API to normalize and
- * detect token codepoints. See {@link CharTokenizer#isTokenChar(int)} and
- * {@link CharTokenizer#normalize(int)} for details.</li>
- * </ul>
- * <p>
  **/
 public final class SimpleAnalyzer extends Analyzer {
 
   /**
    * Creates a new {@link SimpleAnalyzer}
    */
-  public SimpleAnalyzer() {}
-
-  /**
-   * @deprecated Use {@link #SimpleAnalyzer()}
-   */
-  @Deprecated
-  public SimpleAnalyzer(Version matchVersion) {
-    setVersion(matchVersion);
+  public SimpleAnalyzer() {
   }
   
   @Override
-  protected TokenStreamComponents createComponents(final String fieldName,
-      final Reader reader) {
-    return new TokenStreamComponents(new LowerCaseTokenizer(getVersion(), reader));
+  protected TokenStreamComponents createComponents(final String fieldName) {
+    return new TokenStreamComponents(new LowerCaseTokenizer());
   }
 }

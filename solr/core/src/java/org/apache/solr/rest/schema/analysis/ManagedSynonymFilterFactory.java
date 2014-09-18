@@ -29,6 +29,7 @@ import java.util.TreeSet;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.synonym.SynonymFilterFactory;
 import org.apache.lucene.analysis.synonym.SynonymMap;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.util.CharsRef;
@@ -335,7 +336,7 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
     }    
   }
   
-  protected FSTSynonymFilterFactory delegate;
+  protected SynonymFilterFactory delegate;
           
   public ManagedSynonymFilterFactory(Map<String,String> args) {
     super(args);    
@@ -373,7 +374,7 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
     }
     // create the actual filter factory that pulls the synonym mappings
     // from synonymMappings using a custom parser implementation
-    delegate = new FSTSynonymFilterFactory(filtArgs) {
+    delegate = new SynonymFilterFactory(filtArgs) {
       @Override
       protected SynonymMap loadSynonyms
           (ResourceLoader loader, String cname, boolean dedup, Analyzer analyzer)

@@ -17,14 +17,12 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
 /**
  * Tests things like sorting on docvalues with missing values
  */
-@SuppressCodecs({"Lucene3x", "Appending", "Lucene40", "Lucene41", "Lucene42"}) // old formats cannot represent missing values
 public class DocValuesMissingTest extends SolrTestCaseJ4 {
   
   @BeforeClass

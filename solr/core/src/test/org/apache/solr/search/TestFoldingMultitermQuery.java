@@ -46,8 +46,6 @@ public class TestFoldingMultitermQuery extends SolrTestCaseJ4 {
           "float_f", num,
           "long_f", num,
           "double_f", num,
-          "byte_f", num,
-          "short_f", num,
           "bool_f", boolVal,
           "date_f", "200" + Integer.toString(i % 10) + "-01-01T00:00:00Z",
           "content", docs[i],
@@ -269,7 +267,7 @@ public class TestFoldingMultitermQuery extends SolrTestCaseJ4 {
 
   @Test
   public void testNonTextTypes() {
-    String[] intTypes = {"int_f", "float_f", "long_f", "double_f", "byte_f", "short_f"};
+    String[] intTypes = {"int_f", "float_f", "long_f", "double_f"};
 
     for (String str : intTypes) {
       assertQ(req("q", str + ":" + "0"),

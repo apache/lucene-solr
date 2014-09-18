@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -287,16 +286,12 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     q.addTransition(s2, s3, "sun");
     q.finish();
 
-    s.search(q, new Collector() {
+    s.search(q, new SimpleCollector() {
         private Scorer scorer;
 
         @Override
         public boolean acceptsDocsOutOfOrder() {
           return false;
-        }
-
-        @Override
-        public void setNextReader(AtomicReaderContext context) {
         }
 
         @Override
@@ -470,8 +465,8 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     // Adds occassional random synonyms:
     Analyzer analyzer = new Analyzer() {
         @Override
-        public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, true, 100);
+        public TokenStreamComponents createComponents(String fieldName) {
+          MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true, 100);
           tokenizer.setEnableChecks(true);
           TokenFilter filt = new MockTokenFilter(tokenizer, MockTokenFilter.EMPTY_STOPSET);
           filt = new RandomSynonymFilter(filt);

@@ -41,7 +41,7 @@ import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Version;
+
 
 
 /** Shows simple usage of dynamic range faceting. */
@@ -60,7 +60,7 @@ public class RangeFacetsExample implements Closeable {
   
   /** Build the example index. */
   public void index() throws IOException {
-    IndexWriter indexWriter = new IndexWriter(indexDir, new IndexWriterConfig(Version.LATEST,
+    IndexWriter indexWriter = new IndexWriter(indexDir, new IndexWriterConfig(
         new WhitespaceAnalyzer()));
 
     // Add documents with a fake timestamp, 1000 sec before

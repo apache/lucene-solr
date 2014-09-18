@@ -37,7 +37,6 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 
@@ -58,7 +57,7 @@ public class TokenSources {
    *        and get the vector from
    * @param docId The docId to retrieve.
    * @param field The field to retrieve on the document
-   * @param doc The document to fall back on
+   * @param document The document to fall back on
    * @param analyzer The analyzer to use for creating the TokenStream if the
    *        vector doesn't exist
    * @return The {@link org.apache.lucene.analysis.TokenStream} for the
@@ -68,7 +67,7 @@ public class TokenSources {
    */
 
   public static TokenStream getAnyTokenStream(IndexReader reader, int docId,
-      String field, Document doc, Analyzer analyzer) throws IOException {
+      String field, Document document, Analyzer analyzer) throws IOException {
     TokenStream ts = null;
 
     Fields vectors = reader.getTermVectors(docId);
@@ -81,7 +80,7 @@ public class TokenSources {
 
     // No token info stored so fall back to analyzing raw content
     if (ts == null) {
-      ts = getTokenStream(doc, field, analyzer);
+      ts = getTokenStream(document, field, analyzer);
     }
     return ts;
   }
@@ -319,7 +318,7 @@ public class TokenSources {
     Document doc = reader.document(docId);
     return getTokenStream(doc, field, analyzer);
   }
-
+  
   public static TokenStream getTokenStream(Document doc, String field,
       Analyzer analyzer) {
     String contents = doc.get(field);

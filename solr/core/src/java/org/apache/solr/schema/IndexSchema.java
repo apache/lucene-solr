@@ -19,8 +19,12 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -272,23 +276,8 @@ public class IndexSchema {
    * This Analyzer is field (and dynamic field) name aware, and delegates to
    * a field specific Analyzer based on the field type.
    * </p>
-   * @deprecated (4.9) Use {@link #getIndexAnalyzer()} instead.
    */
-  @Deprecated
-  public Analyzer getAnalyzer() { return indexAnalyzer; }
-
-  /**
-   * Returns the Analyzer used when indexing documents for this index
-   *
-   * <p>
-   * This Analyzer is field (and dynamic field) name aware, and delegates to
-   * a field specific Analyzer based on the field type.
-   * </p>
-   */
-  @SuppressWarnings("deprecation")
-  public Analyzer getIndexAnalyzer() {
-    return getAnalyzer();
-  }
+  public Analyzer getIndexAnalyzer() { return indexAnalyzer; }
 
   /**
    * Returns the Analyzer used when searching this index
@@ -369,6 +358,22 @@ public class IndexSchema {
   public void refreshAnalyzers() {
     indexAnalyzer = new SolrIndexAnalyzer();
     queryAnalyzer = new SolrQueryAnalyzer();
+  }
+  
+  public Map<String,UninvertingReader.Type> getUninversionMap(IndexReader reader) {
+    Map<String,UninvertingReader.Type> map = new HashMap<>();
+    for (FieldInfo f : MultiFields.getMergedFieldInfos(reader)) {
+      if (f.hasDocValues() == false && f.isIndexed()) {
+        SchemaField sf = getFieldOrNull(f.name);
+        if (sf != null) {
+          UninvertingReader.Type type = sf.getType().getUninversionType(sf);
+          if (type != null) {
+            map.put(f.name, type);
+          }
+        }
+      }
+    }
+    return map;
   }
 
   /**

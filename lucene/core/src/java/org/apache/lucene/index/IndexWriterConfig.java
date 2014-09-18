@@ -28,7 +28,6 @@ import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.PrintStreamInfoStream;
 import org.apache.lucene.util.SetOnce;
 import org.apache.lucene.util.SetOnce.AlreadySetException;
-import org.apache.lucene.util.Version;
 
 /**
  * Holds all the configuration that is used to create an {@link IndexWriter}.
@@ -72,9 +71,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
     CREATE_OR_APPEND 
   }
 
-  /** Default value is 32. Change using {@link #setTermIndexInterval(int)}. */
-  public static final int DEFAULT_TERM_INDEX_INTERVAL = 32; // TODO: this should be private to the codec, not settable here
-
   /** Denotes a flush trigger is disabled. */
   public final static int DISABLE_AUTO_FLUSH = -1;
 
@@ -100,9 +96,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   /** Default setting for {@link #setReaderPooling}. */
   public final static boolean DEFAULT_READER_POOLING = false;
 
-  /** Default value is 1. Change using {@link #setReaderTermsIndexDivisor(int)}. */
-  public static final int DEFAULT_READER_TERMS_INDEX_DIVISOR = DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR;
-
   /** Default value is 1945. Change using {@link #setRAMPerThreadHardLimitMB(int)} */
   public static final int DEFAULT_RAM_PER_THREAD_HARD_LIMIT_MB = 1945;
   
@@ -121,6 +114,9 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
    *  merging segments (set to <code>false</code>). You can set this
    *  to <code>true</code> for additional safety. */
   public final static boolean DEFAULT_CHECK_INTEGRITY_AT_MERGE = false;
+
+  /** Default value for whether calls to {@link IndexWriter#close()} include a commit. */
+  public final static boolean DEFAULT_COMMIT_ON_CLOSE = true;
   
   /**
    * Sets the default (for any instance) maximum time to wait for a write lock
@@ -156,19 +152,17 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   }
   
   /**
-   * Creates a new config that with defaults that match the specified
-   * {@link Version} as well as the default {@link
-   * Analyzer}. If matchVersion is >= {@link
-   * Version#LUCENE_3_2}, {@link TieredMergePolicy} is used
-   * for merging; else {@link LogByteSizeMergePolicy}.
+   * Creates a new config that with the default {@link
+   * Analyzer}. By default, {@link TieredMergePolicy} is used
+   * for merging;
    * Note that {@link TieredMergePolicy} is free to select
    * non-contiguous merges, which means docIDs may not
    * remain monotonic over time.  If this is a problem you
    * should switch to {@link LogByteSizeMergePolicy} or
    * {@link LogDocMergePolicy}.
    */
-  public IndexWriterConfig(Version matchVersion, Analyzer analyzer) {
-    super(analyzer, matchVersion);
+  public IndexWriterConfig(Analyzer analyzer) {
+    super(analyzer);
   }
 
   /** Specifies {@link OpenMode} of the index.
@@ -462,16 +456,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
     return super.getRAMBufferSizeMB();
   }
   
-  @Override
-  public int getReaderTermsIndexDivisor() {
-    return super.getReaderTermsIndexDivisor();
-  }
-  
-  @Override
-  public int getTermIndexInterval() {
-    return super.getTermIndexInterval();
-  }
-  
   /** 
    * Information about merges, deletes and a
    * message when maxFieldLength is reached will be printed
@@ -523,18 +507,17 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   }
   
   @Override
-  public IndexWriterConfig setReaderTermsIndexDivisor(int divisor) {
-    return (IndexWriterConfig) super.setReaderTermsIndexDivisor(divisor);
-  }
-  
-  @Override
-  public IndexWriterConfig setTermIndexInterval(int interval) {
-    return (IndexWriterConfig) super.setTermIndexInterval(interval);
-  }
-  
-  @Override
   public IndexWriterConfig setUseCompoundFile(boolean useCompoundFile) {
     return (IndexWriterConfig) super.setUseCompoundFile(useCompoundFile);
+  }
+
+  /**
+   * Sets if calls {@link IndexWriter#close()} should first commit
+   * before closing.  Use <code>true</code> to match behavior of Lucene 4.x.
+   */
+  public IndexWriterConfig setCommitOnClose(boolean commitOnClose) {
+    this.commitOnClose = commitOnClose;
+    return this;
   }
 
   @Override

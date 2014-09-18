@@ -69,13 +69,6 @@ public class SegmentWriteState {
    *  
    *  Note: the suffix must be either empty, or be a textual suffix contain exactly two parts (separated by underscore), or be a base36 generation. */
   public final String segmentSuffix;
-
-  /** Expert: The fraction of terms in the "dictionary" which should be stored
-   * in RAM.  Smaller values use more memory, but make searching slightly
-   * faster, while larger values use less memory and make searching slightly
-   * slower.  Searching is typically not dominated by dictionary lookup, so
-   * tweaking this is rarely useful.*/
-  public int termIndexInterval;                   // TODO: this should be private to the codec, not settable here or in IWC
   
   /** {@link IOContext} for all writes; you should pass this
    *  to {@link Directory#createOutput(String,IOContext)}. */
@@ -83,24 +76,23 @@ public class SegmentWriteState {
 
   /** Sole constructor. */
   public SegmentWriteState(InfoStream infoStream, Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos,
-      int termIndexInterval, BufferedUpdates segUpdates, IOContext context) {
-    this(infoStream, directory, segmentInfo, fieldInfos, termIndexInterval, segUpdates, context, "");
+      BufferedUpdates segUpdates, IOContext context) {
+    this(infoStream, directory, segmentInfo, fieldInfos, segUpdates, context, "");
   }
 
   /**
    * Constructor which takes segment suffix.
    * 
-   * @see #SegmentWriteState(InfoStream, Directory, SegmentInfo, FieldInfos, int,
+   * @see #SegmentWriteState(InfoStream, Directory, SegmentInfo, FieldInfos,
    *      BufferedUpdates, IOContext)
    */
   public SegmentWriteState(InfoStream infoStream, Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos,
-      int termIndexInterval, BufferedUpdates segUpdates, IOContext context, String segmentSuffix) {
+      BufferedUpdates segUpdates, IOContext context, String segmentSuffix) {
     this.infoStream = infoStream;
     this.segUpdates = segUpdates;
     this.directory = directory;
     this.segmentInfo = segmentInfo;
     this.fieldInfos = fieldInfos;
-    this.termIndexInterval = termIndexInterval;
     assert assertSegmentSuffix(segmentSuffix);
     this.segmentSuffix = segmentSuffix;
     this.context = context;
@@ -112,7 +104,6 @@ public class SegmentWriteState {
     directory = state.directory;
     segmentInfo = state.segmentInfo;
     fieldInfos = state.fieldInfos;
-    termIndexInterval = state.termIndexInterval;
     context = state.context;
     this.segmentSuffix = segmentSuffix;
     segUpdates = state.segUpdates;

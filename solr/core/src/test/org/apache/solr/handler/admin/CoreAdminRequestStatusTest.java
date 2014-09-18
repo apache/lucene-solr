@@ -37,7 +37,7 @@ public class CoreAdminRequestStatusTest extends SolrTestCaseJ4{
 
   @Test
   public void testCoreAdminRequestStatus() throws Exception {
-    final File workDir = createTempDir();
+    final File workDir = createTempDir().toFile();
 
     final CoreContainer cores = h.getCoreContainer();
 

@@ -54,7 +54,7 @@ import static org.hamcrest.core.Is.is;
 
 public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
 
-  private File solrHomeDirectory = createTempDir();
+  private File solrHomeDirectory = createTempDir().toFile();
 
   @Rule
   public TestRule solrTestRules =
@@ -62,7 +62,7 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
 
   @Before
   public void setupTest() {
-    solrHomeDirectory = createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    solrHomeDirectory = createTempDir(LuceneTestCase.getTestClass().getSimpleName()).toFile();
   }
 
   private CoreContainer init(String solrXmlString, String... subDirs) throws Exception {

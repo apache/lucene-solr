@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,29 +30,25 @@ import org.apache.lucene.analysis.MockPayloadAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.Version;
 
 // TODO: we really need to test indexingoffsets, but then getting only docs / docs + freqs.
 // not all codecs store prx separate...
 // TODO: fix sep codec to index offsets so we can greatly reduce this list!
-@SuppressCodecs({"Lucene3x", "MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom"})
 public class TestPostingsOffsets extends LuceneTestCase {
   IndexWriterConfig iwc;
   
@@ -245,7 +240,8 @@ public class TestPostingsOffsets extends LuceneTestCase {
 
     for(int docCount=0;docCount<numDocs;docCount++) {
       Document doc = new Document();
-      doc.add(new IntField("id", docCount, Field.Store.NO));
+      doc.add(new IntField("id", docCount, Field.Store.YES));
+      doc.add(new NumericDocValuesField("id", docCount));
       List<Token> tokens = new ArrayList<>();
       final int numTokens = atLeast(100);
       //final int numTokens = atLeast(20);
@@ -302,7 +298,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
       DocsEnum docs = null;
       DocsAndPositionsEnum docsAndPositions = null;
       DocsAndPositionsEnum docsAndPositionsAndOffsets = null;
-      final FieldCache.Ints docIDToID = FieldCache.DEFAULT.getInts(sub, "id", false);
+      final NumericDocValues docIDToID = DocValues.getNumeric(sub, "id");
       for(String term : terms) {
         //System.out.println("  term=" + term);
         if (termsEnum.seekExact(new BytesRef(term))) {
@@ -311,7 +307,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
           int doc;
           //System.out.println("    doc/freq");
           while((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-            final List<Token> expected = actualTokens.get(term).get(docIDToID.get(doc));
+            final List<Token> expected = actualTokens.get(term).get((int) docIDToID.get(doc));
             //System.out.println("      doc=" + docIDToID.get(doc) + " docID=" + doc + " " + expected.size() + " freq");
             assertNotNull(expected);
             assertEquals(expected.size(), docs.freq());
@@ -322,7 +318,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
           assertNotNull(docsAndPositions);
           //System.out.println("    doc/freq/pos");
           while((doc = docsAndPositions.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-            final List<Token> expected = actualTokens.get(term).get(docIDToID.get(doc));
+            final List<Token> expected = actualTokens.get(term).get((int) docIDToID.get(doc));
             //System.out.println("      doc=" + docIDToID.get(doc) + " " + expected.size() + " freq");
             assertNotNull(expected);
             assertEquals(expected.size(), docsAndPositions.freq());
@@ -337,7 +333,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
           assertNotNull(docsAndPositionsAndOffsets);
           //System.out.println("    doc/freq/pos/offs");
           while((doc = docsAndPositionsAndOffsets.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-            final List<Token> expected = actualTokens.get(term).get(docIDToID.get(doc));
+            final List<Token> expected = actualTokens.get(term).get((int) docIDToID.get(doc));
             //System.out.println("      doc=" + docIDToID.get(doc) + " " + expected.size() + " freq");
             assertNotNull(expected);
             assertEquals(expected.size(), docsAndPositionsAndOffsets.freq());
@@ -456,8 +452,8 @@ public class TestPostingsOffsets extends LuceneTestCase {
     Directory dir = newDirectory();
     Analyzer analyzer = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        return new TokenStreamComponents(new MockTokenizer(reader, MockTokenizer.KEYWORD, false));
+      protected TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new MockTokenizer(MockTokenizer.KEYWORD, false));
       }
 
       @Override
@@ -465,7 +461,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
         return -10;
       }
     };
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, analyzer));
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(analyzer));
     // add good document
     Document doc = new Document();
     iw.addDocument(doc);
@@ -527,10 +523,11 @@ public class TestPostingsOffsets extends LuceneTestCase {
       Document doc = new Document();
       doc.add(new Field("body", new CannedTokenStream(tokens), ft));
       riw.addDocument(doc);
+      riw.close();
       success = true;
     } finally {
       if (success) {
-        IOUtils.close(riw, dir);
+        IOUtils.close(dir);
       } else {
         IOUtils.closeWhileHandlingException(riw, dir);
       }

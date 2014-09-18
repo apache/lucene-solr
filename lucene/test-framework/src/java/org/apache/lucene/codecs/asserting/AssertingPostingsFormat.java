@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.asserting;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.Iterator;
 
 import org.apache.lucene.codecs.FieldsConsumer;
@@ -236,11 +235,6 @@ public final class AssertingPostingsFormat extends PostingsFormat {
     @Override
     public void close() throws IOException {
       in.close();
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return in.getComparator();
     }
   }
 }

@@ -17,12 +17,12 @@ package org.apache.lucene.search.grouping;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.util.FixedBitSet;
-
 import java.io.IOException;
 import java.util.Collection;
+
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.SimpleCollector;
+import org.apache.lucene.util.FixedBitSet;
 
 /**
  * This collector specializes in collecting the most relevant document (group head) for each group that match the query.
@@ -30,7 +30,7 @@ import java.util.Collection;
  * @lucene.experimental
  */
 @SuppressWarnings({"unchecked","rawtypes"})
-public abstract class AbstractAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsCollector.GroupHead> extends Collector {
+public abstract class AbstractAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsCollector.GroupHead> extends SimpleCollector {
 
   protected final int[] reversed;
   protected final int compIDXEnd;

@@ -20,6 +20,8 @@ package org.apache.lucene.store;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.io.File;
 import java.io.IOException;
@@ -77,18 +79,8 @@ public class NativeFSLockFactory extends FSLockFactory {
    * directory itself. Be sure to create one instance for each directory
    * your create!
    */
-  public NativeFSLockFactory() {
-    this((File) null);
-  }
-
-  /**
-   * Create a NativeFSLockFactory instance, storing lock
-   * files into the specified lockDirName:
-   *
-   * @param lockDirName where lock files are created.
-   */
-  public NativeFSLockFactory(String lockDirName) {
-    this(new File(lockDirName));
+  public NativeFSLockFactory() throws IOException {
+    this((Path) null);
   }
 
   /**
@@ -97,7 +89,7 @@ public class NativeFSLockFactory extends FSLockFactory {
    * 
    * @param lockDir where lock files are created.
    */
-  public NativeFSLockFactory(File lockDir) {
+  public NativeFSLockFactory(Path lockDir) throws IOException {
     setLockDir(lockDir);
   }
 
@@ -118,14 +110,14 @@ class NativeFSLock extends Lock {
 
   private FileChannel channel;
   private FileLock lock;
-  private File path;
-  private File lockDir;
+  private Path path;
+  private Path lockDir;
   private static final Set<String> LOCK_HELD = Collections.synchronizedSet(new HashSet<String>());
 
 
-  public NativeFSLock(File lockDir, String lockFileName) {
+  public NativeFSLock(Path lockDir, String lockFileName) {
     this.lockDir = lockDir;
-    path = new File(lockDir, lockFileName);
+    path = lockDir.resolve(lockFileName);
   }
 
 
@@ -138,16 +130,14 @@ class NativeFSLock extends Lock {
     }
 
     // Ensure that lockDir exists and is a directory.
-    if (!lockDir.exists()) {
-      if (!lockDir.mkdirs())
-        throw new IOException("Cannot create directory: " +
-            lockDir.getAbsolutePath());
-    } else if (!lockDir.isDirectory()) {
-      // TODO: NoSuchDirectoryException instead?
-      throw new IOException("Found regular file where directory expected: " + 
-          lockDir.getAbsolutePath());
+    Files.createDirectories(lockDir);
+    try {
+      Files.createFile(path);
+    } catch (IOException ignore) {
+      // we must create the file to have a truly canonical path.
+      // if its already created, we don't care. if it cant be created, it will fail below.
     }
-    final String canonicalPath = path.getCanonicalPath();
+    final Path canonicalPath = path.toRealPath();
     // Make sure nobody else in-process has this lock held
     // already, and, mark it held if not:
     // This is a pretty crazy workaround for some documented
@@ -162,9 +152,9 @@ class NativeFSLock extends Lock {
     // is that we can't re-obtain the lock in the same JVM but from a different process if that happens. Nevertheless
     // this is super trappy. See LUCENE-5738
     boolean obtained = false;
-    if (LOCK_HELD.add(canonicalPath)) {
+    if (LOCK_HELD.add(canonicalPath.toString())) {
       try {
-        channel = FileChannel.open(path.toPath(), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+        channel = FileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
         try {
           lock = channel.tryLock();
           obtained = lock != null;
@@ -209,8 +199,9 @@ class NativeFSLock extends Lock {
     }
   }
 
-  private static final void clearLockHeld(File path) throws IOException {
-    boolean remove = LOCK_HELD.remove(path.getCanonicalPath());
+  private static final void clearLockHeld(Path path) throws IOException {
+    path = path.toRealPath();
+    boolean remove = LOCK_HELD.remove(path.toString());
     assert remove : "Lock was cleared but never marked as held";
   }
 
@@ -221,8 +212,8 @@ class NativeFSLock extends Lock {
     // First a shortcut, if a lock reference in this instance is available
     if (lock != null) return true;
     
-    // Look if lock file is present; if not, there can definitely be no lock!
-    if (!path.exists()) return false;
+    // Look if lock file is definitely not present; if not, there can definitely be no lock!
+    if (Files.notExists(path)) return false;
     
     // Try to obtain and release (if was locked) the lock
     try {

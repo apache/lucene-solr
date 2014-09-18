@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.util.CharacterUtils;
-import org.apache.lucene.util.Version;
 
 /**
  * A simple class that stores key Strings as char[]'s in a
@@ -35,19 +34,6 @@ import org.apache.lucene.util.Version;
  * etc.  It is designed to be quick to retrieve items
  * by char[] keys without the necessity of converting
  * to a String first.
- *
- * <a name="version"></a>
- * <p>You may specify the {@link Version}
- * compatibility when creating {@link CharArrayMap}:
- * <ul>
- *   <li> As of 3.1, supplementary characters are
- *       properly lowercased.</li>
- * </ul>
- * Before 3.1 supplementary characters could not be
- * lowercased correctly due to the lack of Unicode 4
- * support in JDK 1.4. To use instances of
- * {@link CharArrayMap} with the behavior before Lucene
- * 3.1 pass a {@link Version} &lt; 3.1 to the constructors.
  */
 public class CharArrayMap<V> extends AbstractMap<Object,V> {
   // private only because missing generics
@@ -57,7 +43,6 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
   private final CharacterUtils charUtils;
   private boolean ignoreCase;  
   private int count;
-  final Version matchVersion; // package private because used in CharArraySet
   char[][] keys; // package private because used in CharArraySet's non Set-conform CharArraySetIterator
   V[] values; // package private because used in CharArraySet's non Set-conform CharArraySetIterator
 
@@ -70,24 +55,15 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
    *          <code>false</code> if and only if the set should be case sensitive
    *          otherwise <code>true</code>.
    */
-  public CharArrayMap(int startSize, boolean ignoreCase) {
-    this(Version.LATEST, startSize, ignoreCase);
-  }
-
-  /**
-   * @deprecated Use {@link #CharArrayMap(int, boolean)}
-   */
-  @Deprecated
   @SuppressWarnings("unchecked")
-  public CharArrayMap(Version matchVersion, int startSize, boolean ignoreCase) {
+  public CharArrayMap(int startSize, boolean ignoreCase) {
     this.ignoreCase = ignoreCase;
     int size = INIT_SIZE;
     while(startSize + (startSize>>2) > size)
       size <<= 1;
     keys = new char[size][];
     values = (V[]) new Object[size];
-    this.charUtils = CharacterUtils.getInstance(matchVersion);
-    this.matchVersion = matchVersion;
+    this.charUtils = CharacterUtils.getInstance();
   }
 
   /**
@@ -100,15 +76,7 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
    *          otherwise <code>true</code>.
    */
   public CharArrayMap(Map<?,? extends V> c, boolean ignoreCase) {
-    this(Version.LATEST, c, ignoreCase);
-  }
-
-  /**
-   * @deprecated Use {@link #CharArrayMap(java.util.Map, boolean)}
-   */
-  @Deprecated
-  public CharArrayMap(Version matchVersion, Map<?,? extends V> c, boolean ignoreCase) {
-    this(matchVersion, c.size(), ignoreCase);
+    this(c.size(), ignoreCase);
     putAll(c);
   }
   
@@ -119,7 +87,6 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
     this.ignoreCase = toCopy.ignoreCase;
     this.count = toCopy.count;
     this.charUtils = toCopy.charUtils;
-    this.matchVersion = toCopy.matchVersion;
   }
   
   /** Clears all entries in this map. This method is supported for reusing, but not {@link Map#remove}. */
@@ -574,30 +541,15 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
   /**
    * Returns a copy of the given map as a {@link CharArrayMap}. If the given map
    * is a {@link CharArrayMap} the ignoreCase property will be preserved.
-   * <p>
-   * <b>Note:</b> If you intend to create a copy of another {@link CharArrayMap} where
-   * the {@link Version} of the source map differs from its copy
-   * {@link #CharArrayMap(Version, Map, boolean)} should be used instead.
-   * The {@link #copy(Version, Map)} will preserve the {@link Version} of the
-   * source map it is an instance of {@link CharArrayMap}.
-   * </p>
-   *
+   * 
    * @param map
    *          a map to copy
    * @return a copy of the given map as a {@link CharArrayMap}. If the given map
    *         is a {@link CharArrayMap} the ignoreCase property as well as the
    *         matchVersion will be of the given map will be preserved.
    */
-  public static <V> CharArrayMap<V> copy(final Map<?,? extends V> map) {
-    return copy(Version.LATEST, map);
-  }
-
-  /**
-   * @deprecated Use {@link #copy(Map)}
-   */
-  @Deprecated
   @SuppressWarnings("unchecked")
-  public static <V> CharArrayMap<V> copy(Version matchVersion, final Map<?,? extends V> map) {
+  public static <V> CharArrayMap<V> copy(final Map<?,? extends V> map) {
     if(map == EMPTY_MAP)
       return emptyMap();
     if(map instanceof CharArrayMap) {
@@ -613,7 +565,7 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
       m.values = values;
       return m;
     }
-    return new CharArrayMap<>(matchVersion, map, false);
+    return new CharArrayMap<>(map, false);
   }
   
   /** Returns an empty, unmodifiable map. */

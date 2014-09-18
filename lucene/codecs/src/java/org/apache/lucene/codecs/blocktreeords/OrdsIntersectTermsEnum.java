@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.blocktreeords;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 
 import org.apache.lucene.codecs.blocktreeords.FSTOrdsOutputs.Output;
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -462,11 +461,6 @@ final class OrdsIntersectTermsEnum extends TermsEnum {
     }
     System.arraycopy(currentFrame.suffixBytes, currentFrame.startBytePos, term.bytes, currentFrame.prefix, currentFrame.suffix);
     term.length = len;
-  }
-
-  @Override
-  public Comparator<BytesRef> getComparator() {
-    return BytesRef.getUTF8SortedAsUnicodeComparator();
   }
 
   @Override

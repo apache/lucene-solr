@@ -34,9 +34,7 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Version;
 
-import java.io.Reader;
 import java.io.IOException;
 import java.util.Random;
 
@@ -62,8 +60,8 @@ public class PayloadHelper {
     }
 
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer result = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+    public TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer result = new MockTokenizer(MockTokenizer.SIMPLE, true);
       return new TokenStreamComponents(result, new PayloadFilter(result, fieldName));
     }
   }
@@ -120,7 +118,7 @@ public class PayloadHelper {
 
     // TODO randomize this
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        Version.LATEST, analyzer).setSimilarity(similarity));
+        analyzer).setSimilarity(similarity));
     // writer.infoStream = System.out;
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();

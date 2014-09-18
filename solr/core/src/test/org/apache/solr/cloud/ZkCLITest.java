@@ -77,7 +77,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     log.info("####SETUP_START " + getTestName());
     
     boolean useNewSolrXml = random().nextBoolean();
-    File tmpDir = createTempDir();
+    File tmpDir = createTempDir().toFile();
     if (useNewSolrXml) {
       solrHome = ExternalPaths.EXAMPLE_HOME;
     } else {
@@ -204,7 +204,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   
   @Test
   public void testUpConfigLinkConfigClearZk() throws Exception {
-    File tmpDir = createTempDir();
+    File tmpDir = createTempDir().toFile();
     
     // test upconfig
     String confsetname = "confsetone";
@@ -278,7 +278,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetFile() throws Exception {
-    File tmpDir = createTempDir();
+    File tmpDir = createTempDir().toFile();
     
     String getNode = "/getFileNode";
     byte [] data = new String("getFileNode-data").getBytes(StandardCharsets.UTF_8);
@@ -296,7 +296,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetFileNotExists() throws Exception {
-    File tmpDir = createTempDir();
+    File tmpDir = createTempDir().toFile();
     String getNode = "/getFileNotExistsNode";
 
     File file = File.createTempFile("newfile", null, tmpDir);

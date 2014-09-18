@@ -18,7 +18,7 @@ package org.apache.lucene.analysis.ngram;
  */
 
 import java.io.IOException;
-import java.io.Reader;
+
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -46,33 +46,29 @@ public final class Lucene43NGramTokenizer extends Tokenizer {
 
   /**
    * Creates NGramTokenizer with given min and max n-grams.
-   * @param input {@link Reader} holding the input to be tokenized
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
    */
-  public Lucene43NGramTokenizer(Reader input, int minGram, int maxGram) {
-    super(input);
+  public Lucene43NGramTokenizer(int minGram, int maxGram) {
     init(minGram, maxGram);
   }
 
   /**
    * Creates NGramTokenizer with given min and max n-grams.
    * @param factory {@link org.apache.lucene.util.AttributeFactory} to use
-   * @param input {@link Reader} holding the input to be tokenized
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
    */
-  public Lucene43NGramTokenizer(AttributeFactory factory, Reader input, int minGram, int maxGram) {
-    super(factory, input);
+  public Lucene43NGramTokenizer(AttributeFactory factory, int minGram, int maxGram) {
+    super(factory);
     init(minGram, maxGram);
   }
 
   /**
    * Creates NGramTokenizer with default min and max n-grams.
-   * @param input {@link Reader} holding the input to be tokenized
    */
-  public Lucene43NGramTokenizer(Reader input) {
-    this(input, DEFAULT_MIN_NGRAM_SIZE, DEFAULT_MAX_NGRAM_SIZE);
+  public Lucene43NGramTokenizer() {
+    this(DEFAULT_MIN_NGRAM_SIZE, DEFAULT_MAX_NGRAM_SIZE);
   }
   
   private void init(int minGram, int maxGram) {

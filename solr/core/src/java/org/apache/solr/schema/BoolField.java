@@ -25,21 +25,23 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.BoolDocValues;
-import org.apache.lucene.queries.function.valuesource.OrdFieldSource;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueBool;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.function.OrdFieldSource;
 /**
  *
  */
@@ -48,6 +50,15 @@ public class BoolField extends PrimitiveFieldType {
   public SortField getSortField(SchemaField field,boolean reverse) {
     field.checkSortability();
     return getStringSort(field,reverse);
+  }
+
+  @Override
+  public Type getUninversionType(SchemaField sf) {
+    if (sf.multiValued()) {
+      return Type.SORTED_SET_BINARY;
+    } else {
+      return Type.SORTED;
+    }
   }
 
   @Override
@@ -66,8 +77,8 @@ public class BoolField extends PrimitiveFieldType {
 
   protected final static Analyzer boolAnalyzer = new SolrAnalyzer() {
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new Tokenizer(reader) {
+    public TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer tokenizer = new Tokenizer() {
         final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
         boolean done = false;
 
@@ -137,13 +148,13 @@ public class BoolField extends PrimitiveFieldType {
   private static final CharsRef FALSE = new CharsRef("false");
   
   @Override
-  public CharsRef indexedToReadable(BytesRef input, CharsRef charsRef) {
+  public CharsRef indexedToReadable(BytesRef input, CharsRefBuilder charsRef) {
     if (input.length > 0 && input.bytes[input.offset] == 'T') {
       charsRef.copyChars(TRUE);
     } else {
       charsRef.copyChars(FALSE);
     }
-    return charsRef;
+    return charsRef.get();
   }
 
   @Override
@@ -178,7 +189,7 @@ class BoolFieldSource extends ValueSource {
 
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final SortedDocValues sindex = FieldCache.DEFAULT.getTermsIndex(readerContext.reader(), field);
+    final SortedDocValues sindex = DocValues.getSorted(readerContext.reader(), field);
 
     // figure out what ord maps to true
     int nord = sindex.getValueCount();

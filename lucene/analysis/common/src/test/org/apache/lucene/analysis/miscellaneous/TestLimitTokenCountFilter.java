@@ -17,8 +17,6 @@ package org.apache.lucene.analysis.miscellaneous;
  * limitations under the License.
  */
 
-import java.io.StringReader;
-
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
@@ -28,7 +26,7 @@ public class TestLimitTokenCountFilter extends BaseTokenStreamTestCase {
 
   public void test() throws Exception {
     for (final boolean consumeAll : new boolean[]{true, false}) {
-      MockTokenizer tokenizer = new MockTokenizer(new StringReader("A1 B2 C3 D4 E5 F6"), MockTokenizer.WHITESPACE, false);
+      MockTokenizer tokenizer = whitespaceMockTokenizer("A1 B2 C3 D4 E5 F6");
       tokenizer.setEnableChecks(consumeAll);
       TokenStream stream = new LimitTokenCountFilter(tokenizer, 3, consumeAll);
       assertTokenStreamContents(stream, new String[]{"A1", "B2", "C3"});
@@ -37,6 +35,6 @@ public class TestLimitTokenCountFilter extends BaseTokenStreamTestCase {
 
   @Test(expected = IllegalArgumentException.class)
   public void testIllegalArguments() throws Exception {
-    new LimitTokenCountFilter(new MockTokenizer(new StringReader("A1 B2 C3 D4 E5 F6"), MockTokenizer.WHITESPACE, false), -1);
+    new LimitTokenCountFilter(whitespaceMockTokenizer("A1 B2 C3 D4 E5 F6"), -1);
   }
 }

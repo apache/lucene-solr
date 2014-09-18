@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -36,7 +35,6 @@ import org.apache.solr.util.RefCounted;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40", "Lucene41", "Lucene42", "Lucene43"})
 public class TestIntervalFaceting extends SolrTestCaseJ4 {
 
   @BeforeClass

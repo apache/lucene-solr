@@ -25,8 +25,6 @@ import java.util.Iterator;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene3x.Lucene3xCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -81,11 +79,7 @@ public class TestIndexableField extends LuceneTestCase {
       
       @Override
       public boolean storeTermVectorPayloads() {
-        if (Codec.getDefault() instanceof Lucene3xCodec) {
-          return false; // 3.x doesnt support
-        } else {
-          return storeTermVectors() && counter % 10 != 9;
-        }
+        return storeTermVectors() && counter % 10 != 9;
       }
 
       @Override

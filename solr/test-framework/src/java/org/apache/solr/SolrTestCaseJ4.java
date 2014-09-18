@@ -23,6 +23,7 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
@@ -90,6 +91,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -152,7 +154,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   @BeforeClass 
   @SuppressWarnings("unused")
   private static void beforeClass() {
-    initCoreDataDir = createTempDir("init-core-data");
+    initCoreDataDir = createTempDir("init-core-data").toFile();
 
     System.err.println("Creating dataDir: " + initCoreDataDir.getAbsolutePath());
 
@@ -256,6 +258,18 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   
   protected static String buildUrl(final int port, final String context) {
     return (isSSLMode() ? "https" : "http") + "://127.0.0.1:" + port + context;
+  }
+
+  protected static MockTokenizer whitespaceMockTokenizer(Reader input) throws IOException {
+    MockTokenizer mockTokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    mockTokenizer.setReader(input);
+    return mockTokenizer;
+  }
+
+  protected static MockTokenizer whitespaceMockTokenizer(String input) throws IOException {
+    MockTokenizer mockTokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    mockTokenizer.setReader(new StringReader(input));
+    return mockTokenizer;
   }
 
   /**
@@ -1025,12 +1039,12 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   /**
-   * @see IOUtils#rm(File...)
+   * @see IOUtils#rm(Path...)
    */
   @Deprecated()
   public static boolean recurseDelete(File f) {
     try {
-      IOUtils.rm(f);
+      IOUtils.rm(f.toPath());
       return true;
     } catch (IOException e) {
       System.err.println(e.toString());
@@ -1884,6 +1898,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       return this;
     }
   }
+
   public boolean compareSolrDocument(Object expected, Object actual) {
 
     if (!(expected instanceof SolrDocument)  || !(actual instanceof SolrDocument)) {

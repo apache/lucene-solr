@@ -52,8 +52,8 @@ public class MockTokenizerFactory extends TokenizerFactory {
   }
 
   @Override
-  public MockTokenizer create(AttributeFactory factory, Reader input) {
-    MockTokenizer t = new MockTokenizer(factory, input, pattern, false);
+  public MockTokenizer create(AttributeFactory factory) {
+    MockTokenizer t = new MockTokenizer(factory, pattern, false);
     t.setEnableChecks(enableChecks);
     return t;
   }

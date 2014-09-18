@@ -40,17 +40,12 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
 public class PatternReplaceCharFilterFactory extends CharFilterFactory {
   private final Pattern pattern;
   private final String replacement;
-  private final int maxBlockChars;
-  private final String blockDelimiters;
 
   /** Creates a new PatternReplaceCharFilterFactory */
   public PatternReplaceCharFilterFactory(Map<String, String> args) {
     super(args);
     pattern = getPattern(args, "pattern");
     replacement = get(args, "replacement", "");
-    // TODO: warn if you set maxBlockChars or blockDelimiters ?
-    maxBlockChars = getInt(args, "maxBlockChars", PatternReplaceCharFilter.DEFAULT_MAX_BLOCK_CHARS);
-    blockDelimiters = args.remove("blockDelimiters");
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -58,6 +53,6 @@ public class PatternReplaceCharFilterFactory extends CharFilterFactory {
 
   @Override
   public CharFilter create(Reader input) {
-    return new PatternReplaceCharFilter(pattern, replacement, maxBlockChars, blockDelimiters, input);
+    return new PatternReplaceCharFilter(pattern, replacement, input);
   }
 }

@@ -130,15 +130,10 @@
 
   <target name="-jflex-legacy-StandardAnalyzer" depends="init,-install-jflex-1.5.1">
     <run-jflex-1.5.1 dir="src/java/org/apache/lucene/analysis/standard" name="ClassicTokenizerImpl"/>
-    <run-jflex-1.5.1 dir="src/java/org/apache/lucene/analysis/standard/std31" name="StandardTokenizerImpl31"/>
-    <run-jflex-1.5.1 dir="src/java/org/apache/lucene/analysis/standard/std34" name="StandardTokenizerImpl34"/>
     <run-jflex-1.5.1 dir="src/java/org/apache/lucene/analysis/standard/std40" name="StandardTokenizerImpl40"/>
   </target>
 
   <target name="-jflex-legacy-UAX29URLEmailTokenizer" depends="init,-install-jflex-1.5.1">
-    <run-jflex-1.5.1 dir="src/java/org/apache/lucene/analysis/standard/std31" name="UAX29URLEmailTokenizerImpl31"/>
-    <run-jflex-1.5.1 dir="src/java/org/apache/lucene/analysis/standard/std34" name="UAX29URLEmailTokenizerImpl34"/>
-    <run-jflex-1.5.1 dir="src/java/org/apache/lucene/analysis/standard/std36" name="UAX29URLEmailTokenizerImpl36"/>
     <run-jflex-1.5.1 dir="src/java/org/apache/lucene/analysis/standard/std40" name="UAX29URLEmailTokenizerImpl40"/>
   </target>
 
@@ -153,15 +148,6 @@
   <target name="-clean-jflex-legacy">
     <delete>
       <fileset dir="src/java/org/apache/lucene/analysis/standard" includes="ClassicTokenizerImpl.java">
-        <containsregexp expression="generated.*by.*JFlex"/>
-      </fileset>
-      <fileset dir="src/java/org/apache/lucene/analysis/standard/std31" includes="*.java">
-        <containsregexp expression="generated.*by.*JFlex"/>
-      </fileset>
-      <fileset dir="src/java/org/apache/lucene/analysis/standard/std34" includes="*.java">
-        <containsregexp expression="generated.*by.*JFlex"/>
-      </fileset>
-      <fileset dir="src/java/org/apache/lucene/analysis/standard/std36" includes="*.java">
         <containsregexp expression="generated.*by.*JFlex"/>
       </fileset>
       <fileset dir="src/java/org/apache/lucene/analysis/standard/std40" includes="*.java">

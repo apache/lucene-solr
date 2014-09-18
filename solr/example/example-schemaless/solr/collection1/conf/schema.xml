@@ -314,7 +314,7 @@
                   ... 6 months and 3 days in the future from the start of
                       the current day
                       
-         Consult the DateField javadocs for more information.
+         Consult the TrieDateField javadocs for more information.
 
          Note: For faster range queries, consider the tdate type
       -->
@@ -1052,5 +1052,4 @@
        <str name="paramkey">param value</str>
      </similarity>
     -->
-
 </schema>

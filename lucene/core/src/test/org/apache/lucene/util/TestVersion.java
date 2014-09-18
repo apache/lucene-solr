@@ -31,11 +31,8 @@ public class TestVersion extends LuceneTestCase {
         assertTrue("LATEST must be always onOrAfter("+v+")", Version.LATEST.onOrAfter(v));
       }
     }
-    assertTrue(Version.LUCENE_4_0_0.onOrAfter(Version.LUCENE_3_1_0));
-    assertTrue(Version.LUCENE_4_0_0.onOrAfter(Version.LUCENE_4_0_0));
-    assertFalse(Version.LUCENE_3_0_0.onOrAfter(Version.LUCENE_3_1_0));
-    assertTrue(Version.LUCENE_3_0_0.onOrAfter(Version.LUCENE_3_0_0));
-    assertFalse(Version.LUCENE_3_0_0.onOrAfter(Version.LUCENE_4_0_0));
+    assertTrue(Version.LUCENE_5_0_0.onOrAfter(Version.LUCENE_4_0_0));
+    assertFalse(Version.LUCENE_4_0_0.onOrAfter(Version.LUCENE_5_0_0));
     assertTrue(Version.LUCENE_4_0_0_ALPHA.onOrAfter(Version.LUCENE_4_0_0_ALPHA));
     assertTrue(Version.LUCENE_4_0_0_BETA.onOrAfter(Version.LUCENE_4_0_0_ALPHA));
     assertTrue(Version.LUCENE_4_0_0.onOrAfter(Version.LUCENE_4_0_0_ALPHA));
@@ -107,7 +104,7 @@ public class TestVersion extends LuceneTestCase {
   }
 
   public void testParse() {
-    assertEquals(Version.LUCENE_3_0_0, Version.parse("3.0.0"));
+    assertEquals(Version.LUCENE_5_0_0, Version.parse("5.0.0"));
     assertEquals(Version.LUCENE_4_1_0, Version.parse("4.1"));
     assertEquals(Version.LUCENE_4_1_0, Version.parse("4.1.0"));
     assertEquals(Version.LUCENE_4_0_0_ALPHA, Version.parse("4.0.0"));
@@ -118,7 +115,7 @@ public class TestVersion extends LuceneTestCase {
   public void testForwardsCompatibility() {
     assertTrue(Version.parse("4.7.10").onOrAfter(Version.LUCENE_4_7_2));
     assertTrue(Version.parse("4.20.0").onOrAfter(Version.LUCENE_4_8_1));
-    assertTrue(Version.parse("3.6.10").onOrAfter(Version.LUCENE_3_6_0));
+    assertTrue(Version.parse("5.10.20").onOrAfter(Version.LUCENE_5_0_0));
   }
 
   public void testParseExceptions() {

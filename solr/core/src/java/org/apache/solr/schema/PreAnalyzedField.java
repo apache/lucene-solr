@@ -30,12 +30,18 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortedSetSortField;
+import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.AttributeSource.State;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.response.TextResponseWriter;
+import org.apache.solr.search.QParser;
+import org.apache.solr.search.Sorting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,8 +91,8 @@ public class PreAnalyzedField extends FieldType {
     // create Analyzer instance for reuse:
     analyzer = new SolrAnalyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        return new TokenStreamComponents(new PreAnalyzedTokenizer(reader, parser));
+      protected TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new PreAnalyzedTokenizer(parser));
       }
     };
   }
@@ -113,10 +119,21 @@ public class PreAnalyzedField extends FieldType {
     }
     return f;
   }
-
+  
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
-    return getStringSort(field, top);
+    field.checkSortability();
+    return Sorting.getTextSortField(field.getName(), top, field.sortMissingLast(), field.sortMissingFirst());
+  }
+  
+  @Override
+  public ValueSource getValueSource(SchemaField field, QParser parser) {
+    return new SortedSetFieldSource(field.getName());
+  }
+
+  @Override
+  public Type getUninversionType(SchemaField sf) {
+    return Type.SORTED_SET_BINARY;
   }
 
   @Override
@@ -201,7 +218,8 @@ public class PreAnalyzedField extends FieldType {
     if (val == null || val.trim().length() == 0) {
       return null;
     }
-    PreAnalyzedTokenizer parse = new PreAnalyzedTokenizer(new StringReader(val), parser);
+    PreAnalyzedTokenizer parse = new PreAnalyzedTokenizer(parser);
+    parse.setReader(new StringReader(val));
     parse.reset(); // consume
     org.apache.lucene.document.FieldType type = createFieldType(field);
     if (type == null) {
@@ -254,13 +272,10 @@ public class PreAnalyzedField extends FieldType {
     private String stringValue = null;
     private byte[] binaryValue = null;
     private PreAnalyzedParser parser;
-    private Reader lastReader;
-    private Reader input; // hides original input since we replay saved states (and dont reuse)
     
-    public PreAnalyzedTokenizer(Reader reader, PreAnalyzedParser parser) {
+    public PreAnalyzedTokenizer(PreAnalyzedParser parser) {
       // we don't pack attributes: since we are used for (de)serialization and dont want bloat.
-      super(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, reader);
-      this.input = reader;
+      super(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY);
       this.parser = parser;
     }
     
@@ -275,7 +290,7 @@ public class PreAnalyzedField extends FieldType {
     public byte[] getBinaryValue() {
       return binaryValue;
     }
-    
+
     @Override
     public final boolean incrementToken() {
       // lazy init the iterator
@@ -295,8 +310,8 @@ public class PreAnalyzedField extends FieldType {
     @Override
     public final void reset() throws IOException {
       // NOTE: this acts like rewind if you call it again
-      if (input != lastReader) {
-        lastReader = input;
+      if (it == null) {
+        super.reset();
         cachedStates.clear();
         stringValue = null;
         binaryValue = null;
@@ -310,12 +325,6 @@ public class PreAnalyzedField extends FieldType {
         }
       }
       it = cachedStates.iterator();
-    }
-
-    @Override
-    public void close() throws IOException {
-      super.close();
-      lastReader = null; // just a ref, null for gc
     }
   }
   

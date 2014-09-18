@@ -151,7 +151,7 @@ public abstract class Weight {
     }
 
     @Override
-    public boolean score(Collector collector, int max) throws IOException {
+    public boolean score(LeafCollector collector, int max) throws IOException {
       // TODO: this may be sort of weird, when we are
       // embedded in a BooleanScorer, because we are
       // called for every chunk of 2048 documents.  But,
@@ -175,7 +175,7 @@ public abstract class Weight {
      *  separate this from {@link #scoreAll} to help out
      *  hotspot.
      *  See <a href="https://issues.apache.org/jira/browse/LUCENE-5487">LUCENE-5487</a> */
-    static boolean scoreRange(Collector collector, Scorer scorer, int currentDoc, int end) throws IOException {
+    static boolean scoreRange(LeafCollector collector, Scorer scorer, int currentDoc, int end) throws IOException {
       while (currentDoc < end) {
         collector.collect(currentDoc);
         currentDoc = scorer.nextDoc();
@@ -187,7 +187,7 @@ public abstract class Weight {
      *  separate this from {@link #scoreRange} to help out
      *  hotspot.
      *  See <a href="https://issues.apache.org/jira/browse/LUCENE-5487">LUCENE-5487</a> */
-    static void scoreAll(Collector collector, Scorer scorer) throws IOException {
+    static void scoreAll(LeafCollector collector, Scorer scorer) throws IOException {
       int doc;
       while ((doc = scorer.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         collector.collect(doc);
@@ -198,7 +198,7 @@ public abstract class Weight {
   /**
    * Returns true iff this implementation scores docs only out of order. This
    * method is used in conjunction with {@link Collector}'s
-   * {@link Collector#acceptsDocsOutOfOrder() acceptsDocsOutOfOrder} and
+   * {@link LeafCollector#acceptsDocsOutOfOrder() acceptsDocsOutOfOrder} and
    * {@link #bulkScorer(AtomicReaderContext, boolean, Bits)} to
    * create a matching {@link Scorer} instance for a given {@link Collector}, or
    * vice versa.

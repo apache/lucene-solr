@@ -21,7 +21,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.compound.hyphenation.Hyphenation;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.Version;
 import org.xml.sax.InputSource;
 
 import java.io.File;
@@ -33,14 +32,6 @@ import java.io.IOException;
  * "Donaudampfschiff" becomes Donau, dampf, schiff so that you can find
  * "Donaudampfschiff" even when you only enter "schiff". It uses a hyphenation
  * grammar and a word dictionary to achieve this.
- * <p>
- * You may specify the {@link Version} compatibility when creating
- * CompoundWordTokenFilterBase:
- * <ul>
- * <li>As of 3.1, CompoundWordTokenFilterBase correctly handles Unicode 4.0
- * supplementary characters in strings and char arrays provided as compound word
- * dictionaries.
- * </ul>
  */
 public class HyphenationCompoundWordTokenFilter extends
     CompoundWordTokenFilterBase {
@@ -50,7 +41,7 @@ public class HyphenationCompoundWordTokenFilter extends
    * Creates a new {@link HyphenationCompoundWordTokenFilter} instance.
    *
    * @param input
-   *          the {@link TokenStream} to process
+   *          the {@link org.apache.lucene.analysis.TokenStream} to process
    * @param hyphenator
    *          the hyphenation pattern tree to use for hyphenation
    * @param dictionary
@@ -63,20 +54,10 @@ public class HyphenationCompoundWordTokenFilter extends
   }
 
   /**
-   * @deprecated Use {@link #HyphenationCompoundWordTokenFilter(TokenStream,HyphenationTree,CharArraySet)}
-   */
-  @Deprecated
-  public HyphenationCompoundWordTokenFilter(Version matchVersion, TokenStream input,
-      HyphenationTree hyphenator, CharArraySet dictionary) {
-    this(matchVersion, input, hyphenator, dictionary, DEFAULT_MIN_WORD_SIZE,
-        DEFAULT_MIN_SUBWORD_SIZE, DEFAULT_MAX_SUBWORD_SIZE, false);
-  }
-
-  /**
    * Creates a new {@link HyphenationCompoundWordTokenFilter} instance.
    *
    * @param input
-   *          the {@link TokenStream} to process
+   *          the {@link org.apache.lucene.analysis.TokenStream} to process
    * @param hyphenator
    *          the hyphenation pattern tree to use for hyphenation
    * @param dictionary
@@ -100,19 +81,6 @@ public class HyphenationCompoundWordTokenFilter extends
   }
 
   /**
-   * @deprecated Use {@link #HyphenationCompoundWordTokenFilter(TokenStream,HyphenationTree,CharArraySet,int,int,int,boolean)}
-   */
-  @Deprecated
-  public HyphenationCompoundWordTokenFilter(Version matchVersion, TokenStream input,
-      HyphenationTree hyphenator, CharArraySet dictionary, int minWordSize,
-      int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
-    super(matchVersion, input, dictionary, minWordSize, minSubwordSize, maxSubwordSize,
-        onlyLongestMatch);
-
-    this.hyphenator = hyphenator;
-  }
-
-  /**
    * Create a HyphenationCompoundWordTokenFilter with no dictionary.
    * <p>
    * Calls {@link #HyphenationCompoundWordTokenFilter(org.apache.lucene.analysis.TokenStream, org.apache.lucene.analysis.compound.hyphenation.HyphenationTree, org.apache.lucene.analysis.util.CharArraySet, int, int, int, boolean)
@@ -123,17 +91,6 @@ public class HyphenationCompoundWordTokenFilter extends
                                             HyphenationTree hyphenator, int minWordSize, int minSubwordSize,
                                             int maxSubwordSize) {
     this(input, hyphenator, null, minWordSize, minSubwordSize,
-        maxSubwordSize, false);
-  }
-
-  /**
-   * @deprecated Use {@link #HyphenationCompoundWordTokenFilter(TokenStream,HyphenationTree,int,int,int)}
-   */
-  @Deprecated
-  public HyphenationCompoundWordTokenFilter(Version matchVersion, TokenStream input,
-      HyphenationTree hyphenator, int minWordSize, int minSubwordSize,
-      int maxSubwordSize) {
-    this(matchVersion, input, hyphenator, null, minWordSize, minSubwordSize,
         maxSubwordSize, false);
   }
 
@@ -151,21 +108,11 @@ public class HyphenationCompoundWordTokenFilter extends
   }
 
   /**
-   * @deprecated Use {@link #HyphenationCompoundWordTokenFilter(TokenStream,HyphenationTree)}
-   */
-  @Deprecated
-  public HyphenationCompoundWordTokenFilter(Version matchVersion, TokenStream input,
-      HyphenationTree hyphenator) {
-    this(matchVersion, input, hyphenator, DEFAULT_MIN_WORD_SIZE, DEFAULT_MIN_SUBWORD_SIZE,
-        DEFAULT_MAX_SUBWORD_SIZE);
-  }
-
-  /**
    * Create a hyphenator tree
    *
    * @param hyphenationFilename the filename of the XML grammar to load
    * @return An object representing the hyphenation patterns
-   * @throws IOException If there is a low-level I/O error.
+   * @throws java.io.IOException If there is a low-level I/O error.
    */
   public static HyphenationTree getHyphenationTree(String hyphenationFilename)
       throws IOException {
@@ -175,21 +122,9 @@ public class HyphenationCompoundWordTokenFilter extends
   /**
    * Create a hyphenator tree
    *
-   * @param hyphenationFile the file of the XML grammar to load
-   * @return An object representing the hyphenation patterns
-   * @throws IOException If there is a low-level I/O error.
-   */
-  public static HyphenationTree getHyphenationTree(File hyphenationFile)
-      throws IOException {
-    return getHyphenationTree(new InputSource(hyphenationFile.toURI().toASCIIString()));
-  }
-
-  /**
-   * Create a hyphenator tree
-   *
    * @param hyphenationSource the InputSource pointing to the XML grammar
    * @return An object representing the hyphenation patterns
-   * @throws IOException If there is a low-level I/O error.
+   * @throws java.io.IOException If there is a low-level I/O error.
    */
   public static HyphenationTree getHyphenationTree(InputSource hyphenationSource)
       throws IOException {

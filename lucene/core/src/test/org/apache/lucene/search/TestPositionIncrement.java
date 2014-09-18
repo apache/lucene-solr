@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -59,8 +58,8 @@ public class TestPositionIncrement extends LuceneTestCase {
   public void testSetPosition() throws Exception {
     Analyzer analyzer = new Analyzer() {
       @Override
-      public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        return new TokenStreamComponents(new Tokenizer(reader) {
+      public TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new Tokenizer() {
           // TODO: use CannedTokenStream
           private final String[] TOKENS = {"1", "2", "3", "4", "5"};
           private final int[] INCREMENTS = {1, 2, 1, 0, 1};

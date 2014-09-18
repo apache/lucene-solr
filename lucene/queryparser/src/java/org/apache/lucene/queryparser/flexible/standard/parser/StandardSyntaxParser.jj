@@ -183,7 +183,7 @@ QueryNode TopLevelQuery(CharSequence field) :
 {
   q=Query(field) <EOF>
   {
-    return q;
+     return q;
   }
 }
 
@@ -212,8 +212,8 @@ QueryNode Query(CharSequence field) :
        if (clauses == null) {
            clauses = new Vector<QueryNode>();
            clauses.addElement(first);
-       }
-       clauses.addElement(c);
+        }
+        clauses.addElement(c);
     }
     )*
     {
@@ -290,18 +290,18 @@ QueryNode ConjQuery(CharSequence field) : {
 //     
 //     // do not create modifier nodes with MOD_NONE
 //      if (mods != ModifierQueryNode.Modifier.MOD_NONE) {
-//        q = new ModifierQueryNode(q, mods);
-//      }
+//          q = new ModifierQueryNode(q, mods);
+//         }
 //      clauses.add(q);
 //   }
 //   (
 //     conj=Conjunction() mods=Modifiers() q=Clause(field)
 //     { 
 //       // do not create modifier nodes with MOD_NONE
-//        if (mods != ModifierQueryNode.Modifier.MOD_NONE) {
+//         if (mods != ModifierQueryNode.Modifier.MOD_NONE) {
 //          q = new ModifierQueryNode(q, mods);
-//        }
-//        clauses.add(q);
+//         }
+//          clauses.add(q);
 //        //TODO: figure out what to do with AND and ORs
 //   }
 //   )*
@@ -321,7 +321,7 @@ QueryNode ModClause(CharSequence field) : {
 {
    mods=Modifiers() q= Clause(field) {
         if (mods != ModifierQueryNode.Modifier.MOD_NONE) {
-          q = new ModifierQueryNode(q, mods);
+           q = new ModifierQueryNode(q, mods);
         }
         return q;
    }
@@ -350,7 +350,7 @@ QueryNode Clause(CharSequence field) : {
               lowerInclusive = true;
               upperInclusive = false;
 
-              qLower = new FieldQueryNode(field,
+               qLower = new FieldQueryNode(field,
                                          "*", term.beginColumn, term.endColumn);
             qUpper = new FieldQueryNode(field,
                                  EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn);
@@ -445,8 +445,8 @@ QueryNode Term(CharSequence field) : {
            try {
             fms = Float.valueOf(fuzzySlop.image.substring(1)).floatValue();
            } catch (Exception ignored) { }
-          if(fms < 0.0f){
-            throw new ParseException(new MessageImpl(QueryParserMessages.INVALID_SYNTAX_FUZZY_LIMITS));
+           if(fms < 0.0f){
+                throw new ParseException(new MessageImpl(QueryParserMessages.INVALID_SYNTAX_FUZZY_LIMITS));
           } else if (fms >= 1.0f && fms != (int) fms) {
             throw new ParseException(new MessageImpl(QueryParserMessages.INVALID_SYNTAX_FUZZY_EDITS));
           }

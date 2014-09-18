@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -50,7 +51,7 @@ public class TestFieldsReader extends LuceneTestCase {
     testDoc = new Document();
     fieldInfos = new FieldInfos.Builder();
     DocHelper.setupDoc(testDoc);
-    for (IndexableField field : testDoc) {
+    for (IndexableField field : testDoc.getFields()) {
       fieldInfos.addOrUpdate(field.name(), field.fieldType());
     }
     dir = newDirectory();
@@ -110,7 +111,7 @@ public class TestFieldsReader extends LuceneTestCase {
     Directory fsDir;
     AtomicBoolean doFail = new AtomicBoolean();
 
-    public FaultyFSDirectory(File dir) {
+    public FaultyFSDirectory(Path dir) {
       fsDir = newFSDirectory(dir);
       lockFactory = fsDir.getLockFactory();
     }
@@ -125,10 +126,6 @@ public class TestFieldsReader extends LuceneTestCase {
       return fsDir.listAll();
     }
     
-    @Override
-    public boolean fileExists(String name) throws IOException {
-      return fsDir.fileExists(name);
-    }
     @Override
     public void deleteFile(String name) throws IOException {
       fsDir.deleteFile(name);
@@ -224,7 +221,7 @@ public class TestFieldsReader extends LuceneTestCase {
 
   // LUCENE-1262
   public void testExceptions() throws Throwable {
-    File indexDir = createTempDir("testfieldswriterexceptions");
+    Path indexDir = createTempDir("testfieldswriterexceptions");
 
     try {
       FaultyFSDirectory dir = new FaultyFSDirectory(indexDir);

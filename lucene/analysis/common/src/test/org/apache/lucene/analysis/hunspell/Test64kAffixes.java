@@ -18,12 +18,10 @@ package org.apache.lucene.analysis.hunspell;
  */
 
 import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import org.apache.lucene.util.CharsRef;
@@ -33,13 +31,11 @@ import org.apache.lucene.util.LuceneTestCase;
 public class Test64kAffixes extends LuceneTestCase {
   
   public void test() throws Exception {
-    File tempDir = createTempDir("64kaffixes");
-    File affix = new File(tempDir, "64kaffixes.aff");
-    File dict = new File(tempDir, "64kaffixes.dic");
+    Path tempDir = createTempDir("64kaffixes");
+    Path affix = tempDir.resolve("64kaffixes.aff");
+    Path dict = tempDir.resolve("64kaffixes.dic");
     
-    BufferedWriter affixWriter = new BufferedWriter(
-                                 new OutputStreamWriter(
-                                 new FileOutputStream(affix), StandardCharsets.UTF_8));
+    BufferedWriter affixWriter = Files.newBufferedWriter(affix, StandardCharsets.UTF_8);
     
     // 65k affixes with flag 1, then an affix with flag 2
     affixWriter.write("SET UTF-8\nFLAG num\nSFX 1 Y 65536\n");
@@ -49,15 +45,13 @@ public class Test64kAffixes extends LuceneTestCase {
     affixWriter.write("SFX 2 Y 1\nSFX 2 0 s\n");
     affixWriter.close();
     
-    BufferedWriter dictWriter = new BufferedWriter(
-                                new OutputStreamWriter(
-                                new FileOutputStream(dict), StandardCharsets.UTF_8));
+    BufferedWriter dictWriter = Files.newBufferedWriter(dict, StandardCharsets.UTF_8);
     
     // drink signed with affix 2 (takes -s)
     dictWriter.write("1\ndrink/2\n");
     dictWriter.close();
     
-    try (InputStream affStream = new FileInputStream(affix); InputStream dictStream = new FileInputStream(dict)) {
+    try (InputStream affStream = Files.newInputStream(affix); InputStream dictStream = Files.newInputStream(dict)) {
       Dictionary dictionary = new Dictionary(affStream, dictStream);
       Stemmer stemmer = new Stemmer(dictionary);
       // drinks should still stem to drink

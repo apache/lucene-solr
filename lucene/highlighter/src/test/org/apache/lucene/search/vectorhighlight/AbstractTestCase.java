@@ -18,7 +18,6 @@ package org.apache.lucene.search.vectorhighlight;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -43,9 +42,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 
 public abstract class AbstractTestCase extends LuceneTestCase {
 
@@ -172,8 +169,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
   protected List<BytesRef> analyze(String text, String field, Analyzer analyzer) throws IOException {
     List<BytesRef> bytesRefs = new ArrayList<>();
 
-    TokenStream tokenStream = analyzer.tokenStream(field, text);
-    try {
+    try (TokenStream tokenStream = analyzer.tokenStream(field, text)) {
       TermToBytesRefAttribute termAttribute = tokenStream.getAttribute(TermToBytesRefAttribute.class);
 
       BytesRef bytesRef = termAttribute.getBytesRef();
@@ -186,8 +182,6 @@ public abstract class AbstractTestCase extends LuceneTestCase {
       }
 
       tokenStream.end();
-    } finally {
-      IOUtils.closeWhileHandlingException(tokenStream);
     }
 
     return bytesRefs;
@@ -203,8 +197,8 @@ public abstract class AbstractTestCase extends LuceneTestCase {
 
   static final class BigramAnalyzer extends Analyzer {
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      return new TokenStreamComponents(new BasicNGramTokenizer(reader));
+    public TokenStreamComponents createComponents(String fieldName) {
+      return new TokenStreamComponents(new BasicNGramTokenizer());
     }
   }
   
@@ -226,20 +220,20 @@ public abstract class AbstractTestCase extends LuceneTestCase {
     private int charBufferIndex;
     private int charBufferLen;
     
-    public BasicNGramTokenizer( Reader in ){
-      this( in, DEFAULT_N_SIZE );
+    public BasicNGramTokenizer( ){
+      this( DEFAULT_N_SIZE );
     }
     
-    public BasicNGramTokenizer( Reader in, int n ){
-      this( in, n, DEFAULT_DELIMITERS );
+    public BasicNGramTokenizer( int n ){
+      this( n, DEFAULT_DELIMITERS );
     }
     
-    public BasicNGramTokenizer( Reader in, String delimiters ){
-      this( in, DEFAULT_N_SIZE, delimiters );
+    public BasicNGramTokenizer( String delimiters ){
+      this( DEFAULT_N_SIZE, delimiters );
     }
     
-    public BasicNGramTokenizer( Reader in, int n, String delimiters ){
-      super(in);
+    public BasicNGramTokenizer(int n, String delimiters ){
+      super();
       this.n = n;
       this.delimiters = delimiters;
       startTerm = 0;
@@ -354,8 +348,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
   
   // make 1 doc with multi valued field
   protected void make1dmfIndex( Analyzer analyzer, String... values ) throws Exception {
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        Version.LATEST, analyzer).setOpenMode(OpenMode.CREATE));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzer).setOpenMode(OpenMode.CREATE));
     Document doc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setStoreTermVectors(true);
@@ -372,8 +365,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
   
   // make 1 doc with multi valued & not analyzed field
   protected void make1dmfIndexNA( String... values ) throws Exception {
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        Version.LATEST, analyzerK).setOpenMode(OpenMode.CREATE));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzerK).setOpenMode(OpenMode.CREATE));
     Document doc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setStoreTermVectors(true);

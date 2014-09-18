@@ -18,9 +18,9 @@ package org.apache.lucene.search.suggest.analyzing;
  */
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -81,7 +81,6 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.Version;
 
@@ -203,15 +202,15 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     if (DirectoryReader.indexExists(dir)) {
       // Already built; open it:
       writer = new IndexWriter(dir,
-                               getIndexWriterConfig(matchVersion, getGramAnalyzer(), IndexWriterConfig.OpenMode.APPEND));
+                               getIndexWriterConfig(getGramAnalyzer(), IndexWriterConfig.OpenMode.APPEND));
       searcherMgr = new SearcherManager(writer, true, null);
     }
   }
 
   /** Override this to customize index settings, e.g. which
    *  codec to use. */
-  protected IndexWriterConfig getIndexWriterConfig(Version matchVersion, Analyzer indexAnalyzer, IndexWriterConfig.OpenMode openMode) {
-    IndexWriterConfig iwc = new IndexWriterConfig(matchVersion, indexAnalyzer);
+  protected IndexWriterConfig getIndexWriterConfig(Analyzer indexAnalyzer, IndexWriterConfig.OpenMode openMode) {
+    IndexWriterConfig iwc = new IndexWriterConfig(indexAnalyzer);
     iwc.setCodec(new Lucene410Codec());
     iwc.setOpenMode(openMode);
 
@@ -225,7 +224,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
   /** Subclass can override to choose a specific {@link
    *  Directory} implementation. */
-  protected Directory getDirectory(File path) throws IOException {
+  protected Directory getDirectory(Path path) throws IOException {
     return FSDirectory.open(path);
   }
 
@@ -242,13 +241,12 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       writer = null;
     }
 
-    AtomicReader r = null;
     boolean success = false;
     try {
       // First pass: build a temporary normal Lucene index,
       // just indexing the suggestions as they iterate:
       writer = new IndexWriter(dir,
-                               getIndexWriterConfig(matchVersion, getGramAnalyzer(), IndexWriterConfig.OpenMode.CREATE));
+                               getIndexWriterConfig(getGramAnalyzer(), IndexWriterConfig.OpenMode.CREATE));
       //long t0 = System.nanoTime();
 
       // TODO: use threads?
@@ -271,10 +269,8 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       searcherMgr = new SearcherManager(writer, true, null);
       success = true;
     } finally {
-      if (success) {
-        IOUtils.close(r);
-      } else {
-        IOUtils.closeWhileHandlingException(writer, r);
+      if (success == false && writer != null) {
+        writer.rollback();
         writer = null;
       }
     }
@@ -300,11 +296,14 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       @Override
       protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
         if (fieldName.equals("textgrams") && minPrefixChars > 0) {
-
-          return new TokenStreamComponents(components.getTokenizer(),
-                                           new EdgeNGramTokenFilter(matchVersion,
-                                                                    components.getTokenStream(),
-                                                                    1, minPrefixChars));
+          // TODO: should use an EdgeNGramTokenFilterFactory here
+          TokenFilter filter;
+          if (matchVersion.onOrAfter(Version.LUCENE_4_4_0)) {
+            filter = new EdgeNGramTokenFilter(components.getTokenStream(), 1, minPrefixChars);
+          } else {
+            filter = new Lucene43EdgeNGramTokenFilter(components.getTokenStream(), 1, minPrefixChars);
+          }
+          return new TokenStreamComponents(components.getTokenizer(), filter);
         } else {
           return components;
         }
@@ -319,7 +318,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
         searcherMgr = null;
       }
       writer = new IndexWriter(dir,
-                               getIndexWriterConfig(matchVersion, getGramAnalyzer(), IndexWriterConfig.OpenMode.CREATE));
+          getIndexWriterConfig(getGramAnalyzer(), IndexWriterConfig.OpenMode.CREATE));
       searcherMgr = new SearcherManager(writer, true, null);
     }
   }
@@ -430,14 +429,11 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       occur = BooleanClause.Occur.SHOULD;
     }
 
-    TokenStream ts = null;
     BooleanQuery query;
     Set<String> matchedTokens = new HashSet<>();
     String prefixToken = null;
 
-    try {
-      ts = queryAnalyzer.tokenStream("", new StringReader(key.toString()));
-
+    try (TokenStream ts = queryAnalyzer.tokenStream("", new StringReader(key.toString()))) {
       //long t0 = System.currentTimeMillis();
       ts.reset();
       final CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
@@ -498,8 +494,6 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
           sub.add(new TermQuery(new Term(CONTEXTS_FIELD_NAME, context.utf8ToString())), BooleanClause.Occur.SHOULD);
         }
       }
-    } finally {
-      IOUtils.closeWhileHandlingException(ts);
     }
 
     // TODO: we could allow blended sort here, combining
@@ -609,8 +603,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    *  result is set on each {@link
    *  LookupResult#highlightKey} member. */
   protected Object highlight(String text, Set<String> matchedTokens, String prefixToken) throws IOException {
-    TokenStream ts = queryAnalyzer.tokenStream("text", new StringReader(text));
-    try {
+    try (TokenStream ts = queryAnalyzer.tokenStream("text", new StringReader(text))) {
       CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
       OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
       ts.reset();
@@ -642,8 +635,6 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
         addNonMatch(sb, text.substring(upto));
       }
       return sb.toString();
-    } finally {
-      IOUtils.closeWhileHandlingException(ts);
     }
   }
 

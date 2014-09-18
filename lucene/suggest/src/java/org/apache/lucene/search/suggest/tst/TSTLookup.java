@@ -53,28 +53,27 @@ public class TSTLookup extends Lookup {
   public TSTLookup() {}
 
   @Override
-  public void build(InputIterator tfit) throws IOException {
-    if (tfit.hasPayloads()) {
+  public void build(InputIterator iterator) throws IOException {
+    if (iterator.hasPayloads()) {
       throw new IllegalArgumentException("this suggester doesn't support payloads");
     }
-    if (tfit.hasContexts()) {
+    if (iterator.hasContexts()) {
       throw new IllegalArgumentException("this suggester doesn't support contexts");
     }
     root = new TernaryTreeNode();
-    // buffer first
-    if (tfit.getComparator() != BytesRef.getUTF8SortedAsUTF16Comparator()) {
-      // make sure it's sorted and the comparator uses UTF16 sort order
-      tfit = new SortedInputIterator(tfit, BytesRef.getUTF8SortedAsUTF16Comparator());
-    }
 
+    // make sure it's sorted and the comparator uses UTF16 sort order
+    iterator = new SortedInputIterator(iterator, BytesRef.getUTF8SortedAsUTF16Comparator());
+    count = 0;
     ArrayList<String> tokens = new ArrayList<>();
     ArrayList<Number> vals = new ArrayList<>();
     BytesRef spare;
     CharsRefBuilder charsSpare = new CharsRefBuilder();
-    while ((spare = tfit.next()) != null) {
+    while ((spare = iterator.next()) != null) {
       charsSpare.copyUTF8Bytes(spare);
       tokens.add(charsSpare.toString());
-      vals.add(Long.valueOf(tfit.weight()));
+      vals.add(Long.valueOf(iterator.weight()));
+      count++;
     }
     autocomplete.balancedTree(tokens.toArray(), vals.toArray(), 0, tokens.size() - 1, root);
   }

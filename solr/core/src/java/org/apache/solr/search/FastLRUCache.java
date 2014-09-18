@@ -194,6 +194,7 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
     return null;
   }
 
+
   @Override
   public NamedList getStatistics() {
     NamedList<Serializable> lst = new SimpleOrderedMap<>();

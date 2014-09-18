@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARDS_PROP;
+import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 
@@ -27,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -59,9 +61,11 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -100,21 +104,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected boolean printLayoutOnTearDown = false;
   
   String t1 = "a_t";
-  String i1 = "a_si";
-  String nint = "n_i";
-  String tint = "n_ti";
-  String nfloat = "n_f";
-  String tfloat = "n_tf";
-  String ndouble = "n_d";
-  String tdouble = "n_td";
-  String nlong = "n_l";
+  String i1 = "a_i1";
   String tlong = "other_tl1";
-  String ndate = "n_dt";
-  String tdate = "n_tdt";
 
   String oddField = "oddField_s";
   String missingField = "ignore_exception__missing_but_valid_field_t";
-  String invalidField = "ignore_exception__invalid_field_not_in_schema";
   protected int sliceCount;
 
   protected CloudSolrServer controlClientCloud;  // cloud version of the control client
@@ -279,7 +273,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     
     try {
       
-      File controlJettyDir = createTempDir();
+      File controlJettyDir = createTempDir().toFile();
       setupJettySolrHome(controlJettyDir);
       
       controlJetty = createJetty(controlJettyDir, useJettyDataDir ? getDataDir(testDir
@@ -324,11 +318,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   }
 
-
   protected void waitForCollection(ZkStateReader reader, String collection, int slices) throws Exception {
     // wait until shards have started registering...
     int cnt = 30;
-    while (!reader.getClusterState().getCollections().contains(collection)) {
+    while (!reader.getClusterState().hasCollection(collection)) {
       if (cnt == 0) {
         throw new RuntimeException("timeout waiting for collection in cluster state: collection=" + collection);
       }
@@ -351,6 +344,19 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return createJettys(numJettys, false);
   }
 
+  protected int defaultStateFormat = 1 + random().nextInt(2);
+
+  protected int getStateFormat()  {
+    String stateFormat = System.getProperty("tests.solr.stateFormat", null);
+    if (stateFormat != null)  {
+      if ("2".equals(stateFormat)) {
+        return defaultStateFormat = 2;
+      } else if ("1".equals(stateFormat))  {
+        return defaultStateFormat = 1;
+      }
+    }
+    return defaultStateFormat; // random
+  }
 
   /**
    * @param checkCreatedVsState
@@ -362,11 +368,24 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     List<JettySolrRunner> jettys = new ArrayList<>();
     List<SolrServer> clients = new ArrayList<>();
     StringBuilder sb = new StringBuilder();
+
+    if (getStateFormat() == 2) {
+      log.info("Creating collection1 with stateFormat=2");
+      SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(),
+          AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT);
+      Overseer.getInQueue(zkClient).offer(
+          ZkStateReader.toJSON(ZkNodeProps.makeMap(Overseer.QUEUE_OPERATION,
+              CollectionParams.CollectionAction.CREATE.toLower(), "name",
+              DEFAULT_COLLECTION, "numShards", String.valueOf(sliceCount),
+              DocCollection.STATE_FORMAT, getStateFormat())));
+      zkClient.close();
+    }
+
     for (int i = 1; i <= numJettys; i++) {
       if (sb.length() > 0) sb.append(',');
       int cnt = this.jettyIntCntr.incrementAndGet();
 
-      File jettyDir = createTempDir();
+      File jettyDir = createTempDir().toFile();
 
       jettyDir.mkdirs();
       setupJettySolrHome(jettyDir);
@@ -431,7 +450,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     int cnt = this.jettyIntCntr.incrementAndGet();
 
-      File jettyDir = createTempDir("jetty");
+      File jettyDir = createTempDir("jetty").toFile();
       jettyDir.mkdirs();
       org.apache.commons.io.FileUtils.copyDirectory(new File(getSolrHome()), jettyDir);
       JettySolrRunner j = createJetty(jettyDir, testDir + "/jetty" + cnt, shard, "solrconfig.xml", null);
@@ -1509,6 +1528,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       collectionInfos.put(collectionName, list);
     }
     params.set("name", collectionName);
+    if (getStateFormat() == 2) {
+      log.info("Creating collection with stateFormat=2: " + collectionName);
+      params.set(DocCollection.STATE_FORMAT, "2");
+    }
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
@@ -1753,4 +1776,91 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     baseServer.shutdown();
     return r;
   }
+
+  protected void createCollection(String collName,
+                                  CloudSolrServer client,
+                                  int replicationFactor ,
+                                  int numShards ) throws Exception {
+    int maxShardsPerNode = ((((numShards+1) * replicationFactor) / getCommonCloudSolrServer()
+        .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
+
+    Map<String, Object> props = makeMap(
+        REPLICATION_FACTOR, replicationFactor,
+        MAX_SHARDS_PER_NODE, maxShardsPerNode,
+        NUM_SLICES, numShards);
+    Map<String,List<Integer>> collectionInfos = new HashMap<String,List<Integer>>();
+    createCollection(collectionInfos, collName, props, client);
+  }
+
+  protected List<Replica> ensureAllReplicasAreActive(String testCollectionName, String shardId, int shards, int rf, int maxWaitSecs) throws Exception {
+    long startMs = System.currentTimeMillis();
+    
+    Map<String,Replica> notLeaders = new HashMap<String,Replica>();
+    
+    ZkStateReader zkr = cloudClient.getZkStateReader();
+    zkr.updateClusterState(true); // force the state to be fresh
+
+    ClusterState cs = zkr.getClusterState();
+    Collection<Slice> slices = cs.getActiveSlices(testCollectionName);
+    assertTrue(slices.size() == shards);
+    boolean allReplicasUp = false;
+    long waitMs = 0L;
+    long maxWaitMs = maxWaitSecs * 1000L;
+    Replica leader = null;
+    while (waitMs < maxWaitMs && !allReplicasUp) {
+      // refresh state every 2 secs
+      if (waitMs % 2000 == 0)
+        cloudClient.getZkStateReader().updateClusterState(true);
+      
+      cs = cloudClient.getZkStateReader().getClusterState();
+      assertNotNull(cs);
+      Slice shard = cs.getSlice(testCollectionName, shardId);
+      assertNotNull("No Slice for "+shardId, shard);
+      allReplicasUp = true; // assume true
+      Collection<Replica> replicas = shard.getReplicas();
+      assertTrue(replicas.size() == rf);
+      leader = shard.getLeader();
+      assertNotNull(leader);
+      log.info("Found "+replicas.size()+" replicas and leader on "+
+        leader.getNodeName()+" for "+shardId+" in "+testCollectionName);
+      
+      // ensure all replicas are "active" and identify the non-leader replica
+      for (Replica replica : replicas) {
+        String replicaState = replica.getStr(ZkStateReader.STATE_PROP);
+        if (!ZkStateReader.ACTIVE.equals(replicaState)) {
+          log.info("Replica " + replica.getName() + " is currently " + replicaState);
+          allReplicasUp = false;
+        }
+        
+        if (!leader.equals(replica)) 
+          notLeaders.put(replica.getName(), replica);
+      }
+      
+      if (!allReplicasUp) {
+        try {
+          Thread.sleep(500L);
+        } catch (Exception ignoreMe) {}
+        waitMs += 500L;
+      }
+    } // end while
+    
+    if (!allReplicasUp) 
+      fail("Didn't see all replicas for shard "+shardId+" in "+testCollectionName+
+          " come up within " + maxWaitMs + " ms! ClusterState: " + printClusterStateInfo());
+    
+    if (notLeaders.isEmpty()) 
+      fail("Didn't isolate any replicas that are not the leader! ClusterState: " + printClusterStateInfo());
+    
+    long diffMs = (System.currentTimeMillis() - startMs);
+    log.info("Took " + diffMs + " ms to see all replicas become active.");
+    
+    List<Replica> replicas = new ArrayList<Replica>();
+    replicas.addAll(notLeaders.values());
+    return replicas;
+  }  
+  
+  protected String printClusterStateInfo() throws Exception {
+    cloudClient.getZkStateReader().updateClusterState(true);
+    return String.valueOf(cloudClient.getZkStateReader().getClusterState());
+  }   
 }

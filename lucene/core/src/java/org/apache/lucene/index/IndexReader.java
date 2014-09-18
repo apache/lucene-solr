@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 
@@ -303,95 +302,6 @@ public abstract class IndexReader implements Closeable {
   public final int hashCode() {
     return System.identityHashCode(this);
   }
-  
-  /** Returns a IndexReader reading the index in the given
-   *  Directory
-   * @param directory the index directory
-   * @throws IOException if there is a low-level IO error
-   * @deprecated Use {@link DirectoryReader#open(Directory)}
-   */
-  @Deprecated
-  public static DirectoryReader open(final Directory directory) throws IOException {
-    return DirectoryReader.open(directory);
-  }
-  
-  /** Expert: Returns a IndexReader reading the index in the given
-   *  Directory with the given termInfosIndexDivisor.
-   * @param directory the index directory
-   * @param termInfosIndexDivisor Subsamples which indexed
-   *  terms are loaded into RAM. This has the same effect as {@link
-   *  IndexWriterConfig#setTermIndexInterval} except that setting
-   *  must be done at indexing time while this setting can be
-   *  set per reader.  When set to N, then one in every
-   *  N*termIndexInterval terms in the index is loaded into
-   *  memory.  By setting this to a value > 1 you can reduce
-   *  memory usage, at the expense of higher latency when
-   *  loading a TermInfo.  The default value is 1.  Set this
-   *  to -1 to skip loading the terms index entirely.
-   * @throws IOException if there is a low-level IO error
-   * @deprecated Use {@link DirectoryReader#open(Directory,int)}
-   */
-  @Deprecated
-  public static DirectoryReader open(final Directory directory, int termInfosIndexDivisor) throws IOException {
-    return DirectoryReader.open(directory, termInfosIndexDivisor);
-  }
-  
-  /**
-   * Open a near real time IndexReader from the {@link org.apache.lucene.index.IndexWriter}.
-   *
-   * @param writer The IndexWriter to open from
-   * @param applyAllDeletes If true, all buffered deletes will
-   * be applied (made visible) in the returned reader.  If
-   * false, the deletes are not applied but remain buffered
-   * (in IndexWriter) so that they will be applied in the
-   * future.  Applying deletes can be costly, so if your app
-   * can tolerate deleted documents being returned you might
-   * gain some performance by passing false.
-   * @return The new IndexReader
-   * @throws IOException if there is a low-level IO error
-   *
-   * @see DirectoryReader#openIfChanged(DirectoryReader,IndexWriter,boolean)
-   *
-   * @lucene.experimental
-   * @deprecated Use {@link DirectoryReader#open(IndexWriter,boolean)}
-   */
-  @Deprecated
-  public static DirectoryReader open(final IndexWriter writer, boolean applyAllDeletes) throws IOException {
-    return DirectoryReader.open(writer, applyAllDeletes);
-  }
-
-  /** Expert: returns an IndexReader reading the index in the given
-   *  {@link IndexCommit}.
-   * @param commit the commit point to open
-   * @throws IOException if there is a low-level IO error
-   * @deprecated Use {@link DirectoryReader#open(IndexCommit)}
-   */
-  @Deprecated
-  public static DirectoryReader open(final IndexCommit commit) throws IOException {
-    return DirectoryReader.open(commit);
-  }
-
-
-  /** Expert: returns an IndexReader reading the index in the given
-   *  {@link IndexCommit} and termInfosIndexDivisor.
-   * @param commit the commit point to open
-   * @param termInfosIndexDivisor Subsamples which indexed
-   *  terms are loaded into RAM. This has the same effect as {@link
-   *  IndexWriterConfig#setTermIndexInterval} except that setting
-   *  must be done at indexing time while this setting can be
-   *  set per reader.  When set to N, then one in every
-   *  N*termIndexInterval terms in the index is loaded into
-   *  memory.  By setting this to a value > 1 you can reduce
-   *  memory usage, at the expense of higher latency when
-   *  loading a TermInfo.  The default value is 1.  Set this
-   *  to -1 to skip loading the terms index entirely.
-   * @throws IOException if there is a low-level IO error
-   * @deprecated Use {@link DirectoryReader#open(IndexCommit,int)}
-   */
-  @Deprecated
-  public static DirectoryReader open(final IndexCommit commit, int termInfosIndexDivisor) throws IOException {
-    return DirectoryReader.open(commit, termInfosIndexDivisor);
-  }
 
   /** Retrieve term vectors for this document, or null if
    *  term vectors were not indexed.  The returned Fields
@@ -450,6 +360,7 @@ public abstract class IndexReader implements Closeable {
    * like boost, omitNorm, IndexOptions, tokenized, etc.,
    * are not preserved.
    * 
+   * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
   // TODO: we need a separate StoredField, so that the
@@ -466,8 +377,10 @@ public abstract class IndexReader implements Closeable {
    * fields.  Note that this is simply sugar for {@link
    * DocumentStoredFieldVisitor#DocumentStoredFieldVisitor(Set)}.
    */
-  public final Document document(int docID, Set<String> fieldsToLoad) throws IOException {
-    final DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(fieldsToLoad);
+  public final Document document(int docID, Set<String> fieldsToLoad)
+      throws IOException {
+    final DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(
+        fieldsToLoad);
     document(docID, visitor);
     return visitor.getDocument();
   }
@@ -526,7 +439,7 @@ public abstract class IndexReader implements Closeable {
     return getContext().leaves();
   }
 
-  /** Expert: Returns a key for this IndexReader, so FieldCache/CachingWrapperFilter can find
+  /** Expert: Returns a key for this IndexReader, so CachingWrapperFilter can find
    * it again.
    * This key must not have equals()/hashCode() methods, so &quot;equals&quot; means &quot;identical&quot;. */
   public Object getCoreCacheKey() {
@@ -536,7 +449,7 @@ public abstract class IndexReader implements Closeable {
   }
 
   /** Expert: Returns a key for this IndexReader that also includes deletions,
-   * so FieldCache/CachingWrapperFilter can find it again.
+   * so CachingWrapperFilter can find it again.
    * This key must not have equals()/hashCode() methods, so &quot;equals&quot; means &quot;identical&quot;. */
   public Object getCombinedCoreAndDeletesKey() {
     // Don't call ensureOpen since FC calls this (to evict)

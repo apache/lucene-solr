@@ -24,7 +24,6 @@ import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
-import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -34,15 +33,7 @@ import java.io.Reader;
  * LowerCaseFilter} and {@link StopFilter}, using a list of
  * English stop words.
  * 
- * <a name="version"/>
- * <p>You may specify the {@link Version}
- * compatibility when creating ClassicAnalyzer:
- * <ul>
- *   <li> As of 3.1, StopFilter correctly handles Unicode 4.0
- *         supplementary characters in stopwords</li>
- * </ul>
- *
- * ClassicAnalyzer was named StandardAnalyzer in Lucene versions prior to 3.1.
+ * ClassicAnalyzer was named StandardAnalyzer in Lucene versions prior to 3.1. 
  * As of 3.1, {@link StandardAnalyzer} implements Unicode text segmentation,
  * as specified by UAX#29.
  */
@@ -63,14 +54,6 @@ public final class ClassicAnalyzer extends StopwordAnalyzerBase {
     super(stopWords);
   }
 
-  /**
-   * @deprecated Use {@link #ClassicAnalyzer(CharArraySet)}
-   */
-  @Deprecated
-  public ClassicAnalyzer(Version matchVersion, CharArraySet stopWords) {
-    super(matchVersion, stopWords);
-  }
-
   /** Builds an analyzer with the default stop words ({@link
    * #STOP_WORDS_SET}).
    */
@@ -78,27 +61,11 @@ public final class ClassicAnalyzer extends StopwordAnalyzerBase {
     this(STOP_WORDS_SET);
   }
 
-  /**
-   * @deprecated Use {@link #ClassicAnalyzer()}
-   */
-  @Deprecated
-  public ClassicAnalyzer(Version matchVersion) {
-    this(matchVersion, STOP_WORDS_SET);
-  }
-
   /** Builds an analyzer with the stop words from the given reader.
    * @see WordlistLoader#getWordSet(Reader)
    * @param stopwords Reader to read stop words from */
   public ClassicAnalyzer(Reader stopwords) throws IOException {
     this(loadStopwordSet(stopwords));
-  }
-
-  /**
-   * @deprecated Use {@link #ClassicAnalyzer(CharArraySet)}
-   */
-  @Deprecated
-  public ClassicAnalyzer(Version matchVersion, Reader stopwords) throws IOException {
-    this(matchVersion, loadStopwordSet(stopwords, matchVersion));
   }
 
   /**
@@ -119,12 +86,12 @@ public final class ClassicAnalyzer extends StopwordAnalyzerBase {
   }
 
   @Override
-  protected TokenStreamComponents createComponents(final String fieldName, final Reader reader) {
-    final ClassicTokenizer src = new ClassicTokenizer(getVersion(), reader);
+  protected TokenStreamComponents createComponents(final String fieldName) {
+    final ClassicTokenizer src = new ClassicTokenizer();
     src.setMaxTokenLength(maxTokenLength);
     TokenStream tok = new ClassicFilter(src);
-    tok = new LowerCaseFilter(getVersion(), tok);
-    tok = new StopFilter(getVersion(), tok, stopwords);
+    tok = new LowerCaseFilter(tok);
+    tok = new StopFilter(tok, stopwords);
     return new TokenStreamComponents(src, tok) {
       @Override
       protected void setReader(final Reader reader) throws IOException {

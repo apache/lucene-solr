@@ -89,7 +89,7 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='fox']/int[@name='origFreq']=1",
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='fox']/arr[@name='suggestion']/lst/str[@name='word']='foo'",
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='fox']/arr[@name='suggestion']/lst/int[@name='freq']=2",
-        "//lst[@name='spellcheck']/lst[@name='suggestions']/bool[@name='correctlySpelled']='true'"
+        "//lst[@name='spellcheck']/bool[@name='correctlySpelled']='true'"
     );
   }  
   

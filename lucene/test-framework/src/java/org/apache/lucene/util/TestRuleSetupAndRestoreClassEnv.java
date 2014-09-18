@@ -34,15 +34,7 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.cheapbastard.CheapBastardCodec;
 import org.apache.lucene.codecs.compressing.CompressingCodec;
-import org.apache.lucene.codecs.lucene3x.PreFlexRWCodec;
-import org.apache.lucene.codecs.lucene40.Lucene40RWCodec;
-import org.apache.lucene.codecs.lucene40.Lucene40RWPostingsFormat;
-import org.apache.lucene.codecs.lucene41.Lucene41RWCodec;
 import org.apache.lucene.codecs.lucene410.Lucene410Codec;
-import org.apache.lucene.codecs.lucene42.Lucene42RWCodec;
-import org.apache.lucene.codecs.lucene45.Lucene45RWCodec;
-import org.apache.lucene.codecs.lucene46.Lucene46RWCodec;
-import org.apache.lucene.codecs.lucene49.Lucene49RWCodec;
 import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.index.RandomCodec;
@@ -156,69 +148,10 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
       avoidCodecs.addAll(Arrays.asList(a.value()));
     }
     
-    // set back to default
-    LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE = false;
-    
     savedCodec = Codec.getDefault();
-    int randomVal = random.nextInt(12);
+    int randomVal = random.nextInt(11);
     if ("default".equals(TEST_CODEC)) {
       codec = savedCodec; // just use the default, don't randomize
-    } else if ("Lucene3x".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) &&
-                                          "random".equals(TEST_POSTINGSFORMAT) &&
-                                          "random".equals(TEST_DOCVALUESFORMAT) &&
-                                          randomVal == 10 &&
-                                          !shouldAvoidCodec("Lucene3x"))) { // preflex-only setup
-      codec = Codec.forName("Lucene3x");
-      assert (codec instanceof PreFlexRWCodec) : "fix your classpath to have tests-framework.jar before lucene-core.jar";
-      LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true;
-    } else if ("Lucene40".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) &&
-                                                 "random".equals(TEST_POSTINGSFORMAT) &&
-                                                  randomVal == 0 &&
-                                                  !shouldAvoidCodec("Lucene40"))) { // 4.0 setup
-      codec = Codec.forName("Lucene40");
-      LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true;
-      assert codec instanceof Lucene40RWCodec : "fix your classpath to have tests-framework.jar before lucene-core.jar";
-      assert (PostingsFormat.forName("Lucene40") instanceof Lucene40RWPostingsFormat) : "fix your classpath to have tests-framework.jar before lucene-core.jar";
-    } else if ("Lucene41".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) &&
-                                                 "random".equals(TEST_POSTINGSFORMAT) &&
-                                                 "random".equals(TEST_DOCVALUESFORMAT) &&
-                                                 randomVal == 1 &&
-                                                 !shouldAvoidCodec("Lucene41"))) { 
-      codec = Codec.forName("Lucene41");
-      LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true;
-      assert codec instanceof Lucene41RWCodec : "fix your classpath to have tests-framework.jar before lucene-core.jar";
-    } else if ("Lucene42".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) &&
-                                                 "random".equals(TEST_POSTINGSFORMAT) &&
-                                                 "random".equals(TEST_DOCVALUESFORMAT) &&
-                                                  randomVal == 2 &&
-                                                  !shouldAvoidCodec("Lucene42"))) { 
-      codec = Codec.forName("Lucene42");
-      LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true;
-      assert codec instanceof Lucene42RWCodec : "fix your classpath to have tests-framework.jar before lucene-core.jar";
-    } else if ("Lucene45".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) &&
-                                                 "random".equals(TEST_POSTINGSFORMAT) &&
-                                                 "random".equals(TEST_DOCVALUESFORMAT) &&
-                                                  randomVal == 3 &&
-                                                  !shouldAvoidCodec("Lucene45"))) { 
-      codec = Codec.forName("Lucene45");
-      LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true;
-      assert codec instanceof Lucene45RWCodec : "fix your classpath to have tests-framework.jar before lucene-core.jar";
-    } else if ("Lucene46".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) &&
-                                                 "random".equals(TEST_POSTINGSFORMAT) &&
-                                                 "random".equals(TEST_DOCVALUESFORMAT) &&
-                                                  randomVal == 4 &&
-                                                  !shouldAvoidCodec("Lucene46"))) { 
-      codec = Codec.forName("Lucene46");
-      LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true;
-      assert codec instanceof Lucene46RWCodec : "fix your classpath to have tests-framework.jar before lucene-core.jar";
-    } else if ("Lucene49".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) &&
-                                                 "random".equals(TEST_POSTINGSFORMAT) &&
-                                                 "random".equals(TEST_DOCVALUESFORMAT) &&
-                                                  randomVal == 5 &&
-                                                  !shouldAvoidCodec("Lucene49"))) { 
-      codec = Codec.forName("Lucene49");
-      LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true;
-      assert codec instanceof Lucene49RWCodec : "fix your classpath to have tests-framework.jar before lucene-core.jar";
     } else if (("random".equals(TEST_POSTINGSFORMAT) == false) || ("random".equals(TEST_DOCVALUESFORMAT) == false)) {
       // the user wired postings or DV: this is messy
       // refactor into RandomCodec....
@@ -261,9 +194,9 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     } else if ("CheapBastard".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 8 && !shouldAvoidCodec("CheapBastard") && !shouldAvoidCodec("Lucene41"))) {
       // we also avoid this codec if Lucene41 is avoided, since thats the postings format it uses.
       codec = new CheapBastardCodec();
-    } else if ("Asserting".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 6 && !shouldAvoidCodec("Asserting"))) {
+    } else if ("Asserting".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 7 && !shouldAvoidCodec("Asserting"))) {
       codec = new AssertingCodec();
-    } else if ("Compressing".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 7 && !shouldAvoidCodec("Compressing"))) {
+    } else if ("Compressing".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 6 && !shouldAvoidCodec("Compressing"))) {
       codec = CompressingCodec.randomInstance(random);
     } else if (!"random".equals(TEST_CODEC)) {
       codec = Codec.forName(TEST_CODEC);

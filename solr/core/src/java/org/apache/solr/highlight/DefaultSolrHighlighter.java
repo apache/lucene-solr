@@ -457,7 +457,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
     List<IndexableField> allFields = doc.getFields();
     if (allFields != null && allFields.size() == 0) return; // No explicit contract that getFields returns != null,
-    // although currently it can't.
+                                                            // although currently it can't.
 
     TokenStream tstream = null;
     int numFragments = getMaxSnippets(fieldName, params);
@@ -476,7 +476,6 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     int mvToMatch = Integer.parseInt(req.getParams().get(HighlightParams.MAX_MULTIVALUED_TO_MATCH,
         Integer.toString(Integer.MAX_VALUE)));
 
-
     for (IndexableField thisField : allFields) {
       if (mvToExamine <= 0 || mvToMatch <= 0) break;
 
@@ -484,7 +483,6 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
       --mvToExamine;
       String thisText = thisField.stringValue();
-
       if( tots != null ) {
         // if we're using TermOffsets optimization, then get the next
         // field value's TokenStream (i.e. get field j's TokenStream) from tots:

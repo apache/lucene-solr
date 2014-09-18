@@ -25,18 +25,16 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 
 import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
 import java.util.regex.Pattern;
 
 /**
  */
 public class TestPatternReplaceFilter extends BaseTokenStreamTestCase {
-
+  
   public void testReplaceAll() throws Exception {
     String input = "aabfooaabfooabfoob ab caaaaaaaaab";
     TokenStream ts = new PatternReplaceFilter
-            (new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false),
+            (whitespaceMockTokenizer(input),
                     Pattern.compile("a*b"),
                     "-", true);
     assertTokenStreamContents(ts, 
@@ -46,7 +44,7 @@ public class TestPatternReplaceFilter extends BaseTokenStreamTestCase {
   public void testReplaceFirst() throws Exception {
     String input = "aabfooaabfooabfoob ab caaaaaaaaab";
     TokenStream ts = new PatternReplaceFilter
-            (new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false),
+            (whitespaceMockTokenizer(input),
                     Pattern.compile("a*b"),
                     "-", false);
     assertTokenStreamContents(ts, 
@@ -56,7 +54,7 @@ public class TestPatternReplaceFilter extends BaseTokenStreamTestCase {
   public void testStripFirst() throws Exception {
     String input = "aabfooaabfooabfoob ab caaaaaaaaab";
     TokenStream ts = new PatternReplaceFilter
-            (new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false),
+            (whitespaceMockTokenizer(input),
                     Pattern.compile("a*b"),
                     null, false);
     assertTokenStreamContents(ts,
@@ -66,7 +64,7 @@ public class TestPatternReplaceFilter extends BaseTokenStreamTestCase {
   public void testStripAll() throws Exception {
     String input = "aabfooaabfooabfoob ab caaaaaaaaab";
     TokenStream ts = new PatternReplaceFilter
-            (new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false),
+            (whitespaceMockTokenizer(input),
                     Pattern.compile("a*b"),
                     null, true);
     assertTokenStreamContents(ts,
@@ -76,7 +74,7 @@ public class TestPatternReplaceFilter extends BaseTokenStreamTestCase {
   public void testReplaceAllWithBackRef() throws Exception {
     String input = "aabfooaabfooabfoob ab caaaaaaaaab";
     TokenStream ts = new PatternReplaceFilter
-            (new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false),
+            (whitespaceMockTokenizer(input),
                     Pattern.compile("(a*)b"),
                     "$1\\$", true);
     assertTokenStreamContents(ts,
@@ -87,8 +85,8 @@ public class TestPatternReplaceFilter extends BaseTokenStreamTestCase {
   public void testRandomStrings() throws Exception {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         TokenStream filter = new PatternReplaceFilter(tokenizer, Pattern.compile("a"), "b", false);
         return new TokenStreamComponents(tokenizer, filter);
       }    
@@ -97,8 +95,8 @@ public class TestPatternReplaceFilter extends BaseTokenStreamTestCase {
     
     Analyzer b = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         TokenStream filter = new PatternReplaceFilter(tokenizer, Pattern.compile("a"), "b", true);
         return new TokenStreamComponents(tokenizer, filter);
       }    
@@ -109,8 +107,8 @@ public class TestPatternReplaceFilter extends BaseTokenStreamTestCase {
   public void testEmptyTerm() throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer,  new PatternReplaceFilter(tokenizer, Pattern.compile("a"), "b", true));
       }
     };

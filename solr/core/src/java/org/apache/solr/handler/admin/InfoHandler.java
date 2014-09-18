@@ -105,11 +105,6 @@ public class InfoHandler extends RequestHandlerBase {
     return "System Information";
   }
 
-  @Override
-  public String getSource() {
-    return null;
-  }
-
   protected PropertiesRequestHandler getPropertiesHandler() {
     return propertiesHandler;
   }

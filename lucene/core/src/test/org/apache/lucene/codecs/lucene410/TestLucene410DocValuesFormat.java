@@ -28,7 +28,6 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.blocktreeords.Ords41PostingsFormat;
 import org.apache.lucene.codecs.lucene41ords.Lucene41WithOrds;
 import org.apache.lucene.codecs.memory.FSTOrdPostingsFormat;
-import org.apache.lucene.codecs.memory.FSTOrdPulsing41PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedSetDocValuesField;
@@ -130,8 +129,6 @@ public class TestLucene410DocValuesFormat extends BaseCompressingDocValuesFormat
               break;
       // TODO: these don't actually support ords!
       //case 2: pf = new FSTOrdPostingsFormat();
-      //        break;
-      //case 3: pf = new FSTOrdPulsing41PostingsFormat();
       //        break;
       default: throw new AssertionError();
     }

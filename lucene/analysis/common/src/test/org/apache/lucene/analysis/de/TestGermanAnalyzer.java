@@ -25,7 +25,6 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.core.LowerCaseTokenizer;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.Version;
 
 public class TestGermanAnalyzer extends BaseTokenStreamTestCase {
   public void testReusableTokenStream() throws Exception {
@@ -38,9 +37,10 @@ public class TestGermanAnalyzer extends BaseTokenStreamTestCase {
   public void testWithKeywordAttribute() throws IOException {
     CharArraySet set = new CharArraySet( 1, true);
     set.add("fischen");
+    final LowerCaseTokenizer in = new LowerCaseTokenizer();
+    in.setReader(new StringReader("Fischen Trinken"));
     GermanStemFilter filter = new GermanStemFilter(
-        new SetKeywordMarkerFilter(new LowerCaseTokenizer(new StringReader(
-            "Fischen Trinken")), set));
+        new SetKeywordMarkerFilter(in, set));
     assertTokenStreamContents(filter, new String[] { "fischen", "trink" });
   }
 
@@ -58,10 +58,6 @@ public class TestGermanAnalyzer extends BaseTokenStreamTestCase {
     // a/o/u + e is equivalent to the umlaut form
     checkOneTerm(a, "Schaltflächen", "schaltflach");
     checkOneTerm(a, "Schaltflaechen", "schaltflach");
-    // here they are with the old stemmer
-    a = new GermanAnalyzer(Version.LUCENE_3_0);
-    checkOneTerm(a, "Schaltflächen", "schaltflach");
-    checkOneTerm(a, "Schaltflaechen", "schaltflaech");
   }
   
   /** blast some random strings through the analyzer */

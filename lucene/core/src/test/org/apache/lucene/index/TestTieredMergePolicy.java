@@ -23,7 +23,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.Version;
 
 public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
 
@@ -217,7 +216,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
   // LUCENE-5668
   public void testUnbalancedMergeSelection() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     TieredMergePolicy tmp = (TieredMergePolicy) iwc.getMergePolicy();
     tmp.setFloorSegmentMB(0.00001);
     // We need stable sizes for each segment:
@@ -226,7 +225,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     iwc.setMaxBufferedDocs(100);
     iwc.setRAMBufferSizeMB(-1);
     IndexWriter w = new IndexWriter(dir, iwc);
-    for(int i=0;i<100000;i++) {
+    for(int i=0;i<15000*RANDOM_MULTIPLIER;i++) {
       Document doc = new Document();
       doc.add(newTextField("id", random().nextLong() + "" + random().nextLong(), Field.Store.YES));
       w.addDocument(doc);

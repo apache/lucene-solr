@@ -20,7 +20,6 @@ package org.apache.lucene.codecs.compressing;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.SortedSet;
@@ -666,11 +665,6 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
     }
     indexWriter.finish(numDocs, vectorsStream.getFilePointer());
     CodecUtil.writeFooter(vectorsStream);
-  }
-
-  @Override
-  public Comparator<BytesRef> getComparator() {
-    return BytesRef.getUTF8SortedAsUnicodeComparator();
   }
 
   @Override

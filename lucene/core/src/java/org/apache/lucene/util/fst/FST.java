@@ -19,13 +19,12 @@ package org.apache.lucene.util.fst;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -634,37 +633,18 @@ public final class FST<T> implements Accountable {
   /**
    * Writes an automaton to a file. 
    */
-  public void save(final File file) throws IOException {
-    boolean success = false;
-    OutputStream os = new BufferedOutputStream(new FileOutputStream(file));
-    try {
-      save(new OutputStreamDataOutput(os));
-      success = true;
-    } finally { 
-      if (success) { 
-        IOUtils.close(os);
-      } else {
-        IOUtils.closeWhileHandlingException(os); 
-      }
+  public void save(final Path path) throws IOException {
+    try (OutputStream os = Files.newOutputStream(path)) {
+      save(new OutputStreamDataOutput(new BufferedOutputStream(os)));
     }
   }
 
   /**
    * Reads an automaton from a file. 
    */
-  public static <T> FST<T> read(File file, Outputs<T> outputs) throws IOException {
-    InputStream is = new BufferedInputStream(new FileInputStream(file));
-    boolean success = false;
-    try {
-      FST<T> fst = new FST<>(new InputStreamDataInput(is), outputs);
-      success = true;
-      return fst;
-    } finally {
-      if (success) { 
-        IOUtils.close(is);
-      } else {
-        IOUtils.closeWhileHandlingException(is); 
-      }
+  public static <T> FST<T> read(Path path, Outputs<T> outputs) throws IOException {
+    try (InputStream is = Files.newInputStream(path)) {
+      return new FST<>(new InputStreamDataInput(new BufferedInputStream(is)), outputs);
     }
   }
 

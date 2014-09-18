@@ -96,6 +96,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
               + type + "  Not in: " + loaders.keySet());
         }
       }
+
       if(loader.getDefaultWT()!=null) {
         setDefaultWT(req,loader);
       }
@@ -169,11 +170,6 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
   @Override
   public String getDescription() {
     return "Add documents using XML (with XSLT), CSV, JSON, or javabin";
-  }
-
-  @Override
-  public String getSource() {
-    return null;
   }
 
   public static void addImplicits(List<PluginInfo> implicits) {

@@ -67,8 +67,8 @@ import org.apache.solr.response.SortingResponseWriter;
 import org.apache.solr.response.XMLResponseWriter;
 import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.rest.ManagedResourceStorage;
-import org.apache.solr.rest.RestManager;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
+import org.apache.solr.rest.RestManager;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
@@ -176,11 +176,11 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   private DirectoryFactory directoryFactory;
   private IndexReaderFactory indexReaderFactory;
   private final Codec codec;
-
+  
   private final ReentrantLock ruleExpiryLock;
-
+  
   public long getStartTime() { return startTime; }
-
+  
   private RestManager restManager;
   
   public RestManager getRestManager() {
@@ -199,7 +199,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       }
     }
   }
-
+    
   /**
    * The SolrResourceLoader used to load all resources for this core.
    * @since solr 1.3
@@ -1480,7 +1480,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       if (newestSearcher != null && (nrt || indexDirFile.equals(newIndexDirFile))) {
 
         DirectoryReader newReader;
-        DirectoryReader currentReader = newestSearcher.get().getIndexReader();
+        DirectoryReader currentReader = newestSearcher.get().getRawReader();
 
         // SolrCore.verbose("start reopen from",previousSearcher,"writer=",writer);
         
@@ -2373,8 +2373,8 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     mgr.init(resourceLoader, initArgs, storageIO);
     
     return mgr;
-  }
-
+  }  
+  
   public CoreDescriptor getCoreDescriptor() {
     return coreDescriptor;
   }

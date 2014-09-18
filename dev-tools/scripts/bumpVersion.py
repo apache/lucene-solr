@@ -212,7 +212,7 @@ def codec_exists(version):
 def create_backcompat_indexes(version, on_trunk):
   majorminor = '%d%d' % (version.major, version.minor)
   codec = 'Lucene%s' % majorminor
-  backcompat_dir = 'lucene/backwards-codecs' if on_trunk else 'lucene/core'
+  backcompat_dir = 'lucene/backward-codecs' if on_trunk else 'lucene/core'
 
   create_index(codec, backcompat_dir, 'cfs', majorminor)
   create_index(codec, backcompat_dir, 'nocfs', majorminor)
@@ -255,7 +255,7 @@ def create_index(codec, codecs_dir, type, majorminor):
 def update_backcompat_tests(version, on_trunk):
   majorminor = '%d%d' % (version.major, version.minor)
   print('  adding new indexes to backcompat tests...', end='')
-  basedir = 'lucene/backwards-codecs' if on_trunk else 'lucene/core'
+  basedir = 'lucene/backward-codecs' if on_trunk else 'lucene/core'
   filename = '%s/src/test/org/apache/lucene/index/TestBackwardsCompatibility.java' % basedir
   matcher = re.compile(r'final static String\[\] oldNames = {|};')
   cfs_name = '%s.cfs' % majorminor
@@ -310,7 +310,7 @@ def check_solr_version_tests():
 def check_backcompat_tests(on_trunk):
   print('  checking backcompat tests...', end='')
   base_dir = os.getcwd()
-  basedir = 'lucene/backwards-codecs' if on_trunk else 'lucene/core'
+  basedir = 'lucene/backward-codecs' if on_trunk else 'lucene/core'
   os.chdir(basedir) 
   run('ant test -Dtestcase=TestBackwardsCompatibility')
   os.chdir(base_dir)
@@ -338,7 +338,7 @@ def find_previous_version():
   return version_prop_re.search(open('lucene/version.properties').read()).group(1)
 
 def merge_change(changeid, repo):
-  print('\nMerging downstream change %d...' % changid, end='')
+  print('\nMerging downstream change %d...' % changeid, end='')
   run('svn merge -c %d --record-only %s' % (changeid, repo))
   print('done')
 

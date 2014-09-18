@@ -23,10 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
@@ -39,7 +37,6 @@ import org.junit.Test;
  * to the indexed facet results as if it were just another faceting method.
  */
 @Slow
-@SuppressCodecs({"Appending", "Lucene3x", "Lucene40", "Lucene41", "Lucene42"})
 public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
   @BeforeClass
@@ -114,27 +111,23 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
   @Test
   public void testRandomFaceting() throws Exception {
-    try {
-      Random rand = random();
-      int iter = atLeast(100);
-      init();
-      addMoreDocs(0);
-
-      for (int i=0; i<iter; i++) {
-        doFacetTests();
-
-        if (rand.nextInt(100) < 5) {
-          init();
-        }
-
-        addMoreDocs(rand.nextInt(indexSize) + 1);
-
-        if (rand.nextInt(100) < 50) {
-          deleteSomeDocs();
-        }
+    Random rand = random();
+    int iter = atLeast(100);
+    init();
+    addMoreDocs(0);
+    
+    for (int i=0; i<iter; i++) {
+      doFacetTests();
+      
+      if (rand.nextInt(100) < 5) {
+        init();
       }
-    } finally {
-      FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity
+      
+      addMoreDocs(rand.nextInt(indexSize) + 1);
+      
+      if (rand.nextInt(100) < 50) {
+        deleteSomeDocs();
+      }
     }
   }
 

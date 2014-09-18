@@ -25,7 +25,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Version;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -43,7 +42,7 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
     super.setUp();
     dir = new RAMDirectory();
     appAnalyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, appAnalyzer));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(appAnalyzer));
     int numDocs = 200;
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();

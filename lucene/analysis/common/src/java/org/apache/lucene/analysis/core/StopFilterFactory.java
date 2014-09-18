@@ -35,7 +35,7 @@ import java.io.IOException;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
  *     &lt;filter class="solr.StopFilterFactory" ignoreCase="true"
- *             words="stopwords.txt" format="wordset" /&gt;
+ *             words="stopwords.txt" format="wordset"
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  *
@@ -77,7 +77,6 @@ public class StopFilterFactory extends TokenFilterFactory implements ResourceLoa
   private final String stopWordFiles;
   private final String format;
   private final boolean ignoreCase;
-  private final boolean enablePositionIncrements;
   
   /** Creates a new StopFilterFactory */
   public StopFilterFactory(Map<String,String> args) {
@@ -85,7 +84,6 @@ public class StopFilterFactory extends TokenFilterFactory implements ResourceLoa
     stopWordFiles = get(args, "words");
     format = get(args, "format", (null == stopWordFiles ? null : FORMAT_WORDSET));
     ignoreCase = getBoolean(args, "ignoreCase", false);
-    enablePositionIncrements = getBoolean(args, "enablePositionIncrements", true);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -105,16 +103,8 @@ public class StopFilterFactory extends TokenFilterFactory implements ResourceLoa
       if (null != format) {
         throw new IllegalArgumentException("'format' can not be specified w/o an explicit 'words' file: " + format);
       }
-      if (luceneMatchVersion == null) {
-        stopWords = new CharArraySet(StopAnalyzer.ENGLISH_STOP_WORDS_SET, ignoreCase);
-      } else {
-        stopWords = new CharArraySet(luceneMatchVersion, StopAnalyzer.ENGLISH_STOP_WORDS_SET, ignoreCase);
-      }
+      stopWords = new CharArraySet(StopAnalyzer.ENGLISH_STOP_WORDS_SET, ignoreCase);
     }
-  }
-
-  public boolean isEnablePositionIncrements() {
-    return enablePositionIncrements;
   }
 
   public boolean isIgnoreCase() {
@@ -127,13 +117,7 @@ public class StopFilterFactory extends TokenFilterFactory implements ResourceLoa
 
   @Override
   public TokenStream create(TokenStream input) {
-    StopFilter stopFilter;
-    if (luceneMatchVersion == null) {
-      stopFilter = new StopFilter(input, stopWords);
-    } else {
-      stopFilter = new StopFilter(luceneMatchVersion, input,stopWords);
-    }
-    stopFilter.setEnablePositionIncrements(enablePositionIncrements);
+    StopFilter stopFilter = new StopFilter(input,stopWords);
     return stopFilter;
   }
 }

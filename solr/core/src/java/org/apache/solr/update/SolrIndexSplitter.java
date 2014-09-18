@@ -34,6 +34,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.cloud.CompositeIdRouter;
@@ -89,7 +90,7 @@ public class SolrIndexSplitter {
 
   public void split() throws IOException {
 
-    List<AtomicReaderContext> leaves = searcher.getTopReaderContext().leaves();
+    List<AtomicReaderContext> leaves = searcher.getRawReader().leaves();
     List<FixedBitSet[]> segmentDocSets = new ArrayList<>(leaves.size());
 
     log.info("SolrIndexSplitter: partitions=" + numPieces + " segments="+leaves.size());
@@ -138,7 +139,7 @@ public class SolrIndexSplitter {
           iwRef.decref();
         } else {
           if (success) {
-            IOUtils.close(iw);
+            iw.close();
           } else {
             IOUtils.closeWhileHandlingException(iw);
           }
@@ -167,7 +168,7 @@ public class SolrIndexSplitter {
     BytesRef term = null;
     DocsEnum docsEnum = null;
 
-    CharsRef idRef = new CharsRef();
+    CharsRefBuilder idRef = new CharsRefBuilder();
     for (;;) {
       term = termsEnum.next();
       if (term == null) break;

@@ -27,12 +27,13 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
@@ -94,13 +95,7 @@ public class TestSortRandom extends LuceneTestCase {
         }
 
         br = new BytesRef(s);
-        if (defaultCodecSupportsDocValues()) {
-          doc.add(new SortedDocValuesField("stringdv", br));
-          doc.add(new NumericDocValuesField("id", numDocs));
-        } else {
-          doc.add(newStringField("id", Integer.toString(numDocs), Field.Store.NO));
-        }
-        doc.add(newStringField("string", s, Field.Store.NO));
+        doc.add(new SortedDocValuesField("stringdv", br));
         docValues.add(br);
 
       } else {
@@ -109,13 +104,9 @@ public class TestSortRandom extends LuceneTestCase {
           System.out.println("  " + numDocs + ": <missing>");
         }
         docValues.add(null);
-        if (defaultCodecSupportsDocValues()) {
-          doc.add(new NumericDocValuesField("id", numDocs));
-        } else {
-          doc.add(newStringField("id", Integer.toString(numDocs), Field.Store.NO));
-        }
       }
-      
+
+      doc.add(new NumericDocValuesField("id", numDocs));
       doc.add(new StoredField("id", numDocs));
       writer.addDocument(doc);
       numDocs++;
@@ -141,17 +132,9 @@ public class TestSortRandom extends LuceneTestCase {
       final SortField sf;
       final boolean sortMissingLast;
       final boolean missingIsNull;
-      if (defaultCodecSupportsDocValues() && random.nextBoolean()) {
-        sf = new SortField("stringdv", type, reverse);
-        // Can only use sort missing if the DVFormat
-        // supports docsWithField:
-        sortMissingLast = defaultCodecSupportsDocsWithField() && random().nextBoolean();
-        missingIsNull = defaultCodecSupportsDocsWithField();
-      } else {
-        sf = new SortField("string", SortField.Type.STRING, reverse);
-        sortMissingLast = random().nextBoolean();
-        missingIsNull = true;
-      }
+      sf = new SortField("stringdv", type, reverse);
+      sortMissingLast = random().nextBoolean();
+
       if (sortMissingLast) {
         sf.setMissingValue(SortField.STRING_LAST);
       }
@@ -220,9 +203,6 @@ public class TestSortRandom extends LuceneTestCase {
         System.out.println("  expected:");
         for(int idx=0;idx<expected.size();idx++) {
           BytesRef br = expected.get(idx);
-          if (br == null && missingIsNull == false) {
-            br = new BytesRef();
-          }
           System.out.println("    " + idx + ": " + (br == null ? "<missing>" : br.utf8ToString()));
           if (idx == hitCount-1) {
             break;
@@ -242,22 +222,10 @@ public class TestSortRandom extends LuceneTestCase {
       for(int hitIDX=0;hitIDX<hits.scoreDocs.length;hitIDX++) {
         final FieldDoc fd = (FieldDoc) hits.scoreDocs[hitIDX];
         BytesRef br = expected.get(hitIDX);
-        if (br == null && missingIsNull == false) {
-          br = new BytesRef();
-        }
 
-        // Normally, the old codecs (that don't support
-        // docsWithField via doc values) will always return
-        // an empty BytesRef for the missing case; however,
-        // if all docs in a given segment were missing, in
-        // that case it will return null!  So we must map
-        // null here, too:
         BytesRef br2 = (BytesRef) fd.fields[0];
-        if (br2 == null && missingIsNull == false) {
-          br2 = new BytesRef();
-        }
         
-        assertEquals("hit=" + hitIDX + " has wrong sort value", br, br2);
+        assertEquals(br, br2);
       }
     }
 
@@ -281,14 +249,14 @@ public class TestSortRandom extends LuceneTestCase {
     @Override
     public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
       final int maxDoc = context.reader().maxDoc();
-      final FieldCache.Ints idSource = FieldCache.DEFAULT.getInts(context.reader(), "id", false);
+      final NumericDocValues idSource = DocValues.getNumeric(context.reader(), "id");
       assertNotNull(idSource);
       final FixedBitSet bits = new FixedBitSet(maxDoc);
       for(int docID=0;docID<maxDoc;docID++) {
         if (random.nextFloat() <= density && (acceptDocs == null || acceptDocs.get(docID))) {
           bits.set(docID);
-          //System.out.println("  acc id=" + idSource.get(docID) + " docID=" + docID + " id=" + idSource.get(docID) + " v=" + docValues.get(idSource.get(docID)).utf8ToString());
-          matchValues.add(docValues.get(idSource.get(docID)));
+          //System.out.println("  acc id=" + idSource.getInt(docID) + " docID=" + docID);
+          matchValues.add(docValues.get((int) idSource.get(docID)));
         }
       }
 

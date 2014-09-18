@@ -141,7 +141,7 @@ public class TestMultiFields extends LuceneTestCase {
 
   /*
   private void verify(IndexReader r, String term, List<Integer> expected) throws Exception {
-    DocsEnum docs = TestUtil.docs(random, r,
+    DocsEnum docs = _TestUtil.docs(random, r,
                                    "field",
                                    new BytesRef(term),
                                    MultiFields.getLiveDocs(r),

@@ -43,7 +43,7 @@ public class TestSimplePropertiesWriter extends AbstractDIHJdbcTestCase {
   
   @Before
   public void spwBefore() throws Exception {
-    fileLocation = createTempDir().getAbsolutePath();
+    fileLocation = createTempDir().toFile().getAbsolutePath();
     fileName = "the.properties";
   }
  

@@ -39,7 +39,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    File tempSolrHome = createTempDir();
+    File tempSolrHome = createTempDir().toFile();
     // Schemaless renames schema.xml -> schema.xml.bak, and creates + modifies conf/managed-schema,
     // which violates the test security manager's rules, which disallow writes outside the build dir,
     // so we copy the example/example-schemaless/solr/ directory to a new temp dir where writes are allowed. 

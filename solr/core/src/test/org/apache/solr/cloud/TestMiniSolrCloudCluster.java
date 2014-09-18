@@ -80,7 +80,7 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
   @BeforeClass
   public static void startup() throws Exception {
     File solrXml = new File(SolrTestCaseJ4.TEST_HOME(), "solr-no-core.xml");
-    miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, null, createTempDir(), solrXml, null, null);
+    miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, null, createTempDir().toFile(), solrXml, null, null);
   }
 
   @AfterClass

@@ -24,7 +24,7 @@ import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.core.CoreContainer;
 
 /**
- * An EmbeddedSolrServer that supresses shutdown and rollback requests as
+ * An EmbeddedSolrServer that supresses close and rollback requests as
  * necessary for testing
  */
 public class EmbeddedTestSolrServer extends EmbeddedSolrServer {

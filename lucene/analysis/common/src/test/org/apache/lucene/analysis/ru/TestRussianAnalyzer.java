@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.Version;
 
 /**
  * Test case for RussianAnalyzer.
@@ -35,16 +34,6 @@ public class TestRussianAnalyzer extends BaseTokenStreamTestCase {
     {
       RussianAnalyzer ra = new RussianAnalyzer();
       assertAnalyzesTo(ra, "text 1000", new String[] { "text", "1000" });
-    }
-    
-    /** @deprecated (3.1) remove this test in Lucene 5.0: stopwords changed */
-    @Deprecated
-    public void testReusableTokenStream30() throws Exception {
-      Analyzer a = new RussianAnalyzer(Version.LUCENE_3_0);
-      assertAnalyzesTo(a, "Вместе с тем о силе электромагнитной энергии имели представление еще",
-          new String[] { "вмест", "сил", "электромагнитн", "энерг", "имел", "представлен" });
-      assertAnalyzesTo(a, "Но знание это хранилось в тайне",
-          new String[] { "знан", "хран", "тайн" });
     }
     
     public void testReusableTokenStream() throws Exception {

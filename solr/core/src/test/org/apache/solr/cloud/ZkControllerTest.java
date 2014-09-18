@@ -84,7 +84,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
                  ZkController.generateNodeName("foo-bar", "77", "/solr/sub_dir/"));
 
     // setup a SolrZkClient to do some getBaseUrlForNodeName testing
-    String zkDir = createTempDir("zkData").getAbsolutePath();
+    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
 
     ZkTestServer server = new ZkTestServer(zkDir);
     try {
@@ -154,7 +154,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testReadConfigName() throws Exception {
-    String zkDir = createTempDir("zkData").getAbsolutePath();
+    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
     CoreContainer cc = null;
 
     ZkTestServer server = new ZkTestServer(zkDir);
@@ -209,7 +209,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testUploadToCloud() throws Exception {
-    String zkDir = createTempDir("zkData").getAbsolutePath();
+    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
 
     ZkTestServer server = new ZkTestServer(zkDir);
     ZkController zkController = null;
@@ -261,7 +261,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetHostName() throws Exception {
-    String zkDir = createTempDir("zkData").getAbsolutePath();
+    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
     CoreContainer cc = null;
 
     ZkTestServer server = new ZkTestServer(zkDir);

@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetField;
@@ -295,6 +296,9 @@ public class FacetsConfig {
         result.add(field);
       }
     }
+
+    //System.out.println("all indexed: " + allIndexedFields);
+    //System.out.println("all stored: " + allStoredFields);
 
     return result;
   }

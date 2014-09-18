@@ -34,7 +34,6 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-import java.lang.reflect.Constructor;
 import java.util.*;
 
 import org.slf4j.Logger;
@@ -261,28 +260,20 @@ public final class FieldTypePluginLoader
       try {
         // No need to be core-aware as Analyzers are not in the core-aware list
         final Class<? extends Analyzer> clazz = loader.findClass(analyzerName, Analyzer.class);
+        Analyzer analyzer = clazz.newInstance();
 
-        try {
-          // first try to use a ctor with version parameter 
-          // (needed for many new Analyzers that have no default one anymore)
-          Constructor<? extends Analyzer> cnstr
-            = clazz.getConstructor(Version.class);
-          final String matchVersionStr 
-            = DOMUtil.getAttr(attrs, LUCENE_MATCH_VERSION_PARAM);
-          final Version luceneMatchVersion = (matchVersionStr == null) ?
-            schema.getDefaultLuceneMatchVersion() : 
-            Config.parseLuceneVersionString(matchVersionStr);
-          if (luceneMatchVersion == null) {
-            throw new SolrException
-              ( SolrException.ErrorCode.SERVER_ERROR,
-                "Configuration Error: Analyzer '" + clazz.getName() +
-                "' needs a 'luceneMatchVersion' parameter");
-          }
-          return cnstr.newInstance(luceneMatchVersion);
-        } catch (NoSuchMethodException nsme) {
-          // otherwise use default ctor
-          return clazz.newInstance();
+        final String matchVersionStr = DOMUtil.getAttr(attrs, LUCENE_MATCH_VERSION_PARAM);
+        final Version luceneMatchVersion = (matchVersionStr == null) ?
+          schema.getDefaultLuceneMatchVersion() :
+          Config.parseLuceneVersionString(matchVersionStr);
+        if (luceneMatchVersion == null) {
+          throw new SolrException
+            ( SolrException.ErrorCode.SERVER_ERROR,
+              "Configuration Error: Analyzer '" + clazz.getName() +
+              "' needs a 'luceneMatchVersion' parameter");
         }
+        analyzer.setVersion(luceneMatchVersion);
+        return analyzer;
       } catch (Exception e) {
         log.error("Cannot load analyzer: "+analyzerName, e);
         throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,

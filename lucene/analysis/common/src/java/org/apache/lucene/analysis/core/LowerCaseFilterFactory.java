@@ -47,10 +47,7 @@ public class LowerCaseFilterFactory extends TokenFilterFactory implements MultiT
 
   @Override
   public LowerCaseFilter create(TokenStream input) {
-    if (luceneMatchVersion == null) {
-      return new LowerCaseFilter(input);
-    }
-    return new LowerCaseFilter(luceneMatchVersion, input);
+    return new LowerCaseFilter(input);
   }
 
   @Override

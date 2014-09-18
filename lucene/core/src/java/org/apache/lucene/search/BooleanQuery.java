@@ -314,8 +314,8 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
         return super.bulkScorer(context, scoreDocsInOrder, acceptDocs);
       }
 
-      List<BulkScorer> prohibited = new ArrayList<>();
-      List<BulkScorer> optional = new ArrayList<>();
+      List<BulkScorer> prohibited = new ArrayList<BulkScorer>();
+      List<BulkScorer> optional = new ArrayList<BulkScorer>();
       Iterator<BooleanClause> cIter = clauses.iterator();
       for (Weight w  : weights) {
         BooleanClause c =  cIter.next();

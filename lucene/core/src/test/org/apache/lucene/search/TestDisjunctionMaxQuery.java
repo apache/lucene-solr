@@ -38,7 +38,6 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Version;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -482,7 +481,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     Directory directory = newDirectory();
     Analyzer indexerAnalyzer = new MockAnalyzer(random());
 
-    IndexWriterConfig config = new IndexWriterConfig(Version.LATEST, indexerAnalyzer);
+    IndexWriterConfig config = new IndexWriterConfig(indexerAnalyzer);
     IndexWriter writer = new IndexWriter(directory, config);
     String FIELD = "content";
     Document d = new Document();

@@ -532,7 +532,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       long seed) throws IOException {
     Random random = new Random(seed);
     // primary source for our data is from linefiledocs, its realistic.
-    LineFileDocs lineFileDocs = new LineFileDocs(random, false); // no docvalues in 4x
+    LineFileDocs lineFileDocs = new LineFileDocs(random);
     
     // TODO: we should add other fields that use things like docs&freqs but omit
     // positions,

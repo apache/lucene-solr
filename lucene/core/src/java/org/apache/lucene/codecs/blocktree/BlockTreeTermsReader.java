@@ -41,7 +41,6 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.RamUsageEstimator;
 
 /** A block-based terms index and dictionary that assigns
  *  terms to variable length blocks according to how they
@@ -54,9 +53,9 @@ import org.apache.lucene.util.RamUsageEstimator;
  *  does not support a pluggable terms index
  *  implementation).
  *
- *  <p><b>NOTE</b>: this terms dictionary does not support
- *  index divisor when opening an IndexReader.  Instead, you
- *  can change the min/maxItemsPerBlock during indexing.</p>
+ *  <p><b>NOTE</b>: this terms dictionary supports
+ *  min/maxItemsPerBlock during indexing to control how
+ *  much memory the terms index uses.</p>
  *
  *  <p>The data structure used by this implementation is very
  *  similar to a burst trie
@@ -73,9 +72,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * @lucene.experimental
  */
 
-public class BlockTreeTermsReader extends FieldsProducer {
-
-  private static long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(BlockTreeTermsReader.class);
+public final class BlockTreeTermsReader extends FieldsProducer {
 
   // Open input to the main terms dict file (_X.tib)
   final IndexInput in;
@@ -101,7 +98,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
   /** Sole constructor. */
   public BlockTreeTermsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo info,
                               PostingsReaderBase postingsReader, IOContext ioContext,
-                              String segmentSuffix, int indexDivisor)
+                              String segmentSuffix)
     throws IOException {
     
     this.postingsReader = postingsReader;
@@ -115,17 +112,15 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
     try {
       version = readHeader(in);
-      if (indexDivisor != -1) {
-        indexIn = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, BlockTreeTermsWriter.TERMS_INDEX_EXTENSION),
+      indexIn = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, BlockTreeTermsWriter.TERMS_INDEX_EXTENSION),
                                 ioContext);
-        int indexVersion = readIndexHeader(indexIn);
-        if (indexVersion != version) {
-          throw new CorruptIndexException("mixmatched version files: " + in + "=" + version + "," + indexIn + "=" + indexVersion);
-        }
+      int indexVersion = readIndexHeader(indexIn);
+      if (indexVersion != version) {
+        throw new CorruptIndexException("mixmatched version files: " + in + "=" + version + "," + indexIn + "=" + indexVersion);
       }
       
       // verify
-      if (indexIn != null && version >= BlockTreeTermsWriter.VERSION_CHECKSUM) {
+      if (version >= BlockTreeTermsWriter.VERSION_CHECKSUM) {
         CodecUtil.checksumEntireFile(indexIn);
       }
 
@@ -143,9 +138,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
       // Read per-field details
       seekDir(in, dirOffset);
-      if (indexDivisor != -1) {
-        seekDir(indexIn, indexDirOffset);
-      }
+      seekDir(indexIn, indexDirOffset);
 
       final int numFields = in.readVInt();
       if (numFields < 0) {
@@ -192,7 +185,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
         if (sumTotalTermFreq != -1 && sumTotalTermFreq < sumDocFreq) { // #positions must be >= #postings
           throw new CorruptIndexException("invalid sumTotalTermFreq: " + sumTotalTermFreq + " sumDocFreq: " + sumDocFreq + " (resource=" + in + ")");
         }
-        final long indexStartFP = indexDivisor != -1 ? indexIn.readVLong() : 0;
+        final long indexStartFP = indexIn.readVLong();
         FieldReader previous = fields.put(fieldInfo.name,       
                                           new FieldReader(this, fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount,
                                                           indexStartFP, longsSize, indexIn, minTerm, maxTerm));
@@ -200,9 +193,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
           throw new CorruptIndexException("duplicate field: " + fieldInfo.name + " (resource=" + in + ")");
         }
       }
-      if (indexDivisor != -1) {
-        indexIn.close();
-      }
+      indexIn.close();
 
       success = true;
     } finally {
@@ -222,7 +213,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
   }
 
   /** Reads terms file header. */
-  protected int readHeader(IndexInput input) throws IOException {
+  private int readHeader(IndexInput input) throws IOException {
     int version = CodecUtil.checkHeader(input, BlockTreeTermsWriter.TERMS_CODEC_NAME,
                           BlockTreeTermsWriter.VERSION_START,
                           BlockTreeTermsWriter.VERSION_CURRENT);
@@ -233,7 +224,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
   }
 
   /** Reads index file header. */
-  protected int readIndexHeader(IndexInput input) throws IOException {
+  private int readIndexHeader(IndexInput input) throws IOException {
     int version = CodecUtil.checkHeader(input, BlockTreeTermsWriter.TERMS_INDEX_CODEC_NAME,
                           BlockTreeTermsWriter.VERSION_START,
                           BlockTreeTermsWriter.VERSION_CURRENT);
@@ -244,7 +235,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
   }
 
   /** Seek {@code input} to the directory offset. */
-  protected void seekDir(IndexInput input, long dirOffset)
+  private void seekDir(IndexInput input, long dirOffset)
       throws IOException {
     if (version >= BlockTreeTermsWriter.VERSION_CHECKSUM) {
       input.seek(input.length() - CodecUtil.footerLength() - 8);

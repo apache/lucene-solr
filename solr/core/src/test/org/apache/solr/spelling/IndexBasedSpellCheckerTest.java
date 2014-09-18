@@ -38,7 +38,6 @@ import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.lucene.search.spell.SuggestWordFrequencyComparator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
-import org.apache.lucene.util.Version;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -111,7 +110,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     NamedList spellchecker = new NamedList();
     spellchecker.add("classname", IndexBasedSpellChecker.class.getName());
 
-    File indexDir = createTempDir();
+    File indexDir = createTempDir().toFile();
 
     spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
     spellchecker.add(AbstractLuceneSpellChecker.FIELD, "title");
@@ -187,7 +186,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     NamedList spellchecker = new NamedList();
     spellchecker.add("classname", IndexBasedSpellChecker.class.getName());
 
-    File indexDir = createTempDir();
+    File indexDir = createTempDir().toFile();
     indexDir.mkdirs();
     spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
     spellchecker.add(AbstractLuceneSpellChecker.FIELD, "title");
@@ -244,7 +243,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     NamedList spellchecker = new NamedList();
     spellchecker.add("classname", IndexBasedSpellChecker.class.getName());
 
-    File indexDir = createTempDir();
+    File indexDir = createTempDir().toFile();
     spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
     spellchecker.add(AbstractLuceneSpellChecker.FIELD, "title");
     spellchecker.add(AbstractLuceneSpellChecker.SPELLCHECKER_ARG_NAME, spellchecker);
@@ -283,14 +282,14 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     NamedList spellchecker = new NamedList();
     spellchecker.add("classname", IndexBasedSpellChecker.class.getName());
     
-    File tmpDir = createTempDir();
+    File tmpDir = createTempDir().toFile();
     File indexDir = new File(tmpDir, "spellingIdx");
     //create a standalone index
     File altIndexDir = new File(tmpDir, "alternateIdx" + new Date().getTime());
-    Directory dir = newFSDirectory(altIndexDir);
+    Directory dir = newFSDirectory(altIndexDir.toPath());
     IndexWriter iw = new IndexWriter(
         dir,
-        new IndexWriterConfig(Version.LATEST, new WhitespaceAnalyzer())
+        new IndexWriterConfig(new WhitespaceAnalyzer())
     );
     for (int i = 0; i < ALT_DOCS.length; i++) {
       Document doc = new Document();

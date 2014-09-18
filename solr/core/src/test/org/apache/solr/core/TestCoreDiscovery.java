@@ -41,7 +41,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     initCore();
   }
 
-  private final File solrHomeDirectory = createTempDir();
+  private final File solrHomeDirectory = createTempDir().toFile();
 
   private void setMeUp(String alternateCoreDir) throws Exception {
     System.setProperty("solr.solr.home", solrHomeDirectory.getAbsolutePath());
@@ -195,7 +195,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   @Test
   public void testAlternateCoreDir() throws Exception {
 
-    File alt = createTempDir();
+    File alt = createTempDir().toFile();
 
     setMeUp(alt.getAbsolutePath());
     addCoreWithProps(makeCorePropFile("core1", false, true, "dataDir=core1"),
@@ -213,7 +213,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   }
   @Test
   public void testNoCoreDir() throws Exception {
-    File noCoreDir = createTempDir();
+    File noCoreDir = createTempDir().toFile();
     setMeUp(noCoreDir.getAbsolutePath());
     addCoreWithProps(makeCorePropFile("core1", false, true),
         new File(noCoreDir, "core1" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));

@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.idversion;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -454,8 +453,8 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     // MockAnalyzer minus maybePayload else it sometimes stuffs in an 8-byte payload!
     Analyzer a = new Analyzer() {
         @Override
-        public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, true, 100);
+        public TokenStreamComponents createComponents(String fieldName) {
+          MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true, 100);
           tokenizer.setEnableChecks(true);
           MockTokenFilter filt = new MockTokenFilter(tokenizer, MockTokenFilter.EMPTY_STOPSET);
           return new TokenStreamComponents(tokenizer, filt);

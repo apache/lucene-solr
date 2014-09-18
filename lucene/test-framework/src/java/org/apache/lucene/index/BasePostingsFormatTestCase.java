@@ -19,10 +19,10 @@ package org.apache.lucene.index;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -41,7 +41,6 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene3x.Lucene3xCodec;
 import org.apache.lucene.codecs.lucene410.Lucene410Codec;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.document.Document;
@@ -354,7 +353,6 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
 
   @BeforeClass
   public static void createPostings() throws IOException {
-    // TODO: we use the wrong comparator for treemap, but this still works since we only use randomSimpleString?
     totalPostings = 0;
     totalPayloadBytes = 0;
     fields = new TreeMap<>();
@@ -570,11 +568,6 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     public boolean hasPayloads() {
       return allowPayloads && fieldInfo.hasPayloads();
     }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return (Comparator<BytesRef>) terms.comparator();
-    }
   }
 
   private static class SeedTermsEnum extends TermsEnum {
@@ -673,11 +666,6 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
       }
       return getSeedPostings(current.getKey().utf8ToString(), current.getValue().seed, false, maxAllowed, allowPayloads);
     }
-    
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return (Comparator<BytesRef>) terms.comparator();
-    }
   }
 
   // TODO maybe instead of @BeforeClass just make a single test run: build postings & index & test it?
@@ -695,25 +683,15 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
       System.out.println("\nTEST: now build index");
     }
 
-    int maxIndexOptionNoOffsets = Arrays.asList(IndexOptions.values()).indexOf(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-
     // TODO use allowPayloads
 
     FieldInfo[] newFieldInfoArray = new FieldInfo[fields.size()];
     for(int fieldUpto=0;fieldUpto<fields.size();fieldUpto++) {
       FieldInfo oldFieldInfo = fieldInfos.fieldInfo(fieldUpto);
-
-      String pf = TestUtil.getPostingsFormat(codec, oldFieldInfo.name);
-      int fieldMaxIndexOption;
-      if (doesntSupportOffsets.contains(pf)) {
-        fieldMaxIndexOption = Math.min(maxIndexOptionNoOffsets, maxIndexOption);
-      } else {
-        fieldMaxIndexOption = maxIndexOption;
-      }
     
       // Randomly picked the IndexOptions to index this
       // field with:
-      IndexOptions indexOptions = IndexOptions.values()[alwaysTestMax ? fieldMaxIndexOption : random().nextInt(1+fieldMaxIndexOption)];
+      IndexOptions indexOptions = IndexOptions.values()[alwaysTestMax ? maxIndexOption : random().nextInt(1+maxIndexOption)];
       boolean doPayloads = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 && allowPayloads;
 
       newFieldInfoArray[fieldUpto] = new FieldInfo(oldFieldInfo.name,
@@ -736,7 +714,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     long bytes =  totalPostings * 8 + totalPayloadBytes;
 
     SegmentWriteState writeState = new SegmentWriteState(null, dir,
-                                                         segmentInfo, newFieldInfos, 128,
+                                                         segmentInfo, newFieldInfos,
                                                          null, new IOContext(new FlushInfo(maxDoc, bytes)));
 
     Fields seedFields = new SeedFields(fields, newFieldInfos, maxAllowed, allowPayloads);
@@ -763,7 +741,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
 
     currentFieldInfos = newFieldInfos;
 
-    SegmentReadState readState = new SegmentReadState(dir, segmentInfo, newFieldInfos, IOContext.READ, 1);
+    SegmentReadState readState = new SegmentReadState(dir, segmentInfo, newFieldInfos, IOContext.READ);
 
     return codec.postingsFormat().fieldsProducer(readState);
   }
@@ -1358,7 +1336,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
   /** Indexes all fields/terms at the specified
    *  IndexOptions, and fully tests at that IndexOptions. */
   private void testFull(IndexOptions options, boolean withPayloads) throws Exception {
-    File path = createTempDir("testPostingsFormat.testExact");
+    Path path = createTempDir("testPostingsFormat.testExact");
     Directory dir = newFSDirectory(path);
 
     // TODO test thread safety of buildIndex too
@@ -1411,7 +1389,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     int iters = 5;
 
     for(int iter=0;iter<iters;iter++) {
-      File path = createTempDir("testPostingsFormat");
+      Path path = createTempDir("testPostingsFormat");
       Directory dir = newFSDirectory(path);
 
       boolean indexPayloads = random().nextBoolean();
@@ -1525,7 +1503,6 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
   // LUCENE-5123: make sure we can visit postings twice
   // during flush/merge
   public void testInvertedWrite() throws Exception {
-    assumeFalse("test cannot work with 3.x, does all kinds of illegal stuff", getCodec() instanceof Lucene3xCodec);
     Directory dir = newDirectory();
     MockAnalyzer analyzer = new MockAnalyzer(random());
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
@@ -1700,11 +1677,6 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
                   public void close() throws IOException {
                     fieldsConsumer.close();
                   }
-
-                  @Override
-                  public Comparator<BytesRef> getComparator() {
-                    return fieldsConsumer.getComparator();
-                  }
                 };
               }
 
@@ -1767,15 +1739,9 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
   @Override
   protected void addRandomFields(Document doc) {
     for (IndexOptions opts : IndexOptions.values()) {
-      final String field = "f_" + opts;
-      String pf = TestUtil.getPostingsFormat(Codec.getDefault(), field);
-      if (opts == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS && doesntSupportOffsets.contains(pf)) {
-        continue;
-      }
       FieldType ft = new FieldType();
       ft.setIndexOptions(opts);
       ft.setIndexed(true);
-      ft.setOmitNorms(true);
       ft.freeze();
       final int numFields = random().nextInt(5);
       for (int j = 0; j < numFields; ++j) {

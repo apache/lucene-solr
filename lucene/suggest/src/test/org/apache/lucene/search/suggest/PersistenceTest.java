@@ -16,10 +16,9 @@
  */
 package org.apache.lucene.search.suggest;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Random;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.util.List;
 
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
@@ -70,12 +69,12 @@ public class PersistenceTest extends LuceneTestCase {
     lookup.build(new InputArrayIterator(keys));
 
     // Store the suggester.
-    File storeDir = createTempDir(LuceneTestCase.getTestClass().getSimpleName());
-    lookup.store(new FileOutputStream(new File(storeDir, "lookup.dat")));
+    Path storeDir = createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    lookup.store(Files.newOutputStream(storeDir.resolve("lookup.dat")));
 
     // Re-read it from disk.
     lookup = lookupClass.newInstance();
-    lookup.load(new FileInputStream(new File(storeDir, "lookup.dat")));
+    lookup.load(Files.newInputStream(storeDir.resolve("lookup.dat")));
 
     // Assert validity.
     Random random = random();

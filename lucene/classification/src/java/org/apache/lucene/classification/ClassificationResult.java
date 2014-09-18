@@ -20,10 +20,10 @@ package org.apache.lucene.classification;
  * The result of a call to {@link Classifier#assignClass(String)} holding an assigned class of type <code>T</code> and a score.
  * @lucene.experimental
  */
-public class ClassificationResult<T> {
+public class ClassificationResult<T> implements Comparable<ClassificationResult<T>>{
 
   private final T assignedClass;
-  private final double score;
+  private double score;
 
   /**
    * Constructor
@@ -49,5 +49,19 @@ public class ClassificationResult<T> {
    */
   public double getScore() {
     return score;
+  }
+  
+  /**
+   * set the score value
+   * @param score the score for the assignedClass as a <code>double</code>
+   */
+  public void setScore(double score) {
+    this.score = score;
+  }
+
+
+  @Override
+  public int compareTo(ClassificationResult<T> o) {
+    return this.getScore() < o.getScore() ? 1 : this.getScore() > o.getScore() ? -1 : 0;
   }
 }

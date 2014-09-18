@@ -33,7 +33,6 @@ import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.Version;
 
 /**
  * {@link Analyzer} for Sorani Kurdish.
@@ -77,14 +76,6 @@ public final class SoraniAnalyzer extends StopwordAnalyzerBase {
   public SoraniAnalyzer() {
     this(DefaultSetHolder.DEFAULT_STOP_SET);
   }
-
-  /**
-   * @deprecated Use {@link #SoraniAnalyzer()}
-   */
-  @Deprecated
-  public SoraniAnalyzer(Version matchVersion) {
-    this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
-  }
   
   /**
    * Builds an analyzer with the given stop words.
@@ -93,14 +84,6 @@ public final class SoraniAnalyzer extends StopwordAnalyzerBase {
    */
   public SoraniAnalyzer(CharArraySet stopwords) {
     this(stopwords, CharArraySet.EMPTY_SET);
-  }
-
-  /**
-   * @deprecated Use {@link #SoraniAnalyzer(CharArraySet)}
-   */
-  @Deprecated
-  public SoraniAnalyzer(Version matchVersion, CharArraySet stopwords) {
-    this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
   }
 
   /**
@@ -117,16 +100,6 @@ public final class SoraniAnalyzer extends StopwordAnalyzerBase {
   }
 
   /**
-   * @deprecated Use {@link #SoraniAnalyzer(CharArraySet,CharArraySet)}
-   */
-  @Deprecated
-  public SoraniAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet) {
-    super(matchVersion, stopwords);
-    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(
-        matchVersion, stemExclusionSet));
-  }
-
-  /**
    * Creates a
    * {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    * which tokenizes all the text in the provided {@link Reader}.
@@ -140,12 +113,12 @@ public final class SoraniAnalyzer extends StopwordAnalyzerBase {
    *         provided and {@link SoraniStemFilter}.
    */
   @Override
-  protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-    final Tokenizer source = new StandardTokenizer(getVersion(), reader);
-    TokenStream result = new StandardFilter(getVersion(), source);
+  protected TokenStreamComponents createComponents(String fieldName) {
+    final Tokenizer source = new StandardTokenizer();
+    TokenStream result = new StandardFilter(source);
     result = new SoraniNormalizationFilter(result);
-    result = new LowerCaseFilter(getVersion(), result);
-    result = new StopFilter(getVersion(), result, stopwords);
+    result = new LowerCaseFilter(result);
+    result = new StopFilter(result, stopwords);
     if(!stemExclusionSet.isEmpty())
       result = new SetKeywordMarkerFilter(result, stemExclusionSet);
     result = new SoraniStemFilter(result);

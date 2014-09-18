@@ -20,29 +20,24 @@ package org.apache.lucene.queries.function.valuesource;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueFloat;
 
 /**
- * Obtains float field values from {@link FieldCache#getFloats} and makes those
+ * Obtains float field values from {@link AtomicReader#getNumericDocValues} and makes those
  * values available as other numeric types, casting as needed.
  */
 public class FloatFieldSource extends FieldCacheSource {
 
-  protected final FieldCache.FloatParser parser;
-
   public FloatFieldSource(String field) {
-    this(field, null);
-  }
-
-  public FloatFieldSource(String field, FieldCache.FloatParser parser) {
     super(field);
-    this.parser = parser;
   }
 
   @Override
@@ -52,18 +47,13 @@ public class FloatFieldSource extends FieldCacheSource {
 
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final FieldCache.Floats arr = cache.getFloats(readerContext.reader(), field, parser, true);
-    final Bits valid = cache.getDocsWithField(readerContext.reader(), field);
+    final NumericDocValues arr = DocValues.getNumeric(readerContext.reader(), field);
+    final Bits valid = DocValues.getDocsWithField(readerContext.reader(), field);
 
     return new FloatDocValues(this) {
       @Override
       public float floatVal(int doc) {
-        return arr.get(doc);
-      }
-
-      @Override
-      public Object objectVal(int doc) {
-        return valid.get(doc) ? arr.get(doc) : null;
+        return Float.intBitsToFloat((int)arr.get(doc));
       }
 
       @Override
@@ -83,7 +73,7 @@ public class FloatFieldSource extends FieldCacheSource {
 
           @Override
           public void fillValue(int doc) {
-            mval.value = arr.get(doc);
+            mval.value = floatVal(doc);
             mval.exists = mval.value != 0 || valid.get(doc);
           }
         };
@@ -96,14 +86,12 @@ public class FloatFieldSource extends FieldCacheSource {
   public boolean equals(Object o) {
     if (o.getClass() !=  FloatFieldSource.class) return false;
     FloatFieldSource other = (FloatFieldSource)o;
-    return super.equals(other)
-      && (this.parser==null ? other.parser==null :
-          this.parser.getClass() == other.parser.getClass());
+    return super.equals(other);
   }
 
   @Override
   public int hashCode() {
-    int h = parser==null ? Float.class.hashCode() : parser.getClass().hashCode();
+    int h = Float.class.hashCode();
     h += super.hashCode();
     return h;
   }

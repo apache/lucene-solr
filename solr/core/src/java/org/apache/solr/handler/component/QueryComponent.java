@@ -1279,11 +1279,6 @@ public class QueryComponent extends SearchComponent
   }
 
   @Override
-  public String getSource() {
-    return null;
-  }
-
-  @Override
   public URL[] getDocs() {
     return null;
   }

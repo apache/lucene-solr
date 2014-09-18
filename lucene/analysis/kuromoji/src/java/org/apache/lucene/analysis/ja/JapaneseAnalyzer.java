@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.ja;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -85,8 +84,8 @@ public class JapaneseAnalyzer extends StopwordAnalyzerBase {
   }
   
   @Override
-  protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-    Tokenizer tokenizer = new JapaneseTokenizer(reader, userDict, true, mode);
+  protected TokenStreamComponents createComponents(String fieldName) {
+    Tokenizer tokenizer = new JapaneseTokenizer(userDict, true, mode);
     TokenStream stream = new JapaneseBaseFormFilter(tokenizer);
     stream = new JapanesePartOfSpeechStopFilter(stream, stoptags);
     stream = new CJKWidthFilter(stream);

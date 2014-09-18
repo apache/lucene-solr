@@ -244,8 +244,8 @@ public class SloppyMath {
     
     
     // WGS84 earth-ellipsoid major (a) and minor (b) radius
-    final double a = 6378137; // [m]
-    final double b = 6356752.31420; // [m]
+    final double a = 6_378_137; // [m]
+    final double b = 6_356_752.31420; // [m]
     
     final double a2 = a*a;
     final double b2 = b*b;

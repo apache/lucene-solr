@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
@@ -33,8 +32,9 @@ import org.apache.lucene.util.BytesRefIterator;
  * #docs}.
  * 
  * <p>Term enumerations are always ordered by
- * {@link #getComparator}.  Each term in the enumeration is
- * greater than the one before it.</p>
+ * BytesRef.compareTo, which is Unicode sort
+ * order if the terms are UTF-8 bytes.  Each term in the
+ * enumeration is greater than the one before it.</p>
  *
  * <p>The TermsEnum is unpositioned when you first obtain it
  * and you must first successfully call {@link #next} or one
@@ -229,11 +229,6 @@ public abstract class TermsEnum implements BytesRefIterator {
       throw new IllegalStateException("this method should never be called");
     }
 
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return null;
-    }
-      
     @Override
     public int docFreq() {
       throw new IllegalStateException("this method should never be called");

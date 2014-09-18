@@ -32,7 +32,7 @@ import org.apache.solr.uima.processor.SolrUIMAConfiguration.MapField;
  */
 public class SolrUIMAConfigurationReader {
 
-  private NamedList<Object> args;
+  private final NamedList<Object> args;
 
   public SolrUIMAConfigurationReader(NamedList<Object> args) {
     this.args = args;

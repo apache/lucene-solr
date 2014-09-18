@@ -18,16 +18,14 @@ package org.apache.lucene.analysis.ar;
  */
 
 import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.Version;
 
 /**
  * Test the Arabic Normalization Filter
@@ -122,14 +120,14 @@ public class TestArabicStemFilter extends BaseTokenStreamTestCase {
   public void testWithKeywordAttribute() throws IOException {
     CharArraySet set = new CharArraySet(1, true);
     set.add("ساهدهات");
-    ArabicLetterTokenizer tokenStream  = new ArabicLetterTokenizer(Version.LATEST, new StringReader("ساهدهات"));
+    MockTokenizer tokenStream  = whitespaceMockTokenizer("ساهدهات");
 
     ArabicStemFilter filter = new ArabicStemFilter(new SetKeywordMarkerFilter(tokenStream, set));
     assertTokenStreamContents(filter, new String[]{"ساهدهات"});
   }
 
   private void check(final String input, final String expected) throws IOException {
-    ArabicLetterTokenizer tokenStream  = new ArabicLetterTokenizer(Version.LATEST, new StringReader(input));
+    MockTokenizer tokenStream  = whitespaceMockTokenizer(input);
     ArabicStemFilter filter = new ArabicStemFilter(tokenStream);
     assertTokenStreamContents(filter, new String[]{expected});
   }
@@ -137,8 +135,8 @@ public class TestArabicStemFilter extends BaseTokenStreamTestCase {
   public void testEmptyTerm() throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, new ArabicStemFilter(tokenizer));
       }
     };

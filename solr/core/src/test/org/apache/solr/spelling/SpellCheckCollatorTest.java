@@ -118,8 +118,8 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
       req.close();
       NamedList values = rsp.getValues();
       NamedList spellCheck = (NamedList) values.get("spellcheck");
-      NamedList suggestions = (NamedList) spellCheck.get("suggestions");
-      List<String> collations = suggestions.getAll("collation");
+      NamedList collationHolder = (NamedList) spellCheck.get("collations");
+      List<String> collations = collationHolder.getAll("collation");
       assertTrue(collations.size()==1); 
       String collation = collations.iterator().next();      
       assertTrue("Incorrect collation: " + collation,"lowerfilt:(hyphenated-word)".equals(collation));
@@ -138,8 +138,8 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
       req.close();
       NamedList values = rsp.getValues();
       NamedList spellCheck = (NamedList) values.get("spellcheck");
-      NamedList suggestions = (NamedList) spellCheck.get("suggestions");
-      List<String> collations = suggestions.getAll("collation");
+      NamedList collationHolder = (NamedList) spellCheck.get("collations");
+      List<String> collations = collationHolder.getAll("collation");
       assertTrue(collations.size()==1);
       String collation = collations.iterator().next();
       assertTrue("Incorrect collation: " + collation,"hyphenated-word".equals(collation));
@@ -163,7 +163,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
         "mm", "1",
         CommonParams.Q, "partisian politcal mashine"
       ),
-      "//lst[@name='spellcheck']/lst[@name='suggestions']/str[@name='collation']='parisian political machine'"
+      "//lst[@name='spellcheck']/lst[@name='collations']/str[@name='collation']='parisian political machine'"
     );
     assertQ(
         req(
@@ -180,7 +180,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
           SpellingParams.SPELLCHECK_COLLATE_PARAM_OVERRIDE + "mm", "100%",
           CommonParams.Q, "partisian politcal mashine"
         ),
-       "//lst[@name='spellcheck']/lst[@name='suggestions']/str[@name='collation']='partisan political machine'"
+       "//lst[@name='spellcheck']/lst[@name='collations']/str[@name='collation']='partisan political machine'"
      );
     
   }
@@ -212,8 +212,8 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     req.close();
     NamedList values = rsp.getValues();
     NamedList spellCheck = (NamedList) values.get("spellcheck");
-    NamedList suggestions = (NamedList) spellCheck.get("suggestions");
-    List<String> collations = suggestions.getAll("collation");
+    NamedList collationHolder = (NamedList) spellCheck.get("collations");
+    List<String> collations = collationHolder.getAll("collation");
     assertTrue(collations.size() > 0);
     for(String collation : collations) {
       assertTrue(!collation.equals("lowerfilt:(+faith +hope +loaves)"));
@@ -247,8 +247,8 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     req.close();
     NamedList values = rsp.getValues();
     NamedList spellCheck = (NamedList) values.get("spellcheck");
-    NamedList suggestions = (NamedList) spellCheck.get("suggestions");
-    String singleCollation = (String) suggestions.get("collation");
+    NamedList collationHolder = (NamedList) spellCheck.get("collations");
+    String singleCollation = (String) collationHolder.get("collation");
     assertNull(singleCollation);
 
     //SpellCheckCompRH1 has "lowerfilt1" defined in the "qf" param.  It will find "peace" from "peac" because
@@ -262,8 +262,8 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     req.close();
     values = rsp.getValues();
     spellCheck = (NamedList) values.get("spellcheck");
-    suggestions = (NamedList) spellCheck.get("suggestions");
-    singleCollation = (String) suggestions.get("collation");
+    collationHolder = (NamedList) spellCheck.get("collations");
+    singleCollation = (String) collationHolder.get("collation");
     assertEquals(singleCollation, "peace");
   }
 
@@ -294,8 +294,8 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     req.close();
     NamedList values = rsp.getValues();
     NamedList spellCheck = (NamedList) values.get("spellcheck");
-    NamedList suggestions = (NamedList) spellCheck.get("suggestions");
-    String singleCollation = (String) suggestions.get("collation");
+    NamedList collationHolder = (NamedList) spellCheck.get("collations");
+    String singleCollation = (String) collationHolder.get("collation");
     assertEquals("lowerfilt:(+faith +homer +loaves)", singleCollation);
 
     // Testing backwards-compatible response format but will only return a
@@ -311,8 +311,8 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     req.close();
     values = rsp.getValues();
     spellCheck = (NamedList) values.get("spellcheck");
-    suggestions = (NamedList) spellCheck.get("suggestions");
-    singleCollation = (String) suggestions.get("collation");
+    collationHolder = (NamedList) spellCheck.get("collations");
+    singleCollation = (String) collationHolder.get("collation");
     assertEquals("lowerfilt:(+faith +hope +loaves)", singleCollation);
 
     // Testing returning multiple collations if more than one valid
@@ -329,8 +329,8 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     req.close();
     values = rsp.getValues();
     spellCheck = (NamedList) values.get("spellcheck");
-    suggestions = (NamedList) spellCheck.get("suggestions");
-    List<String> collations = suggestions.getAll("collation");
+    collationHolder = (NamedList) spellCheck.get("collations");
+    List<String> collations = collationHolder.getAll("collation");
     assertTrue(collations.size() == 2);
     for (String multipleCollation : collations) {
       assertTrue(multipleCollation.equals("lowerfilt:(+faith +hope +love)")
@@ -348,8 +348,8 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     req.close();
     values = rsp.getValues();
     spellCheck = (NamedList) values.get("spellcheck");
-    suggestions = (NamedList) spellCheck.get("suggestions");
-    List<NamedList> expandedCollationList = suggestions.getAll("collation");
+    collationHolder = (NamedList) spellCheck.get("collations");
+    List<NamedList> expandedCollationList = collationHolder.getAll("collation");
     Set<String> usedcollations = new HashSet<>();
     assertTrue(expandedCollationList.size() == 2);
     for (NamedList expandedCollation : expandedCollationList) {
@@ -402,8 +402,8 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     req.close();
     NamedList values = rsp.getValues();
     NamedList spellCheck = (NamedList) values.get("spellcheck");
-    NamedList suggestions = (NamedList) spellCheck.get("suggestions");
-    List<String> collations = suggestions.getAll("collation");
+    NamedList collationHolder = (NamedList) spellCheck.get("collations");
+    List<String> collations = collationHolder.getAll("collation");
     assertTrue(collations.size() == 1);
   }
 
@@ -434,10 +434,10 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 /* DirectSolrSpellChecker won't suggest if the edit distance > 2, so we can't test for this one...
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='heathrow']/arr[@name='suggestion']/lst/str[@name='word']='hearth'",
 */
-        "//lst[@name='spellcheck']/lst[@name='suggestions']/bool[@name='correctlySpelled']='false'",
-        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/str[@name='collationQuery']='teststop:(flew AND from AND heathrow)'",
-        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/int[@name='hits']=1",
-        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/lst[@name='misspellingsAndCorrections']/str[@name='form']='from'"
+        "//lst[@name='spellcheck']/bool[@name='correctlySpelled']='false'",
+        "//lst[@name='spellcheck']/lst[@name='collations']/lst[@name='collation']/str[@name='collationQuery']='teststop:(flew AND from AND heathrow)'",
+        "//lst[@name='spellcheck']/lst[@name='collations']/lst[@name='collation']/int[@name='hits']=1",
+        "//lst[@name='spellcheck']/lst[@name='collations']/lst[@name='collation']/lst[@name='misspellingsAndCorrections']/str[@name='form']='from'"
       );
 
       assertQ(
@@ -458,10 +458,10 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
         ),
         "//result[@numFound=1]",
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='june']/arr[@name='suggestion']/lst/str[@name='word']='jane'",
-        "//lst[@name='spellcheck']/lst[@name='suggestions']/bool[@name='correctlySpelled']='false'",
-        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/str[@name='collationQuery']='teststop:(jane AND customs)'",
-        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/int[@name='hits']=1",
-        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/lst[@name='misspellingsAndCorrections']/str[@name='june']='jane'"
+        "//lst[@name='spellcheck']/bool[@name='correctlySpelled']='false'",
+        "//lst[@name='spellcheck']/lst[@name='collations']/lst[@name='collation']/str[@name='collationQuery']='teststop:(jane AND customs)'",
+        "//lst[@name='spellcheck']/lst[@name='collations']/lst[@name='collation']/int[@name='hits']=1",
+        "//lst[@name='spellcheck']/lst[@name='collations']/lst[@name='collation']/lst[@name='misspellingsAndCorrections']/str[@name='june']='jane'"
       );
       //SOLR-5090, alternativeTermCount==0 was being evaluated, sometimes would throw NPE
       assertQ(req("q", "teststop:(june customs)", "mm", "2", "qt",
@@ -477,7 +477,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
   @Test
   public void testEstimatedHitCounts() throws Exception {
     final String xpathPrefix = 
-      "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/";
+      "//lst[@name='spellcheck']/lst[@name='collations']/lst[@name='collation']/";
     final SolrParams reusedParams = params
       (SpellCheckComponent.COMPONENT_NAME, "true",
        SpellCheckComponent.SPELLCHECK_DICT, "direct",
@@ -559,8 +559,8 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     req.close();
     NamedList values = rsp.getValues();
     NamedList spellCheck = (NamedList) values.get("spellcheck");
-    NamedList suggestions = (NamedList) spellCheck.get("suggestions");
-    List<String> collations = suggestions.getAll("collation");
+    NamedList collationList = (NamedList) spellCheck.get("collations");
+    List<?> collations = (List<?>) collationList.getAll("collation");
     assertTrue(collations.size() == 2);
   }
   

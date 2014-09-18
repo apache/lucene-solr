@@ -214,8 +214,6 @@ public class DataImportHandler extends RequestHandlerBase implements
     rsp.add("status", importer.isBusy() ? "busy" : "idle");
     rsp.add("importResponse", message);
     rsp.add("statusMessages", importer.getStatusMessages());
-
-    RequestHandlerUtils.addExperimentalFormatWarning(rsp);
   }
 
   private Map<String, Object> getParamsMap(SolrParams params) {
@@ -313,11 +311,6 @@ public class DataImportHandler extends RequestHandlerBase implements
   @Override
   public String getDescription() {
     return DataImporter.MSG.JMX_DESC;
-  }
-
-  @Override
-  public String getSource() {
-    return null;
   }
 
   public static final String ENABLE_DEBUG = "enableDebug";

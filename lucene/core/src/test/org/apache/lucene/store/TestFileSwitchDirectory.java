@@ -17,9 +17,9 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -28,12 +28,12 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexNotFoundException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TestIndexWriterReader;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.Version;
 
 public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
 
@@ -51,13 +51,11 @@ public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
     secondaryDir.setCheckIndexOnClose(false); // only part of an index
     
     FileSwitchDirectory fsd = new FileSwitchDirectory(fileExtensions, primaryDir, secondaryDir, true);
-    // for now we wire Lucene40Codec because we rely upon its specific impl
-    boolean oldValue = OLD_FORMAT_IMPERSONATION_IS_ACTIVE;
-    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true;
+    // for now we wire Lucene410Codec because we rely upon its specific impl
     IndexWriter writer = new IndexWriter(
         fsd,
-        new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())).
-            setMergePolicy(newLogMergePolicy(false)).setCodec(Codec.forName("Lucene40")).setUseCompoundFile(false)
+        new IndexWriterConfig(new MockAnalyzer(random())).
+            setMergePolicy(newLogMergePolicy(false)).setCodec(Codec.forName("Lucene410")).setUseCompoundFile(false)
     );
     TestIndexWriterReader.createIndexNoClose(true, "ram", writer);
     IndexReader reader = DirectoryReader.open(writer, true);
@@ -85,16 +83,15 @@ public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
       assertNotNull(files[i]);
     }
     fsd.close();
-    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = oldValue;
   }
   
   private Directory newFSSwitchDirectory(Set<String> primaryExtensions) throws IOException {
-    File primDir = createTempDir("foo");
-    File secondDir = createTempDir("bar");
+    Path primDir = createTempDir("foo");
+    Path secondDir = createTempDir("bar");
     return newFSSwitchDirectory(primDir, secondDir, primaryExtensions);
   }
 
-  private Directory newFSSwitchDirectory(File aDir, File bDir, Set<String> primaryExtensions) throws IOException {
+  private Directory newFSSwitchDirectory(Path aDir, Path bDir, Set<String> primaryExtensions) throws IOException {
     Directory a = new SimpleFSDirectory(aDir);
     Directory b = new SimpleFSDirectory(bDir);
     return new FileSwitchDirectory(primaryExtensions, a, b, true);
@@ -102,21 +99,21 @@ public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
   
   // LUCENE-3380 -- make sure we get exception if the directory really does not exist.
   public void testNoDir() throws Throwable {
-    File primDir = createTempDir("foo");
-    File secondDir = createTempDir("bar");
+    Path primDir = createTempDir("foo");
+    Path secondDir = createTempDir("bar");
     IOUtils.rm(primDir, secondDir);
     Directory dir = newFSSwitchDirectory(primDir, secondDir, Collections.<String>emptySet());
     try {
       DirectoryReader.open(dir);
       fail("did not hit expected exception");
-    } catch (NoSuchDirectoryException nsde) {
+    } catch (IndexNotFoundException nsde) {
       // expected
     }
     dir.close();
   }
 
   @Override
-  protected Directory getDirectory(File path) throws IOException {
+  protected Directory getDirectory(Path path) throws IOException {
     Set<String> extensions = new HashSet<String>();
     if (random().nextBoolean()) {
       extensions.add("cfs");

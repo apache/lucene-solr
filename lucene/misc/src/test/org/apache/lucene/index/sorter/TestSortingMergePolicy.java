@@ -45,11 +45,9 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
-@SuppressCodecs("Lucene3x")
 public class TestSortingMergePolicy extends LuceneTestCase {
 
   private List<String> terms;
@@ -137,13 +135,11 @@ public class TestSortingMergePolicy extends LuceneTestCase {
     iw1.w.addDocument(doc);
     iw2.w.addDocument(doc);
 
-    if (defaultCodecSupportsFieldUpdates()) {
-      // update NDV of docs belonging to one term (covers many documents)
-      final long value = random().nextLong();
-      final String term = RandomPicks.randomFrom(random(), terms);
-      iw1.w.updateNumericDocValue(new Term("s", term), "ndv", value);
-      iw2.w.updateNumericDocValue(new Term("s", term), "ndv", value);
-    }
+    // update NDV of docs belonging to one term (covers many documents)
+    final long value = random().nextLong();
+    final String term = RandomPicks.randomFrom(random(), terms);
+    iw1.w.updateNumericDocValue(new Term("s", term), "ndv", value);
+    iw2.w.updateNumericDocValue(new Term("s", term), "ndv", value);
     
     iw1.forceMerge(1);
     iw2.forceMerge(1);

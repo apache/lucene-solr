@@ -22,7 +22,6 @@ package org.apache.lucene.codecs.blocktreeords;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.Comparator;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.blocktreeords.FSTOrdsOutputs.Output;
@@ -148,11 +147,6 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
       arcs = next;
     }
     return arcs[ord];
-  }
-
-  @Override
-  public Comparator<BytesRef> getComparator() {
-    return BytesRef.getUTF8SortedAsUnicodeComparator();
   }
 
   // Pushes a frame we seek'd to

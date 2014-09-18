@@ -42,9 +42,6 @@ import org.apache.lucene.util.fst.Util;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -55,6 +52,7 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -141,7 +139,7 @@ public class Dictionary {
   // when set, some words have exceptional stems, and the last entry is a pointer to stemExceptions
   boolean hasStemExceptions;
   
-  private final File tempDir = OfflineSorter.defaultTempDir(); // TODO: make this configurable?
+  private final Path tempDir = OfflineSorter.defaultTempDir(); // TODO: make this configurable?
   
   boolean ignoreCase;
   boolean complexPrefixes;
@@ -200,8 +198,8 @@ public class Dictionary {
     this.needsOutputCleaning = false; // set if we have an OCONV
     flagLookup.add(new BytesRef()); // no flags -> ord 0
 
-    File aff = File.createTempFile("affix", "aff", tempDir);
-    OutputStream out = new BufferedOutputStream(new FileOutputStream(aff));
+    Path aff = Files.createTempFile(tempDir, "affix", "aff");
+    OutputStream out = new BufferedOutputStream(Files.newOutputStream(aff));
     InputStream aff1 = null;
     InputStream aff2 = null;
     boolean success = false;
@@ -215,12 +213,12 @@ public class Dictionary {
       out.close();
       
       // pass 1: get encoding
-      aff1 = new BufferedInputStream(new FileInputStream(aff));
+      aff1 = new BufferedInputStream(Files.newInputStream(aff));
       String encoding = getDictionaryEncoding(aff1);
       
       // pass 2: parse affixes
       CharsetDecoder decoder = getJavaEncoding(encoding);
-      aff2 = new BufferedInputStream(new FileInputStream(aff));
+      aff2 = new BufferedInputStream(Files.newInputStream(aff));
       readAffixFile(aff2, decoder);
       
       // read dictionary entries
@@ -234,7 +232,7 @@ public class Dictionary {
     } finally {
       IOUtils.closeWhileHandlingException(out, aff1, aff2);
       if (success) {
-        Files.delete(aff.toPath());
+        Files.delete(aff);
       } else {
         IOUtils.deleteFilesIgnoringExceptions(aff);
       }
@@ -782,10 +780,8 @@ public class Dictionary {
     
     StringBuilder sb = new StringBuilder();
     
-    File unsorted = File.createTempFile("unsorted", "dat", tempDir);
-    ByteSequencesWriter writer = new ByteSequencesWriter(unsorted);
-    boolean success = false;
-    try {
+    Path unsorted = Files.createTempFile(tempDir, "unsorted", "dat");
+    try (ByteSequencesWriter writer = new ByteSequencesWriter(unsorted)) {
       for (InputStream dictionary : dictionaries) {
         BufferedReader lines = new BufferedReader(new InputStreamReader(dictionary, decoder));
         String line = lines.readLine(); // first line is number of entries (approximately, sometimes)
@@ -826,15 +822,8 @@ public class Dictionary {
           }
         }
       }
-      success = true;
-    } finally {
-      if (success) {
-        IOUtils.close(writer);
-      } else {
-        IOUtils.closeWhileHandlingException(writer);
-      }
     }
-    File sorted = File.createTempFile("sorted", "dat", tempDir);
+    Path sorted = Files.createTempFile(tempDir, "sorted", "dat");
     
     OfflineSorter sorter = new OfflineSorter(new Comparator<BytesRef>() {
       BytesRef scratch1 = new BytesRef();
@@ -873,19 +862,19 @@ public class Dictionary {
         }
       }
     });
-    boolean success2 = false;
+    boolean success = false;
     try {
       sorter.sort(unsorted, sorted);
-      success2 = true;
+      success = true;
     } finally {
-      if (success2) {
-        Files.delete(unsorted.toPath());
+      if (success) {
+        Files.delete(unsorted);
       } else {
         IOUtils.deleteFilesIgnoringExceptions(unsorted);
       }
     }
     
-    boolean success3 = false;
+    boolean success2 = false;
     ByteSequencesReader reader = new ByteSequencesReader(sorted);
     try {
       BytesRefBuilder scratchLine = new BytesRefBuilder();
@@ -965,11 +954,11 @@ public class Dictionary {
       // finalize last entry
       Util.toUTF32(currentEntry, scratchInts);
       words.add(scratchInts.get(), currentOrds.get());
-      success3 = true;
+      success2 = true;
     } finally {
       IOUtils.closeWhileHandlingException(reader);
-      if (success3) {
-        Files.delete(sorted.toPath());
+      if (success2) {
+        Files.delete(sorted);
       } else {
         IOUtils.deleteFilesIgnoringExceptions(sorted);
       }

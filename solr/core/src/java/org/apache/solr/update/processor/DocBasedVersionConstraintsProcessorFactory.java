@@ -231,9 +231,9 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
         // in theory, the FieldType might still be CharSequence based,
         // but in that case trust it to do an identiy conversion...
         FieldType fieldType = userVersionField.getType();
-        BytesRef term = new BytesRef();
+        BytesRefBuilder term = new BytesRefBuilder();
         fieldType.readableToIndexed((CharSequence)rawValue, term);
-        return fieldType.toObject(userVersionField, term);
+        return fieldType.toObject(userVersionField, term.get());
       }
       // else...
       return rawValue;

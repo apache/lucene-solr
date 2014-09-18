@@ -33,7 +33,7 @@ public class TestGreekLowerCaseFilterFactory extends BaseTokenStreamFactoryTestC
    */
   public void testNormalization() throws Exception {
     Reader reader = new StringReader("Μάϊος ΜΆΪΟΣ");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("GreekLowerCase").create(stream);
     assertTokenStreamContents(stream, new String[] { "μαιοσ", "μαιοσ" });
   }

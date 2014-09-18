@@ -50,9 +50,9 @@ public class NGramFilterFactory extends TokenFilterFactory {
 
   @Override
   public TokenFilter create(TokenStream input) {
-    if (luceneMatchVersion == null) {
+    if (luceneMatchVersion.onOrAfter(Version.LUCENE_4_4_0)) {
       return new NGramTokenFilter(input, minGramSize, maxGramSize);
     }
-    return new NGramTokenFilter(luceneMatchVersion, input, minGramSize, maxGramSize);
+    return new Lucene43NGramTokenFilter(input, minGramSize, maxGramSize);
   }
 }

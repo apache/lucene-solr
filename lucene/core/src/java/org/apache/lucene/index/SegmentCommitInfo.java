@@ -209,9 +209,7 @@ public class SegmentCommitInfo {
   }
   
   /** Returns total size in bytes of all files for this
-   *  segment. 
-   * <p><b>NOTE:</b> This value is not correct for 3.0 segments
-   * that have shared docstores. To get the correct value, upgrade! */
+   *  segment. */
   public long sizeInBytes() throws IOException {
     if (sizeInBytes == -1) {
       long sum = 0;
@@ -354,18 +352,7 @@ public class SegmentCommitInfo {
 
   @Override
   public SegmentCommitInfo clone() {
-    return clone(false);
-  }
-
-  /** Clones {@code this}, optionally also cloning the {@link SegmentInfo}. */
-  SegmentCommitInfo clone(boolean cloneSegmentInfo) {
-    SegmentInfo otherInfo;
-    if (cloneSegmentInfo) {
-      otherInfo = info.clone();
-    } else {
-      otherInfo = info;
-    }
-    SegmentCommitInfo other = new SegmentCommitInfo(otherInfo, delCount, delGen, fieldInfosGen, docValuesGen);
+    SegmentCommitInfo other = new SegmentCommitInfo(info, delCount, delGen, fieldInfosGen, docValuesGen);
     // Not clear that we need to carry over nextWriteDelGen
     // (i.e. do we ever clone after a failed write and
     // before the next successful write?), but just do it to

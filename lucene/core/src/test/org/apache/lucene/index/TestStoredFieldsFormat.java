@@ -17,11 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene3x.Lucene3xCodec;
-import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Tests with the default randomized codec. Not really redundant with
@@ -33,14 +29,5 @@ public class TestStoredFieldsFormat extends BaseStoredFieldsFormatTestCase {
   @Override
   protected Codec getCodec() {
     return Codec.getDefault();
-  }
-  
-  @Override
-  public void testWriteReadMerge() throws IOException {
-    assumeFalse("impersonation isnt good enough", getCodec() instanceof Lucene3xCodec);
-    // this test tries to switch up between the codec and another codec.
-    // for 3.x: we currently cannot take an index with existing 4.x segments
-    // and merge into newly formed 3.x segments.
-    super.testWriteReadMerge();
   }
 }

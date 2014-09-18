@@ -18,7 +18,6 @@
 package org.apache.lucene.analysis.synonym;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -152,8 +151,8 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
 
     final Analyzer analyzer = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, true);
         return new TokenStreamComponents(tokenizer, new SynonymFilter(tokenizer, map, false));
       }
     };
@@ -177,8 +176,8 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
 
     final Analyzer analyzer = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, true);
         return new TokenStreamComponents(tokenizer, new SynonymFilter(tokenizer, map, false));
       }
     };
@@ -209,9 +208,8 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     add("z", "boo", false);
     add("y", "bee", true);
 
-    tokensIn = new MockTokenizer(new StringReader("a"),
-                                 MockTokenizer.WHITESPACE,
-                                 true);
+    tokensIn = new MockTokenizer(MockTokenizer.WHITESPACE, true);
+    tokensIn.setReader(new StringReader("a"));
     tokensIn.reset();
     assertTrue(tokensIn.incrementToken());
     assertFalse(tokensIn.incrementToken());
@@ -425,9 +423,9 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
       }
     }
 
-    tokensIn = new MockTokenizer(new StringReader("a"),
-                                 MockTokenizer.WHITESPACE,
+    tokensIn = new MockTokenizer(MockTokenizer.WHITESPACE,
                                  true);
+    tokensIn.setReader(new StringReader("a"));
     tokensIn.reset();
     assertTrue(tokensIn.incrementToken());
     assertFalse(tokensIn.incrementToken());
@@ -497,8 +495,8 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
       
       final Analyzer analyzer = new Analyzer() {
         @Override
-        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+        protected TokenStreamComponents createComponents(String fieldName) {
+          Tokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, true);
           return new TokenStreamComponents(tokenizer, new SynonymFilter(tokenizer, map, ignoreCase));
         }
       };
@@ -526,7 +524,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
       
       final Analyzer analyzer = new Analyzer() {
         @Override
-        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        protected TokenStreamComponents createComponents(String fieldName) {
           Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
           TokenStream graph = new MockGraphTokenFilter(random(), tokenizer);
           return new TokenStreamComponents(tokenizer, new SynonymFilter(graph, map, ignoreCase));
@@ -553,8 +551,8 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
       
       final Analyzer analyzer = new Analyzer() {
         @Override
-        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+        protected TokenStreamComponents createComponents(String fieldName) {
+          Tokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, true);
           TokenStream syns = new SynonymFilter(tokenizer, map, ignoreCase);
           TokenStream graph = new MockGraphTokenFilter(random(), syns);
           return new TokenStreamComponents(tokenizer, graph);
@@ -579,8 +577,8 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
       
       final Analyzer analyzer = new Analyzer() {
         @Override
-        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          Tokenizer tokenizer = new KeywordTokenizer(reader);
+        protected TokenStreamComponents createComponents(String fieldName) {
+          Tokenizer tokenizer = new KeywordTokenizer();
           return new TokenStreamComponents(tokenizer, new SynonymFilter(tokenizer, map, ignoreCase));
         }
       };
@@ -608,8 +606,8 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
       
       final Analyzer analyzer = new Analyzer() {
         @Override
-        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+        protected TokenStreamComponents createComponents(String fieldName) {
+          Tokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, true);
           return new TokenStreamComponents(tokenizer, new SynonymFilter(tokenizer, map, ignoreCase));
         }
       };
@@ -630,8 +628,8 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
       
     Analyzer analyzer = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);
         return new TokenStreamComponents(tokenizer, new SynonymFilter(tokenizer, map, true));
       }
     };
@@ -651,9 +649,9 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     final boolean keepOrig = false;
     add("aaa", "aaaa1 aaaa2 aaaa3", keepOrig);
     add("bbb", "bbbb1 bbbb2", keepOrig);
-    tokensIn = new MockTokenizer(new StringReader("a"),
-                                 MockTokenizer.WHITESPACE,
+    tokensIn = new MockTokenizer(MockTokenizer.WHITESPACE,
                                  true);
+    tokensIn.setReader(new StringReader("a"));
     tokensIn.reset();
     assertTrue(tokensIn.incrementToken());
     assertFalse(tokensIn.incrementToken());
@@ -689,8 +687,8 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     final SynonymMap map = b.build();
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, new SynonymFilter(tokenizer, map, true));
       }
     };
@@ -729,8 +727,8 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     final SynonymMap map = b.build();
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, new SynonymFilter(tokenizer, map, true));
       }
     };
@@ -749,8 +747,8 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     final SynonymMap map = b.build();
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, new SynonymFilter(tokenizer, map, true));
       }
     };
@@ -767,8 +765,8 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     final SynonymMap map = b.build();
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, new SynonymFilter(tokenizer, map, true));
       }
     };
@@ -786,8 +784,8 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     final SynonymMap map = b.build();
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, new SynonymFilter(tokenizer, map, true));
       }
     };
@@ -803,9 +801,8 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     final boolean keepOrig = false;
     // b hangs off the end (no input token under it):
     add("a", "a b", keepOrig);
-    tokensIn = new MockTokenizer(new StringReader("a"),
-                                 MockTokenizer.WHITESPACE,
-                                 true);
+    tokensIn = new MockTokenizer(MockTokenizer.WHITESPACE, true);
+    tokensIn.setReader(new StringReader("a"));
     tokensIn.reset();
     assertTrue(tokensIn.incrementToken());
     assertFalse(tokensIn.incrementToken());
@@ -836,8 +833,8 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     final SynonymMap map = b.build();
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, new SynonymFilter(tokenizer, map, true));
       }
     };
@@ -881,8 +878,8 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     final SynonymMap map = b.build();
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, new SynonymFilter(tokenizer, map, true));
       }
     };
@@ -900,8 +897,8 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     final SynonymMap map = b.build();
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, new SynonymFilter(tokenizer, map, true));
       }
     };
@@ -918,8 +915,8 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     final SynonymMap map = b.build();
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, new SynonymFilter(tokenizer, map, true));
       }
     };
@@ -932,7 +929,8 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
   }
 
   public void testEmpty() throws Exception {
-    Tokenizer tokenizer = new MockTokenizer(new StringReader("aa bb"));
+    Tokenizer tokenizer = new MockTokenizer();
+    tokenizer.setReader(new StringReader("aa bb"));
     try {
       new SynonymFilter(tokenizer, new SynonymMap.Builder(true).build(), true);
       fail("did not hit expected exception");

@@ -27,7 +27,6 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.Version;
 
 /*
  * TODO: Consider implementing https://issues.apache.org/jira/browse/LUCENE-1688 changes to stop list and associated constructors 
@@ -81,14 +80,6 @@ public final class CommonGramsFilter extends TokenFilter {
   public CommonGramsFilter(TokenStream input, CharArraySet commonWords) {
     super(input);
     this.commonWords = commonWords;
-  }
-
-  /**
-   * @deprecated Use {@link #CommonGramsFilter(TokenStream, CharArraySet)}
-   */
-  @Deprecated
-  public CommonGramsFilter(Version matchVersion, TokenStream input, CharArraySet commonWords) {
-    this(input, commonWords);
   }
 
   /**

@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.util;
 import java.util.*;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 
 
 public class TestCharArraySet extends LuceneTestCase {
@@ -250,77 +249,6 @@ public class TestCharArraySet extends LuceneTestCase {
     }
   }
   
-  /**
-   * @deprecated (3.1) remove this test when lucene 3.0 "broken unicode 4" support is
-   *             no longer needed.
-   */
-  @Deprecated
-  public void testSupplementaryCharsBWCompat() {
-    String missing = "Term %s is missing in the set";
-    String falsePos = "Term %s is in the set but shouldn't";
-    // for reference see
-    // http://unicode.org/cldr/utility/list-unicodeset.jsp?a=[[%3ACase_Sensitive%3DTrue%3A]%26[^[\u0000-\uFFFF]]]&esc=on
-    String[] upperArr = new String[] {"Abc\ud801\udc1c",
-        "\ud801\udc1c\ud801\udc1cCDE", "A\ud801\udc1cB"};
-    String[] lowerArr = new String[] {"abc\ud801\udc44",
-        "\ud801\udc44\ud801\udc44cde", "a\ud801\udc44b"};
-    CharArraySet set = new CharArraySet(Version.LUCENE_3_0, Arrays.asList(TEST_STOP_WORDS), true);
-    for (String upper : upperArr) {
-      set.add(upper);
-    }
-    for (int i = 0; i < upperArr.length; i++) {
-      assertTrue(String.format(Locale.ROOT, missing, upperArr[i]), set.contains(upperArr[i]));
-      assertFalse(String.format(Locale.ROOT, falsePos, lowerArr[i]), set.contains(lowerArr[i]));
-    }
-    set = new CharArraySet(Version.LUCENE_3_0, Arrays.asList(TEST_STOP_WORDS), false);
-    for (String upper : upperArr) {
-      set.add(upper);
-    }
-    for (int i = 0; i < upperArr.length; i++) {
-      assertTrue(String.format(Locale.ROOT,missing, upperArr[i]), set.contains(upperArr[i]));
-      assertFalse(String.format(Locale.ROOT, falsePos, lowerArr[i]), set.contains(lowerArr[i]));
-    }
-  }
-
-  /**
-   * @deprecated (3.1) remove this test when lucene 3.0 "broken unicode 4" support is
-   *             no longer needed.
-   */
-  @Deprecated
-  public void testSingleHighSurrogateBWComapt() {
-    String missing = "Term %s is missing in the set";
-    String falsePos = "Term %s is in the set but shouldn't";
-    String[] upperArr = new String[] { "ABC\uD800", "ABC\uD800EfG",
-        "\uD800EfG", "\uD800\ud801\udc1cB" };
-
-    String[] lowerArr = new String[] { "abc\uD800", "abc\uD800efg",
-        "\uD800efg", "\uD800\ud801\udc44b" };
-    CharArraySet set = new CharArraySet(Version.LUCENE_3_0, Arrays
-        .asList(TEST_STOP_WORDS), true);
-    for (String upper : upperArr) {
-      set.add(upper);
-    }
-    for (int i = 0; i < upperArr.length; i++) {
-      assertTrue(String.format(Locale.ROOT, missing, upperArr[i]), set.contains(upperArr[i]));
-      if (i == lowerArr.length - 1)
-        assertFalse(String.format(Locale.ROOT, falsePos, lowerArr[i]), set
-            .contains(lowerArr[i]));
-      else
-        assertTrue(String.format(Locale.ROOT, missing, lowerArr[i]), set
-            .contains(lowerArr[i]));
-    }
-    set = new CharArraySet(Version.LUCENE_3_0, Arrays.asList(TEST_STOP_WORDS),
-        false);
-    for (String upper : upperArr) {
-      set.add(upper);
-    }
-    for (int i = 0; i < upperArr.length; i++) {
-      assertTrue(String.format(Locale.ROOT, missing, upperArr[i]), set.contains(upperArr[i]));
-      assertFalse(String.format(Locale.ROOT, falsePos, lowerArr[i]), set
-          .contains(lowerArr[i]));
-    }
-  }
-  
   @SuppressWarnings("deprecated")
   public void testCopyCharArraySetBWCompat() {
     CharArraySet setIngoreCase = new CharArraySet(10, true);
@@ -496,11 +424,6 @@ public class TestCharArraySet extends LuceneTestCase {
   
   public void testToString() {
     CharArraySet set = CharArraySet.copy(Collections.singleton("test"));
-    assertEquals("[test]", set.toString());
-    set.add("test2");
-    assertTrue(set.toString().contains(", "));
-    
-    set = CharArraySet.copy(Version.LUCENE_3_0, Collections.singleton("test"));
     assertEquals("[test]", set.toString());
     set.add("test2");
     assertTrue(set.toString().contains(", "));

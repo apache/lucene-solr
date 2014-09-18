@@ -31,7 +31,6 @@ import org.apache.lucene.util.automaton.RegExp;
  */
 public class MockTokenFilterFactory extends TokenFilterFactory {
   final CharacterRunAutomaton filter;
-  final boolean enablePositionIncrements;
 
   /** Creates a new MockTokenizerFactory */
   public MockTokenFilterFactory(Map<String, String> args) {
@@ -54,7 +53,6 @@ public class MockTokenFilterFactory extends TokenFilterFactory {
       throw new IllegalArgumentException
           ("Configuration Error: either the 'stopset' or the 'stopregex' parameter must be specified.");
     }
-    enablePositionIncrements = getBoolean(args, "enablePositionIncrements", true);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }

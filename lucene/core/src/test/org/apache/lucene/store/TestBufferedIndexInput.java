@@ -17,10 +17,8 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -41,27 +39,10 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.Version;
 
 public class TestBufferedIndexInput extends LuceneTestCase {
   
-  private static void writeBytes(File aFile, long size) throws IOException{
-    OutputStream stream = null;
-    try {
-      stream = new FileOutputStream(aFile);
-      for (int i = 0; i < size; i++) {
-        stream.write(byten(i));  
-      }
-      stream.flush();
-    } finally {
-      if (stream != null) {
-        stream.close();
-      }
-    }
-  }
-
   private static final long TEST_FILE_LENGTH = 100*1024;
  
   // Call readByte() repeatedly, past the buffer boundary, and see that it
@@ -84,8 +65,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
     runReadBytes(input, BufferedIndexInput.BUFFER_SIZE, random());
   }
 
-  private void runReadBytesAndClose(IndexInput input, int bufferSize, Random r)
-      throws IOException {
+  private void runReadBytesAndClose(IndexInput input, int bufferSize, Random r) throws IOException {
     try {
       runReadBytes(input, bufferSize, r);
     } finally {
@@ -231,12 +211,12 @@ public class TestBufferedIndexInput extends LuceneTestCase {
     }
 
     public void testSetBufferSize() throws IOException {
-      File indexDir = createTempDir("testSetBufferSize");
+      Path indexDir = createTempDir("testSetBufferSize");
       MockFSDirectory dir = new MockFSDirectory(indexDir, random());
       try {
         IndexWriter writer = new IndexWriter(
             dir,
-            new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())).
+            new IndexWriterConfig(new MockAnalyzer(random())).
                 setOpenMode(OpenMode.CREATE).
                 setMergePolicy(newLogMergePolicy(false))
         );
@@ -295,7 +275,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
 
       private Directory dir;
 
-      public MockFSDirectory(File path, Random rand) throws IOException {
+      public MockFSDirectory(Path path, Random rand) throws IOException {
         this.rand = rand;
         lockFactory = NoLockFactory.getNoLockFactory();
         dir = new SimpleFSDirectory(path, null);
@@ -336,12 +316,6 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         throws IOException
       {
         dir.deleteFile(name);
-      }
-      @Override
-      public boolean fileExists(String name)
-        throws IOException
-      {
-        return dir.fileExists(name);
       }
       @Override
       public String[] listAll()

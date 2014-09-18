@@ -17,9 +17,9 @@ package org.apache.lucene.search.suggest.analyzing;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
@@ -427,9 +427,9 @@ public class AnalyzingSuggester extends Lookup {
       throw new IllegalArgumentException("this suggester doesn't support contexts");
     }
     String prefix = getClass().getSimpleName();
-    File directory = OfflineSorter.defaultTempDir();
-    File tempInput = File.createTempFile(prefix, ".input", directory);
-    File tempSorted = File.createTempFile(prefix, ".sorted", directory);
+    Path directory = OfflineSorter.defaultTempDir();
+    Path tempInput = Files.createTempFile(directory, prefix, ".input");
+    Path tempSorted = Files.createTempFile(directory, prefix, ".sorted");
 
     hasPayloads = iterator.hasPayloads();
 
@@ -512,7 +512,7 @@ public class AnalyzingSuggester extends Lookup {
       new OfflineSorter(new AnalyzingComparator(hasPayloads)).sort(tempInput, tempSorted);
 
       // Free disk space:
-      Files.delete(tempInput.toPath());
+      Files.delete(tempInput);
 
       reader = new OfflineSorter.ByteSequencesReader(tempSorted);
      
@@ -867,15 +867,12 @@ public class AnalyzingSuggester extends Lookup {
   final Set<IntsRef> toFiniteStrings(final BytesRef surfaceForm, final TokenStreamToAutomaton ts2a) throws IOException {
     // Analyze surface form:
     Automaton automaton = null;
-    TokenStream ts = indexAnalyzer.tokenStream("", surfaceForm.utf8ToString());
-    try {
+    try (TokenStream ts = indexAnalyzer.tokenStream("", surfaceForm.utf8ToString())) {
 
       // Create corresponding automaton: labels are bytes
       // from each analyzed token, with byte 0 used as
       // separator between tokens:
       automaton = ts2a.toAutomaton(ts);
-    } finally {
-      IOUtils.closeWhileHandlingException(ts);
     }
 
     automaton = replaceSep(automaton);
@@ -899,11 +896,8 @@ public class AnalyzingSuggester extends Lookup {
     // TODO: is there a Reader from a CharSequence?
     // Turn tokenstream into automaton:
     Automaton automaton = null;
-    TokenStream ts = queryAnalyzer.tokenStream("", key.toString());
-    try {
+    try (TokenStream ts = queryAnalyzer.tokenStream("", key.toString())) {
         automaton = getTokenStreamToAutomaton().toAutomaton(ts);
-    } finally {
-      IOUtils.closeWhileHandlingException(ts);
     }
 
     automaton = replaceSep(automaton);

@@ -25,7 +25,6 @@ import java.util.TreeSet;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
@@ -36,7 +35,6 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.*;
 
@@ -51,9 +49,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    // we generate aweful regexps: good for testing.
-    // but for preflex codec, the test can be very slow, so use less iterations.
-    numIterations = Codec.getDefault().getName().equals("Lucene3x") ? 10 * RANDOM_MULTIPLIER : atLeast(50);
+    numIterations = atLeast(50);
     dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
         newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))

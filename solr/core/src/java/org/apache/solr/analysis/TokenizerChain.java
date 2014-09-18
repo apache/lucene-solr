@@ -60,8 +60,8 @@ public final class TokenizerChain extends SolrAnalyzer {
   }
 
   @Override
-  protected TokenStreamComponents createComponents(String fieldName, Reader aReader) {
-    Tokenizer tk = tokenizer.create( aReader );
+  protected TokenStreamComponents createComponents(String fieldName) {
+    Tokenizer tk = tokenizer.create();
     TokenStream ts = tk;
     for (TokenFilterFactory filter : filters) {
       ts = filter.create(ts);

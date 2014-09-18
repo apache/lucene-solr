@@ -25,7 +25,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -37,9 +36,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 
 /** tests for writing term vectors */
 public class TestTermVectorsWriter extends LuceneTestCase {
@@ -613,16 +610,14 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     doTestMixup(a, b);
     
     // vectors with pos + vectors with pos + pay
-    if (!"Lucene3x".equals(Codec.getDefault().getName())) {
-      a = new FieldType(TextField.TYPE_NOT_STORED);   
-      a.setStoreTermVectors(true);
-      a.setStoreTermVectorPositions(true);
-      b = new FieldType(TextField.TYPE_NOT_STORED);
-      b.setStoreTermVectors(true);
-      b.setStoreTermVectorPositions(true);
-      b.setStoreTermVectorPayloads(true);
-      doTestMixup(a, b);
-    }
+    a = new FieldType(TextField.TYPE_NOT_STORED);   
+    a.setStoreTermVectors(true);
+    a.setStoreTermVectorPositions(true);
+    b = new FieldType(TextField.TYPE_NOT_STORED);
+    b.setStoreTermVectors(true);
+    b.setStoreTermVectorPositions(true);
+    b.setStoreTermVectorPayloads(true);
+    doTestMixup(a, b);
   }
   
   private void doTestMixup(FieldType ft1, FieldType ft2) throws IOException {
@@ -663,7 +658,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
   public void testNoAbortOnBadTVSettings() throws Exception {
     Directory dir = newDirectory();
     // Don't use RandomIndexWriter because we want to be sure both docs go to 1 seg:
-    IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter iw = new IndexWriter(dir, iwc);
 
     Document doc = new Document();

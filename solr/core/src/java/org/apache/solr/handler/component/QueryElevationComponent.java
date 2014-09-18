@@ -43,7 +43,6 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.SentinelIntSet;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -357,8 +356,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       return query;
     }
     StringBuilder norm = new StringBuilder();
-    TokenStream tokens = analyzer.tokenStream("", query);
-    try {
+    try (TokenStream tokens = analyzer.tokenStream("", query)) {
       tokens.reset();
 
       CharTermAttribute termAtt = tokens.addAttribute(CharTermAttribute.class);
@@ -367,8 +365,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       }
       tokens.end();
       return norm.toString();
-    } finally {
-      IOUtils.closeWhileHandlingException(tokens);
     }
   }
 
@@ -608,11 +604,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   @Override
   public String getDescription() {
     return "Query Boosting -- boost particular documents for a given query";
-  }
-
-  @Override
-  public String getSource() {
-    return null;
   }
 
   @Override

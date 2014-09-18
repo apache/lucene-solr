@@ -21,7 +21,6 @@ import com.carrotsearch.randomizedtesting.ThreadFilter;
 
 /**
  * Last minute patches.
- * TODO: remove when integrated in system filters in rr.
  */
 public class QuickPatchThreadsFilter implements ThreadFilter {
   static final boolean isJ9;

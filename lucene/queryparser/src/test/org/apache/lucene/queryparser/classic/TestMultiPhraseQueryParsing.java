@@ -48,8 +48,8 @@ public class TestMultiPhraseQueryParsing extends LuceneTestCase {
     }
 
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      return new TokenStreamComponents(new CannedTokenizer(reader, tokens));
+    public TokenStreamComponents createComponents(String fieldName) {
+      return new TokenStreamComponents(new CannedTokenizer(tokens));
     }
   }
 
@@ -60,8 +60,8 @@ public class TestMultiPhraseQueryParsing extends LuceneTestCase {
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
 
-    public CannedTokenizer(Reader reader, TokenAndPos[] tokens) {
-      super(reader);
+    public CannedTokenizer(TokenAndPos[] tokens) {
+      super();
       this.tokens = tokens;
     }
 

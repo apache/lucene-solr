@@ -45,5 +45,6 @@
     <orderEntry type="module" module-name="stempel" />
     <orderEntry type="module" module-name="analysis-common" />
     <orderEntry type="module" module-name="lucene-core" />
+    <orderEntry type="module" module-name="misc" />
   </component>
 </module>

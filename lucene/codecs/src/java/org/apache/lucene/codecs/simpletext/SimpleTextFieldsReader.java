@@ -30,7 +30,6 @@ import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.TERM;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -235,11 +234,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
         docsAndPositionsEnum = new SimpleTextDocsAndPositionsEnum();
       } 
       return docsAndPositionsEnum.reset(docsStart, liveDocs, indexOptions, docFreq);
-    }
-    
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
     }
   }
 
@@ -623,11 +617,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
       } else {
         return TermsEnum.EMPTY;
       }
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
     }
 
     @Override

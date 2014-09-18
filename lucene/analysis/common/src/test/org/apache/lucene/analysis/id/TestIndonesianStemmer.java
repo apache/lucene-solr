@@ -33,8 +33,8 @@ public class TestIndonesianStemmer extends BaseTokenStreamTestCase {
   /* full stemming, no stopwords */
   Analyzer a = new Analyzer() {
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.KEYWORD, false);
+    public TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer tokenizer = new MockTokenizer(MockTokenizer.KEYWORD, false);
       return new TokenStreamComponents(tokenizer, new IndonesianStemFilter(tokenizer));
     }
   };
@@ -114,8 +114,8 @@ public class TestIndonesianStemmer extends BaseTokenStreamTestCase {
   /* inflectional-only stemming */
   Analyzer b = new Analyzer() {
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.KEYWORD, false);
+    public TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer tokenizer = new MockTokenizer(MockTokenizer.KEYWORD, false);
       return new TokenStreamComponents(tokenizer, new IndonesianStemFilter(tokenizer, false));
     }
   };
@@ -137,8 +137,8 @@ public class TestIndonesianStemmer extends BaseTokenStreamTestCase {
   public void testEmptyTerm() throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, new IndonesianStemFilter(tokenizer));
       }
     };

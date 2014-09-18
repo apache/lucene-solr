@@ -87,7 +87,7 @@ import org.slf4j.LoggerFactory;
  * notes: loads everything on init, creates what's not there - further updates
  * are prompted with Watches.
  * 
- * TODO: exceptions during shutdown on attempts to update cloud state
+ * TODO: exceptions during close on attempts to update cloud state
  * 
  */
 public final class ZkController {
@@ -730,7 +730,7 @@ public final class ZkController {
       boolean nodeDeleted = true;
       try {
         // we attempt a delete in the case of a quick server bounce -
-        // if there was not a graceful shutdown, the node may exist
+        // if there was not a graceful close, the node may exist
         // until expiration timeout - so a node won't be created here because
         // it exists, but eventually the node will be removed. So delete
         // in case it exists and create a new node.
@@ -957,7 +957,7 @@ public final class ZkController {
         Thread.sleep(1000);
       }
       if (cc.isShutDown()) {
-        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "CoreContainer is shutdown");
+        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "CoreContainer is close");
       }
     }
     throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Could not get leader props", exp);
@@ -1085,7 +1085,7 @@ public final class ZkController {
           if (ZkStateReader.RECOVERING.equals(lirState)) {
             updateLeaderInitiatedRecoveryState(collection, shardId, coreNodeName, ZkStateReader.ACTIVE);
           } else if (ZkStateReader.DOWN.equals(lirState)) {
-            throw new SolrException(ErrorCode.SERVER_ERROR, 
+            throw new SolrException(ErrorCode.INVALID_STATE, 
                 "Cannot publish state of core '"+cd.getName()+"' as active without recovering first!");
           }
         } else if (ZkStateReader.RECOVERING.equals(state)) {
@@ -1163,9 +1163,21 @@ public final class ZkController {
     if (context != null) {
       context.cancelElection();
     }
-    
+
     CloudDescriptor cloudDescriptor = cd.getCloudDescriptor();
-    
+    boolean removeWatch = true;
+    // if there is no SolrCore which is a member of this collection, remove the watch
+    for (SolrCore solrCore : cc.getCores()) {
+      CloudDescriptor cloudDesc = solrCore.getCoreDescriptor()
+          .getCloudDescriptor();
+      if (cloudDesc != null
+          && cloudDescriptor.getCollectionName().equals(
+              cloudDesc.getCollectionName())) {
+        removeWatch = false;
+        break;
+      }
+    }
+    if (removeWatch) zkStateReader.removeZKWatch(collection);
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
         Overseer.OverseerAction.DELETECORE.toLower(), ZkStateReader.CORE_NAME_PROP, coreName,
         ZkStateReader.NODE_NAME_PROP, getNodeName(),
@@ -1382,7 +1394,7 @@ public final class ZkController {
     log.info("waiting to find shard id in clusterstate for " + cd.getName());
     int retryCount = 320;
     while (retryCount-- > 0) {
-      final String shardId = zkStateReader.getClusterState().getShardId(getNodeName(), cd.getName());
+      final String shardId = zkStateReader.getClusterState().getShardId(cd.getCollectionName(), getNodeName(), cd.getName());
       if (shardId != null) {
         cd.getCloudDescriptor().setShardId(shardId);
         return;
@@ -1467,6 +1479,11 @@ public final class ZkController {
       }
 
       publish(cd, ZkStateReader.DOWN, false, true);
+      DocCollection collection = zkStateReader.getClusterState().getCollectionOrNull(cd.getCloudDescriptor().getCollectionName());
+      if(collection !=null && collection.getStateFormat()>1  ){
+        log.info("Registering watch for external collection {}",cd.getCloudDescriptor().getCollectionName());
+        zkStateReader.addCollectionWatch(cd.getCloudDescriptor().getCollectionName());
+      }
     } catch (KeeperException e) {
       log.error("", e);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);

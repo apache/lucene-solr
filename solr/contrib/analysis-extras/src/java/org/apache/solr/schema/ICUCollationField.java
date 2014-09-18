@@ -29,15 +29,16 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.collation.ICUCollationKeyAnalyzer;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocTermOrdsRangeFilter;
-import org.apache.lucene.search.FieldCacheRangeFilter;
+import org.apache.lucene.search.DocValuesRangeFilter;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.analysis.util.ResourceLoader;
@@ -224,6 +225,15 @@ public class ICUCollationField extends FieldType {
   public SortField getSortField(SchemaField field, boolean top) {
     return getStringSort(field, top);
   }
+  
+  @Override
+  public Type getUninversionType(SchemaField sf) {
+    if (sf.multiValued()) {
+      return Type.SORTED_SET_BINARY; 
+    } else {
+      return Type.SORTED;
+    }
+  }
 
   @Override
   public Analyzer getIndexAnalyzer() {
@@ -241,9 +251,7 @@ public class ICUCollationField extends FieldType {
    * simple (we already have a threadlocal clone in the reused TS)
    */
   private BytesRef getCollationKey(String field, String text) {
-    TokenStream source = null;
-    try {
-      source = analyzer.tokenStream(field, text);
+    try (TokenStream source = analyzer.tokenStream(field, text)) {
       source.reset();
       
       TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
@@ -259,8 +267,6 @@ public class ICUCollationField extends FieldType {
       return BytesRef.deepCopyOf(bytes);
     } catch (IOException e) {
       throw new RuntimeException("Unable to analyze text: " + text, e);
-    } finally {
-      IOUtils.closeQuietly(source);
     }
   }
   
@@ -274,7 +280,7 @@ public class ICUCollationField extends FieldType {
           return new ConstantScoreQuery(DocTermOrdsRangeFilter.newBytesRefRange(
               field.getName(), low, high, minInclusive, maxInclusive));
         } else {
-          return new ConstantScoreQuery(FieldCacheRangeFilter.newBytesRefRange(
+          return new ConstantScoreQuery(DocValuesRangeFilter.newBytesRefRange(
               field.getName(), low, high, minInclusive, maxInclusive));
         } 
     } else {

@@ -60,7 +60,8 @@ public class TestICUNormalizer2CharFilter extends BaseTokenStreamTestCase {
     CharFilter reader = new ICUNormalizer2CharFilter(new StringReader(input),
       Normalizer2.getInstance(null, "nfkc", Normalizer2.Mode.COMPOSE));
 
-    Tokenizer tokenStream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    Tokenizer tokenStream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    tokenStream.setReader(reader);
 
     assertTokenStreamContents(tokenStream,
       new String[] {"°C", "No", "(株)", "グラム", "ザ", "ゾ", "ピゴ"},
@@ -76,7 +77,8 @@ public class TestICUNormalizer2CharFilter extends BaseTokenStreamTestCase {
     CharFilter reader = new ICUNormalizer2CharFilter(new StringReader(input),
       Normalizer2.getInstance(null, "nfkc_cf", Normalizer2.Mode.COMPOSE));
 
-    Tokenizer tokenStream = new NGramTokenizer(newAttributeFactory(), reader, 1, 1);
+    Tokenizer tokenStream = new NGramTokenizer(newAttributeFactory(), 1, 1);
+    tokenStream.setReader(reader);
 
     assertTokenStreamContents(tokenStream,
       new String[] {"ピ", "ゴ", "5", "°", "c", "n", "o", "(", "株", ")", "グ", "ラ", "ム", "ザ", "ゾ"},
@@ -92,7 +94,8 @@ public class TestICUNormalizer2CharFilter extends BaseTokenStreamTestCase {
     CharFilter reader = new ICUNormalizer2CharFilter(new StringReader(input),
       Normalizer2.getInstance(null, "nfkc_cf", Normalizer2.Mode.COMPOSE));
 
-    Tokenizer tokenStream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    Tokenizer tokenStream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    tokenStream.setReader(reader);
 
     assertTokenStreamContents(tokenStream,
       new String[] {"صلى", "الله", "عليه", "وسلم"},
@@ -105,8 +108,8 @@ public class TestICUNormalizer2CharFilter extends BaseTokenStreamTestCase {
   public void doTestMode(final Normalizer2 normalizer, int maxLength, int iterations) throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        return new TokenStreamComponents(new MockTokenizer(reader, MockTokenizer.KEYWORD, false));
+      protected TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new MockTokenizer(MockTokenizer.KEYWORD, false));
       }
 
       @Override
@@ -172,8 +175,8 @@ public class TestICUNormalizer2CharFilter extends BaseTokenStreamTestCase {
     // nfkc_cf
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        return new TokenStreamComponents(new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
+      protected TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new MockTokenizer(MockTokenizer.WHITESPACE, false));
       }
 
       @Override
@@ -188,8 +191,8 @@ public class TestICUNormalizer2CharFilter extends BaseTokenStreamTestCase {
     // nfkd
     a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        return new TokenStreamComponents(new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
+      protected TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new MockTokenizer(MockTokenizer.WHITESPACE, false));
       }
 
       @Override
@@ -206,8 +209,8 @@ public class TestICUNormalizer2CharFilter extends BaseTokenStreamTestCase {
     String text = "\udb40\udc3d\uf273\ue960\u06c8\ud955\udc13\ub7fc\u0692 \u2089\u207b\u2073\u2075";
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        return new TokenStreamComponents(new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
+      protected TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new MockTokenizer(MockTokenizer.WHITESPACE, false));
       }
 
       @Override
@@ -396,8 +399,8 @@ public class TestICUNormalizer2CharFilter extends BaseTokenStreamTestCase {
     
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        return new TokenStreamComponents(new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
+      protected TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new MockTokenizer(MockTokenizer.WHITESPACE, false));
       }
 
       @Override

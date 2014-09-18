@@ -20,7 +20,6 @@ package org.apache.lucene.codecs.ramonly;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -61,41 +60,6 @@ import org.apache.lucene.util.RamUsageEstimator;
  *  NOTE: this codec sorts terms by reverse-unicode-order! */
 
 public final class RAMOnlyPostingsFormat extends PostingsFormat {
-
-  // For fun, test that we can override how terms are
-  // sorted, and basic things still work -- this comparator
-  // sorts in reversed unicode code point order:
-  private static final Comparator<BytesRef> reverseUnicodeComparator = new Comparator<BytesRef>() {
-      @Override
-      public int compare(BytesRef t1, BytesRef t2) {
-        byte[] b1 = t1.bytes;
-        byte[] b2 = t2.bytes;
-        int b1Stop;
-        int b1Upto = t1.offset;
-        int b2Upto = t2.offset;
-        if (t1.length < t2.length) {
-          b1Stop = t1.offset + t1.length;
-        } else {
-          b1Stop = t1.offset + t2.length;
-        }
-        while(b1Upto < b1Stop) {
-          final int bb1 = b1[b1Upto++] & 0xff;
-          final int bb2 = b2[b2Upto++] & 0xff;
-          if (bb1 != bb2) {
-            //System.out.println("cmp 1=" + t1 + " 2=" + t2 + " return " + (bb2-bb1));
-            return bb2 - bb1;
-          }
-        }
-
-        // One is prefix of another, or they are equal
-        return t2.length-t1.length;
-      }
-
-      @Override
-      public boolean equals(Object other) {
-        return this == other;
-      }
-    };
 
   public RAMOnlyPostingsFormat() {
     super("RAMOnly");
@@ -192,11 +156,6 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     @Override
     public TermsEnum iterator(TermsEnum reuse) {
       return new RAMTermsEnum(RAMOnlyPostingsFormat.RAMField.this);
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return reverseUnicodeComparator;
     }
 
     @Override
@@ -400,11 +359,6 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     @Override
     public void close() throws IOException {
     }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return reverseUnicodeComparator;
-    }
   }
 
   private static class RAMTermsConsumer {
@@ -480,11 +434,6 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
       this.ramField = field;
     }
       
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
-    }
-
     @Override
     public BytesRef next() {
       if (it == null) {

@@ -149,7 +149,7 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
 
 
     public void setUp() throws Exception {
-      homeDir = createTempDir("inst");
+      homeDir = createTempDir("inst").toFile();
       dataDir = new File(homeDir + "/collection1", "data");
       confDir = new File(homeDir + "/collection1", "conf");
 

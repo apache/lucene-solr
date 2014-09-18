@@ -47,10 +47,7 @@ public class ReverseStringFilterFactory extends TokenFilterFactory {
   
   @Override
   public ReverseStringFilter create(TokenStream in) {
-    if (luceneMatchVersion == null) {
-      return new ReverseStringFilter(in);
-    }
-    return new ReverseStringFilter(luceneMatchVersion,in);
+    return new ReverseStringFilter(in);
   }
 }
 

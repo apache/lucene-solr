@@ -103,12 +103,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 //    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     // For manual testing only
     // useFactory(null); // force an FS factory.
-    master = new SolrInstance(createTempDir("solr-instance"), "master", null);
+    master = new SolrInstance(createTempDir("solr-instance").toFile(), "master", null);
     master.setUp();
     masterJetty = createJetty(master);
     masterClient = createNewSolrServer(masterJetty.getLocalPort());
 
-    slave = new SolrInstance(createTempDir("solr-instance"), "slave", masterJetty.getLocalPort());
+    slave = new SolrInstance(createTempDir("solr-instance").toFile(), "slave", masterJetty.getLocalPort());
     slave.setUp();
     slaveJetty = createJetty(slave);
     slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
@@ -312,7 +312,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     JettySolrRunner repeaterJetty = null;
     SolrServer repeaterClient = null;
     try {
-      repeater = new SolrInstance(createTempDir("solr-instance"), "repeater", masterJetty.getLocalPort());
+      repeater = new SolrInstance(createTempDir("solr-instance").toFile(), "repeater", masterJetty.getLocalPort());
       repeater.setUp();
       repeaterJetty = createJetty(repeater);
       repeaterClient = createNewSolrServer(repeaterJetty.getLocalPort());
@@ -899,7 +899,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
 
     try {
-      repeater = new SolrInstance(createTempDir("solr-instance"), "repeater", null);
+      repeater = new SolrInstance(createTempDir("solr-instance").toFile(), "repeater", null);
       repeater.setUp();
       repeater.copyConfigFile(CONF_DIR + "solrconfig-repeater.xml",
           "solrconfig.xml");
@@ -1438,7 +1438,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     }
 
     public void tearDown() throws Exception {
-      IOUtils.rm(homeDir);
+      IOUtils.rm(homeDir.toPath());
     }
 
     public void copyConfigFile(String srcFile, String destFile) 

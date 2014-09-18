@@ -16,9 +16,7 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -27,6 +25,7 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -50,9 +49,9 @@ import org.apache.lucene.util.Version;
 /** JUnit adaptation of an older test case DocTest. */
 public class TestDoc extends LuceneTestCase {
 
-    private File workDir;
-    private File indexDir;
-    private LinkedList<File> files;
+    private Path workDir;
+    private Path indexDir;
+    private LinkedList<Path> files;
 
     /** Set the test case. This test case needs
      *  a few text files created in the current working directory.
@@ -64,10 +63,7 @@ public class TestDoc extends LuceneTestCase {
           System.out.println("TEST: setUp");
         }
         workDir = createTempDir("TestDoc");
-        workDir.mkdirs();
-
         indexDir = createTempDir("testIndex");
-        indexDir.mkdirs();
 
         Directory directory = newFSDirectory(indexDir);
         directory.close();
@@ -82,18 +78,18 @@ public class TestDoc extends LuceneTestCase {
         ));
     }
 
-    private File createOutput(String name, String text) throws IOException {
+    private Path createOutput(String name, String text) throws IOException {
         Writer fw = null;
         PrintWriter pw = null;
 
         try {
-            File f = new File(workDir, name);
-            Files.deleteIfExists(f.toPath());
+            Path path = workDir.resolve(name);
+            Files.deleteIfExists(path);
 
-            fw = new OutputStreamWriter(new FileOutputStream(f), StandardCharsets.UTF_8);
+            fw = new OutputStreamWriter(Files.newOutputStream(path), StandardCharsets.UTF_8);
             pw = new PrintWriter(fw);
             pw.println(text);
-            return f;
+            return path;
 
         } finally {
             if (pw != null) pw.close();
@@ -203,9 +199,9 @@ public class TestDoc extends LuceneTestCase {
    private SegmentCommitInfo indexDoc(IndexWriter writer, String fileName)
    throws Exception
    {
-      File file = new File(workDir, fileName);
+      Path path = workDir.resolve(fileName);
       Document doc = new Document();
-      InputStreamReader is = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8);
+      InputStreamReader is = new InputStreamReader(Files.newInputStream(path), StandardCharsets.UTF_8);
       doc.add(new TextField("contents", is));
       writer.addDocument(doc);
       writer.commit();
@@ -217,15 +213,15 @@ public class TestDoc extends LuceneTestCase {
    private SegmentCommitInfo merge(Directory dir, SegmentCommitInfo si1, SegmentCommitInfo si2, String merged, boolean useCompoundFile)
    throws Exception {
       IOContext context = newIOContext(random());
-      SegmentReader r1 = new SegmentReader(si1, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, context);
-      SegmentReader r2 = new SegmentReader(si2, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, context);
+      SegmentReader r1 = new SegmentReader(si1, context);
+      SegmentReader r2 = new SegmentReader(si2, context);
 
       final Codec codec = Codec.getDefault();
       TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(si1.info.dir);
       final SegmentInfo si = new SegmentInfo(si1.info.dir, Version.LATEST, merged, -1, false, codec, null);
 
       SegmentMerger merger = new SegmentMerger(Arrays.<AtomicReader>asList(r1, r2),
-          si, InfoStream.getDefault(), trackingDir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL,
+          si, InfoStream.getDefault(), trackingDir,
           MergeState.CheckAbort.NONE, new FieldInfos.FieldNumbers(), context, true);
 
       MergeState mergeState = merger.merge();
@@ -250,7 +246,7 @@ public class TestDoc extends LuceneTestCase {
 
    private void printSegment(PrintWriter out, SegmentCommitInfo si)
    throws Exception {
-      SegmentReader reader = new SegmentReader(si, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random()));
+      SegmentReader reader = new SegmentReader(si, newIOContext(random()));
 
       for (int i = 0; i < reader.numDocs(); i++)
         out.println(reader.document(i));

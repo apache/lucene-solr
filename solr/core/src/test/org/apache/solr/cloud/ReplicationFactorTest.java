@@ -22,7 +22,6 @@ import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -35,9 +34,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
@@ -49,10 +46,10 @@ import org.slf4j.LoggerFactory;
 /**
  * Tests a client application's ability to get replication factor
  * information back from the cluster after an add or update.
- * @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6157")
  */
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6157")
 public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   
   private static final transient Logger log = 
@@ -76,11 +73,8 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   @Override
   @After
   public void tearDown() throws Exception {
-    if (!proxies.isEmpty()) {
-      for (SocketProxy proxy : proxies.values()) {
-        proxy.close();
-      }
-    }
+    
+    log.info("tearing down replicationFactorTest!");
     
     System.clearProperty("numShards");
     
@@ -88,7 +82,14 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
       super.tearDown();
     } catch (Exception exc) {}
     
-    resetExceptionIgnores();
+    resetExceptionIgnores();    
+    
+    log.info("super.tearDown complete, closing all socket proxies");
+    if (!proxies.isEmpty()) {
+      for (SocketProxy proxy : proxies.values()) {
+        proxy.close();
+      }
+    }    
   }
   
   /**
@@ -142,8 +143,10 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     // test handling when not using direct updates
     log.info("Now testing replication factor handling for repfacttest_c8n_2x2");
     testRf2NotUsingDirectUpdates();
-    
-    log.info("replication factor testing complete");
+        
+    waitForThingsToLevelOut(30000);
+    log.info("replication factor testing complete! final clusterState is: "+
+        cloudClient.getZkStateReader().getClusterState());    
   }
   
   protected void testRf2NotUsingDirectUpdates() throws Exception {
@@ -158,7 +161,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     cloudClient.setDefaultCollection(testCollectionName);
     
     List<Replica> replicas = 
-        ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 10);
+        ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 30);
     assertTrue("Expected active 1 replicas for "+testCollectionName, replicas.size() == 1);
                 
     List<SolrInputDocument> batch = new ArrayList<SolrInputDocument>(10);
@@ -180,7 +183,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     
     // so now kill the replica of shard2 and verify the achieved rf is only 1
     List<Replica> shard2Replicas = 
-        ensureAllReplicasAreActive(testCollectionName, "shard2", numShards, replicationFactor, 10);
+        ensureAllReplicasAreActive(testCollectionName, "shard2", numShards, replicationFactor, 30);
     assertTrue("Expected active 1 replicas for "+testCollectionName, replicas.size() == 1);
     
     getProxyForReplica(shard2Replicas.get(0)).close();
@@ -228,7 +231,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     cloudClient.setDefaultCollection(testCollectionName);
     
     List<Replica> replicas = 
-        ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 10);
+        ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 30);
     assertTrue("Expected 2 active replicas for "+testCollectionName, replicas.size() == 2);
                 
     int rf = sendDoc(1, minRf);
@@ -338,68 +341,6 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     up.add(doc);
     return cloudClient.getMinAchievedReplicationFactor(cloudClient.getDefaultCollection(), cloudClient.request(up));
   }
-    
-  protected List<Replica> ensureAllReplicasAreActive(String testCollectionName, String shardId, int shards, int rf, int maxWaitSecs) throws Exception {
-    long startMs = System.currentTimeMillis();
-    
-    Map<String,Replica> notLeaders = new HashMap<String,Replica>();
-    
-    ZkStateReader zkr = cloudClient.getZkStateReader();
-    zkr.updateClusterState(true); // force the state to be fresh
-
-    ClusterState cs = zkr.getClusterState();
-    Collection<Slice> slices = cs.getActiveSlices(testCollectionName);
-    assertTrue(slices.size() == shards);
-    boolean allReplicasUp = false;
-    long waitMs = 0L;
-    long maxWaitMs = maxWaitSecs * 1000L;
-    Replica leader = null;
-    while (waitMs < maxWaitMs && !allReplicasUp) {
-      cs = zkr.getClusterState();
-      assertNotNull(cs);
-      Slice shard = cs.getSlice(testCollectionName, shardId);
-      assertNotNull("No Slice for "+shardId, shard);
-      allReplicasUp = true; // assume true
-      Collection<Replica> replicas = shard.getReplicas();
-      assertTrue(replicas.size() == rf);
-      leader = shard.getLeader();
-      assertNotNull(leader);
-      log.info("Found "+replicas.size()+" replicas and leader on "+
-        leader.getNodeName()+" for "+shardId+" in "+testCollectionName);
-      
-      // ensure all replicas are "active" and identify the non-leader replica
-      for (Replica replica : replicas) {
-        String replicaState = replica.getStr(ZkStateReader.STATE_PROP);
-        if (!ZkStateReader.ACTIVE.equals(replicaState)) {
-          log.info("Replica " + replica.getName() + " is currently " + replicaState);
-          allReplicasUp = false;
-        }
-        
-        if (!leader.equals(replica)) 
-          notLeaders.put(replica.getName(), replica);
-      }
-      
-      if (!allReplicasUp) {
-        try {
-          Thread.sleep(500L);
-        } catch (Exception ignoreMe) {}
-        waitMs += 500L;
-      }
-    } // end while
-    
-    if (!allReplicasUp) 
-      fail("Didn't see all replicas come up within " + maxWaitMs + " ms! ClusterState: " + printClusterStateInfo());
-    
-    if (notLeaders.isEmpty()) 
-      fail("Didn't isolate any replicas that are not the leader! ClusterState: " + printClusterStateInfo());
-    
-    long diffMs = (System.currentTimeMillis() - startMs);
-    log.info("Took " + diffMs + " ms to see all replicas become active.");
-    
-    List<Replica> replicas = new ArrayList<Replica>();
-    replicas.addAll(notLeaders.values());
-    return replicas;
-  }  
   
   protected void assertRf(int expected, String explain, int actual) throws Exception {
     if (actual != expected) {
@@ -407,10 +348,5 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
           String.format(Locale.ENGLISH, "Expected rf=%d because %s but got %d", expected, explain, actual);
       fail(assertionFailedMessage+"; clusterState: "+printClusterStateInfo());
     }    
-  }
-  
-  protected String printClusterStateInfo() throws Exception {
-    cloudClient.getZkStateReader().updateClusterState(true);
-    return String.valueOf(cloudClient.getZkStateReader().getClusterState());
   }  
 }

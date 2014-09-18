@@ -653,15 +653,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
   }
 
   /**
-   * Handle "ALIAS" action
-   */
-  @Deprecated
-  protected void handleAliasAction(SolrQueryRequest req, SolrQueryResponse rsp) {
-    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The ALIAS action is no longer supported");
-  }
-
-
-  /**
    * Handle "UNLOAD" Action
    */
   protected void handleUnloadAction(SolrQueryRequest req, SolrQueryResponse rsp) throws SolrException {
@@ -785,21 +776,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
           cname = "";
         }
         try (SolrCore core = coreContainer.getCore(cname)) {
-
           if (core != null) {
-            // try to publish as recovering right away
-            try {
-              coreContainer.getZkController().publish(core.getCoreDescriptor(), ZkStateReader.RECOVERING);
-            }  catch (InterruptedException e) {
-              Thread.currentThread().interrupt();
-              SolrException.log(log, "", e);
-            } catch (Throwable e) {
-              SolrException.log(log, "", e);
-              if (e instanceof Error) {
-                throw (Error) e;
-              }
-            }
-            
             core.getUpdateHandler().getSolrCoreState().doRecovery(coreContainer, core.getCoreDescriptor());
           } else {
             SolrException.log(log, "Could not find core to call recovery:" + cname);
@@ -1203,11 +1180,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
   @Override
   public String getDescription() {
     return "Manage Multiple Solr Cores";
-  }
-
-  @Override
-  public String getSource() {
-    return null;
   }
 
   /**

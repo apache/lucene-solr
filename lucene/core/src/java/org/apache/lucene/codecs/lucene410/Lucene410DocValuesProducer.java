@@ -36,7 +36,6 @@ import static org.apache.lucene.codecs.lucene410.Lucene410DocValuesConsumer.BLOC
 
 import java.io.Closeable; // javadocs
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -1087,11 +1086,6 @@ class Lucene410DocValuesProducer extends DocValuesProducer implements Closeable 
       @Override
       public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
         throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public Comparator<BytesRef> getComparator() {
-        return BytesRef.getUTF8SortedAsUnicodeComparator();
       }
     }
   }

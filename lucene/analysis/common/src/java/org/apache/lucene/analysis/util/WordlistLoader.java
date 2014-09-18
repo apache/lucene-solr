@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.Version;
 
 /**
  * Loader for text files that represent a list of stopwords.
@@ -80,14 +79,6 @@ public class WordlistLoader {
   }
 
   /**
-   * @deprecated Use {@link #getWordSet(Reader)}
-   */
-  @Deprecated
-  public static CharArraySet getWordSet(Reader reader, Version matchVersion) throws IOException {
-    return getWordSet(reader, new CharArraySet(matchVersion, INITIAL_CAPACITY, false));
-  }
-
-  /**
    * Reads lines from a Reader and adds every non-comment line as an entry to a CharArraySet (omitting
    * leading and trailing whitespace). Every line of the Reader should contain only
    * one word. The words need to be in lowercase if you make use of an
@@ -99,14 +90,6 @@ public class WordlistLoader {
    */
   public static CharArraySet getWordSet(Reader reader, String comment) throws IOException {
     return getWordSet(reader, comment, new CharArraySet(INITIAL_CAPACITY, false));
-  }
-
-  /**
-   * @deprecated Use {@link #getWordSet(Reader,String)}
-   */
-  @Deprecated
-  public static CharArraySet getWordSet(Reader reader, String comment, Version matchVersion) throws IOException {
-    return getWordSet(reader, comment, new CharArraySet(matchVersion, INITIAL_CAPACITY, false));
   }
 
   /**
@@ -188,14 +171,6 @@ public class WordlistLoader {
    */
   public static CharArraySet getSnowballWordSet(Reader reader) throws IOException {
     return getSnowballWordSet(reader, new CharArraySet(INITIAL_CAPACITY, false));
-  }
-
-  /**
-   * @deprecated Use {@link #getSnowballWordSet(Reader)}
-   */
-  @Deprecated
-  public static CharArraySet getSnowballWordSet(Reader reader, Version matchVersion) throws IOException {
-    return getSnowballWordSet(reader, new CharArraySet(matchVersion, INITIAL_CAPACITY, false));
   }
 
 

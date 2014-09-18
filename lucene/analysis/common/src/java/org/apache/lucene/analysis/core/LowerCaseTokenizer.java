@@ -17,12 +17,8 @@ package org.apache.lucene.analysis.core;
  * limitations under the License.
  */
 
-import java.io.Reader;
-
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.util.CharTokenizer;
 import org.apache.lucene.util.AttributeFactory;
-import org.apache.lucene.util.Version;
 
 /**
  * LowerCaseTokenizer performs the function of LetterTokenizer
@@ -34,34 +30,13 @@ import org.apache.lucene.util.Version;
  * Note: this does a decent job for most European languages, but does a terrible
  * job for some Asian languages, where words are not separated by spaces.
  * </p>
- * <p>
- * <a name="version"/>
- * You may specify the required {@link Version} compatibility when creating
- * {@link LowerCaseTokenizer}:
- * <ul>
- * <li>As of 3.1, {@link CharTokenizer} uses an int based API to normalize and
- * detect token characters. See {@link CharTokenizer#isTokenChar(int)} and
- * {@link CharTokenizer#normalize(int)} for details.</li>
- * </ul>
- * </p>
  */
 public final class LowerCaseTokenizer extends LetterTokenizer {
   
   /**
    * Construct a new LowerCaseTokenizer.
-   * @param in
-   *          the input to split up into tokens
    */
-  public LowerCaseTokenizer(Reader in) {
-    super(in);
-  }
-
-  /**
-   * @deprecated Use {@link #LowerCaseTokenizer(Reader)}
-   */
-  @Deprecated
-  public LowerCaseTokenizer(Version matchVersion, Reader in) {
-    super(matchVersion, in);
+  public LowerCaseTokenizer() {
   }
 
   /**
@@ -70,19 +45,9 @@ public final class LowerCaseTokenizer extends LetterTokenizer {
    *
    * @param factory
    *          the attribute factory to use for this {@link Tokenizer}
-   * @param in
-   *          the input to split up into tokens
    */
-  public LowerCaseTokenizer(AttributeFactory factory, Reader in) {
-    super(factory, in);
-  }
-
-  /**
-   * @deprecated Use {@link #LowerCaseTokenizer(AttributeFactory,Reader)}
-   */
-  @Deprecated
-  public LowerCaseTokenizer(Version matchVersion, AttributeFactory factory, Reader in) {
-    super(matchVersion, factory, in);
+  public LowerCaseTokenizer(AttributeFactory factory) {
+    super(factory);
   }
   
   /** Converts char to lower case

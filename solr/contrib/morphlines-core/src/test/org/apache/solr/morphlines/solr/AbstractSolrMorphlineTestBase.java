@@ -134,7 +134,7 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
     testServer = new SolrServerDocumentLoader(solrServer, batchSize);
     deleteAllDocuments();
     
-    tempDir = createTempDir().getAbsolutePath();
+    tempDir = createTempDir().toFile().getAbsolutePath();
   }
   
   @After

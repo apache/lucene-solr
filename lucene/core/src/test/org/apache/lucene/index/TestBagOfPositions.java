@@ -34,15 +34,13 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.Version;
 
 /**
  * Simple test that adds numeric terms, where each term has the 
  * totalTermFreq of its integer value, and checks that the totalTermFreq is correct. 
  */
 // TODO: somehow factor this with BagOfPostings? its almost the same
-@SuppressCodecs({"Direct", "Memory", "Lucene3x"}) // at night this makes like 200k/300k docs and will make Direct's heart beat!
-                                                  // Lucene3x doesnt have totalTermFreq, so the test isn't interesting there.
+@SuppressCodecs({"Direct", "Memory"}) // at night this makes like 200k/300k docs and will make Direct's heart beat!
 public class TestBagOfPositions extends LuceneTestCase {
   public void test() throws Exception {
     List<String> postingsList = new ArrayList<>();
@@ -50,7 +48,7 @@ public class TestBagOfPositions extends LuceneTestCase {
     final int maxTermsPerDoc = TestUtil.nextInt(random(), 10, 20);
     boolean isSimpleText = "SimpleText".equals(TestUtil.getPostingsFormat("field"));
 
-    IndexWriterConfig iwc = newIndexWriterConfig(random(), Version.LATEST, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), new MockAnalyzer(random()));
 
     if ((isSimpleText || iwc.getMergePolicy() instanceof MockRandomMergePolicy) && (TEST_NIGHTLY || RANDOM_MULTIPLIER > 1)) {
       // Otherwise test can take way too long (> 2 hours)
@@ -89,7 +87,7 @@ public class TestBagOfPositions extends LuceneTestCase {
     if (options == 0) {
       fieldType.setIndexOptions(IndexOptions.DOCS_AND_FREQS); // we dont actually need positions
       fieldType.setStoreTermVectors(true); // but enforce term vectors when we do this so we check SOMETHING
-    } else if (options == 1 && !doesntSupportOffsets.contains(TestUtil.getPostingsFormat("field"))) {
+    } else if (options == 1) {
       fieldType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
     }
     // else just positions

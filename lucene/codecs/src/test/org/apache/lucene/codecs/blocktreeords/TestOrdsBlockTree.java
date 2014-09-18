@@ -37,7 +37,6 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.Version;
 
 public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
   private final Codec codec = TestUtil.alwaysPostingsFormat(new Ords41PostingsFormat());
@@ -155,33 +154,6 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     dir.close();
   }
 
-  public void testSeekCeilNotFound() throws Exception {
-    Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    // Get empty string in there!
-    doc.add(newStringField("field", "", Field.Store.NO));
-    w.addDocument(doc);
-    
-    for(int i=0;i<36;i++) {
-      doc = new Document();
-      String term = "" + (char) (97+i);
-      String term2 = "a" + (char) (97+i);
-      doc.add(newTextField("field", term + " " + term2, Field.Store.NO));
-      w.addDocument(doc);
-    }
-
-    w.forceMerge(1);
-    IndexReader r = w.getReader();
-    TermsEnum te = MultiFields.getTerms(r, "field").iterator(null);
-    assertEquals(TermsEnum.SeekStatus.NOT_FOUND, te.seekCeil(new BytesRef(new byte[] {0x22})));
-    assertEquals("a", te.term().utf8ToString());
-    assertEquals(1L, te.ord());
-    r.close();
-    w.close();
-    dir.close();
-  }
-
   public void testThreeBlocks() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
@@ -265,7 +237,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
 
   public void testFloorBlocks() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     for(int i=0;i<128;i++) {
       Document doc = new Document();
@@ -303,7 +275,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
 
   public void testNonRootFloorBlocks() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     List<String> terms = new ArrayList<>();
     for(int i=0;i<36;i++) {
@@ -349,7 +321,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
 
   public void testSeveralNonRootBlocks() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     List<String> terms = new ArrayList<>();
     for(int i=0;i<30;i++) {
@@ -384,6 +356,33 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     te.seekExact(0);
     assertEquals("aa", te.term().utf8ToString());
 
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testSeekCeilNotFound() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    // Get empty string in there!
+    doc.add(newStringField("field", "", Field.Store.NO));
+    w.addDocument(doc);
+    
+    for(int i=0;i<36;i++) {
+      doc = new Document();
+      String term = "" + (char) (97+i);
+      String term2 = "a" + (char) (97+i);
+      doc.add(newTextField("field", term + " " + term2, Field.Store.NO));
+      w.addDocument(doc);
+    }
+
+    w.forceMerge(1);
+    IndexReader r = w.getReader();
+    TermsEnum te = MultiFields.getTerms(r, "field").iterator(null);
+    assertEquals(TermsEnum.SeekStatus.NOT_FOUND, te.seekCeil(new BytesRef(new byte[] {0x22})));
+    assertEquals("a", te.term().utf8ToString());
+    assertEquals(1L, te.ord());
     r.close();
     w.close();
     dir.close();

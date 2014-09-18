@@ -16,14 +16,12 @@
  */
 package org.apache.solr.analysis;
 
-import java.lang.reflect.Field;
-
-import org.apache.lucene.analysis.tr.TurkishAnalyzer;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.Config;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.FieldType;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.tr.TurkishAnalyzer;
 import org.apache.lucene.util.Version;
 import org.junit.BeforeClass;
 
@@ -54,7 +52,7 @@ public class TestLuceneMatchVersion extends SolrTestCaseJ4 {
     type = schema.getFieldType("text40");
     ana = (TokenizerChain) type.getIndexAnalyzer();
     assertEquals(Version.LUCENE_4_0_0_ALPHA, (ana.getTokenizerFactory()).getLuceneMatchVersion());
-    assertEquals(Version.LUCENE_4_3_0, (ana.getTokenFilterFactories()[2]).getLuceneMatchVersion());
+    assertEquals(Version.LUCENE_5_0_0, (ana.getTokenFilterFactories()[2]).getLuceneMatchVersion());
 
     type = schema.getFieldType("textTurkishAnalyzerDefault");
     Analyzer ana1 = type.getIndexAnalyzer();

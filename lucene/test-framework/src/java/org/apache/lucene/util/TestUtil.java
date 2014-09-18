@@ -17,10 +17,7 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -29,10 +26,9 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.CharBuffer;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +39,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
@@ -106,43 +102,33 @@ public final class TestUtil {
 
   /** 
    * Convenience method unzipping zipName into destDir, cleaning up 
-   * destDir first. 
+   * destDir first.
+   * Closes the given InputStream after extracting! 
    */
-  public static void unzip(File zipName, File destDir) throws IOException {
+  public static void unzip(InputStream in, Path destDir) throws IOException {
     IOUtils.rm(destDir);
-    destDir.mkdir();
+    Files.createDirectory(destDir);
 
-    ZipFile zipFile = new ZipFile(zipName);
-    Enumeration<? extends ZipEntry> entries = zipFile.entries();
-
-    while (entries.hasMoreElements()) {
-      ZipEntry entry = entries.nextElement();
-      
-      InputStream in = zipFile.getInputStream(entry);
-      File targetFile = new File(destDir, entry.getName());
-      if (entry.isDirectory()) {
-        // allow unzipping with directory structure
-        targetFile.mkdirs();
-      } else {
-        if (targetFile.getParentFile()!=null) {
-          // be on the safe side: do not rely on that directories are always extracted
-          // before their children (although this makes sense, but is it guaranteed?)
-          targetFile.getParentFile().mkdirs();   
-        }
-        OutputStream out = new BufferedOutputStream(new FileOutputStream(targetFile));
+    try (ZipInputStream zipInput = new ZipInputStream(in)) {
+      ZipEntry entry;
+      byte[] buffer = new byte[8192];
+      while ((entry = zipInput.getNextEntry()) != null) {
+        Path targetFile = destDir.resolve(entry.getName());
         
-        byte[] buffer = new byte[8192];
-        int len;
-        while((len = in.read(buffer)) >= 0) {
-          out.write(buffer, 0, len);
+        // be on the safe side: do not rely on that directories are always extracted
+        // before their children (although this makes sense, but is it guaranteed?)
+        Files.createDirectories(targetFile.getParent());
+        if (!entry.isDirectory()) {
+          OutputStream out = Files.newOutputStream(targetFile);
+          int len;
+          while((len = zipInput.read(buffer)) >= 0) {
+            out.write(buffer, 0, len);
+          }
+          out.close();
         }
-        
-        in.close();
-        out.close();
+        zipInput.closeEntry();
       }
     }
-    
-    zipFile.close();
   }
   
   /** 
@@ -961,7 +947,7 @@ public final class TestUtil {
         ex.awaitTermination(1, TimeUnit.SECONDS);
       } catch (InterruptedException e) {
         // Just report it on the syserr.
-        System.err.println("Could not properly shutdown executor service.");
+        System.err.println("Could not properly close executor service.");
         e.printStackTrace(System.err);
       }
     }

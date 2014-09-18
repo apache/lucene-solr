@@ -132,7 +132,6 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
     for(int j=0;j<500;j++) {
       TestIndexWriter.addDocWithIndex(writer, j);
     }
-    final int termIndexInterval = writer.getConfig().getTermIndexInterval();
     // force one extra segment w/ different doc store so
     // we see the doc stores get merged
     writer.commit();
@@ -154,14 +153,9 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
     dir.resetMaxUsedSizeInBytes();
     dir.setTrackDiskUsage(true);
 
-    // Import to use same term index interval else a
-    // smaller one here could increase the disk usage and
-    // cause a false failure:
     writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                     .setOpenMode(OpenMode.APPEND)
-                                    .setTermIndexInterval(termIndexInterval)
                                     .setMergePolicy(newLogMergePolicy()));
-
     writer.forceMerge(1);
     writer.close();
     long maxDiskUsage = dir.getMaxUsedSizeInBytes();

@@ -70,13 +70,11 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@SuppressCodecs("Lucene3x")
 public abstract class SorterTestBase extends LuceneTestCase {
 
   static final class NormsSimilarity extends Similarity {
@@ -177,26 +175,17 @@ public abstract class SorterTestBase extends LuceneTestCase {
     doc.add(new StringField(ID_FIELD, Integer.toString(id), Store.YES));
     doc.add(new StringField(DOCS_ENUM_FIELD, DOCS_ENUM_TERM, Store.NO));
     positions.setId(id);
-    if (doesntSupportOffsets.contains(TestUtil.getPostingsFormat(DOC_POSITIONS_FIELD))) {
-      // codec doesnt support offsets: just index positions for the field
-      doc.add(new Field(DOC_POSITIONS_FIELD, positions, TextField.TYPE_NOT_STORED));
-    } else {
-      doc.add(new Field(DOC_POSITIONS_FIELD, positions, POSITIONS_TYPE));
-    }
+    doc.add(new Field(DOC_POSITIONS_FIELD, positions, POSITIONS_TYPE));
     doc.add(new NumericDocValuesField(NUMERIC_DV_FIELD, id));
     TextField norms = new TextField(NORMS_FIELD, Integer.toString(id), Store.NO);
     norms.setBoost(Float.intBitsToFloat(id));
     doc.add(norms);
     doc.add(new BinaryDocValuesField(BINARY_DV_FIELD, new BytesRef(Integer.toString(id))));
     doc.add(new SortedDocValuesField(SORTED_DV_FIELD, new BytesRef(Integer.toString(id))));
-    if (defaultCodecSupportsSortedSet()) {
-      doc.add(new SortedSetDocValuesField(SORTED_SET_DV_FIELD, new BytesRef(Integer.toString(id))));
-      doc.add(new SortedSetDocValuesField(SORTED_SET_DV_FIELD, new BytesRef(Integer.toString(id + 1))));
-    }
-    if (defaultCodecSupportsSortedNumeric()) {
-      doc.add(new SortedNumericDocValuesField(SORTED_NUMERIC_DV_FIELD, id));
-      doc.add(new SortedNumericDocValuesField(SORTED_NUMERIC_DV_FIELD, id + 1));
-    }
+    doc.add(new SortedSetDocValuesField(SORTED_SET_DV_FIELD, new BytesRef(Integer.toString(id))));
+    doc.add(new SortedSetDocValuesField(SORTED_SET_DV_FIELD, new BytesRef(Integer.toString(id + 1))));
+    doc.add(new SortedNumericDocValuesField(SORTED_NUMERIC_DV_FIELD, id));
+    doc.add(new SortedNumericDocValuesField(SORTED_NUMERIC_DV_FIELD, id + 1));
     doc.add(new Field(TERM_VECTORS_FIELD, Integer.toString(id), TERM_VECTORS_TYPE));
     return doc;
   }
@@ -272,10 +261,8 @@ public abstract class SorterTestBase extends LuceneTestCase {
       assertEquals("incorrect freq for doc=" + doc, sortedValues[doc].intValue() / 10 + 1, freq);
       for (int i = 0; i < freq; i++) {
         assertEquals("incorrect position for doc=" + doc, i, sortedPositions.nextPosition());
-        if (!doesntSupportOffsets.contains(TestUtil.getPostingsFormat(DOC_POSITIONS_FIELD))) {
-          assertEquals("incorrect startOffset for doc=" + doc, i, sortedPositions.startOffset());
-          assertEquals("incorrect endOffset for doc=" + doc, i, sortedPositions.endOffset());
-        }
+        assertEquals("incorrect startOffset for doc=" + doc, i, sortedPositions.startOffset());
+        assertEquals("incorrect endOffset for doc=" + doc, i, sortedPositions.endOffset());
         assertEquals("incorrect payload for doc=" + doc, freq - i, Integer.parseInt(sortedPositions.getPayload().utf8ToString()));
       }
     }
@@ -292,10 +279,8 @@ public abstract class SorterTestBase extends LuceneTestCase {
       assertEquals("incorrect freq for doc=" + doc, sortedValues[doc].intValue() / 10 + 1, freq);
       for (int i = 0; i < freq; i++) {
         assertEquals("incorrect position for doc=" + doc, i, sortedPositions.nextPosition());
-        if (!doesntSupportOffsets.contains(TestUtil.getPostingsFormat(DOC_POSITIONS_FIELD))) {
-          assertEquals("incorrect startOffset for doc=" + doc, i, sortedPositions.startOffset());
-          assertEquals("incorrect endOffset for doc=" + doc, i, sortedPositions.endOffset());
-        }
+        assertEquals("incorrect startOffset for doc=" + doc, i, sortedPositions.startOffset());
+        assertEquals("incorrect endOffset for doc=" + doc, i, sortedPositions.endOffset());
         assertEquals("incorrect payload for doc=" + doc, freq - i, Integer.parseInt(sortedPositions.getPayload().utf8ToString()));
       }
     }
@@ -392,7 +377,6 @@ public abstract class SorterTestBase extends LuceneTestCase {
   
   @Test
   public void testSortedSetDocValuesField() throws Exception {
-    assumeTrue("default codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
     SortedSetDocValues dv = reader.getSortedSetDocValues(SORTED_SET_DV_FIELD);
     int maxDoc = reader.maxDoc();
     for (int i = 0; i < maxDoc; i++) {
@@ -408,7 +392,6 @@ public abstract class SorterTestBase extends LuceneTestCase {
   
   @Test
   public void testSortedNumericDocValuesField() throws Exception {
-    assumeTrue("default codec does not support SORTED_NUMERIC", defaultCodecSupportsSortedNumeric());
     SortedNumericDocValues dv = reader.getSortedNumericDocValues(SORTED_NUMERIC_DV_FIELD);
     int maxDoc = reader.maxDoc();
     for (int i = 0; i < maxDoc; i++) {

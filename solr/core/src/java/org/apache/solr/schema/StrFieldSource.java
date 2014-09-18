@@ -73,7 +73,7 @@ public class StrFieldSource extends FieldCacheSource {
             && super.equals(o);
   }
 
-  private static int hcode = SortableFloatFieldSource.class.hashCode();
+  private static int hcode = StrFieldSource.class.hashCode();
   @Override
   public int hashCode() {
     return hcode + super.hashCode();

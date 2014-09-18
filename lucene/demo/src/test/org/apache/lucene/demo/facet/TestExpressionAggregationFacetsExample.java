@@ -21,11 +21,9 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.lucene.facet.FacetResult;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
-@SuppressCodecs("Lucene3x")
 public class TestExpressionAggregationFacetsExample extends LuceneTestCase {
 
   @Test

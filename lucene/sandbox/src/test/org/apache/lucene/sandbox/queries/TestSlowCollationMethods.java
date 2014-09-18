@@ -5,11 +5,13 @@ import java.util.Locale;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
@@ -58,6 +60,8 @@ public class TestSlowCollationMethods extends LuceneTestCase {
       String value = TestUtil.randomUnicodeString(random());
       Field field = newStringField("field", value, Field.Store.YES);
       doc.add(field);
+      Field dvField = new SortedDocValuesField("field", new BytesRef(value));
+      doc.add(dvField);
       iw.addDocument(doc);
     }
     splitDoc = TestUtil.randomUnicodeString(random());

@@ -18,8 +18,6 @@ package org.apache.lucene.codecs.mockrandom;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.codecs.FieldsConsumer;
@@ -42,26 +40,14 @@ import org.apache.lucene.codecs.blocktreeords.OrdsBlockTreeTermsReader;
 import org.apache.lucene.codecs.blocktreeords.OrdsBlockTreeTermsWriter;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsReader;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsWriter;
-import org.apache.lucene.codecs.mockintblock.MockFixedIntBlockPostingsFormat;
-import org.apache.lucene.codecs.mockintblock.MockVariableIntBlockPostingsFormat;
-import org.apache.lucene.codecs.mocksep.MockSingleIntFactory;
-import org.apache.lucene.codecs.pulsing.PulsingPostingsReader;
-import org.apache.lucene.codecs.pulsing.PulsingPostingsWriter;
-import org.apache.lucene.codecs.sep.IntIndexInput;
-import org.apache.lucene.codecs.sep.IntIndexOutput;
-import org.apache.lucene.codecs.sep.IntStreamFactory;
-import org.apache.lucene.codecs.sep.SepPostingsReader;
-import org.apache.lucene.codecs.sep.SepPostingsWriter;
-import org.apache.lucene.codecs.memory.FSTTermsWriter;
-import org.apache.lucene.codecs.memory.FSTTermsReader;
-import org.apache.lucene.codecs.memory.FSTOrdTermsWriter;
 import org.apache.lucene.codecs.memory.FSTOrdTermsReader;
+import org.apache.lucene.codecs.memory.FSTOrdTermsWriter;
+import org.apache.lucene.codecs.memory.FSTTermsReader;
+import org.apache.lucene.codecs.memory.FSTTermsWriter;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
@@ -92,48 +78,6 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
       };
     } else {
       this.seedRandom = new Random(random.nextLong());
-    }
-  }
-
-  // Chooses random IntStreamFactory depending on file's extension
-  private static class MockIntStreamFactory extends IntStreamFactory {
-    private final int salt;
-    private final List<IntStreamFactory> delegates = new ArrayList<>();
-
-    public MockIntStreamFactory(Random random) {
-      salt = random.nextInt();
-      delegates.add(new MockSingleIntFactory());
-      final int blockSize = TestUtil.nextInt(random, 1, 2000);
-      delegates.add(new MockFixedIntBlockPostingsFormat.MockIntFactory(blockSize));
-      final int baseBlockSize = TestUtil.nextInt(random, 1, 127);
-      delegates.add(new MockVariableIntBlockPostingsFormat.MockIntFactory(baseBlockSize));
-      // TODO: others
-    }
-
-    private static String getExtension(String fileName) {
-      final int idx = fileName.indexOf('.');
-      assert idx != -1;
-      return fileName.substring(idx);
-    }
-
-    @Override
-    public IntIndexInput openInput(Directory dir, String fileName, IOContext context) throws IOException {
-      // Must only use extension, because IW.addIndexes can
-      // rename segment!
-      final IntStreamFactory f = delegates.get((Math.abs(salt ^ getExtension(fileName).hashCode())) % delegates.size());
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockRandomCodec: read using int factory " + f + " from fileName=" + fileName);
-      }
-      return f.openInput(dir, fileName, context);
-    }
-
-    @Override
-    public IntIndexOutput createOutput(Directory dir, String fileName, IOContext context) throws IOException {
-      final IntStreamFactory f = delegates.get((Math.abs(salt ^ getExtension(fileName).hashCode())) % delegates.size());
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockRandomCodec: write using int factory " + f + " to fileName=" + fileName);
-      }
-      return f.createOutput(dir, fileName, context);
     }
   }
 
@@ -173,24 +117,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
     
     random.nextInt(); // consume a random for buffersize
 
-    PostingsWriterBase postingsWriter;
-    if (random.nextBoolean()) {
-      postingsWriter = new SepPostingsWriter(state, new MockIntStreamFactory(random), skipInterval);
-    } else {
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockRandomCodec: writing Standard postings");
-      }
-      // TODO: randomize variables like acceptibleOverHead?!
-      postingsWriter = new Lucene41PostingsWriter(state, skipInterval);
-    }
-
-    if (random.nextBoolean()) {
-      final int totTFCutoff = TestUtil.nextInt(random, 1, 20);
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockRandomCodec: writing pulsing postings with totTFCutoff=" + totTFCutoff);
-      }
-      postingsWriter = new PulsingPostingsWriter(state, totTFCutoff, postingsWriter);
-    }
+    PostingsWriterBase postingsWriter = new Lucene41PostingsWriter(state, skipInterval);
 
     final FieldsConsumer fields;
     final int t1 = random.nextInt(5);
@@ -247,11 +174,11 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
       final TermsIndexWriterBase indexWriter;
       try {
         if (random.nextBoolean()) {
-          state.termIndexInterval = TestUtil.nextInt(random, 1, 100);
+          int termIndexInterval = TestUtil.nextInt(random, 1, 100);
           if (LuceneTestCase.VERBOSE) {
-            System.out.println("MockRandomCodec: fixed-gap terms index (tii=" + state.termIndexInterval + ")");
+            System.out.println("MockRandomCodec: fixed-gap terms index (tii=" + termIndexInterval + ")");
           }
-          indexWriter = new FixedGapTermsIndexWriter(state);
+          indexWriter = new FixedGapTermsIndexWriter(state, termIndexInterval);
         } else {
           final VariableGapTermsIndexWriter.IndexTermSelector selector;
           final int n2 = random.nextInt(3);
@@ -353,28 +280,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
       System.out.println("MockRandomCodec: readBufferSize=" + readBufferSize);
     }
 
-    PostingsReaderBase postingsReader;
-
-    if (random.nextBoolean()) {
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockRandomCodec: reading Sep postings");
-      }
-      postingsReader = new SepPostingsReader(state.directory, state.fieldInfos, state.segmentInfo,
-                                             state.context, new MockIntStreamFactory(random), state.segmentSuffix);
-    } else {
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockRandomCodec: reading Standard postings");
-      }
-      postingsReader = new Lucene41PostingsReader(state.directory, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
-    }
-
-    if (random.nextBoolean()) {
-      final int totTFCutoff = TestUtil.nextInt(random, 1, 20);
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockRandomCodec: reading pulsing postings with totTFCutoff=" + totTFCutoff);
-      }
-      postingsReader = new PulsingPostingsReader(state, postingsReader);
-    }
+    PostingsReaderBase postingsReader = new Lucene41PostingsReader(state.directory, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
 
     final FieldsProducer fields;
     final int t1 = random.nextInt(5);
@@ -411,8 +317,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
                                           state.segmentInfo,
                                           postingsReader,
                                           state.context,
-                                          state.segmentSuffix,
-                                          state.termsIndexDivisor);
+                                          state.segmentSuffix);
         success = true;
       } finally {
         if (!success) {
@@ -430,20 +335,14 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
         final boolean doFixedGap = random.nextBoolean();
 
         // randomness diverges from writer, here:
-        if (state.termsIndexDivisor != -1) {
-          state.termsIndexDivisor = TestUtil.nextInt(random, 1, 10);
-        }
 
         if (doFixedGap) {
-          // if termsIndexDivisor is set to -1, we should not touch it. It means a
-          // test explicitly instructed not to load the terms index.
           if (LuceneTestCase.VERBOSE) {
-            System.out.println("MockRandomCodec: fixed-gap terms index (divisor=" + state.termsIndexDivisor + ")");
+            System.out.println("MockRandomCodec: fixed-gap terms index");
           }
           indexReader = new FixedGapTermsIndexReader(state.directory,
                                                      state.fieldInfos,
                                                      state.segmentInfo.name,
-                                                     state.termsIndexDivisor,
                                                      BytesRef.getUTF8SortedAsUnicodeComparator(),
                                                      state.segmentSuffix, state.context);
         } else {
@@ -454,12 +353,11 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
             random.nextLong();
           }
           if (LuceneTestCase.VERBOSE) {
-            System.out.println("MockRandomCodec: variable-gap terms index (divisor=" + state.termsIndexDivisor + ")");
+            System.out.println("MockRandomCodec: variable-gap terms index");
           }
           indexReader = new VariableGapTermsIndexReader(state.directory,
                                                         state.fieldInfos,
                                                         state.segmentInfo.name,
-                                                        state.termsIndexDivisor,
                                                         state.segmentSuffix, state.context);
 
         }

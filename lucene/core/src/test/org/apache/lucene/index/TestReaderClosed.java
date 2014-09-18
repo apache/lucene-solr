@@ -75,6 +75,7 @@ public class TestReaderClosed extends LuceneTestCase {
     wrappedReader = new ParallelAtomicReader((AtomicReader) wrappedReader);
 
     IndexSearcher searcher = newSearcher(wrappedReader);
+
     TermRangeQuery query = TermRangeQuery.newStringRange("field", "a", "z", true, true);
     searcher.search(query, 5);
     reader.close(); // close original child reader
@@ -86,7 +87,7 @@ public class TestReaderClosed extends LuceneTestCase {
         ace.getMessage()
       );
     } finally {
-      // shutdown executor: in case of wrap-wrap-wrapping
+      // close executor: in case of wrap-wrap-wrapping
       searcher.getIndexReader().close();
     }
   }

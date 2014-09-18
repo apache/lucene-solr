@@ -21,16 +21,6 @@ package org.apache.lucene.search.suggest.analyzing;
 //   - test w/ syns
 //   - add pruning of low-freq ngrams?
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.AnalyzerWrapper;
 import org.apache.lucene.analysis.TokenStream;
@@ -67,16 +57,26 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.Version;
 import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FST.Arc;
 import org.apache.lucene.util.fst.FST.BytesReader;
-import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Outputs;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
+import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.util.fst.Util.Result;
 import org.apache.lucene.util.fst.Util.TopResults;
-import org.apache.lucene.util.fst.Util;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 //import java.io.PrintWriter;
 
@@ -304,11 +304,11 @@ public class FreeTextSuggester extends Lookup {
     }
 
     String prefix = getClass().getSimpleName();
-    File tempIndexPath = Files.createTempDirectory(prefix + ".index.").toFile();
+    Path tempIndexPath = Files.createTempDirectory(prefix + ".index.");
 
     Directory dir = FSDirectory.open(tempIndexPath);
 
-    IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_CURRENT, indexAnalyzer);
+    IndexWriterConfig iwc = new IndexWriterConfig(indexAnalyzer);
     iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
     iwc.setRAMBufferSizeMB(ramBufferSizeMB);
     IndexWriter writer = new IndexWriter(dir, iwc);
@@ -380,11 +380,15 @@ public class FreeTextSuggester extends Lookup {
       pw.close();
       */
 
+      // Writer was only temporary, to count up bigrams,
+      // which we transferred to the FST, so now we
+      // rollback:
+      writer.rollback();
       success = true;
     } finally {
       try {
         if (success) {
-          IOUtils.close(reader, writer, dir);
+          IOUtils.close(reader, dir);
         } else {
           IOUtils.closeWhileHandlingException(reader, writer, dir);
         }
@@ -466,8 +470,7 @@ public class FreeTextSuggester extends Lookup {
       throw new IllegalArgumentException("this suggester doesn't support contexts");
     }
 
-    TokenStream ts = queryAnalyzer.tokenStream("", key.toString());
-    try {
+    try (TokenStream ts = queryAnalyzer.tokenStream("", key.toString())) {
       TermToBytesRefAttribute termBytesAtt = ts.addAttribute(TermToBytesRefAttribute.class);
       OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
       PositionLengthAttribute posLenAtt = ts.addAttribute(PositionLengthAttribute.class);
@@ -728,8 +731,6 @@ public class FreeTextSuggester extends Lookup {
       }
       
       return results;
-    } finally {
-      IOUtils.closeWhileHandlingException(ts);
     }
   }
 

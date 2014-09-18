@@ -196,16 +196,13 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
                    doc(f("id", "1111"),
                        f("foo_t", " string1 "),
                        f("foo_s", " string2 "),
-                       f("bar_dt", " string3 "),
-                       f("bar_pdt", " string4 ")));
+                       f("bar_dt", " string3 ")));
 
     assertNotNull(d);
 
     assertEquals(" string1 ", d.getFieldValue("foo_t"));
     assertEquals("string2", d.getFieldValue("foo_s"));
     assertEquals("string3", d.getFieldValue("bar_dt"));
-    assertEquals("string4", d.getFieldValue("bar_pdt"));
-
   }
 
   public void testTrimMultipleRules() throws Exception {
@@ -214,16 +211,13 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
                    doc(f("id", "1111"),
                        f("foo_t", " string1 "),
                        f("foo_s", " string2 "),
-                       f("bar_dt", " string3 "),
-                       f("foo_pdt", " string4 ")));
+                       f("bar_dt", " string3 ")));
 
     assertNotNull(d);
 
     assertEquals(" string1 ", d.getFieldValue("foo_t"));
     assertEquals("string2", d.getFieldValue("foo_s"));
     assertEquals(" string3 ", d.getFieldValue("bar_dt"));
-    assertEquals("string4", d.getFieldValue("foo_pdt"));
-
   }
 
   public void testTrimExclusions() throws Exception {
@@ -232,24 +226,20 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
                    doc(f("id", "1111"),
                        f("foo_t", " string1 "),
                        f("foo_s", " string2 "),
-                       f("bar_dt", " string3 "),
-                       f("foo_pdt", " string4 ")));
+                       f("bar_dt", " string3 ")));
 
     assertNotNull(d);
 
     assertEquals(" string1 ", d.getFieldValue("foo_t"));
     assertEquals("string2", d.getFieldValue("foo_s"));
     assertEquals("string3", d.getFieldValue("bar_dt"));
-    assertEquals("string4", d.getFieldValue("foo_pdt"));
 
     d = processAdd("trim-many", 
                    doc(f("id", "1111"),
                        f("foo_t", " string1 "),
                        f("foo_s", " string2 "),
                        f("bar_dt", " string3 "),
-                       f("bar_HOSS_s", " string4 "),
-                       f("foo_pdt", " string5 "),
-                       f("foo_HOSS_pdt", " string6 ")));
+                       f("bar_HOSS_s", " string4 ")));
 
     assertNotNull(d);
 
@@ -257,17 +247,13 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertEquals("string2", d.getFieldValue("foo_s"));
     assertEquals("string3", d.getFieldValue("bar_dt"));
     assertEquals(" string4 ", d.getFieldValue("bar_HOSS_s"));
-    assertEquals("string5", d.getFieldValue("foo_pdt"));
-    assertEquals(" string6 ", d.getFieldValue("foo_HOSS_pdt"));
 
     d = processAdd("trim-few", 
                    doc(f("id", "1111"),
                        f("foo_t", " string1 "),
                        f("foo_s", " string2 "),
                        f("bar_dt", " string3 "),
-                       f("bar_HOSS_s", " string4 "),
-                       f("foo_pdt", " string5 "),
-                       f("foo_HOSS_pdt", " string6 ")));
+                       f("bar_HOSS_s", " string4 ")));
 
     assertNotNull(d);
 
@@ -275,17 +261,13 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertEquals("string2", d.getFieldValue("foo_s"));
     assertEquals(" string3 ", d.getFieldValue("bar_dt"));
     assertEquals(" string4 ", d.getFieldValue("bar_HOSS_s"));
-    assertEquals(" string5 ", d.getFieldValue("foo_pdt"));
-    assertEquals(" string6 ", d.getFieldValue("foo_HOSS_pdt"));
 
     d = processAdd("trim-some", 
                    doc(f("id", "1111"),
                        f("foo_t", " string1 "),
                        f("foo_s", " string2 "),
                        f("bar_dt", " string3 "),
-                       f("bar_HOSS_s", " string4 "),
-                       f("foo_pdt", " string5 "),
-                       f("foo_HOSS_pdt", " string6 ")));
+                       f("bar_HOSS_s", " string4 ")));
 
     assertNotNull(d);
 
@@ -293,8 +275,6 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertEquals("string2", d.getFieldValue("foo_s"));
     assertEquals("string3", d.getFieldValue("bar_dt"));
     assertEquals("string4", d.getFieldValue("bar_HOSS_s"));
-    assertEquals("string5", d.getFieldValue("foo_pdt"));
-    assertEquals(" string6 ", d.getFieldValue("foo_HOSS_pdt"));
   }
 
   public void testRemoveBlanks() throws Exception {

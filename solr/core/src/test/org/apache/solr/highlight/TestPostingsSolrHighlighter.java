@@ -17,14 +17,12 @@ package org.apache.solr.highlight;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.schema.IndexSchema;
 import org.junit.BeforeClass;
 
 /** simple tests for PostingsSolrHighlighter */
-@SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom", "Lucene3x"})
 public class TestPostingsSolrHighlighter extends SolrTestCaseJ4 {
   
   @BeforeClass

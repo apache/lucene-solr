@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.core;
 import java.io.Reader;
 import java.io.StringReader;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -45,9 +44,6 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ValidatingTokenFilter;
 import org.apache.lucene.analysis.miscellaneous.PatternKeywordMarkerFilter;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
-import org.apache.lucene.analysis.fr.FrenchStemFilter;
-import org.apache.lucene.analysis.in.IndicTokenizer;
-import org.apache.lucene.analysis.nl.DutchStemFilter;
 import org.apache.lucene.analysis.path.ReversePathHierarchyTokenizer;
 import org.apache.lucene.analysis.sinks.TeeSinkTokenFilter;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
@@ -92,17 +88,6 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
     );
   }
   
-  // these are deprecated components that are just exact dups of other functionality: they dont need factories
-  // (they never had them)
-  private static final Set<Class<?>> deprecatedDuplicatedComponents = Collections.newSetFromMap(new IdentityHashMap<Class<?>,Boolean>());
-  static {
-    Collections.<Class<?>>addAll(deprecatedDuplicatedComponents,
-      DutchStemFilter.class,
-      FrenchStemFilter.class,
-      IndicTokenizer.class
-    );
-  }
-  
   // these are oddly-named (either the actual analyzer, or its factory)
   // they do actually have factories.
   // TODO: clean this up!
@@ -119,9 +104,7 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
   private static final ResourceLoader loader = new StringMockResourceLoader("");
   
   public void test() throws Exception {
-    List<Class<?>> analysisClasses = new ArrayList<>();
-    analysisClasses.addAll(TestRandomChains.getClassesForPackage("org.apache.lucene.analysis"));
-    analysisClasses.addAll(TestRandomChains.getClassesForPackage("org.apache.lucene.collation"));
+    List<Class<?>> analysisClasses = TestRandomChains.getClassesForPackage("org.apache.lucene.analysis");
     
     for (final Class<?> c : analysisClasses) {
       final int modifiers = c.getModifiers();
@@ -132,7 +115,6 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
         || testComponents.contains(c)
         || crazyComponents.contains(c)
         || oddlyNamedComponents.contains(c)
-        || deprecatedDuplicatedComponents.contains(c)
         || c.isAnnotationPresent(Deprecated.class) // deprecated ones are typically back compat hacks
         || !(Tokenizer.class.isAssignableFrom(c) || TokenFilter.class.isAssignableFrom(c) || CharFilter.class.isAssignableFrom(c))
       ) {
@@ -154,7 +136,7 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
           if (instance instanceof ResourceLoaderAware) {
             ((ResourceLoaderAware) instance).inform(loader);
           }
-          assertSame(c, instance.create(new StringReader("")).getClass());
+          assertSame(c, instance.create().getClass());
         } catch (IllegalArgumentException e) {
           if (e.getCause() instanceof NoSuchMethodException) {
             // there is no corresponding ctor available
@@ -174,7 +156,7 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
           if (instance instanceof ResourceLoaderAware) {
             ((ResourceLoaderAware) instance).inform(loader);
           }
-          Class<? extends TokenStream> createdClazz = instance.create(new KeywordTokenizer(new StringReader(""))).getClass();
+          Class<? extends TokenStream> createdClazz = instance.create(new KeywordTokenizer()).getClass();
           // only check instance if factory have wrapped at all!
           if (KeywordTokenizer.class != createdClazz) {
             assertSame(c, createdClazz);

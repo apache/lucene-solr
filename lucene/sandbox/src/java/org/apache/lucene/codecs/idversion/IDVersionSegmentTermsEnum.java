@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.idversion;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.Comparator;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -1065,10 +1064,5 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
   @Override
   public String toString() {
     return "IDVersionSegmentTermsEnum(seg=" + fr.parent.segment + ")";
-  }
-
-  @Override
-  public Comparator<BytesRef> getComparator() {
-    return BytesRef.getUTF8SortedAsUnicodeComparator();
   }
 }

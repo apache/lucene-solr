@@ -50,7 +50,7 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     useFactory(null); // I require FS-based indexes for this test.
 
-    solrHomeDirectory = createTempDir();
+    solrHomeDirectory = createTempDir().toFile();
 
     setupNoCoreTest(solrHomeDirectory, null);
 

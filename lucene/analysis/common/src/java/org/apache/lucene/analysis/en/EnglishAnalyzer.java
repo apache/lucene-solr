@@ -30,7 +30,6 @@ import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
-import org.apache.lucene.util.Version;
 
 /**
  * {@link Analyzer} for English.
@@ -60,14 +59,6 @@ public final class EnglishAnalyzer extends StopwordAnalyzerBase {
   public EnglishAnalyzer() {
     this(DefaultSetHolder.DEFAULT_STOP_SET);
   }
-
-  /**
-   * @deprecated Use {@link #EnglishAnalyzer()}
-   */
-  @Deprecated
-  public EnglishAnalyzer(Version matchVersion) {
-    this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
-  }
   
   /**
    * Builds an analyzer with the given stop words.
@@ -76,14 +67,6 @@ public final class EnglishAnalyzer extends StopwordAnalyzerBase {
    */
   public EnglishAnalyzer(CharArraySet stopwords) {
     this(stopwords, CharArraySet.EMPTY_SET);
-  }
-
-  /**
-   * @deprecated Use {@link #EnglishAnalyzer(CharArraySet)}
-   */
-  @Deprecated
-  public EnglishAnalyzer(Version matchVersion, CharArraySet stopwords) {
-    this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
   }
 
   /**
@@ -100,16 +83,6 @@ public final class EnglishAnalyzer extends StopwordAnalyzerBase {
   }
 
   /**
-   * @deprecated Use {@link #EnglishAnalyzer(CharArraySet,CharArraySet)}
-   */
-  @Deprecated
-  public EnglishAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet) {
-    super(matchVersion, stopwords);
-    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(
-        matchVersion, stemExclusionSet));
-  }
-
-  /**
    * Creates a
    * {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    * which tokenizes all the text in the provided {@link Reader}.
@@ -123,15 +96,12 @@ public final class EnglishAnalyzer extends StopwordAnalyzerBase {
    *         provided and {@link PorterStemFilter}.
    */
   @Override
-  protected TokenStreamComponents createComponents(String fieldName,
-      Reader reader) {
-    final Tokenizer source = new StandardTokenizer(getVersion(), reader);
-    TokenStream result = new StandardFilter(getVersion(), source);
-    // prior to this we get the classic behavior, standardfilter does it for us.
-    if (getVersion().onOrAfter(Version.LUCENE_3_1))
-      result = new EnglishPossessiveFilter(getVersion(), result);
-    result = new LowerCaseFilter(getVersion(), result);
-    result = new StopFilter(getVersion(), result, stopwords);
+  protected TokenStreamComponents createComponents(String fieldName) {
+    final Tokenizer source = new StandardTokenizer();
+    TokenStream result = new StandardFilter(source);
+    result = new EnglishPossessiveFilter(result);
+    result = new LowerCaseFilter(result);
+    result = new StopFilter(result, stopwords);
     if(!stemExclusionSet.isEmpty())
       result = new SetKeywordMarkerFilter(result, stemExclusionSet);
     result = new PorterStemFilter(result);

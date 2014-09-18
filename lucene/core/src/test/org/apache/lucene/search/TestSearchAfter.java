@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleField;
@@ -50,8 +49,6 @@ public class TestSearchAfter extends LuceneTestCase {
   private Directory dir;
   private IndexReader reader;
   private IndexSearcher searcher;
-   
-  boolean supportsDocValues = Codec.getDefault().getName().equals("Lucene3x") == false;
   private int iter;
   private List<SortField> allSortFields;
 
@@ -60,39 +57,31 @@ public class TestSearchAfter extends LuceneTestCase {
     super.setUp();
 
     allSortFields = new ArrayList<>(Arrays.asList(new SortField[] {
-          new SortField("byte", SortField.Type.BYTE, false),
-          new SortField("short", SortField.Type.SHORT, false),
           new SortField("int", SortField.Type.INT, false),
           new SortField("long", SortField.Type.LONG, false),
           new SortField("float", SortField.Type.FLOAT, false),
           new SortField("double", SortField.Type.DOUBLE, false),
           new SortField("bytes", SortField.Type.STRING, false),
           new SortField("bytesval", SortField.Type.STRING_VAL, false),
-          new SortField("byte", SortField.Type.BYTE, true),
-          new SortField("short", SortField.Type.SHORT, true),
+          new SortField("intdocvalues", SortField.Type.INT, false),
+          new SortField("floatdocvalues", SortField.Type.FLOAT, false),
+          new SortField("sortedbytesdocvalues", SortField.Type.STRING, false),
+          new SortField("sortedbytesdocvaluesval", SortField.Type.STRING_VAL, false),
+          new SortField("straightbytesdocvalues", SortField.Type.STRING_VAL, false),
           new SortField("int", SortField.Type.INT, true),
           new SortField("long", SortField.Type.LONG, true),
           new SortField("float", SortField.Type.FLOAT, true),
           new SortField("double", SortField.Type.DOUBLE, true),
           new SortField("bytes", SortField.Type.STRING, true),
           new SortField("bytesval", SortField.Type.STRING_VAL, true),
-          SortField.FIELD_SCORE,
-          SortField.FIELD_DOC,
-        }));
-
-    if (supportsDocValues) {
-      allSortFields.addAll(Arrays.asList(new SortField[] {
-          new SortField("intdocvalues", SortField.Type.INT, false),
-          new SortField("floatdocvalues", SortField.Type.FLOAT, false),
-          new SortField("sortedbytesdocvalues", SortField.Type.STRING, false),
-          new SortField("sortedbytesdocvaluesval", SortField.Type.STRING_VAL, false),
-          new SortField("straightbytesdocvalues", SortField.Type.STRING_VAL, false),
           new SortField("intdocvalues", SortField.Type.INT, true),
           new SortField("floatdocvalues", SortField.Type.FLOAT, true),
           new SortField("sortedbytesdocvalues", SortField.Type.STRING, true),
           new SortField("sortedbytesdocvaluesval", SortField.Type.STRING_VAL, true),
-          new SortField("straightbytesdocvalues", SortField.Type.STRING_VAL, true)}));
-    }
+          new SortField("straightbytesdocvalues", SortField.Type.STRING_VAL, true),
+          SortField.FIELD_SCORE,
+          SortField.FIELD_DOC,
+        }));
 
     // Also test missing first / last for the "string" sorts:
     for(String field : new String[] {"bytes", "sortedbytesdocvalues"}) {
@@ -162,13 +151,12 @@ public class TestSearchAfter extends LuceneTestCase {
       fields.add(newStringField("bytesval", TestUtil.randomRealisticUnicodeString(random()), Field.Store.NO));
       fields.add(new DoubleField("double", random().nextDouble(), Field.Store.NO));
 
-      if (supportsDocValues) {
-        fields.add(new NumericDocValuesField("intdocvalues", random().nextInt()));
-        fields.add(new FloatDocValuesField("floatdocvalues", random().nextFloat()));
-        fields.add(new SortedDocValuesField("sortedbytesdocvalues", new BytesRef(TestUtil.randomRealisticUnicodeString(random()))));
-        fields.add(new SortedDocValuesField("sortedbytesdocvaluesval", new BytesRef(TestUtil.randomRealisticUnicodeString(random()))));
-        fields.add(new BinaryDocValuesField("straightbytesdocvalues", new BytesRef(TestUtil.randomRealisticUnicodeString(random()))));
-      }
+      fields.add(new NumericDocValuesField("intdocvalues", random().nextInt()));
+      fields.add(new FloatDocValuesField("floatdocvalues", random().nextFloat()));
+      fields.add(new SortedDocValuesField("sortedbytesdocvalues", new BytesRef(TestUtil.randomRealisticUnicodeString(random()))));
+      fields.add(new SortedDocValuesField("sortedbytesdocvaluesval", new BytesRef(TestUtil.randomRealisticUnicodeString(random()))));
+      fields.add(new BinaryDocValuesField("straightbytesdocvalues", new BytesRef(TestUtil.randomRealisticUnicodeString(random()))));
+
       Document document = new Document();
       document.add(new StoredField("id", ""+i));
       if (VERBOSE) {
@@ -246,7 +234,7 @@ public class TestSearchAfter extends LuceneTestCase {
   void assertQuery(Query query, Filter filter, Sort sort) throws Exception {
     int maxDoc = searcher.getIndexReader().maxDoc();
     TopDocs all;
-    int pageSize = TestUtil.nextInt(random(), 1, maxDoc*2);
+    int pageSize = TestUtil.nextInt(random(), 1, maxDoc * 2);
     if (VERBOSE) {
       System.out.println("\nassertQuery " + (iter++) + ": query=" + query + " filter=" + filter + " sort=" + sort + " pageSize=" + pageSize);
     }

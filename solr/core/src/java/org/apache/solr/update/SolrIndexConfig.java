@@ -67,7 +67,6 @@ public class SolrIndexConfig {
   public final String lockType;
   public final PluginInfo mergePolicyInfo;
   public final PluginInfo mergeSchedulerInfo;
-  public final int termIndexInterval;
   
   public final PluginInfo mergedSegmentWarmerInfo;
   
@@ -95,7 +94,6 @@ public class SolrIndexConfig {
     ramBufferSizeMB = 100;
     writeLockTimeout = -1;
     lockType = LOCK_TYPE_NATIVE;
-    termIndexInterval = IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL;
     mergePolicyInfo = null;
     mergeSchedulerInfo = null;
     defaultMergePolicyClassName = TieredMergePolicy.class.getName();
@@ -153,7 +151,10 @@ public class SolrIndexConfig {
     mergeSchedulerInfo = getPluginInfo(prefix + "/mergeScheduler", solrConfig, def.mergeSchedulerInfo);
     mergePolicyInfo = getPluginInfo(prefix + "/mergePolicy", solrConfig, def.mergePolicyInfo);
     
-    termIndexInterval = solrConfig.getInt(prefix + "/termIndexInterval", def.termIndexInterval);
+    String val = solrConfig.get(prefix + "/termIndexInterval", null);
+    if (val != null) {
+      throw new IllegalArgumentException("Illegal parameter 'termIndexInterval'");
+    }
 
     boolean infoStreamEnabled = solrConfig.getBool(prefix + "/infoStream", false);
     if(infoStreamEnabled) {
@@ -162,17 +163,7 @@ public class SolrIndexConfig {
         log.info("IndexWriter infoStream solr logging is enabled");
         infoStream = new LoggingInfoStream();
       } else {
-        log.warn("IndexWriter infoStream file log is enabled: " + infoStreamFile +
-                 "\nThis feature is deprecated. Remove @file from <infoStream> to output messages to solr's logfile");
-        File f = new File(infoStreamFile);
-        File parent = f.getParentFile();
-        if (parent != null) parent.mkdirs();
-        try {
-          FileOutputStream fos = new FileOutputStream(f, true);
-          infoStream = new PrintStreamInfoStream(new PrintStream(fos, true, "UTF-8"));
-        } catch (Exception e) {
-          log.error("Could not create info stream for file " + infoStreamFile, e);
-        }
+        throw new IllegalArgumentException("Remove @file from <infoStream> to output messages to solr's logfile");
       }
     }
     mergedSegmentWarmerInfo = getPluginInfo(prefix + "/mergedSegmentWarmer", solrConfig, def.mergedSegmentWarmerInfo);
@@ -208,15 +199,12 @@ public class SolrIndexConfig {
     // for the default analyzer, and explicitly pass an analyzer on 
     // appropriate calls to IndexWriter
     
-    IndexWriterConfig iwc = new IndexWriterConfig(luceneVersion, null);
+    IndexWriterConfig iwc = new IndexWriterConfig(null);
     if (maxBufferedDocs != -1)
       iwc.setMaxBufferedDocs(maxBufferedDocs);
 
     if (ramBufferSizeMB != -1)
       iwc.setRAMBufferSizeMB(ramBufferSizeMB);
-
-    if (termIndexInterval != -1)
-      iwc.setTermIndexInterval(termIndexInterval);
 
     if (writeLockTimeout != -1)
       iwc.setWriteLockTimeout(writeLockTimeout);

@@ -29,7 +29,6 @@ import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.util.Version;
 
 /**
  * {@link Analyzer} for Arabic. 
@@ -92,14 +91,6 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
   public ArabicAnalyzer() {
     this(DefaultSetHolder.DEFAULT_STOP_SET);
   }
-
-  /**
-   * @deprecated Use {@link #ArabicAnalyzer()}
-   */
-  @Deprecated
-  public ArabicAnalyzer(Version matchVersion) {
-    this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
-  }
   
   /**
    * Builds an analyzer with the given stop words
@@ -109,14 +100,6 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
    */
   public ArabicAnalyzer(CharArraySet stopwords){
     this(stopwords, CharArraySet.EMPTY_SET);
-  }
-
-  /**
-   * @deprecated Use {@link #ArabicAnalyzer(CharArraySet)}
-   */
-  @Deprecated
-  public ArabicAnalyzer(Version matchVersion, CharArraySet stopwords){
-    this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
   }
 
   /**
@@ -135,16 +118,6 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
   }
 
   /**
-   * @deprecated Use {@link #ArabicAnalyzer(CharArraySet,CharArraySet)}
-   */
-  @Deprecated
-  public ArabicAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet){
-    super(matchVersion, stopwords);
-    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(
-        matchVersion, stemExclusionSet));
-  }
-
-  /**
    * Creates
    * {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    * used to tokenize all the text in the provided {@link Reader}.
@@ -156,13 +129,11 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
    *         if a stem exclusion set is provided and {@link ArabicStemFilter}.
    */
   @Override
-  protected TokenStreamComponents createComponents(String fieldName,
-      Reader reader) {
-    final Tokenizer source = getVersion().onOrAfter(Version.LUCENE_3_1_0) ?
-        new StandardTokenizer(getVersion(), reader) : new ArabicLetterTokenizer(getVersion(), reader);
-    TokenStream result = new LowerCaseFilter(getVersion(), source);
+  protected TokenStreamComponents createComponents(String fieldName) {
+    final Tokenizer source = new StandardTokenizer();
+    TokenStream result = new LowerCaseFilter(source);
     // the order here is important: the stopword list is not normalized!
-    result = new StopFilter(getVersion(), result, stopwords);
+    result = new StopFilter(result, stopwords);
     // TODO maybe we should make ArabicNormalization filter also KeywordAttribute aware?!
     result = new ArabicNormalizationFilter(result);
     if(!stemExclusionSet.isEmpty()) {

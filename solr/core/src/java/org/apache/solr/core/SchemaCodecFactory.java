@@ -36,9 +36,9 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
   private volatile SolrCore core;
   
   // TODO: we need to change how solr does this?
-  // rather than a string like "Pulsing" you need to be able to pass parameters
+  // rather than a string like "Direct" you need to be able to pass parameters
   // and everything to a field in the schema, e.g. we should provide factories for 
-  // the Lucene's core formats (Memory, Pulsing, ...) and such.
+  // the Lucene's core formats (Memory, Direct, ...) and such.
   //
   // So I think a FieldType should return PostingsFormat, not a String.
   // how it constructs this from the XML... i don't care.

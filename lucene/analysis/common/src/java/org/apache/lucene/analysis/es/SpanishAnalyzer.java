@@ -34,18 +34,9 @@ import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.Version;
-import org.tartarus.snowball.ext.SpanishStemmer;
 
 /**
  * {@link Analyzer} for Spanish.
- * <p>
- * <a name="version"/>
- * <p>You must specify the required {@link Version}
- * compatibility when creating SpanishAnalyzer:
- * <ul>
- *   <li> As of 3.6, SpanishLightStemFilter is used for less aggressive stemming.
- * </ul>
  */
 public final class SpanishAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;
@@ -86,14 +77,6 @@ public final class SpanishAnalyzer extends StopwordAnalyzerBase {
   public SpanishAnalyzer() {
     this(DefaultSetHolder.DEFAULT_STOP_SET);
   }
-
-  /**
-   * @deprecated Use {@link #SpanishAnalyzer()}
-   */
-  @Deprecated
-  public SpanishAnalyzer(Version matchVersion) {
-    this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
-  }
   
   /**
    * Builds an analyzer with the given stop words.
@@ -102,14 +85,6 @@ public final class SpanishAnalyzer extends StopwordAnalyzerBase {
    */
   public SpanishAnalyzer(CharArraySet stopwords) {
     this(stopwords, CharArraySet.EMPTY_SET);
-  }
-
-  /**
-   * @deprecated Use {@link #SpanishAnalyzer(CharArraySet)}
-   */
-  @Deprecated
-  public SpanishAnalyzer(Version matchVersion, CharArraySet stopwords) {
-    this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
   }
 
   /**
@@ -126,16 +101,6 @@ public final class SpanishAnalyzer extends StopwordAnalyzerBase {
   }
 
   /**
-   * @deprecated Use {@link #SpanishAnalyzer(CharArraySet,CharArraySet)}
-   */
-  @Deprecated
-  public SpanishAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet) {
-    super(matchVersion, stopwords);
-    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(
-        matchVersion, stemExclusionSet));
-  }
-
-  /**
    * Creates a
    * {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    * which tokenizes all the text in the provided {@link Reader}.
@@ -148,19 +113,14 @@ public final class SpanishAnalyzer extends StopwordAnalyzerBase {
    *         provided and {@link SpanishLightStemFilter}.
    */
   @Override
-  protected TokenStreamComponents createComponents(String fieldName,
-      Reader reader) {
-    final Tokenizer source = new StandardTokenizer(getVersion(), reader);
-    TokenStream result = new StandardFilter(getVersion(), source);
-    result = new LowerCaseFilter(getVersion(), result);
-    result = new StopFilter(getVersion(), result, stopwords);
+  protected TokenStreamComponents createComponents(String fieldName) {
+    final Tokenizer source = new StandardTokenizer();
+    TokenStream result = new StandardFilter(source);
+    result = new LowerCaseFilter(result);
+    result = new StopFilter(result, stopwords);
     if(!stemExclusionSet.isEmpty())
       result = new SetKeywordMarkerFilter(result, stemExclusionSet);
-    if (getVersion().onOrAfter(Version.LUCENE_3_6)) {
-      result = new SpanishLightStemFilter(result);
-    } else {
-      result = new SnowballFilter(result, new SpanishStemmer());
-    }
+    result = new SpanishLightStemFilter(result);
     return new TokenStreamComponents(source, result);
   }
 }

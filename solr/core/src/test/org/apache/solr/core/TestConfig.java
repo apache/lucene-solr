@@ -113,13 +113,6 @@ public class TestConfig extends SolrTestCaseJ4 {
     assertTrue(handler.getHiddenFiles().contains("PROTWORDS.TXT"));
   }
 
-  @Test
-  public void testTermIndexDivisor() throws Exception {
-    IndexReaderFactory irf = h.getCore().getIndexReaderFactory();
-    StandardIndexReaderFactory sirf = (StandardIndexReaderFactory) irf;
-    assertEquals(12, sirf.termInfosIndexDivisor);
-  }
-
   // If defaults change, add test methods to cover each version
   @Test
   public void testDefaults() throws Exception {

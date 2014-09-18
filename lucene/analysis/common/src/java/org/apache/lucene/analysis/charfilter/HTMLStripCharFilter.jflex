@@ -27,7 +27,6 @@ import java.util.Set;
 import org.apache.lucene.analysis.util.CharArrayMap;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.OpenStringBuilder;
-import org.apache.lucene.util.Version;
 
 /**
  * A CharFilter that wraps another Reader and attempts to strip out HTML constructs.

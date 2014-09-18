@@ -19,9 +19,9 @@ package org.apache.lucene.replicator;
 
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -138,7 +138,7 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
   private SnapshotDirectoryTaxonomyWriter publishTaxoWriter;
   private FacetsConfig config;
   private IndexAndTaxonomyReadyCallback callback;
-  private File clientWorkDir;
+  private Path clientWorkDir;
   
   private static final String VERSION_ID = "version";
   
@@ -214,8 +214,9 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
   @After
   @Override
   public void tearDown() throws Exception {
-    IOUtils.close(client, callback, publishIndexWriter, publishTaxoWriter, replicator, publishIndexDir, publishTaxoDir,
-        handlerIndexDir, handlerTaxoDir);
+    publishIndexWriter.close();
+    IOUtils.close(client, callback, publishTaxoWriter, replicator, publishIndexDir, publishTaxoDir,
+            handlerIndexDir, handlerTaxoDir);
     super.tearDown();
   }
   

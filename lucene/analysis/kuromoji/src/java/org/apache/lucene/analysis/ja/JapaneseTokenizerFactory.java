@@ -98,7 +98,7 @@ public class JapaneseTokenizerFactory extends TokenizerFactory implements Resour
   }
   
   @Override
-  public JapaneseTokenizer create(AttributeFactory factory, Reader input) {
-    return new JapaneseTokenizer(factory, input, userDictionary, discardPunctuation, mode);
+  public JapaneseTokenizer create(AttributeFactory factory) {
+    return new JapaneseTokenizer(factory, userDictionary, discardPunctuation, mode);
   }
 }

@@ -17,8 +17,8 @@ package org.apache.solr.highlight;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.postingshighlight.DefaultPassageFormatter;
 import org.apache.lucene.search.postingshighlight.Passage;

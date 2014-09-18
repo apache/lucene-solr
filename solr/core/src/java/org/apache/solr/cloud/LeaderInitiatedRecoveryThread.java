@@ -150,7 +150,7 @@ public class LeaderInitiatedRecoveryThread extends Thread {
         
         if (coreContainer.isShutDown()) {
           log.warn("Stop trying to send recovery command to downed replica core={} coreNodeName={} on "
-              + replicaNodeName + " because my core container is shutdown.", coreNeedingRecovery, replicaCoreNodeName);
+              + replicaNodeName + " because my core container is close.", coreNeedingRecovery, replicaCoreNodeName);
           continueTrying = false;
           break;
         }

@@ -17,8 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.Random;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.SortedDocValuesField;
@@ -31,9 +29,8 @@ import org.apache.lucene.util.LuceneTestCase.Monster;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
-import org.apache.lucene.util.Version;
 
-@SuppressCodecs({"SimpleText", "Memory", "Direct", "Lucene3x"})
+@SuppressCodecs({"SimpleText", "Memory", "Direct"})
 @TimeoutSuite(millis = 80 * TimeUnits.HOUR)
 @Monster("very slow")
 public class Test2BSortedDocValues extends LuceneTestCase {
@@ -46,7 +43,7 @@ public class Test2BSortedDocValues extends LuceneTestCase {
     }
     
     IndexWriter w = new IndexWriter(dir,
-        new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
+        new IndexWriterConfig(new MockAnalyzer(random()))
         .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
         .setRAMBufferSizeMB(256.0)
         .setMergeScheduler(new ConcurrentMergeScheduler())
@@ -101,7 +98,7 @@ public class Test2BSortedDocValues extends LuceneTestCase {
     }
     
     IndexWriter w = new IndexWriter(dir,
-        new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
+        new IndexWriterConfig(new MockAnalyzer(random()))
         .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
         .setRAMBufferSizeMB(256.0)
         .setMergeScheduler(new ConcurrentMergeScheduler())

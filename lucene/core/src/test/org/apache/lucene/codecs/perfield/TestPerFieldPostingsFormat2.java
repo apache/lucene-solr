@@ -23,8 +23,8 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
 import org.apache.lucene.codecs.lucene410.Lucene410Codec;
-import org.apache.lucene.codecs.mocksep.MockSepPostingsFormat;
-import org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat;
+import org.apache.lucene.codecs.lucene41vargap.Lucene41VarGapFixedInterval;
+import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -44,8 +44,6 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.Version;
 import org.junit.Test;
 
 /**
@@ -194,7 +192,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("\nTEST: assertQuery " + t);
     }
-    IndexReader reader = DirectoryReader.open(dir, 1);
+    IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = newSearcher(reader);
     TopDocs search = searcher.search(new TermQuery(t), num + 10);
     assertEquals(num, search.totalHits);
@@ -205,14 +203,14 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
   public static class MockCodec extends Lucene410Codec {
     final PostingsFormat lucene40 = new Lucene41PostingsFormat();
     final PostingsFormat simpleText = new SimpleTextPostingsFormat();
-    final PostingsFormat mockSep = new MockSepPostingsFormat();
+    final PostingsFormat memory = new MemoryPostingsFormat();
     
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {
       if (field.equals("id")) {
         return simpleText;
       } else if (field.equals("content")) {
-        return mockSep;
+        return memory;
       } else {
         return lucene40;
       }
@@ -244,7 +242,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     for (int i = 0; i < numRounds; i++) {
       int num = TestUtil.nextInt(random(), 30, 60);
       IndexWriterConfig config = newIndexWriterConfig(random(),
-          Version.LATEST, new MockAnalyzer(random()));
+          new MockAnalyzer(random()));
       config.setOpenMode(OpenMode.CREATE_OR_APPEND);
       IndexWriter writer = newWriter(dir, config);
       for (int j = 0; j < docsPerRound; j++) {
@@ -274,9 +272,9 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
         if ("id".equals(field)) {
-          return new Pulsing41PostingsFormat(1);
+          return new MemoryPostingsFormat();
         } else if ("date".equals(field)) {
-          return new Pulsing41PostingsFormat(1);
+          return new MemoryPostingsFormat();
         } else {
           return super.getPostingsFormatForField(field);
         }
@@ -290,9 +288,9 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
         if ("id".equals(field)) {
-          return new Pulsing41PostingsFormat(1);
+          return new Lucene41VarGapFixedInterval(1);
         } else if ("date".equals(field)) {
-          return new Pulsing41PostingsFormat(2);
+          return new Lucene41VarGapFixedInterval(2);
         } else {
           return super.getPostingsFormatForField(field);
         }

@@ -136,9 +136,10 @@ public class ExportQParserPlugin extends QParserPlugin {
       this.sets = sets;
     }
     
-    public void setNextReader(AtomicReaderContext context) throws IOException {
+    public void doSetNextReader(AtomicReaderContext context) throws IOException {
       this.set = new FixedBitSet(context.reader().maxDoc());
       this.sets[context.ord] = set;
+
     }
     
     public void collect(int docId) throws IOException{

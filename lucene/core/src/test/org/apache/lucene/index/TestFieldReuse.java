@@ -151,7 +151,7 @@ public class TestFieldReuse extends BaseTokenStreamTestCase {
   
   public void testIndexWriterActuallyReuses() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, null);
+    IndexWriterConfig iwc = new IndexWriterConfig(null);
     IndexWriter iw = new IndexWriter(dir, iwc);
     final MyField field1 = new MyField();
     iw.addDocument(Collections.singletonList(field1));

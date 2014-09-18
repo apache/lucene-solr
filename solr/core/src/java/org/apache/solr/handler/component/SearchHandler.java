@@ -29,6 +29,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CloseHook;
@@ -43,6 +44,7 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 /**
  *
@@ -233,7 +235,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
         if (rb.isDebugTimings()) {
           rb.addDebugInfo("timing", timer.asNamedList() );
         }
-      }
+      }      
     } else {
       // a distributed request
 
@@ -379,11 +381,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
       }
     }
     return sb.toString();
-  }
-
-  @Override
-  public String getSource() {
-    return null;
   }
 }
 

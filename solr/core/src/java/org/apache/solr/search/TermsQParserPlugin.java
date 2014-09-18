@@ -22,7 +22,7 @@ import org.apache.lucene.queries.TermsFilter;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.FieldCacheTermsFilter;
+import org.apache.lucene.search.DocValuesTermsFilter;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.MultiTermQueryWrapperFilter;
 import org.apache.lucene.search.Query;
@@ -93,7 +93,7 @@ public class TermsQParserPlugin extends QParserPlugin {
       //note: limited to one val per doc
       @Override
       Filter makeFilter(String fname, BytesRef[] byteRefs) {
-        return new FieldCacheTermsFilter(fname, byteRefs);
+        return new DocValuesTermsFilter(fname, byteRefs);
       }
     };
 
@@ -122,7 +122,7 @@ public class TermsQParserPlugin extends QParserPlugin {
         assert splitVals.length > 0;
 
         BytesRef[] bytesRefs = new BytesRef[splitVals.length];
-        BytesRef term = new BytesRef();
+        BytesRefBuilder term = new BytesRefBuilder();
         for (int i = 0; i < splitVals.length; i++) {
           String stringVal = splitVals[i];
           //logic same as TermQParserPlugin
@@ -131,7 +131,7 @@ public class TermsQParserPlugin extends QParserPlugin {
           } else {
             term.copyChars(stringVal);
           }
-          bytesRefs[i] = BytesRef.deepCopyOf(term);
+          bytesRefs[i] = term.toBytesRef();
         }
 
         return new SolrConstantScoreQuery(method.makeFilter(fname, bytesRefs));

@@ -60,14 +60,7 @@ public class MappedMultiFields extends FilterFields {
 
     @Override
     public TermsEnum iterator(TermsEnum reuse) throws IOException {
-      // TODO: this is needed for codecs that aren't ghostbusters, can we improve this?
-      // should we have it in trunk too for safety?
-      TermsEnum iterator = in.iterator(reuse);
-      if (iterator instanceof MultiTermsEnum) {
-        return new MappedMultiTermsEnum(mergeState, (MultiTermsEnum) iterator);
-      } else {
-        return iterator;
-      }
+      return new MappedMultiTermsEnum(mergeState, (MultiTermsEnum) in.iterator(reuse));
     }
 
     @Override

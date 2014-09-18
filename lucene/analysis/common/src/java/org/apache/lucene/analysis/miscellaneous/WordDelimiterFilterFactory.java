@@ -119,7 +119,7 @@ public class WordDelimiterFilterFactory extends TokenFilterFactory implements Re
   @Override
   public TokenFilter create(TokenStream input) {
     if (luceneMatchVersion.onOrAfter(Version.LUCENE_4_8_0)) {
-      return new WordDelimiterFilter(luceneMatchVersion, input, typeTable == null ? WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE : typeTable,
+      return new WordDelimiterFilter(input, typeTable == null ? WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE : typeTable,
                                    flags, protectedWords);
     } else {
       return new Lucene47WordDelimiterFilter(input, typeTable == null ? WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE : typeTable,

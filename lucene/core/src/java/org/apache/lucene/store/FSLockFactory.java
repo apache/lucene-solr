@@ -17,7 +17,9 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * Base class for file system based locking implementation.
@@ -28,7 +30,7 @@ public abstract class FSLockFactory extends LockFactory {
   /**
    * Directory for the lock files.
    */
-  protected File lockDir = null;
+  protected Path lockDir = null;
 
   /**
    * Set the lock directory. This method can be only called
@@ -37,16 +39,19 @@ public abstract class FSLockFactory extends LockFactory {
    * Subclasses can also use this method to set the directory
    * in the constructor.
    */
-  protected final void setLockDir(File lockDir) {
+  protected final void setLockDir(Path lockDir) throws IOException {
     if (this.lockDir != null)
       throw new IllegalStateException("You can set the lock directory for this factory only once.");
+    if (lockDir != null) {
+      Files.createDirectories(lockDir);
+    }
     this.lockDir = lockDir;
   }
   
   /**
    * Retrieve the lock directory.
    */
-  public File getLockDir() {
+  public Path getLockDir() {
     return lockDir;
   }
 

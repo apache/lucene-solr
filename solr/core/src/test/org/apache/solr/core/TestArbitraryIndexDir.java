@@ -34,7 +34,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.handler.SnapPuller;
@@ -74,7 +73,7 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
   public void setUp() throws Exception {
     super.setUp();
     
-    File tmpDataDir = createTempDir();
+    File tmpDataDir = createTempDir().toFile();
 
     solrConfig = TestHarness.createConfig(getSolrHome(), "solrconfig.xml");
     h = new TestHarness( tmpDataDir.getAbsolutePath(),
@@ -113,10 +112,10 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
     }
 
     //add a doc in the new index dir
-    Directory dir = newFSDirectory(newDir);
+    Directory dir = newFSDirectory(newDir.toPath());
     IndexWriter iw = new IndexWriter(
         dir,
-        new IndexWriterConfig(Version.LATEST, new StandardAnalyzer())
+        new IndexWriterConfig(new StandardAnalyzer())
     );
     Document doc = new Document();
     doc.add(new TextField("id", "2", Field.Store.YES));

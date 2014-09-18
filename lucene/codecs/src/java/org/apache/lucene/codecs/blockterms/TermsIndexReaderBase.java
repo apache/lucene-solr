@@ -48,8 +48,6 @@ public abstract class TermsIndexReaderBase implements Closeable, Accountable {
 
   public abstract boolean supportsOrd();
 
-  public abstract int getDivisor();
-
   /** 
    * Similar to TermsEnum, except, the only "metadata" it
    * reports for a given indexed term is the long fileOffset

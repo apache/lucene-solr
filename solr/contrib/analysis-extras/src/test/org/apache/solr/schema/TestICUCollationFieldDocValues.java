@@ -22,9 +22,6 @@ import java.io.FileOutputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
@@ -35,7 +32,6 @@ import com.ibm.icu.util.ULocale;
 /**
  * Tests {@link ICUCollationField} with docValues.
  */
-@SuppressCodecs({"Lucene3x", "Appending", "Lucene40", "Lucene41"})
 public class TestICUCollationFieldDocValues extends SolrTestCaseJ4 {
   
   @BeforeClass
@@ -65,7 +61,7 @@ public class TestICUCollationFieldDocValues extends SolrTestCaseJ4 {
    * So its preferable to create this file on-the-fly.
    */
   public static String setupSolrHome() throws Exception {
-    File tmpFile = createTempDir();
+    File tmpFile = createTempDir().toFile();
     
     // make data and conf dirs
     new File(tmpFile + "/collection1", "data").mkdirs();

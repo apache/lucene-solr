@@ -21,7 +21,6 @@ import java.io.IOException;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.Version;
 
 /**
  * Test the CzechAnalyzer
@@ -31,28 +30,10 @@ import org.apache.lucene.util.Version;
  *
  */
 public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
-  /**
-   * @deprecated (3.1) Remove this test when support for 3.0 indexes is no longer needed.
-   */
-  @Deprecated
-  public void testStopWordLegacy() throws Exception {
-    assertAnalyzesTo(new CzechAnalyzer(Version.LUCENE_3_0), "Pokud mluvime o volnem",
-        new String[] { "mluvime", "volnem" });
-  }
   
   public void testStopWord() throws Exception {
     assertAnalyzesTo(new CzechAnalyzer(), "Pokud mluvime o volnem", 
         new String[] { "mluvim", "voln" });
-  }
-  
-  /**
-   * @deprecated (3.1) Remove this test when support for 3.0 indexes is no longer needed.
-   */
-  @Deprecated
-  public void testReusableTokenStreamLegacy() throws Exception {
-    Analyzer analyzer = new CzechAnalyzer(Version.LUCENE_3_0);
-    assertAnalyzesTo(analyzer, "Pokud mluvime o volnem", new String[] { "mluvime", "volnem" });
-    assertAnalyzesTo(analyzer, "Česká Republika", new String[] { "česká", "republika" });
   }
   
   public void testReusableTokenStream() throws Exception {

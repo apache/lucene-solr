@@ -46,7 +46,7 @@ public class TestSameScoresWithThreads extends LuceneTestCase {
     MockAnalyzer analyzer = new MockAnalyzer(random());
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir, analyzer);
-    LineFileDocs docs = new LineFileDocs(random(), defaultCodecSupportsDocValues());
+    LineFileDocs docs = new LineFileDocs(random());
     int charsToIndex = atLeast(100000);
     int charsIndexed = 0;
     //System.out.println("bytesToIndex=" + charsToIndex);

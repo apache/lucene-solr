@@ -30,13 +30,11 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
 
 /**
  * 
  */
-@SuppressCodecs("Lucene3x")
 public class TestCustomNorms extends LuceneTestCase {
   final String floatTestField = "normsTestFloat";
   final String exceptionTestField = "normsTestExcp";

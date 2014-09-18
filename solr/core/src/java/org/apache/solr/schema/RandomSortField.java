@@ -28,6 +28,7 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
 import org.apache.lucene.search.*;
+import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 
@@ -89,6 +90,11 @@ public class RandomSortField extends FieldType {
   @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
     return new SortField(field.getName(), randomComparatorSource, reverse);
+  }
+  
+  @Override
+  public Type getUninversionType(SchemaField sf) {
+    return null;
   }
 
   @Override

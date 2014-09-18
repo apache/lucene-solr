@@ -33,6 +33,7 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.StrategyTestCase;
 import org.apache.lucene.spatial.prefix.tree.Cell;
+import org.apache.lucene.spatial.prefix.tree.CellIterator;
 import org.apache.lucene.spatial.prefix.tree.GeohashPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.QuadPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
@@ -78,7 +79,7 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
 
     //((PrefixTreeStrategy) strategy).setDistErrPct(0);//fully precise to grid
 
-    //((RecursivePrefixTreeStrategy)strategy).setPruneLeafyBranches(randomBoolean());
+    ((RecursivePrefixTreeStrategy)strategy).setPruneLeafyBranches(randomBoolean());
 
     System.out.println("Strategy: " + strategy.toString());
   }
@@ -135,13 +136,6 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
   public void testContains() throws IOException {
     setupGrid(-1);
     doTest(SpatialOperation.Contains);
-  }
-
-  @Test
-  @Repeat(iterations = ITERATIONS)
-  public void testDisjoint() throws IOException {
-    setupGrid(-1);
-    doTest(SpatialOperation.IsDisjointTo);
   }
 
   /** See LUCENE-5062, {@link ContainsPrefixTreeFilter#multiOverlappingIndexedShapes}. */
@@ -398,7 +392,7 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
     double distErrPct = ((PrefixTreeStrategy) strategy).getDistErrPct();
     double distErr = SpatialArgs.calcDistanceFromErrPct(snapMe, distErrPct, ctx);
     int detailLevel = grid.getLevelForDistance(distErr);
-    Iterator<Cell> cells = grid.getCells(snapMe, detailLevel, false, false).iterator();
+    CellIterator cells = grid.getTreeCellIterator(snapMe, detailLevel);
 
     //calc bounding box of cells.
     List<Shape> cellShapes = new ArrayList<>(1024);

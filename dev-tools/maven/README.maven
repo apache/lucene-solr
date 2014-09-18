@@ -101,8 +101,8 @@ D. How to use Maven to build Lucene/Solr
 
          ant -Dversion=my-special-version get-maven-poms
 
-      or to append "my-special-version" to the current base version, e.g. 4.8,
-      resulting in version "4.8-my-special-version":
+      or to append "my-special-version" to the current base version, e.g. 5.0,
+      resulting in version "5.0-my-special-version":
 
          ant -Ddev.version.suffix=my-special-version get-maven-poms
 

@@ -69,7 +69,6 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
     IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore().getLatestSchema());
     assertEquals(expectCFS, iwc.getUseCompoundFile());
 
-    assertEquals("termIndexInteval", 256, iwc.getTermIndexInterval());
 
     TieredMergePolicy tieredMP = assertAndCast(TieredMergePolicy.class,
                                                iwc.getMergePolicy());
@@ -197,7 +196,7 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
   public static void assertCompoundSegments(SolrCore core, boolean compound) {
     RefCounted<SolrIndexSearcher> searcherRef = core.getRegisteredSearcher();
     try {
-      assertCompoundSegments(searcherRef.get().getIndexReader(), compound);
+      assertCompoundSegments(searcherRef.get().getRawReader(), compound);
     } finally {
       searcherRef.decref();
     }

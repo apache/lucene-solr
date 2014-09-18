@@ -37,7 +37,6 @@ import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.PrintStreamInfoStream;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.Version;
 
 // TODO
 //   - doc blocks?  so we can test joins/grouping...
@@ -452,7 +451,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
       // TODO: set warmer
       MockAnalyzer analyzer = new MockAnalyzer(random());
       analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
-      IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, analyzer);
+      IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
       iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
       if (VERBOSE) {
         iwc.setInfoStream(new PrintStreamInfoStream(System.out));
@@ -550,7 +549,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
     @Override
     public void run() {
       try {
-        final LineFileDocs docs = new LineFileDocs(random(), defaultCodecSupportsDocValues());
+        final LineFileDocs docs = new LineFileDocs(random(), true);
         int numDocs = 0;
         while (System.nanoTime() < endTimeNanos) {
           final int what = random().nextInt(3);

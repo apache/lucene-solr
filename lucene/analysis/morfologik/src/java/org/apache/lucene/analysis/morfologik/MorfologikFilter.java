@@ -49,7 +49,7 @@ public class MorfologikFilter extends TokenFilter {
   private final KeywordAttribute keywordAttr = addAttribute(KeywordAttribute.class);
 
   private final CharsRefBuilder scratch = new CharsRefBuilder();
-  private final CharacterUtils charUtils;
+  private final CharacterUtils charUtils = CharacterUtils.getInstance();
 
   private State current;
   private final TokenStream input;
@@ -68,28 +68,12 @@ public class MorfologikFilter extends TokenFilter {
   }
 
   /**
-   * @deprecated Use {@link #MorfologikFilter(TokenStream)}
-   */
-  @Deprecated
-  public MorfologikFilter(final TokenStream in, final Version version) {
-    this(in, MorfologikFilterFactory.DEFAULT_DICTIONARY_RESOURCE, version);
-  }
-
-  /**
    * Creates a filter with a given dictionary resource.
    *
    * @param in input token stream.
    * @param dict Dictionary resource from classpath.
    */
   public MorfologikFilter(final TokenStream in, final String dict) {
-    this(in, dict, Version.LATEST);
-  }
-
-  /**
-   * @deprecated Use {@link #MorfologikFilter(TokenStream,String)}
-   */
-  @Deprecated
-  public MorfologikFilter(final TokenStream in, final String dict, final Version version) {
     super(in);
     this.input = in;
 
@@ -99,7 +83,6 @@ public class MorfologikFilter extends TokenFilter {
     try {
       me.setContextClassLoader(morfologik.stemming.Dictionary.class.getClassLoader());
       this.stemmer = new DictionaryLookup(morfologik.stemming.Dictionary.getForLanguage(dict));
-      this.charUtils = CharacterUtils.getInstance(version);
       this.lemmaList = Collections.emptyList();
     } finally {
       me.setContextClassLoader(cl);

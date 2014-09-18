@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.io.Reader;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -46,14 +45,12 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Rethrow;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.Ignore;
 
 /** 
  * Causes a bunch of fake OOM and checks that no other exceptions are delivered instead,
  * no index corruption is ever created.
  */
-@SuppressCodecs("Lucene3x")
 public class TestIndexWriterOutOfMemory extends LuceneTestCase {
   
   // just one thread, serial merge policy, hopefully debuggable
@@ -66,8 +63,8 @@ public class TestIndexWriterOutOfMemory extends LuceneTestCase {
     final long analyzerSeed = random().nextLong();
     final Analyzer analyzer = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         tokenizer.setEnableChecks(false); // we are gonna make it angry
         TokenStream stream = tokenizer;
         // emit some payloads
@@ -112,14 +109,10 @@ public class TestIndexWriterOutOfMemory extends LuceneTestCase {
           doc.add(new NumericDocValuesField("dv", i));
           doc.add(new BinaryDocValuesField("dv2", new BytesRef(Integer.toString(i))));
           doc.add(new SortedDocValuesField("dv3", new BytesRef(Integer.toString(i))));
-          if (defaultCodecSupportsSortedSet()) {
-            doc.add(new SortedSetDocValuesField("dv4", new BytesRef(Integer.toString(i))));
-            doc.add(new SortedSetDocValuesField("dv4", new BytesRef(Integer.toString(i-1))));
-          }
-          if (defaultCodecSupportsSortedNumeric()) {
-            doc.add(new SortedNumericDocValuesField("dv5", i));
-            doc.add(new SortedNumericDocValuesField("dv5", i-1));
-          }
+          doc.add(new SortedSetDocValuesField("dv4", new BytesRef(Integer.toString(i))));
+          doc.add(new SortedSetDocValuesField("dv4", new BytesRef(Integer.toString(i-1))));
+          doc.add(new SortedNumericDocValuesField("dv5", i));
+          doc.add(new SortedNumericDocValuesField("dv5", i-1));
           doc.add(newTextField("text1", TestUtil.randomAnalysisString(random(), 20, true), Field.Store.NO));
           // ensure we store something
           doc.add(new StoredField("stored1", "foo"));
@@ -139,9 +132,9 @@ public class TestIndexWriterOutOfMemory extends LuceneTestCase {
               int thingToDo = random().nextInt(4);
               if (thingToDo == 0) {
                 iw.deleteDocuments(new Term("id", Integer.toString(i)));
-              } else if (thingToDo == 1 && defaultCodecSupportsFieldUpdates()) {
+              } else if (thingToDo == 1) {
                 iw.updateNumericDocValue(new Term("id", Integer.toString(i)), "dv", i+1L);
-              } else if (thingToDo == 2 && defaultCodecSupportsFieldUpdates()) {
+              } else if (thingToDo == 2) {
                 iw.updateBinaryDocValue(new Term("id", Integer.toString(i)), "dv2", new BytesRef(Integer.toString(i+1)));
               }
             } catch (OutOfMemoryError | AlreadyClosedException disaster) {

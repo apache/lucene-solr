@@ -52,12 +52,12 @@ import java.io.IOException;
  * </ul>
  * <p>Description:</p>
  * <ul>
- *   <li>Compound (.cfs) --&gt; Header, FileData <sup>FileCount</sup></li>
+ *   <li>Compound (.cfs) --&gt; Header, FileData <sup>FileCount</sup>, Footer</li>
  *   <li>Compound Entry Table (.cfe) --&gt; Header, FileCount, &lt;FileName,
- *       DataOffset, DataLength&gt; <sup>FileCount</sup>, Footer</li>
+ *       DataOffset, DataLength&gt; <sup>FileCount</sup></li>
  *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *   <li>FileCount --&gt; {@link DataOutput#writeVInt VInt}</li>
- *   <li>DataOffset,DataLength --&gt; {@link DataOutput#writeLong UInt64}</li>
+ *   <li>DataOffset,DataLength,Checksum --&gt; {@link DataOutput#writeLong UInt64}</li>
  *   <li>FileName --&gt; {@link DataOutput#writeString String}</li>
  *   <li>FileData --&gt; raw file data</li>
  *   <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
@@ -103,7 +103,7 @@ public final class CompoundFileDirectory extends BaseDirectory {
       boolean success = false;
       handle = directory.openInput(fileName, context);
       try {
-        this.entries = readEntries(handle, directory, fileName);
+        this.entries = readEntries(directory, fileName);
         if (version >= CompoundFileWriter.VERSION_CHECKSUM) {
           CodecUtil.checkHeader(handle, CompoundFileWriter.DATA_CODEC, version, version);
           // NOTE: data file is too costly to verify checksum against all the bytes on open,
@@ -129,129 +129,43 @@ public final class CompoundFileDirectory extends BaseDirectory {
     }
   }
 
-  private static final byte CODEC_MAGIC_BYTE1 = (byte) (CodecUtil.CODEC_MAGIC >>> 24);
-  private static final byte CODEC_MAGIC_BYTE2 = (byte) (CodecUtil.CODEC_MAGIC >>> 16);
-  private static final byte CODEC_MAGIC_BYTE3 = (byte) (CodecUtil.CODEC_MAGIC >>> 8);
-  private static final byte CODEC_MAGIC_BYTE4 = (byte) CodecUtil.CODEC_MAGIC;
-
   /** Helper method that reads CFS entries from an input stream */
-  private final Map<String, FileEntry> readEntries(
-      IndexInput handle, Directory dir, String name) throws IOException {
-    IndexInput stream = null; 
+  private final Map<String, FileEntry> readEntries(Directory dir, String name) throws IOException {
     ChecksumIndexInput entriesStream = null;
     Map<String,FileEntry> mapping = null;
-    // read the first VInt. If it is negative, it's the version number
-    // otherwise it's the count (pre-3.1 indexes)
     boolean success = false;
     try {
-      stream = handle.clone();
-      final int firstInt = stream.readVInt();
-      // impossible for 3.0 to have 63 files in a .cfs, CFS writer was not visible
-      // and separate norms/etc are outside of cfs.
-      if (firstInt == CODEC_MAGIC_BYTE1) {
-        byte secondByte = stream.readByte();
-        byte thirdByte = stream.readByte();
-        byte fourthByte = stream.readByte();
-        if (secondByte != CODEC_MAGIC_BYTE2 || 
-            thirdByte != CODEC_MAGIC_BYTE3 || 
-            fourthByte != CODEC_MAGIC_BYTE4) {
-          throw new CorruptIndexException("Illegal/impossible header for CFS file: " 
-                                         + secondByte + "," + thirdByte + "," + fourthByte);
+      final String entriesFileName = IndexFileNames.segmentFileName(
+                                            IndexFileNames.stripExtension(name), "",
+                                             IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
+      entriesStream = dir.openChecksumInput(entriesFileName, IOContext.READONCE);
+      version = CodecUtil.checkHeader(entriesStream, CompoundFileWriter.ENTRY_CODEC, CompoundFileWriter.VERSION_START, CompoundFileWriter.VERSION_CURRENT);
+      final int numEntries = entriesStream.readVInt();
+      mapping = new HashMap<>(numEntries);
+      for (int i = 0; i < numEntries; i++) {
+        final FileEntry fileEntry = new FileEntry();
+        final String id = entriesStream.readString();
+        FileEntry previous = mapping.put(id, fileEntry);
+        if (previous != null) {
+          throw new CorruptIndexException("Duplicate cfs entry id=" + id + " in CFS: " + entriesStream);
         }
-        version = CodecUtil.checkHeaderNoMagic(stream, CompoundFileWriter.DATA_CODEC, 
-            CompoundFileWriter.VERSION_START, CompoundFileWriter.VERSION_CURRENT);
-        final String entriesFileName = IndexFileNames.segmentFileName(
-                                              IndexFileNames.stripExtension(name), "",
-                                              IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
-        entriesStream = dir.openChecksumInput(entriesFileName, IOContext.READONCE);
-        CodecUtil.checkHeader(entriesStream, CompoundFileWriter.ENTRY_CODEC, CompoundFileWriter.VERSION_START, CompoundFileWriter.VERSION_CURRENT);
-        final int numEntries = entriesStream.readVInt();
-        mapping = new HashMap<>(numEntries);
-        for (int i = 0; i < numEntries; i++) {
-          final FileEntry fileEntry = new FileEntry();
-          final String id = entriesStream.readString();
-          FileEntry previous = mapping.put(id, fileEntry);
-          if (previous != null) {
-            throw new CorruptIndexException("Duplicate cfs entry id=" + id + " in CFS: " + entriesStream);
-          }
-          fileEntry.offset = entriesStream.readLong();
-          fileEntry.length = entriesStream.readLong();
-        }
-        if (version >= CompoundFileWriter.VERSION_CHECKSUM) {
-          CodecUtil.checkFooter(entriesStream);
-        } else {
-          CodecUtil.checkEOF(entriesStream);
-        }
+        fileEntry.offset = entriesStream.readLong();
+        fileEntry.length = entriesStream.readLong();
+      }
+      if (version >= CompoundFileWriter.VERSION_CHECKSUM) {
+        CodecUtil.checkFooter(entriesStream);
       } else {
-        // TODO remove once 3.x is not supported anymore
-        mapping = readLegacyEntries(stream, firstInt);
-        version = -1; // version before versioning was added
+        CodecUtil.checkEOF(entriesStream);
       }
       success = true;
     } finally {
       if (success) {
-        IOUtils.close(stream, entriesStream);
+        IOUtils.close(entriesStream);
       } else {
-        IOUtils.closeWhileHandlingException(stream, entriesStream);
+        IOUtils.closeWhileHandlingException(entriesStream);
       }
     }
     return mapping;
-  }
-
-  private static Map<String, FileEntry> readLegacyEntries(IndexInput stream,
-      int firstInt) throws CorruptIndexException, IOException {
-    final Map<String,FileEntry> entries = new HashMap<>();
-    final int count;
-    final boolean stripSegmentName;
-    if (firstInt < CompoundFileWriter.FORMAT_PRE_VERSION) {
-      if (firstInt < CompoundFileWriter.FORMAT_NO_SEGMENT_PREFIX) {
-        throw new CorruptIndexException("Incompatible format version: "
-            + firstInt + " expected >= " + CompoundFileWriter.FORMAT_NO_SEGMENT_PREFIX + " (resource: " + stream + ")");
-      }
-      // It's a post-3.1 index, read the count.
-      count = stream.readVInt();
-      stripSegmentName = false;
-    } else {
-      count = firstInt;
-      stripSegmentName = true;
-    }
-    
-    // read the directory and init files
-    long streamLength = stream.length();
-    FileEntry entry = null;
-    for (int i=0; i<count; i++) {
-      long offset = stream.readLong();
-      if (offset < 0 || offset > streamLength) {
-        throw new CorruptIndexException("Invalid CFS entry offset: " + offset + " (resource: " + stream + ")");
-      }
-      String id = stream.readString();
-      
-      if (stripSegmentName) {
-        // Fix the id to not include the segment names. This is relevant for
-        // pre-3.1 indexes.
-        id = IndexFileNames.stripSegmentName(id);
-      }
-      
-      if (entry != null) {
-        // set length of the previous entry
-        entry.length = offset - entry.offset;
-      }
-      
-      entry = new FileEntry();
-      entry.offset = offset;
-
-      FileEntry previous = entries.put(id, entry);
-      if (previous != null) {
-        throw new CorruptIndexException("Duplicate cfs entry id=" + id + " in CFS: " + stream);
-      }
-    }
-    
-    // set the length of the final entry
-    if (entry != null) {
-      entry.length = streamLength - entry.offset;
-    }
-    
-    return entries;
   }
   
   public Directory getDirectory() {
@@ -305,16 +219,6 @@ public final class CompoundFileDirectory extends BaseDirectory {
       }
     }
     return res;
-  }
-  
-  /** Returns true iff a file with the given name exists. */
-  @Override
-  public boolean fileExists(String name) {
-    ensureOpen();
-    if (this.writer != null) {
-      return writer.fileExists(name);
-    }
-    return entries.containsKey(IndexFileNames.stripSegmentName(name));
   }
   
   /** Not implemented

@@ -8,7 +8,6 @@ import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.w3c.dom.Element;
@@ -52,9 +51,7 @@ public class SpanOrTermsBuilder extends SpanBuilderBase {
 
     List<SpanQuery> clausesList = new ArrayList<>();
 
-    TokenStream ts = null;
-    try {
-      ts = analyzer.tokenStream(fieldName, value);
+    try (TokenStream ts = analyzer.tokenStream(fieldName, value)) {
       TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
       BytesRef bytes = termAtt.getBytesRef();
       ts.reset();
@@ -70,8 +67,6 @@ public class SpanOrTermsBuilder extends SpanBuilderBase {
     }
     catch (IOException ioe) {
       throw new ParserException("IOException parsing value:" + value);
-    } finally {
-      IOUtils.closeWhileHandlingException(ts);
     }
   }
 

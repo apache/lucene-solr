@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.blocktree;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.Comparator;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -233,11 +232,6 @@ final class SegmentTermsEnum extends TermsEnum {
       arcs = next;
     }
     return arcs[ord];
-  }
-
-  @Override
-  public Comparator<BytesRef> getComparator() {
-    return BytesRef.getUTF8SortedAsUnicodeComparator();
   }
 
   // Pushes a frame we seek'd to

@@ -27,7 +27,6 @@ import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
 
 import java.io.IOException;
-import java.io.Reader;
 
 /**
  * Tests for {@link JapaneseKatakanaStemFilter}
@@ -35,9 +34,9 @@ import java.io.Reader;
 public class TestJapaneseKatakanaStemFilter extends BaseTokenStreamTestCase {
   private Analyzer analyzer = new Analyzer() {
     @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+    protected TokenStreamComponents createComponents(String fieldName) {
       // Use a MockTokenizer here since this filter doesn't really depend on Kuromoji
-      Tokenizer source = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
       return new TokenStreamComponents(source, new JapaneseKatakanaStemFilter(source));
     }
   };
@@ -68,8 +67,8 @@ public class TestJapaneseKatakanaStemFilter extends BaseTokenStreamTestCase {
     final CharArraySet exclusionSet = new CharArraySet(asSet("コーヒー"), false);
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer source = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         TokenStream sink = new SetKeywordMarkerFilter(source, exclusionSet);
         return new TokenStreamComponents(source, new JapaneseKatakanaStemFilter(sink));
       }
@@ -89,8 +88,8 @@ public class TestJapaneseKatakanaStemFilter extends BaseTokenStreamTestCase {
   public void testEmptyTerm() throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, new JapaneseKatakanaStemFilter(tokenizer));
       }
     };

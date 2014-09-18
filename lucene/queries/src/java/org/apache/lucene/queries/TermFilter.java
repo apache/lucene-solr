@@ -72,6 +72,10 @@ final public class TermFilter extends Filter {
         return termsEnum.docs(acceptDocs, null, DocsEnum.FLAG_NONE);
       }
 
+      @Override
+      public long ramBytesUsed() {
+        return 0L;
+      }
     };
   }
 

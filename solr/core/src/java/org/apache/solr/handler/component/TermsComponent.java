@@ -139,9 +139,9 @@ public class TermsComponent extends SearchComponent {
 
       BytesRef upperBytes = null;
       if (upperStr != null) {
-        BytesRef b = new BytesRef();
+        BytesRefBuilder b = new BytesRefBuilder();
         ft.readableToIndexed(upperStr, b);
-        upperBytes = b;
+        upperBytes = b.get();
       }
 
       BytesRef lowerBytes;
@@ -155,9 +155,9 @@ public class TermsComponent extends SearchComponent {
           // perhaps we detect if the FieldType is non-character and expect hex if so?
           lowerBytes = new BytesRef(lowerStr);
         } else {
-          BytesRef b = new BytesRef();
+          BytesRefBuilder b = new BytesRefBuilder();
           ft.readableToIndexed(lowerStr, b);
-          lowerBytes = b;
+          lowerBytes = b.get();
         }
       }
 
@@ -182,7 +182,7 @@ public class TermsComponent extends SearchComponent {
 
       int i = 0;
       BoundedTreeSet<CountPair<BytesRef, Integer>> queue = (sort ? new BoundedTreeSet<CountPair<BytesRef, Integer>>(limit) : null);
-      CharsRef external = new CharsRef();
+      CharsRefBuilder external = new CharsRefBuilder();
       while (term != null && (i<limit || sort)) {
         boolean externalized = false; // did we fill in "external" yet for this term?
 
@@ -194,7 +194,7 @@ public class TermsComponent extends SearchComponent {
           // TODO: support "raw" mode?
           ft.indexedToReadable(term, external);
           externalized = true;
-          if (!pattern.matcher(external).matches()) {
+          if (!pattern.matcher(external.get()).matches()) {
             term = termsEnum.next();
             continue;
           }
@@ -475,11 +475,6 @@ public class TermsComponent extends SearchComponent {
 
       return arr;
     }
-  }
-
-  @Override
-  public String getSource() {
-    return null;
   }
 
   @Override

@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.reverse;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 
@@ -31,20 +30,11 @@ import java.io.IOException;
  * that character. For example, with a marker of &#x5C;u0001, "country" =>
  * "&#x5C;u0001yrtnuoc". This is useful when implementing efficient leading
  * wildcards search.
- * </p>
- * <a name="version"/>
- * <p>You must specify the required {@link Version}
- * compatibility when creating ReverseStringFilter, or when using any of
- * its static methods:
- * <ul>
- *   <li> As of 3.1, supplementary characters are handled correctly
- * </ul>
  */
 public final class ReverseStringFilter extends TokenFilter {
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final char marker;
-  private final Version matchVersion;
   private static final char NOMARKER = '\uFFFF';
   
   /**
@@ -73,19 +63,11 @@ public final class ReverseStringFilter extends TokenFilter {
    * <p>
    * The reversed tokens will not be marked. 
    * </p>
-   *
+   * 
    * @param in {@link TokenStream} to filter
    */
   public ReverseStringFilter(TokenStream in) {
     this(in, NOMARKER);
-  }
-
-  /**
-   * @deprecated Use {@link #ReverseStringFilter(TokenStream)}
-   */
-  @Deprecated
-  public ReverseStringFilter(Version matchVersion, TokenStream in) {
-    this(matchVersion, in, NOMARKER);
   }
 
   /**
@@ -95,23 +77,12 @@ public final class ReverseStringFilter extends TokenFilter {
    * The reversed tokens will be prepended (marked) by the <code>marker</code>
    * character.
    * </p>
-   *
+   * 
    * @param in {@link TokenStream} to filter
    * @param marker A character used to mark reversed tokens
    */
   public ReverseStringFilter(TokenStream in, char marker) {
     super(in);
-    this.matchVersion = Version.LATEST;
-    this.marker = marker;
-  }
-
-  /**
-   * @deprecated Use {@link #ReverseStringFilter(TokenStream,char)}
-   */
-  @Deprecated
-  public ReverseStringFilter(Version matchVersion, TokenStream in, char marker) {
-    super(in);
-    this.matchVersion = matchVersion;
     this.marker = marker;
   }
 
@@ -124,7 +95,7 @@ public final class ReverseStringFilter extends TokenFilter {
         termAtt.resizeBuffer(len);
         termAtt.buffer()[len - 1] = marker;
       }
-      reverse( matchVersion, termAtt.buffer(), 0, len );
+      reverse( termAtt.buffer(), 0, len );
       termAtt.setLength(len);
       return true;
     } else {
@@ -134,21 +105,13 @@ public final class ReverseStringFilter extends TokenFilter {
 
   /**
    * Reverses the given input string
-   *
+   * 
    * @param input the string to reverse
    * @return the given input string in reversed order
    */
   public static String reverse(final String input ){
-    return reverse(Version.LATEST, input);
-  }
-
-  /**
-   * @deprecated Use {@link #reverse(String)}
-   */
-  @Deprecated
-  public static String reverse( Version matchVersion, final String input ){
     final char[] charInput = input.toCharArray();
-    reverse( matchVersion, charInput, 0, charInput.length );
+    reverse( charInput, 0, charInput.length );
     return new String( charInput );
   }
   
@@ -157,15 +120,7 @@ public final class ReverseStringFilter extends TokenFilter {
    * @param buffer the input char array to reverse
    */
   public static void reverse(final char[] buffer) {
-    reverse(Version.LATEST, buffer, 0, buffer.length);
-  }
-
-  /**
-   * @deprecated Use {@link #reverse(char[])}
-   */
-  @Deprecated
-  public static void reverse(Version matchVersion, final char[] buffer) {
-    reverse(matchVersion, buffer, 0, buffer.length);
+    reverse(buffer, 0, buffer.length);
   }
   
   /**
@@ -175,32 +130,8 @@ public final class ReverseStringFilter extends TokenFilter {
    * @param len the length in the buffer up to where the
    *        buffer should be reversed
    */
-  public static void reverse(final char[] buffer,
-                             final int len) {
-    reverse(Version.LATEST, buffer, 0, len );
-  }
-
-  /**
-   * @deprecated Use {@link #reverse(char[],int)}
-   */
-  @Deprecated
-  public static void reverse(Version matchVersion, final char[] buffer,
-      final int len) {
-    reverse( matchVersion, buffer, 0, len );
-  }
-  
-  /**
-   * @deprecated (3.1) Remove this when support for 3.0 indexes is no longer needed.
-   */
-  @Deprecated
-  private static void reverseUnicode3( char[] buffer, int start, int len ){
-    if( len <= 1 ) return;
-    int num = len>>1;
-    for( int i = start; i < ( start + num ); i++ ){
-      char c = buffer[i];
-      buffer[i] = buffer[start * 2 + len - i - 1];
-      buffer[start * 2 + len - i - 1] = c;
-    }
+  public static void reverse(final char[] buffer, final int len) {
+    reverse( buffer, 0, len );
   }
   
   /**
@@ -212,20 +143,7 @@ public final class ReverseStringFilter extends TokenFilter {
    *        buffer should be reversed
    */
   public static void reverse(final char[] buffer,
-                             final int start, final int len) {
-    reverse(Version.LATEST, buffer, start, len);
-  }
-
-  /**
-   * @deprecated Use {@link #reverse(char[],int,int)}
-   */
-  @Deprecated
-  public static void reverse(Version matchVersion, final char[] buffer,
       final int start, final int len) {
-    if (!matchVersion.onOrAfter(Version.LUCENE_3_1)) {
-      reverseUnicode3(buffer, start, len);
-      return;
-    }
     /* modified version of Apache Harmony AbstractStringBuilder reverse0() */
     if (len < 2)
       return;

@@ -69,9 +69,9 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
 
       /* get the fields to analyze */
       String[] texts = getTextsToAnalyze(solrInputDocument);
-      for (int i = 0; i < texts.length; i++) {
-        text = texts[i];
-        if (text != null && text.length()>0) {
+      for (String currentText : texts) {
+        text = currentText;
+        if (text != null && text.length() > 0) {
           /* create a JCas which contain the text to analyze */
           JCas jcas = pool.getJCas(0);
           try {

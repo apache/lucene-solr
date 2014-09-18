@@ -18,11 +18,9 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /** Tests the codec configuration defined by LuceneTestCase randomly
  */
-@SuppressCodecs("Lucene3x") // 3.x only supports single byte norms
 public class TestNormsFormat extends BaseNormsFormatTestCase {
 
   @Override

@@ -76,7 +76,7 @@ public abstract class AbstractAnalysisFactory {
     return originalArgs;
   }
 
-   /** this method can be called in the {@link org.apache.lucene.analysis.util.TokenizerFactory#create(java.io.Reader)}
+   /** this method can be called in the {@link org.apache.lucene.analysis.util.TokenizerFactory#create()}
    * or {@link org.apache.lucene.analysis.util.TokenFilterFactory#create(org.apache.lucene.analysis.TokenStream)} methods,
    * to inform user, that for this factory a {@link #luceneMatchVersion} is required */
   protected final void assureMatchVersion() {
@@ -238,12 +238,10 @@ public abstract class AbstractAnalysisFactory {
     if (files.size() > 0) {
       // default stopwords list has 35 or so words, but maybe don't make it that
       // big to start
-      words = new CharArraySet(luceneMatchVersion,
-          files.size() * 10, ignoreCase);
+      words = new CharArraySet(files.size() * 10, ignoreCase);
       for (String file : files) {
         List<String> wlist = getLines(loader, file.trim());
-        words.addAll(StopFilter.makeStopSet(luceneMatchVersion, wlist,
-            ignoreCase));
+        words.addAll(StopFilter.makeStopSet(wlist, ignoreCase));
       }
     }
     return words;
@@ -266,8 +264,7 @@ public abstract class AbstractAnalysisFactory {
     if (files.size() > 0) {
       // default stopwords list has 35 or so words, but maybe don't make it that
       // big to start
-      words = new CharArraySet(luceneMatchVersion,
-          files.size() * 10, ignoreCase);
+      words = new CharArraySet(files.size() * 10, ignoreCase);
       for (String file : files) {
         InputStream stream = null;
         Reader reader = null;

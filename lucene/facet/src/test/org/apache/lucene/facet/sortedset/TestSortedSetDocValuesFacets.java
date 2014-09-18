@@ -49,7 +49,6 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
   // randomly uses SortedSetDV
 
   public void testBasic() throws Exception {
-    assumeTrue("Test requires SortedSetDV support", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
 
     FacetsConfig config = new FacetsConfig();
@@ -92,13 +91,13 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     TopDocs hits = searcher.search(q, 1);
     assertEquals(1, hits.totalHits);
 
-    IOUtils.close(writer, searcher.getIndexReader(), dir);
+    writer.close();
+    IOUtils.close(searcher.getIndexReader(), dir);
   }
 
   // LUCENE-5090
   @SuppressWarnings("unused")
   public void testStaleState() throws Exception {
-    assumeTrue("Test requires SortedSetDV support", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -141,7 +140,6 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
 
   // LUCENE-5333
   public void testSparseFacets() throws Exception {
-    assumeTrue("Test requires SortedSetDV support", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -195,7 +193,6 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
   }
 
   public void testSomeSegmentsMissing() throws Exception {
-    assumeTrue("Test requires SortedSetDV support", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -235,7 +232,6 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
   }
 
   public void testSlowCompositeReaderWrapper() throws Exception {
-    assumeTrue("Test requires SortedSetDV support", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -265,12 +261,12 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     // Ask for top 10 labels for any dims that have counts:
     assertEquals("dim=a path=[] value=2 childCount=2\n  foo1 (1)\n  foo2 (1)\n", facets.getTopChildren(10, "a").toString());
 
-    IOUtils.close(writer, searcher.getIndexReader(), dir);
+    writer.close();
+    IOUtils.close(searcher.getIndexReader(), dir);
   }
 
 
   public void testRandom() throws Exception {
-    assumeTrue("Test requires SortedSetDV support", defaultCodecSupportsSortedSet());
     String[] tokens = getRandomTokens(10);
     Directory indexDir = newDirectory();
     Directory taxoDir = newDirectory();
@@ -353,6 +349,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
       assertEquals(expected, actual);
     }
 
-    IOUtils.close(w, searcher.getIndexReader(), indexDir, taxoDir);
+    w.close();
+    IOUtils.close(searcher.getIndexReader(), indexDir, taxoDir);
   }
 }

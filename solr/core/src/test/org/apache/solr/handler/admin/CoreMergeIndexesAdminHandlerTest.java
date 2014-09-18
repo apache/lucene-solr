@@ -22,17 +22,14 @@ import java.io.IOException;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.MockFSDirectoryFactory;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrXMLCoresLocator;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -64,18 +61,18 @@ public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
 
     public boolean fail = false;
     @Override
-    public Directory create(String path, DirContext dirContext) throws IOException {
+    public Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
       if (fail) {
         throw new FailingDirectoryFactoryException();
       } else {
-        return super.create(path, dirContext);
+        return super.create(path, lockFactory, dirContext);
       }
     }
   }
 
   @Test
   public void testMergeIndexesCoreAdminHandler() throws Exception {
-    final File workDir = createTempDir();
+    final File workDir = createTempDir().toFile();
 
     final CoreContainer cores = h.getCoreContainer();
 

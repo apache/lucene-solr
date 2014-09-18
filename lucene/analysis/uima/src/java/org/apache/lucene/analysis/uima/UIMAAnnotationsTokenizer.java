@@ -27,7 +27,6 @@ import org.apache.uima.cas.text.AnnotationFS;
 import org.apache.uima.resource.ResourceInitializationException;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.Map;
 
 /**
@@ -43,13 +42,13 @@ public final class UIMAAnnotationsTokenizer extends BaseUIMATokenizer {
 
   private int finalOffset = 0;
 
-  public UIMAAnnotationsTokenizer(String descriptorPath, String tokenType, Map<String, Object> configurationParameters, Reader input) {
-    this(descriptorPath, tokenType, configurationParameters,DEFAULT_TOKEN_ATTRIBUTE_FACTORY, input);
+  public UIMAAnnotationsTokenizer(String descriptorPath, String tokenType, Map<String, Object> configurationParameters) {
+    this(descriptorPath, tokenType, configurationParameters, DEFAULT_TOKEN_ATTRIBUTE_FACTORY);
   }
 
   public UIMAAnnotationsTokenizer(String descriptorPath, String tokenType, Map<String, Object> configurationParameters, 
-                                  AttributeFactory factory, Reader input) {
-    super(factory, input, descriptorPath, configurationParameters);
+                                  AttributeFactory factory) {
+    super(factory, descriptorPath, configurationParameters);
     this.tokenTypeString = tokenType;
     this.termAttr = addAttribute(CharTermAttribute.class);
     this.offsetAttr = addAttribute(OffsetAttribute.class);

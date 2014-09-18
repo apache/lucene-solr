@@ -26,10 +26,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -45,7 +43,6 @@ import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util.Version;
 import org.junit.Test;
 
 public class TestIndexWriterReader extends LuceneTestCase {
@@ -313,8 +310,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     boolean doFullMerge = true;
 
     Directory dir1 = getAssertNoDeletesDirectory(newDirectory());
-    IndexWriter writer = new IndexWriter(dir1, newIndexWriterConfig(new MockAnalyzer(random()))
-                                                 .setReaderTermsIndexDivisor(2));
+    IndexWriter writer = new IndexWriter(dir1, newIndexWriterConfig(new MockAnalyzer(random())));
     // create the index
     createIndexNoClose(!doFullMerge, "index1", writer);
     writer.flush(false, true);
@@ -437,8 +433,10 @@ public class TestIndexWriterReader extends LuceneTestCase {
       didClose = true;
       if (doWait) {
         mainWriter.waitForMerges();
+      } else {
+        mainWriter.abortMerges();
       }
-      mainWriter.close(doWait);
+      mainWriter.close();
     }
 
     void closeDir() throws Throwable {
@@ -577,8 +575,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
   
   public static void createIndex(Random random, Directory dir1, String indexName,
       boolean multiSegment) throws IOException {
-    IndexWriter w = new IndexWriter(dir1, LuceneTestCase.newIndexWriterConfig(random,
-        Version.LATEST, new MockAnalyzer(random))
+    IndexWriter w = new IndexWriter(dir1, LuceneTestCase.newIndexWriterConfig(random, new MockAnalyzer(random))
         .setMergePolicy(new LogDocMergePolicy()));
     for (int i = 0; i < 100; i++) {
       w.addDocument(DocHelper.createDocument(i, indexName, 4));
@@ -1020,46 +1017,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertTrue(didWarm.get());
   }
   
-  public void testNoTermsIndex() throws Exception {
-    // Some Codecs don't honor the ReaderTermsIndexDivisor, so skip the test if
-    // they're picked.
-    assumeFalse("PreFlex codec does not support ReaderTermsIndexDivisor!", 
-        "Lucene3x".equals(Codec.getDefault().getName()));
-
-    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()))
-                               .setReaderTermsIndexDivisor(-1);
-    
-    // Don't proceed if picked Codec is in the list of illegal ones.
-    final String format = TestUtil.getPostingsFormat("f");
-    assumeFalse("Format: " + format + " does not support ReaderTermsIndexDivisor!",
-                (format.equals("FSTPulsing41") ||
-                 format.equals("FSTOrdPulsing41") ||
-                 format.equals("FST41") ||
-                 format.equals("OrdsLucene41") ||
-                 format.equals("FSTOrd41") ||
-                 format.equals("SimpleText") ||
-                 format.equals("Memory") ||
-                 format.equals("MockRandom") ||
-                 format.equals("Direct")));
-
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, conf);
-    Document doc = new Document();
-    doc.add(new TextField("f", "val", Field.Store.NO));
-    w.addDocument(doc);
-    SegmentReader r = getOnlySegmentReader(DirectoryReader.open(w, true));
-    try {
-      TestUtil.docs(random(), r, "f", new BytesRef("val"), null, null, DocsEnum.FLAG_NONE);
-      fail("should have failed to seek since terms index was not loaded.");
-    } catch (IllegalStateException e) {
-      // expected - we didn't load the term index
-    } finally {
-      r.close();
-      w.close();
-      dir.close();
-    }
-  }
-  
   public void testReopenAfterNoRealChange() throws Exception {
     Directory d = getAssertNoDeletesDirectory(newDirectory());
     IndexWriter w = new IndexWriter(
@@ -1157,7 +1114,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     Directory dir = getAssertNoDeletesDirectory(newDirectory());
     // Don't use newIndexWriterConfig, because we need a
     // "sane" mergePolicy:
-    IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     // Create 500 segments:
     for(int i=0;i<500;i++) {
@@ -1176,7 +1133,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
   // LUCENE-5912: make sure when you reopen an NRT reader using a commit point, the SegmentReaders are in fact shared:
   public void testReopenNRTReaderOnCommit() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     w.addDocument(new Document());
 

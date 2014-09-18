@@ -78,9 +78,4 @@ final class RateLimitedIndexOutput extends IndexOutput {
       currentMinPauseCheckBytes = rateLimiter.getMinPauseCheckBytes();
     }    
   }
-
-  @Override
-  public void flush() throws IOException {
-    delegate.flush();
-  }
 }

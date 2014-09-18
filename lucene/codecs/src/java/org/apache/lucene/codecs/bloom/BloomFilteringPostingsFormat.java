@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.bloom;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -227,10 +226,6 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       return delegateFieldsProducer.size();
     }
     
-    public long getUniqueTermCount() throws IOException {
-      return delegateFieldsProducer.getUniqueTermCount();
-    }
-    
     class BloomFilteredTerms extends Terms {
       private Terms delegateTerms;
       private FuzzySet filter;
@@ -260,11 +255,6 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
         // We have been handed something we cannot reuse (either null, wrong
         // class or wrong filter) so allocate a new object
         return new BloomFilteredTermsEnum(delegateTerms, reuse, filter);
-      }
-      
-      @Override
-      public Comparator<BytesRef> getComparator() {
-        return delegateTerms.getComparator();
       }
       
       @Override
@@ -348,17 +338,12 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       }
       
       @Override
-      public final BytesRef next() throws IOException {
+      public BytesRef next() throws IOException {
         return delegate().next();
       }
       
       @Override
-      public final Comparator<BytesRef> getComparator() {
-        return delegateTerms.getComparator();
-      }
-      
-      @Override
-      public final boolean seekExact(BytesRef text)
+      public boolean seekExact(BytesRef text)
           throws IOException {
         // The magical fail-fast speed up that is the entire point of all of
         // this code - save a disk seek if there is a match on an in-memory
@@ -540,11 +525,6 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       }
       //We are done with large bitsets so no need to keep them hanging around
       bloomFilters.clear(); 
-    }
-    
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return delegateFieldsConsumer.getComparator();
     }
     
     private void saveAppropriatelySizedBloomFilter(IndexOutput bloomOutput,

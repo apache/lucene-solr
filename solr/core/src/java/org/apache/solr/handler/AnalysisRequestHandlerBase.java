@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -87,16 +88,12 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
 
     if (!TokenizerChain.class.isInstance(analyzer)) {
 
-      TokenStream tokenStream = null;
-      try {
-        tokenStream = analyzer.tokenStream(context.getFieldName(), value);
+      try (TokenStream tokenStream = analyzer.tokenStream(context.getFieldName(), value)) {
         NamedList<List<NamedList>> namedList = new NamedList<>();
         namedList.add(tokenStream.getClass().getName(), convertTokensToNamedLists(analyzeTokenStream(tokenStream), context));
         return namedList;
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-      } finally {
-        IOUtils.closeWhileHandlingException(tokenStream);
       }
     }
 
@@ -116,7 +113,12 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       }
     }
 
-    TokenStream tokenStream = tfac.create(tokenizerChain.initReader(null, new StringReader(value)));
+    TokenStream tokenStream = tfac.create();
+    try {
+      ((Tokenizer)tokenStream).setReader(tokenizerChain.initReader(null, new StringReader(value)));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
     List<AttributeSource> tokens = analyzeTokenStream(tokenStream);
 
     namedList.add(tokenStream.getClass().getName(), convertTokensToNamedLists(tokens, context));
@@ -143,9 +145,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
    * @param analyzer The analyzer to use.
    */
   protected Set<BytesRef> getQueryTokenSet(String query, Analyzer analyzer) {
-    TokenStream tokenStream = null;
-    try {
-      tokenStream = analyzer.tokenStream("", query);
+    try (TokenStream tokenStream = analyzer.tokenStream("", query)){
       final Set<BytesRef> tokens = new HashSet<>();
       final TermToBytesRefAttribute bytesAtt = tokenStream.getAttribute(TermToBytesRefAttribute.class);
       final BytesRef bytes = bytesAtt.getBytesRef();
@@ -161,8 +161,6 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       return tokens;
     } catch (IOException ioe) {
       throw new RuntimeException("Error occured while iterating over tokenstream", ioe);
-    } finally {
-      IOUtils.closeWhileHandlingException(tokenStream);
     }
   }
 
@@ -249,7 +247,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       final TermToBytesRefAttribute termAtt = token.getAttribute(TermToBytesRefAttribute.class);
       BytesRef rawBytes = termAtt.getBytesRef();
       termAtt.fillBytesRef();
-      final String text = fieldType.indexedToReadable(rawBytes, new CharsRef()).toString();
+      final String text = fieldType.indexedToReadable(rawBytes, new CharsRefBuilder()).toString();
       tokenNamedList.add("text", text);
       
       if (token.hasAttribute(CharTermAttribute.class)) {

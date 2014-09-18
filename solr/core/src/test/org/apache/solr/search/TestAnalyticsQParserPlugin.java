@@ -17,6 +17,7 @@
 
 package org.apache.solr.search;
 
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.solr.common.params.SolrParams;
@@ -74,7 +75,7 @@ public class TestAnalyticsQParserPlugin extends QParserPlugin {
 
     public void collect(int doc) throws IOException {
       ++count;
-      delegate.collect(doc);
+      leafDelegate.collect(doc);
     }
 
     public void finish() throws IOException {

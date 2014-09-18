@@ -21,7 +21,6 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.Version;
 import org.junit.Test;
 
 /*
@@ -245,7 +244,7 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
         assertEquals(roundOrdinal, parents[ord]); // round's parent is root
       }
     }
-
+    
     reader.close();
     writer.close();
     dir.close();
@@ -261,7 +260,7 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
     // hold onto IW to forceMerge
     // note how we don't close it, since DTW will close it.
     final IndexWriter iw = new IndexWriter(dir,
-        new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
+        new IndexWriterConfig(new MockAnalyzer(random()))
             .setMergePolicy(new LogByteSizeMergePolicy()));
     DirectoryTaxonomyWriter writer = new DirectoryTaxonomyWriter(dir) {
       @Override
@@ -304,7 +303,7 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
     // hold onto IW to forceMerge
     // note how we don't close it, since DTW will close it.
     final IndexWriter iw = new IndexWriter(dir,
-        new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
+        new IndexWriterConfig(new MockAnalyzer(random()))
             .setMergePolicy(new LogByteSizeMergePolicy()));
     DirectoryTaxonomyWriter writer = new DirectoryTaxonomyWriter(dir) {
       @Override
@@ -337,7 +336,7 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
     writer.close();
     dir.close();
   }
-  
+ 
   @Test
   public void testOpenIfChangedReuseAfterRecreate() throws Exception {
     // tests that if the taxonomy is recreated, no data is reused from the previous taxonomy

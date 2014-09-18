@@ -17,12 +17,10 @@ package org.apache.lucene.search.suggest;
  * limitations under the License.
  */
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiDocValues;
@@ -113,12 +111,11 @@ public class DocumentDictionary implements Dictionary {
     private final boolean hasContexts;
     private final Bits liveDocs;
     private int currentDocId = -1;
-    private long currentWeight;
-    private BytesRef currentPayload;
+    private long currentWeight = 0;
+    private BytesRef currentPayload = null;
     private Set<BytesRef> currentContexts;
     private final NumericDocValues weightValues;
 
-    
     /**
      * Creates an iterator over term, weight and payload fields from the lucene
      * index. setting <code>withPayload</code> to false, implies an iterator
@@ -136,11 +133,6 @@ public class DocumentDictionary implements Dictionary {
     @Override
     public long weight() {
       return currentWeight;
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return null;
     }
 
     @Override

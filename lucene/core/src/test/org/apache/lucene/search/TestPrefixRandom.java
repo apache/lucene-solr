@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.FilteredTermsEnum;
@@ -35,7 +34,6 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TestUtil;
 
 /**
@@ -59,10 +57,7 @@ public class TestPrefixRandom extends LuceneTestCase {
     Field field = newStringField("field", "", Field.Store.NO);
     doc.add(field);
 
-    // we generate aweful prefixes: good for testing.
-    // but for preflex codec, the test can be very slow, so use less iterations.
-    final String codec = Codec.getDefault().getName();
-    int num = codec.equals("Lucene3x") ? 200 * RANDOM_MULTIPLIER : atLeast(1000);
+    int num = atLeast(1000);
     for (int i = 0; i < num; i++) {
       field.setStringValue(TestUtil.randomUnicodeString(random(), 10));
       writer.addDocument(doc);

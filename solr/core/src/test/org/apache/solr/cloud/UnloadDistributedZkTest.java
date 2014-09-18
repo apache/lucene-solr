@@ -88,7 +88,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     createCmd.setCoreName("test_unload_shard_and_collection_1");
     String collection = "test_unload_shard_and_collection";
     createCmd.setCollection(collection);
-    String coreDataDir = createTempDir().getAbsolutePath();
+    String coreDataDir = createTempDir().toFile().getAbsolutePath();
     createCmd.setDataDir(getDataDir(coreDataDir));
     createCmd.setNumShards(2);
     
@@ -103,7 +103,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     createCmd.setCoreName("test_unload_shard_and_collection_2");
     collection = "test_unload_shard_and_collection";
     createCmd.setCollection(collection);
-    coreDataDir = createTempDir().getAbsolutePath();
+    coreDataDir = createTempDir().toFile().getAbsolutePath();
     createCmd.setDataDir(getDataDir(coreDataDir));
     
     server.request(createCmd);
@@ -154,7 +154,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
    * @throws Exception on any problem
    */
   private void testCoreUnloadAndLeaders() throws Exception {
-    File tmpDir = createTempDir();
+    File tmpDir = createTempDir().toFile();
     
     // create a new collection collection
     SolrServer client = clients.get(0);

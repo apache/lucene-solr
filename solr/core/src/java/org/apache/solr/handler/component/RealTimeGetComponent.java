@@ -138,11 +138,11 @@ public class RealTimeGetComponent extends SearchComponent
    try {
      SolrIndexSearcher searcher = null;
 
-     BytesRef idBytes = new BytesRef();
+     BytesRefBuilder idBytes = new BytesRefBuilder();
      for (String idStr : allIds) {
        fieldType.readableToIndexed(idStr, idBytes);
        if (ulog != null) {
-         Object o = ulog.lookup(idBytes);
+         Object o = ulog.lookup(idBytes.get());
          if (o != null) {
            // should currently be a List<Oper,Ver,Doc/Id>
            List entry = (List)o;
@@ -173,7 +173,7 @@ public class RealTimeGetComponent extends SearchComponent
 
        // SolrCore.verbose("RealTimeGet using searcher ", searcher);
 
-       int docid = searcher.getFirstMatch(new Term(idField.getName(), idBytes));
+       int docid = searcher.getFirstMatch(new Term(idField.getName(), idBytes.get()));
        if (docid < 0) continue;
        Document luceneDocument = searcher.doc(docid);
        SolrDocument doc = toSolrDoc(luceneDocument,  core.getLatestSchema());
@@ -327,7 +327,7 @@ public class RealTimeGetComponent extends SearchComponent
     Document out = new Document();
     for (IndexableField f : doc.getFields()) {
       if (f.fieldType().stored() ) {
-        out.add((IndexableField) f);
+        out.add(f);
       }
     }
 
@@ -489,11 +489,6 @@ public class RealTimeGetComponent extends SearchComponent
   @Override
   public String getDescription() {
     return "query";
-  }
-
-  @Override
-  public String getSource() {
-    return null;
   }
 
   @Override

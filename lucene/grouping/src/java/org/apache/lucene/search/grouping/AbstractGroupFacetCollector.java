@@ -19,6 +19,7 @@ package org.apache.lucene.search.grouping;
 
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 
@@ -30,7 +31,7 @@ import java.util.*;
  *
  * @lucene.experimental
  */
-public abstract class AbstractGroupFacetCollector extends Collector {
+public abstract class AbstractGroupFacetCollector extends SimpleCollector {
 
   protected final String groupField;
   protected final String facetField;

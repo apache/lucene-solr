@@ -33,7 +33,7 @@ public class AssertingBulkOutOfOrderScorer extends BulkScorer {
   }
 
   @Override
-  public boolean score(Collector collector, int max) throws IOException {
+  public boolean score(LeafCollector collector, int max) throws IOException {
     final RandomOrderCollector randomCollector = new RandomOrderCollector(random, collector);
     final boolean remaining = in.score(randomCollector, max);
     randomCollector.flush();
@@ -41,7 +41,7 @@ public class AssertingBulkOutOfOrderScorer extends BulkScorer {
   }
 
   @Override
-  public void score(Collector collector) throws IOException {
+  public void score(LeafCollector collector) throws IOException {
     final RandomOrderCollector randomCollector = new RandomOrderCollector(random, collector);
     in.score(randomCollector);
     randomCollector.flush();

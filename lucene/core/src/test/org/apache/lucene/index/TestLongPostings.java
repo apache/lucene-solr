@@ -30,11 +30,9 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TestUtil;
 
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
@@ -77,7 +75,7 @@ public class TestLongPostings extends LuceneTestCase {
   }
 
   public void testLongPostings() throws Exception {
-    // Don't use TestUtil.getTempDir so that we own the
+    // Don't use _TestUtil.getTempDir so that we own the
     // randomness (ie same seed will point to same dir):
     Directory dir = newFSDirectory(createTempDir("longpostings" + "." + random().nextLong()));
 
@@ -200,6 +198,9 @@ public class TestLongPostings extends LuceneTestCase {
           }
 
           if (random().nextInt(6) == 3) {
+            if (VERBOSE) {
+              System.out.println("    check positions");
+            }
             final int freq = postings.freq();
             assertTrue(freq >=1 && freq <= 4);
             for(int pos=0;pos<freq;pos++) {
@@ -271,7 +272,7 @@ public class TestLongPostings extends LuceneTestCase {
   }
   
   public void doTestLongPostingsNoPositions(IndexOptions options) throws Exception {
-    // Don't use TestUtil.getTempDir so that we own the
+    // Don't use _TestUtil.getTempDir so that we own the
     // randomness (ie same seed will point to same dir):
     Directory dir = newFSDirectory(createTempDir("longpostings" + "." + random().nextLong()));
 

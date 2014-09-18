@@ -28,9 +28,9 @@ import java.util.Map;
 import java.util.TimeZone;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -43,7 +43,7 @@ import org.junit.BeforeClass;
 /**
  * Statistics Component Test
  */
-@LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40", "Lucene41", "Lucene42"})
+@LuceneTestCase.SuppressCodecs({"Lucene40", "Lucene41", "Lucene42"})
 public class StatsComponentTest extends AbstractSolrTestCase {
 
   final static String XPRE = "/response/lst[@name='stats']/";
@@ -90,8 +90,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
       assertU(commit());
     }
 
-    for (String f : new String[] {"stats_ii", // plain int
-            "stats_is",    // sortable int
+    for (String f : new String[] {"stats_ii",
             "stats_tis","stats_tfs","stats_tls","stats_tds",  // trie fields
             "stats_tis_dv","stats_tfs_dv","stats_tls_dv","stats_tds_dv",  // Doc Values
             "stats_tis_ni_dv","stats_tfs_ni_dv","stats_tls_ni_dv","stats_tds_ni_dv"  // Doc Values Not indexed

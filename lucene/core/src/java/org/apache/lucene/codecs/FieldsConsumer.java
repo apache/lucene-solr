@@ -20,7 +20,6 @@ package org.apache.lucene.codecs;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.index.AtomicReader;
@@ -29,7 +28,6 @@ import org.apache.lucene.index.MappedMultiFields;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.ReaderSlice;
-import org.apache.lucene.util.BytesRef;
 
 /** 
  * Abstract API that consumes terms, doc, freq, prox, offset and
@@ -108,9 +106,6 @@ public abstract class FieldsConsumer implements Closeable {
                                                                 slices.toArray(ReaderSlice.EMPTY_ARRAY)));
     write(mergedFields);
   }
-  
-  /** Return the BytesRef Comparator used to sort terms */
-  public abstract Comparator<BytesRef> getComparator();
 
   // NOTE: strange but necessary so javadocs linting is happy:
   @Override

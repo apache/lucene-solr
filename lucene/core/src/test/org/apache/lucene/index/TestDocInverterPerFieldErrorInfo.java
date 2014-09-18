@@ -28,13 +28,11 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.PrintStreamInfoStream;
-import org.apache.lucene.util.Version;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.io.Reader;
 
 /**
  * Test adding to the info stream when there's an exception thrown during field analysis.
@@ -50,8 +48,8 @@ public class TestDocInverterPerFieldErrorInfo extends LuceneTestCase {
 
   private static class ThrowingAnalyzer extends Analyzer {
     @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader input) {
-      Tokenizer tokenizer = new MockTokenizer(input);
+    protected TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer tokenizer = new MockTokenizer();
       if (fieldName.equals("distinctiveFieldName")) {
         TokenFilter tosser = new TokenFilter(tokenizer) {
           @Override
@@ -70,7 +68,7 @@ public class TestDocInverterPerFieldErrorInfo extends LuceneTestCase {
   public void testInfoStreamGetsFieldName() throws Exception {
     Directory dir = newDirectory();
     IndexWriter writer;
-    IndexWriterConfig c = new IndexWriterConfig(Version.LATEST, new ThrowingAnalyzer());
+    IndexWriterConfig c = new IndexWriterConfig(new ThrowingAnalyzer());
     final ByteArrayOutputStream infoBytes = new ByteArrayOutputStream();
     PrintStream infoPrintStream = new PrintStream(infoBytes, true, IOUtils.UTF_8);
     PrintStreamInfoStream printStreamInfoStream = new PrintStreamInfoStream(infoPrintStream);
@@ -95,7 +93,7 @@ public class TestDocInverterPerFieldErrorInfo extends LuceneTestCase {
   public void testNoExtraNoise() throws Exception {
     Directory dir = newDirectory();
     IndexWriter writer;
-    IndexWriterConfig c = new IndexWriterConfig(Version.LATEST, new ThrowingAnalyzer());
+    IndexWriterConfig c = new IndexWriterConfig(new ThrowingAnalyzer());
     final ByteArrayOutputStream infoBytes = new ByteArrayOutputStream();
     PrintStream infoPrintStream = new PrintStream(infoBytes, true, IOUtils.UTF_8);
     PrintStreamInfoStream printStreamInfoStream = new PrintStreamInfoStream(infoPrintStream);

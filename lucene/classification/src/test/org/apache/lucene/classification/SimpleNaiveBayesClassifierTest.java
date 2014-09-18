@@ -34,7 +34,6 @@ import java.io.Reader;
  * Testcase for {@link SimpleNaiveBayesClassifier}
  */
 // TODO : eventually remove this if / when fallback methods exist for all un-supportable codec methods (see LUCENE-4872)
-@LuceneTestCase.SuppressCodecs("Lucene3x")
 public class SimpleNaiveBayesClassifierTest extends ClassificationTestBase<BytesRef> {
 
   @Test
@@ -55,8 +54,8 @@ public class SimpleNaiveBayesClassifierTest extends ClassificationTestBase<Bytes
 
   private class NGramAnalyzer extends Analyzer {
     @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      final Tokenizer tokenizer = new KeywordTokenizer(reader);
+    protected TokenStreamComponents createComponents(String fieldName) {
+      final Tokenizer tokenizer = new KeywordTokenizer();
       return new TokenStreamComponents(tokenizer, new ReverseStringFilter(new EdgeNGramTokenFilter(new ReverseStringFilter(tokenizer), 10, 20)));
     }
   }

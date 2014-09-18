@@ -19,9 +19,6 @@ package org.apache.solr.common.util;
 
 import java.util.concurrent.TimeUnit;
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-
 public class RetryUtil {
   public static interface RetryCmd {
     public void execute() throws Throwable;
@@ -37,7 +34,7 @@ public class RetryUtil {
           Thread.sleep(intervalms);
           continue;
         }
-        throw new SolrException(ErrorCode.SERVER_ERROR, t);
+        throw t;
       }
       // success
       break;

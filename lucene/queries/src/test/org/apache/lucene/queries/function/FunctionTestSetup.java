@@ -5,14 +5,18 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FloatField;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.queries.function.valuesource.ByteFieldSource;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
-import org.apache.lucene.queries.function.valuesource.ShortFieldSource;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
@@ -53,10 +57,7 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
   protected static final String INT_FIELD = "iii";
   protected static final String FLOAT_FIELD = "fff";
 
-  protected ValueSource BYTE_VALUESOURCE = new ByteFieldSource(INT_FIELD);
-  protected ValueSource SHORT_VALUESOURCE = new ShortFieldSource(INT_FIELD);
   protected ValueSource INT_VALUESOURCE = new IntFieldSource(INT_FIELD);
-  protected ValueSource INT_AS_FLOAT_VALUESOURCE = new FloatFieldSource(INT_FIELD);
   protected ValueSource FLOAT_VALUESOURCE = new FloatFieldSource(FLOAT_FIELD);
 
   private static final String DOC_TEXT_LINES[] = {
@@ -134,17 +135,20 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
     
     f = newField(ID_FIELD, id2String(scoreAndID), customType); // for debug purposes
     d.add(f);
+    d.add(new SortedDocValuesField(ID_FIELD, new BytesRef(id2String(scoreAndID))));
 
     FieldType customType2 = new FieldType(TextField.TYPE_NOT_STORED);
     customType2.setOmitNorms(true);
     f = newField(TEXT_FIELD, "text of doc" + scoreAndID + textLine(i), customType2); // for regular search
     d.add(f);
 
-    f = newField(INT_FIELD, "" + scoreAndID, customType); // for function scoring
+    f = new IntField(INT_FIELD, scoreAndID, Store.YES); // for function scoring
     d.add(f);
+    d.add(new NumericDocValuesField(INT_FIELD, scoreAndID));
 
-    f = newField(FLOAT_FIELD, scoreAndID + ".000", customType); // for function scoring
+    f = new FloatField(FLOAT_FIELD, scoreAndID, Store.YES); // for function scoring
     d.add(f);
+    d.add(new NumericDocValuesField(FLOAT_FIELD, Float.floatToRawIntBits(scoreAndID)));
 
     iw.addDocument(d);
     log("added: " + d);

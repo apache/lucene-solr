@@ -24,19 +24,9 @@ import org.apache.lucene.analysis.util.FilteringTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.Version;
 
 /**
  * Removes stop words from a token stream.
- *
- * <a name="version"/>
- * <p>You may specify the {@link Version}
- * compatibility when creating StopFilter:
- * <ul>
- *   <li> As of 3.1, StopFilter correctly handles Unicode 4.0
- *         supplementary characters in stopwords and position
- *         increments are preserved
- * </ul>
  */
 public final class StopFilter extends FilteringTokenFilter {
 
@@ -54,15 +44,7 @@ public final class StopFilter extends FilteringTokenFilter {
    * @see #makeStopSet(java.lang.String...)
    */
   public StopFilter(TokenStream in, CharArraySet stopWords) {
-    this(Version.LATEST, in, stopWords);
-  }
-
-  /**
-   * @deprecated Use {@link #StopFilter(TokenStream, CharArraySet)}
-   */
-  @Deprecated
-  public StopFilter(Version matchVersion, TokenStream in, CharArraySet stopWords) {
-    super(matchVersion, in);
+    super(in);
     this.stopWords = stopWords;
   }
 
@@ -78,14 +60,6 @@ public final class StopFilter extends FilteringTokenFilter {
   public static CharArraySet makeStopSet(String... stopWords) {
     return makeStopSet(stopWords, false);
   }
-
-  /**
-   * @deprecated Use {@link #makeStopSet(String...)}
-   */
-  @Deprecated
-  public static CharArraySet makeStopSet(Version matchVersion, String... stopWords) {
-    return makeStopSet(matchVersion, stopWords, false);
-  }
   
   /**
    * Builds a Set from an array of stop words,
@@ -100,14 +74,6 @@ public final class StopFilter extends FilteringTokenFilter {
   public static CharArraySet makeStopSet(List<?> stopWords) {
     return makeStopSet(stopWords, false);
   }
-
-  /**
-   * @deprecated Use {@link #makeStopSet(List)}
-   */
-  @Deprecated
-  public static CharArraySet makeStopSet(Version matchVersion, List<?> stopWords) {
-    return makeStopSet(matchVersion, stopWords, false);
-  }
     
   /**
    * Creates a stopword set from the given stopword array.
@@ -121,16 +87,6 @@ public final class StopFilter extends FilteringTokenFilter {
     stopSet.addAll(Arrays.asList(stopWords));
     return stopSet;
   }
-
-  /**
-   * @deprecated Use {@link #makeStopSet(String[],boolean)}
-   */
-  @Deprecated
-  public static CharArraySet makeStopSet(Version matchVersion, String[] stopWords, boolean ignoreCase) {
-    CharArraySet stopSet = new CharArraySet(matchVersion, stopWords.length, ignoreCase);
-    stopSet.addAll(Arrays.asList(stopWords));
-    return stopSet;
-  }
   
   /**
    * Creates a stopword set from the given stopword list.
@@ -140,16 +96,6 @@ public final class StopFilter extends FilteringTokenFilter {
    */
   public static CharArraySet makeStopSet(List<?> stopWords, boolean ignoreCase){
     CharArraySet stopSet = new CharArraySet(stopWords.size(), ignoreCase);
-    stopSet.addAll(stopWords);
-    return stopSet;
-  }
-
-  /**
-   * @deprecated Use {@link #makeStopSet(List,boolean)}
-   */
-  @Deprecated
-  public static CharArraySet makeStopSet(Version matchVersion, List<?> stopWords, boolean ignoreCase) {
-    CharArraySet stopSet = new CharArraySet(matchVersion, stopWords.size(), ignoreCase);
     stopSet.addAll(stopWords);
     return stopSet;
   }

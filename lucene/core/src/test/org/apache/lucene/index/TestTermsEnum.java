@@ -24,10 +24,9 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
@@ -43,7 +42,7 @@ public class TestTermsEnum extends LuceneTestCase {
 
   public void test() throws Exception {
     Random random = new Random(random().nextLong());
-    final LineFileDocs docs = new LineFileDocs(random, defaultCodecSupportsDocValues());
+    final LineFileDocs docs = new LineFileDocs(random, true);
     final Directory d = newDirectory();
     MockAnalyzer analyzer = new MockAnalyzer(random());
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
@@ -159,7 +158,8 @@ public class TestTermsEnum extends LuceneTestCase {
 
   private void addDoc(RandomIndexWriter w, Collection<String> terms, Map<BytesRef,Integer> termToID, int id) throws IOException {
     Document doc = new Document();
-    doc.add(new IntField("id", id, Field.Store.NO));
+    doc.add(new IntField("id", id, Field.Store.YES));
+    doc.add(new NumericDocValuesField("id", id));
     if (VERBOSE) {
       System.out.println("TEST: addDoc id:" + id + " terms=" + terms);
     }
@@ -227,8 +227,7 @@ public class TestTermsEnum extends LuceneTestCase {
     final IndexReader r = w.getReader();
     w.close();
 
-    // NOTE: intentional insanity!!
-    final FieldCache.Ints docIDToID = FieldCache.DEFAULT.getInts(SlowCompositeReaderWrapper.wrap(r), "id", false);
+    final NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
 
     for(int iter=0;iter<10*RANDOM_MULTIPLIER;iter++) {
 
@@ -519,7 +518,7 @@ public class TestTermsEnum extends LuceneTestCase {
   }
 
   private String getRandomString() {
-    //return TestUtil.randomSimpleString(random());
+    //return _TestUtil.randomSimpleString(random());
     return TestUtil.randomRealisticUnicodeString(random());
   }
 

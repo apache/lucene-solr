@@ -30,6 +30,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -51,11 +52,12 @@ public class DataSplitterTest extends LuceneTestCase {
   private String classFieldName = "class";
   private String idFieldName = "id";
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
-    indexWriter = new RandomIndexWriter(random(), dir, new MockAnalyzer(random()));
+    indexWriter = new RandomIndexWriter(random(), dir);
 
     FieldType ft = new FieldType(TextField.TYPE_STORED);
     ft.setStoreTermVectors(true);
@@ -65,12 +67,12 @@ public class DataSplitterTest extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
 
     Document doc;
+    Random rnd = random();
     for (int i = 0; i < 100; i++) {
       doc = new Document();
-      doc.add(new Field(idFieldName, random().toString(), ft));
-      doc.add(new Field(textFieldName, new StringBuilder(random().toString()).append(random().toString()).append(
-          random().toString()).toString(), ft));
-      doc.add(new Field(classFieldName, random().toString(), ft));
+      doc.add(new Field(idFieldName, Integer.toString(i), ft));
+      doc.add(new Field(textFieldName, TestUtil.randomUnicodeString(rnd, 1024), ft));
+      doc.add(new Field(classFieldName, TestUtil.randomUnicodeString(rnd, 10), ft));
       indexWriter.addDocument(doc, analyzer);
     }
 
@@ -80,6 +82,7 @@ public class DataSplitterTest extends LuceneTestCase {
 
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     originalIndex.close();
@@ -128,9 +131,15 @@ public class DataSplitterTest extends LuceneTestCase {
       closeQuietly(testReader);
       closeQuietly(cvReader);
     } finally {
-      trainingIndex.close();
-      testIndex.close();
-      crossValidationIndex.close();
+      if (trainingIndex != null) {
+        trainingIndex.close();
+      }
+      if (testIndex != null) {
+        testIndex.close();
+      }
+      if (crossValidationIndex != null) {
+        crossValidationIndex.close();
+      }
     }
   }
 

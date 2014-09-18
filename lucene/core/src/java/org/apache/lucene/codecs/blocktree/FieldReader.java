@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.blocktree;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.Collections;
 
 import org.apache.lucene.index.FieldInfo;
@@ -124,11 +123,6 @@ public final class FieldReader extends Terms implements Accountable {
   // TODO: maybe push this into Terms?
   public Stats computeStats() throws IOException {
     return new SegmentTermsEnum(this).computeBlockStats();
-  }
-
-  @Override
-  public Comparator<BytesRef> getComparator() {
-    return BytesRef.getUTF8SortedAsUnicodeComparator();
   }
 
   @Override

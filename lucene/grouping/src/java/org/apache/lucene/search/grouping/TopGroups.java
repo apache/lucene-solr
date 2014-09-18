@@ -78,7 +78,7 @@ public class TopGroups<GROUP_VALUE_TYPE> {
     Total,
     /* Avg score across all shards for this group. */
     Avg,
-  };
+  }
 
   /** Merges an array of TopGroups, for example obtained
    *  from the second-pass collector across multiple

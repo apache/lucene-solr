@@ -30,9 +30,9 @@
     org/apache/lucene/util/PrintStreamInfoStream.class
   "/>
 
-  <property name="forbidden-rue-excludes" value="
-    org/apache/lucene/search/FieldCache$CacheEntry.class
-    org/apache/lucene/util/RamUsageEstimator.class
+  <!-- Needs to start a process --> 
+  <property name="forbidden-tests-excludes" value="
+    org/apache/lucene/index/TestIndexWriterOnJRECrash.class
   "/>
 
   <import file="../common-build.xml"/>
@@ -43,8 +43,8 @@
   <path id="classpath"/>
   
   <path id="test.classpath">
-    <pathelement location="${common.dir}/build/test-framework/classes/java"/>
     <pathelement location="${common.dir}/build/codecs/classes/java"/>
+    <pathelement location="${common.dir}/build/test-framework/classes/java"/>
     <path refid="junit-path"/>
     <pathelement location="${build.dir}/classes/java"/>
     <pathelement location="${build.dir}/classes/test"/>

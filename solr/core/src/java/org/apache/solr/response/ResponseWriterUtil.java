@@ -17,8 +17,8 @@ package org.apache.solr.response;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexableField;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;

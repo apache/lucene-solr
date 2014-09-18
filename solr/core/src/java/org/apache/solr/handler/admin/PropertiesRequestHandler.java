@@ -53,9 +53,4 @@ public class PropertiesRequestHandler extends RequestHandlerBase
   public String getDescription() {
     return "Get System Properties";
   }
-
-  @Override
-  public String getSource() {
-    return null;
-  }
 }

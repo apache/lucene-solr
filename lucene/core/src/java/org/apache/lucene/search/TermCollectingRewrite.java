@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.Fields;
@@ -47,7 +46,6 @@ abstract class TermCollectingRewrite<Q extends Query> extends MultiTermQuery.Rew
   
   final void collectTerms(IndexReader reader, MultiTermQuery query, TermCollector collector) throws IOException {
     IndexReaderContext topReaderContext = reader.getContext();
-    Comparator<BytesRef> lastTermComp = null;
     for (AtomicReaderContext context : topReaderContext.leaves()) {
       final Fields fields = context.reader().fields();
       if (fields == null) {
@@ -67,11 +65,6 @@ abstract class TermCollectingRewrite<Q extends Query> extends MultiTermQuery.Rew
       if (termsEnum == TermsEnum.EMPTY)
         continue;
       
-      // Check comparator compatibility:
-      final Comparator<BytesRef> newTermComp = termsEnum.getComparator();
-      if (lastTermComp != null && newTermComp != null && newTermComp != lastTermComp)
-        throw new RuntimeException("term comparator should not change between segments: "+lastTermComp+" != "+newTermComp);
-      lastTermComp = newTermComp;
       collector.setReaderContext(topReaderContext, context);
       collector.setNextEnum(termsEnum);
       BytesRef bytes;

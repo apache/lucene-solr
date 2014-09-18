@@ -38,11 +38,9 @@ import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-@SuppressCodecs("Lucene3x")
 public class TestLongNormValueSource extends LuceneTestCase {
 
   static Directory dir;

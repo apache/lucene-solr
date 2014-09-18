@@ -32,7 +32,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.Version;
 import org.junit.Test;
 
 public class IndexRevisionTest extends ReplicatorTestCase {
@@ -40,7 +39,7 @@ public class IndexRevisionTest extends ReplicatorTestCase {
   @Test
   public void testNoSnapshotDeletionPolicy() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = new IndexWriterConfig(Version.LATEST, null);
+    IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
     IndexWriter writer = new IndexWriter(dir, conf);
     try {
@@ -49,14 +48,15 @@ public class IndexRevisionTest extends ReplicatorTestCase {
     } catch (IllegalArgumentException e) {
       // expected
     } finally {
-      IOUtils.close(writer, dir);
+      writer.close();
+      IOUtils.close(dir);
     }
   }
   
   @Test
   public void testNoCommit() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = new IndexWriterConfig(Version.LATEST, null);
+    IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     IndexWriter writer = new IndexWriter(dir, conf);
     try {
@@ -65,7 +65,8 @@ public class IndexRevisionTest extends ReplicatorTestCase {
     } catch (IllegalStateException e) {
       // expected
     } finally {
-      IOUtils.close(writer, dir);
+      writer.close();
+      IOUtils.close(dir);
     }
   }
   
@@ -76,7 +77,7 @@ public class IndexRevisionTest extends ReplicatorTestCase {
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
     }
-    IndexWriterConfig conf = new IndexWriterConfig(Version.LATEST, null);
+    IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     IndexWriter writer = new IndexWriter(dir, conf);
     try {
@@ -101,7 +102,7 @@ public class IndexRevisionTest extends ReplicatorTestCase {
   @Test
   public void testSegmentsFileLast() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = new IndexWriterConfig(Version.LATEST, null);
+    IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     IndexWriter writer = new IndexWriter(dir, conf);
     try {
@@ -114,15 +115,16 @@ public class IndexRevisionTest extends ReplicatorTestCase {
       List<RevisionFile> files = sourceFiles.values().iterator().next();
       String lastFile = files.get(files.size() - 1).fileName;
       assertTrue(lastFile.startsWith(IndexFileNames.SEGMENTS));
+      writer.close();
     } finally {
-      IOUtils.close(writer, dir);
+      IOUtils.close(dir);
     }
   }
   
   @Test
   public void testOpen() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = new IndexWriterConfig(Version.LATEST, null);
+    IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     IndexWriter writer = new IndexWriter(dir, conf);
     try {
@@ -153,8 +155,9 @@ public class IndexRevisionTest extends ReplicatorTestCase {
         assertArrayEquals(srcBytes, inBytes);
         IOUtils.close(src, in);
       }
+      writer.close();
     } finally {
-      IOUtils.close(writer, dir);
+      IOUtils.close(dir);
     }
   }
   

@@ -18,7 +18,6 @@ package org.apache.lucene.queryparser.analyzing;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -42,11 +41,9 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /**
  */
-@SuppressCodecs("Lucene3x") // binary terms
 public class TestAnalyzingQueryParser extends LuceneTestCase {
   private final static String FIELD = "field";
    
@@ -253,8 +250,8 @@ public class TestAnalyzingQueryParser extends LuceneTestCase {
 
   final static class ASCIIAnalyzer extends Analyzer {
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer result = new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
+    public TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer result = new MockTokenizer(MockTokenizer.WHITESPACE, true);
       return new TokenStreamComponents(result, new FoldingFilter(result));
     }
   }

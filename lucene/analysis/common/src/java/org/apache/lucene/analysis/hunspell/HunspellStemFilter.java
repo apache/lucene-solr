@@ -136,11 +136,12 @@ public final class HunspellStemFilter extends TokenFilter {
   static final Comparator<CharsRef> lengthComparator = new Comparator<CharsRef>() {
     @Override
     public int compare(CharsRef o1, CharsRef o2) {
-      if (o2.length == o1.length) {
+      int cmp = Integer.compare(o2.length, o1.length);
+      if (cmp == 0) {
         // tie break on text
         return o2.compareTo(o1);
       } else {
-        return o2.length < o1.length ? -1 : 1;
+        return cmp;
       }
     }
   };

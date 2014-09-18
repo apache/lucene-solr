@@ -17,6 +17,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -37,7 +39,7 @@ final class JustCompileSearch {
 
   private static final String UNSUPPORTED_MSG = "unsupported: used for back-compat testing only !";
 
-  static final class JustCompileCollector extends Collector {
+  static final class JustCompileCollector extends SimpleCollector {
 
     @Override
     public void collect(int doc) {
@@ -45,7 +47,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) {
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -67,7 +69,11 @@ final class JustCompileSearch {
     public DocIdSetIterator iterator() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-    
+
+    @Override
+    public long ramBytesUsed() {
+      return 0L;
+    }
   }
 
   static final class JustCompileDocIdSetIterator extends DocIdSetIterator {
@@ -93,34 +99,6 @@ final class JustCompileSearch {
     }
   }
   
-  static final class JustCompileExtendedFieldCacheLongParser implements FieldCache.LongParser {
-
-    @Override
-    public long parseLong(BytesRef string) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public TermsEnum termsEnum(Terms terms) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-    
-  }
-  
-  static final class JustCompileExtendedFieldCacheDoubleParser implements FieldCache.DoubleParser {
-    
-    @Override
-    public double parseDouble(BytesRef term) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public TermsEnum termsEnum(Terms terms) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-    
-  }
-
   static final class JustCompileFieldComparator extends FieldComparator<Object> {
 
     @Override
@@ -290,7 +268,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) {
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

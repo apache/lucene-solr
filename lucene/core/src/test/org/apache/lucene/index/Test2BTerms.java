@@ -27,7 +27,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -48,15 +47,10 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
 
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
-import org.apache.lucene.util.Version;
 
-// NOTE: this test will fail w/ PreFlexRW codec!  (Because
-// this test uses full binary term space, but PreFlex cannot
-// handle this since it requires the terms are UTF8 bytes).
-//
-// Also, SimpleText codec will consume very large amounts of
+// NOTE: SimpleText codec will consume very large amounts of
 // disk (but, should run successfully).  Best to run w/
-// -Dtests.codec=Standard, and w/ plenty of RAM, eg:
+// -Dtests.codec=<current codec>, and w/ plenty of RAM, eg:
 //
 //   ant test -Dtests.monster=true -Dtests.heapsize=8g
 //
@@ -170,9 +164,6 @@ public class Test2BTerms extends LuceneTestCase {
 
   public void test2BTerms() throws IOException {
 
-    if ("Lucene3x".equals(Codec.getDefault().getName())) {
-      throw new RuntimeException("this test cannot run with PreFlex codec");
-    }
     System.out.println("Starting Test2B");
     final long TERM_COUNT = ((long) Integer.MAX_VALUE) + 100000000;
 
@@ -190,7 +181,7 @@ public class Test2BTerms extends LuceneTestCase {
     if (true) {
 
       IndexWriter w = new IndexWriter(dir,
-                                      new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
+                                      new IndexWriterConfig(new MockAnalyzer(random()))
                                       .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
                                       .setRAMBufferSizeMB(256.0)
                                       .setMergeScheduler(new ConcurrentMergeScheduler())

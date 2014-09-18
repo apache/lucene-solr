@@ -20,14 +20,11 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Random;
 
-import org.apache.lucene.index.AtomicReaderContext;
-
 /** Randomize collection order. Don't forget to call {@link #flush()} when
  *  collection is finished to collect buffered documents. */
-final class RandomOrderCollector extends Collector {
+final class RandomOrderCollector extends FilterLeafCollector {
 
   final Random random;
-  final Collector in;
   Scorer scorer;
   FakeScorer fakeScorer;
 
@@ -37,11 +34,11 @@ final class RandomOrderCollector extends Collector {
   final float[] scores;
   final int[] freqs;
 
-  RandomOrderCollector(Random random, Collector in) {
+  RandomOrderCollector(Random random, LeafCollector in) {
+    super(in);
     if (!in.acceptsDocsOutOfOrder()) {
       throw new IllegalArgumentException();
     }
-    this.in = in;
     this.random = random;
     bufferSize = 1 + random.nextInt(100);
     docIDs = new int[bufferSize];
@@ -105,9 +102,5 @@ final class RandomOrderCollector extends Collector {
     return in.acceptsDocsOutOfOrder();
   }
 
-  @Override
-  public void setNextReader(AtomicReaderContext context) throws IOException {
-    throw new UnsupportedOperationException();
-  }
-
 }
+

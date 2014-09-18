@@ -32,13 +32,10 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
-import org.apache.lucene.util.fst.Util;
 
 /** See {@link VariableGapTermsIndexWriter}
  * 
@@ -46,13 +43,8 @@ import org.apache.lucene.util.fst.Util;
 public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
 
   private final PositiveIntOutputs fstOutputs = PositiveIntOutputs.getSingleton();
-  private int indexDivisor;
 
-  // Closed if indexLoaded is true:
-  private IndexInput in;
-  private volatile boolean indexLoaded;
-
-  final HashMap<FieldInfo,FieldIndexData> fields = new HashMap<>();
+  final HashMap<String,FieldIndexData> fields = new HashMap<>();
   
   // start of the field info data
   private long dirOffset;
@@ -60,17 +52,15 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
   private final int version;
 
   final String segment;
-  public VariableGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, int indexDivisor, String segmentSuffix, IOContext context)
+  public VariableGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, String segmentSuffix, IOContext context)
     throws IOException {
-    in = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, VariableGapTermsIndexWriter.TERMS_INDEX_EXTENSION), new IOContext(context, true));
+    final IndexInput in = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, VariableGapTermsIndexWriter.TERMS_INDEX_EXTENSION), new IOContext(context, true));
     this.segment = segment;
     boolean success = false;
-    assert indexDivisor == -1 || indexDivisor > 0;
 
     try {
       
       version = readHeader(in);
-      this.indexDivisor = indexDivisor;
       
       if (version >= VariableGapTermsIndexWriter.VERSION_CHECKSUM) {
         CodecUtil.checksumEntireFile(in);
@@ -88,26 +78,19 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
         final int field = in.readVInt();
         final long indexStart = in.readVLong();
         final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
-        FieldIndexData previous = fields.put(fieldInfo, new FieldIndexData(fieldInfo, indexStart));
+        FieldIndexData previous = fields.put(fieldInfo.name, new FieldIndexData(in, fieldInfo, indexStart));
         if (previous != null) {
           throw new CorruptIndexException("duplicate field: " + fieldInfo.name + " (resource=" + in + ")");
         }
       }
       success = true;
     } finally {
-      if (indexDivisor > 0) {
-        in.close();
-        in = null;
-        if (success) {
-          indexLoaded = true;
-        }
+      if (success) {
+        IOUtils.close(in);
+      } else {
+        IOUtils.closeWhileHandlingException(in);
       }
     }
-  }
-
-  @Override
-  public int getDivisor() {
-    return indexDivisor;
   }
   
   private int readHeader(IndexInput input) throws IOException {
@@ -173,59 +156,28 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
   }
 
   private final class FieldIndexData implements Accountable {
+    private final FST<Long> fst;
 
-    private final long indexStart;
-    // Set only if terms index is loaded:
-    private volatile FST<Long> fst;
+    public FieldIndexData(IndexInput in, FieldInfo fieldInfo, long indexStart) throws IOException {
+      IndexInput clone = in.clone();
+      clone.seek(indexStart);
+      fst = new FST<>(clone, fstOutputs);
+      clone.close();
 
-    public FieldIndexData(FieldInfo fieldInfo, long indexStart) throws IOException {
-      this.indexStart = indexStart;
-
-      if (indexDivisor > 0) {
-        loadTermsIndex();
-      }
+      /*
+      final String dotFileName = segment + "_" + fieldInfo.name + ".dot";
+      Writer w = new OutputStreamWriter(new FileOutputStream(dotFileName));
+      Util.toDot(fst, w, false, false);
+      System.out.println("FST INDEX: SAVED to " + dotFileName);
+      w.close();
+      */
     }
 
-    private void loadTermsIndex() throws IOException {
-      if (fst == null) {
-        IndexInput clone = in.clone();
-        clone.seek(indexStart);
-        fst = new FST<>(clone, fstOutputs);
-        clone.close();
-
-        /*
-        final String dotFileName = segment + "_" + fieldInfo.name + ".dot";
-        Writer w = new OutputStreamWriter(new FileOutputStream(dotFileName));
-        Util.toDot(fst, w, false, false);
-        System.out.println("FST INDEX: SAVED to " + dotFileName);
-        w.close();
-        */
-
-        if (indexDivisor > 1) {
-          // subsample
-          final IntsRefBuilder scratchIntsRef = new IntsRefBuilder();
-          final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
-          final Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
-          final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<>(fst);
-          BytesRefFSTEnum.InputOutput<Long> result;
-          int count = indexDivisor;
-          while((result = fstEnum.next()) != null) {
-            if (count == indexDivisor) {
-              builder.add(Util.toIntsRef(result.input, scratchIntsRef), result.output);
-              count = 0;
-            }
-            count++;
-          }
-          fst = builder.finish();
-        }
-      }
-    }
-    
     @Override
     public long ramBytesUsed() {
       return fst == null ? 0 : fst.ramBytesUsed();
     }
-    
+
     @Override
     public Iterable<? extends Accountable> getChildResources() {
       if (fst == null) {
@@ -243,7 +195,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
 
   @Override
   public FieldIndexEnum getFieldEnum(FieldInfo fieldInfo) {
-    final FieldIndexData fieldData = fields.get(fieldInfo);
+    final FieldIndexData fieldData = fields.get(fieldInfo.name);
     if (fieldData.fst == null) {
       return null;
     } else {
@@ -252,11 +204,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
   }
 
   @Override
-  public void close() throws IOException {
-    if (in != null && !indexLoaded) {
-      in.close();
-    }
-  }
+  public void close() throws IOException {}
 
   private void seekDir(IndexInput input, long dirOffset) throws IOException {
     if (version >= VariableGapTermsIndexWriter.VERSION_CHECKSUM) {
@@ -268,7 +216,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
     }
     input.seek(dirOffset);
   }
-  
+
   @Override
   public long ramBytesUsed() {
     long sizeInBytes = 0;
@@ -277,7 +225,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
     }
     return sizeInBytes;
   }
-  
+
   @Override
   public Iterable<? extends Accountable> getChildResources() {
     return Accountables.namedAccountables("field", fields);

@@ -29,8 +29,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
-import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
 public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
@@ -76,7 +74,7 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
   public void testChineseStopWordsOff() throws Exception {
     Analyzer[] analyzers = new Analyzer[] {
       new SmartChineseAnalyzer(false),/* doesn't load stopwords */
-      new SmartChineseAnalyzer((CharArraySet)null) /* sets stopwords to empty set */};
+      new SmartChineseAnalyzer(null) /* sets stopwords to empty set */};
     String sentence = "我购买了道具和服装。";
     String result[] = { "我", "购买", "了", "道具", "和", "服装", "," };
     for (Analyzer analyzer : analyzers) {
@@ -186,14 +184,11 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
       sb.append("我购买了道具和服装。");
     }
     Analyzer analyzer = new SmartChineseAnalyzer();
-    TokenStream stream = analyzer.tokenStream("", sb.toString());
-    try {
+    try (TokenStream stream = analyzer.tokenStream("", sb.toString())) {
       stream.reset();
       while (stream.incrementToken()) {
       }
       stream.end();
-    } finally {
-      IOUtils.closeWhileHandlingException(stream);
     }
   }
   
@@ -204,14 +199,11 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
       sb.append("我购买了道具和服装");
     }
     Analyzer analyzer = new SmartChineseAnalyzer();
-    TokenStream stream = analyzer.tokenStream("", sb.toString());
-    try {
+    try (TokenStream stream = analyzer.tokenStream("", sb.toString())) {
       stream.reset();
       while (stream.incrementToken()) {
       }
       stream.end();
-    } finally {
-      IOUtils.closeWhileHandlingException(stream);
     }
   }
   
@@ -219,8 +211,8 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
   public void testInvalidOffset() throws Exception {
     Analyzer analyzer = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         TokenFilter filters = new ASCIIFoldingFilter(tokenizer);
         filters = new WordTokenFilter(filters);
         return new TokenStreamComponents(tokenizer, filters);
@@ -248,8 +240,8 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
     Random random = random();
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, new WordTokenFilter(tokenizer));
       }
     };

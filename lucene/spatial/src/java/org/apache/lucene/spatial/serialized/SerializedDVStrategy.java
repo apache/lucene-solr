@@ -21,6 +21,7 @@ import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.io.BinaryCodec;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
+
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.AtomicReaderContext;
@@ -38,6 +39,7 @@ import org.apache.lucene.spatial.util.DistanceToShapeValueSource;
 import org.apache.lucene.spatial.util.ShapePredicateValueSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -50,7 +52,7 @@ import java.util.Map;
 
 /**
  * A SpatialStrategy based on serializing a Shape stored into BinaryDocValues.
- * This is not at all fast; it's designed to be used in conjuction with another index based
+ * This is not at all fast; it's designed to be used in conjunction with another index based
  * SpatialStrategy that is approximated (like {@link org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy})
  * to add precision or eventually make more specific / advanced calculations on the per-document
  * geometry.
@@ -170,6 +172,11 @@ public class SerializedDVStrategy extends SpatialStrategy {
             }
           };
         }
+
+        @Override
+        public long ramBytesUsed() {
+          return 0L;
+        }
       };
     }
 
@@ -211,14 +218,14 @@ public class SerializedDVStrategy extends SpatialStrategy {
 
       return new FunctionValues() {
         int bytesRefDoc = -1;
-        BytesRef bytesRef = new BytesRef();//scratch
+        BytesRefBuilder bytesRef = new BytesRefBuilder();
 
         boolean fillBytes(int doc) {
           if (bytesRefDoc != doc) {
             bytesRef.copyBytes(docValues.get(doc));
             bytesRefDoc = doc;
           }
-          return bytesRef.length != 0;
+          return bytesRef.length() != 0;
         }
 
         @Override
@@ -227,14 +234,12 @@ public class SerializedDVStrategy extends SpatialStrategy {
         }
 
         @Override
-        public boolean bytesVal(int doc, BytesRef target) {
+        public boolean bytesVal(int doc, BytesRefBuilder target) {
+          target.clear();
           if (fillBytes(doc)) {
-            target.bytes = bytesRef.bytes;
-            target.offset = bytesRef.offset;
-            target.length = bytesRef.length;
+            target.copyBytes(bytesRef);
             return true;
           } else {
-            target.length = 0;
             return false;
           }
         }
@@ -244,7 +249,7 @@ public class SerializedDVStrategy extends SpatialStrategy {
           if (!fillBytes(docId))
             return null;
           DataInputStream dataInput = new DataInputStream(
-              new ByteArrayInputStream(bytesRef.bytes, bytesRef.offset, bytesRef.length));
+              new ByteArrayInputStream(bytesRef.bytes(), 0, bytesRef.length()));
           try {
             return binaryCodec.readShape(dataInput);
           } catch (IOException e) {

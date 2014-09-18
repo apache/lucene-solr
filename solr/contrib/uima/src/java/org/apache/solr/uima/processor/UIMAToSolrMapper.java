@@ -38,9 +38,9 @@ public class UIMAToSolrMapper {
 
   private final Logger log = LoggerFactory.getLogger(UIMAToSolrMapper.class);
 
-  private SolrInputDocument document;
+  private final SolrInputDocument document;
 
-  private JCas cas;
+  private final JCas cas;
 
   public UIMAToSolrMapper(SolrInputDocument document, JCas cas) {
     this.document = document;
@@ -67,7 +67,7 @@ public class UIMAToSolrMapper {
           if (log.isInfoEnabled()) {
             log.info("mapping {}@{} to {}", new Object[]{typeName, featureName, fieldName});
           }
-          String featureValue = null;
+          String featureValue;
           if (fs instanceof Annotation && "coveredText".equals(featureName)) {
             featureValue = ((Annotation) fs).getCoveredText();
           } else {

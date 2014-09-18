@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.uima;
 
 import org.apache.lucene.analysis.Analyzer;
 
-import java.io.Reader;
 import java.util.Map;
 
 /**
@@ -39,7 +38,7 @@ public final class UIMATypeAwareAnalyzer extends Analyzer {
   }
 
   @Override
-  protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-    return new TokenStreamComponents(new UIMATypeAwareAnnotationsTokenizer(descriptorPath, tokenType, featurePath, configurationParameters, reader));
+  protected TokenStreamComponents createComponents(String fieldName) {
+    return new TokenStreamComponents(new UIMATypeAwareAnnotationsTokenizer(descriptorPath, tokenType, featurePath, configurationParameters));
   }
 }

@@ -34,7 +34,8 @@ public class TestTruncateTokenFilterFactory extends BaseTokenStreamFactoryTestCa
    */
   public void testTruncating() throws Exception {
     Reader reader = new StringReader("abcdefg 1234567 ABCDEFG abcde abc 12345 123");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    ((Tokenizer) stream).setReader(reader);
     stream = tokenFilterFactory("Truncate",
         TruncateTokenFilterFactory.PREFIX_LENGTH_KEY, "5").create(stream);
     assertTokenStreamContents(stream, new String[]{"abcde", "12345", "ABCDE", "abcde", "abc", "12345", "123"});

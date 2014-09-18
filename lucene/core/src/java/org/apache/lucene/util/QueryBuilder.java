@@ -202,9 +202,7 @@ public class QueryBuilder {
     boolean severalTokensAtSamePosition = false;
     boolean hasMoreTokens = false;    
     
-    TokenStream source = null;
-    try {
-      source = analyzer.tokenStream(field, queryText);
+    try (TokenStream source = analyzer.tokenStream(field, queryText)) {
       source.reset();
       buffer = new CachingTokenFilter(source);
       buffer.reset();
@@ -231,8 +229,6 @@ public class QueryBuilder {
       }
     } catch (IOException e) {
       throw new RuntimeException("Error analyzing query text", e);
-    } finally {
-      IOUtils.closeWhileHandlingException(source);
     }
     
     // rewind the buffer stream

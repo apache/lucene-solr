@@ -27,7 +27,6 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 
 public class TestLimitTokenPositionFilter extends BaseTokenStreamTestCase {
@@ -36,8 +35,8 @@ public class TestLimitTokenPositionFilter extends BaseTokenStreamTestCase {
     for (final boolean consumeAll : new boolean[]{true, false}) {
       Analyzer a = new Analyzer() {
         @Override
-        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        protected TokenStreamComponents createComponents(String fieldName) {
+          MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
           // if we are consuming all tokens, we can use the checks, otherwise we can't
           tokenizer.setEnableChecks(consumeAll);
           return new TokenStreamComponents(tokenizer, new LimitTokenPositionFilter(tokenizer, 2, consumeAll));
@@ -62,7 +61,7 @@ public class TestLimitTokenPositionFilter extends BaseTokenStreamTestCase {
 
   public void testMaxPosition3WithSynomyms() throws IOException {
     for (final boolean consumeAll : new boolean[]{true, false}) {
-      MockTokenizer tokenizer = new MockTokenizer(new StringReader("one two three four five"), MockTokenizer.WHITESPACE, false);
+      MockTokenizer tokenizer = whitespaceMockTokenizer("one two three four five");
       // if we are consuming all tokens, we can use the checks, otherwise we can't
       tokenizer.setEnableChecks(consumeAll);
 
@@ -88,6 +87,6 @@ public class TestLimitTokenPositionFilter extends BaseTokenStreamTestCase {
 
   @Test(expected = IllegalArgumentException.class)
   public void testIllegalArguments() throws Exception {
-    new LimitTokenPositionFilter(new MockTokenizer(new StringReader("one two three four five")), 0);
+    new LimitTokenPositionFilter(whitespaceMockTokenizer("one two three four five"), 0);
   }
 }

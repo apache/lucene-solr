@@ -17,7 +17,6 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.solr.cloud.CurrentCoreDescriptorProvider;
 import org.apache.solr.cloud.SolrZkServer;
 import org.apache.solr.cloud.ZkController;
@@ -41,11 +40,6 @@ import java.util.concurrent.TimeoutException;
 
 public class ZkContainer {
   protected static Logger log = LoggerFactory.getLogger(ZkContainer.class);
-  
-  /** @deprecated will be remove in Solr 5.0 (SOLR-4622) */
-  public static final String DEFAULT_HOST_CONTEXT = "solr";
-  /** @deprecated will be remove in Solr 5.0 (SOLR-4622) */
-  public static final String DEFAULT_HOST_PORT = "8983";
   
   protected ZkController zkController;
   private SolrZkServer zkServer;
@@ -71,15 +65,7 @@ public class ZkContainer {
         config.getZkHost(), config.getZkClientTimeout(), config.getZkHostPort(), config.getZkHostContext(),
         config.getHost(), config.getLeaderVoteWait(), config.getLeaderConflictResolveWait(), config.getGenericCoreNodeNames());
   }
-  // TODO: 5.0 remove this, it's only here for back-compat and only called from ConfigSolr.
-  public static boolean isZkMode() {
-    String test = System.getProperty("zkHost");
-    if (StringUtils.isBlank(test)) {
-      test = System.getProperty("zkRun");
-    }
-    return StringUtils.isNotBlank(test);
-  }
-
+    
   public void initZooKeeper(final CoreContainer cc, String solrHome, String zkHost, int zkClientTimeout, String hostPort,
         String hostContext, String host, int leaderVoteWait, int leaderConflictResolveWait, boolean genericCoreNodeNames) {
 
@@ -98,21 +84,14 @@ public class ZkContainer {
     if (zkRun == null && zookeeperHost == null)
         return;  // not in zk mode
 
-
-    // BEGIN: SOLR-4622: deprecated hardcoded defaults for hostPort & hostContext
     if (null == hostPort) {
-      // throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-      //               "'hostPort' must be configured to run SolrCloud");
-      log.warn("Solr 'hostPort' has not be explicitly configured, using hardcoded default of " + DEFAULT_HOST_PORT + ".  This default has been deprecated and will be removed in future versions of Solr, please configure this value explicitly");
-      hostPort = DEFAULT_HOST_PORT;
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+                   "'hostPort' must be configured to run SolrCloud");
     }
     if (null == hostContext) {
-      // throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-      //               "'hostContext' must be configured to run SolrCloud");
-      log.warn("Solr 'hostContext' has not be explicitly configured, using hardcoded default of " + DEFAULT_HOST_CONTEXT + ".  This default has been deprecated and will be removed in future versions of Solr, please configure this value explicitly");
-      hostContext = DEFAULT_HOST_CONTEXT;
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+                   "'hostContext' must be configured to run SolrCloud");
     }
-    // END: SOLR-4622
 
     // zookeeper in quorum mode currently causes a failure when trying to
     // register log4j mbeans.  See SOLR-2369

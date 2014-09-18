@@ -300,9 +300,4 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
   public String getDescription() {
     return "Get Info (and statistics) for registered SolrInfoMBeans";
   }
-
-  @Override
-  public String getSource() {
-    return null;
-  }
 }

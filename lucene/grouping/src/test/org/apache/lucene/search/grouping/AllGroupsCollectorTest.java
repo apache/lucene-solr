@@ -18,10 +18,13 @@ package org.apache.lucene.search.grouping;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.*;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
 import org.apache.lucene.search.IndexSearcher;
@@ -47,25 +50,24 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
         random(),
         dir,
         newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
-    boolean canUseIDV = !"Lucene3x".equals(w.w.getConfig().getCodec().getName());
 
     // 0
     Document doc = new Document();
-    addGroupField(doc, groupField, "author1", canUseIDV);
+    addGroupField(doc, groupField, "author1");
     doc.add(new TextField("content", "random text", Field.Store.YES));
     doc.add(new Field("id", "1", customType));
     w.addDocument(doc);
 
     // 1
     doc = new Document();
-    addGroupField(doc, groupField, "author1", canUseIDV);
+    addGroupField(doc, groupField, "author1");
     doc.add(new TextField("content", "some more random text blob", Field.Store.YES));
     doc.add(new Field("id", "2", customType));
     w.addDocument(doc);
 
     // 2
     doc = new Document();
-    addGroupField(doc, groupField, "author1", canUseIDV);
+    addGroupField(doc, groupField, "author1");
     doc.add(new TextField("content", "some more random textual data", Field.Store.YES));
     doc.add(new Field("id", "3", customType));
     w.addDocument(doc);
@@ -73,21 +75,21 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
 
     // 3
     doc = new Document();
-    addGroupField(doc, groupField, "author2", canUseIDV);
+    addGroupField(doc, groupField, "author2");
     doc.add(new TextField("content", "some random text", Field.Store.YES));
     doc.add(new Field("id", "4", customType));
     w.addDocument(doc);
 
     // 4
     doc = new Document();
-    addGroupField(doc, groupField, "author3", canUseIDV);
+    addGroupField(doc, groupField, "author3");
     doc.add(new TextField("content", "some more random text", Field.Store.YES));
     doc.add(new Field("id", "5", customType));
     w.addDocument(doc);
 
     // 5
     doc = new Document();
-    addGroupField(doc, groupField, "author3", canUseIDV);
+    addGroupField(doc, groupField, "author3");
     doc.add(new TextField("content", "random blob", Field.Store.YES));
     doc.add(new Field("id", "6", customType));
     w.addDocument(doc);
@@ -101,15 +103,15 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
     IndexSearcher indexSearcher = newSearcher(w.getReader());
     w.close();
 
-    AbstractAllGroupsCollector<?> allGroupsCollector = createRandomCollector(groupField, canUseIDV);
+    AbstractAllGroupsCollector<?> allGroupsCollector = createRandomCollector(groupField);
     indexSearcher.search(new TermQuery(new Term("content", "random")), allGroupsCollector);
     assertEquals(4, allGroupsCollector.getGroupCount());
 
-    allGroupsCollector = createRandomCollector(groupField, canUseIDV);
+    allGroupsCollector = createRandomCollector(groupField);
     indexSearcher.search(new TermQuery(new Term("content", "some")), allGroupsCollector);
     assertEquals(3, allGroupsCollector.getGroupCount());
 
-    allGroupsCollector = createRandomCollector(groupField, canUseIDV);
+    allGroupsCollector = createRandomCollector(groupField);
     indexSearcher.search(new TermQuery(new Term("content", "blob")), allGroupsCollector);
     assertEquals(2, allGroupsCollector.getGroupCount());
 
@@ -117,14 +119,12 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
     dir.close();
   }
 
-  private void addGroupField(Document doc, String groupField, String value, boolean canUseIDV) {
+  private void addGroupField(Document doc, String groupField, String value) {
     doc.add(new TextField(groupField, value, Field.Store.YES));
-    if (canUseIDV) {
-      doc.add(new SortedDocValuesField(groupField, new BytesRef(value)));
-    }
+    doc.add(new SortedDocValuesField(groupField, new BytesRef(value)));
   }
 
-  private AbstractAllGroupsCollector<?> createRandomCollector(String groupField, boolean canUseIDV) {
+  private AbstractAllGroupsCollector<?> createRandomCollector(String groupField) {
     AbstractAllGroupsCollector<?> selected;
     if (random().nextBoolean()) {
       selected = new TermAllGroupsCollector(groupField);

@@ -17,8 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -435,15 +435,15 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
     final long t0 = System.currentTimeMillis();
 
     Random random = new Random(random().nextLong());
-    final LineFileDocs docs = new LineFileDocs(random, defaultCodecSupportsDocValues());
-    final File tempDir = createTempDir(testName);
+    final LineFileDocs docs = new LineFileDocs(random, true);
+    final Path tempDir = createTempDir(testName);
     dir = getDirectory(newMockFSDirectory(tempDir)); // some subclasses rely on this being MDW
     if (dir instanceof BaseDirectoryWrapper) {
       ((BaseDirectoryWrapper) dir).setCheckIndexOnClose(false); // don't double-checkIndex, we do it ourselves.
     }
     MockAnalyzer analyzer = new MockAnalyzer(random());
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
-    final IndexWriterConfig conf = newIndexWriterConfig(analyzer);
+    final IndexWriterConfig conf = newIndexWriterConfig(analyzer).setCommitOnClose(false);
     conf.setInfoStream(new FailOnNonBulkMergesInfoStream());
     if (conf.getMergePolicy() instanceof MockRandomMergePolicy) {
       ((MockRandomMergePolicy)conf.getMergePolicy()).setDoNonBulkMerges(false);
@@ -637,9 +637,14 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
     assertEquals("index=" + writer.segString() + " addCount=" + addCount + " delCount=" + delCount, addCount.get() - delCount.get(), writer.numDocs());
 
     doClose();
-    writer.close(false);
 
-    // Cannot shutdown until after writer is closed because
+    try {
+      writer.commit();
+    } finally {
+      writer.close();
+    }
+
+    // Cannot close until after writer is closed because
     // writer has merged segment warmer that uses IS to run
     // searches, and that IS may be using this es!
     if (es != null) {
@@ -659,11 +664,9 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
   private int runQuery(IndexSearcher s, Query q) throws Exception {
     s.search(q, 10);
     int hitCount = s.search(q, null, 10, new Sort(new SortField("title", SortField.Type.STRING))).totalHits;
-    if (defaultCodecSupportsDocValues()) {
-      final Sort dvSort = new Sort(new SortField("title", SortField.Type.STRING));
-      int hitCount2 = s.search(q, null, 10, dvSort).totalHits;
-      assertEquals(hitCount, hitCount2);
-    }
+    final Sort dvSort = new Sort(new SortField("title", SortField.Type.STRING));
+    int hitCount2 = s.search(q, null, 10, dvSort).totalHits;
+    assertEquals(hitCount, hitCount2);
     return hitCount;
   }
 

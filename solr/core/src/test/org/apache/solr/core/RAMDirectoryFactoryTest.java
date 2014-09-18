@@ -20,6 +20,7 @@ package org.apache.solr.core;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.core.DirectoryFactory.DirContext;
@@ -38,7 +39,7 @@ public class RAMDirectoryFactoryTest extends LuceneTestCase {
     final Directory directory = new RAMDirectory();
     RAMDirectoryFactory factory = new RAMDirectoryFactory()  {
       @Override
-      protected Directory create(String path, DirContext dirContext) {
+      protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) {
         return directory;
       }
     };

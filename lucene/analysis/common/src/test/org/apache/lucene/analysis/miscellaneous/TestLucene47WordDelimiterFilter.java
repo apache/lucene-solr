@@ -27,8 +27,6 @@ import org.apache.lucene.analysis.util.CharArraySet;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
 import java.util.*;
 
 import static org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.*;
@@ -129,8 +127,7 @@ public class TestLucene47WordDelimiterFilter extends BaseTokenStreamTestCase {
 
   public void doSplit(final String input, String... output) throws Exception {
     int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
-    MockTokenizer tokenizer = new MockTokenizer(new StringReader(input), MockTokenizer.KEYWORD, false);
-    TokenFilter wdf = new Lucene47WordDelimiterFilter(tokenizer,
+    TokenFilter wdf = new Lucene47WordDelimiterFilter(keywordMockTokenizer(input),
         WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, flags, null);
     
     assertTokenStreamContents(wdf, output);
@@ -174,8 +171,7 @@ public class TestLucene47WordDelimiterFilter extends BaseTokenStreamTestCase {
   public void doSplitPossessive(int stemPossessive, final String input, final String... output) throws Exception {
     int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS;
     flags |= (stemPossessive == 1) ? STEM_ENGLISH_POSSESSIVE : 0;
-    MockTokenizer tokenizer = new MockTokenizer(new StringReader(input), MockTokenizer.KEYWORD, false);
-    TokenFilter wdf = new Lucene47WordDelimiterFilter(tokenizer, flags, null);
+    TokenFilter wdf = new Lucene47WordDelimiterFilter(keywordMockTokenizer(input), flags, null);
 
     assertTokenStreamContents(wdf, output);
   }
@@ -220,8 +216,8 @@ public class TestLucene47WordDelimiterFilter extends BaseTokenStreamTestCase {
     /* analyzer that uses whitespace + wdf */
     Analyzer a = new Analyzer() {
       @Override
-      public TokenStreamComponents createComponents(String field, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      public TokenStreamComponents createComponents(String field) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, new Lucene47WordDelimiterFilter(
             tokenizer,
             flags, protWords));
@@ -257,8 +253,8 @@ public class TestLucene47WordDelimiterFilter extends BaseTokenStreamTestCase {
     /* analyzer that will consume tokens with large position increments */
     Analyzer a2 = new Analyzer() {
       @Override
-      public TokenStreamComponents createComponents(String field, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      public TokenStreamComponents createComponents(String field) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, new Lucene47WordDelimiterFilter(
             new LargePosIncTokenFilter(tokenizer),
             flags, protWords));
@@ -302,8 +298,8 @@ public class TestLucene47WordDelimiterFilter extends BaseTokenStreamTestCase {
 
     Analyzer a3 = new Analyzer() {
       @Override
-      public TokenStreamComponents createComponents(String field, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      public TokenStreamComponents createComponents(String field) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         StopFilter filter = new StopFilter(tokenizer, StandardAnalyzer.STOP_WORDS_SET);
         return new TokenStreamComponents(tokenizer, new Lucene47WordDelimiterFilter(filter, flags, protWords));
       }
@@ -344,8 +340,8 @@ public class TestLucene47WordDelimiterFilter extends BaseTokenStreamTestCase {
       Analyzer a = new Analyzer() {
         
         @Override
-        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        protected TokenStreamComponents createComponents(String fieldName) {
+          Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
           return new TokenStreamComponents(tokenizer, new Lucene47WordDelimiterFilter(tokenizer, flags, protectedWords));
         }
       };
@@ -366,8 +362,8 @@ public class TestLucene47WordDelimiterFilter extends BaseTokenStreamTestCase {
     
       Analyzer a = new Analyzer() { 
         @Override
-        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          Tokenizer tokenizer = new KeywordTokenizer(reader);
+        protected TokenStreamComponents createComponents(String fieldName) {
+          Tokenizer tokenizer = new KeywordTokenizer();
           return new TokenStreamComponents(tokenizer, new Lucene47WordDelimiterFilter(tokenizer, flags, protectedWords));
         }
       };

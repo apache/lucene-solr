@@ -19,7 +19,6 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.solr.SolrTestCaseJ4;
@@ -120,7 +119,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     List<String> tests = new ArrayList<>();
 
     // Construct xpaths like the following:
-    // "//doc[./float[@name='foo_pf']='10.0' and ./float[@name='score']='10.0']"
+    // "//doc[./float[@name='foo_f']='10.0' and ./float[@name='score']='10.0']"
 
     for (int i=0; i<results.length; i+=2) {
       String xpath = "//doc[./float[@name='" + "id" + "']='"
@@ -202,13 +201,10 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     singleTest(field,"sum(query($v1,5),query($v1,7))",
             Arrays.asList("v1","\0:[* TO *]"),  88,12
             );
-
-    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity
   }
 
   @Test
   public void testFunctions() {
-    doTest("foo_pf");  // a plain float field
     doTest("foo_f");  // a sortable float field
     doTest("foo_tf");  // a trie float field
   }
@@ -284,9 +280,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
       singleTest(field, "\0", answers);
       // System.out.println("Done test "+i);
-    }
-
-    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity    
+    }  
   }
 
   @Test
@@ -423,17 +417,12 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
            ,"*//doc[1]/float[.='120.0']"
            ,"*//doc[2]/float[.='121.0']"
     );
-
-
-    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity
   }
 
   /**
    * test collection-level term stats (new in 4.x indexes)
    */
-  public void testTotalTermFreq() throws Exception {
-    assumeFalse("PreFlex codec does not support collection-level term stats", "Lucene3x".equals(Codec.getDefault().getName()));
-
+  public void testTotalTermFreq() throws Exception {  
     clearIndex();
     
     assertU(adoc("id","1", "a_tdt","2009-08-31T12:10:10.123Z", "b_tdt","2009-08-31T12:10:10.124Z"));
@@ -643,9 +632,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertU(adoc("id", "10000")); // will get same reader if no index change
     assertU(commit());   
     singleTest(fieldAsFunc, "sqrt(\0)");
-    assertTrue(orig != FileFloatSource.onlyForTesting);
-
-    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity    
+    assertTrue(orig != FileFloatSource.onlyForTesting);  
   }
 
   /**
@@ -670,9 +657,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
                100,100,  -4,-4,  0,0,  10,10,  25,25,  5,5,  77,77,  1,1);
     singleTest(fieldAsFunc, "sqrt(\0)", 
                100,10,  25,5,  0,0,   1,1);
-    singleTest(fieldAsFunc, "log(\0)",  1,0);
-
-    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity    
+    singleTest(fieldAsFunc, "log(\0)",  1,0); 
   }
 
     @Test
@@ -744,7 +729,6 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     
     for (String suffix : new String[] {"s", "b", "dt", "tdt",
                                        "i", "l", "f", "d", 
-                                       "pi", "pl", "pf", "pd",
                                        "ti", "tl", "tf", "td"    }) {
       final String field = "no__vals____" + suffix;
       assertQ(req("q","id:1",

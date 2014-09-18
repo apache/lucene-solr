@@ -58,16 +58,6 @@ class ReadersAndUpdates {
   // Set once (null, and then maybe set, and never set again):
   private SegmentReader reader;
 
-  // TODO: it's sometimes wasteful that we hold open two
-  // separate SRs (one for merging one for
-  // reading)... maybe just use a single SR?  The gains of
-  // not loading the terms index (for merging in the
-  // non-NRT case) are far less now... and if the app has
-  // any deletes it'll open real readers anyway.
-
-  // Set once (null, and then maybe set, and never set again):
-  private SegmentReader mergeReader;
-
   // Holds the current shared (readable and writable)
   // liveDocs.  This is null when there are no deleted
   // docs, and it's copy-on-write (cloned whenever we need
@@ -141,7 +131,7 @@ class ReadersAndUpdates {
   public SegmentReader getReader(IOContext context) throws IOException {
     if (reader == null) {
       // We steal returned ref:
-      reader = new SegmentReader(info, writer.getConfig().getReaderTermsIndexDivisor(), context);
+      reader = new SegmentReader(info, context);
       if (liveDocs == null) {
         liveDocs = reader.getLiveDocs();
       }
@@ -152,37 +142,6 @@ class ReadersAndUpdates {
     return reader;
   }
   
-  // Get reader for merging (does not load the terms
-  // index):
-  public synchronized SegmentReader getMergeReader(IOContext context) throws IOException {
-    //System.out.println("  livedocs=" + rld.liveDocs);
-
-    if (mergeReader == null) {
-
-      if (reader != null) {
-        // Just use the already opened non-merge reader
-        // for merging.  In the NRT case this saves us
-        // pointless double-open:
-        //System.out.println("PROMOTE non-merge reader seg=" + rld.info);
-        // Ref for us:
-        reader.incRef();
-        mergeReader = reader;
-        //System.out.println(Thread.currentThread().getName() + ": getMergeReader share seg=" + info.name);
-      } else {
-        //System.out.println(Thread.currentThread().getName() + ": getMergeReader seg=" + info.name);
-        // We steal returned ref:
-        mergeReader = new SegmentReader(info, -1, context);
-        if (liveDocs == null) {
-          liveDocs = mergeReader.getLiveDocs();
-        }
-      }
-    }
-
-    // Ref for caller
-    mergeReader.incRef();
-    return mergeReader;
-  }
-
   public synchronized void release(SegmentReader sr) throws IOException {
     assert info == sr.getSegmentInfo();
     sr.decRef();
@@ -206,23 +165,12 @@ class ReadersAndUpdates {
   public synchronized void dropReaders() throws IOException {
     // TODO: can we somehow use IOUtils here...?  problem is
     // we are calling .decRef not .close)...
-    try {
-      if (reader != null) {
-        //System.out.println("  pool.drop info=" + info + " rc=" + reader.getRefCount());
-        try {
-          reader.decRef();
-        } finally {
-          reader = null;
-        }
-      }
-    } finally {
-      if (mergeReader != null) {
-        //System.out.println("  pool.drop info=" + info + " merge rc=" + mergeReader.getRefCount());
-        try {
-          mergeReader.decRef();
-        } finally {
-          mergeReader = null;
-        }
+    if (reader != null) {
+      //System.out.println("  pool.drop info=" + info + " rc=" + reader.getRefCount());
+      try {
+        reader.decRef();
+      } finally {
+        reader = null;
       }
     }
 
@@ -300,7 +248,6 @@ class ReadersAndUpdates {
   // Commit live docs (writes new _X_N.del files) and field updates (writes new
   // _X_N updates files) to the directory; returns true if it wrote any file
   // and false if there were no new deletes or updates to write:
-  // TODO (DVU_RENAME) to writeDeletesAndUpdates
   public synchronized boolean writeLiveDocs(Directory dir) throws IOException {
     assert Thread.holdsLock(writer);
     //System.out.println("rld.writeLiveDocs seg=" + info + " pendingDelCount=" + pendingDeleteCount + " numericUpdates=" + numericUpdates);
@@ -350,7 +297,6 @@ class ReadersAndUpdates {
   @SuppressWarnings("synthetic-access")
   private void handleNumericDVUpdates(FieldInfos infos, Map<String,NumericDocValuesFieldUpdates> updates,
       Directory dir, DocValuesFormat dvFormat, final SegmentReader reader, Map<Integer,Set<String>> fieldFiles) throws IOException {
-    int termsIndexDivisor = writer.getConfig().getReaderTermsIndexDivisor();
     for (Entry<String,NumericDocValuesFieldUpdates> e : updates.entrySet()) {
       final String field = e.getKey();
       final NumericDocValuesFieldUpdates fieldUpdates = e.getValue();
@@ -365,7 +311,7 @@ class ReadersAndUpdates {
       final FieldInfos fieldInfos = new FieldInfos(new FieldInfo[] { fieldInfo });
       // separately also track which files were created for this gen
       final TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(dir);
-      final SegmentWriteState state = new SegmentWriteState(null, trackingDir, info.info, fieldInfos, termsIndexDivisor, null, updatesContext, segmentSuffix);
+      final SegmentWriteState state = new SegmentWriteState(null, trackingDir, info.info, fieldInfos, null, updatesContext, segmentSuffix);
       try (final DocValuesConsumer fieldsConsumer = dvFormat.fieldsConsumer(state)) {
         // write the numeric updates to a new gen'd docvalues file
         fieldsConsumer.addNumericField(fieldInfo, new Iterable<Number>() {
@@ -424,7 +370,6 @@ class ReadersAndUpdates {
   @SuppressWarnings("synthetic-access")
   private void handleBinaryDVUpdates(FieldInfos infos, Map<String,BinaryDocValuesFieldUpdates> updates, 
       TrackingDirectoryWrapper dir, DocValuesFormat dvFormat, final SegmentReader reader, Map<Integer,Set<String>> fieldFiles) throws IOException {
-    int termsIndexDivisor = writer.getConfig().getReaderTermsIndexDivisor();
     for (Entry<String,BinaryDocValuesFieldUpdates> e : updates.entrySet()) {
       final String field = e.getKey();
       final BinaryDocValuesFieldUpdates fieldUpdates = e.getValue();
@@ -439,7 +384,7 @@ class ReadersAndUpdates {
       final FieldInfos fieldInfos = new FieldInfos(new FieldInfo[] { fieldInfo });
       // separately also track which files were created for this gen
       final TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(dir);
-      final SegmentWriteState state = new SegmentWriteState(null, trackingDir, info.info, fieldInfos, termsIndexDivisor, null, updatesContext, segmentSuffix);
+      final SegmentWriteState state = new SegmentWriteState(null, trackingDir, info.info, fieldInfos, null, updatesContext, segmentSuffix);
       try (final DocValuesConsumer fieldsConsumer = dvFormat.fieldsConsumer(state)) {
         // write the binary updates to a new gen'd docvalues file
         fieldsConsumer.addBinaryField(fieldInfo, new Iterable<BytesRef>() {
@@ -532,7 +477,7 @@ class ReadersAndUpdates {
 
       // reader could be null e.g. for a just merged segment (from
       // IndexWriter.commitMergedDeletes).
-      final SegmentReader reader = this.reader == null ? new SegmentReader(info, writer.getConfig().getReaderTermsIndexDivisor(), IOContext.READONCE) : this.reader;
+      final SegmentReader reader = this.reader == null ? new SegmentReader(info, IOContext.READONCE) : this.reader;
       try {
         // clone FieldInfos so that we can update their dvGen separately from
         // the reader's infos and write them to a new fieldInfos_gen file

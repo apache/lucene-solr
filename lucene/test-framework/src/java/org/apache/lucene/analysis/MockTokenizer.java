@@ -18,7 +18,6 @@ package org.apache.lucene.analysis;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.nio.CharBuffer;
 import java.util.Random;
 
@@ -90,35 +89,34 @@ public class MockTokenizer extends Tokenizer {
   // evil: but we don't change the behavior with this random, we only switch up how we read
   private final Random random = new Random(RandomizedContext.current().getRandom().nextLong());
   
-  public MockTokenizer(AttributeFactory factory, Reader input, CharacterRunAutomaton runAutomaton, boolean lowerCase, int maxTokenLength) {
-    super(factory, input);
+  public MockTokenizer(AttributeFactory factory, CharacterRunAutomaton runAutomaton, boolean lowerCase, int maxTokenLength) {
+    super(factory);
     this.runAutomaton = runAutomaton;
     this.lowerCase = lowerCase;
     this.state = runAutomaton.getInitialState();
-    this.streamState = State.SETREADER;
     this.maxTokenLength = maxTokenLength;
   }
 
-  public MockTokenizer(Reader input, CharacterRunAutomaton runAutomaton, boolean lowerCase, int maxTokenLength) {
-    this(BaseTokenStreamTestCase.newAttributeFactory(), input, runAutomaton, lowerCase, maxTokenLength);
+  public MockTokenizer(CharacterRunAutomaton runAutomaton, boolean lowerCase, int maxTokenLength) {
+    this(BaseTokenStreamTestCase.newAttributeFactory(), runAutomaton, lowerCase, maxTokenLength);
   }
 
-  public MockTokenizer(Reader input, CharacterRunAutomaton runAutomaton, boolean lowerCase) {
-    this(input, runAutomaton, lowerCase, DEFAULT_MAX_TOKEN_LENGTH);
+  public MockTokenizer(CharacterRunAutomaton runAutomaton, boolean lowerCase) {
+    this(runAutomaton, lowerCase, DEFAULT_MAX_TOKEN_LENGTH);
   }
-  /** Calls {@link #MockTokenizer(Reader, CharacterRunAutomaton, boolean) MockTokenizer(Reader, WHITESPACE, true)} */
-  public MockTokenizer(Reader input) {
-    this(input, WHITESPACE, true);
-  }
-
-  public MockTokenizer(AttributeFactory factory, Reader input, CharacterRunAutomaton runAutomaton, boolean lowerCase) {
-    this(factory, input, runAutomaton, lowerCase, DEFAULT_MAX_TOKEN_LENGTH);
+  /** Calls {@link #MockTokenizer(CharacterRunAutomaton, boolean) MockTokenizer(Reader, WHITESPACE, true)} */
+  public MockTokenizer() {
+    this(WHITESPACE, true);
   }
 
-  /** Calls {@link #MockTokenizer(AttributeFactory,Reader,CharacterRunAutomaton,boolean)
+  public MockTokenizer(AttributeFactory factory, CharacterRunAutomaton runAutomaton, boolean lowerCase) {
+    this(factory, runAutomaton, lowerCase, DEFAULT_MAX_TOKEN_LENGTH);
+  }
+
+  /** Calls {@link #MockTokenizer(AttributeFactory,CharacterRunAutomaton,boolean)
    *                MockTokenizer(AttributeFactory, Reader, WHITESPACE, true)} */
-  public MockTokenizer(AttributeFactory factory, Reader input) {
-    this(input, WHITESPACE, true);
+  public MockTokenizer(AttributeFactory factory) {
+    this(factory, WHITESPACE, true);
   }
 
   @Override

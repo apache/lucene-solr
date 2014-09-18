@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.Document;
@@ -70,8 +69,8 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         
         final Analyzer analyzer = new Analyzer() {
           @Override
-          public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-            return new TokenStreamComponents(new MockTokenizer(reader, MockTokenizer.WHITESPACE, true));
+          public TokenStreamComponents createComponents(String fieldName) {
+            return new TokenStreamComponents(new MockTokenizer(MockTokenizer.WHITESPACE, true));
           }
         };
         Directory directory = new SeekCountingDirectory(new RAMDirectory());

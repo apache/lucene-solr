@@ -2,7 +2,7 @@
  *  Hyperlinked spelling suggestions in results list
  *#
 
-#set($collations = $response.response.spellcheck.suggestions.getAll("collation"))
+#set($collations = $response.response.spellcheck.collations.getAll("collation"))
 #if($collations.size() > 0)
   Did you mean
   #foreach($collation in $collations)

@@ -662,7 +662,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
   }
 
-  // make sure that log isn't needlessly replayed after a clean shutdown
+  // make sure that log isn't needlessly replayed after a clean close
   @Test
   public void testCleanShutdown() throws Exception {
     DirectUpdateHandler2.commitOnClose = true;

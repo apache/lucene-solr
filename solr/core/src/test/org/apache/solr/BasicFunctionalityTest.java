@@ -34,7 +34,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LazyDocument;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext.Context;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -796,7 +795,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
     // testing everything from query level is hard because
     // time marches on ... and there is no easy way to reach into the
-    // bowels of DateField and muck with the definition of "now"
+    // bowels of TrieDateField and muck with the definition of "now"
     //    ...
     // BUT: we can test that crazy combinations of "NOW" all work correctly,
     // assuming the test doesn't take too long to run...

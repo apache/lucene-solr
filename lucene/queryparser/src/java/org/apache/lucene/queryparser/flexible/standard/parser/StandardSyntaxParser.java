@@ -146,7 +146,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
   QueryNode q;
     q = Query(field);
     jj_consume_token(0);
-    {if (true) return q;}
+     {if (true) return q;}
     throw new Error("Missing return statement in function");
   }
 
@@ -187,8 +187,8 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
        if (clauses == null) {
            clauses = new Vector<>();
            clauses.addElement(first);
-       }
-       clauses.addElement(c);
+        }
+        clauses.addElement(c);
     }
         if (clauses != null) {
         {if (true) return new BooleanQueryNode(clauses);}
@@ -273,18 +273,18 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
 //     
 //     // do not create modifier nodes with MOD_NONE
 //      if (mods != ModifierQueryNode.Modifier.MOD_NONE) {
-//        q = new ModifierQueryNode(q, mods);
-//      }
+//          q = new ModifierQueryNode(q, mods);
+//         }
 //      clauses.add(q);
 //   }
 //   (
 //     conj=Conjunction() mods=Modifiers() q=Clause(field)
 //     { 
 //       // do not create modifier nodes with MOD_NONE
-//        if (mods != ModifierQueryNode.Modifier.MOD_NONE) {
+//         if (mods != ModifierQueryNode.Modifier.MOD_NONE) {
 //          q = new ModifierQueryNode(q, mods);
-//        }
-//        clauses.add(q);
+//         }
+//          clauses.add(q);
 //        //TODO: figure out what to do with AND and ORs
 //   }
 //   )*
@@ -302,7 +302,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     mods = Modifiers();
     q = Clause(field);
         if (mods != ModifierQueryNode.Modifier.MOD_NONE) {
-          q = new ModifierQueryNode(q, mods);
+           q = new ModifierQueryNode(q, mods);
         }
         {if (true) return q;}
     throw new Error("Missing return statement in function");
@@ -381,7 +381,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
               lowerInclusive = true;
               upperInclusive = false;
 
-              qLower = new FieldQueryNode(field,
+               qLower = new FieldQueryNode(field,
                                          "*", term.beginColumn, term.endColumn);
             qUpper = new FieldQueryNode(field,
                                  EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn);
@@ -568,8 +568,8 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
            try {
             fms = Float.valueOf(fuzzySlop.image.substring(1)).floatValue();
            } catch (Exception ignored) { }
-          if(fms < 0.0f){
-            {if (true) throw new ParseException(new MessageImpl(QueryParserMessages.INVALID_SYNTAX_FUZZY_LIMITS));}
+           if(fms < 0.0f){
+                {if (true) throw new ParseException(new MessageImpl(QueryParserMessages.INVALID_SYNTAX_FUZZY_LIMITS));}
           } else if (fms >= 1.0f && fms != (int) fms) {
             {if (true) throw new ParseException(new MessageImpl(QueryParserMessages.INVALID_SYNTAX_FUZZY_EDITS));}
           }

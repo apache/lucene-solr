@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.morfologik;
  */
 
 import java.util.Map;
-import java.util.logging.Logger;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -62,10 +61,7 @@ public class MorfologikFilterFactory extends TokenFilterFactory {
     // Be specific about no-longer-supported dictionary attribute.
     String dictionaryName = get(args, DICTIONARY_SCHEMA_ATTRIBUTE);
     if (dictionaryName != null && !dictionaryName.isEmpty()) {
-      // We do not throw a hard exception on 4.x branch to keep it backward compatible.
-      // Emit a warning though.
-      Logger.getLogger(MorfologikFilterFactory.class.getName())
-        .warning("The " + DICTIONARY_SCHEMA_ATTRIBUTE + " attribute is no "
+      throw new IllegalArgumentException("The " + DICTIONARY_SCHEMA_ATTRIBUTE + " attribute is no "
           + "longer supported (Morfologik now offers one unified Polish dictionary): " + dictionaryName
           + ". Perhaps you wanted to use 'dictionary-resource' attribute instead?");
     }

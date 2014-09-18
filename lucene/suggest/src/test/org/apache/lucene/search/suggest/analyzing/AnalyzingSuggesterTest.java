@@ -17,13 +17,12 @@ package org.apache.lucene.search.suggest.analyzing;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -272,8 +271,8 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
 
     final Analyzer analyzer = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, true);
         
         return new TokenStreamComponents(tokenizer) {
           int tokenStreamCounter = 0;
@@ -345,8 +344,8 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
 
     final Analyzer analyzer = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, true);
         
         return new TokenStreamComponents(tokenizer) {
           int tokenStreamCounter = 0;
@@ -423,8 +422,8 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
   private final Analyzer getUnusualAnalyzer() {
     return new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, true);
         
         return new TokenStreamComponents(tokenizer) {
 
@@ -628,8 +627,9 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     }
 
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      MockTokenizer tokenizer = new MockTokenizer(MockUTF16TermAttributeImpl.UTF16_TERM_ATTRIBUTE_FACTORY, reader, MockTokenizer.WHITESPACE, false, MockTokenizer.DEFAULT_MAX_TOKEN_LENGTH);
+    public TokenStreamComponents createComponents(String fieldName) {
+      MockTokenizer tokenizer = new MockTokenizer(MockUTF16TermAttributeImpl.UTF16_TERM_ATTRIBUTE_FACTORY,
+          MockTokenizer.WHITESPACE, false, MockTokenizer.DEFAULT_MAX_TOKEN_LENGTH);
       tokenizer.setEnableChecks(true);
       TokenStream next;
       if (numStopChars != 0) {
@@ -920,16 +920,15 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(3, results.get(2).value);
 
     // Try again after save/load:
-    File tmpDir = createTempDir("AnalyzingSuggesterTest");
-    tmpDir.mkdir();
+    Path tmpDir = createTempDir("AnalyzingSuggesterTest");
 
-    File path = new File(tmpDir, "suggester");
+    Path path = tmpDir.resolve("suggester");
 
-    OutputStream os = new FileOutputStream(path);
+    OutputStream os = Files.newOutputStream(path);
     suggester.store(os);
     os.close();
 
-    InputStream is = new FileInputStream(path);
+    InputStream is = Files.newInputStream(path);
     suggester.load(is);
     is.close();
 
@@ -947,8 +946,8 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
   public void testDupSurfaceFormsMissingResults() throws Exception {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, true);
         
         return new TokenStreamComponents(tokenizer) {
 
@@ -982,16 +981,15 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(5, results.get(1).value);
 
     // Try again after save/load:
-    File tmpDir = createTempDir("AnalyzingSuggesterTest");
-    tmpDir.mkdir();
+    Path tmpDir = createTempDir("AnalyzingSuggesterTest");
 
-    File path = new File(tmpDir, "suggester");
+    Path path = tmpDir.resolve("suggester");
 
-    OutputStream os = new FileOutputStream(path);
+    OutputStream os = Files.newOutputStream(path);
     suggester.store(os);
     os.close();
 
-    InputStream is = new FileInputStream(path);
+    InputStream is = Files.newInputStream(path);
     suggester.load(is);
     is.close();
 
@@ -1006,8 +1004,8 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
   public void testDupSurfaceFormsMissingResults2() throws Exception {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, true);
         
         return new TokenStreamComponents(tokenizer) {
 
@@ -1052,16 +1050,15 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(5, results.get(1).value);
 
     // Try again after save/load:
-    File tmpDir = createTempDir("AnalyzingSuggesterTest");
-    tmpDir.mkdir();
+    Path tmpDir = createTempDir("AnalyzingSuggesterTest");
 
-    File path = new File(tmpDir, "suggester");
+    Path path = tmpDir.resolve("suggester");
 
-    OutputStream os = new FileOutputStream(path);
+    OutputStream os = Files.newOutputStream(path);
     suggester.store(os);
     os.close();
 
-    InputStream is = new FileInputStream(path);
+    InputStream is = Files.newInputStream(path);
     suggester.load(is);
     is.close();
 
@@ -1076,8 +1073,8 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
   public void test0ByteKeys() throws Exception {
     final Analyzer a = new Analyzer() {
         @Override
-        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+        protected TokenStreamComponents createComponents(String fieldName) {
+          Tokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, true);
         
           return new TokenStreamComponents(tokenizer) {
             int tokenStreamCounter = 0;
@@ -1146,8 +1143,8 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
 
     final Analyzer a = new Analyzer() {
         @Override
-        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+        protected TokenStreamComponents createComponents(String fieldName) {
+          Tokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, true);
         
           return new TokenStreamComponents(tokenizer) {
             @Override
@@ -1204,7 +1201,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
   public void testTooLongSuggestion() throws Exception {
     Analyzer a = new MockAnalyzer(random());
     AnalyzingSuggester suggester = new AnalyzingSuggester(a);
-    String bigString = TestUtil.randomSimpleString(random(), 60000, 60000);
+    String bigString = TestUtil.randomSimpleString(random(), 30000, 30000);
     try {
       suggester.build(new InputArrayIterator(new Input[] {
             new Input(bigString, 7)}));

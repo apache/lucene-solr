@@ -17,42 +17,21 @@ package org.apache.lucene.analysis.core;
  * limitations under the License.
  */
 
-import java.io.Reader;
-
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.util.CharTokenizer;
-import org.apache.lucene.util.Version;
 
 /**
  * An Analyzer that uses {@link WhitespaceTokenizer}.
- * <p>
- * <a name="version">You may specify the {@link Version} compatibility
- * when creating {@link WhitespaceAnalyzer}:
- * <ul>
- * <li>As of 3.1, {@link WhitespaceTokenizer} uses an int based API to normalize and
- * detect token codepoints. See {@link CharTokenizer#isTokenChar(int)} and
- * {@link CharTokenizer#normalize(int)} for details.</li>
- * </ul>
- * <p>
  **/
 public final class WhitespaceAnalyzer extends Analyzer {
   
   /**
    * Creates a new {@link WhitespaceAnalyzer}
    */
-  public WhitespaceAnalyzer() {}
-
-  /**
-   * @deprecated Use {@link #WhitespaceAnalyzer()}
-   */
-  @Deprecated
-  public WhitespaceAnalyzer(Version matchVersion) {
-    setVersion(matchVersion);
+  public WhitespaceAnalyzer() {
   }
   
   @Override
-  protected TokenStreamComponents createComponents(final String fieldName,
-      final Reader reader) {
-    return new TokenStreamComponents(new WhitespaceTokenizer(getVersion(), reader));
+  protected TokenStreamComponents createComponents(final String fieldName) {
+    return new TokenStreamComponents(new WhitespaceTokenizer());
   }
 }

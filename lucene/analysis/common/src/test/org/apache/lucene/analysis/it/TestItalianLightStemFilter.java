@@ -34,16 +34,15 @@ import static org.apache.lucene.analysis.VocabularyAssert.*;
 public class TestItalianLightStemFilter extends BaseTokenStreamTestCase {
   private Analyzer analyzer = new Analyzer() {
     @Override
-    protected TokenStreamComponents createComponents(String fieldName,
-        Reader reader) {
-      Tokenizer source = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    protected TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
       return new TokenStreamComponents(source, new ItalianLightStemFilter(source));
     }
   };
   
   /** Test against a vocabulary from the reference impl */
   public void testVocabulary() throws IOException {
-    assertVocabulary(analyzer, getDataFile("itlighttestdata.zip"), "itlight.txt");
+    assertVocabulary(analyzer, getDataPath("itlighttestdata.zip"), "itlight.txt");
   }
   
   /** blast some random strings through the analyzer */
@@ -54,8 +53,8 @@ public class TestItalianLightStemFilter extends BaseTokenStreamTestCase {
   public void testEmptyTerm() throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, new ItalianLightStemFilter(tokenizer));
       }
     };

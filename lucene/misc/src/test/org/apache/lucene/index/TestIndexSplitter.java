@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.index;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -24,13 +24,11 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.Version;
 
 public class TestIndexSplitter extends LuceneTestCase {
   public void test() throws Exception {
-    File dir = createTempDir(LuceneTestCase.getTestClass().getSimpleName());
-    File destDir = createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    Path dir = createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    Path destDir = createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     Directory fsDir = newFSDirectory(dir);
     // IndexSplitter.split makes its own commit directly with SIPC/SegmentInfos,
     // so the unreferenced files are expected.
@@ -43,7 +41,7 @@ public class TestIndexSplitter extends LuceneTestCase {
     mergePolicy.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
     IndexWriter iw = new IndexWriter(
         fsDir,
-        new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())).
+        new IndexWriterConfig(new MockAnalyzer(random())).
             setOpenMode(OpenMode.CREATE).
             setMergePolicy(mergePolicy)
     );
@@ -77,17 +75,17 @@ public class TestIndexSplitter extends LuceneTestCase {
     fsDirDest.close();
     
     // now test cmdline
-    File destDir2 = createTempDir(LuceneTestCase.getTestClass().getSimpleName());
-    IndexSplitter.main(new String[] {dir.getAbsolutePath(), destDir2.getAbsolutePath(), splitSegName});
-    assertEquals(4, destDir2.listFiles().length);
+    Path destDir2 = createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    IndexSplitter.main(new String[] {dir.toAbsolutePath().toString(), destDir2.toAbsolutePath().toString(), splitSegName});
     Directory fsDirDest2 = newFSDirectory(destDir2);
+    assertEquals(4, fsDirDest2.listAll().length);
     r = DirectoryReader.open(fsDirDest2);
     assertEquals(50, r.maxDoc());
     r.close();
     fsDirDest2.close();
     
     // now remove the copied segment from src
-    IndexSplitter.main(new String[] {dir.getAbsolutePath(), "-d", splitSegName});
+    IndexSplitter.main(new String[] {dir.toAbsolutePath().toString(), "-d", splitSegName});
     r = DirectoryReader.open(fsDir);
     assertEquals(2, r.leaves().size());
     r.close();

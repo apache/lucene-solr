@@ -151,7 +151,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     Directory ramdir = new RAMDirectory();
     Analyzer analyzer = randomAnalyzer();
     IndexWriter writer = new IndexWriter(ramdir,
-                                         new IndexWriterConfig(Version.LATEST, analyzer).setCodec(TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat())));
+                                         new IndexWriterConfig(analyzer).setCodec(TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat())));
     Document doc = new Document();
     Field field1 = newTextField("foo", fooField.toString(), Field.Store.NO);
     Field field2 = newTextField("term", termField.toString(), Field.Store.NO);
@@ -258,8 +258,8 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       case 1: return new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET);
       case 2: return new Analyzer() {
         @Override
-        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          Tokenizer tokenizer = new MockTokenizer(reader);
+        protected TokenStreamComponents createComponents(String fieldName) {
+          Tokenizer tokenizer = new MockTokenizer();
           return new TokenStreamComponents(tokenizer, new CrazyTokenFilter(tokenizer));
         }
       };
@@ -432,7 +432,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       Directory dir = newDirectory();
       MockAnalyzer mockAnalyzer = new MockAnalyzer(random());
       mockAnalyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
-      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), Version.LATEST, mockAnalyzer));
+      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), mockAnalyzer));
       Document nextDoc = lineFileDocs.nextDoc();
       Document doc = new Document();
       for (IndexableField field : nextDoc.getFields()) {
@@ -488,7 +488,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     doc.add(new Field(field_name, "foo bar foo bar foo", type));
 
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), Version.LATEST, mockAnalyzer));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), mockAnalyzer));
     writer.updateDocument(new Term("id", "1"), doc);
     writer.commit();
     writer.close();

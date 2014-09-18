@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.blocktreeords;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.codecs.BlockTermState;
@@ -956,10 +955,5 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
   private static void writeBytesRef(IndexOutput out, BytesRef bytes) throws IOException {
     out.writeVInt(bytes.length);
     out.writeBytes(bytes.bytes, bytes.offset, bytes.length);
-  }
-  
-  @Override
-  public Comparator<BytesRef> getComparator() {
-    return BytesRef.getUTF8SortedAsUnicodeComparator();
   }
 }

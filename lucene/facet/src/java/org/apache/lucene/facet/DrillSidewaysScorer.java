@@ -23,6 +23,7 @@ import java.util.Collections;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Scorer;
@@ -36,6 +37,7 @@ class DrillSidewaysScorer extends BulkScorer {
   //private static boolean DEBUG = false;
 
   private final Collector drillDownCollector;
+  private LeafCollector drillDownLeafCollector;
 
   private final DocsAndCost[] dims;
 
@@ -62,7 +64,7 @@ class DrillSidewaysScorer extends BulkScorer {
   }
 
   @Override
-  public boolean score(Collector collector, int maxDoc) throws IOException {
+  public boolean score(LeafCollector collector, int maxDoc) throws IOException {
     if (maxDoc != Integer.MAX_VALUE) {
       throw new IllegalArgumentException("maxDoc must be Integer.MAX_VALUE");
     }
@@ -73,12 +75,14 @@ class DrillSidewaysScorer extends BulkScorer {
     FakeScorer scorer = new FakeScorer();
     collector.setScorer(scorer);
     if (drillDownCollector != null) {
-      drillDownCollector.setScorer(scorer);
-      drillDownCollector.setNextReader(context);
+      drillDownLeafCollector = drillDownCollector.getLeafCollector(context);
+      drillDownLeafCollector.setScorer(scorer);
+    } else {
+      drillDownLeafCollector = null;
     }
     for (DocsAndCost dim : dims) {
-      dim.sidewaysCollector.setScorer(scorer);
-      dim.sidewaysCollector.setNextReader(context);
+      dim.sidewaysLeafCollector = dim.sidewaysCollector.getLeafCollector(context);
+      dim.sidewaysLeafCollector.setScorer(scorer);
     }
 
     // TODO: if we ever allow null baseScorer ... it will
@@ -100,10 +104,10 @@ class DrillSidewaysScorer extends BulkScorer {
     final int numDims = dims.length;
 
     Bits[] bits = new Bits[numBits];
-    Collector[] bitsSidewaysCollectors = new Collector[numBits];
+    LeafCollector[] bitsSidewaysCollectors = new LeafCollector[numBits];
 
     DocIdSetIterator[] disis = new DocIdSetIterator[numDims-numBits];
-    Collector[] sidewaysCollectors = new Collector[numDims-numBits];
+    LeafCollector[] sidewaysCollectors = new LeafCollector[numDims-numBits];
     long drillDownCost = 0;
     int disiUpto = 0;
     int bitsUpto = 0;
@@ -111,14 +115,14 @@ class DrillSidewaysScorer extends BulkScorer {
       DocIdSetIterator disi = dims[dim].disi;
       if (dims[dim].bits == null) {
         disis[disiUpto] = disi;
-        sidewaysCollectors[disiUpto] = dims[dim].sidewaysCollector;
+        sidewaysCollectors[disiUpto] = dims[dim].sidewaysLeafCollector;
         disiUpto++;
         if (disi != null) {
           drillDownCost += disi.cost();
         }
       } else {
         bits[bitsUpto] = dims[dim].bits;
-        bitsSidewaysCollectors[bitsUpto] = dims[dim].sidewaysCollector;
+        bitsSidewaysCollectors[bitsUpto] = dims[dim].sidewaysLeafCollector;
         bitsUpto++;
       }
     }
@@ -154,15 +158,15 @@ class DrillSidewaysScorer extends BulkScorer {
    *  (i.e., like BooleanScorer2, not BooleanScorer).  In
    *  this case we just .next() on base and .advance() on
    *  the dim filters. */ 
-  private void doQueryFirstScoring(Collector collector, DocIdSetIterator[] disis, Collector[] sidewaysCollectors,
-                                   Bits[] bits, Collector[] bitsSidewaysCollectors) throws IOException {
+  private void doQueryFirstScoring(LeafCollector collector, DocIdSetIterator[] disis, LeafCollector[] sidewaysCollectors,
+                                   Bits[] bits, LeafCollector[] bitsSidewaysCollectors) throws IOException {
     //if (DEBUG) {
     //  System.out.println("  doQueryFirstScoring");
     //}
     int docID = baseScorer.docID();
 
     nextDoc: while (docID != DocsEnum.NO_MORE_DOCS) {
-      Collector failedCollector = null;
+      LeafCollector failedCollector = null;
       for (int i=0;i<disis.length;i++) {
         // TODO: should we sort this 2nd dimension of
         // docsEnums from most frequent to least?
@@ -225,7 +229,7 @@ class DrillSidewaysScorer extends BulkScorer {
 
   /** Used when drill downs are highly constraining vs
    *  baseQuery. */
-  private void doDrillDownAdvanceScoring(Collector collector, DocIdSetIterator[] disis, Collector[] sidewaysCollectors) throws IOException {
+  private void doDrillDownAdvanceScoring(LeafCollector collector, DocIdSetIterator[] disis, LeafCollector[] sidewaysCollectors) throws IOException {
     final int maxDoc = context.reader().maxDoc();
     final int numDims = dims.length;
 
@@ -423,7 +427,7 @@ class DrillSidewaysScorer extends BulkScorer {
     }
   }
 
-  private void doUnionScoring(Collector collector, DocIdSetIterator[] disis, Collector[] sidewaysCollectors) throws IOException {
+  private void doUnionScoring(LeafCollector collector, DocIdSetIterator[] disis, LeafCollector[] sidewaysCollectors) throws IOException {
     //if (DEBUG) {
     //  System.out.println("  doUnionScoring");
     //}
@@ -569,14 +573,14 @@ class DrillSidewaysScorer extends BulkScorer {
     }
   }
 
-  private void collectHit(Collector collector, Collector[] sidewaysCollectors) throws IOException {
+  private void collectHit(LeafCollector collector, LeafCollector[] sidewaysCollectors) throws IOException {
     //if (DEBUG) {
     //  System.out.println("      hit");
     //}
 
     collector.collect(collectDocID);
     if (drillDownCollector != null) {
-      drillDownCollector.collect(collectDocID);
+      drillDownLeafCollector.collect(collectDocID);
     }
 
     // TODO: we could "fix" faceting of the sideways counts
@@ -589,14 +593,14 @@ class DrillSidewaysScorer extends BulkScorer {
     }
   }
 
-  private void collectHit(Collector collector, Collector[] sidewaysCollectors, Collector[] sidewaysCollectors2) throws IOException {
+  private void collectHit(LeafCollector collector, LeafCollector[] sidewaysCollectors, LeafCollector[] sidewaysCollectors2) throws IOException {
     //if (DEBUG) {
     //  System.out.println("      hit");
     //}
 
     collector.collect(collectDocID);
     if (drillDownCollector != null) {
-      drillDownCollector.collect(collectDocID);
+      drillDownLeafCollector.collect(collectDocID);
     }
 
     // TODO: we could "fix" faceting of the sideways counts
@@ -612,7 +616,7 @@ class DrillSidewaysScorer extends BulkScorer {
     }
   }
 
-  private void collectNearMiss(Collector sidewaysCollector) throws IOException {
+  private void collectNearMiss(LeafCollector sidewaysCollector) throws IOException {
     //if (DEBUG) {
     //  System.out.println("      missingDim=" + dim);
     //}
@@ -620,8 +624,6 @@ class DrillSidewaysScorer extends BulkScorer {
   }
 
   private final class FakeScorer extends Scorer {
-    float score;
-    int doc;
 
     public FakeScorer() {
       super(null);
@@ -674,6 +676,7 @@ class DrillSidewaysScorer extends BulkScorer {
     // Random access bits:
     Bits bits;
     Collector sidewaysCollector;
+    LeafCollector sidewaysLeafCollector;
     String dim;
 
     @Override

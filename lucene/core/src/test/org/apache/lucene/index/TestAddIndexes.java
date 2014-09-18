@@ -29,7 +29,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene410.Lucene410Codec;
-import org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat;
+import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -47,7 +47,6 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.Version;
 
 public class TestAddIndexes extends LuceneTestCase {
   
@@ -416,7 +415,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
     setUpDirs(dir, aux, true);
 
-    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
+    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(new MockAnalyzer(random()))
       .setMergePolicy(NoMergePolicy.INSTANCE);
     IndexWriter writer = new IndexWriter(aux, dontMergeConfig);
     for (int i = 0; i < 20; i++) {
@@ -468,7 +467,7 @@ public class TestAddIndexes extends LuceneTestCase {
     assertEquals(3, writer.getSegmentCount());
     writer.close();
 
-    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
+    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(new MockAnalyzer(random()))
       .setMergePolicy(NoMergePolicy.INSTANCE);
     writer = new IndexWriter(aux, dontMergeConfig);
     for (int i = 0; i < 27; i++) {
@@ -479,7 +478,7 @@ public class TestAddIndexes extends LuceneTestCase {
     assertEquals(3, reader.numDocs());
     reader.close();
 
-    dontMergeConfig = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()))
+    dontMergeConfig = new IndexWriterConfig(new MockAnalyzer(random()))
     .setMergePolicy(NoMergePolicy.INSTANCE);
     writer = new IndexWriter(aux2, dontMergeConfig);
     for (int i = 0; i < 8; i++) {
@@ -662,15 +661,14 @@ public class TestAddIndexes extends LuceneTestCase {
     public RunAddIndexesThreads(int numCopy) throws Throwable {
       NUM_COPY = numCopy;
       dir = new MockDirectoryWrapper(random(), new RAMDirectory());
-      IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-          Version.LATEST, new MockAnalyzer(random()))
+      IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random()))
           .setMaxBufferedDocs(2));
       for (int i = 0; i < NUM_INIT_DOCS; i++)
         addDoc(writer);
       writer.close();
 
       dir2 = newDirectory();
-      writer2 = new IndexWriter(dir2, new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())));
+      writer2 = new IndexWriter(dir2, new IndexWriterConfig(new MockAnalyzer(random())));
       writer2.commit();
       
 
@@ -717,7 +715,11 @@ public class TestAddIndexes extends LuceneTestCase {
 
     void close(boolean doWait) throws Throwable {
       didClose = true;
-      writer2.close(doWait);
+      if (doWait == false) {
+        writer2.abortMerges();
+      }
+      //writer2.close();
+      writer2.rollback();
     }
 
     void closeDir() throws Throwable {
@@ -751,7 +753,15 @@ public class TestAddIndexes extends LuceneTestCase {
           System.out.println(Thread.currentThread().getName() + ": TEST: addIndexes(Dir[]) then full merge");
         }
         writer2.addIndexes(dirs);
-        writer2.forceMerge(1);
+        try {
+          writer2.forceMerge(1);
+        } catch (IOException ioe) {
+          if (ioe.getCause() instanceof MergePolicy.MergeAbortedException) {
+            // OK
+          } else {
+            throw ioe;
+          }
+        }
         break;
       case 1:
         if (VERBOSE) {
@@ -968,7 +978,7 @@ public class TestAddIndexes extends LuceneTestCase {
       writer.close();
     }
 
-    IndexWriterConfig conf = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random()));
+    IndexWriterConfig conf = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dirs[0], conf);
 
     // Now delete the document
@@ -1063,14 +1073,14 @@ public class TestAddIndexes extends LuceneTestCase {
   private static final class CustomPerFieldCodec extends Lucene410Codec {
     private final PostingsFormat simpleTextFormat = PostingsFormat.forName("SimpleText");
     private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene41");
-    private final PostingsFormat mockSepFormat = PostingsFormat.forName("MockSep");
+    private final PostingsFormat memoryFormat = PostingsFormat.forName("Memory");
 
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {
       if (field.equals("id")) {
         return simpleTextFormat;
       } else if (field.equals("content")) {
-        return mockSepFormat;
+        return memoryFormat;
       } else {
         return defaultFormat;
       }
@@ -1083,7 +1093,7 @@ public class TestAddIndexes extends LuceneTestCase {
     Directory[] dirs = new Directory[2];
     for (int i = 0; i < dirs.length; i++) {
       dirs[i] = new RAMDirectory();
-      IndexWriter w = new IndexWriter(dirs[i], new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())));
+      IndexWriter w = new IndexWriter(dirs[i], new IndexWriterConfig(new MockAnalyzer(random())));
       Document d = new Document();
       FieldType customType = new FieldType(TextField.TYPE_STORED);
       customType.setStoreTermVectors(true);
@@ -1096,7 +1106,7 @@ public class TestAddIndexes extends LuceneTestCase {
     
     MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new RAMDirectory());
     dir.setEnableVirusScanner(false); // we check for specific list of files
-    IndexWriterConfig conf = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy(true));
+    IndexWriterConfig conf = new IndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy(true));
     MergePolicy lmp = conf.getMergePolicy();
     // Force creation of CFS:
     lmp.setNoCFSRatio(1.0);
@@ -1139,7 +1149,7 @@ public class TestAddIndexes extends LuceneTestCase {
     {
       Directory dir = newDirectory();
       IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
-      conf.setCodec(TestUtil.alwaysPostingsFormat(new Pulsing41PostingsFormat(1 + random().nextInt(20))));
+      conf.setCodec(TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat()));
       IndexWriter w = new IndexWriter(dir, conf);
       try {
         w.addIndexes(toAdd);
@@ -1265,6 +1275,8 @@ public class TestAddIndexes extends LuceneTestCase {
       // expected
     }
 
-    IOUtils.close(w1, w2, src, dest);
+    w1.close();
+    w2.close();
+    IOUtils.close(src, dest);
   }
 }

@@ -17,12 +17,10 @@ package org.apache.solr.spelling.suggest;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.SpellingParams;
 import org.junit.BeforeClass;
 
-@SuppressCodecs("Lucene3x")
 public class TestFreeTextSuggestions extends SolrTestCaseJ4 {
   static final String URI = "/free_text_suggest";
   

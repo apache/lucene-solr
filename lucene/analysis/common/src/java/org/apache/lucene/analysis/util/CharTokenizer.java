@@ -18,71 +18,23 @@ package org.apache.lucene.analysis.util;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.AttributeFactory;
-import org.apache.lucene.util.Version;
+import org.apache.lucene.analysis.util.CharacterUtils;
 import org.apache.lucene.analysis.util.CharacterUtils.CharacterBuffer;
 
 /**
  * An abstract base class for simple, character-oriented tokenizers. 
- * <p>
- * <a name="version">You must specify the required {@link Version} compatibility
- * when creating {@link CharTokenizer}:
- * <ul>
- * <li>As of 3.1, {@link CharTokenizer} uses an int based API to normalize and
- * detect token codepoints. See {@link #isTokenChar(int)} and
- * {@link #normalize(int)} for details.</li>
- * </ul>
- * <p>
- * A new {@link CharTokenizer} API has been introduced with Lucene 3.1. This API
- * moved from UTF-16 code units to UTF-32 codepoints to eventually add support
- * for <a href=
- * "http://java.sun.com/j2se/1.5.0/docs/api/java/lang/Character.html#supplementary"
- * >supplementary characters</a>. The old <i>char</i> based API has been
- * deprecated and should be replaced with the <i>int</i> based methods
- * {@link #isTokenChar(int)} and {@link #normalize(int)}.
- * </p>
- * <p>
- * As of Lucene 3.1 each {@link CharTokenizer} - constructor expects a
- * {@link Version} argument. Based on the given {@link Version} either the new
- * API or a backwards compatibility layer is used at runtime. For
- * {@link Version} < 3.1 the backwards compatibility layer ensures correct
- * behavior even for indexes build with previous versions of Lucene. If a
- * {@link Version} >= 3.1 is used {@link CharTokenizer} requires the new API to
- * be implemented by the instantiated class. Yet, the old <i>char</i> based API
- * is not required anymore even if backwards compatibility must be preserved.
- * {@link CharTokenizer} subclasses implementing the new API are fully backwards
- * compatible if instantiated with {@link Version} < 3.1.
- * </p>
- * <p>
- * <strong>Note:</strong> If you use a subclass of {@link CharTokenizer} with {@link Version} >=
- * 3.1 on an index build with a version < 3.1, created tokens might not be
- * compatible with the terms in your index.
- * </p>
  **/
 public abstract class CharTokenizer extends Tokenizer {
   
   /**
    * Creates a new {@link CharTokenizer} instance
-   * @param input
-   *          the input to split up into tokens
    */
-  public CharTokenizer(Reader input) {
-    super(input);
-    charUtils = CharacterUtils.getInstance();
-  }
-
-  /**
-   * @deprecated Use {@link #CharTokenizer(Reader)}
-   */
-  @Deprecated
-  public CharTokenizer(Version matchVersion, Reader input) {
-    super(input);
-    charUtils = CharacterUtils.getInstance(matchVersion);
+  public CharTokenizer() {
   }
   
   /**
@@ -90,24 +42,11 @@ public abstract class CharTokenizer extends Tokenizer {
    * 
    * @param factory
    *          the attribute factory to use for this {@link Tokenizer}
-   * @param input
-   *          the input to split up into tokens
    */
-  public CharTokenizer(AttributeFactory factory, Reader input) {
-    super(factory, input);
-    charUtils = CharacterUtils.getInstance();
+  public CharTokenizer(AttributeFactory factory) {
+    super(factory);
   }
-
-  /**
-   * @deprecated Use {@link #CharTokenizer(AttributeFactory, Reader)}
-   */
-  @Deprecated
-  public CharTokenizer(Version matchVersion, AttributeFactory factory,
-      Reader input) {
-    super(factory, input);
-    charUtils = CharacterUtils.getInstance(matchVersion);
-  }
-
+  
   private int offset = 0, bufferIndex = 0, dataLen = 0, finalOffset = 0;
   private static final int MAX_WORD_LEN = 255;
   private static final int IO_BUFFER_SIZE = 4096;
@@ -115,7 +54,7 @@ public abstract class CharTokenizer extends Tokenizer {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   
-  private final CharacterUtils charUtils;
+  private final CharacterUtils charUtils = CharacterUtils.getInstance();
   private final CharacterBuffer ioBuffer = CharacterUtils.newCharacterBuffer(IO_BUFFER_SIZE);
   
   /**

@@ -1,5 +1,3 @@
-package org.apache.solr.core;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.solr.core;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.solr.core;
 
 import java.io.File;
 import java.io.IOException;
@@ -85,7 +85,7 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
     coreNames = new ArrayList<>();
     cumulativeDocs = 0;
 
-    solrHomeDirectory = createTempDir();
+    solrHomeDirectory = createTempDir().toFile();
 
     jetty = new JettySolrRunner(solrHomeDirectory.getAbsolutePath(), "/solr", 0, null, null, true, null, sslConfig);
   }
@@ -225,13 +225,13 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
     // create directories in groups of 100 until you have enough.
     for (int idx = 0; idx < numCores; ++idx) {
       String coreName = String.format(Locale.ROOT, "%05d_core", idx);
-      makeCore(new File(home, coreName), testSrcRoot, coreName);
+      makeCore(new File(home, coreName), testSrcRoot, oldStyle);
       coreCounts.put(coreName, 0L);
       coreNames.add(coreName);
     }
   }
 
-  private void makeCore(File coreDir, File testSrcRoot, String coreName) throws IOException {
+  private void makeCore(File coreDir, File testSrcRoot, boolean oldStyle) throws IOException {
     File conf = new File(coreDir, "conf");
 
     if (!conf.mkdirs()) log.warn("mkdirs returned false in makeCore... ignoring");
@@ -244,7 +244,10 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
     FileUtils.copyFile(new File(testConf, "solrconfig.snippet.randomindexconfig.xml"),
         new File(conf, "solrconfig.snippet.randomindexconfig.xml"));
 
-    FileUtils.copyFile(new File(testSrcRoot, "conf/core.properties"), new File(coreDir, "core.properties"));
+    if (!oldStyle) {
+      FileUtils.copyFile(new File(testSrcRoot, "conf/core.properties"), new File(coreDir, "core.properties"));
+    }
+
   }
 
 
@@ -420,7 +423,6 @@ class OneIndexer extends Thread {
             Indexer.updateCounts.incrementAndGet();
             break; // retry loop.
           }
-          server.commit(true, true);
           Thread.sleep(100L); // Let's not go crazy here.
         } catch (Exception e) {
           if (e instanceof InterruptedException) return;
@@ -430,7 +432,7 @@ class OneIndexer extends Thread {
           } else {
             SolrTestCaseJ4.log.info("Indexing thread " + Thread.currentThread().getId() + " swallowed one exception " + e.getMessage());
             try {
-              Thread.sleep(100);
+              Thread.sleep(500);
             } catch (InterruptedException tex) {
               return;
             }
@@ -528,7 +530,7 @@ class OneQuery extends Thread {
           } else {
             SolrTestCaseJ4.log.info("Querying thread: " + Thread.currentThread().getId() + " swallowed exception: " + e.getMessage());
             try {
-              Thread.sleep(250L);
+              Thread.sleep(500L);
             } catch (InterruptedException tex) {
               return;
             }

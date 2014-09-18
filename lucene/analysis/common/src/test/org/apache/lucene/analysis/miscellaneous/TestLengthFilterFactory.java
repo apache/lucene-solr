@@ -22,26 +22,15 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
-import org.apache.lucene.analysis.util.ClasspathResourceLoader;
-import org.apache.lucene.util.Version;
 
 public class TestLengthFilterFactory extends BaseTokenStreamFactoryTestCase {
 
-  public void test() throws Exception {
-    Reader reader = new StringReader("foo foobar super-duper-trooper");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    stream = tokenFilterFactory("Length",
-        Version.LUCENE_4_3, new ClasspathResourceLoader(getClass()),
-        "min", "4",
-        "max", "10",
-        "enablePositionIncrements", "false").create(stream);
-    assertTokenStreamContents(stream, new String[] { "foobar" }, new int[] { 1 });
-  }
-
   public void testPositionIncrements() throws Exception {
     Reader reader = new StringReader("foo foobar super-duper-trooper");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    ((Tokenizer)stream).setReader(reader);
     stream = tokenFilterFactory("Length",
         LengthFilterFactory.MIN_KEY, "4",
         LengthFilterFactory.MAX_KEY, "10").create(stream);
@@ -65,7 +54,8 @@ public class TestLengthFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testInvalidArguments() throws Exception {
     try {
       Reader reader = new StringReader("foo foobar super-duper-trooper");
-      TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+      ((Tokenizer)stream).setReader(reader);
       tokenFilterFactory("Length",
           LengthFilterFactory.MIN_KEY, "5",
           LengthFilterFactory.MAX_KEY, "4").create(stream);

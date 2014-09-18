@@ -144,14 +144,7 @@ class BufferedUpdatesStream implements Accountable {
   private static final Comparator<SegmentCommitInfo> sortSegInfoByDelGen = new Comparator<SegmentCommitInfo>() {
     @Override
     public int compare(SegmentCommitInfo si1, SegmentCommitInfo si2) {
-      final long cmp = si1.getBufferedDeletesGen() - si2.getBufferedDeletesGen();
-      if (cmp > 0) {
-        return 1;
-      } else if (cmp < 0) {
-        return -1;
-      } else {
-        return 0;
-      }
+      return Long.compare(si1.getBufferedDeletesGen(), si2.getBufferedDeletesGen());
     }
   };
   
@@ -184,7 +177,7 @@ class BufferedUpdatesStream implements Accountable {
     infos2.addAll(infos);
     Collections.sort(infos2, sortSegInfoByDelGen);
 
-    CoalescedUpdates coalescedUpdates = null;
+    CoalescedUpdates coalescedDeletes = null;
     boolean anyNewDeletes = false;
 
     int infosIDX = infos2.size()-1;
@@ -201,8 +194,8 @@ class BufferedUpdatesStream implements Accountable {
 
       if (packet != null && segGen < packet.delGen()) {
 //        System.out.println("  coalesce");
-        if (coalescedUpdates == null) {
-          coalescedUpdates = new CoalescedUpdates();
+        if (coalescedDeletes == null) {
+          coalescedDeletes = new CoalescedUpdates();
         }
         if (!packet.isSegmentPrivate) {
           /*
@@ -212,7 +205,7 @@ class BufferedUpdatesStream implements Accountable {
            * its segPrivate packet (higher delGen) have been applied, the segPrivate packet has not been
            * removed.
            */
-          coalescedUpdates.update(packet);
+          coalescedDeletes.update(packet);
         }
 
         delIDX--;
@@ -228,12 +221,12 @@ class BufferedUpdatesStream implements Accountable {
         final boolean segAllDeletes;
         try {
           final DocValuesFieldUpdates.Container dvUpdates = new DocValuesFieldUpdates.Container();
-          if (coalescedUpdates != null) {
+          if (coalescedDeletes != null) {
             //System.out.println("    del coalesced");
-            delCount += applyTermDeletes(coalescedUpdates.termsIterable(), rld, reader);
-            delCount += applyQueryDeletes(coalescedUpdates.queriesIterable(), rld, reader);
-            applyDocValuesUpdates(coalescedUpdates.numericDVUpdates, rld, reader, dvUpdates);
-            applyDocValuesUpdates(coalescedUpdates.binaryDVUpdates, rld, reader, dvUpdates);
+            delCount += applyTermDeletes(coalescedDeletes.termsIterable(), rld, reader);
+            delCount += applyQueryDeletes(coalescedDeletes.queriesIterable(), rld, reader);
+            applyDocValuesUpdates(coalescedDeletes.numericDVUpdates, rld, reader, dvUpdates);
+            applyDocValuesUpdates(coalescedDeletes.binaryDVUpdates, rld, reader, dvUpdates);
           }
           //System.out.println("    del exact");
           // Don't delete by Term here; DocumentsWriterPerThread
@@ -261,11 +254,11 @@ class BufferedUpdatesStream implements Accountable {
         }
 
         if (infoStream.isEnabled("BD")) {
-          infoStream.message("BD", "seg=" + info + " segGen=" + segGen + " segDeletes=[" + packet + "]; coalesced deletes=[" + (coalescedUpdates == null ? "null" : coalescedUpdates) + "] newDelCount=" + delCount + (segAllDeletes ? " 100% deleted" : ""));
+          infoStream.message("BD", "seg=" + info + " segGen=" + segGen + " segDeletes=[" + packet + "]; coalesced deletes=[" + (coalescedDeletes == null ? "null" : coalescedDeletes) + "] newDelCount=" + delCount + (segAllDeletes ? " 100% deleted" : ""));
         }
 
-        if (coalescedUpdates == null) {
-          coalescedUpdates = new CoalescedUpdates();
+        if (coalescedDeletes == null) {
+          coalescedDeletes = new CoalescedUpdates();
         }
         
         /*
@@ -280,7 +273,7 @@ class BufferedUpdatesStream implements Accountable {
       } else {
         //System.out.println("  gt");
 
-        if (coalescedUpdates != null) {
+        if (coalescedDeletes != null) {
           // Lock order: IW -> BD -> RP
           assert readerPool.infoIsLive(info);
           final ReadersAndUpdates rld = readerPool.get(info, true);
@@ -288,11 +281,11 @@ class BufferedUpdatesStream implements Accountable {
           int delCount = 0;
           final boolean segAllDeletes;
           try {
-            delCount += applyTermDeletes(coalescedUpdates.termsIterable(), rld, reader);
-            delCount += applyQueryDeletes(coalescedUpdates.queriesIterable(), rld, reader);
+            delCount += applyTermDeletes(coalescedDeletes.termsIterable(), rld, reader);
+            delCount += applyQueryDeletes(coalescedDeletes.queriesIterable(), rld, reader);
             DocValuesFieldUpdates.Container dvUpdates = new DocValuesFieldUpdates.Container();
-            applyDocValuesUpdates(coalescedUpdates.numericDVUpdates, rld, reader, dvUpdates);
-            applyDocValuesUpdates(coalescedUpdates.binaryDVUpdates, rld, reader, dvUpdates);
+            applyDocValuesUpdates(coalescedDeletes.numericDVUpdates, rld, reader, dvUpdates);
+            applyDocValuesUpdates(coalescedDeletes.binaryDVUpdates, rld, reader, dvUpdates);
             if (dvUpdates.any()) {
               rld.writeFieldUpdates(info.info.dir, dvUpdates);
             }
@@ -313,7 +306,7 @@ class BufferedUpdatesStream implements Accountable {
           }
 
           if (infoStream.isEnabled("BD")) {
-            infoStream.message("BD", "seg=" + info + " segGen=" + segGen + " coalesced deletes=[" + coalescedUpdates + "] newDelCount=" + delCount + (segAllDeletes ? " 100% deleted" : ""));
+            infoStream.message("BD", "seg=" + info + " segGen=" + segGen + " coalesced deletes=[" + coalescedDeletes + "] newDelCount=" + delCount + (segAllDeletes ? " 100% deleted" : ""));
           }
         }
         info.setBufferedDeletesGen(gen);

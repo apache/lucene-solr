@@ -73,9 +73,4 @@ public class OutputStreamIndexOutput extends IndexOutput {
     os.flush();
     return crc.getValue();
   }
-
-  @Override
-  public void flush() throws IOException {
-    os.flush();
-  }
 }

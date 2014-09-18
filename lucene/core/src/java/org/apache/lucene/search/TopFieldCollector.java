@@ -92,7 +92,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     }
     
     @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
       this.docBase = context.docBase;
       queue.setComparator(0, comparator.setNextReader(context));
       comparator = queue.firstComparator;
@@ -446,7 +446,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
       docBase = context.docBase;
       for (int i = 0; i < comparators.length; i++) {
         queue.setComparator(i, comparators[i].setNextReader(context));
@@ -1001,7 +1001,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
       docBase = context.docBase;
       afterDoc = after.doc - docBase;
       for (int i = 0; i < comparators.length; i++) {

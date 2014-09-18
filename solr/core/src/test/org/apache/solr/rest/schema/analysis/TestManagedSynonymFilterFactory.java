@@ -42,7 +42,7 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
    */
   @Before
   public void before() throws Exception {
-    tmpSolrHome = createTempDir();
+    tmpSolrHome = createTempDir().toFile();
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
     final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
@@ -60,6 +60,7 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
   private void after() throws Exception {
     jetty.stop();
     jetty = null;
+    FileUtils.deleteDirectory(tmpSolrHome);
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");
   }

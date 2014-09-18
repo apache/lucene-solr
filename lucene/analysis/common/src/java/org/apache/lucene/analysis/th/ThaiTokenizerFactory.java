@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.th;
  * limitations under the License.
  */
 
-import java.io.Reader;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Tokenizer;
@@ -44,8 +43,8 @@ public class ThaiTokenizerFactory extends TokenizerFactory {
   }
   
   @Override
-  public Tokenizer create(AttributeFactory factory, Reader reader) {
-    return new ThaiTokenizer(factory, reader);
+  public Tokenizer create(AttributeFactory factory) {
+    return new ThaiTokenizer(factory);
   }
 }
 

@@ -17,25 +17,22 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import java.io.File;
-
-import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LiveIndexWriterConfig;
-import org.apache.lucene.util.PrintStreamInfoStream;
+
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.RandomMergePolicy;
+import org.apache.solr.update.LoggingInfoStream;
 import org.junit.BeforeClass;
 
 public class TestSolrIndexConfig extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    File infostreamDir = createTempDir();
-    System.setProperty("infostream.dir", infostreamDir.getAbsolutePath());
-    initCore("solrconfig-indexconfig.xml", "schema.xml");
+    initCore("solrconfig-indexconfig.xml","schema.xml");
   }
 
   public void testLiveWriter() throws Exception {
@@ -61,7 +58,7 @@ public class TestSolrIndexConfig extends SolrTestCaseJ4 {
   private void checkIndexWriterConfig(LiveIndexWriterConfig iwc) {
 
     assertEquals(123, iwc.getMaxThreadStates());
-    assertTrue(iwc.getInfoStream() instanceof PrintStreamInfoStream);
+    assertTrue(iwc.getInfoStream() instanceof LoggingInfoStream);
     assertTrue(iwc.getMergePolicy().getClass().toString(),
                iwc.getMergePolicy() instanceof RandomMergePolicy);
 

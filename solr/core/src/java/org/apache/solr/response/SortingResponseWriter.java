@@ -1177,7 +1177,7 @@ public class SortingResponseWriter implements QueryResponseWriter {
     private String field;
     private FieldType fieldType;
     private boolean numeric;
-    private CharsRef cref = new CharsRef();
+    private CharsRefBuilder cref = new CharsRefBuilder();
 
     public MultiFieldWriter(String field, FieldType fieldType, boolean numeric) {
       this.field = field;
@@ -1274,7 +1274,7 @@ public class SortingResponseWriter implements QueryResponseWriter {
   class StringFieldWriter extends FieldWriter {
     private String field;
     private FieldType fieldType;
-    private CharsRef cref = new CharsRef();
+    private CharsRefBuilder cref = new CharsRefBuilder();
 
     public StringFieldWriter(String field, FieldType fieldType) {
       this.field = field;

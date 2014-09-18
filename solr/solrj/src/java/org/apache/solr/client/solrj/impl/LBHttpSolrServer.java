@@ -106,7 +106,7 @@ public class LBHttpSolrServer extends SolrServer {
   private volatile ResponseParser parser;
   private volatile RequestWriter requestWriter;
 
-  private Set<String> queryParams;
+  private Set<String> queryParams = new HashSet<>();
 
   static {
     solrQuery.setRows(0);
@@ -243,6 +243,9 @@ public class LBHttpSolrServer extends SolrServer {
    */
   public void setQueryParams(Set<String> queryParams) {
     this.queryParams = queryParams;
+  }
+  public void addQueryParams(String queryOnlyParam) {
+    this.queryParams.add(queryOnlyParam) ;
   }
 
   public static String normalize(String server) {

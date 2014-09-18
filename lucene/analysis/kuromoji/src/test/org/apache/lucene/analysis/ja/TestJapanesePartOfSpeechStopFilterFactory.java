@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.util.Version;
 
 /**
@@ -37,7 +38,8 @@ public class TestJapanesePartOfSpeechStopFilterFactory extends BaseTokenStreamTe
     
     JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory(new HashMap<String,String>());
     tokenizerFactory.inform(new StringMockResourceLoader(""));
-    TokenStream ts = tokenizerFactory.create(new StringReader("私は制限スピードを超える。"));
+    TokenStream ts = tokenizerFactory.create();
+    ((Tokenizer)ts).setReader(new StringReader("私は制限スピードを超える。"));
     Map<String,String> args = new HashMap<>();
     args.put("luceneMatchVersion", Version.LATEST.toString());
     args.put("tags", "stoptags.txt");

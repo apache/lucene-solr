@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,14 +37,12 @@ import org.apache.lucene.util.BytesRefBuilder;
 
 class FreqProxFields extends Fields {
   final Map<String,FreqProxTermsWriterPerField> fields = new LinkedHashMap<>();
-  final Comparator<BytesRef> comparator;
 
-  public FreqProxFields(List<FreqProxTermsWriterPerField> fieldList, Comparator<BytesRef> comparator) {
+  public FreqProxFields(List<FreqProxTermsWriterPerField> fieldList) {
     // NOTE: fields are already sorted by field name
     for(FreqProxTermsWriterPerField field : fieldList) {
       fields.put(field.fieldInfo.name, field);
     }
-    this.comparator = comparator;
   }
 
   public Iterator<String> iterator() {
@@ -55,7 +52,7 @@ class FreqProxFields extends Fields {
   @Override
   public Terms terms(String field) throws IOException {
     FreqProxTermsWriterPerField perField = fields.get(field);
-    return perField == null ? null : new FreqProxTerms(perField, comparator);
+    return perField == null ? null : new FreqProxTerms(perField);
   }
 
   @Override
@@ -66,11 +63,9 @@ class FreqProxFields extends Fields {
 
   private static class FreqProxTerms extends Terms {
     final FreqProxTermsWriterPerField terms;
-    final Comparator<BytesRef> comparator;
 
-    public FreqProxTerms(FreqProxTermsWriterPerField terms, Comparator<BytesRef> comparator) {
+    public FreqProxTerms(FreqProxTermsWriterPerField terms) {
       this.terms = terms;
-      this.comparator = comparator;
     }
 
     @Override
@@ -79,7 +74,7 @@ class FreqProxFields extends Fields {
       if (reuse instanceof FreqProxTermsEnum && ((FreqProxTermsEnum) reuse).terms == this.terms) {
         termsEnum = (FreqProxTermsEnum) reuse;
       } else {
-        termsEnum = new FreqProxTermsEnum(terms, comparator);
+        termsEnum = new FreqProxTermsEnum(terms);
       }
       termsEnum.reset();
       return termsEnum;
@@ -134,11 +129,6 @@ class FreqProxFields extends Fields {
     public boolean hasPayloads() {
       return terms.sawPayloads;
     }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return comparator;
-    }
   }
 
   private static class FreqProxTermsEnum extends TermsEnum {
@@ -147,16 +137,14 @@ class FreqProxFields extends Fields {
     final FreqProxPostingsArray postingsArray;
     final BytesRef scratch = new BytesRef();
     final int numTerms;
-    final Comparator<BytesRef> comparator;
     int ord;
 
-    public FreqProxTermsEnum(FreqProxTermsWriterPerField terms, Comparator<BytesRef> comparator) {
+    public FreqProxTermsEnum(FreqProxTermsWriterPerField terms) {
       this.terms = terms;
       this.numTerms = terms.bytesHash.size();
       sortedTermIDs = terms.sortedTermIDs;
       assert sortedTermIDs != null;
       postingsArray = (FreqProxPostingsArray) terms.postingsArray;
-      this.comparator = comparator;
     }
 
     public void reset() {
@@ -175,7 +163,7 @@ class FreqProxFields extends Fields {
         int mid = (lo + hi) >>> 1;
         int textStart = postingsArray.textStarts[sortedTermIDs[mid]];
         terms.bytePool.setBytesRef(scratch, textStart);
-        int cmp = getComparator().compare(scratch, text);
+        int cmp = scratch.compareTo(text);
         if (cmp < 0) {
           lo = mid + 1;
         } else if (cmp > 0) {
@@ -317,11 +305,6 @@ class FreqProxFields extends Fields {
           throw new UnsupportedOperationException();
         }
       };
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return comparator;
     }
   }
 

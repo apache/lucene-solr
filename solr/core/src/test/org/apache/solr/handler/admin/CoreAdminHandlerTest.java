@@ -59,7 +59,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   public void testCreateWithSysVars() throws Exception {
     useFactory(null); // I require FS-based indexes for this test.
 
-    final File workDir = createTempDir(getCoreName());
+    final File workDir = createTempDir(getCoreName()).toFile();
 
     String coreName = "with_sys_vars";
     File instDir = new File(workDir, coreName);
@@ -124,7 +124,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCoreAdminHandler() throws Exception {
-    final File workDir = createTempDir();
+    final File workDir = createTempDir().toFile();
     
     final CoreContainer cores = h.getCoreContainer();
 

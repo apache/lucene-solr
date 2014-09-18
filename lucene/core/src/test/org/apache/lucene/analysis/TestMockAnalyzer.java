@@ -22,7 +22,6 @@ import java.io.StringReader;
 import java.util.Arrays;
 import java.util.Random;
 
-import org.apache.lucene.codecs.lucene3x.Lucene3xCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -34,14 +33,12 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
-
 
 public class TestMockAnalyzer extends BaseTokenStreamTestCase {
 
@@ -189,8 +186,8 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
   public void testTooLongToken() throws Exception {
     Analyzer whitespace = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer t = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false, 5);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer t = new MockTokenizer(MockTokenizer.WHITESPACE, false, 5);
         return new TokenStreamComponents(t, t);
       }
     };
@@ -237,8 +234,8 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
       final int limit = TestUtil.nextInt(random(), 0, 500);
       Analyzer a = new Analyzer() {
         @Override
-        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          Tokenizer t = new MockTokenizer(reader, dfa, lowercase, limit);
+        protected TokenStreamComponents createComponents(String fieldName) {
+          Tokenizer t = new MockTokenizer(dfa, lowercase, limit);
           return new TokenStreamComponents(t, t);
         }
       };

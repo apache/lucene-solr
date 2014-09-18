@@ -18,13 +18,11 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
 
 /** Tests the codec configuration defined by LuceneTestCase randomly
  *  (typically a mix across different fields).
  */
-@SuppressCodecs("Lucene3x")
 public class TestDocValuesFormat extends BaseDocValuesFormatTestCase {
 
   @Override

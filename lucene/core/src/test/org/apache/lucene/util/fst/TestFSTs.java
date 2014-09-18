@@ -18,15 +18,13 @@ package org.apache.lucene.util.fst;
  */
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -307,13 +305,13 @@ public class TestFSTs extends LuceneTestCase {
   // file, up until a time limit
   public void testRealTerms() throws Exception {
 
-    final LineFileDocs docs = new LineFileDocs(random(), defaultCodecSupportsDocValues());
+    final LineFileDocs docs = new LineFileDocs(random(), true);
     final int RUN_TIME_MSEC = atLeast(500);
     MockAnalyzer analyzer = new MockAnalyzer(random());
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
 
     final IndexWriterConfig conf = newIndexWriterConfig(analyzer).setMaxBufferedDocs(-1).setRAMBufferSizeMB(64);
-    final File tempDir = createTempDir("fstlines");
+    final Path tempDir = createTempDir("fstlines");
     final Directory dir = newFSDirectory(tempDir);
     final IndexWriter writer = new IndexWriter(dir, conf);
     final long stopTime = System.currentTimeMillis() + RUN_TIME_MSEC;
@@ -458,14 +456,14 @@ public class TestFSTs extends LuceneTestCase {
   }
 
   private static abstract class VisitTerms<T> {
-    private final String dirOut;
-    private final String wordsFileIn;
+    private final Path dirOut;
+    private final Path wordsFileIn;
     private int inputMode;
     private final Outputs<T> outputs;
     private final Builder<T> builder;
     private final boolean doPack;
 
-    public VisitTerms(String dirOut, String wordsFileIn, int inputMode, int prune, Outputs<T> outputs, boolean doPack, boolean noArcArrays) {
+    public VisitTerms(Path dirOut, Path wordsFileIn, int inputMode, int prune, Outputs<T> outputs, boolean doPack, boolean noArcArrays) {
       this.dirOut = dirOut;
       this.wordsFileIn = wordsFileIn;
       this.inputMode = inputMode;
@@ -478,7 +476,8 @@ public class TestFSTs extends LuceneTestCase {
     protected abstract T getOutput(IntsRef input, int ord) throws IOException;
 
     public void run(int limit, boolean verify, boolean verifyByOutput) throws IOException {
-      BufferedReader is = new BufferedReader(new InputStreamReader(new FileInputStream(wordsFileIn), StandardCharsets.UTF_8), 65536);
+      
+      BufferedReader is = Files.newBufferedReader(wordsFileIn, StandardCharsets.UTF_8);
       try {
         final IntsRefBuilder intsRef = new IntsRefBuilder();
         long tStart = System.currentTimeMillis();
@@ -521,13 +520,13 @@ public class TestFSTs extends LuceneTestCase {
 
         System.out.println(ord + " terms; " + fst.getNodeCount() + " nodes; " + fst.getArcCount() + " arcs; " + fst.getArcWithOutputCount() + " arcs w/ output; tot size " + fst.ramBytesUsed());
         if (fst.getNodeCount() < 100) {
-          Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"), StandardCharsets.UTF_8);
+          Writer w = Files.newBufferedWriter(Paths.get("out.dot"), StandardCharsets.UTF_8);
           Util.toDot(fst, w, false, false);
           w.close();
           System.out.println("Wrote FST to out.dot");
         }
 
-        Directory dir = FSDirectory.open(new File(dirOut));
+        Directory dir = FSDirectory.open(dirOut);
         IndexOutput out = dir.createOutput("fst.bin", IOContext.DEFAULT);
         fst.save(out);
         out.close();
@@ -548,7 +547,7 @@ public class TestFSTs extends LuceneTestCase {
         while(true) {
           for(int iter=0;iter<2;iter++) {
             is.close();
-            is = new BufferedReader(new InputStreamReader(new FileInputStream(wordsFileIn), StandardCharsets.UTF_8), 65536);
+            is = Files.newBufferedReader(wordsFileIn, StandardCharsets.UTF_8);
 
             ord = 0;
             tStart = System.currentTimeMillis();
@@ -622,8 +621,8 @@ public class TestFSTs extends LuceneTestCase {
     boolean verify = true;
     boolean doPack = false;
     boolean noArcArrays = false;
-    String wordsFileIn = null;
-    String dirOut = null;
+    Path wordsFileIn = null;
+    Path dirOut = null;
 
     int idx = 0;
     while (idx < args.length) {
@@ -652,9 +651,9 @@ public class TestFSTs extends LuceneTestCase {
         System.exit(-1);
       } else {
         if (wordsFileIn == null) {
-          wordsFileIn = args[idx];
+          wordsFileIn = Paths.get(args[idx]);
         } else if (dirOut == null) {
-          dirOut = args[idx];
+          dirOut = Paths.get(args[idx]);
         } else {
           System.err.println("Too many arguments, expected: input [output]");
           System.exit(-1);

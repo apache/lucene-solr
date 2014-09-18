@@ -322,7 +322,9 @@ public final class RequestHandlers {
     }
 
     @Override
-    public String getSource() { return null; }
+    public String getSource() {
+      return null;
+    }
       
     @Override
     public URL[] getDocs() {

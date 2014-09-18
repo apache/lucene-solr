@@ -27,7 +27,6 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.util.CharacterUtils;
-import org.apache.lucene.util.Version;
 
 /**
  * Tokenizes the input into n-grams of the given size(s).
@@ -63,7 +62,6 @@ public final class NGramTokenFilter extends TokenFilter {
   private int tokEnd;
   private boolean hasIllegalOffsets; // only if the length changed before this filter
 
-  private final Version version;
   private final CharacterUtils charUtils;
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final PositionIncrementAttribute posIncAtt;
@@ -77,19 +75,8 @@ public final class NGramTokenFilter extends TokenFilter {
    * @param maxGram the largest n-gram to generate
    */
   public NGramTokenFilter(TokenStream input, int minGram, int maxGram) {
-    this(Version.LATEST, input, minGram, maxGram);
-  }
-
-  /**
-   * @deprecated Use {@link #NGramTokenFilter(TokenStream, int, int)}
-   */
-  @Deprecated
-  public NGramTokenFilter(Version version, TokenStream input, int minGram, int maxGram) {
-    super(new CodepointCountFilter(version, input, minGram, Integer.MAX_VALUE));
-    this.version = version;
-    this.charUtils = version.onOrAfter(Version.LUCENE_4_4)
-        ? CharacterUtils.getInstance(version)
-        : CharacterUtils.getJava4Instance();
+    super(new CodepointCountFilter(input, minGram, Integer.MAX_VALUE));
+    this.charUtils = CharacterUtils.getInstance();
     if (minGram < 1) {
       throw new IllegalArgumentException("minGram must be greater than zero");
     }
@@ -98,27 +85,9 @@ public final class NGramTokenFilter extends TokenFilter {
     }
     this.minGram = minGram;
     this.maxGram = maxGram;
-    if (version.onOrAfter(Version.LUCENE_4_4)) {
-      posIncAtt = addAttribute(PositionIncrementAttribute.class);
-      posLenAtt = addAttribute(PositionLengthAttribute.class);
-    } else {
-      posIncAtt = new PositionIncrementAttribute() {
-        @Override
-        public void setPositionIncrement(int positionIncrement) {}
-        @Override
-        public int getPositionIncrement() {
-          return 0;
-        }
-      };
-      posLenAtt = new PositionLengthAttribute() {
-        @Override
-        public void setPositionLength(int positionLength) {}
-        @Override
-        public int getPositionLength() {
-          return 0;
-        }
-      };
-    }
+
+    posIncAtt = addAttribute(PositionIncrementAttribute.class);
+    posLenAtt = addAttribute(PositionLengthAttribute.class);
   }
 
   /**
@@ -126,15 +95,7 @@ public final class NGramTokenFilter extends TokenFilter {
    * @param input {@link TokenStream} holding the input to be tokenized
    */
   public NGramTokenFilter(TokenStream input) {
-    this(Version.LATEST, input, DEFAULT_MIN_NGRAM_SIZE, DEFAULT_MAX_NGRAM_SIZE);
-  }
-
-  /**
-   * @deprecated Use {@link #NGramTokenFilter(TokenStream)}
-   */
-  @Deprecated
-  public NGramTokenFilter(Version version, TokenStream input) {
-    this(version, input, DEFAULT_MIN_NGRAM_SIZE, DEFAULT_MAX_NGRAM_SIZE);
+    this(input, DEFAULT_MIN_NGRAM_SIZE, DEFAULT_MAX_NGRAM_SIZE);
   }
 
   /** Returns the next token in the stream, or null at EOS. */
@@ -159,39 +120,22 @@ public final class NGramTokenFilter extends TokenFilter {
           hasIllegalOffsets = (tokStart + curTermLength) != tokEnd;
         }
       }
-      if (version.onOrAfter(Version.LUCENE_4_4_0)) {
-        if (curGramSize > maxGram || (curPos + curGramSize) > curCodePointCount) {
-          ++curPos;
-          curGramSize = minGram;
-        }
-        if ((curPos + curGramSize) <= curCodePointCount) {
-          clearAttributes();
-          final int start = charUtils.offsetByCodePoints(curTermBuffer, 0, curTermLength, 0, curPos);
-          final int end = charUtils.offsetByCodePoints(curTermBuffer, 0, curTermLength, start, curGramSize);
-          termAtt.copyBuffer(curTermBuffer, start, end - start);
-          posIncAtt.setPositionIncrement(curPosInc);
-          curPosInc = 0;
-          posLenAtt.setPositionLength(curPosLen);
-          offsetAtt.setOffset(tokStart, tokEnd);
-          curGramSize++;
-          return true;
-        }
-      } else {
-        while (curGramSize <= maxGram) {
-          while (curPos+curGramSize <= curTermLength) {     // while there is input
-            clearAttributes();
-            termAtt.copyBuffer(curTermBuffer, curPos, curGramSize);
-            if (hasIllegalOffsets) {
-              offsetAtt.setOffset(tokStart, tokEnd);
-            } else {
-              offsetAtt.setOffset(tokStart + curPos, tokStart + curPos + curGramSize);
-            }
-            curPos++;
-            return true;
-          }
-          curGramSize++;                         // increase n-gram size
-          curPos = 0;
-        }
+
+      if (curGramSize > maxGram || (curPos + curGramSize) > curCodePointCount) {
+        ++curPos;
+        curGramSize = minGram;
+      }
+      if ((curPos + curGramSize) <= curCodePointCount) {
+        clearAttributes();
+        final int start = charUtils.offsetByCodePoints(curTermBuffer, 0, curTermLength, 0, curPos);
+        final int end = charUtils.offsetByCodePoints(curTermBuffer, 0, curTermLength, start, curGramSize);
+        termAtt.copyBuffer(curTermBuffer, start, end - start);
+        posIncAtt.setPositionIncrement(curPosInc);
+        curPosInc = 0;
+        posLenAtt.setPositionLength(curPosLen);
+        offsetAtt.setOffset(tokStart, tokEnd);
+        curGramSize++;
+        return true;
       }
       curTermBuffer = null;
     }

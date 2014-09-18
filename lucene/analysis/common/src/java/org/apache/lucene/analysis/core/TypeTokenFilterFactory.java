@@ -21,7 +21,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -42,7 +41,6 @@ import java.util.Set;
  */
 public class TypeTokenFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   private final boolean useWhitelist;
-  private final boolean enablePositionIncrements;
   private final String stopTypesFiles;
   private Set<String> stopTypes;
   
@@ -50,11 +48,6 @@ public class TypeTokenFilterFactory extends TokenFilterFactory implements Resour
   public TypeTokenFilterFactory(Map<String,String> args) {
     super(args);
     stopTypesFiles = require(args, "types");
-    enablePositionIncrements = getBoolean(args, "enablePositionIncrements", true);
-    if (enablePositionIncrements == false &&
-        (luceneMatchVersion == null || luceneMatchVersion.onOrAfter(Version.LUCENE_4_4_0))) {
-      throw new IllegalArgumentException("enablePositionIncrements=false is not supported anymore as of Lucene 4.4");
-    }
     useWhitelist = getBoolean(args, "useWhitelist", false);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
@@ -73,22 +66,13 @@ public class TypeTokenFilterFactory extends TokenFilterFactory implements Resour
     }
   }
 
-  public boolean isEnablePositionIncrements() {
-    return enablePositionIncrements;
-  }
-
   public Set<String> getStopTypes() {
     return stopTypes;
   }
 
   @Override
   public TokenStream create(TokenStream input) {
-    if (luceneMatchVersion == null) {
-      final TokenStream filter = new TypeTokenFilter(input, stopTypes, useWhitelist);
-      return filter;
-    }
-    @SuppressWarnings("deprecation")
-    final TokenStream filter = new TypeTokenFilter(luceneMatchVersion, enablePositionIncrements, input, stopTypes, useWhitelist);
+    final TokenStream filter = new TypeTokenFilter(input, stopTypes, useWhitelist);
     return filter;
   }
 }

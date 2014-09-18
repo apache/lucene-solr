@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.ByteArrayOutputStream;
-import java.io.Reader;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Random;
@@ -46,7 +45,6 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Rethrow;
 
@@ -54,7 +52,6 @@ import org.apache.lucene.util.Rethrow;
  * Causes a bunch of non-aborting and aborting exceptions and checks that
  * no index corruption is ever created
  */
-@SuppressCodecs("Lucene3x")
 public class TestIndexWriterExceptions2 extends LuceneTestCase {
   
   // just one thread, serial merge policy, hopefully debuggable
@@ -75,8 +72,8 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
     final long analyzerSeed = random().nextLong();
     Analyzer analyzer = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, false);
         tokenizer.setEnableChecks(false); // TODO: can we turn this on? our filter is probably too evil
         TokenStream stream = tokenizer;
         // emit some payloads
@@ -109,14 +106,10 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
         doc.add(new NumericDocValuesField("dv", i));
         doc.add(new BinaryDocValuesField("dv2", new BytesRef(Integer.toString(i))));
         doc.add(new SortedDocValuesField("dv3", new BytesRef(Integer.toString(i))));
-        if (defaultCodecSupportsSortedSet()) {
-          doc.add(new SortedSetDocValuesField("dv4", new BytesRef(Integer.toString(i))));
-          doc.add(new SortedSetDocValuesField("dv4", new BytesRef(Integer.toString(i-1))));
-        }
-        if (defaultCodecSupportsSortedNumeric()) {
-          doc.add(new SortedNumericDocValuesField("dv5", i));
-          doc.add(new SortedNumericDocValuesField("dv5", i-1));
-        }
+        doc.add(new SortedSetDocValuesField("dv4", new BytesRef(Integer.toString(i))));
+        doc.add(new SortedSetDocValuesField("dv4", new BytesRef(Integer.toString(i-1))));
+        doc.add(new SortedNumericDocValuesField("dv5", i));
+        doc.add(new SortedNumericDocValuesField("dv5", i-1));
         doc.add(newTextField("text1", TestUtil.randomAnalysisString(random(), 20, true), Field.Store.NO));
         // ensure we store something
         doc.add(new StoredField("stored1", "foo"));
@@ -136,9 +129,9 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
             int thingToDo = random().nextInt(4);
             if (thingToDo == 0) {
               iw.deleteDocuments(new Term("id", Integer.toString(i)));
-            } else if (thingToDo == 1 && defaultCodecSupportsFieldUpdates()) {
+            } else if (thingToDo == 1) {
               iw.updateNumericDocValue(new Term("id", Integer.toString(i)), "dv", i+1L);
-            } else if (thingToDo == 2 && defaultCodecSupportsFieldUpdates()) {
+            } else if (thingToDo == 2) {
               iw.updateBinaryDocValue(new Term("id", Integer.toString(i)), "dv2", new BytesRef(Integer.toString(i+1)));
             }
           } catch (Exception e) {

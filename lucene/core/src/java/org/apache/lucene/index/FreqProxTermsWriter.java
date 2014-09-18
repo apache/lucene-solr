@@ -20,12 +20,10 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.codecs.FieldsConsumer;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CollectionUtil;
 import org.apache.lucene.util.IOUtils;
 
@@ -84,30 +82,28 @@ final class FreqProxTermsWriter extends TermsHash {
   public void flush(Map<String,TermsHashPerField> fieldsToFlush, final SegmentWriteState state) throws IOException {
     super.flush(fieldsToFlush, state);
 
-    boolean success = false;
-    FieldsConsumer consumer = state.segmentInfo.getCodec().postingsFormat().fieldsConsumer(state);
+    // Gather all fields that saw any postings:
+    List<FreqProxTermsWriterPerField> allFields = new ArrayList<>();
 
-    try {
-      Comparator<BytesRef> comparator = consumer.getComparator();
-      // Gather all fields that saw any postings:
-      List<FreqProxTermsWriterPerField> allFields = new ArrayList<>();
-      
-      for (TermsHashPerField f : fieldsToFlush.values()) {
-        final FreqProxTermsWriterPerField perField = (FreqProxTermsWriterPerField) f;
-        if (perField.bytesHash.size() > 0) {
-          perField.sortPostings(comparator);
-          assert perField.fieldInfo.isIndexed();
-          allFields.add(perField);
-        }
+    for (TermsHashPerField f : fieldsToFlush.values()) {
+      final FreqProxTermsWriterPerField perField = (FreqProxTermsWriterPerField) f;
+      if (perField.bytesHash.size() > 0) {
+        perField.sortPostings();
+        assert perField.fieldInfo.isIndexed();
+        allFields.add(perField);
       }
-      
-      // Sort by field name
-      CollectionUtil.introSort(allFields);
-      
-      Fields fields = new FreqProxFields(allFields, comparator);
-      
-      applyDeletes(state, fields);
+    }
 
+    // Sort by field name
+    CollectionUtil.introSort(allFields);
+
+    Fields fields = new FreqProxFields(allFields);
+
+    applyDeletes(state, fields);
+
+    FieldsConsumer consumer = state.segmentInfo.getCodec().postingsFormat().fieldsConsumer(state);
+    boolean success = false;
+    try {
       consumer.write(fields);
       success = true;
     } finally {

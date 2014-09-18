@@ -17,12 +17,9 @@ package org.apache.lucene.analysis.core;
  * limitations under the License.
  */
 
-import java.io.Reader;
-
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.CharTokenizer;
 import org.apache.lucene.util.AttributeFactory;
-import org.apache.lucene.util.Version;
 
 /**
  * A LetterTokenizer is a tokenizer that divides text at non-letters. That's to
@@ -32,35 +29,14 @@ import org.apache.lucene.util.Version;
  * Note: this does a decent job for most European languages, but does a terrible
  * job for some Asian languages, where words are not separated by spaces.
  * </p>
- * <p>
- * <a name="version"/>
- * You may specify the {@link Version} compatibility when creating
- * {@link LetterTokenizer}:
- * <ul>
- * <li>As of 3.1, {@link CharTokenizer} uses an int based API to normalize and
- * detect token characters. See {@link CharTokenizer#isTokenChar(int)} and
- * {@link CharTokenizer#normalize(int)} for details.</li>
- * </ul>
- * </p>
  */
 
 public class LetterTokenizer extends CharTokenizer {
   
   /**
    * Construct a new LetterTokenizer.
-   * @param in
-   *          the input to split up into tokens
    */
-  public LetterTokenizer(Reader in) {
-    super(in);
-  }
-
-  /**
-   * @deprecated Use {@link #LetterTokenizer(Reader)}
-   */
-  @Deprecated
-  public LetterTokenizer(Version matchVersion, Reader in) {
-    super(matchVersion, in);
+  public LetterTokenizer() {
   }
   
   /**
@@ -69,19 +45,9 @@ public class LetterTokenizer extends CharTokenizer {
    * 
    * @param factory
    *          the attribute factory to use for this {@link Tokenizer}
-   * @param in
-   *          the input to split up into tokens
    */
-  public LetterTokenizer(AttributeFactory factory, Reader in) {
-    super(factory, in);
-  }
-
-  /**
-   * @deprecated Use {@link #LetterTokenizer(AttributeFactory,Reader)}
-   */
-  @Deprecated
-  public LetterTokenizer(Version matchVersion, AttributeFactory factory, Reader in) {
-    super(matchVersion, factory, in);
+  public LetterTokenizer(AttributeFactory factory) {
+    super(factory);
   }
   
   /** Collects only characters which satisfy

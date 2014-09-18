@@ -161,8 +161,8 @@ public class TestFactories extends BaseTokenStreamTestCase {
   // some silly classes just so we can use checkRandomData
   private TokenizerFactory assertingTokenizer = new TokenizerFactory(new HashMap<String,String>()) {
     @Override
-    public MockTokenizer create(AttributeFactory factory, Reader input) {
-      return new MockTokenizer(factory, input);
+    public MockTokenizer create(AttributeFactory factory) {
+      return new MockTokenizer(factory);
     }
   };
   
@@ -179,8 +179,8 @@ public class TestFactories extends BaseTokenStreamTestCase {
     }
 
     @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tf = tokenizer.create(newAttributeFactory(), reader);
+    protected TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer tf = tokenizer.create(newAttributeFactory());
       if (tokenfilter != null) {
         return new TokenStreamComponents(tf, tokenfilter.create(tf));
       } else {

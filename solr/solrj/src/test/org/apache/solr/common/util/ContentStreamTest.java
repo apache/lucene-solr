@@ -49,7 +49,7 @@ public class ContentStreamTest extends SolrTestCaseJ4
   {
     InputStream is = new SolrResourceLoader(null, null).openResource( "solrj/README" );
     assertNotNull( is );
-    File file = new File(createTempDir(), "README");
+    File file = new File(createTempDir().toFile(), "README");
     FileOutputStream os = new FileOutputStream(file);
     IOUtils.copy(is, os);
     os.close();
@@ -78,7 +78,7 @@ public class ContentStreamTest extends SolrTestCaseJ4
   {
     InputStream is = new SolrResourceLoader(null, null).openResource( "solrj/README" );
     assertNotNull( is );
-    File file = new File(createTempDir(), "README");
+    File file = new File(createTempDir().toFile(), "README");
     FileOutputStream os = new FileOutputStream(file);
     IOUtils.copy(is, os);
     os.close();

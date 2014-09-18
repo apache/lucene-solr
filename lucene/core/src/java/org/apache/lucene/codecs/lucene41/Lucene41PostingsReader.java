@@ -1580,7 +1580,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
 
   @Override
   public long ramBytesUsed() {
-    return BASE_RAM_BYTES_USED  + forUtil.ramBytesUsed();
+    return BASE_RAM_BYTES_USED;
   }
   
   @Override

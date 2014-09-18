@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.ngram;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -84,106 +83,73 @@ public final class Lucene43EdgeNGramTokenizer extends Tokenizer {
   /**
    * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
    *
-   * @param version the <a href="#version">Lucene match version</a>
-   * @param input {@link Reader} holding the input to be tokenized
    * @param side the {@link Side} from which to chop off an n-gram
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
    */
-  @Deprecated
-  public Lucene43EdgeNGramTokenizer(Version version, Reader input, Side side, int minGram, int maxGram) {
-    super(input);
-    init(version, side, minGram, maxGram);
-  }
-
-  /**
-   * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
-   * 
-   * @param version the <a href="#version">Lucene match version</a>
-   * @param factory {@link AttributeFactory} to use
-   * @param input {@link Reader} holding the input to be tokenized
-   * @param side the {@link Side} from which to chop off an n-gram
-   * @param minGram the smallest n-gram to generate
-   * @param maxGram the largest n-gram to generate
-   */
-  @Deprecated
-  public Lucene43EdgeNGramTokenizer(Version version, AttributeFactory factory, Reader input, Side side, int minGram, int maxGram) {
-    super(factory, input);
-    init(version, side, minGram, maxGram);
-  }
-  
-  /**
-   * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
-   *
-   * @param version the <a href="#version">Lucene match version</a>
-   * @param input {@link Reader} holding the input to be tokenized
-   * @param sideLabel the name of the {@link Side} from which to chop off an n-gram
-   * @param minGram the smallest n-gram to generate
-   * @param maxGram the largest n-gram to generate
-   */
-  @Deprecated
-  public Lucene43EdgeNGramTokenizer(Version version, Reader input, String sideLabel, int minGram, int maxGram) {
-    this(version, input, Side.getSide(sideLabel), minGram, maxGram);
-  }
-
-  /**
-   * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
-   *
-   * @param version the <a href="#version">Lucene match version</a>
-   * @param factory {@link org.apache.lucene.util.AttributeFactory} to use
-   * @param input {@link Reader} holding the input to be tokenized
-   * @param sideLabel the name of the {@link Side} from which to chop off an n-gram
-   * @param minGram the smallest n-gram to generate
-   * @param maxGram the largest n-gram to generate
-   */
-  @Deprecated
-  public Lucene43EdgeNGramTokenizer(Version version, AttributeFactory factory, Reader input, String sideLabel, int minGram, int maxGram) {
-    this(version, factory, input, Side.getSide(sideLabel), minGram, maxGram);
-  }
-
-  /**
-   * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
-   *
-   * @param input {@link Reader} holding the input to be tokenized
-   * @param minGram the smallest n-gram to generate
-   * @param maxGram the largest n-gram to generate
-   */
-  public Lucene43EdgeNGramTokenizer(Reader input, int minGram, int maxGram) {
-    this(Version.LATEST, input, Side.FRONT, minGram, maxGram);
-  }
-
-  /**
-   * @deprecated Use {@link #Lucene43EdgeNGramTokenizer(Reader, int, int)}
-   */
-  @Deprecated
-  public Lucene43EdgeNGramTokenizer(Version version, Reader input, int minGram, int maxGram) {
-    this(version, input, Side.FRONT, minGram, maxGram);
+  public Lucene43EdgeNGramTokenizer(Side side, int minGram, int maxGram) {
+    init(side, minGram, maxGram);
   }
 
   /**
    * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
    *
    * @param factory {@link org.apache.lucene.util.AttributeFactory} to use
-   * @param input {@link Reader} holding the input to be tokenized
+   * @param side the {@link Side} from which to chop off an n-gram
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
    */
-  public Lucene43EdgeNGramTokenizer(AttributeFactory factory, Reader input, int minGram, int maxGram) {
-    this(Version.LATEST, factory, input, Side.FRONT, minGram, maxGram);
+  public Lucene43EdgeNGramTokenizer(AttributeFactory factory, Side side, int minGram, int maxGram) {
+    super(factory);
+    init(side, minGram, maxGram);
   }
 
   /**
-   * @deprecated Use {@link #Lucene43EdgeNGramTokenizer(AttributeFactory, Reader, int, int)}
+   * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
+   *
+   * @param factory {@link org.apache.lucene.util.AttributeFactory} to use
+   * @param sideLabel the {@link Side} from which to chop off an n-gram
+   * @param minGram the smallest n-gram to generate
+   * @param maxGram the largest n-gram to generate
    */
-  @Deprecated
-  public Lucene43EdgeNGramTokenizer(Version version, AttributeFactory factory, Reader input, int minGram, int maxGram) {
-    this(version, factory, input, Side.FRONT, minGram, maxGram);
+  public Lucene43EdgeNGramTokenizer(AttributeFactory factory, String sideLabel, int minGram, int maxGram) {
+    this(factory, Side.getSide(sideLabel), minGram, maxGram);
   }
 
-  private void init(Version version, Side side, int minGram, int maxGram) {
-    if (version == null) {
-      throw new IllegalArgumentException("version must not be null");
-    }
+  /**
+   * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
+   *
+   * @param minGram the smallest n-gram to generate
+   * @param maxGram the largest n-gram to generate
+   */
+  public Lucene43EdgeNGramTokenizer(int minGram, int maxGram) {
+    this(Side.FRONT, minGram, maxGram);
+  }
+
+  /**
+   * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
+   *
+   * @param sideLabel the name of the {@link Side} from which to chop off an n-gram
+   * @param minGram the smallest n-gram to generate
+   * @param maxGram the largest n-gram to generate
+   */
+  @Deprecated
+  public Lucene43EdgeNGramTokenizer(String sideLabel, int minGram, int maxGram) {
+    this(Side.getSide(sideLabel), minGram, maxGram);
+  }
+
+  /**
+   * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
+   *
+   * @param factory {@link org.apache.lucene.util.AttributeFactory} to use
+   * @param minGram the smallest n-gram to generate
+   * @param maxGram the largest n-gram to generate
+   */
+  public Lucene43EdgeNGramTokenizer(AttributeFactory factory, int minGram, int maxGram) {
+    this(factory, Side.FRONT, minGram, maxGram);
+  }
+
+  private void init(Side side, int minGram, int maxGram) {
 
     if (side == null) {
       throw new IllegalArgumentException("sideLabel must be either front or back");
@@ -197,13 +163,7 @@ public final class Lucene43EdgeNGramTokenizer extends Tokenizer {
       throw new IllegalArgumentException("minGram must not be greater than maxGram");
     }
 
-    if (version.onOrAfter(Version.LUCENE_4_4)) {
-      if (side == Side.BACK) {
-        throw new IllegalArgumentException("Side.BACK is not supported anymore as of Lucene 4.4");
-      }
-    } else {
-      maxGram = Math.min(maxGram, 1024);
-    }
+    maxGram = Math.min(maxGram, 1024);
 
     this.minGram = minGram;
     this.maxGram = maxGram;

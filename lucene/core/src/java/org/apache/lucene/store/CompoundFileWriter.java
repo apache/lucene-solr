@@ -51,12 +51,6 @@ final class CompoundFileWriter implements Closeable{
     Directory dir;
   }
 
-  // Before versioning started.
-  static final int FORMAT_PRE_VERSION = 0;
-
-  // Segment name is not written in the file names.
-  static final int FORMAT_NO_SEGMENT_PREFIX = -1;
-  
   // versioning for the .cfs file
   static final String DATA_CODEC = "CompoundFileWriterData";
   static final int VERSION_START = 0;
@@ -312,11 +306,6 @@ final class CompoundFileWriter implements Closeable{
       entry.offset = offset = delegate.getFilePointer();
       this.isSeparate = isSeparate;
 
-    }
-
-    @Override
-    public void flush() throws IOException {
-      delegate.flush();
     }
 
     @Override

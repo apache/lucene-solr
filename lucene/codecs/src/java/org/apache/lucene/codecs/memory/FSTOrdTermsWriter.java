@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.memory;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.codecs.BlockTermState;
@@ -386,10 +385,5 @@ public class FSTOrdTermsWriter extends FieldsConsumer {
       lastBlockMetaBytesFP = metaBytesOut.getFilePointer();
       System.arraycopy(lastLongs, 0, lastBlockLongs, 0, longsSize);
     }
-  }
-
-  @Override
-  public Comparator<BytesRef> getComparator() {
-    return BytesRef.getUTF8SortedAsUnicodeComparator();
   }
 }

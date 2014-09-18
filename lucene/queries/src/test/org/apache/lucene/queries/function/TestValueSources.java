@@ -21,15 +21,19 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FloatField;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.queries.function.valuesource.ByteFieldSource;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
 import org.apache.lucene.queries.function.valuesource.ConstValueSource;
 import org.apache.lucene.queries.function.valuesource.DivFloatFunction;
@@ -55,7 +59,6 @@ import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.queries.function.valuesource.RangeMapFloatFunction;
 import org.apache.lucene.queries.function.valuesource.ReciprocalFloatFunction;
 import org.apache.lucene.queries.function.valuesource.ScaleFloatFunction;
-import org.apache.lucene.queries.function.valuesource.ShortFieldSource;
 import org.apache.lucene.queries.function.valuesource.SumFloatFunction;
 import org.apache.lucene.queries.function.valuesource.SumTotalTermFreqValueSource;
 import org.apache.lucene.queries.function.valuesource.TFValueSource;
@@ -86,9 +89,9 @@ public class TestValueSources extends LuceneTestCase {
   static IndexSearcher searcher;
   
   static final List<String[]> documents = Arrays.asList(new String[][] {
-      /*             id,  byte, double, float, int,    long, short, string, text */ 
-      new String[] { "0",  "5", "3.63", "5.2", "35", "4343", "945", "test", "this is a test test test" },
-      new String[] { "1", "12", "5.65", "9.3", "54", "1954", "123", "bar",  "second test" },
+      /*             id,  double, float, int,  long,   string, text */ 
+      new String[] { "0", "3.63", "5.2", "35", "4343", "test", "this is a test test test" },
+      new String[] { "1", "5.65", "9.3", "54", "1954", "bar",  "second test" },
   });
   
   @BeforeClass
@@ -100,33 +103,45 @@ public class TestValueSources extends LuceneTestCase {
     Document document = new Document();
     Field idField = new StringField("id", "", Field.Store.NO);
     document.add(idField);
-    Field byteField = new StringField("byte", "", Field.Store.NO);
-    document.add(byteField);
-    Field doubleField = new StringField("double", "", Field.Store.NO);
+    Field idDVField = new SortedDocValuesField("id", new BytesRef());
+    document.add(idDVField);
+    Field doubleField = new DoubleField("double", 0d, Field.Store.NO);
     document.add(doubleField);
-    Field floatField = new StringField("float", "", Field.Store.NO);
+    Field doubleDVField = new NumericDocValuesField("double", 0);
+    document.add(doubleDVField);
+    Field floatField = new FloatField("float", 0f, Field.Store.NO);
     document.add(floatField);
-    Field intField = new StringField("int", "", Field.Store.NO);
+    Field floatDVField = new NumericDocValuesField("float", 0);
+    document.add(floatDVField);
+    Field intField = new IntField("int", 0, Field.Store.NO);
     document.add(intField);
-    Field longField = new StringField("long", "", Field.Store.NO);
+    Field intDVField = new NumericDocValuesField("int", 0);
+    document.add(intDVField);
+    Field longField = new LongField("long", 0L, Field.Store.NO);
     document.add(longField);
-    Field shortField = new StringField("short", "", Field.Store.NO);
-    document.add(shortField);
+    Field longDVField = new NumericDocValuesField("long", 0);
+    document.add(longDVField);
     Field stringField = new StringField("string", "", Field.Store.NO);
     document.add(stringField);
+    Field stringDVField = new SortedDocValuesField("string", new BytesRef());
+    document.add(stringDVField);
     Field textField = new TextField("text", "", Field.Store.NO);
     document.add(textField);
     
     for (String [] doc : documents) {
       idField.setStringValue(doc[0]);
-      byteField.setStringValue(doc[1]);
-      doubleField.setStringValue(doc[2]);
-      floatField.setStringValue(doc[3]);
-      intField.setStringValue(doc[4]);
-      longField.setStringValue(doc[5]);
-      shortField.setStringValue(doc[6]);
-      stringField.setStringValue(doc[7]);
-      textField.setStringValue(doc[8]);
+      idDVField.setBytesValue(new BytesRef(doc[0]));
+      doubleField.setDoubleValue(Double.valueOf(doc[1]));
+      doubleDVField.setLongValue(Double.doubleToRawLongBits(Double.valueOf(doc[1])));
+      floatField.setFloatValue(Float.valueOf(doc[2]));
+      floatDVField.setLongValue(Float.floatToRawIntBits(Float.valueOf(doc[2])));
+      intField.setIntValue(Integer.valueOf(doc[3]));
+      intDVField.setLongValue(Integer.valueOf(doc[3]));
+      longField.setLongValue(Long.valueOf(doc[4]));
+      longDVField.setLongValue(Long.valueOf(doc[4]));
+      stringField.setStringValue(doc[5]);
+      stringDVField.setBytesValue(new BytesRef(doc[5]));
+      textField.setStringValue(doc[6]);
       iw.addDocument(document);
     }
     
@@ -142,11 +157,6 @@ public class TestValueSources extends LuceneTestCase {
     reader = null;
     dir.close();
     dir = null;
-  }
-  
-  public void testByte() throws Exception {
-    assertHits(new FunctionQuery(new ByteFieldSource("byte")),
-        new float[] { 5f, 12f });
   }
   
   public void testConst() throws Exception {
@@ -303,11 +313,6 @@ public class TestValueSources extends LuceneTestCase {
        new float[] { 0.0f, 1.0f });
   }
   
-  public void testShort() throws Exception {
-    assertHits(new FunctionQuery(new ShortFieldSource("short")),
-        new float[] { 945f, 123f });
-  }
-  
   public void testSumFloat() throws Exception {
     assertHits(new FunctionQuery(new SumFloatFunction(new ValueSource[] {
         new ConstValueSource(1f), new ConstValueSource(2f)})),
@@ -315,13 +320,8 @@ public class TestValueSources extends LuceneTestCase {
   }
   
   public void testSumTotalTermFreq() throws Exception {
-    if (Codec.getDefault().getName().equals("Lucene3x")) {
-      assertHits(new FunctionQuery(new SumTotalTermFreqValueSource("text")),
-          new float[] { -1f, -1f });
-    } else {
-      assertHits(new FunctionQuery(new SumTotalTermFreqValueSource("text")),
+    assertHits(new FunctionQuery(new SumTotalTermFreqValueSource("text")),
           new float[] { 8f, 8f });
-    }
   }
   
   public void testTermFreq() throws Exception {
@@ -350,15 +350,9 @@ public class TestValueSources extends LuceneTestCase {
   }
   
   public void testTotalTermFreq() throws Exception {
-    if (Codec.getDefault().getName().equals("Lucene3x")) {
-      assertHits(new FunctionQuery(
-          new TotalTermFreqValueSource("bogus", "bogus", "text", new BytesRef("test"))),
-          new float[] { -1f, -1f });
-    } else {
-      assertHits(new FunctionQuery(
-          new TotalTermFreqValueSource("bogus", "bogus", "text", new BytesRef("test"))),
-          new float[] { 4f, 4f });
-    }
+    assertHits(new FunctionQuery(
+        new TotalTermFreqValueSource("bogus", "bogus", "text", new BytesRef("test"))),
+        new float[] { 4f, 4f });
   }
   
   void assertHits(Query q, float scores[]) throws Exception {

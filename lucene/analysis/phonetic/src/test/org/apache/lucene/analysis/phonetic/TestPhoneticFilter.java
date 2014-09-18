@@ -18,7 +18,6 @@
 package org.apache.lucene.analysis.phonetic;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 
 import org.apache.commons.codec.Encoder;
@@ -28,7 +27,6 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 /**
  * Tests {@link PhoneticFilter}
@@ -66,7 +64,8 @@ public class TestPhoneticFilter extends BaseTokenStreamTestCase {
   
   static void assertAlgorithm(Encoder encoder, boolean inject, String input,
       String[] expected) throws Exception {
-    Tokenizer tokenizer = new WhitespaceTokenizer(new StringReader(input));
+    Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    tokenizer.setReader(new StringReader(input));
     PhoneticFilter filter = new PhoneticFilter(tokenizer, encoder, inject);
     assertTokenStreamContents(filter, expected);
   }
@@ -80,8 +79,8 @@ public class TestPhoneticFilter extends BaseTokenStreamTestCase {
     for (final Encoder e : encoders) {
       Analyzer a = new Analyzer() {
         @Override
-        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        protected TokenStreamComponents createComponents(String fieldName) {
+          Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
           return new TokenStreamComponents(tokenizer, new PhoneticFilter(tokenizer, e, false));
         }   
       };
@@ -90,8 +89,8 @@ public class TestPhoneticFilter extends BaseTokenStreamTestCase {
       
       Analyzer b = new Analyzer() {
         @Override
-        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        protected TokenStreamComponents createComponents(String fieldName) {
+          Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
           return new TokenStreamComponents(tokenizer, new PhoneticFilter(tokenizer, e, false));
         }   
       };
@@ -107,8 +106,8 @@ public class TestPhoneticFilter extends BaseTokenStreamTestCase {
     for (final Encoder e : encoders) {
       Analyzer a = new Analyzer() {
         @Override
-        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          Tokenizer tokenizer = new KeywordTokenizer(reader);
+        protected TokenStreamComponents createComponents(String fieldName) {
+          Tokenizer tokenizer = new KeywordTokenizer();
           return new TokenStreamComponents(tokenizer, new PhoneticFilter(tokenizer, e, random().nextBoolean()));
         }
       };

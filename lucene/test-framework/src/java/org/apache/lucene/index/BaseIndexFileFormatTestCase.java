@@ -32,18 +32,15 @@ import java.util.Set;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
-import org.apache.lucene.codecs.sep.IntIndexInput;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.CloseableThreadLocal;
-import org.apache.lucene.util.DoubleBarrelLRUCache;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.RamUsageTester;
-import org.apache.lucene.util.Version;
 
 /**
  * Common tests to all index formats.
@@ -57,7 +54,6 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     // Directory objects, don't take into account eg. the NIO buffers
     EXCLUDED_CLASSES.add(Directory.class);
     EXCLUDED_CLASSES.add(IndexInput.class);
-    EXCLUDED_CLASSES.add(IntIndexInput.class);
 
     // used for thread management, not by the index
     EXCLUDED_CLASSES.add(CloseableThreadLocal.class);
@@ -73,9 +69,6 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     EXCLUDED_CLASSES.add(SegmentInfo.class);
     EXCLUDED_CLASSES.add(SegmentCommitInfo.class);
     EXCLUDED_CLASSES.add(FieldInfo.class);
-
-    // used by lucene3x to maintain a cache. Doesn't depend on the number of docs
-    EXCLUDED_CLASSES.add(DoubleBarrelLRUCache.class);
 
     // constant overhead is typically due to strings
     // TODO: can we remove this and still pass the test consistently
@@ -183,7 +176,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     // do not use RIW which will change things up!
     MergePolicy mp = newTieredMergePolicy();
     mp.setNoCFSRatio(0);
-    IndexWriterConfig cfg = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())).setUseCompoundFile(false).setMergePolicy(mp);
+    IndexWriterConfig cfg = new IndexWriterConfig(new MockAnalyzer(random())).setUseCompoundFile(false).setMergePolicy(mp);
     IndexWriter w = new IndexWriter(dir, cfg);
     final int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; ++i) {
@@ -204,7 +197,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     }
     mp = newTieredMergePolicy();
     mp.setNoCFSRatio(0);
-    cfg = new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random())).setUseCompoundFile(false).setMergePolicy(mp);
+    cfg = new IndexWriterConfig(new MockAnalyzer(random())).setUseCompoundFile(false).setMergePolicy(mp);
     w = new IndexWriter(dir2, cfg);
     w.addIndexes(reader);
     w.commit();

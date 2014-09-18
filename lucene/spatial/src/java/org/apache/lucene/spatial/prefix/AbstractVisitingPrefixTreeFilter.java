@@ -22,10 +22,10 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.spatial.prefix.tree.Cell;
+import org.apache.lucene.spatial.prefix.tree.CellIterator;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.StringHelper;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -46,6 +46,11 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
 
   //Historical note: this code resulted from a refactoring of RecursivePrefixTreeFilter,
   // which in turn came out of SOLR-2155
+
+  //This class perhaps could have been implemented in terms of FilteredTermsEnum & MultiTermQuery
+  //  & MultiTermQueryWrapperFilter.  Maybe so for simple Intersects predicate but not for when we want to collect terms
+  //  differently depending on cell state like IsWithin and for fuzzy/accurate collection planned improvements.  At
+  //  least it would just make things more complicated.
 
   protected final int prefixGridScanLevel;//at least one less than grid.getMaxLevels()
 
@@ -109,15 +114,20 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
     does act as a short-circuit.  So maybe do some percent of the time or when the level
     is above some threshold.
 
-  * Each shape.relate(otherShape) result could be cached since much of the same relations
-    will be invoked when multiple segments are involved.
+  * Once we don't have redundant non-leaves indexed with leaf cells (LUCENE-4942), we can
+    sometimes know to call next() instead of seek() if we're processing a leaf cell that
+    didn't have a corresponding non-leaf.
 
   */
+
+    //
+    //  TODO MAJOR REFACTOR SIMPLIFICATION BASED ON TreeCellIterator  TODO
+    //
 
     protected final boolean hasIndexedLeaves;//if false then we can skip looking for them
 
     private VNode curVNode;//current pointer, derived from query shape
-    private BytesRef curVNodeTerm = new BytesRef();//curVNode.cell's term.
+    private BytesRef curVNodeTerm = new BytesRef();//curVNode.cell's term, without leaf
     private Cell scanCell;
 
     private BytesRef thisTerm;//the result of termsEnum.term()
@@ -171,9 +181,8 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
         }
 
         //Seek to curVNode's cell (or skip if termsEnum has moved beyond)
-        curVNodeTerm.bytes = curVNode.cell.getTokenBytes();
-        curVNodeTerm.length = curVNodeTerm.bytes.length;
-        int compare = termsEnum.getComparator().compare(thisTerm, curVNodeTerm);
+        curVNode.cell.getTokenBytesNoLeaf(curVNodeTerm);
+        int compare = thisTerm.compareTo(curVNodeTerm);
         if (compare > 0) {
           // leap frog (termsEnum is beyond where we would otherwise seek)
           assert ! context.reader().terms(fieldName).iterator(null).seekExact(curVNodeTerm) : "should be absent";
@@ -213,10 +222,10 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
 
       //Check for adjacent leaf (happens for indexed non-point shapes)
       if (hasIndexedLeaves && cell.getLevel() != 0) {
-        //If the next indexed term just adds a leaf marker ('+') to cell,
+        //If the next indexed term just adds a leaf marker to cell,
         // then add all of those docs
-        assert StringHelper.startsWith(thisTerm, curVNodeTerm);//TODO refactor to use method on curVNode.cell
-        scanCell = grid.getCell(thisTerm.bytes, thisTerm.offset, thisTerm.length, scanCell);
+        scanCell = grid.readCell(thisTerm, scanCell);
+        assert curVNode.cell.isPrefixOf(scanCell) : "missing leaf or descendants";
         if (scanCell.getLevel() == cell.getLevel() && scanCell.isLeaf()) {
           visitLeaf(scanCell);
           //advance
@@ -253,8 +262,8 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
      * guaranteed to have an intersection and thus this must return some number
      * of nodes.
      */
-    protected Iterator<Cell> findSubCellsToVisit(Cell cell) {
-      return cell.getSubCells(queryShape).iterator();
+    protected CellIterator findSubCellsToVisit(Cell cell) {
+      return cell.getNextLevelCells(queryShape);
     }
 
     /**
@@ -264,10 +273,12 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
      * #visitScanned(org.apache.lucene.spatial.prefix.tree.Cell)}.
      */
     protected void scan(int scanDetailLevel) throws IOException {
-      for (;
-           thisTerm != null && StringHelper.startsWith(thisTerm, curVNodeTerm);//TODO refactor to use method on curVNode.cell
-           thisTerm = termsEnum.next()) {
-        scanCell = grid.getCell(thisTerm.bytes, thisTerm.offset, thisTerm.length, scanCell);
+      for ( ;
+          thisTerm != null;
+          thisTerm = termsEnum.next()) {
+        scanCell = grid.readCell(thisTerm, scanCell);
+        if (!curVNode.cell.isPrefixOf(scanCell))
+          break;
 
         int termLevel = scanCell.getLevel();
         if (termLevel < scanDetailLevel) {
@@ -336,7 +347,6 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
      * might not even intersect the query shape, so be sure to check for that.
      */
     protected abstract void visitScanned(Cell cell) throws IOException;
-
 
     protected void preSiblings(VNode vNode) throws IOException {
     }

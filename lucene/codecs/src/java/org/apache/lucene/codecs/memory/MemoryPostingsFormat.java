@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.memory;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedMap;
@@ -414,11 +413,6 @@ public final class MemoryPostingsFormat extends PostingsFormat {
       } finally {
         out.close();
       }
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
     }
   }
 
@@ -874,11 +868,6 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
-    }
-
-    @Override
     public void seekExact(long ord) {
       // NOTE: we could add this...
       throw new UnsupportedOperationException();
@@ -939,11 +928,6 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     @Override
     public TermsEnum iterator(TermsEnum reuse) {
       return new FSTTermsEnum(field, fst);
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
     }
 
     @Override

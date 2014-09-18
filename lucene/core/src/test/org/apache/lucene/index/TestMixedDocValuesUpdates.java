@@ -18,7 +18,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
@@ -40,7 +39,6 @@ import com.carrotsearch.randomizedtesting.generators.RandomPicks;
  * limitations under the License.
  */
 
-@SuppressCodecs({"Appending","Lucene3x","Lucene40","Lucene41","Lucene42","Lucene45"})
 public class TestMixedDocValuesUpdates extends LuceneTestCase {
 
   public void testManyReopensAndFields() throws Exception {
@@ -149,7 +147,8 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
 //      System.out.println();
     }
     
-    IOUtils.close(writer, reader, dir);
+    writer.close();
+    IOUtils.close(reader, dir);
   }
   
   public void testStressMultiThreading() throws Exception {

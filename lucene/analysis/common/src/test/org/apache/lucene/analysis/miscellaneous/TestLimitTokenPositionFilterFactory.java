@@ -28,7 +28,7 @@ public class TestLimitTokenPositionFilterFactory extends BaseTokenStreamFactoryT
   public void testMaxPosition1() throws Exception {
     for (final boolean consumeAll : new boolean[]{true, false}) {
       Reader reader = new StringReader("A1 B2 C3 D4 E5 F6");
-      MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      MockTokenizer tokenizer = whitespaceMockTokenizer(reader);
       // if we are consuming all tokens, we can use the checks, otherwise we can't
       tokenizer.setEnableChecks(consumeAll);
       TokenStream stream = tokenizer;
@@ -53,7 +53,7 @@ public class TestLimitTokenPositionFilterFactory extends BaseTokenStreamFactoryT
   public void testMaxPosition1WithShingles() throws Exception {
     for (final boolean consumeAll : new boolean[]{true, false}) {
       Reader reader = new StringReader("one two three four five");
-      MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      MockTokenizer tokenizer = whitespaceMockTokenizer(reader);
       // if we are consuming all tokens, we can use the checks, otherwise we can't
       tokenizer.setEnableChecks(consumeAll);
       TokenStream stream = tokenizer;
@@ -68,16 +68,7 @@ public class TestLimitTokenPositionFilterFactory extends BaseTokenStreamFactoryT
       assertTokenStreamContents(stream, new String[]{"one", "one two", "one two three"});
     }
   }
-  
-  public void testConsumeAllTokens() throws Exception {
-    Reader reader = new StringReader("A1 B2 C3 D4 E5 F6");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    stream = tokenFilterFactory("LimitTokenPosition",
-        "maxTokenPosition", "3",
-        "consumeAllTokens", "true").create(stream);
-    assertTokenStreamContents(stream, new String[] { "A1", "B2", "C3" });
-  }
- 
+
   /**
    * Test that bogus arguments result in exception
    */

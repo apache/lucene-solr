@@ -4,12 +4,9 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -50,7 +47,6 @@ import org.apache.lucene.store.LockObtainFailedException; // javadocs
 import org.apache.lucene.store.NativeFSLockFactory;
 import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Version;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -281,13 +277,12 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * @param openMode see {@link OpenMode}
    */
   protected IndexWriterConfig createIndexWriterConfig(OpenMode openMode) {
-    // TODO: should we use a more optimized Codec, e.g. Pulsing (or write custom)?
+    // TODO: should we use a more optimized Codec?
     // The taxonomy has a unique structure, where each term is associated with one document
 
     // Make sure we use a MergePolicy which always merges adjacent segments and thus
     // keeps the doc IDs ordered as well (this is crucial for the taxonomy index).
-    return new IndexWriterConfig(Version.LUCENE_4_10_0,
-        null).setOpenMode(openMode).setMergePolicy(
+    return new IndexWriterConfig(null).setOpenMode(openMode).setMergePolicy(
         new LogByteSizeMergePolicy());
   }
   
@@ -341,12 +336,12 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   public synchronized void close() throws IOException {
     if (!isClosed) {
       commit();
+      indexWriter.close();
       doClose();
     }
   }
   
   private void doClose() throws IOException {
-    indexWriter.close();
     isClosed = true;
     closeResources();
   }
@@ -893,14 +888,14 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * {@link OrdinalMap} maintained on file system
    */
   public static final class DiskOrdinalMap implements OrdinalMap {
-    File tmpfile;
+    Path tmpfile;
     DataOutputStream out;
 
     /** Sole constructor. */
-    public DiskOrdinalMap(File tmpfile) throws FileNotFoundException {
+    public DiskOrdinalMap(Path tmpfile) throws IOException {
       this.tmpfile = tmpfile;
       out = new DataOutputStream(new BufferedOutputStream(
-          new FileOutputStream(tmpfile)));
+          Files.newOutputStream(tmpfile)));
     }
 
     @Override
@@ -931,7 +926,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       }
       addDone(); // in case this wasn't previously called
       DataInputStream in = new DataInputStream(new BufferedInputStream(
-          new FileInputStream(tmpfile)));
+          Files.newInputStream(tmpfile)));
       map = new int[in.readInt()];
       // NOTE: The current code assumes here that the map is complete,
       // i.e., every ordinal gets one and exactly one value. Otherwise,
@@ -944,7 +939,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       in.close();
 
       // Delete the temporary file, which is no longer needed.
-      Files.delete(tmpfile.toPath());
+      Files.delete(tmpfile);
 
       return map;
     }

@@ -241,6 +241,11 @@
     </lst>
   </requestHandler>
 
+  <requestHandler name="/admin/fileedit" class="solr.admin.EditFileRequestHandler" >
+    <lst name="invariants">
+      <str name="hidden">bogus.txt</str>
+    </lst>
+  </requestHandler>
 
   <!-- test query parameter defaults -->
   <requestHandler name="defaults" class="solr.StandardRequestHandler">
@@ -530,11 +535,11 @@
   </updateRequestProcessorChain>
   <updateRequestProcessorChain name="uniq-fields">
     <processor class="org.apache.solr.update.processor.UniqFieldsUpdateProcessorFactory">
-      <lst name="fields">
+      <arr name="fieldName">
         <str>uniq</str>
         <str>uniq2</str>
         <str>uniq3</str>
-      </lst>      
+      </arr>      
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>  

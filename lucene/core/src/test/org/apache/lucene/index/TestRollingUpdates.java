@@ -43,10 +43,11 @@ public class TestRollingUpdates extends LuceneTestCase {
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
     }
-    final LineFileDocs docs = new LineFileDocs(random, defaultCodecSupportsDocValues());
     
+    final LineFileDocs docs = new LineFileDocs(random, true);
+
     //provider.register(new MemoryCodec());
-    if ( (!"Lucene3x".equals(Codec.getDefault().getName())) && random().nextBoolean()) {
+    if (random().nextBoolean()) {
       Codec.setDefault(TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat(random().nextBoolean(), random.nextFloat())));
     }
 
@@ -66,7 +67,7 @@ public class TestRollingUpdates extends LuceneTestCase {
     // TODO: sometimes update ids not in order...
     for(int docIter=0;docIter<numUpdates;docIter++) {
       final Document doc = docs.nextDoc();
-      final String myID = ""+id;
+      final String myID = Integer.toString(id);
       if (id == SIZE-1) {
         id = 0;
       } else {

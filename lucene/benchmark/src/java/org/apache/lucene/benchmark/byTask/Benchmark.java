@@ -17,14 +17,14 @@ package org.apache.lucene.benchmark.byTask;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.apache.lucene.benchmark.byTask.utils.Algorithm;
 import org.apache.lucene.benchmark.byTask.utils.Config;
-import org.apache.lucene.util.IOUtils;
-
 
 /**
  * Run the benchmark algorithm.
@@ -97,17 +97,17 @@ public class Benchmark {
     }
     
     // verify input files 
-    File algFile = new File(args[0]);
-    if (!algFile.exists() || !algFile.isFile() || !algFile.canRead()) {
-      System.err.println("cannot find/read algorithm file: "+algFile.getAbsolutePath()); 
+    Path algFile = Paths.get(args[0]);
+    if (!Files.isReadable(algFile)) {
+      System.err.println("cannot find/read algorithm file: "+algFile.toAbsolutePath()); 
       System.exit(1);
     }
     
-    System.out.println("Running algorithm from: "+algFile.getAbsolutePath());
+    System.out.println("Running algorithm from: "+algFile.toAbsolutePath());
     
     Benchmark benchmark = null;
     try {
-      benchmark = new Benchmark(IOUtils.getDecodingReader(algFile, StandardCharsets.UTF_8));
+      benchmark = new Benchmark(Files.newBufferedReader(algFile, StandardCharsets.UTF_8));
     } catch (Exception e) {
       e.printStackTrace();
       System.exit(1);

@@ -61,15 +61,15 @@ public abstract class SegmentingTokenizerBase extends Tokenizer {
    * TokenStreams, instead a newly created or cloned one should always
    * be provided to this constructor.
    */
-  public SegmentingTokenizerBase(Reader reader, BreakIterator iterator) {
-    this(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, reader, iterator);
+  public SegmentingTokenizerBase(BreakIterator iterator) {
+    this(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, iterator);
   }
   
   /**
    * Construct a new SegmenterBase, also supplying the AttributeFactory
    */
-  public SegmentingTokenizerBase(AttributeFactory factory, Reader reader, BreakIterator iterator) {
-    super(factory, reader);
+  public SegmentingTokenizerBase(AttributeFactory factory, BreakIterator iterator) {
+    super(factory);
     this.iterator = iterator;
   }
 

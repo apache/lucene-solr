@@ -97,12 +97,9 @@ public class SpatialDocMaker extends DocMaker {
     //A factory for the prefix tree grid
     SpatialPrefixTree grid = SpatialPrefixTreeFactory.makeSPT(configMap, null, ctx);
 
-    RecursivePrefixTreeStrategy strategy = new RecursivePrefixTreeStrategy(grid, SPATIAL_FIELD) {
-      {
-        //protected field
-        this.pointsOnly = config.get("spatial.docPointsOnly", false);
-      }
-    };
+    RecursivePrefixTreeStrategy strategy = new RecursivePrefixTreeStrategy(grid, SPATIAL_FIELD);
+    strategy.setPointsOnly(config.get("spatial.docPointsOnly", false));
+    strategy.setPruneLeafyBranches(config.get("spatial.pruneLeafyBranches", true));
 
     int prefixGridScanLevel = config.get("query.spatial.prefixGridScanLevel", -4);
     if (prefixGridScanLevel < 0)

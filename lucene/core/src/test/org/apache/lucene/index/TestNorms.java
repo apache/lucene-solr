@@ -117,7 +117,7 @@ public class TestNorms extends LuceneTestCase {
     for (int i = 0; i < open.maxDoc(); i++) {
       Document document = open.document(i);
       int expected = Integer.parseInt(document.get(byteTestField));
-      assertEquals(expected, normValues.get(i) & 0xff);
+      assertEquals(expected, normValues.get(i));
     }
     open.close();
     dir.close();
@@ -133,7 +133,7 @@ public class TestNorms extends LuceneTestCase {
     Similarity provider = new MySimProvider();
     config.setSimilarity(provider);
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);
-    final LineFileDocs docs = new LineFileDocs(random, defaultCodecSupportsDocValues());
+    final LineFileDocs docs = new LineFileDocs(random, true);
     int num = atLeast(100);
     for (int i = 0; i < num; i++) {
       Document doc = docs.nextDoc();
@@ -183,7 +183,7 @@ public class TestNorms extends LuceneTestCase {
     @Override
     public long computeNorm(FieldInvertState state) {
       int boost = (int) state.getBoost();
-      return (byte) boost;
+      return (0xFF & boost);
     }
 
     @Override

@@ -189,7 +189,7 @@ public class ChaosMonkey {
   private static void stopJettySolrRunner(JettySolrRunner jetty) throws Exception {
     assert(jetty != null);
     monkeyLog("stop shard! " + jetty.getLocalPort());
-    // get a clean shutdown so that no dirs are left open...
+    // get a clean close so that no dirs are left open...
     FilterHolder fh = jetty.getDispatchFilter();
     if (fh != null) {
       SolrDispatchFilter sdf = (SolrDispatchFilter) fh.getFilter();
@@ -446,7 +446,7 @@ public class ChaosMonkey {
     
     
     if (LuceneTestCase.random().nextBoolean()) {
-      monkeyLog("Jetty will not commit on shutdown");
+      monkeyLog("Jetty will not commit on close");
       DirectUpdateHandler2.commitOnClose = false;
     }
     

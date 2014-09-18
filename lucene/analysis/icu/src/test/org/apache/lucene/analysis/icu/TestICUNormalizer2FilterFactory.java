@@ -32,7 +32,7 @@ public class TestICUNormalizer2FilterFactory extends BaseTokenStreamTestCase {
   public void testDefaults() throws Exception {
     Reader reader = new StringReader("This is a Ｔｅｓｔ");
     ICUNormalizer2FilterFactory factory = new ICUNormalizer2FilterFactory(new HashMap<String,String>());
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = factory.create(stream);
     assertTokenStreamContents(stream, new String[] { "this", "is", "a", "test" });
   }

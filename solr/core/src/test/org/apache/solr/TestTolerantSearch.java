@@ -47,7 +47,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
   private static File solrHome;
   
   private static File createSolrHome() throws Exception {
-    File workDir = createTempDir();
+    File workDir = createTempDir().toFile();
     setupJettyTestHome(workDir, "collection1");
     FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME() + "/collection1/conf/solrconfig-tolerant-search.xml"), new File(workDir, "/collection1/conf/solrconfig.xml"));
     FileUtils.copyDirectory(new File(workDir, "collection1"), new File(workDir, "collection2"));

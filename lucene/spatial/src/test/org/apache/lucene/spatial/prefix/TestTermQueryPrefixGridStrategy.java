@@ -23,7 +23,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.spatial.SpatialTestCase;
 import org.apache.lucene.spatial.prefix.tree.QuadPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
@@ -44,7 +43,7 @@ public class TestTermQueryPrefixGridStrategy extends SpatialTestCase {
 
     Document losAngeles = new Document();
     losAngeles.add(new StringField("name", "Los Angeles", Field.Store.YES));
-    for (IndexableField field : prefixGridStrategy.createIndexableFields(point)) {
+    for (Field field : prefixGridStrategy.createIndexableFields(point)) {
       losAngeles.add(field);
     }
     losAngeles.add(new StoredField(prefixGridStrategy.getFieldName(), point.toString()));//just for diagnostics

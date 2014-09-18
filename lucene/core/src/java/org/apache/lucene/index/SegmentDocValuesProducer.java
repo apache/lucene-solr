@@ -49,7 +49,7 @@ class SegmentDocValuesProducer extends DocValuesProducer {
   final Set<DocValuesProducer> dvProducers = Collections.newSetFromMap(new IdentityHashMap<DocValuesProducer,Boolean>());
   final List<Long> dvGens = new ArrayList<>();
   
-  SegmentDocValuesProducer(SegmentCommitInfo si, Directory dir, FieldInfos fieldInfos, SegmentDocValues segDocValues, DocValuesFormat dvFormat, int termIndexDivisor) throws IOException {
+  SegmentDocValuesProducer(SegmentCommitInfo si, Directory dir, FieldInfos fieldInfos, SegmentDocValues segDocValues, DocValuesFormat dvFormat) throws IOException {
     boolean success = false;
     try {
       Version ver = si.info.getVersion();
@@ -63,14 +63,14 @@ class SegmentDocValuesProducer extends DocValuesProducer {
           if (docValuesGen == -1) {
             if (baseProducer == null) {
               // the base producer gets all the fields, so the Codec can validate properly
-              baseProducer = segDocValues.getDocValuesProducer(docValuesGen, si, IOContext.READ, dir, dvFormat, fieldInfos, termIndexDivisor);
+              baseProducer = segDocValues.getDocValuesProducer(docValuesGen, si, IOContext.READ, dir, dvFormat, fieldInfos);
               dvGens.add(docValuesGen);
               dvProducers.add(baseProducer);
             }
             dvProducersByField.put(fi.name, baseProducer);
           } else {
             assert !dvGens.contains(docValuesGen);
-            final DocValuesProducer dvp = segDocValues.getDocValuesProducer(docValuesGen, si, IOContext.READ, dir, dvFormat, new FieldInfos(new FieldInfo[] { fi }), termIndexDivisor);
+            final DocValuesProducer dvp = segDocValues.getDocValuesProducer(docValuesGen, si, IOContext.READ, dir, dvFormat, new FieldInfos(new FieldInfo[] { fi }));
             dvGens.add(docValuesGen);
             dvProducers.add(dvp);
             dvProducersByField.put(fi.name, dvp);
@@ -100,9 +100,9 @@ class SegmentDocValuesProducer extends DocValuesProducer {
           if (docValuesGen == -1) {
             // we need to send all FieldInfos to gen=-1, but later we need to
             // record the DVP only for the "true" gen=-1 fields (not updated)
-            dvp = segDocValues.getDocValuesProducer(docValuesGen, si, IOContext.READ, dir, dvFormat, fieldInfos, termIndexDivisor);
+            dvp = segDocValues.getDocValuesProducer(docValuesGen, si, IOContext.READ, dir, dvFormat, fieldInfos);
           } else {
-            dvp = segDocValues.getDocValuesProducer(docValuesGen, si, IOContext.READ, dir, dvFormat, new FieldInfos(infos.toArray(new FieldInfo[infos.size()])), termIndexDivisor);
+            dvp = segDocValues.getDocValuesProducer(docValuesGen, si, IOContext.READ, dir, dvFormat, new FieldInfos(infos.toArray(new FieldInfo[infos.size()])));
           }
           dvGens.add(docValuesGen);
           dvProducers.add(dvp);

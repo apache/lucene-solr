@@ -34,12 +34,14 @@ import org.noggit.JSONWriter;
 public class DocCollection extends ZkNodeProps {
   public static final String DOC_ROUTER = "router";
   public static final String SHARDS = "shards";
-  private int version;
+  public static final String STATE_FORMAT = "stateFormat";
+  private int znodeVersion;
 
   private final String name;
   private final Map<String, Slice> slices;
   private final Map<String, Slice> activeSlices;
   private final DocRouter router;
+  private final String znode;
 
   private final Integer replicationFactor;
   private final Integer maxShardsPerNode;
@@ -47,7 +49,7 @@ public class DocCollection extends ZkNodeProps {
 
 
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
-    this(name, slices, props, router, -1);
+    this(name, slices, props, router, -1, ZkStateReader.CLUSTER_STATE);
   }
 
   /**
@@ -55,9 +57,9 @@ public class DocCollection extends ZkNodeProps {
    * @param slices The logical shards of the collection.  This is used directly and a copy is not made.
    * @param props  The properties of the slice.  This is used directly and a copy is not made.
    */
-  public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router, int zkVersion) {
-    super( props==null ? props = new HashMap<String,Object>() : props);
-    this.version = zkVersion;
+  public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router, int zkVersion, String znode) {
+    super(props==null ? props = new HashMap<String,Object>() : props);
+    this.znodeVersion = zkVersion;
     this.name = name;
 
     this.slices = slices;
@@ -89,10 +91,17 @@ public class DocCollection extends ZkNodeProps {
         this.activeSlices.put(slice.getKey(), slice.getValue());
     }
     this.router = router;
-
+    this.znode = znode == null? ZkStateReader.CLUSTER_STATE : znode;
     assert name != null && slices != null;
   }
 
+  /**Use this to make an exact copy of DocCollection with a new set of Slices and every other property as is
+   * @param slices the new set of Slices
+   * @return the resulting DocCollection
+   */
+  public DocCollection copyWithSlices(Map<String, Slice> slices){
+    return new DocCollection(getName(), slices, propMap, router, znodeVersion,znode);
+  }
 
   /**
    * Return collection name.
@@ -134,10 +143,13 @@ public class DocCollection extends ZkNodeProps {
     return activeSlices;
   }
 
-  public int getVersion(){
-    return version;
+  public int getZNodeVersion(){
+    return znodeVersion;
   }
-  
+
+  public int getStateFormat() {
+    return ZkStateReader.CLUSTER_STATE.equals(znode) ? 1 : 2;
+  }
   /**
    * @return replication factor for this collection or null if no
    *         replication factor exists.
@@ -157,6 +169,10 @@ public class DocCollection extends ZkNodeProps {
     return maxShardsPerNode;
   }
 
+  public String getZNode(){
+    return znode;
+  }
+
 
   public DocRouter getRouter() {
     return router;
@@ -173,5 +189,13 @@ public class DocCollection extends ZkNodeProps {
     all.putAll(propMap);
     all.put(SHARDS, slices);
     jsonWriter.write(all);
+  }
+
+  public Replica getReplica(String coreNodeName) {
+    for (Slice slice : slices.values()) {
+      Replica replica = slice.getReplica(coreNodeName);
+      if (replica != null) return replica;
+    }
+    return null;
   }
 }

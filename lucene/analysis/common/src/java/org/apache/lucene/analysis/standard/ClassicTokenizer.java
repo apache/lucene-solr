@@ -18,7 +18,6 @@
 package org.apache.lucene.analysis.standard;
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -26,7 +25,6 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.AttributeFactory;
-import org.apache.lucene.util.Version;
 
 /** A grammar-based tokenizer constructed with JFlex
  *
@@ -99,38 +97,17 @@ public final class ClassicTokenizer extends Tokenizer {
    * Creates a new instance of the {@link ClassicTokenizer}.  Attaches
    * the <code>input</code> to the newly created JFlex scanner.
    *
-   * @param input The input reader
-   *
    * See http://issues.apache.org/jira/browse/LUCENE-1068
    */
-  public ClassicTokenizer(Reader input) {
-    super(input);
-    init();
-  }
-
-  /**
-   * @deprecated Use {@link #ClassicTokenizer(AttributeFactory, Reader)}
-   */
-  @Deprecated
-  public ClassicTokenizer(Version matchVersion, Reader input) {
-    super(input);
+  public ClassicTokenizer() {
     init();
   }
 
   /**
    * Creates a new ClassicTokenizer with a given {@link org.apache.lucene.util.AttributeFactory} 
    */
-  public ClassicTokenizer(AttributeFactory factory, Reader input) {
-    super(factory, input);
-    init();
-  }
-
-  /**
-   * @deprecated Use {@link #ClassicTokenizer(AttributeFactory, Reader)}
-   */
-  @Deprecated
-  public ClassicTokenizer(Version matchVersion, AttributeFactory factory, Reader input) {
-    super(factory, input);
+  public ClassicTokenizer(AttributeFactory factory) {
+    super(factory);
     init();
   }
 

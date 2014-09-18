@@ -17,8 +17,6 @@ package org.apache.lucene.analysis.ngram;
  * limitations under the License.
  */
 
-import java.io.Reader;
-
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.Version;
@@ -26,17 +24,10 @@ import org.apache.lucene.util.Version;
 /**
  * Tokenizes the input from an edge into n-grams of given size(s).
  * <p>
- * This {@link Tokenizer} create n-grams from the beginning edge or ending edge of a input token.
- * <p><a name="version" /> As of Lucene 4.4, this tokenizer<ul>
- * <li>can handle <code>maxGram</code> larger than 1024 chars, but beware that this will result in increased memory usage
- * <li>doesn't trim the input,
- * <li>sets position increments equal to 1 instead of 1 for the first token and 0 for all other ones
- * <li>doesn't support backward n-grams anymore.
- * <li>supports {@link #isTokenChar(int) pre-tokenization},
- * <li>correctly handles supplementary characters.
- * </ul>
- * <p>Although <b style="color:red">highly</b> discouraged, it is still possible
- * to use the old behavior through {@link Lucene43EdgeNGramTokenizer}.
+ * This {@link Tokenizer} create n-grams from the beginning edge of a input token.
+ * <p><a name="match_version" />As of Lucene 4.4, this class supports
+ * {@link #isTokenChar(int) pre-tokenization} and correctly handles
+ * supplementary characters.
  */
 public class EdgeNGramTokenizer extends NGramTokenizer {
   public static final int DEFAULT_MAX_GRAM_SIZE = 1;
@@ -45,40 +36,22 @@ public class EdgeNGramTokenizer extends NGramTokenizer {
   /**
    * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
    *
-   * @param input {@link Reader} holding the input to be tokenized
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
    */
-  public EdgeNGramTokenizer(Reader input, int minGram, int maxGram) {
-    super(Version.LATEST, input, minGram, maxGram, true);
-  }
-
-  /**
-   * @deprecated Use {@link #EdgeNGramTokenizer(Reader, int, int)}
-   */
-  @Deprecated
-  public EdgeNGramTokenizer(Version version, Reader input, int minGram, int maxGram) {
-    super(version, input, minGram, maxGram, true);
+  public EdgeNGramTokenizer(int minGram, int maxGram) {
+    super(minGram, maxGram, true);
   }
 
   /**
    * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
    *
    * @param factory {@link org.apache.lucene.util.AttributeFactory} to use
-   * @param input {@link Reader} holding the input to be tokenized
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
    */
-  public EdgeNGramTokenizer(AttributeFactory factory, Reader input, int minGram, int maxGram) {
-    super(Version.LATEST, factory, input, minGram, maxGram, true);
-  }
-
-  /**
-   * @deprecated Use {@link #EdgeNGramTokenizer(AttributeFactory, Reader, int, int)}
-   */
-  @Deprecated
-  public EdgeNGramTokenizer(Version version, AttributeFactory factory, Reader input, int minGram, int maxGram) {
-    super(version, factory, input, minGram, maxGram, true);
+  public EdgeNGramTokenizer(AttributeFactory factory, int minGram, int maxGram) {
+    super(factory, minGram, maxGram, true);
   }
 
 }

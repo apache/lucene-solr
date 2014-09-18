@@ -22,7 +22,6 @@ import java.util.Set;
 import org.apache.lucene.analysis.ja.tokenattributes.PartOfSpeechAttribute;
 import org.apache.lucene.analysis.util.FilteringTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.util.Version;
 
 /**
  * Removes tokens that match a set of part-of-speech tags.
@@ -31,13 +30,6 @@ public final class JapanesePartOfSpeechStopFilter extends FilteringTokenFilter {
   private final Set<String> stopTags;
   private final PartOfSpeechAttribute posAtt = addAttribute(PartOfSpeechAttribute.class);
 
-  /** @deprecated enablePositionIncrements=false is not supported anymore as of Lucene 4.4. */
-  @Deprecated
-  public JapanesePartOfSpeechStopFilter(Version version, boolean enablePositionIncrements, TokenStream input, Set<String> stopTags) {
-    super(version, enablePositionIncrements, input);
-    this.stopTags = stopTags;
-  }
-
   /**
    * Create a new {@link JapanesePartOfSpeechStopFilter}.
    * @param input    the {@link TokenStream} to consume
@@ -45,15 +37,6 @@ public final class JapanesePartOfSpeechStopFilter extends FilteringTokenFilter {
    */
   public JapanesePartOfSpeechStopFilter(TokenStream input, Set<String> stopTags) {
     super(input);
-    this.stopTags = stopTags;
-  }
-
-  /**
-   * @deprecated Use {@link #JapanesePartOfSpeechStopFilter(TokenStream,Set)}
-   */
-  @Deprecated
-  public JapanesePartOfSpeechStopFilter(Version version, TokenStream input, Set<String> stopTags) {
-    super(version, input);
     this.stopTags = stopTags;
   }
 

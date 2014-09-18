@@ -35,7 +35,6 @@ import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
@@ -198,8 +197,7 @@ public class FuzzyLikeThisQuery extends Query
     if (terms == null) {
       return;
     }
-    TokenStream ts = analyzer.tokenStream(f.fieldName, f.queryString);
-    try {
+    try (TokenStream ts = analyzer.tokenStream(f.fieldName, f.queryString)) {
       CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
 
       int corpusNumDocs = reader.numDocs();
@@ -255,8 +253,6 @@ public class FuzzyLikeThisQuery extends Query
         }
       }
       ts.end();
-    } finally {
-      IOUtils.closeWhileHandlingException(ts);
     }
   }
 

@@ -17,7 +17,6 @@ package org.apache.lucene.codecs.lucene41;
  * limitations under the License.
  */
 
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -54,7 +53,6 @@ import org.apache.lucene.util.English;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
@@ -70,8 +68,8 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
     Directory dir = newDirectory();
     Analyzer analyzer = new Analyzer(Analyzer.PER_FIELD_REUSE_STRATEGY) {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer();
         if (fieldName.contains("payloadsFixed")) {
           TokenFilter filter = new MockFixedLengthPayloadFilter(new Random(0), tokenizer, 1);
           return new TokenStreamComponents(tokenizer, filter);
@@ -264,7 +262,6 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
    * checks collection-level statistics on Terms 
    */
   public void assertTermsStatistics(Terms leftTerms, Terms rightTerms) throws Exception {
-    assert leftTerms.getComparator() == rightTerms.getComparator();
     if (leftTerms.getDocCount() != -1 && rightTerms.getDocCount() != -1) {
       assertEquals(leftTerms.getDocCount(), rightTerms.getDocCount());
     }

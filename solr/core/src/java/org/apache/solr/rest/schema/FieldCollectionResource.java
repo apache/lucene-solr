@@ -132,7 +132,7 @@ public class FieldCollectionResource extends BaseFieldResource implements GETabl
           throw new SolrException(ErrorCode.BAD_REQUEST, message);
         } else {
           Object object = ObjectBuilder.fromJSON(entity.getText());
-          if ( ! (object instanceof List)) {
+          if (!(object instanceof List)) {
             String message = "Invalid JSON type " + object.getClass().getName() + ", expected List of the form"
                 + " (ignore the backslashes): [{\"name\":\"foo\",\"type\":\"text_general\", ...}, {...}, ...]";
             log.error(message);

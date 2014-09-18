@@ -33,13 +33,11 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiReader;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 
 /**
  * Utility class for sanity-checking queries.
@@ -129,11 +127,6 @@ public class QueryUtils {
     }
   }
   
-  public static void purgeFieldCache(IndexReader r) throws IOException {
-    // this is just a hack, to get an atomic reader that contains all subreaders for insanity checks
-    FieldCache.DEFAULT.purgeByCacheKey(SlowCompositeReaderWrapper.wrap(r).getCoreCacheKey());
-  }
-  
   /** This is a MultiReader that can be used for randomly wrapping other readers
    * without creating FieldCache insanity.
    * The trick is to use an opaque/fake cache key. */
@@ -207,12 +200,11 @@ public class QueryUtils {
     if (LuceneTestCase.VERBOSE) {
       System.out.println("NOTE: QueryUtils: now create empty index");
     }
-    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(Version.LATEST, new MockAnalyzer(random)));
+    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random)));
     for (int i = 0; i < numDocs; i++) {
       w.addDocument(new Document());
     }
     w.forceMerge(1);
-    w.commit();
     w.close();
     if (LuceneTestCase.VERBOSE) {
       System.out.println("NOTE: QueryUtils: done create empty index");
@@ -254,7 +246,7 @@ public class QueryUtils {
         final float maxDiff = 1e-5f;
         final AtomicReader lastReader[] = {null};
 
-        s.search(q, new Collector() {
+        s.search(q, new SimpleCollector() {
           private Scorer sc;
           private Scorer scorer;
           private int leafPtr;
@@ -310,7 +302,7 @@ public class QueryUtils {
           }
 
           @Override
-          public void setNextReader(AtomicReaderContext context) throws IOException {
+          protected void doSetNextReader(AtomicReaderContext context) throws IOException {
             // confirm that skipping beyond the last doc, on the
             // previous reader, hits NO_MORE_DOCS
             if (lastReader[0] != null) {
@@ -362,7 +354,7 @@ public class QueryUtils {
     final int lastDoc[] = {-1};
     final AtomicReader lastReader[] = {null};
     final List<AtomicReaderContext> context = s.getTopReaderContext().leaves();
-    s.search(q,new Collector() {
+    s.search(q,new SimpleCollector() {
       private Scorer scorer;
       private int leafPtr;
       private Bits liveDocs;
@@ -397,7 +389,7 @@ public class QueryUtils {
       }
 
       @Override
-      public void setNextReader(AtomicReaderContext context) throws IOException {
+      protected void doSetNextReader(AtomicReaderContext context) throws IOException {
         // confirm that skipping beyond the last doc, on the
         // previous reader, hits NO_MORE_DOCS
         if (lastReader[0] != null) {

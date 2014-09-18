@@ -71,7 +71,7 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
 
   @BeforeClass
   public static void beforeClass() throws IOException {
-    solrHomeDirectory = createTempDir();
+    solrHomeDirectory = createTempDir().toFile();
     System.setProperty("solrcloud.skip.autorecovery", "true");
     System.setProperty("genericCoreNodeNames", "false");
     copyMinFullSetup(solrHomeDirectory);
@@ -89,7 +89,7 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
   public void setUp() throws Exception {
     super.setUp();
     System.setProperty("zkClientTimeout", "3000");
-    File tmpDir = createTempDir("zkData");
+    File tmpDir = createTempDir("zkData").toFile();
     zkDir = tmpDir.getAbsolutePath();
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();

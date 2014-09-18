@@ -169,8 +169,8 @@ public class RAMOutputStream extends IndexOutput implements Accountable {
     }
   }
 
-  @Override
-  public void flush() throws IOException {
+  /** Forces any buffered output to be written. */
+  protected void flush() throws IOException {
     setFileLength();
   }
 

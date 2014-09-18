@@ -18,13 +18,11 @@ package org.apache.solr.analysis;
 
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.Query;
@@ -65,7 +63,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
     String text = "simple text";
     args.put("withOriginal", "true");
     ReversedWildcardFilterFactory factory = new ReversedWildcardFilterFactory(args);
-    TokenStream input = factory.create(new MockTokenizer(new StringReader(text), MockTokenizer.WHITESPACE, false));
+    TokenStream input = factory.create(whitespaceMockTokenizer(text));
     assertTokenStreamContents(input, 
         new String[] { "\u0001elpmis", "simple", "\u0001txet", "text" },
         new int[] { 1, 0, 1, 0 });
@@ -73,7 +71,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
     // now without original tokens
     args.put("withOriginal", "false");
     factory = new ReversedWildcardFilterFactory(args);
-    input = factory.create(new MockTokenizer(new StringReader(text), MockTokenizer.WHITESPACE, false));
+    input = factory.create(whitespaceMockTokenizer(text));
     assertTokenStreamContents(input,
         new String[] { "\u0001elpmis", "\u0001txet" },
         new int[] { 1, 1 });

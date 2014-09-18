@@ -6,6 +6,8 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
@@ -41,16 +43,16 @@ public class WriteEnwikiLineDocTask extends WriteLineDocTask {
 
   public WriteEnwikiLineDocTask(PerfRunData runData) throws Exception {
     super(runData);
-    OutputStream out = StreamUtils.outputStream(categoriesLineFile(new File(fname)));
+    OutputStream out = StreamUtils.outputStream(categoriesLineFile(Paths.get(fname)));
     categoryLineFileOut = new PrintWriter(new BufferedWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8), StreamUtils.BUFFER_SIZE));
     writeHeader(categoryLineFileOut);
   }
 
   /** Compose categories line file out of original line file */
-  public static File categoriesLineFile(File f) {
-    File dir = f.getParentFile();
-    String categoriesName = "categories-"+f.getName();
-    return dir==null ? new File(categoriesName) :  new File(dir,categoriesName);
+  public static Path categoriesLineFile(Path f) {
+    Path dir = f.toAbsolutePath().getParent();
+    String categoriesName = "categories-"+f.getFileName();
+    return dir.resolve(categoriesName);
   }
   
   @Override

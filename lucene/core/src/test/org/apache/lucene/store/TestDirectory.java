@@ -20,7 +20,9 @@ package org.apache.lucene.store;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -30,7 +32,7 @@ import org.apache.lucene.util.TestUtil;
 public class TestDirectory extends BaseDirectoryTestCase {
 
   @Override
-  protected Directory getDirectory(File path) throws IOException {
+  protected Directory getDirectory(Path path) throws IOException {
     final Directory dir;
     if (random().nextBoolean()) {
       dir = newDirectory();
@@ -53,7 +55,7 @@ public class TestDirectory extends BaseDirectoryTestCase {
   // Test that different instances of FSDirectory can coexist on the same
   // path, can read, write, and lock files.
   public void testDirectInstantiation() throws Exception {
-    final File path = createTempDir("testDirectInstantiation");
+    final Path path = createTempDir("testDirectInstantiation");
     
     final byte[] largeBuffer = new byte[random().nextInt(256*1024)], largeReadBuffer = new byte[largeBuffer.length];
     for (int i = 0; i < largeBuffer.length; i++) {
@@ -141,10 +143,9 @@ public class TestDirectory extends BaseDirectoryTestCase {
 
   // LUCENE-1468
   public void testCopySubdir() throws Throwable {
-    File path = createTempDir("testsubdir");
+    Path path = createTempDir("testsubdir");
     try {
-      path.mkdirs();
-      new File(path, "subdir").mkdirs();
+      Files.createDirectory(path.resolve("subdir"));
       Directory fsDir = new SimpleFSDirectory(path, null);
       assertEquals(0, new RAMDirectory(fsDir, newIOContext(random())).listAll().length);
     } finally {
@@ -154,16 +155,16 @@ public class TestDirectory extends BaseDirectoryTestCase {
 
   // LUCENE-1468
   public void testNotDirectory() throws Throwable {
-    File path = createTempDir("testnotdir");
+    Path path = createTempDir("testnotdir");
     Directory fsDir = new SimpleFSDirectory(path, null);
     try {
       IndexOutput out = fsDir.createOutput("afile", newIOContext(random()));
       out.close();
       assertTrue(slowFileExists(fsDir, "afile"));
       try {
-        new SimpleFSDirectory(new File(path, "afile"), null);
+        new SimpleFSDirectory(path.resolve("afile"), null);
         fail("did not hit expected exception");
-      } catch (NoSuchDirectoryException nsde) {
+      } catch (IOException nsde) {
         // Expected
       }
     } finally {

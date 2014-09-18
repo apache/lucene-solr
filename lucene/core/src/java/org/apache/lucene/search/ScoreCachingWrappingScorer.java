@@ -36,7 +36,7 @@ public class ScoreCachingWrappingScorer extends FilterScorer {
 
   private int curDoc = -1;
   private float curScore;
-  
+
   /** Creates a new instance by wrapping the given scorer. */
   public ScoreCachingWrappingScorer(Scorer scorer) {
     super(scorer);
@@ -49,7 +49,7 @@ public class ScoreCachingWrappingScorer extends FilterScorer {
       curScore = in.score();
       curDoc = doc;
     }
-    
+
     return curScore;
   }
 

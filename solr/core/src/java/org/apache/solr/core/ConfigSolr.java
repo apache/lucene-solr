@@ -51,32 +51,18 @@ public abstract class ConfigSolr {
   public static ConfigSolr fromFile(SolrResourceLoader loader, File configFile) {
     log.info("Loading container configuration from {}", configFile.getAbsolutePath());
 
-    InputStream inputStream = null;
+    if (!configFile.exists()) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "solr.xml does not exist in " + configFile.getAbsolutePath() + " cannot start Solr");
+    }
 
-    try {
-
-      // 4x specific behavior, removed in 5.0...
-      // if configFile doesn't exist, and we aren't in cloud mode, use old style default
-      if (!configFile.exists()) {
-        if (ZkContainer.isZkMode()) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "solr.xml does not exist in " + configFile.getAbsolutePath() + " cannot start Solr");
-        }
-        log.info("{} does not exist, using default configuration", configFile.getAbsolutePath());
-        inputStream = new ByteArrayInputStream(ConfigSolrXmlOld.DEF_SOLR_XML.getBytes(StandardCharsets.UTF_8));
-      } else {
-        inputStream = new FileInputStream(configFile);
-      }
+    try (InputStream inputStream = new FileInputStream(configFile)) {
       return fromInputStream(loader, inputStream);
-
     } catch (SolrException exc) {
       throw exc;
-    } catch (Exception e) {
+    } catch (Exception exc) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Could not load SOLR configuration", e);
-    }
-    finally {
-      IOUtils.closeQuietly(inputStream);
+          "Could not load SOLR configuration", exc);
     }
   }
 

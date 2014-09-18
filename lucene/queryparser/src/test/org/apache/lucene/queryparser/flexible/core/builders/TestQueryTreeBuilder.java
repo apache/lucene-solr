@@ -37,6 +37,7 @@ public class TestQueryTreeBuilder extends LuceneTestCase {
     Object result = qtb.build(new FieldQueryNode(new UnescapedCharSequence("field"), "foo", 0, 0));
     Assert.assertEquals("OK", result);
     
+    // LUCENE-4890
     qtb = new QueryTreeBuilder();
     qtb.setBuilder(DummyQueryNodeInterface.class, new DummyBuilder());
     result = qtb.build(new DummyQueryNode());

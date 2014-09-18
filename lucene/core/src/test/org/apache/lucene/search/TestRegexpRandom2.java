@@ -24,9 +24,9 @@ import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -68,11 +68,14 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     Document doc = new Document();
     Field field = newStringField(fieldName, "", Field.Store.NO);
     doc.add(field);
+    Field dvField = new SortedDocValuesField(fieldName, new BytesRef());
+    doc.add(dvField);
     List<String> terms = new ArrayList<>();
     int num = atLeast(200);
     for (int i = 0; i < num; i++) {
       String s = TestUtil.randomUnicodeString(random());
       field.setStringValue(s);
+      dvField.setBytesValue(new BytesRef(s));
       terms.add(s);
       writer.addDocument(doc);
     }
@@ -139,9 +142,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
   
   /** test a bunch of random regular expressions */
   public void testRegexps() throws Exception {
-    // we generate aweful regexps: good for testing.
-    // but for preflex codec, the test can be very slow, so use less iterations.
-    int num = Codec.getDefault().getName().equals("Lucene3x") ? 100 * RANDOM_MULTIPLIER : atLeast(1000);
+    int num = atLeast(1000);
     for (int i = 0; i < num; i++) {
       String reg = AutomatonTestUtil.randomRegexp(random());
       if (VERBOSE) {

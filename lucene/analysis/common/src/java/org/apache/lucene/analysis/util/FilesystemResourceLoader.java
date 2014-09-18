@@ -17,11 +17,12 @@ package org.apache.lucene.analysis.util;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 
 /**
  * Simple {@link ResourceLoader} that opens resource files
@@ -37,25 +38,16 @@ import java.io.InputStream;
  * to allow lookup of files in more than one base directory.
  */
 public final class FilesystemResourceLoader implements ResourceLoader {
-  private final File baseDirectory;
+  private final Path baseDirectory;
   private final ResourceLoader delegate;
   
-  /**
-   * Creates a resource loader that requires absolute filenames or relative to CWD
-   * to resolve resources. Files not found in file system and class lookups
-   * are delegated to context classloader.
-   */
-  public FilesystemResourceLoader() {
-    this((File) null);
-  }
-
   /**
    * Creates a resource loader that resolves resources against the given
    * base directory (may be {@code null} to refer to CWD).
    * Files not found in file system and class lookups are delegated to context
    * classloader.
    */
-  public FilesystemResourceLoader(File baseDirectory) {
+  public FilesystemResourceLoader(Path baseDirectory) {
     this(baseDirectory, new ClasspathResourceLoader());
   }
 
@@ -65,9 +57,12 @@ public final class FilesystemResourceLoader implements ResourceLoader {
    * Files not found in file system and class lookups are delegated
    * to the given delegate {@link ResourceLoader}.
    */
-  public FilesystemResourceLoader(File baseDirectory, ResourceLoader delegate) {
-    if (baseDirectory != null && !baseDirectory.isDirectory())
-      throw new IllegalArgumentException("baseDirectory is not a directory or null");
+  public FilesystemResourceLoader(Path baseDirectory, ResourceLoader delegate) {
+    if (baseDirectory == null) {
+      throw new NullPointerException();
+    }
+    if (!Files.isDirectory(baseDirectory))
+      throw new IllegalArgumentException(baseDirectory + " is not a directory");
     if (delegate == null)
       throw new IllegalArgumentException("delegate ResourceLoader may not be null");
     this.baseDirectory = baseDirectory;
@@ -77,12 +72,8 @@ public final class FilesystemResourceLoader implements ResourceLoader {
   @Override
   public InputStream openResource(String resource) throws IOException {
     try {
-      File file = new File (resource);
-      if (baseDirectory != null && !file.isAbsolute()) {
-        file = new File(baseDirectory, resource);
-      }
-      return new FileInputStream(file);
-    } catch (FileNotFoundException fnfe) {
+      return Files.newInputStream(baseDirectory.resolve(resource));
+    } catch (FileNotFoundException | NoSuchFileException fnfe) {
       return delegate.openResource(resource);
     }
   }

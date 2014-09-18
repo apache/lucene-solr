@@ -28,7 +28,6 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Version;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -59,7 +58,7 @@ public class ExpressionAggregationFacetsExample {
   
   /** Build the example index. */
   private void index() throws IOException {
-    IndexWriter indexWriter = new IndexWriter(indexDir, new IndexWriterConfig(Version.LATEST,
+    IndexWriter indexWriter = new IndexWriter(indexDir, new IndexWriterConfig(
         new WhitespaceAnalyzer()));
 
     // Writes facet ords to a separate directory from the main index

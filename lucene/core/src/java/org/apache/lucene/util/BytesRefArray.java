@@ -188,11 +188,6 @@ public final class BytesRefArray {
         }
         return null;
       }
-
-      @Override
-      public Comparator<BytesRef> getComparator() {
-        return comp;
-      }
     };
   }
 }

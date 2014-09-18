@@ -22,6 +22,7 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 /**
@@ -33,7 +34,8 @@ public class TestDictionaryCompoundWordTokenFilterFactory extends BaseTokenStrea
    */
   public void testDecompounding() throws Exception {
     Reader reader = new StringReader("I like to play softball");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    ((Tokenizer)stream).setReader(reader);
     stream = tokenFilterFactory("DictionaryCompoundWord", 
         "dictionary", "compoundDictionary.txt").create(stream);
     assertTokenStreamContents(stream, 

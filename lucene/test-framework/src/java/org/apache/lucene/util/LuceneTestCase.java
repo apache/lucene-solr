@@ -18,9 +18,9 @@ package org.apache.lucene.util;
  */
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -32,6 +32,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -54,10 +56,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.SegmentInfoFormat;
-import org.apache.lucene.codecs.lucene46.Lucene46SegmentInfoFormat;
-import org.apache.lucene.codecs.simpletext.SimpleTextSegmentInfoFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
@@ -109,8 +107,6 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.AssertingIndexSearcher;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.FieldCache.CacheEntry;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryUtils.FCInvisibleMultiReader;
 import org.apache.lucene.store.BaseDirectoryWrapper;
@@ -125,7 +121,6 @@ import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.RateLimitedDirectoryWrapper;
-import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
@@ -140,6 +135,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
+
 import com.carrotsearch.randomizedtesting.JUnit4MethodProvider;
 import com.carrotsearch.randomizedtesting.LifecycleScope;
 import com.carrotsearch.randomizedtesting.MixWithSuiteName;
@@ -465,26 +461,10 @@ public abstract class LuceneTestCase extends Assert {
     CORE_DIRECTORIES.add("RAMDirectory");
   };
   
-  protected static final Set<String> doesntSupportOffsets = new HashSet<>(Arrays.asList(
-    "Lucene3x",
-    "MockFixedIntBlock",
-    "MockVariableIntBlock",
-    "MockSep",
-    "MockRandom"
-  ));
-  
   // -----------------------------------------------------------------
   // Fields initialized in class or instance rules.
   // -----------------------------------------------------------------
 
-  /**
-   * When {@code true}, Codecs for old Lucene version will support writing
-   * indexes in that format. Defaults to {@code false}, can be disabled by
-   * specific tests on demand.
-   * 
-   * @lucene.internal
-   */
-  public static boolean OLD_FORMAT_IMPERSONATION_IS_ACTIVE = false;
 
   // -----------------------------------------------------------------
   // Class level (suite) rules.
@@ -638,7 +618,6 @@ public abstract class LuceneTestCase extends Assert {
     .around(threadAndTestNameRule)
     .around(new SystemPropertiesInvariantRule(IGNORED_INVARIANT_PROPERTIES))
     .around(new TestRuleSetupAndRestoreInstanceEnv())
-    .around(new TestRuleFieldCacheSanity())
     .around(parentChainCallRule);
 
   private static final Map<String,FieldType> fieldToType = new HashMap<String,FieldType>();
@@ -785,48 +764,6 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /**
-   * Asserts that FieldCacheSanityChecker does not detect any
-   * problems with FieldCache.DEFAULT.
-   * <p>
-   * If any problems are found, they are logged to System.err
-   * (allong with the msg) when the Assertion is thrown.
-   * </p>
-   * <p>
-   * This method is called by tearDown after every test method,
-   * however IndexReaders scoped inside test methods may be garbage
-   * collected prior to this method being called, causing errors to
-   * be overlooked. Tests are encouraged to keep their IndexReaders
-   * scoped at the class level, or to explicitly call this method
-   * directly in the same scope as the IndexReader.
-   * </p>
-   *
-   * @see org.apache.lucene.util.FieldCacheSanityChecker
-   */
-  protected static void assertSaneFieldCaches(final String msg) {
-    final CacheEntry[] entries = FieldCache.DEFAULT.getCacheEntries();
-    Insanity[] insanity = null;
-    try {
-      try {
-        insanity = FieldCacheSanityChecker.checkSanity(entries);
-      } catch (RuntimeException e) {
-        dumpArray(msg + ": FieldCache", entries, System.err);
-        throw e;
-      }
-
-      assertEquals(msg + ": Insane FieldCache usage(s) found",
-                   0, insanity.length);
-      insanity = null;
-    } finally {
-
-      // report this in the event of any exception/failure
-      // if no failure, then insanity will be null anyway
-      if (null != insanity) {
-        dumpArray(msg + ": Insane FieldCache usage(s)", insanity, System.err);
-      }
-    }
-  }
-
-  /**
    * Returns a number of at least <code>i</code>
    * <p>
    * The actual number returned will be influenced by whether {@link #TEST_NIGHTLY}
@@ -921,12 +858,12 @@ public abstract class LuceneTestCase extends Assert {
 
   /** create a new index writer config with random defaults */
   public static IndexWriterConfig newIndexWriterConfig(Analyzer a) {
-    return newIndexWriterConfig(random(), Version.LATEST, a);
+    return newIndexWriterConfig(random(), a);
   }
   
   /** create a new index writer config with random defaults using the specified random */
-  public static IndexWriterConfig newIndexWriterConfig(Random r, Version v, Analyzer a) {
-    IndexWriterConfig c = new IndexWriterConfig(v, a);
+  public static IndexWriterConfig newIndexWriterConfig(Random r, Analyzer a) {
+    IndexWriterConfig c = new IndexWriterConfig(a);
     c.setSimilarity(classEnvRule.similarity);
     if (VERBOSE) {
       // Even though TestRuleSetupAndRestoreClassEnv calls
@@ -942,7 +879,7 @@ public abstract class LuceneTestCase extends Assert {
       c.setMergeScheduler(new SerialMergeScheduler());
     } else if (rarely(r)) {
       int maxThreadCount = TestUtil.nextInt(r, 1, 4);
-      int maxMergeCount = TestUtil.nextInt(r, maxThreadCount, maxThreadCount+4);
+      int maxMergeCount = TestUtil.nextInt(r, maxThreadCount, maxThreadCount + 4);
       ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
       cms.setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
       c.setMergeScheduler(cms);
@@ -954,15 +891,6 @@ public abstract class LuceneTestCase extends Assert {
       } else {
         // reasonable value
         c.setMaxBufferedDocs(TestUtil.nextInt(r, 16, 1000));
-      }
-    }
-    if (r.nextBoolean()) {
-      if (rarely(r)) {
-        // crazy value
-        c.setTermIndexInterval(r.nextBoolean() ? TestUtil.nextInt(r, 1, 31) : TestUtil.nextInt(r, 129, 1000));
-      } else {
-        // reasonable value
-        c.setTermIndexInterval(TestUtil.nextInt(r, 32, 128));
       }
     }
     if (r.nextBoolean()) {
@@ -979,7 +907,6 @@ public abstract class LuceneTestCase extends Assert {
     }
     c.setUseCompoundFile(r.nextBoolean());
     c.setReaderPooling(r.nextBoolean());
-    c.setReaderTermsIndexDivisor(TestUtil.nextInt(r, 1, 4));
     c.setCheckIntegrityAtMerge(r.nextBoolean());
     return c;
   }
@@ -1242,7 +1169,7 @@ public abstract class LuceneTestCase extends Assert {
     return (MockDirectoryWrapper) wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY), false);
   }
 
-  public static MockDirectoryWrapper newMockFSDirectory(File f) {
+  public static MockDirectoryWrapper newMockFSDirectory(Path f) {
     return (MockDirectoryWrapper) newFSDirectory(f, null, false);
   }
 
@@ -1256,16 +1183,16 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /** Returns a new FSDirectory instance over the given file, which must be a folder. */
-  public static BaseDirectoryWrapper newFSDirectory(File f) {
+  public static BaseDirectoryWrapper newFSDirectory(Path f) {
     return newFSDirectory(f, null);
   }
 
   /** Returns a new FSDirectory instance over the given file, which must be a folder. */
-  public static BaseDirectoryWrapper newFSDirectory(File f, LockFactory lf) {
+  public static BaseDirectoryWrapper newFSDirectory(Path f, LockFactory lf) {
     return newFSDirectory(f, lf, rarely());
   }
 
-  private static BaseDirectoryWrapper newFSDirectory(File f, LockFactory lf, boolean bare) {
+  private static BaseDirectoryWrapper newFSDirectory(Path f, LockFactory lf, boolean bare) {
     String fsdirClass = TEST_DIRECTORY;
     if (fsdirClass.equals("random")) {
       fsdirClass = RandomPicks.randomFrom(random(), FS_DIRECTORIES); 
@@ -1421,7 +1348,7 @@ public abstract class LuceneTestCase extends Assert {
         newType.setStoreTermVectorPositions(random.nextBoolean());
         
         if (newType.storeTermVectorPositions()) {
-          if (!newType.storeTermVectorPayloads() && !OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
+          if (!newType.storeTermVectorPayloads()) {
             newType.setStoreTermVectorPayloads(random.nextBoolean());
           }
         }
@@ -1480,17 +1407,11 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
 
-  public static boolean defaultCodecSupportsDocValues() {
-    return !Codec.getDefault().getName().equals("Lucene3x");
-  }
-
-  private static Directory newFSDirectoryImpl(
-      Class<? extends FSDirectory> clazz, File file)
-      throws IOException {
+  private static Directory newFSDirectoryImpl(Class<? extends FSDirectory> clazz, Path path) throws IOException {
     FSDirectory d = null;
     try {
-      d = CommandLineUtil.newFSDirectory(clazz, file);
-    } catch (Exception e) {
+      d = CommandLineUtil.newFSDirectory(clazz, path);
+    } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
       Rethrow.rethrow(e);
     }
     return d;
@@ -1507,24 +1428,24 @@ public abstract class LuceneTestCase extends Assert {
 
     try {
       final Class<? extends Directory> clazz = CommandLineUtil.loadDirectoryClass(clazzName);
-      // If it is a FSDirectory type, try its ctor(File)
+      // If it is a FSDirectory type, try its ctor(Path)
       if (FSDirectory.class.isAssignableFrom(clazz)) {
-        final File dir = createTempDir("index-" + clazzName);
+        final Path dir = createTempDir("index-" + clazzName);
         return newFSDirectoryImpl(clazz.asSubclass(FSDirectory.class), dir);
       }
 
-      // See if it has a File ctor even though it's not an
+      // See if it has a Path ctor even though it's not an
       // FSDir subclass:
-      Constructor<? extends Directory> fileCtor = null;
+      Constructor<? extends Directory> pathCtor = null;
       try {
-        fileCtor = clazz.getConstructor(File.class);
+        pathCtor = clazz.getConstructor(Path.class);
       } catch (NoSuchMethodException nsme) {
         // Ignore
       }
 
-      if (fileCtor != null) {
-        final File dir = createTempDir("index");
-        return fileCtor.newInstance(dir);
+      if (pathCtor != null) {
+        final Path dir = createTempDir("index");
+        return pathCtor.newInstance(dir);
       }
 
       // try empty ctor
@@ -1738,82 +1659,27 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /**
-   * Gets a resource from the classpath as {@link File}. This method should only
+   * Gets a resource from the test's classpath as {@link Path}. This method should only
    * be used, if a real file is needed. To get a stream, code should prefer
-   * {@link Class#getResourceAsStream} using {@code this.getClass()}.
+   * {@link #getDataInputStream(String)}.
    */
-  protected File getDataFile(String name) throws IOException {
+  protected Path getDataPath(String name) throws IOException {
     try {
-      return new File(this.getClass().getResource(name).toURI());
+      return Paths.get(this.getClass().getResource(name).toURI());
     } catch (Exception e) {
       throw new IOException("Cannot find resource: " + name);
     }
   }
-  
-  /** Returns true if the default codec supports single valued docvalues with missing values */ 
-  public static boolean defaultCodecSupportsMissingDocValues() {
-    String name = Codec.getDefault().getName();
-    if (name.equals("Lucene3x") ||
-        name.equals("Lucene40") || name.equals("Appending") ||
-        name.equals("Lucene41") || 
-        name.equals("Lucene42")) {
-      return false;
-    }
-    return true;
-  }
-  
-  /** Returns true if the default codec supports SORTED_SET docvalues */ 
-  public static boolean defaultCodecSupportsSortedSet() {
-    if (!defaultCodecSupportsDocValues()) {
-      return false;
-    }
-    String name = Codec.getDefault().getName();
-    if (name.equals("Lucene40") || name.equals("Lucene41") || name.equals("Appending")) {
-      return false;
-    }
-    return true;
-  }
-  
-  /** Returns true if the default codec supports SORTED_NUMERIC docvalues */ 
-  public static boolean defaultCodecSupportsSortedNumeric() {
-    if (!defaultCodecSupportsDocValues()) {
-      return false;
-    }
-    String name = Codec.getDefault().getName();
-    if (name.equals("Lucene40") || name.equals("Lucene41") || name.equals("Lucene42") || name.equals("Lucene45") || name.equals("Lucene46")) {
-      return false;
-    }
-    return true;
-  }
-  
-  /** Returns true if the codec "supports" docsWithField 
-   * (other codecs return MatchAllBits, because you couldnt write missing values before) */
-  public static boolean defaultCodecSupportsDocsWithField() {
-    if (!defaultCodecSupportsDocValues()) {
-      return false;
-    }
-    String name = Codec.getDefault().getName();
-    if (name.equals("Appending") || name.equals("Lucene40") || name.equals("Lucene41") || name.equals("Lucene42")) {
-      return false;
-    }
-    return true;
-  }
-  
-  /** Returns true if the codec "supports" field updates. */
-  public static boolean defaultCodecSupportsFieldUpdates() {
-    String name = Codec.getDefault().getName();
-    if (name.equals("Lucene3x") || name.equals("Appending")
-        || name.equals("Lucene40") || name.equals("Lucene41")
-        || name.equals("Lucene42") || name.equals("Lucene45")) {
-      return false;
-    }
-    return true;
-  }
 
-  /** Returns true if the codec "supports" writing segment and commit ids. */
-  public static boolean defaultCodecSupportsSegmentIds() {
-    SegmentInfoFormat siFormat = Codec.getDefault().segmentInfoFormat();
-    return siFormat instanceof SimpleTextSegmentInfoFormat || siFormat instanceof Lucene46SegmentInfoFormat;
+  /**
+   * Gets a resource from the test's classpath as {@link InputStream}.
+   */
+  protected InputStream getDataInputStream(String name) throws IOException {
+    InputStream in = this.getClass().getResourceAsStream(name);
+    if (in == null) {
+      throw new IOException("Cannot find resource: " + name);
+    }
+    return in;
   }
 
   public void assertReaderEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
@@ -1910,7 +1776,6 @@ public abstract class LuceneTestCase extends Assert {
    * checks collection-level statistics on Terms 
    */
   public void assertTermsStatisticsEquals(String info, Terms leftTerms, Terms rightTerms) throws IOException {
-    assert leftTerms.getComparator() == rightTerms.getComparator();
     if (leftTerms.getDocCount() != -1 && rightTerms.getDocCount() != -1) {
       assertEquals(info, leftTerms.getDocCount(), rightTerms.getDocCount());
     }
@@ -2507,7 +2372,7 @@ public abstract class LuceneTestCase extends Assert {
    * or {@link #createTempDir(String)} or {@link #createTempFile(String, String)}.
    */
   @Deprecated
-  public static File getBaseTempDirForTestClass() {
+  public static Path getBaseTempDirForTestClass() {
     return tempFilesCleanupRule.getPerTestClassTempDir();
   }
 
@@ -2517,7 +2382,7 @@ public abstract class LuceneTestCase extends Assert {
    * 
    * @see #createTempDir(String)
    */
-  public static File createTempDir() {
+  public static Path createTempDir() {
     return createTempDir("tempDir");
   }
 
@@ -2529,7 +2394,7 @@ public abstract class LuceneTestCase extends Assert {
    * test class completes successfully. The test should close any file handles that would prevent
    * the folder from being removed. 
    */
-  public static File createTempDir(String prefix) {
+  public static Path createTempDir(String prefix) {
     return tempFilesCleanupRule.createTempDir(prefix);
   }
   
@@ -2541,7 +2406,7 @@ public abstract class LuceneTestCase extends Assert {
    * test class completes successfully. The test should close any file handles that would prevent
    * the folder from being removed. 
    */
-  public static File createTempFile(String prefix, String suffix) throws IOException {
+  public static Path createTempFile(String prefix, String suffix) throws IOException {
     return tempFilesCleanupRule.createTempFile(prefix, suffix);
   }
 
@@ -2550,7 +2415,7 @@ public abstract class LuceneTestCase extends Assert {
    * 
    * @see #createTempFile(String, String) 
    */
-  public static File createTempFile() throws IOException {
+  public static Path createTempFile() throws IOException {
     return createTempFile("tempFile", ".tmp");
   }
 }

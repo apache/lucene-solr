@@ -17,11 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.EnumSet;
-import java.util.Set;
-
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene3x.Lucene3xCodec;
 
 /**
  * Tests with the default randomized codec. Not really redundant with
@@ -33,16 +29,6 @@ public class TestTermVectorsFormat extends BaseTermVectorsFormatTestCase {
   @Override
   protected Codec getCodec() {
     return Codec.getDefault();
-  }
-
-  @Override
-  protected Set<Options> validOptions() {
-    if (getCodec() instanceof Lucene3xCodec) {
-      // payloads are not supported on vectors in 3.x indexes
-      return EnumSet.range(Options.NONE, Options.POSITIONS_AND_OFFSETS);
-    } else {
-      return super.validOptions();
-    }
   }
 
   @Override

@@ -670,7 +670,7 @@ def verifyUnpacked(java, project, artifact, unpackPath, svnRevision, version, te
 
   if project == 'lucene':
     # TODO: clean this up to not be a list of modules that we must maintain
-    extras = ('analysis', 'benchmark', 'classification', 'codecs', 'core', 'demo', 'docs', 'expressions', 'facet', 'grouping', 'highlighter', 'join', 'memory', 'misc', 'queries', 'queryparser', 'replicator', 'sandbox', 'spatial', 'suggest', 'test-framework', 'licenses')
+    extras = ('analysis', 'backward-codecs', 'benchmark', 'classification', 'codecs', 'core', 'demo', 'docs', 'expressions', 'facet', 'grouping', 'highlighter', 'join', 'memory', 'misc', 'queries', 'queryparser', 'replicator', 'sandbox', 'spatial', 'suggest', 'test-framework', 'licenses')
     if isSrc:
       extras += ('build.xml', 'common-build.xml', 'module-build.xml', 'ivy-settings.xml', 'ivy-versions.properties', 'ivy-ignore-conflicts.properties', 'version.properties', 'tools', 'site')
   else:
@@ -797,7 +797,7 @@ def verifyUnpacked(java, project, artifact, unpackPath, svnRevision, version, te
   testChangesText('.', version, project)
 
   if project == 'lucene' and isSrc:
-    print('  confirm all releases have coverage in TestBackwardsCompatibility/3x')
+    print('  confirm all releases have coverage in TestBackwardsCompatibility')
     confirmAllReleasesAreTestedForBackCompat(unpackPath)
     
 
@@ -1384,7 +1384,7 @@ def confirmAllReleasesAreTestedForBackCompat(unpackPath):
 
   os.chdir(unpackPath)
 
-  for suffix in '', '3x':
+  for suffix in '',:
     print('    run TestBackwardsCompatibility%s..' % suffix)
     command = 'ant test -Dtestcase=TestBackwardsCompatibility%s -Dtests.verbose=true' % suffix
     p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -1446,7 +1446,7 @@ def confirmAllReleasesAreTestedForBackCompat(unpackPath):
     failed = True
     for x in notTested:
       print('  %s' % '.'.join(str(y) for y in x))
-    raise RuntimeError('some releases are not tested by TestBackwardsCompatibility/3x?')
+    raise RuntimeError('some releases are not tested by TestBackwardsCompatibility?')
   else:
     print('    success!')
 

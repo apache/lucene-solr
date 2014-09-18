@@ -343,9 +343,9 @@ public abstract class MergePolicy {
   }
 
   /** Thrown when a merge was explicity aborted because
-   *  {@link IndexWriter#close(boolean)} was called with
-   *  <code>false</code>.  Normally this exception is
-   *  privately caught and suppresed by {@link IndexWriter}.  */
+   *  {@link IndexWriter#abortMerges} was called.  Normally
+   *  this exception is privately caught and suppresed by
+   *  {@link IndexWriter}. */
   public static class MergeAbortedException extends IOException {
     /** Create a {@link MergeAbortedException}. */
     public MergeAbortedException() {
@@ -489,7 +489,6 @@ public abstract class MergePolicy {
     assert writer != null;
     boolean hasDeletions = writer.numDeletedDocs(info) > 0;
     return !hasDeletions &&
-      !info.info.hasSeparateNorms() &&
       info.info.dir == writer.getDirectory() &&
       useCompoundFile(infos, info, writer) == info.info.getUseCompoundFile();
   }

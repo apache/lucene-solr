@@ -35,6 +35,9 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class SpatialPrefixTreeTest extends SpatialTestCase {
 
   //TODO plug in others and test them
@@ -56,9 +59,14 @@ public class SpatialPrefixTreeTest extends SpatialTestCase {
     Cell c = trie.getWorldCell();
     assertEquals(0, c.getLevel());
     assertEquals(ctx.getWorldBounds(), c.getShape());
-    while(c.getLevel() < trie.getMaxLevels()) {
+    while (c.getLevel() < trie.getMaxLevels()) {
       prevC = c;
-      c = c.getSubCells().iterator().next();//TODO random which one?
+      List<Cell> subCells = new ArrayList<>();
+      CellIterator subCellsIter = c.getNextLevelCells(null);
+      while (subCellsIter.hasNext()) {
+        subCells.add(subCellsIter.next());
+      }
+      c = subCells.get(random().nextInt(subCells.size()-1));
       
       assertEquals(prevC.getLevel()+1,c.getLevel());
       Rectangle prevNShape = (Rectangle) prevC.getShape();
@@ -69,7 +77,7 @@ public class SpatialPrefixTreeTest extends SpatialTestCase {
     }
   }
   /**
-   * A PrefixTree pruning optimization gone bad.
+   * A PrefixTree pruning optimization gone bad, applicable when optimize=true.
    * See <a href="https://issues.apache.org/jira/browse/LUCENE-4770>LUCENE-4770</a>.
    */
   @Test

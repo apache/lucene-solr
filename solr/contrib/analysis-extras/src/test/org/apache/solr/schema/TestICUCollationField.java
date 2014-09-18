@@ -22,7 +22,8 @@ import java.io.FileOutputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
@@ -33,7 +34,6 @@ import com.ibm.icu.util.ULocale;
 /**
  * Tests {@link ICUCollationField} with TermQueries, RangeQueries, and sort order.
  */
-@SuppressCodecs("Lucene3x")
 public class TestICUCollationField extends SolrTestCaseJ4 {
   
   @BeforeClass
@@ -63,7 +63,7 @@ public class TestICUCollationField extends SolrTestCaseJ4 {
    * So its preferable to create this file on-the-fly.
    */
   public static String setupSolrHome() throws Exception {
-    String tmpFile = createTempDir().getAbsolutePath();
+    String tmpFile = createTempDir().toFile().getAbsolutePath();
     // make data and conf dirs
     new File(tmpFile  + "/collection1", "data").mkdirs();
     File confDir = new File(tmpFile + "/collection1", "conf");

@@ -59,8 +59,6 @@ final class SegmentCoreReaders implements Accountable {
   final FieldsProducer fields;
   final NormsProducer normsProducer;
 
-  final int termsIndexDivisor;
-
   final StoredFieldsReader fieldsReaderOrig;
   final TermVectorsReader termVectorsReaderOrig;
   final CompoundFileDirectory cfsReader;
@@ -93,12 +91,8 @@ final class SegmentCoreReaders implements Accountable {
   private final Set<CoreClosedListener> coreClosedListeners = 
       Collections.synchronizedSet(new LinkedHashSet<CoreClosedListener>());
   
-  SegmentCoreReaders(SegmentReader owner, Directory dir, SegmentCommitInfo si, IOContext context, int termsIndexDivisor) throws IOException {
+  SegmentCoreReaders(SegmentReader owner, Directory dir, SegmentCommitInfo si, IOContext context) throws IOException {
 
-    if (termsIndexDivisor == 0) {
-      throw new IllegalArgumentException("indexDivisor must be < 0 (don't load terms index) or greater than 0 (got 0)");
-    }
-    
     final Codec codec = si.info.getCodec();
     final Directory cfsDir; // confusing name: if (cfs) its the cfsdir, otherwise its the segment's directory.
 
@@ -114,9 +108,8 @@ final class SegmentCoreReaders implements Accountable {
 
       final FieldInfos fieldInfos = owner.fieldInfos;
       
-      this.termsIndexDivisor = termsIndexDivisor;
+      final SegmentReadState segmentReadState = new SegmentReadState(cfsDir, si.info, fieldInfos, context);
       final PostingsFormat format = codec.postingsFormat();
-      final SegmentReadState segmentReadState = new SegmentReadState(cfsDir, si.info, fieldInfos, context, termsIndexDivisor);
       // Ask codec for its Fields
       fields = format.fieldsProducer(segmentReadState);
       assert fields != null;

@@ -41,17 +41,6 @@ public abstract class CharacterUtils {
   public static CharacterUtils getInstance() {
     return JAVA_5;
   }
-
-  /**
-   * @deprecated Use {@link #getInstance()}
-   */
-  @Deprecated
-  public static CharacterUtils getInstance(Version matchVersion) {
-    return matchVersion.onOrAfter(Version.LUCENE_3_1) ? JAVA_5 : JAVA_4;
-  }
-
-  /** Return a {@link CharacterUtils} instance compatible with Java 1.4. */
-
   
   /** 
    * explicitly returns a version matching java 4 semantics 
@@ -64,11 +53,7 @@ public abstract class CharacterUtils {
 
   /**
    * Returns the code point at the given index of the {@link CharSequence}.
-   * Depending on the {@link Version} passed to
-   * {@link CharacterUtils#getInstance(Version)} this method mimics the behavior
-   * of {@link Character#codePointAt(char[], int)} as it would have been
-   * available on a Java 1.4 JVM or on a later virtual machine version.
-   *
+   * 
    * @param seq
    *          a character sequence
    * @param offset
@@ -86,11 +71,7 @@ public abstract class CharacterUtils {
   /**
    * Returns the code point at the given index of the char array where only elements
    * with index less than the limit are used.
-   * Depending on the {@link Version} passed to
-   * {@link CharacterUtils#getInstance(Version)} this method mimics the behavior
-   * of {@link Character#codePointAt(char[], int)} as it would have been
-   * available on a Java 1.4 JVM or on a later virtual machine version.
-   *
+   * 
    * @param chars
    *          a character array
    * @param offset
@@ -199,10 +180,7 @@ public abstract class CharacterUtils {
    * the middle of a surrogate pair, even if there are remaining characters in
    * the {@link Reader}.
    * <p>
-   * Depending on the {@link Version} passed to
-   * {@link CharacterUtils#getInstance(Version)} this method implements
-   * supplementary character awareness when filling the given buffer. For all
-   * {@link Version} &gt; 3.0 {@link #fill(CharacterBuffer, Reader, int)} guarantees
+   * This method guarantees
    * that the given {@link CharacterBuffer} will never contain a high surrogate
    * character as the last element in the buffer unless it is the last available
    * character in the reader. In other words, high and low surrogate pairs will

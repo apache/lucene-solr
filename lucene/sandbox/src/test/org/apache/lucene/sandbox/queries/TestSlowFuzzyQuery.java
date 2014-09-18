@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Arrays;
 import java.io.IOException;
 
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
