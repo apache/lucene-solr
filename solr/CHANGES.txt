@@ -20,10 +20,18 @@ See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
 $Id$
 
-* SOLR-5868: HttpClient should be configured to use ALLOW_ALL_HOSTNAME hostname
-  verifier to simplify SSL setup. (Steve Davids via Mark Miller)
-
 ==================  4.9.1 ==================
+
+Versions of Major Components
+---------------------
+Apache Tika 1.5 (with upgraded Apache POI 3.10.1)
+Carrot2 3.9.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+
+Detailed Change List
+----------------------
 
 Other Changes
 ---------------------
@@ -33,6 +41,9 @@ Other Changes
   JAR yourself (version 4.2) and add it to contrib/extraction/lib folder:
   http://www.unidata.ucar.edu/software/thredds/current/netcdf-java/
   (Uwe Schindler)
+
+* SOLR-6388: Force upgrade of Apache POI dependency in Solr Cell to version
+  3.10.1 to fix CVE-2014-3529 and CVE-2014-3574.  (Uwe Schindler)
 
 ==================  4.9.0 ==================
 
@@ -205,6 +216,10 @@ Other Changes
 
 * SOLR-6128: Removed deprecated analysis factories and fieldTypes from the example
   schema.xml (hossman)
+
+* SOLR-5868: HttpClient should be configured to use ALLOW_ALL_HOSTNAME hostname
+  verifier to simplify SSL setup. (Steve Davids via Mark Miller)
+
 
 Optimizations
 ----------------------
