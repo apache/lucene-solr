@@ -195,13 +195,6 @@ public class TestVersion extends LuceneTestCase {
     } catch (IllegalArgumentException iae) {
       // pass
     }
-
-    try {
-      Version.parse("6.0.0");
-      fail();
-    } catch (IllegalArgumentException iae) {
-      // pass
-    }
   }
   
   public void testDeprecations() throws Exception {
