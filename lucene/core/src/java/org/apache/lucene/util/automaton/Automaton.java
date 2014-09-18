@@ -67,18 +67,34 @@ public class Automaton {
    *  leaving transitions are stored, or -1 if this state
    *  has not added any transitions yet, followed by number
    *  of transitions. */
-  private int[] states = new int[4];
+  private int[] states;
 
+  private final BitSet isAccept;
+  
   /** Holds toState, min, max for each transition. */
-  private int[] transitions = new int[6];
-
-  private final BitSet isAccept = new BitSet(4);
+  private int[] transitions;
 
   /** True if no state has two transitions leaving with the same label. */
   private boolean deterministic = true;
 
   /** Sole constructor; creates an automaton with no states. */
   public Automaton() {
+     this(2, 2);
+  }
+
+  /**
+   * Constructor which creates an automaton with enough space for the given
+   * number of states and transitions.
+   * 
+   * @param numStates
+   *           Number of states.
+   * @param numTransitions
+   *           Number of transitions.
+   */
+  public Automaton(int numStates, int numTransitions) {
+     states = new int[numStates * 2];
+     isAccept = new BitSet(numStates);
+     transitions = new int[numTransitions * 3];
   }
 
   /** Create a new state. */
@@ -620,12 +636,28 @@ public class Automaton {
    *  it's too restrictive to have to add all transitions
    *  leaving each state at once. */
   public static class Builder {
-    private int[] transitions = new int[4];
-    private int nextTransition;
-    private final Automaton a = new Automaton();
+    private int nextState = 0;
+    private final BitSet isAccept;
+    private int[] transitions;
+    private int nextTransition = 0;
 
-    /** Sole constructor. */
+    /** Default constructor, pre-allocating for 16 states and transitions. */
     public Builder() {
+       this(16, 16);
+    }
+
+    /**
+     * Constructor which creates a builder with enough space for the given
+     * number of states and transitions.
+     * 
+     * @param numStates
+     *           Number of states.
+     * @param numTransitions
+     *           Number of transitions.
+     */
+    public Builder(int numStates, int numTransitions) {
+       isAccept = new BitSet(numStates);
+       transitions = new int[numTransitions * 4];
     }
 
     /** Add a new transition with min = max = label. */
@@ -712,43 +744,53 @@ public class Automaton {
     /** Compiles all added states and transitions into a new {@code Automaton}
      *  and returns it. */
     public Automaton finish() {
-      //System.out.println("LA.Builder.finish: count=" + (nextTransition/4));
-      // TODO: we could make this more efficient,
-      // e.g. somehow xfer the int[] to the automaton, or
-      // alloc exactly the right size from the automaton
-      //System.out.println("finish pending");
-      sorter.sort(0, nextTransition/4);
-      int upto = 0;
-      while (upto < nextTransition) {
+      // Create automaton with the correct size.
+      int numStates = nextState;
+      int numTransitions = nextTransition / 4;
+      Automaton a = new Automaton(numStates, numTransitions);
+      
+      // Create all states.
+      for (int state = 0; state < numStates; state++) {
+         a.createState();
+         a.setAccept(state, isAccept(state));
+      }
+      
+      // Create all transitions
+      sorter.sort(0, numTransitions);
+      for (int upto = 0; upto < nextTransition; upto += 4) {
         a.addTransition(transitions[upto],
                         transitions[upto+1],
                         transitions[upto+2],
                         transitions[upto+3]);
-        upto += 4;
       }
 
       a.finishState();
+      
       return a;
     }
 
     /** Create a new state. */
     public int createState() {
-      return a.createState();
+      return nextState++;
     }
 
     /** Set or clear this state as an accept state. */
     public void setAccept(int state, boolean accept) {
-      a.setAccept(state, accept);
+      if (state >= getNumStates()) {
+        throw new IllegalArgumentException("state=" + state + " is out of bounds (numStates=" + getNumStates() + ")");
+      }
+      
+      this.isAccept.set(state, accept);
     }
 
     /** Returns true if this state is an accept state. */
     public boolean isAccept(int state) {
-      return a.isAccept(state);
+      return this.isAccept.get(state);
     }
 
     /** How many states this automaton has. */
     public int getNumStates() {
-      return a.getNumStates();
+      return nextState;
     }
 
     /** Copies over all states/transitions from other. */

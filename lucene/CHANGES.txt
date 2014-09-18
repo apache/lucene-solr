@@ -186,6 +186,11 @@ Tests
 * LUCENE-5957: Add option for tests to not randomize codec
   (Ryan Ernst)
 
+Optimizations
+
+* LUCENE-5960: Use a more efficient bitset, not a Set<Integer>, to
+  track visited states.  (Markus Heiden via Mike McCandless)
+
 Build
 
 * LUCENE-5909: Smoke tester now has better command line parsing and
@@ -326,9 +331,6 @@ Optimizations
   AttributeSource, and VirtualMethod in favour of Java 7's ClassValue.
   Always use MethodHandles to create AttributeImpl classes.
   (Uwe Schindler)
-
-* LUCENE-5960: Use a more efficient bitset, not a Set<Integer>, to
-  track visited states.  (Markus Heiden via Mike McCandless)
 
 Bug Fixes
 
