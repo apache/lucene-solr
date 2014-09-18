@@ -68,22 +68,43 @@ public class OverseerStatusTest extends BasicDistributedZkTest {
   public void doTest() throws Exception {
     waitForThingsToLevelOut(15);
 
+    // find existing command counts because collection may be created by base test class too
+    int numCollectionCreates = 0, numOverseerCreates = 0;
+    NamedList<Object> resp = invokeCollectionApi("action",
+        CollectionParams.CollectionAction.OVERSEERSTATUS.toLower());
+    if (resp != null) {
+      NamedList<Object> collection_operations = (NamedList<Object>) resp.get("collection_operations");
+      if (collection_operations != null)  {
+        SimpleOrderedMap<Object> createcollection = (SimpleOrderedMap<Object>) collection_operations.get(CollectionParams.CollectionAction.CREATE.toLower());
+        if (createcollection != null && createcollection.get("requests") != null) {
+          numCollectionCreates = (Integer) createcollection.get("requests");
+        }
+        NamedList<Object> overseer_operations = (NamedList<Object>) resp.get("overseer_operations");
+        if (overseer_operations != null)  {
+          createcollection = (SimpleOrderedMap<Object>) overseer_operations.get(CollectionParams.CollectionAction.CREATE.toLower());
+          if (createcollection != null && createcollection.get("requests") != null) {
+            numOverseerCreates = (Integer) createcollection.get("requests");
+          }
+        }
+      }
+    }
+
     String collectionName = "overseer_status_test";
     CollectionAdminResponse response = createCollection(collectionName, 1, 1, 1);
-    NamedList<Object> resp = invokeCollectionApi("action",
+    resp = invokeCollectionApi("action",
         CollectionParams.CollectionAction.OVERSEERSTATUS.toLower());
     NamedList<Object> collection_operations = (NamedList<Object>) resp.get("collection_operations");
     NamedList<Object> overseer_operations = (NamedList<Object>) resp.get("overseer_operations");
-    SimpleOrderedMap<Object> createcollection = (SimpleOrderedMap<Object>) collection_operations.get(OverseerCollectionProcessor.CREATECOLLECTION);
-    assertEquals("No stats for createcollection in OverseerCollectionProcessor", 1, createcollection.get("requests"));
-    createcollection = (SimpleOrderedMap<Object>) overseer_operations.get("createcollection");
-    assertEquals("No stats for createcollection in Overseer", 1, createcollection.get("requests"));
+    SimpleOrderedMap<Object> createcollection = (SimpleOrderedMap<Object>) collection_operations.get(CollectionParams.CollectionAction.CREATE.toLower());
+    assertEquals("No stats for create in OverseerCollectionProcessor", numCollectionCreates + 1, createcollection.get("requests"));
+    createcollection = (SimpleOrderedMap<Object>) overseer_operations.get(CollectionParams.CollectionAction.CREATE.toLower());
+    assertEquals("No stats for create in Overseer", numOverseerCreates + 1, createcollection.get("requests"));
 
     invokeCollectionApi("action", CollectionParams.CollectionAction.RELOAD.toLower(), "name", collectionName);
     resp = invokeCollectionApi("action",
         CollectionParams.CollectionAction.OVERSEERSTATUS.toLower());
     collection_operations = (NamedList<Object>) resp.get("collection_operations");
-    SimpleOrderedMap<Object> reload = (SimpleOrderedMap<Object>) collection_operations.get(OverseerCollectionProcessor.RELOADCOLLECTION);
+    SimpleOrderedMap<Object> reload = (SimpleOrderedMap<Object>) collection_operations.get(CollectionParams.CollectionAction.RELOAD.toLower());
     assertEquals("No stats for reload in OverseerCollectionProcessor", 1, reload.get("requests"));
 
     try {
@@ -96,7 +117,7 @@ public class OverseerStatusTest extends BasicDistributedZkTest {
     resp = invokeCollectionApi("action",
         CollectionParams.CollectionAction.OVERSEERSTATUS.toLower());
     collection_operations = (NamedList<Object>) resp.get("collection_operations");
-    SimpleOrderedMap<Object> split = (SimpleOrderedMap<Object>) collection_operations.get(OverseerCollectionProcessor.SPLITSHARD);
+    SimpleOrderedMap<Object> split = (SimpleOrderedMap<Object>) collection_operations.get(CollectionParams.CollectionAction.SPLITSHARD.toLower());
     assertEquals("No stats for split in OverseerCollectionProcessor", 1, split.get("errors"));
     assertNotNull(split.get("recent_failures"));
 

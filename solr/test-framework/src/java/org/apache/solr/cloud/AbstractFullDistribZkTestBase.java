@@ -111,7 +111,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   String tlong = "other_tl1";
   String ndate = "n_dt";
   String tdate = "n_tdt";
-  
+
   String oddField = "oddField_s";
   String missingField = "ignore_exception__missing_but_valid_field_t";
   String invalidField = "ignore_exception__invalid_field_not_in_schema";
@@ -350,7 +350,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected List<JettySolrRunner> createJettys(int numJettys) throws Exception {
     return createJettys(numJettys, false);
   }
-  
+
 
   /**
    * @param checkCreatedVsState
@@ -370,7 +370,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
       jettyDir.mkdirs();
       setupJettySolrHome(jettyDir);
-      log.info("create jetty " + i); 
+      log.info("create jetty " + i);
       JettySolrRunner j = createJetty(jettyDir, useJettyDataDir ? getDataDir(testDir + "/jetty"
           + cnt) : null, null, "solrconfig.xml", null);
       jettys.add(j);
@@ -1527,11 +1527,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return res;
   }
 
-  protected void runCollectionAdminCommand(ModifiableSolrParams params){
-
-   ;
-
-  }
 
   protected CollectionAdminResponse createCollection(Map<String,List<Integer>> collectionInfos,
       String collectionName, int numShards, int replicationFactor, int maxShardsPerNode, SolrServer client, String createNodeSetStr) throws SolrServerException, IOException {

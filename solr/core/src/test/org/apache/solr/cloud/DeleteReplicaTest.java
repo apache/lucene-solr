@@ -17,10 +17,10 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import static org.apache.solr.cloud.OverseerCollectionProcessor.DELETEREPLICA;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
 
 import java.io.File;
 import java.io.IOException;
@@ -144,7 +144,7 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
 
   protected void tryToRemoveOnlyIfDown(String collectionName, CloudSolrServer client, Replica replica, String shard, String dataDir) throws IOException, SolrServerException {
     Map m = makeMap("collection", collectionName,
-        "action", DELETEREPLICA,
+        "action", DELETEREPLICA.toLower(),
         "shard", shard,
         "replica", replica.getName(),
         ZkStateReader.ONLY_IF_DOWN, "true");
@@ -157,7 +157,7 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
   protected void removeAndWaitForReplicaGone(String COLL_NAME,
       CloudSolrServer client, Replica replica, String shard)
       throws SolrServerException, IOException, InterruptedException {
-    Map m = makeMap("collection", COLL_NAME, "action", DELETEREPLICA, "shard",
+    Map m = makeMap("collection", COLL_NAME, "action", DELETEREPLICA.toLower(), "shard",
         shard, "replica", replica.getName());
     SolrParams params = new MapSolrParams(m);
     SolrRequest request = new QueryRequest(params);

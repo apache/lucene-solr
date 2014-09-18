@@ -1167,7 +1167,7 @@ public final class ZkController {
     CloudDescriptor cloudDescriptor = cd.getCloudDescriptor();
     
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
-        Overseer.DELETECORE, ZkStateReader.CORE_NAME_PROP, coreName,
+        Overseer.OverseerAction.DELETECORE.toLower(), ZkStateReader.CORE_NAME_PROP, coreName,
         ZkStateReader.NODE_NAME_PROP, getNodeName(),
         ZkStateReader.COLLECTION_PROP, cloudDescriptor.getCollectionName(),
         ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
@@ -1177,7 +1177,7 @@ public final class ZkController {
   public void createCollection(String collection) throws KeeperException,
       InterruptedException {
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
-        "createcollection", ZkStateReader.NODE_NAME_PROP, getNodeName(),
+        CollectionParams.CollectionAction.CREATE.toLower(), ZkStateReader.NODE_NAME_PROP, getNodeName(),
         ZkStateReader.COLLECTION_PROP, collection);
     overseerJobQueue.offer(ZkStateReader.toJSON(m));
   }
