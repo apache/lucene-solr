@@ -144,7 +144,7 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
 
   protected void tryToRemoveOnlyIfDown(String collectionName, CloudSolrServer client, Replica replica, String shard, String dataDir) throws IOException, SolrServerException {
     Map m = makeMap("collection", collectionName,
-        "action", DELETEREPLICA,
+        "action", DELETEREPLICA.toLower(),
         "shard", shard,
         "replica", replica.getName(),
         ZkStateReader.ONLY_IF_DOWN, "true");
