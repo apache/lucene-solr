@@ -28,7 +28,7 @@ import java.io.IOException;
  */
 public interface StandardTokenizerInterface {
 
-  /** This character denotes the end of file */
+  /** This token type, as returned from {#link #getNextToken()}, denotes the end of file */
   public static final int YYEOF = -1;
 
   /**
