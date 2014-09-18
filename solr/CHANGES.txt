@@ -128,6 +128,10 @@ Upgrading from Solr 4.10
   createAlias() and deleteAlias() have been deprecated. The new usage involves a
   builder style construction of the call.
 
+* The OVERSEERSTATUS API returns new key names for operations such as "create"
+  for "createcollection", "delete" for "removecollection" and "deleteshard" for
+  "removeshard".
+
 Detailed Change List
 ----------------------
 
@@ -240,6 +244,9 @@ Other Changes
   for this format, download the parser JAR yourself and add it to contrib/extraction/lib folder:
   http://www.unidata.ucar.edu/software/thredds/current/netcdf-java/
   (Uwe Schindler)
+
+* SOLR-6115: Cleanup enum/string action types in Overseer, OverseerCollectionProcessor and
+  CollectionHandler. (Erick Erickson, shalin)
 
 
 ==================  4.10.0 =================

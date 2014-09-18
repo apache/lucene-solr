@@ -19,8 +19,6 @@ package org.apache.solr.cloud;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERPROP;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -51,6 +49,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.core.ConfigSolr;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.update.UpdateShardHandler;
@@ -68,17 +67,55 @@ import org.slf4j.LoggerFactory;
  */
 public class Overseer implements Closeable {
   public static final String QUEUE_OPERATION = "operation";
-  public static final String DELETECORE = "deletecore";
+
+  /**
+   * @deprecated use {@link org.apache.solr.common.params.CollectionParams.CollectionAction#DELETE}
+   */
+  @Deprecated
   public static final String REMOVECOLLECTION = "removecollection";
+
+  /**
+   * @deprecated use {@link org.apache.solr.common.params.CollectionParams.CollectionAction#DELETESHARD}
+   */
+  @Deprecated
   public static final String REMOVESHARD = "removeshard";
-  public static final String ADD_ROUTING_RULE = "addroutingrule";
-  public static final String REMOVE_ROUTING_RULE = "removeroutingrule";
-  public static final String STATE = "state";
-  public static final String QUIT = "quit";
+
+  /**
+   * Enum of actions supported by the overseer only.
+   *
+   * There are other actions supported which are public and defined
+   * in {@link org.apache.solr.common.params.CollectionParams.CollectionAction}
+   */
+  public static enum OverseerAction {
+    LEADER,
+    DELETECORE,
+    ADDROUTINGRULE,
+    REMOVEROUTINGRULE,
+    UPDATESHARDSTATE,
+    STATE,
+    QUIT;
+
+    public static OverseerAction get(String p) {
+      if (p != null) {
+        try {
+          return OverseerAction.valueOf(p.toUpperCase(Locale.ROOT));
+        } catch (Exception ex) {
+        }
+      }
+      return null;
+    }
+
+    public boolean isEqual(String s) {
+      return s != null && toString().equals(s.toUpperCase(Locale.ROOT));
+    }
+
+    public String toLower() {
+      return toString().toLowerCase(Locale.ROOT);
+    }
+  }
+
 
   public static final int STATE_UPDATE_DELAY = 1500;  // delay between cloud state updates
-  public static final String CREATESHARD = "createshard";
-  public static final String UPDATESHARDSTATE = "updateshardstate";
 
   private static Logger log = LoggerFactory.getLogger(Overseer.class);
 
@@ -378,60 +415,109 @@ public class Overseer implements Closeable {
 
     private ClusterState processMessage(ClusterState clusterState,
         final ZkNodeProps message, final String operation) {
-      if (STATE.equals(operation)) {
-        if( isLegacy( clusterProps )) {
-          clusterState = updateState(clusterState, message);
-        } else {
-          clusterState = updateStateNew(clusterState, message);
-        }
-      } else if (DELETECORE.equals(operation)) {
-        clusterState = removeCore(clusterState, message);
-      } else if (REMOVECOLLECTION.equals(operation)) {
-        clusterState = removeCollection(clusterState, message);
-      } else if (REMOVESHARD.equals(operation)) {
-        clusterState = removeShard(clusterState, message);
-      } else if (ZkStateReader.LEADER_PROP.equals(operation)) {
 
-        StringBuilder sb = new StringBuilder();
-        String baseUrl = message.getStr(ZkStateReader.BASE_URL_PROP);
-        String coreName = message.getStr(ZkStateReader.CORE_NAME_PROP);
-        sb.append(baseUrl);
-        if (baseUrl != null && !baseUrl.endsWith("/")) sb.append("/");
-        sb.append(coreName == null ? "" : coreName);
-        if (!(sb.substring(sb.length() - 1).equals("/"))) sb.append("/");
-        clusterState = setShardLeader(clusterState,
-            message.getStr(ZkStateReader.COLLECTION_PROP),
-            message.getStr(ZkStateReader.SHARD_ID_PROP),
-            sb.length() > 0 ? sb.toString() : null);
-
-      } else if (CREATESHARD.equals(operation)) {
-        clusterState = createShard(clusterState, message);
-      } else if (UPDATESHARDSTATE.equals(operation))  {
-        clusterState = updateShardState(clusterState, message);
-      } else if (OverseerCollectionProcessor.CREATECOLLECTION.equals(operation)) {
-         clusterState = buildCollection(clusterState, message);
-      } else if(ADDREPLICA.isEqual(operation)){
-        clusterState = createReplica(clusterState, message);
-      } else if (Overseer.ADD_ROUTING_RULE.equals(operation)) {
-        clusterState = addRoutingRule(clusterState, message);
-      } else if (Overseer.REMOVE_ROUTING_RULE.equals(operation))  {
-        clusterState = removeRoutingRule(clusterState, message);
-      } else if(CLUSTERPROP.isEqual(operation)){
-           handleProp(message);
-      } else if( QUIT.equals(operation)){
-        if(myId.equals( message.get("id"))){
-          log.info("Quit command received {}", LeaderElector.getNodeName(myId));
-          overseerCollectionProcessor.close();
-          close();
-        } else {
-          log.warn("Overseer received wrong QUIT message {}", message);
+      CollectionParams.CollectionAction collectionAction = CollectionParams.CollectionAction.get(operation);
+      if (collectionAction != null) {
+        switch (collectionAction) {
+          case CREATE:
+            clusterState = buildCollection(clusterState, message);
+            break;
+          case DELETE:
+            clusterState = removeCollection(clusterState, message);
+            break;
+          case CREATESHARD:
+            clusterState = createShard(clusterState, message);
+            break;
+          case DELETESHARD:
+            clusterState = removeShard(clusterState, message);
+            break;
+          case ADDREPLICA:
+            clusterState = createReplica(clusterState, message);
+            break;
+          case CLUSTERPROP:
+            handleProp(message);
+            break;
+          default:
+            throw new RuntimeException("unknown operation:" + operation
+                + " contents:" + message.getProperties());
         }
-      } else{
-        throw new RuntimeException("unknown operation:" + operation
-            + " contents:" + message.getProperties());
+      } else {
+        OverseerAction overseerAction = OverseerAction.get(operation);
+        if (overseerAction != null) {
+          switch (overseerAction) {
+            case STATE:
+              if (isLegacy(clusterProps)) {
+                clusterState = updateState(clusterState, message);
+              } else {
+                clusterState = updateStateNew(clusterState, message);
+              }
+              break;
+            case LEADER:
+              clusterState = setShardLeader(clusterState, message);
+              break;
+            case DELETECORE:
+              clusterState = removeCore(clusterState, message);
+              break;
+            case ADDROUTINGRULE:
+              clusterState = addRoutingRule(clusterState, message);
+              break;
+            case REMOVEROUTINGRULE:
+              clusterState = removeRoutingRule(clusterState, message);
+              break;
+            case UPDATESHARDSTATE:
+              clusterState = updateShardState(clusterState, message);
+              break;
+            case QUIT:
+              if (myId.equals(message.get("id"))) {
+                log.info("Quit command received {}", LeaderElector.getNodeName(myId));
+                overseerCollectionProcessor.close();
+                close();
+              } else {
+                log.warn("Overseer received wrong QUIT message {}", message);
+              }
+              break;
+            default:
+              throw new RuntimeException("unknown operation:" + operation
+                  + " contents:" + message.getProperties());
+          }
+        } else  {
+          // merely for back-compat where overseer action names were different from the ones
+          // specified in CollectionAction. See SOLR-6115. Remove this in 5.0
+          switch (operation) {
+            case OverseerCollectionProcessor.CREATECOLLECTION:
+              clusterState = buildCollection(clusterState, message);
+              break;
+            case REMOVECOLLECTION:
+              clusterState = removeCollection(clusterState, message);
+              break;
+            case REMOVESHARD:
+              clusterState = removeShard(clusterState, message);
+              break;
+            default:
+              throw new RuntimeException("unknown operation:" + operation
+                  + " contents:" + message.getProperties());
+          }
+        }
       }
+
       return clusterState;
     }
+
+    private ClusterState setShardLeader(ClusterState clusterState, ZkNodeProps message) {
+      StringBuilder sb = new StringBuilder();
+      String baseUrl = message.getStr(ZkStateReader.BASE_URL_PROP);
+      String coreName = message.getStr(ZkStateReader.CORE_NAME_PROP);
+      sb.append(baseUrl);
+      if (baseUrl != null && !baseUrl.endsWith("/")) sb.append("/");
+      sb.append(coreName == null ? "" : coreName);
+      if (!(sb.substring(sb.length() - 1).equals("/"))) sb.append("/");
+      clusterState = setShardLeader(clusterState,
+          message.getStr(ZkStateReader.COLLECTION_PROP),
+          message.getStr(ZkStateReader.SHARD_ID_PROP),
+          sb.length() > 0 ? sb.toString() : null);
+      return clusterState;
+    }
+
     private void handleProp(ZkNodeProps message)  {
       String name = message.getStr("name");
       String val = message.getStr("val");

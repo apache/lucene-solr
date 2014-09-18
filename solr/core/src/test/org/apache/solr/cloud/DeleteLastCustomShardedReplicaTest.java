@@ -25,6 +25,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.After;
@@ -36,12 +37,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.solr.cloud.OverseerCollectionProcessor.DELETEREPLICA;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARDS_PROP;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
 
 public class DeleteLastCustomShardedReplicaTest extends AbstractFullDistribZkTestBase {
   private CloudSolrServer client;
@@ -108,7 +109,7 @@ public class DeleteLastCustomShardedReplicaTest extends AbstractFullDistribZkTes
 
   protected void removeAndWaitForLastReplicaGone(String COLL_NAME, Replica replica, String shard)
       throws SolrServerException, IOException, InterruptedException {
-    Map m = makeMap("collection", COLL_NAME, "action", DELETEREPLICA, "shard",
+    Map m = makeMap("collection", COLL_NAME, "action", DELETEREPLICA.toLower(), "shard",
         shard, "replica", replica.getName());
     SolrParams params = new MapSolrParams(m);
     SolrRequest request = new QueryRequest(params);
