@@ -533,16 +533,16 @@ public final class Version {
 
     // NOTE: do not enforce major version so we remain future proof, except to
     // make sure it fits in the 8 bits we encode it into:
-    if (major > 255 | major < 0) {
+    if (major > 255 || major < 0) {
       throw new IllegalArgumentException("Illegal major version: " + major);
     }
-    if (minor > 255 | minor < 0) {
+    if (minor > 255 || minor < 0) {
       throw new IllegalArgumentException("Illegal minor version: " + minor);
     }
-    if (bugfix > 255 | bugfix < 0) {
+    if (bugfix > 255 || bugfix < 0) {
       throw new IllegalArgumentException("Illegal bugfix version: " + bugfix);
     }
-    if (prerelease > 2 | prerelease < 0) {
+    if (prerelease > 2 || prerelease < 0) {
       throw new IllegalArgumentException("Illegal prerelease version: " + prerelease);
     }
     if (prerelease != 0 && (minor != 0 || bugfix != 0)) {
