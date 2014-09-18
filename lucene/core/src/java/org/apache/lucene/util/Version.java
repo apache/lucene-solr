@@ -18,6 +18,7 @@ package org.apache.lucene.util;
  */
 
 
+import java.text.ParseException;
 import java.util.Locale;
 
 /**
@@ -402,37 +403,84 @@ public final class Version {
    * Part {@code ".bugfix"} and part {@code ".prerelease"} are optional.
    * Note that this is forwards compatible: the parsed version does not have to exist as
    * a constant.
+   *
+   * @lucene.internal
    */
-  public static Version parse(String version) {
+  public static Version parse(String version) throws ParseException {
     if (version == null) return null;
-    String[] pieces = version.split("\\.");
-    if (pieces.length < 2 || pieces.length > 4) {
-      throw new IllegalArgumentException("Version is not in form major.minor.bugfix(.prerelease): " + version);
+
+    StrictStringTokenizer tokens = new StrictStringTokenizer(version, '.');
+    if (tokens.hasMoreTokens() == false) {
+      throw new ParseException("Version is not in form major.minor.bugfix(.prerelease) (got: " + version + ")", 0);
     }
 
-    int major = Integer.parseInt(pieces[0]);
-    int minor = Integer.parseInt(pieces[1]);
+    int major;
+    String token = tokens.nextToken();
+    try {
+      major = Integer.parseInt(token);
+    } catch (NumberFormatException nfe) {
+      throw new ParseException("Failed to parse major version from \"" + token + "\" (got: " + version + ")", 0);
+    }
+
+    if (tokens.hasMoreTokens() == false) {
+      throw new ParseException("Version is not in form major.minor.bugfix(.prerelease) (got: " + version + ")", 0);
+    }
+
+    int minor;
+    token = tokens.nextToken();
+    try {
+      minor = Integer.parseInt(token);
+    } catch (NumberFormatException nfe) {
+      throw new ParseException("Failed to parse minor version from \"" + token + "\" (got: " + version + ")", 0);
+    }
+
     int bugfix = 0;
     int prerelease = 0;
-    if (pieces.length > 2) {
-      bugfix = Integer.parseInt(pieces[2]);
-    }
-    if (pieces.length > 3) {
-      prerelease = Integer.parseInt(pieces[3]);
-      if (prerelease == 0) {
-        throw new IllegalArgumentException("Invalid value " + prerelease + " for prerelease of version " + version +", should be 1 or 2");
+    if (tokens.hasMoreTokens()) {
+
+      token = tokens.nextToken();
+      try {
+        bugfix = Integer.parseInt(token);
+      } catch (NumberFormatException nfe) {
+        throw new ParseException("Failed to parse bugfix version from \"" + token + "\" (got: " + version + ")", 0);
+      }
+
+      if (tokens.hasMoreTokens()) {
+        token = tokens.nextToken();
+        try {
+          prerelease = Integer.parseInt(token);
+        } catch (NumberFormatException nfe) {
+          throw new ParseException("Failed to parse prerelease version from \"" + token + "\" (got: " + version + ")", 0);
+        }
+        if (prerelease == 0) {
+          throw new ParseException("Invalid value " + prerelease + " for prerelease; should be 1 or 2 (got: " + version + ")", 0);
+        }
+
+        if (tokens.hasMoreTokens()) {
+          // Too many tokens!
+          throw new ParseException("Version is not in form major.minor.bugfix(.prerelease) (got: " + version + ")", 0);
+        }
       }
     }
 
-    return new Version(major, minor, bugfix, prerelease);
+    try {
+      return new Version(major, minor, bugfix, prerelease);
+    } catch (IllegalArgumentException iae) {
+      ParseException pe = new ParseException("failed to parse version string \"" + version + "\": " + iae.getMessage(), 0);
+      pe.initCause(iae);
+      throw pe;
+    }
   }
 
   /**
    * Parse the given version number as a constant or dot based version.
    * <p>This method allows to use {@code "LUCENE_X_Y"} constant names,
    * or version numbers in the format {@code "x.y.z"}.
+   *
+   * @lucene.internal
    */
-  public static Version parseLeniently(String version) {
+  public static Version parseLeniently(String version) throws ParseException {
+    String versionOrig = version;
     version = version.toUpperCase(Locale.ROOT);
     switch (version) {
       case "LATEST":
@@ -449,7 +497,13 @@ public final class Version {
           .replaceFirst("^LUCENE_(\\d+)_(\\d+)_(\\d+)$", "$1.$2.$3")
           .replaceFirst("^LUCENE_(\\d+)_(\\d+)$", "$1.$2.0")
           .replaceFirst("^LUCENE_(\\d)(\\d)$", "$1.$2.0");
-        return parse(version);
+        try {
+          return parse(version);
+        } catch (ParseException pe) {
+          ParseException pe2 = new ParseException("failed to parse lenient version string \"" + versionOrig + "\": " + pe.getMessage(), 0);
+          pe2.initCause(pe);
+          throw pe2;
+        }
     }
   }
 
@@ -476,8 +530,11 @@ public final class Version {
     this.minor = minor;
     this.bugfix = bugfix;
     this.prerelease = prerelease;
-    if (major > 4 || major < 3) {
-      throw new IllegalArgumentException("Lucene 4.x only supports 4.x and 3.x versions");
+
+    // NOTE: do not enforce major version so we remain future proof, except to
+    // make sure it fits in the 8 bits we encode it into:
+    if (major > 255 | major < 0) {
+      throw new IllegalArgumentException("Illegal major version: " + major);
     }
     if (minor > 255 | minor < 0) {
       throw new IllegalArgumentException("Illegal minor version: " + minor);
@@ -489,10 +546,12 @@ public final class Version {
       throw new IllegalArgumentException("Illegal prerelease version: " + prerelease);
     }
     if (prerelease != 0 && (minor != 0 || bugfix != 0)) {
-      throw new IllegalArgumentException("Prerelease version only supported with major release");
+      throw new IllegalArgumentException("Prerelease version only supported with major release (got prerelease: " + prerelease + ", minor: " + minor + ", bugfix: " + bugfix + ")");
     }
 
     encodedValue = major << 18 | minor << 10 | bugfix << 2 | prerelease;
+
+    assert encodedIsValid();
   }
 
   /**
@@ -504,10 +563,6 @@ public final class Version {
 
   @Override
   public String toString() {
-    int major = (encodedValue >>> 18) & 0xFF;
-    int minor = (encodedValue >>> 10) & 0xFF;
-    int bugfix = (encodedValue >>> 2) & 0xFF;
-    int prerelease = encodedValue & 0x3;
     if (prerelease == 0) {
       return "" + major + "." + minor + "." + bugfix;
     }
@@ -517,6 +572,15 @@ public final class Version {
   @Override
   public boolean equals(Object o) {
     return o != null && o instanceof Version && ((Version)o).encodedValue == encodedValue;
+  }
+
+  // Used only by assert:
+  private boolean encodedIsValid() {
+    assert major == ((encodedValue >>> 18) & 0xFF);
+    assert minor == ((encodedValue >>> 10) & 0xFF);
+    assert bugfix == ((encodedValue >>> 2) & 0xFF);
+    assert prerelease == (encodedValue & 0x03);
+    return true;
   }
 
   @Override

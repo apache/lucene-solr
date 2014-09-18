@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene3x;
  */
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,11 +27,12 @@ import java.util.Set;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.SegmentInfoReader;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexFormatTooNewException;
 import org.apache.lucene.index.IndexFormatTooOldException;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentCommitInfo;
+import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
@@ -133,9 +135,13 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
       throw new IndexFormatTooNewException(input, format,
                                            Lucene3xSegmentInfoFormat.FORMAT_DIAGNOSTICS, Lucene3xSegmentInfoFormat.FORMAT_3_1);
     }
-    final String version;
+    final Version version;
     if (format <= Lucene3xSegmentInfoFormat.FORMAT_3_1) {
-      version = input.readString();
+      try {
+        version = Version.parse(input.readString());
+      } catch (ParseException pe) {
+        throw new CorruptIndexException("unable to parse version string (input: " + input + "): " + pe.getMessage(), pe);
+      }
     } else {
       version = null;
     }
@@ -253,7 +259,12 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
     CodecUtil.checkHeader(input, Lucene3xSegmentInfoFormat.UPGRADED_SI_CODEC_NAME,
                                  Lucene3xSegmentInfoFormat.UPGRADED_SI_VERSION_START,
                                  Lucene3xSegmentInfoFormat.UPGRADED_SI_VERSION_CURRENT);
-    final String version = input.readString();
+    final Version version;
+    try {
+      version = Version.parse(input.readString());
+    } catch (ParseException pe) {
+      throw new CorruptIndexException("unable to parse version string (input: " + input + "): " + pe.getMessage(), pe);
+    }
 
     final int docCount = input.readInt();
     

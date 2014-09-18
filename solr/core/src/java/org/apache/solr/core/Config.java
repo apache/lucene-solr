@@ -48,6 +48,7 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
@@ -441,9 +442,9 @@ public class Config {
     final Version version;
     try {
       version = Version.parseLeniently(matchVersion);
-    } catch (IllegalArgumentException iae) {
+    } catch (ParseException pe) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-        "Invalid luceneMatchVersion.  Should be of the form 'V.V.V' (e.g. 4.8.0)", iae);
+        "Invalid luceneMatchVersion.  Should be of the form 'V.V.V' (e.g. 4.8.0)", pe);
     }
     
     if (version == Version.LATEST && !versionWarningAlreadyLogged.getAndSet(true)) {

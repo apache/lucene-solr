@@ -17,10 +17,6 @@ package org.apache.lucene.analysis.util;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.core.StopFilter;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.Version;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -28,6 +24,7 @@ import java.io.Reader;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,6 +36,10 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+
+import org.apache.lucene.analysis.core.StopFilter;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.Version;
 
 /**
  * Abstract parent class for analysis factories {@link TokenizerFactory},
@@ -68,7 +69,15 @@ public abstract class AbstractAnalysisFactory {
   protected AbstractAnalysisFactory(Map<String,String> args) {
     originalArgs = Collections.unmodifiableMap(new HashMap<>(args));
     String version = get(args, LUCENE_MATCH_VERSION_PARAM);
-    luceneMatchVersion = version == null ? null : Version.parseLeniently(version);
+    if (version == null) {
+      luceneMatchVersion = null;
+    } else {
+      try {
+        luceneMatchVersion = Version.parseLeniently(version);
+      } catch (ParseException pe) {
+        throw new IllegalArgumentException(pe);
+      }
+    }
     args.remove(CLASS_NAME);  // consume the class arg
   }
   

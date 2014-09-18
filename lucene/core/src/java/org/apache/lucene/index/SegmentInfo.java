@@ -95,24 +95,6 @@ public final class SegmentInfo {
   }
 
   /**
-   * @deprecated Use {@link #SegmentInfo(Directory, Version, String, int, boolean, Codec, Map)}
-   */
-  @Deprecated
-  public SegmentInfo(Directory dir, String version, String name, int docCount,
-                     boolean isCompoundFile, Codec codec, Map<String,String> diagnostics) {
-    this(dir, Version.parse(version), name, docCount, isCompoundFile, codec, diagnostics, null);
-  }
-
-  /**
-   * @deprecated Use {@link #SegmentInfo(Directory, Version, String, int, boolean, Codec, Map, Map)}
-   */
-  @Deprecated
-  public SegmentInfo(Directory dir, String version, String name, int docCount,
-                     boolean isCompoundFile, Codec codec, Map<String,String> diagnostics, Map<String,String> attributes) {
-    this(dir, Version.parse(version), name, docCount, isCompoundFile, codec, diagnostics, attributes);
-  }
-
-  /**
    * Construct a new complete SegmentInfo instance from input.
    * <p>Note: this is public only to allow access from
    * the codecs package.</p>
