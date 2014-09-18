@@ -172,18 +172,18 @@ public final class Version {
   public static final Version LUCENE_4_10_0 = new Version(4, 10, 0);
 
   /**
-   * Match settings and bugs in Lucene's 4.11.0 release.
+   * Match settings and bugs in Lucene's 5.0 release.
    * @deprecated (5.0) Use latest
    */
   @Deprecated
-  public static final Version LUCENE_4_11_0 = new Version(4, 11, 0);
+  public static final Version LUCENE_5_0_0 = new Version(5, 0, 0);
 
-  /** Match settings and bugs in Lucene's 5.0 release.
+  /** Match settings and bugs in Lucene's 6.0 release.
    *  <p>
    *  Use this to get the latest &amp; greatest settings, bug
    *  fixes, etc, for Lucene.
    */
-  public static final Version LUCENE_5_0_0 = new Version(5, 0, 0);
+  public static final Version LUCENE_6_0_0 = new Version(6, 0, 0);
 
   // To add a new version:
   //  * Only add above this comment
@@ -204,7 +204,7 @@ public final class Version {
    * some defaults may have changed and may break functionality 
    * in your application.
    */
-  public static final Version LATEST = LUCENE_5_0_0;
+  public static final Version LATEST = LUCENE_6_0_0;
 
   /**
    * Constant for backwards compatibility.
@@ -333,8 +333,8 @@ public final class Version {
     this.minor = minor;
     this.bugfix = bugfix;
     this.prerelease = prerelease;
-    if (major > 5 || major < 4) {
-      throw new IllegalArgumentException("Lucene 5.x only supports 5.x and 4.x versions");
+    if (major > 6 || major < 4) { // TODO fix this!!!
+      throw new IllegalArgumentException("Lucene 6.x only supports 6.x, 5.x, and 4.x versions");
     }
     if (minor > 255 | minor < 0) {
       throw new IllegalArgumentException("Illegal minor version: " + minor);

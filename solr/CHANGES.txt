@@ -17,7 +17,7 @@ In this release, there is an example Solr server including a bundled
 servlet container in the directory named "example".
 See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
-==================  5.0.0 ==================
+==================  6.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
 
@@ -57,7 +57,7 @@ Upgrading from Solr 4.x
 
 * The CollectionsAPI SolrJ calls createCollection(), reloadCollection(),
   deleteCollection(), requestStatus(), createShard(), splitShard(), deleteShard(),
-  createAlias() and deleteAlias() which were deprecated in 4.11 have been removed.
+  createAlias() and deleteAlias() which were deprecated in 5.0 have been removed.
   The new usage involves a builder style construction of the call.
 
 Detailed Change List
@@ -108,7 +108,7 @@ Other Changes
 * SOLR-6519: Make DirectoryFactory#create() take LockFactory.
   (Uwe Schindler)
 
-==================  4.11.0 =================
+==================  5.0.0 =================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
 
