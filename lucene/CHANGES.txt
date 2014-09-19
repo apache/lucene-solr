@@ -53,13 +53,9 @@ API Changes
 * LUCENE-5527: The Collector API has been refactored to use a dedicated Collector
   per leaf. (Shikhar Bhushan, Adrien Grand)
 
-* LUCENE-4246: IndexWriter.close now discards any changes and always
-  closes, even if it throws an exception.  If matchVersion is <
-  LUCENE_50 yet there were uncommitted changes or still-running
-  merges, then a RuntimeException will be thrown indicating changes
-  were lost (but the writer will still be closed).  Finally, a new
-  shutdown method was added to do what close used to do (flush, wait
-  for merges, commit, close).
+* LUCENE-4246: IndexWriter.close now always closes, even if it throws
+  an exception.  The new IndexWriterConfig.setCommitOnClose (default
+  true) determines whether close() should commit before closing.
 
 * LUCENE-5608, LUCENE-5565: Refactor SpatialPrefixTree/Cell API. Doesn't use Strings
   as tokens anymore, and now iterates cells on-demand during indexing instead of
