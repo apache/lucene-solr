@@ -361,12 +361,14 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         expectedVersions.add(major + minor + bugfix + prerelease + ".cfs");
       }
     }
+    /** TODO: fix LUCENE-5936 to add better way to detect trunk checkout:
     if (Version.LATEST.minor == 0 && Version.LATEST.bugfix == 0 && Version.LATEST.prerelease == 0) {
       // we are on trunk (latest is a first major release) so the last minor index
       // for the previous major version is also not yet tested
       assertNotNull(lastPrevMajorVersion);
       expectedVersions.remove(lastPrevMinorIndex);
     }
+    */
     Collections.sort(expectedVersions);
 
     // find what versions we are testing
