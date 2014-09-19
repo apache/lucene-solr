@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * An Object which represents a &lt;initParams&gt; tag
+ * An Object which represents a {@code <initParams>} tag
  */
 public class InitParams {
   public static final String TYPE = "initParams";
