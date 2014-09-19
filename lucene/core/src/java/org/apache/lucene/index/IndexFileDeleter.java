@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 
 import org.apache.lucene.store.AlreadyClosedException;
@@ -110,7 +111,6 @@ final class IndexFileDeleter implements Closeable {
    *  infoStream is enabled */
   public static boolean VERBOSE_REF_COUNTS = false;
 
-  // Used only for assert
   private final IndexWriter writer;
 
   // called only from assert
@@ -127,6 +127,7 @@ final class IndexFileDeleter implements Closeable {
    */
   public IndexFileDeleter(Directory directory, IndexDeletionPolicy policy, SegmentInfos segmentInfos,
                           InfoStream infoStream, IndexWriter writer, boolean initialIndexExists) throws IOException {
+    Objects.requireNonNull(writer);
     this.infoStream = infoStream;
     this.writer = writer;
 
@@ -265,10 +266,10 @@ final class IndexFileDeleter implements Closeable {
   }
 
   private void ensureOpen() throws AlreadyClosedException {
-    if (writer == null) {
-      throw new AlreadyClosedException("this IndexWriter is closed");
-    } else {
-      writer.ensureOpen(false);
+    writer.ensureOpen(false);
+    // since we allow 'closing' state, we must still check this, we could be closing because we hit e.g. OOM
+    if (writer.tragedy != null) {
+      throw new AlreadyClosedException("refusing to delete any files: this IndexWriter hit an unrecoverable exception", writer.tragedy);
     }
   }
 

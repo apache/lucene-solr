@@ -25,6 +25,11 @@ Bug fixes
   possibly deleting a file that's still in use in the index, leading
   to corruption.  (Mike McCandless)
 
+* LUCENE-5958: Don't let exceptions during checkpoint corrupt the index. 
+  Refactor existing OOM handling too, so you don't need to handle OOM special
+  for every IndexWriter method: instead such disasters will cause IW to close itself
+  defensively. (Robert Muir, Mike McCandless)
+
 Tests
 
 * LUCENE-5936: Add backcompat checks to verify what is tested matches known versions
