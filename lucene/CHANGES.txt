@@ -30,11 +30,6 @@ Bug fixes
   for every IndexWriter method: instead such disasters will cause IW to close itself
   defensively. (Robert Muir, Mike McCandless)
 
-Tests
-
-* LUCENE-5936: Add backcompat checks to verify what is tested matches known versions
-  (Ryan Ernst)
-
 * LUCENE-5904: Fixed a corruption case that can happen when 1)
   IndexWriter is uncleanly shut-down (OS crash, power loss, etc.), 2)
   on startup, when a new IndexWriter is created, a virus checker is
@@ -44,6 +39,14 @@ Tests
   corruption.  This case was detected by adding evilness to
   MockDirectoryWrapper to have it simulate a virus checker holding a
   file open and preventing deletion (Robert Muir, Mike McCandless)
+
+* LUCENE-5922: DocValuesDocIdSet on 5.x and FieldCacheDocIdSet on 4.x
+  are not cacheable. (Adrien Grand)
+
+Tests
+
+* LUCENE-5936: Add backcompat checks to verify what is tested matches known versions
+  (Ryan Ernst)
 
 ======================= Lucene 4.10.0 ======================
 
