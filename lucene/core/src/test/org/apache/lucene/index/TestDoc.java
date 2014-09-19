@@ -119,6 +119,8 @@ public class TestDoc extends LuceneTestCase {
         // We create unreferenced files (we don't even write
         // a segments file):
         ((MockDirectoryWrapper) directory).setAssertNoUnrefencedFilesOnClose(false);
+        // this test itself deletes files (has no retry mechanism)
+        ((MockDirectoryWrapper) directory).setEnableVirusScanner(false);
       }
 
       IndexWriter writer = new IndexWriter(
@@ -161,6 +163,8 @@ public class TestDoc extends LuceneTestCase {
         // We create unreferenced files (we don't even write
         // a segments file):
         ((MockDirectoryWrapper) directory).setAssertNoUnrefencedFilesOnClose(false);
+        // this test itself deletes files (has no retry mechanism)
+        ((MockDirectoryWrapper) directory).setEnableVirusScanner(false);
       }
 
       writer = new IndexWriter(

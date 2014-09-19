@@ -28,9 +28,11 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 
 /*
@@ -44,6 +46,8 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     Directory dir = newDirectory();
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setPreventDoubleWrite(false);
+      // ensure we actually delete files
+      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
     }
 
     MergePolicy mergePolicy = newLogMergePolicy(true, 10);
@@ -296,6 +300,196 @@ public class TestIndexFileDeleter extends LuceneTestCase {
 
     doFailExc.set(false);
     w.close();
+    dir.close();
+  }
+  
+  public void testVirusScannerDoesntCorruptIndex() throws IOException {
+    MockDirectoryWrapper dir = newMockDirectory();
+    dir.setPreventDoubleWrite(false); // we arent trying to test this
+    dir.setEnableVirusScanner(false); // we have our own to make test reproduce always
+    
+    // add empty commit
+    new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null)).close();
+    // add a trash unreferenced file
+    dir.createOutput("_0.si", IOContext.DEFAULT).close();
+
+    // start virus scanner
+    final AtomicBoolean stopScanning = new AtomicBoolean();
+    dir.failOn(new MockDirectoryWrapper.Failure() {
+      @Override
+      public void eval(MockDirectoryWrapper dir) throws IOException {
+        if (stopScanning.get()) {
+          return;
+        }
+        for (StackTraceElement f : new Exception().getStackTrace()) {
+          if ("deleteFile".equals(f.getMethodName())) {
+            throw new IOException("temporarily cannot delete file");
+          }
+        }
+      }
+    });
+    
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+    iw.addDocument(new Document());
+    // stop virus scanner
+    stopScanning.set(true);
+    iw.commit();
+    iw.close();
+    dir.close();
+  }
+  
+  public void testNoSegmentsDotGenInflation() throws IOException {
+    Directory dir = newMockDirectory();
+    
+    // empty commit
+    new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null)).close();   
+    
+    SegmentInfos sis = new SegmentInfos();
+    sis.read(dir);
+    assertEquals(1, sis.getGeneration());
+    
+    // no inflation
+    IndexFileDeleter.inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
+    assertEquals(1, sis.getGeneration());
+
+    dir.close();
+  }
+  
+  public void testSegmentsInflation() throws IOException {
+    MockDirectoryWrapper dir = newMockDirectory();
+    dir.setCheckIndexOnClose(false); // TODO: allow falling back more than one commit
+    
+    // empty commit
+    new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null)).close();   
+    
+    SegmentInfos sis = new SegmentInfos();
+    sis.read(dir);
+    assertEquals(1, sis.getGeneration());
+    
+    // add trash commit
+    dir.createOutput(IndexFileNames.SEGMENTS + "_2", IOContext.DEFAULT).close();
+    
+    // ensure inflation
+    IndexFileDeleter.inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
+    assertEquals(2, sis.getGeneration());
+    
+    // add another trash commit
+    dir.createOutput(IndexFileNames.SEGMENTS + "_4", IOContext.DEFAULT).close();
+    IndexFileDeleter.inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
+    assertEquals(4, sis.getGeneration());
+
+    dir.close();
+  }
+  
+  public void testSegmentNameInflation() throws IOException {
+    MockDirectoryWrapper dir = newMockDirectory();
+    
+    // empty commit
+    new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null)).close();   
+    
+    SegmentInfos sis = new SegmentInfos();
+    sis.read(dir);
+    assertEquals(0, sis.counter);
+    
+    // no inflation
+    IndexFileDeleter.inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
+    assertEquals(0, sis.counter);
+    
+    // add trash per-segment file
+    dir.createOutput(IndexFileNames.segmentFileName("_0", "", "foo"), IOContext.DEFAULT).close();
+    
+    // ensure inflation
+    IndexFileDeleter.inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
+    assertEquals(1, sis.counter);
+    
+    // add trash per-segment file
+    dir.createOutput(IndexFileNames.segmentFileName("_3", "", "foo"), IOContext.DEFAULT).close();
+    IndexFileDeleter.inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
+    assertEquals(4, sis.counter);
+    
+    // ensure we write _4 segment next
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+    iw.addDocument(new Document());
+    iw.commit();
+    iw.close();
+    sis = new SegmentInfos();
+    sis.read(dir);
+    assertEquals("_4", sis.info(0).info.name);
+    assertEquals(5, sis.counter);
+    
+    dir.close();
+  }
+  
+  public void testGenerationInflation() throws IOException {
+    MockDirectoryWrapper dir = newMockDirectory();
+    
+    // initial commit
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+    iw.addDocument(new Document());
+    iw.commit();
+    iw.close();   
+    
+    // no deletes: start at 1
+    SegmentInfos sis = new SegmentInfos();
+    sis.read(dir);
+    assertEquals(1, sis.info(0).getNextDelGen());
+    
+    // no inflation
+    IndexFileDeleter.inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
+    assertEquals(1, sis.info(0).getNextDelGen());
+    
+    // add trash per-segment deletes file
+    dir.createOutput(IndexFileNames.fileNameFromGeneration("_0", "del", 2), IOContext.DEFAULT).close();
+    
+    // ensure inflation
+    IndexFileDeleter.inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
+    assertEquals(3, sis.info(0).getNextDelGen());
+    
+    dir.close();
+  }
+  
+  public void testTrashyFile() throws IOException {
+    MockDirectoryWrapper dir = newMockDirectory();
+    dir.setCheckIndexOnClose(false); // TODO: maybe handle such trash better elsewhere...
+    
+    // empty commit
+    new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null)).close();   
+    
+    SegmentInfos sis = new SegmentInfos();
+    sis.read(dir);
+    assertEquals(1, sis.getGeneration());
+    
+    // add trash file
+    dir.createOutput(IndexFileNames.SEGMENTS + "_", IOContext.DEFAULT).close();
+    
+    // no inflation
+    IndexFileDeleter.inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
+    assertEquals(1, sis.getGeneration());
+
+    dir.close();
+  }
+  
+  public void testTrashyGenFile() throws IOException {
+    MockDirectoryWrapper dir = newMockDirectory();
+    
+    // initial commit
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+    iw.addDocument(new Document());
+    iw.commit();
+    iw.close();   
+    
+    // no deletes: start at 1
+    SegmentInfos sis = new SegmentInfos();
+    sis.read(dir);
+    assertEquals(1, sis.info(0).getNextDelGen());
+    
+    // add trash file
+    dir.createOutput("_1_A", IOContext.DEFAULT).close();
+    
+    // no inflation
+    IndexFileDeleter.inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
+    assertEquals(1, sis.info(0).getNextDelGen());
+
     dir.close();
   }
 }

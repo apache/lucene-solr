@@ -28,6 +28,7 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -38,6 +39,12 @@ import org.apache.lucene.util.TestUtil;
 public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
   public void test() throws Exception {
     Directory dir = newDirectory();
+
+    if (dir instanceof MockDirectoryWrapper) {
+      // Else we might remove .cfe but not the corresponding .cfs, causing false exc when trying to verify headers:
+      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
+    }
+
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setCodec(new Lucene410Codec());
     RandomIndexWriter riw = new RandomIndexWriter(random(), dir, conf);

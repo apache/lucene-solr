@@ -61,6 +61,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
           System.out.println("TEST: cycle: diskFree=" + diskFree);
         }
         MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new RAMDirectory());
+        dir.setEnableVirusScanner(false); // currently uses the IW unreferenced files method, unaware of retries
         dir.setMaxSizeInBytes(diskFree);
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
         MergeScheduler ms = writer.getConfig().getMergeScheduler();
@@ -532,6 +533,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                                 .setMaxBufferedDocs(2)
                                                 .setMergeScheduler(new ConcurrentMergeScheduler()));
+    writer.commit(); // empty commit, to not create confusing situation with first commit
     dir.setMaxSizeInBytes(Math.max(1, dir.getRecomputedActualSizeInBytes()));
     final Document doc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_STORED);

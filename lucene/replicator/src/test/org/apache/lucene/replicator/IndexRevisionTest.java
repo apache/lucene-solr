@@ -30,6 +30,7 @@ import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.IOUtils;
 import org.junit.Test;
 
@@ -71,6 +72,11 @@ public class IndexRevisionTest extends ReplicatorTestCase {
   public void testRevisionRelease() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
+
+    // we look to see that certain files are deleted:
+    if (dir instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
+    }
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     IndexWriter writer = new IndexWriter(dir, conf);
     try {

@@ -95,6 +95,7 @@ public class TestFSTs extends LuceneTestCase {
     super.setUp();
     dir = newMockDirectory();
     dir.setPreventDoubleWrite(false);
+    dir.setEnableVirusScanner(false);
   }
 
   @Override

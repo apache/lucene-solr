@@ -152,7 +152,7 @@ final class IndexFileDeleter implements Closeable {
       // it means the directory is empty, so ignore it.
       files = new String[0];
     }
-    
+
     if (currentSegmentsFile != null) {
       Matcher m = IndexFileNames.CODEC_FILE_PATTERN.matcher("");
       for (String fileName : files) {
@@ -238,6 +238,9 @@ final class IndexFileDeleter implements Closeable {
     // We keep commits list in sorted order (oldest to newest):
     CollectionUtil.timSort(commits);
 
+    // refCounts only includes "normal" filenames (does not include segments.gen, write.lock)
+    inflateGens(segmentInfos, refCounts.keySet(), infoStream);
+
     // Now delete anything with ref count at 0.  These are
     // presumably abandoned files eg due to crash of
     // IndexWriter.
@@ -263,6 +266,83 @@ final class IndexFileDeleter implements Closeable {
     startingCommitDeleted = currentCommitPoint == null ? false : currentCommitPoint.isDeleted();
 
     deleteCommits();
+  }
+
+  /** Set all gens beyond what we currently see in the directory, to avoid double-write in cases where the previous IndexWriter did not
+   *  gracefully close/rollback (e.g. os/machine crashed or lost power). */
+  static void inflateGens(SegmentInfos infos, Collection<String> files, InfoStream infoStream) {
+
+    long maxSegmentGen = Long.MIN_VALUE;
+    int maxSegmentName = Integer.MIN_VALUE;
+
+    // Confusingly, this is the union of liveDocs, field infos, doc values
+    // (and maybe others, in the future) gens.  This is somewhat messy,
+    // since it means DV updates will suddenly write to the next gen after
+    // live docs' gen, for example, but we don't have the APIs to ask the
+    // codec which file is which:
+    Map<String,Long> maxPerSegmentGen = new HashMap<>();
+
+    for(String fileName : files) {
+      if (fileName.equals(IndexFileNames.SEGMENTS_GEN) || fileName.equals(IndexWriter.WRITE_LOCK_NAME)) {
+        // do nothing
+      } else if (fileName.startsWith(IndexFileNames.SEGMENTS)) {
+        try {
+          maxSegmentGen = Math.max(SegmentInfos.generationFromSegmentsFileName(fileName), maxSegmentGen);
+        } catch (NumberFormatException ignore) {
+          // trash file: we have to handle this since we allow anything starting with 'segments' here
+        }
+      } else {
+        String segmentName = IndexFileNames.parseSegmentName(fileName);
+        assert segmentName.startsWith("_"): "wtf? file=" + fileName;
+
+        maxSegmentName = Math.max(maxSegmentName, Integer.parseInt(segmentName.substring(1), Character.MAX_RADIX));
+
+        Long curGen = maxPerSegmentGen.get(segmentName);
+        if (curGen == null) {
+          curGen = 0L;
+        }
+
+        try {
+          curGen = Math.max(curGen, IndexFileNames.parseGeneration(fileName));
+        } catch (NumberFormatException ignore) {
+          // trash file: we have to handle this since codec regex is only so good
+        }
+        maxPerSegmentGen.put(segmentName, curGen);
+      }
+    }
+
+    // Generation is advanced before write:
+    infos.setGeneration(Math.max(infos.getGeneration(), maxSegmentGen));
+    if (infos.counter < 1+maxSegmentName) {
+      if (infoStream.isEnabled("IFD")) {
+        infoStream.message("IFD", "init: inflate infos.counter to " + (1+maxSegmentName) + " vs current=" + infos.counter);
+      }
+      infos.counter = 1+maxSegmentName;
+    }
+
+    for(SegmentCommitInfo info : infos) {
+      Long gen = maxPerSegmentGen.get(info.info.name);
+      assert gen != null;
+      long genLong = gen;
+      if (info.getNextWriteDelGen() < genLong+1) {
+        if (infoStream.isEnabled("IFD")) {
+          infoStream.message("IFD", "init: seg=" + info.info.name + " set nextWriteDelGen=" + (genLong+1) + " vs current=" + info.getNextWriteDelGen());
+        }
+        info.setNextWriteDelGen(genLong+1);
+      }
+      if (info.getNextWriteFieldInfosGen() < genLong+1) {
+        if (infoStream.isEnabled("IFD")) {
+          infoStream.message("IFD", "init: seg=" + info.info.name + " set nextWriteFieldInfosGen=" + (genLong+1) + " vs current=" + info.getNextWriteFieldInfosGen());
+        }
+        info.setNextWriteFieldInfosGen(genLong+1);
+      }
+      if (info.getNextWriteDocValuesGen() < genLong+1) {
+        if (infoStream.isEnabled("IFD")) {
+          infoStream.message("IFD", "init: seg=" + info.info.name + " set nextWriteDocValuesGen=" + (genLong+1) + " vs current=" + info.getNextWriteDocValuesGen());
+        }
+        info.setNextWriteDocValuesGen(genLong+1);
+      }
+    }
   }
 
   private void ensureOpen() throws AlreadyClosedException {
@@ -424,10 +504,17 @@ final class IndexFileDeleter implements Closeable {
       deletable = null;
       int size = oldDeletable.size();
       for(int i=0;i<size;i++) {
+        String fileName = oldDeletable.get(i);
         if (infoStream.isEnabled("IFD")) {
-          infoStream.message("IFD", "delete pending file " + oldDeletable.get(i));
+          infoStream.message("IFD", "delete pending file " + fileName);
         }
-        deleteFile(oldDeletable.get(i));
+        RefCount rc = refCounts.get(fileName);
+        if (rc != null && rc.count > 0) {
+          // LUCENE-5904: should never happen!  This means we are about to pending-delete a referenced index file
+          assert false: "fileName=" + fileName + " is in pending delete list but also has refCount=" + rc.count;
+        } else {
+          deleteFile(fileName);
+        }
       }
     }
   }

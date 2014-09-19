@@ -203,7 +203,8 @@ final class CompoundFileWriter implements Closeable{
       if (success) {
         IOUtils.close(is);
         // copy successful - delete file
-        fileEntry.dir.deleteFile(fileEntry.file);
+        // if we can't we rely on IFD to pick up and retry
+        IOUtils.deleteFilesIgnoringExceptions(fileEntry.dir, fileEntry.file);
       } else {
         IOUtils.closeWhileHandlingException(is);
       }

@@ -30,6 +30,7 @@ import org.apache.lucene.index.BaseStoredFieldsFormatTestCase;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.junit.Test;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
@@ -46,6 +47,10 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
   @Test(expected=IllegalArgumentException.class)
   public void testDeletePartiallyWrittenFilesIfAbort() throws IOException {
     Directory dir = newDirectory();
+    // test explicitly needs files to always be actually deleted
+    if (dir instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
+    }
     IndexWriterConfig iwConf = newIndexWriterConfig(new MockAnalyzer(random()));
     iwConf.setMaxBufferedDocs(RandomInts.randomIntBetween(random(), 2, 30));
     iwConf.setCodec(CompressingCodec.randomInstance(random()));
