@@ -528,6 +528,7 @@
   <patternset id="patternset.lucene.solr.jars">
     <include name="**/lucene-*.jar"/>
     <include name="**/solr-*.jar"/>
+    <include name="**/solr-*.war"/>
   </patternset>
   <available type="dir" file="${lucene.tgz.unpack.dir}" property="lucene.tgz.unpack.dir.exists"/>
   <target name="-ensure-lucene-tgz-exists" unless="lucene.tgz.exists">
