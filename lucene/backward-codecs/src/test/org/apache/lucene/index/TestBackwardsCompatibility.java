@@ -322,12 +322,27 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
 
+  private String cfsFilename(Version v) {
+    String bugfix = "";
+    if (v.bugfix != 0) {
+      bugfix = Integer.toString(v.bugfix);
+    }
+    String prerelease = "";
+    if (v.minor == 0 && v.bugfix == 0) {
+      if (v.prerelease == 0) {
+        prerelease = "a";
+      } else if (v.prerelease == 1) {
+        prerelease = "b";
+      }
+    }
+
+    return Integer.toString(v.major) + v.minor + bugfix + prerelease + ".cfs";
+  }
+
   public void testAllVersionsTested() throws Exception {
     Pattern constantPattern = Pattern.compile("LUCENE_(\\d+)_(\\d+)_(\\d+)(_ALPHA|_BETA)?");
     // find the unique versions according to Version.java
     List<String> expectedVersions = new ArrayList<>();
-    int lastPrevMinorIndex = -1;
-    Version lastPrevMajorVersion = null;
     for (java.lang.reflect.Field field : Version.class.getDeclaredFields()) {
       if (Modifier.isStatic(field.getModifiers()) && field.getType() == Version.class) {
         Version v = (Version)field.get(Version.class);
@@ -336,37 +351,28 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         Matcher constant = constantPattern.matcher(field.getName());
         if (constant.matches() == false) continue;
 
+        expectedVersions.add(cfsFilename(v));
+      }
+    }
+
+    // BEGIN TRUNK ONLY BLOCK
+    // on trunk, the last release of the prev major release is also untested
+    Version lastPrevMajorVersion = null;
+    for (java.lang.reflect.Field field : Version.class.getDeclaredFields()) {
+      if (Modifier.isStatic(field.getModifiers()) && field.getType() == Version.class) {
+        Version v = (Version)field.get(Version.class);
+        Matcher constant = constantPattern.matcher(field.getName());
+        if (constant.matches() == false) continue;
         if (v.major == Version.LATEST.major - 1 &&
             (lastPrevMajorVersion == null || v.onOrAfter(lastPrevMajorVersion))) {
           lastPrevMajorVersion = v;
-          lastPrevMinorIndex = expectedVersions.size();
         }
-
-        String major = constant.group(1);
-        String minor = constant.group(2);
-        String bugfix = constant.group(3);
-        if (bugfix.equals("0")) {
-          bugfix = "";
-        }
-        String prerelease = constant.group(4);
-        if (prerelease != null) {
-          if (prerelease.equals("_ALPHA")) {
-            prerelease = "a";
-          } else { // _BETA
-            prerelease = "b";
-          }
-        } else {
-          prerelease = "";
-        }
-        expectedVersions.add(major + minor + bugfix + prerelease + ".cfs");
       }
     }
-    if (Version.LATEST.minor == 0 && Version.LATEST.bugfix == 0 && Version.LATEST.prerelease == 0) {
-      // we are on trunk (latest is a first major release) so the last minor index
-      // for the previous major version is also not yet tested
-      assertNotNull(lastPrevMajorVersion);
-      expectedVersions.remove(lastPrevMinorIndex);
-    }
+    assertNotNull(lastPrevMajorVersion);
+    expectedVersions.remove(cfsFilename(lastPrevMajorVersion));
+    // END TRUNK ONLY BLOCK
+
     Collections.sort(expectedVersions);
 
     // find what versions we are testing
