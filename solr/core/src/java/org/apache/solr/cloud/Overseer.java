@@ -1239,7 +1239,7 @@ public class Overseer implements Closeable {
           // but for tests (it's easier) it seems better for the moment to leave CoreContainer and/or
           // ZkController out of the Overseer.
           try {
-            zkClient.delete("/collections/" + collection, -1, true);
+            zkClient.clean("/collections/" + collection);
           } catch (InterruptedException e) {
             SolrException.log(log, "Cleaning up collection in zk was interrupted:" + collection, e);
             Thread.currentThread().interrupt();
