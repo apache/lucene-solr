@@ -101,11 +101,19 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
       
       Slice shard1 = null;
       Replica replica1 = null;
+      
+      // Get an active replica
       for (Slice slice : testcoll.getSlices()) {
+        if(replica1 != null)
+          break;
         if ("active".equals(slice.getStr("state"))) {
           shard1 = slice;
-          for (Replica replica : shard1.getReplicas())
-            if ("active".equals(replica.getStr("state"))) replica1 = replica;
+          for (Replica replica : shard1.getReplicas()) {
+            if ("active".equals(replica.getStr("state"))) {
+              replica1 = replica;
+              break;
+            }
+          }
         }
       }
 
@@ -122,7 +130,7 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
       }
       try {
         // Should not be able to delete a replica that is up if onlyIfDown=true.
-        tryToRemoveOnlyIfDown(collectionName, client, replica1, shard1.getName(), dataDir);
+        tryToRemoveOnlyIfDown(collectionName, client, replica1, shard1.getName());
         fail("Should have thrown an exception here because the replica is NOT down");
       } catch (SolrException se) {
         assertEquals("Should see 400 here ", se.code(), 400);
@@ -133,16 +141,14 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
             new File(dataDir).exists());
       }
 
-
-      removeAndWaitForReplicaGone(collectionName, client, replica1,
-          shard1.getName());
+      removeAndWaitForReplicaGone(collectionName, client, replica1, shard1.getName());
       assertFalse("dataDir for " + replica1.getName() + " should have been deleted by deleteReplica API", new File(dataDir).exists());
     } finally {
       client.shutdown();
     }
   }
 
-  protected void tryToRemoveOnlyIfDown(String collectionName, CloudSolrServer client, Replica replica, String shard, String dataDir) throws IOException, SolrServerException {
+  protected void tryToRemoveOnlyIfDown(String collectionName, CloudSolrServer client, Replica replica, String shard) throws IOException, SolrServerException {
     Map m = makeMap("collection", collectionName,
         "action", DELETEREPLICA.toLower(),
         "shard", shard,
@@ -151,7 +157,7 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
     SolrParams params = new MapSolrParams(m);
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
-    NamedList<Object> resp = client.request(request);
+    client.request(request);
   }
 
   protected void removeAndWaitForReplicaGone(String COLL_NAME,
