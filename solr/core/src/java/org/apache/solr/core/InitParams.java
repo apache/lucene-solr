@@ -25,9 +25,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 /**
- * An Object which represents a <args> tag
- *
+ * An Object which represents a &lt;initParams&gt; tag
  */
 public class InitParams {
   public static final String TYPE = "initParams";
