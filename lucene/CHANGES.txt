@@ -190,6 +190,9 @@ Optimizations
 * LUCENE-5959: Don't allocate excess memory when building automaton in
   finish. (Markus Heiden via Mike McCandless)
 
+* LUCENE-5963: Reduce memory allocations in
+  AnalyzingSuggester. (Markus Heiden via Mike McCandless)
+
 Build
 
 * LUCENE-5909: Smoke tester now has better command line parsing and

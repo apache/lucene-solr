@@ -334,6 +334,11 @@ public class Automaton {
     return nextState/2;
   }
 
+  /** How many transitions this automaton has. */
+  public int getNumTransitions() {
+    return nextTransition / 3;   
+  }
+  
   /** How many transitions this state has. */
   public int getNumTransitions(int state) {
     int count = states[2*state+1];
@@ -676,6 +681,20 @@ public class Automaton {
       transitions[nextTransition++] = max;
     }
 
+    /** Add a [virtual] epsilon transition between source and dest.
+     *  Dest state must already have all transitions added because this
+     *  method simply copies those same transitions over to source. */
+    public void addEpsilon(int source, int dest) {
+      for (int upto = 0; upto < nextTransition; upto += 4) {
+         if (transitions[upto] == dest) {
+            addTransition(source, transitions[upto + 1], transitions[upto + 2], transitions[upto + 3]);
+         }
+      }
+      if (isAccept(dest)) {
+        setAccept(source, true);
+      }
+    }
+
     /** Sorts transitions first then min label ascending, then
      *  max label ascending, then dest ascending */
     private final Sorter sorter = new InPlaceMergeSorter() {
@@ -797,10 +816,11 @@ public class Automaton {
     public void copy(Automaton other) {
       int offset = getNumStates();
       int otherNumStates = other.getNumStates();
-      for(int s=0;s<otherNumStates;s++) {
-        int newState = createState();
-        setAccept(newState, other.isAccept(s));
-      }
+
+      // Copy all states
+      copyStates(other);
+      
+      // Copy all transitions
       Transition t = new Transition();
       for(int s=0;s<otherNumStates;s++) {
         int count = other.initTransition(s, t);
@@ -808,6 +828,15 @@ public class Automaton {
           other.getNextTransition(t);
           addTransition(offset + s, offset + t.dest, t.min, t.max);
         }
+      }
+    }
+
+    /** Copies over all states from other. */
+    public void copyStates(Automaton other) {
+      int otherNumStates = other.getNumStates();
+      for (int s = 0; s < otherNumStates; s++) {
+        int newState = createState();
+        setAccept(newState, other.isAccept(s));
       }
     }
   }

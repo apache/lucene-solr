@@ -299,14 +299,10 @@ public class AnalyzingSuggester extends Lookup {
   // we were asked to preserve them:
   private Automaton replaceSep(Automaton a) {
 
-    Automaton result = new Automaton();
-
-    // Copy all states over
     int numStates = a.getNumStates();
-    for(int s=0;s<numStates;s++) {
-      result.createState();
-      result.setAccept(s, a.isAccept(s));
-    }
+    Automaton.Builder result = new Automaton.Builder(numStates, a.getNumTransitions());
+    // Copy all states over
+    result.copyStates(a);
 
     // Go in reverse topo sort so we know we only have to
     // make one pass:
@@ -342,9 +338,7 @@ public class AnalyzingSuggester extends Lookup {
       }
     }
 
-    result.finishState();
-
-    return result;
+    return result.finish();
   }
 
   /** Used by subclass to change the lookup automaton, if
