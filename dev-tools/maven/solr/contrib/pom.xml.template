@@ -32,6 +32,7 @@
   <packaging>pom</packaging>
   <modules>
     <module>analysis-extras</module>
+    <module>analytics</module>
     <module>clustering</module>
     <module>dataimporthandler</module>
     <module>dataimporthandler-extras</module>
