@@ -17,13 +17,11 @@
     limitations under the License.
  -->
 
-<project name="solr-clustering" default="default" xmlns:ivy="antlib:org.apache.ivy.ant">
+<project name="solr-clustering" default="default">
 
   <description>
     Clustering Integraton
   </description>
-
-  <property name="test.lib.dir" location="test-lib"/>
 
   <import file="../contrib-build.xml"/>
 
@@ -31,12 +29,4 @@
     <path refid="solr.test.base.classpath"/>
     <fileset dir="${test.lib.dir}" includes="*.jar"/>
   </path>
-
-  <target name="resolve" depends="ivy-availability-check,ivy-fail,ivy-configure">
-    <sequential>
-      <ivy:retrieve conf="compile" type="jar,bundle" sync="${ivy.sync}" log="download-only"/>
-      <ivy:retrieve conf="test" type="jar,bundle,test" sync="${ivy.sync}" log="download-only"
-                    pattern="${test.lib.dir}/[artifact]-[revision](-[classifier]).[ext]"/>
-    </sequential>
-  </target>
 </project>
