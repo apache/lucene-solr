@@ -29,6 +29,31 @@ Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
 
+Upgrading from Solr 5.x
+----------------------
+
+* N/A
+
+Detailed Change List
+----------------------
+
+Other Changes
+----------------------
+
+* SOLR-4792: Stop shipping a .war. (Robert Muir)
+
+==================  5.0.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
+
+Versions of Major Components
+---------------------
+Apache Tika 1.6
+Carrot2 3.9.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+
 Upgrading from Solr 4.x
 ----------------------
 
@@ -57,8 +82,12 @@ Upgrading from Solr 4.x
 
 * The CollectionsAPI SolrJ calls createCollection(), reloadCollection(),
   deleteCollection(), requestStatus(), createShard(), splitShard(), deleteShard(),
-  createAlias() and deleteAlias() which were deprecated in 5.0 have been removed.
+  createAlias() and deleteAlias() which were deprecated in 4.11 have been removed.
   The new usage involves a builder style construction of the call.
+
+* The OVERSEERSTATUS API returns new key names for operations such as "create"
+  for "createcollection", "delete" for "removecollection" and "deleteshard" for
+  "removeshard".
 
 Detailed Change List
 ----------------------
@@ -79,13 +108,90 @@ New Features
 * SOLR-6103: Added DateRangeField for indexing date ranges, especially
   multi-valued ones. Based on LUCENE-5648. (David Smiley)
 
+* SOLR-6403: TransactionLog replay status logging. (Mark Miller)
+
+* SOLR-4580: Support for protecting content in ZooKeeper. (Per Steffensen, Mark Miller)
+
+* SOLR-6365: specify appends, defaults, invariants outside of the request handler.
+  (Noble Paul, Erik Hatcher, shalin)
+
+* SOLR-5097: Schema API: Add REST support for adding dynamic fields to the schema.
+  (Steve Rowe)
+
+* SOLR-5098: Schema API: Add REST support for adding field types to the schema.
+  (Timothy Potter)
+
+* SOLR-5473 : Split clusterstate.json per collection and watch states selectively
+              (Noble Paul, Mark Miller, shalin, Jessica Cheng Mallet, Timothy Potter, Ashum Gupta)
+
+* SOLR-5474 : Support for SOLR-5473 in SolrJ (Timothy Potter, Noble Paul, Mark Miller)
+
+* SOLR-5810 : Support for SOLR-5473 in solr admin UI (Timothy Potter, Noble Paul)
+
+* SOLR-6482:  Add an onlyIfDown flag for DELETEREPLICA collections API command
+  (Erick Erickson)
+
+Bug Fixes
+----------------------
+
+* SOLR-4895: An error should be returned when a rollback is attempted in SolrCloud mode.
+  (Vamsee Yarlagadda via Mark Miller)
+
+* SOLR-6424: The hdfs block cache BLOCKCACHE_WRITE_ENABLED is not defaulting to false like it
+  should. (Mark Miller)
+
+* SOLR-6425: If you using the new global hdfs block cache option, you can end up reading corrupt
+  files on file name reuse. (Mark Miller, Gregory Chanan)
+
+* SOLR-6426: SolrZkClient clean can fail due to a race with children nodes. (Mark Miller)
+
+* SOLR-5966: Admin UI Menu is fixed and doesn't respect smaller viewports.
+  (Aman Tandon, steffkes via shalin)
+
+* SOLR-4406: Fix RawResponseWriter to respect 'base' writer
+  (Steve Davids, hossman)
+
+* SOLR-6024: Fix StatsComponent when using docValues="true" multiValued="true"
+  (Vitaliy Zhovtyuk & Tomas Fernandez-Lobbe via hossman)
+
+* SOLR-6297: Fix WordBreakSolrSpellChecker to not lose suggestions in shard/cloud
+  environments (James Dyer)
+
+* SOLR-5814: CoreContainer reports incorrect & missleading path for solrconfig.xml
+  when there are loading problems (Pradeep via hossman)
+
+* SOLR-6447: bin/solr script needs to pass -DnumShards=1 for boostrapping collection1
+  when starting Solr in cloud mode. (Timothy Potter)
+
+* SOLR-6467: bin/solr script should direct stdout/stderr when starting in the background
+  to the solr-PORT-console.log in the logs directory instead of bin. (Timothy Potter)
+
+* SOLR-6187: SOLR-6154: facet.mincount ignored in range faceting using distributed search
+  NOTE: This does NOT fixed for the (deprecated) facet.date idiom, use facet.range
+  instead. (Erick Erickson, Zacchio Bagnati, Ronald Matamoros, Vamsee Yalargadda)
+
+* SOLR-6457: LBHttpSolrServer: ArrayIndexOutOfBoundsException risk if counter overflows
+  (longkey via Noble Paul)
+
+* SOLR-6493: Fix fq exclusion via "ex" local param in multivalued stats.field (hossman)
+
+* SOLR-6452: StatsComponent's stat 'missing' will work on fields with docValues=true and
+  indexed=false (Xu Zhang via Tomás Fernández Löbbe)
+
+* SOLR-6499: Log warning about multiple update request handlers
+  (Noble Paul, Andreas Hubold, hossman)
+
+* SOLR-6501: Binary Response Writer does not return wildcard fields.
+  (Mike Hugo, Constantin Mitocaru, sarowe, shalin)
+
+* SOLR-6507: Fixed several bugs involving stats.field used with local params (hossman)
+
+
 Other Changes
 ----------------------
 
 * SOLR-4622: Hardcoded SolrCloud defaults for hostContext and hostPort that
   were deprecated in 4.3 have been removed completely. (hossman)
-
-* SOLR-4792: Stop shipping a .war. (Robert Muir)
 
 * SOLR-5936: Removed deprecated non-Trie-based numeric & date field types.
   (Steve Rowe)
@@ -107,117 +213,6 @@ Other Changes
 
 * SOLR-6519: Make DirectoryFactory#create() take LockFactory.
   (Uwe Schindler)
-
-==================  5.0.0 =================
-
-Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
-
-Versions of Major Components
----------------------
-Apache Tika 1.6
-Carrot2 3.9.0
-Velocity 1.7 and Velocity Tools 2.0
-Apache UIMA 2.3.1
-Apache ZooKeeper 3.4.6
-Noggit 0.6
-
-Upgrading from Solr 4.10
-----------------------
-* The CollectionsAPI SolrJ calls createCollection(), reloadCollection(),
-  deleteCollection(), requestStatus(), createShard(), splitShard(), deleteShard(),
-  createAlias() and deleteAlias() have been deprecated. The new usage involves a
-  builder style construction of the call.
-
-* The OVERSEERSTATUS API returns new key names for operations such as "create"
-  for "createcollection", "delete" for "removecollection" and "deleteshard" for
-  "removeshard".
-
-Detailed Change List
-----------------------
-
-New Features
-----------------------
-
-* SOLR-6403: TransactionLog replay status logging. (Mark Miller)
-
-* SOLR-4580: Support for protecting content in ZooKeeper. (Per Steffensen, Mark Miller)
-
-* SOLR-6365: specify appends, defaults, invariants outside of the request handler.
-  (Noble Paul, Erik Hatcher, shalin)
-  
-* SOLR-5097: Schema API: Add REST support for adding dynamic fields to the schema.
-  (Steve Rowe)
-
-* SOLR-5098: Schema API: Add REST support for adding field types to the schema.
-  (Timothy Potter)
-
-* SOLR-5473 : Split clusterstate.json per collection and watch states selectively
-              (Noble Paul, Mark Miller, shalin, Jessica Cheng Mallet, Timothy Potter, Ashum Gupta)
-
-* SOLR-5474 : Support for SOLR-5473 in SolrJ (Timothy Potter, Noble Paul, Mark Miller)
-
-* SOLR-5810 : Support for SOLR-5473 in solr admin UI (Timothy Potter, Noble Paul)
-
-* SOLR-6482:  Add an onlyIfDown flag for DELETEREPLICA collections API command
-  (Erick Erickson)   
-
-Bug Fixes
-----------------------
-
-* SOLR-4895: An error should be returned when a rollback is attempted in SolrCloud mode.
-  (Vamsee Yarlagadda via Mark Miller)
-
-* SOLR-6424: The hdfs block cache BLOCKCACHE_WRITE_ENABLED is not defaulting to false like it 
-  should. (Mark Miller)
-
-* SOLR-6425: If you using the new global hdfs block cache option, you can end up reading corrupt 
-  files on file name reuse. (Mark Miller, Gregory Chanan)
-
-* SOLR-6426: SolrZkClient clean can fail due to a race with children nodes. (Mark Miller)
-
-* SOLR-5966: Admin UI Menu is fixed and doesn't respect smaller viewports.
-  (Aman Tandon, steffkes via shalin)
-
-* SOLR-4406: Fix RawResponseWriter to respect 'base' writer
-  (Steve Davids, hossman)
-
-* SOLR-6024: Fix StatsComponent when using docValues="true" multiValued="true"
-  (Vitaliy Zhovtyuk & Tomas Fernandez-Lobbe via hossman)
-
-* SOLR-6297: Fix WordBreakSolrSpellChecker to not lose suggestions in shard/cloud 
-  environments (James Dyer)
-
-* SOLR-5814: CoreContainer reports incorrect & missleading path for solrconfig.xml 
-  when there are loading problems (Pradeep via hossman)
-
-* SOLR-6447: bin/solr script needs to pass -DnumShards=1 for boostrapping collection1
-  when starting Solr in cloud mode. (Timothy Potter)
-
-* SOLR-6467: bin/solr script should direct stdout/stderr when starting in the background
-  to the solr-PORT-console.log in the logs directory instead of bin. (Timothy Potter)
-
-* SOLR-6187: SOLR-6154: facet.mincount ignored in range faceting using distributed search
-  NOTE: This does NOT fixed for the (deprecated) facet.date idiom, use facet.range
-  instead. (Erick Erickson, Zacchio Bagnati, Ronald Matamoros, Vamsee Yalargadda)
-
-* SOLR-6457: LBHttpSolrServer: ArrayIndexOutOfBoundsException risk if counter overflows
-  (longkey via Noble Paul)
-
-* SOLR-6493: Fix fq exclusion via "ex" local param in multivalued stats.field (hossman)
-
-* SOLR-6452: StatsComponent's stat 'missing' will work on fields with docValues=true and 
-  indexed=false (Xu Zhang via Tomás Fernández Löbbe)
-
-* SOLR-6499: Log warning about multiple update request handlers
-  (Noble Paul, Andreas Hubold, hossman)
-
-* SOLR-6501: Binary Response Writer does not return wildcard fields.
-  (Mike Hugo, Constantin Mitocaru, sarowe, shalin)
-
-* SOLR-6507: Fixed several bugs involving stats.field used with local params (hossman)
-
-Other Changes
----------------------
 
 * SOLR-6400: SolrCloud tests are not properly testing session expiration. (Mark Miller)
 
@@ -247,7 +242,6 @@ Other Changes
 
 * SOLR-6115: Cleanup enum/string action types in Overseer, OverseerCollectionProcessor and
   CollectionHandler. (Erick Erickson, shalin)
-
 
 ==================  4.10.0 =================
 
