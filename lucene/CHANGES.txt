@@ -105,6 +105,9 @@ API Changes
   The default has been changed to match that of 4.x.
   (Ryan Ernst, Mike McCandless)
 
+* LUCENE-5965: CorruptIndexException requires a String or DataInput resource.
+  (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary

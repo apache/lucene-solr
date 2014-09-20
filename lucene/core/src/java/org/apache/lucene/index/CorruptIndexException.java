@@ -18,6 +18,9 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Objects;
+
+import org.apache.lucene.store.DataInput;
 
 /**
  * This exception is thrown when Lucene detects
@@ -25,12 +28,22 @@ import java.io.IOException;
  */
 public class CorruptIndexException extends IOException {
   /** Create exception with a message only */
-  public CorruptIndexException(String message) {
-    super(message);
+  public CorruptIndexException(String message, DataInput input) {
+    this(message, input, null);
   }
   
   /** Create exception with message and root cause. */
-  public CorruptIndexException(String message, Throwable cause) {
-    super(message, cause);
+  public CorruptIndexException(String message, DataInput input, Throwable cause) {
+    this(message, Objects.toString(input), cause);
+  }
+  
+  /** Create exception with a message only */
+  public CorruptIndexException(String message, String resourceDescription) {
+    this(message, resourceDescription, null);
+  }
+  
+  /** Create exception with message and root cause. */
+  public CorruptIndexException(String message, String resourceDescription, Throwable cause) {
+    super(message + " (resource=" + resourceDescription + ")", cause);
   }
 }

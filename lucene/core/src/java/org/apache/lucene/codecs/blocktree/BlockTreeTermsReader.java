@@ -116,7 +116,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
                                 ioContext);
       int indexVersion = readIndexHeader(indexIn);
       if (indexVersion != version) {
-        throw new CorruptIndexException("mixmatched version files: " + in + "=" + version + "," + indexIn + "=" + indexVersion);
+        throw new CorruptIndexException("mixmatched version files: " + in + "=" + version + "," + indexIn + "=" + indexVersion, indexIn);
       }
       
       // verify
@@ -142,32 +142,32 @@ public final class BlockTreeTermsReader extends FieldsProducer {
 
       final int numFields = in.readVInt();
       if (numFields < 0) {
-        throw new CorruptIndexException("invalid numFields: " + numFields + " (resource=" + in + ")");
+        throw new CorruptIndexException("invalid numFields: " + numFields, in);
       }
 
       for(int i=0;i<numFields;i++) {
         final int field = in.readVInt();
         final long numTerms = in.readVLong();
         if (numTerms <= 0) {
-          throw new CorruptIndexException("Illegal numTerms for field number: " + field + " (resource=" + in + ")");
+          throw new CorruptIndexException("Illegal numTerms for field number: " + field, in);
         }
         final int numBytes = in.readVInt();
         if (numBytes < 0) {
-          throw new CorruptIndexException("invalid rootCode for field number: " + field + ", numBytes=" + numBytes + " (resource=" + in + ")");
+          throw new CorruptIndexException("invalid rootCode for field number: " + field + ", numBytes=" + numBytes, in);
         }
         final BytesRef rootCode = new BytesRef(new byte[numBytes]);
         in.readBytes(rootCode.bytes, 0, numBytes);
         rootCode.length = numBytes;
         final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
         if (fieldInfo == null) {
-          throw new CorruptIndexException("invalid field number: " + field + ", resource=" + in + ")");
+          throw new CorruptIndexException("invalid field number: " + field, in);
         }
         final long sumTotalTermFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY ? -1 : in.readVLong();
         final long sumDocFreq = in.readVLong();
         final int docCount = in.readVInt();
         final int longsSize = version >= BlockTreeTermsWriter.VERSION_META_ARRAY ? in.readVInt() : 0;
         if (longsSize < 0) {
-          throw new CorruptIndexException("invalid longsSize for field: " + fieldInfo.name + ", longsSize=" + longsSize + " (resource=" + in + ")");
+          throw new CorruptIndexException("invalid longsSize for field: " + fieldInfo.name + ", longsSize=" + longsSize, in);
         }
         BytesRef minTerm, maxTerm;
         if (version >= BlockTreeTermsWriter.VERSION_MIN_MAX_TERMS) {
@@ -177,20 +177,20 @@ public final class BlockTreeTermsReader extends FieldsProducer {
           minTerm = maxTerm = null;
         }
         if (docCount < 0 || docCount > info.getDocCount()) { // #docs with field must be <= #docs
-          throw new CorruptIndexException("invalid docCount: " + docCount + " maxDoc: " + info.getDocCount() + " (resource=" + in + ")");
+          throw new CorruptIndexException("invalid docCount: " + docCount + " maxDoc: " + info.getDocCount(), in);
         }
         if (sumDocFreq < docCount) {  // #postings must be >= #docs with field
-          throw new CorruptIndexException("invalid sumDocFreq: " + sumDocFreq + " docCount: " + docCount + " (resource=" + in + ")");
+          throw new CorruptIndexException("invalid sumDocFreq: " + sumDocFreq + " docCount: " + docCount, in);
         }
         if (sumTotalTermFreq != -1 && sumTotalTermFreq < sumDocFreq) { // #positions must be >= #postings
-          throw new CorruptIndexException("invalid sumTotalTermFreq: " + sumTotalTermFreq + " sumDocFreq: " + sumDocFreq + " (resource=" + in + ")");
+          throw new CorruptIndexException("invalid sumTotalTermFreq: " + sumTotalTermFreq + " sumDocFreq: " + sumDocFreq, in);
         }
         final long indexStartFP = indexIn.readVLong();
         FieldReader previous = fields.put(fieldInfo.name,       
                                           new FieldReader(this, fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount,
                                                           indexStartFP, longsSize, indexIn, minTerm, maxTerm));
         if (previous != null) {
-          throw new CorruptIndexException("duplicate field: " + fieldInfo.name + " (resource=" + in + ")");
+          throw new CorruptIndexException("duplicate field: " + fieldInfo.name, in);
         }
       }
       indexIn.close();

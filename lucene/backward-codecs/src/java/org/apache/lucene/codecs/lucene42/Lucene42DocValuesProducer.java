@@ -144,7 +144,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
                                                  VERSION_START,
                                                  VERSION_CURRENT);
       if (version != version2) {
-        throw new CorruptIndexException("Format versions mismatch");
+        throw new CorruptIndexException("Format versions mismatch: meta=" + version + ", data=" + version2, data);
       }
       
       if (version >= VERSION_CHECKSUM) {
@@ -172,7 +172,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       if (info == null) {
         // trickier to validate more: because we re-use for norms, because we use multiple entries
         // for "composite" types like sortedset, etc.
-        throw new CorruptIndexException("Invalid field number: " + fieldNumber + " (resource=" + meta + ")");
+        throw new CorruptIndexException("Invalid field number: " + fieldNumber, meta);
       }
       int fieldType = meta.readByte();
       if (fieldType == NUMBER) {
@@ -186,7 +186,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
           case UNCOMPRESSED:
                break;
           default:
-               throw new CorruptIndexException("Unknown format: " + entry.format + ", input=" + meta);
+               throw new CorruptIndexException("Unknown format: " + entry.format, meta);
         }
         if (entry.format != UNCOMPRESSED) {
           entry.packedIntsVersion = meta.readVInt();
@@ -209,7 +209,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
         entry.numOrds = meta.readVLong();
         fsts.put(info.name, entry);
       } else {
-        throw new CorruptIndexException("invalid entry type: " + fieldType + ", input=" + meta);
+        throw new CorruptIndexException("invalid entry type: " + fieldType, meta);
       }
       fieldNumber = meta.readVInt();
     }
@@ -260,7 +260,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       case TABLE_COMPRESSED:
         int size = data.readVInt();
         if (size > 256) {
-          throw new CorruptIndexException("TABLE_COMPRESSED cannot have more than 256 distinct values, input=" + data);
+          throw new CorruptIndexException("TABLE_COMPRESSED cannot have more than 256 distinct values, got=" + size, data);
         }
         final long decode[] = new long[size];
         for (int i = 0; i < decode.length; i++) {

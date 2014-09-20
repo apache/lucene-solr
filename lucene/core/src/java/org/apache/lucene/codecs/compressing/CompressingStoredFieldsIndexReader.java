@@ -22,7 +22,6 @@ import static org.apache.lucene.util.BitUtil.zigZagDecode;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.index.CorruptIndexException;
@@ -85,7 +84,7 @@ public final class CompressingStoredFieldsIndexReader implements Cloneable, Acco
       avgChunkDocs[blockCount] = fieldsIndexIn.readVInt();
       final int bitsPerDocBase = fieldsIndexIn.readVInt();
       if (bitsPerDocBase > 32) {
-        throw new CorruptIndexException("Corrupted bitsPerDocBase (resource=" + fieldsIndexIn + ")");
+        throw new CorruptIndexException("Corrupted bitsPerDocBase: " + bitsPerDocBase, fieldsIndexIn);
       }
       docBasesDeltas[blockCount] = PackedInts.getReaderNoHeader(fieldsIndexIn, PackedInts.Format.PACKED, packedIntsVersion, numChunks, bitsPerDocBase);
 
@@ -94,7 +93,7 @@ public final class CompressingStoredFieldsIndexReader implements Cloneable, Acco
       avgChunkSizes[blockCount] = fieldsIndexIn.readVLong();
       final int bitsPerStartPointer = fieldsIndexIn.readVInt();
       if (bitsPerStartPointer > 64) {
-        throw new CorruptIndexException("Corrupted bitsPerStartPointer (resource=" + fieldsIndexIn + ")");
+        throw new CorruptIndexException("Corrupted bitsPerStartPointer: " + bitsPerStartPointer, fieldsIndexIn);
       }
       startPointersDeltas[blockCount] = PackedInts.getReaderNoHeader(fieldsIndexIn, PackedInts.Format.PACKED, packedIntsVersion, numChunks, bitsPerStartPointer);
 

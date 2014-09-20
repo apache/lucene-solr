@@ -29,7 +29,6 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.util.IOUtils;
 
 /**
  * Lucene 4.6 FieldInfos writer.
@@ -46,9 +45,7 @@ final class Lucene46FieldInfosWriter extends FieldInfosWriter {
   @Override
   public void write(Directory directory, String segmentName, String segmentSuffix, FieldInfos infos, IOContext context) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(segmentName, segmentSuffix, Lucene46FieldInfosFormat.EXTENSION);
-    IndexOutput output = directory.createOutput(fileName, context);
-    boolean success = false;
-    try {
+    try (IndexOutput output = directory.createOutput(fileName, context)) {
       CodecUtil.writeHeader(output, Lucene46FieldInfosFormat.CODEC_NAME, Lucene46FieldInfosFormat.FORMAT_CURRENT);
       output.writeVInt(infos.size());
       for (FieldInfo fi : infos) {
@@ -82,13 +79,6 @@ final class Lucene46FieldInfosWriter extends FieldInfosWriter {
         output.writeStringStringMap(fi.attributes());
       }
       CodecUtil.writeFooter(output);
-      success = true;
-    } finally {
-      if (success) {
-        output.close();
-      } else {
-        IOUtils.closeWhileHandlingException(output);
-      }
     }
   }
   

@@ -145,7 +145,7 @@ public class BlockTermsReader extends FieldsProducer {
 
       final int numFields = in.readVInt();
       if (numFields < 0) {
-        throw new CorruptIndexException("invalid number of fields: " + numFields + " (resource=" + in + ")");
+        throw new CorruptIndexException("invalid number of fields: " + numFields, in);
       }
       for(int i=0;i<numFields;i++) {
         final int field = in.readVInt();
@@ -158,17 +158,17 @@ public class BlockTermsReader extends FieldsProducer {
         final int docCount = in.readVInt();
         final int longsSize = version >= BlockTermsWriter.VERSION_META_ARRAY ? in.readVInt() : 0;
         if (docCount < 0 || docCount > info.getDocCount()) { // #docs with field must be <= #docs
-          throw new CorruptIndexException("invalid docCount: " + docCount + " maxDoc: " + info.getDocCount() + " (resource=" + in + ")");
+          throw new CorruptIndexException("invalid docCount: " + docCount + " maxDoc: " + info.getDocCount(), in);
         }
         if (sumDocFreq < docCount) {  // #postings must be >= #docs with field
-          throw new CorruptIndexException("invalid sumDocFreq: " + sumDocFreq + " docCount: " + docCount + " (resource=" + in + ")");
+          throw new CorruptIndexException("invalid sumDocFreq: " + sumDocFreq + " docCount: " + docCount, in);
         }
         if (sumTotalTermFreq != -1 && sumTotalTermFreq < sumDocFreq) { // #positions must be >= #postings
-          throw new CorruptIndexException("invalid sumTotalTermFreq: " + sumTotalTermFreq + " sumDocFreq: " + sumDocFreq + " (resource=" + in + ")");
+          throw new CorruptIndexException("invalid sumTotalTermFreq: " + sumTotalTermFreq + " sumDocFreq: " + sumDocFreq, in);
         }
         FieldReader previous = fields.put(fieldInfo.name, new FieldReader(fieldInfo, numTerms, termsStartPointer, sumTotalTermFreq, sumDocFreq, docCount, longsSize));
         if (previous != null) {
-          throw new CorruptIndexException("duplicate fields: " + fieldInfo.name + " (resource=" + in + ")");
+          throw new CorruptIndexException("duplicate fields: " + fieldInfo.name, in);
         }
       }
       success = true;

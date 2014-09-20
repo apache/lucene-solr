@@ -217,7 +217,7 @@ final class IndexFileDeleter implements Closeable {
       try {
         sis.read(directory, currentSegmentsFile);
       } catch (IOException e) {
-        throw new CorruptIndexException("failed to locate current segments_N file \"" + currentSegmentsFile + "\"");
+        throw new CorruptIndexException("unable to read current segments_N file", currentSegmentsFile, e);
       }
       if (infoStream.isEnabled("IFD")) {
         infoStream.message("IFD", "forced open of current segments file " + segmentInfos.getSegmentsFileName());

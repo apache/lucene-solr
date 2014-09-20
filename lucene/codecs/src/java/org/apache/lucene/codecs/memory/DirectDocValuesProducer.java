@@ -118,7 +118,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
                                                  VERSION_START,
                                                  VERSION_CURRENT);
       if (version != version2) {
-        throw new CorruptIndexException("Format versions mismatch");
+        throw new CorruptIndexException("Format versions mismatch: meta=" + version + ", data=" + version2, data);
       }
       
       // NOTE: data file is too costly to verify checksum against all the bytes on open,
@@ -221,7 +221,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
         SortedNumericEntry entry = readSortedNumericEntry(meta, true);
         sortedNumerics.put(info.name, entry);
       } else {
-        throw new CorruptIndexException("invalid entry type: " + fieldType + ", field= " + info.name + ", input=" + meta);
+        throw new CorruptIndexException("invalid entry type: " + fieldType + ", field= " + info.name, meta);
       }
       fieldNumber = meta.readVInt();
     }

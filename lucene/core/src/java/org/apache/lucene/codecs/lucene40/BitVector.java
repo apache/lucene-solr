@@ -29,7 +29,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BitUtil;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.MutableBits;
 
 /** Optimized implementation of a vector of bits.  This is more-or-less like
@@ -216,8 +215,7 @@ final class BitVector implements Cloneable, MutableBits {
     #BitVector(Directory, String, IOContext)}.  */
   public final void write(Directory d, String name, IOContext context) throws IOException {
     assert !(d instanceof CompoundFileDirectory);
-    IndexOutput output = d.createOutput(name, context);
-    try {
+    try (IndexOutput output = d.createOutput(name, context)) {
       output.writeInt(-2);
       CodecUtil.writeHeader(output, CODEC, VERSION_CURRENT);
       if (isSparse()) { 
@@ -228,8 +226,6 @@ final class BitVector implements Cloneable, MutableBits {
       }
       CodecUtil.writeFooter(output);
       assert verifyCount();
-    } finally {
-      IOUtils.close(output);
     }
   }
 
@@ -330,9 +326,7 @@ final class BitVector implements Cloneable, MutableBits {
     <code>d</code>, as written by the {@link #write} method.
     */
   public BitVector(Directory d, String name, IOContext context) throws IOException {
-    ChecksumIndexInput input = d.openChecksumInput(name, context);
-
-    try {
+    try (ChecksumIndexInput input = d.openChecksumInput(name, context)) {
       final int firstInt = input.readInt();
 
       if (firstInt == -2) {
@@ -363,8 +357,6 @@ final class BitVector implements Cloneable, MutableBits {
         CodecUtil.checkEOF(input);
       }
       assert verifyCount();
-    } finally {
-      input.close();
     }
   }
 

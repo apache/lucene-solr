@@ -34,8 +34,8 @@ public class IndexFormatTooNewException extends CorruptIndexException {
    *
    * @lucene.internal */
   public IndexFormatTooNewException(String resourceDesc, int version, int minVersion, int maxVersion) {
-    super("Format version is not supported (resource: " + resourceDesc + "): "
-      + version + " (needs to be between " + minVersion + " and " + maxVersion + ")");
+    super("Format version is not supported: "
+      + version + " (needs to be between " + minVersion + " and " + maxVersion + ")", resourceDesc);
     assert resourceDesc != null;
   }
 

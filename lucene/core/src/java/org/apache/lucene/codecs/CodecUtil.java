@@ -133,7 +133,7 @@ public final class CodecUtil {
     // Safety to guard against reading a bogus string:
     final int actualHeader = in.readInt();
     if (actualHeader != CODEC_MAGIC) {
-      throw new CorruptIndexException("codec header mismatch: actual header=" + actualHeader + " vs expected header=" + CODEC_MAGIC + " (resource: " + in + ")");
+      throw new CorruptIndexException("codec header mismatch: actual header=" + actualHeader + " vs expected header=" + CODEC_MAGIC, in);
     }
     return checkHeaderNoMagic(in, codec, minVersion, maxVersion);
   }
@@ -145,7 +145,7 @@ public final class CodecUtil {
   public static int checkHeaderNoMagic(DataInput in, String codec, int minVersion, int maxVersion) throws IOException {
     final String actualCodec = in.readString();
     if (!actualCodec.equals(codec)) {
-      throw new CorruptIndexException("codec mismatch: actual codec=" + actualCodec + " vs expected codec=" + codec + " (resource: " + in + ")");
+      throw new CorruptIndexException("codec mismatch: actual codec=" + actualCodec + " vs expected codec=" + codec, in);
     }
 
     final int actualVersion = in.readInt();
@@ -209,11 +209,10 @@ public final class CodecUtil {
     long expectedChecksum = in.readLong();
     if (expectedChecksum != actualChecksum) {
       throw new CorruptIndexException("checksum failed (hardware problem?) : expected=" + Long.toHexString(expectedChecksum) +  
-                                                       " actual=" + Long.toHexString(actualChecksum) +
-                                                       " (resource=" + in + ")");
+                                                       " actual=" + Long.toHexString(actualChecksum), in);
     }
     if (in.getFilePointer() != in.length()) {
-      throw new CorruptIndexException("did not read all bytes from file: read " + in.getFilePointer() + " vs size " + in.length() + " (resource: " + in + ")");
+      throw new CorruptIndexException("did not read all bytes from file: read " + in.getFilePointer() + " vs size " + in.length(), in);
     }
     return actualChecksum;
   }
@@ -232,12 +231,12 @@ public final class CodecUtil {
   private static void validateFooter(IndexInput in) throws IOException {
     final int magic = in.readInt();
     if (magic != FOOTER_MAGIC) {
-      throw new CorruptIndexException("codec footer mismatch: actual footer=" + magic + " vs expected footer=" + FOOTER_MAGIC + " (resource: " + in + ")");
+      throw new CorruptIndexException("codec footer mismatch: actual footer=" + magic + " vs expected footer=" + FOOTER_MAGIC, in);
     }
     
     final int algorithmID = in.readInt();
     if (algorithmID != 0) {
-      throw new CorruptIndexException("codec footer mismatch: unknown algorithmID: " + algorithmID);
+      throw new CorruptIndexException("codec footer mismatch: unknown algorithmID: " + algorithmID, in);
     }
   }
   
@@ -249,7 +248,7 @@ public final class CodecUtil {
   @Deprecated
   public static void checkEOF(IndexInput in) throws IOException {
     if (in.getFilePointer() != in.length()) {
-      throw new CorruptIndexException("did not read all bytes from file: read " + in.getFilePointer() + " vs size " + in.length() + " (resource: " + in + ")");
+      throw new CorruptIndexException("did not read all bytes from file: read " + in.getFilePointer() + " vs size " + in.length(), in);
     }
   }
   
