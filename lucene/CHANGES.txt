@@ -17,9 +17,23 @@ API Changes
   (Nikola Tanković, Uwe Schindler, Chris Male, Mike McCandless,
   Robert Muir)
 
-======================= Lucene 5.0.0 ======================
+======================= Lucene 5.0.0 =======================
 
 New Features
+
+* LUCENE-5945: All file handling converted to NIO.2 apis. (Robert Muir)
+
+* LUCENE-5946: SimpleFSDirectory now uses Files.newByteChannel, for 
+  portability with custom FileSystemProviders. If you want the old
+  non-interruptible behavior of RandomAccessFile, use RAFDirectory
+  in the misc/ module. (Uwe Schindler, Robert Muir)
+
+* SOLR-3359: Added analyzer attribute/property to SynonymFilterFactory.
+  (Ryo Onodera via Koji Sekiguchi)
+
+* LUCENE-5648: Index and search date ranges, particularly multi-valued ones. It's
+  implemented in the spatial module as DateRangePrefixTree used with
+  NumberRangePrefixTreeStrategy. (David Smiley)
 
 * LUCENE-5895: Lucene now stores a unique id per-segment and per-commit to aid
   in accurate replication of index files (Robert Muir, Mike McCandless)
@@ -40,24 +54,71 @@ New Features
 * LUCENE-5906: Use Files.delete everywhere instead of File.delete, so that
   when things go wrong, you get a real exception message why.
   (Uwe Schindler, Robert Muir)
-  
+
 * LUCENE-5933: Added FilterSpans for easier wrapping of Spans instance. (Shai Erera)
 
 * LUCENE-5925: Remove fallback logic from opening commits, instead use
-  Directory.renameFile so that in-progress commits are never visible. 
+  Directory.renameFile so that in-progress commits are never visible.
   (Robert Muir)
 
-* LUCENE-5820: SuggestStopFilter should have a factory. 
+* LUCENE-5820: SuggestStopFilter should have a factory.
   (Varun Thacker via Steve Rowe)
 
 * LUCENE-5949: Add Accountable.getChildResources(). (Robert Muir)
 
-API Changes:
+API Changes
 
 * LUCENE-5900: Deprecated more constructors taking Version in *InfixSuggester and
   ICUCollationKeyAnalyzer, and removed TEST_VERSION_CURRENT from the test framework.
   (Ryan Ernst)
-  
+
+* LUCENE-4535: oal.util.FilterIterator is now an internal API.
+  (Adrien Grand)
+
+* LUCENE-4924: DocIdSetIterator.docID() must now return -1 when the iterator is
+  not positioned. This change affects all classes that inherit from
+  DocIdSetIterator, including DocsEnum and DocsAndPositionsEnum. (Adrien Grand)
+
+* LUCENE-5127: Reduce RAM usage of FixedGapTermsIndex. Remove 
+  IndexWriterConfig.setTermIndexInterval, IndexWriterConfig.setReaderTermsIndexDivisor,
+  and termsIndexDivisor from StandardDirectoryReader. These options have been no-ops
+  with the default codec since Lucene 4.0. If you want to configure the interval for
+  this term index, pass it directly in your codec, where it can also be configured
+  per-field. (Robert Muir)
+
+* LUCENE-5388: Remove Reader from Tokenizer's constructor and from
+  Analyzer's createComponents. TokenStreams now always get their input
+  via setReader.  
+  (Benson Margulies via Robert Muir - pull request #16)
+
+* LUCENE-5527: The Collector API has been refactored to use a dedicated Collector
+  per leaf. (Shikhar Bhushan, Adrien Grand)
+
+* LUCENE-4246: IndexWriter.close now always closes, even if it throws
+  an exception.  The new IndexWriterConfig.setCommitOnClose (default
+  true) determines whether close() should commit before closing.
+
+* LUCENE-5608, LUCENE-5565: Refactor SpatialPrefixTree/Cell API. Doesn't use Strings
+  as tokens anymore, and now iterates cells on-demand during indexing instead of
+  building a collection.  RPT now has more setters. (David Smiley)
+
+* LUCENE-5666: Change uninverted access (sorting, faceting, grouping, etc)
+  to use the DocValues API instead of FieldCache. For FieldCache functionality,
+  use UninvertingReader in lucene/misc (or implement your own FilterReader).
+  UninvertingReader is more efficient: supports multi-valued numeric fields,
+  detects when a multi-valued field is single-valued, reuses caches
+  of compatible types (e.g. SORTED also supports BINARY and SORTED_SET access
+  without insanity).  "Insanity" is no longer possible unless you explicitly want it. 
+  Rename FieldCache* and DocTermOrds* classes in the search package to DocValues*. 
+  Move SortedSetSortField to core and add SortedSetFieldSource to queries/, which
+  takes the same selectors. Add helper methods to DocValues.java that are better 
+  suited for search code (never return null, etc).  (Mike McCandless, Robert Muir)
+
+* LUCENE-5871: Remove Version from IndexWriterConfig. Use
+  IndexWriterConfig.setCommitOnClose to change the behavior of IndexWriter.close().
+  The default has been changed to match that of 4.x.
+  (Ryan Ernst, Mike McCandless)
+
 * LUCENE-5965: CorruptIndexException requires a String or DataInput resource.
   (Robert Muir)
 
@@ -92,10 +153,15 @@ Bug Fixes
 * LUCENE-5934: Fix backwards compatibility for 4.0 indexes.
   (Ian Lea, Uwe Schindler, Robert Muir, Ryan Ernst)
 
-* LUCENE-5958: Don't let exceptions during checkpoint corrupt the index. 
+* LUCENE-5958: Don't let exceptions during checkpoint corrupt the index.
   Refactor existing OOM handling too, so you don't need to handle OOM special
   for every IndexWriter method: instead such disasters will cause IW to close itself
   defensively. (Robert Muir, Mike McCandless)
+
+Documentation
+
+* LUCENE-5392: Add/improve analysis package documentation to reflect
+  analysis API changes.  (Benson Margulies via Robert Muir - pull request #17)
 
 Tests
 
@@ -126,6 +192,16 @@ Build
   optionally also runs on Java 8.  (Ryan Ernst, Uwe Schindler)
 
 * LUCENE-5902: Add bumpVersion.py script to manage version increase after release branch is cut.
+
+Other
+
+* LUCENE-5563: Removed sep layout: which has fallen behind on features and doesn't
+  perform as well as other options.  (Robert Muir)
+
+* LUCENE-5858: Moved compatibility codecs to 'lucene-backward-codecs.jar'. 
+  (Adrien Grand, Robert Muir)
+
+* LUCENE-5915: Remove Pulsing postings format. (Robert Muir)
 
 ======================= Lucene 4.10.0 ======================
 
