@@ -71,7 +71,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
       // Read directory
       final int numFields = in.readVInt();
       if (numFields < 0) {
-        throw new CorruptIndexException("invalid numFields: " + numFields + " (resource=" + in + ")");
+        throw new CorruptIndexException("invalid numFields: " + numFields, in);
       }
 
       for(int i=0;i<numFields;i++) {
@@ -80,7 +80,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
         final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
         FieldIndexData previous = fields.put(fieldInfo.name, new FieldIndexData(in, fieldInfo, indexStart));
         if (previous != null) {
-          throw new CorruptIndexException("duplicate field: " + fieldInfo.name + " (resource=" + in + ")");
+          throw new CorruptIndexException("duplicate field: " + fieldInfo.name, in);
         }
       }
       success = true;

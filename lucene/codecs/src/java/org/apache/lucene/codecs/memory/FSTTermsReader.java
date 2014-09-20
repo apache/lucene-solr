@@ -129,18 +129,18 @@ public class FSTTermsReader extends FieldsProducer {
   private void checkFieldSummary(SegmentInfo info, IndexInput in, TermsReader field, TermsReader previous) throws IOException {
     // #docs with field must be <= #docs
     if (field.docCount < 0 || field.docCount > info.getDocCount()) {
-      throw new CorruptIndexException("invalid docCount: " + field.docCount + " maxDoc: " + info.getDocCount() + " (resource=" + in + ")");
+      throw new CorruptIndexException("invalid docCount: " + field.docCount + " maxDoc: " + info.getDocCount(), in);
     }
     // #postings must be >= #docs with field
     if (field.sumDocFreq < field.docCount) {
-      throw new CorruptIndexException("invalid sumDocFreq: " + field.sumDocFreq + " docCount: " + field.docCount + " (resource=" + in + ")");
+      throw new CorruptIndexException("invalid sumDocFreq: " + field.sumDocFreq + " docCount: " + field.docCount, in);
     }
     // #positions must be >= #postings
     if (field.sumTotalTermFreq != -1 && field.sumTotalTermFreq < field.sumDocFreq) {
-      throw new CorruptIndexException("invalid sumTotalTermFreq: " + field.sumTotalTermFreq + " sumDocFreq: " + field.sumDocFreq + " (resource=" + in + ")");
+      throw new CorruptIndexException("invalid sumTotalTermFreq: " + field.sumTotalTermFreq + " sumDocFreq: " + field.sumDocFreq, in);
     }
     if (previous != null) {
-      throw new CorruptIndexException("duplicate fields: " + field.fieldInfo.name + " (resource=" + in + ")");
+      throw new CorruptIndexException("duplicate fields: " + field.fieldInfo.name, in);
     }
   }
 

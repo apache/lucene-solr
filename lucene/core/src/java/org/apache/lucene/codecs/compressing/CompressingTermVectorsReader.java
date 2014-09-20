@@ -131,7 +131,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       final String codecNameDat = formatName + CODEC_SFX_DAT;
       int version2 = CodecUtil.checkHeader(vectorsStream, codecNameDat, VERSION_START, VERSION_CURRENT);
       if (version != version2) {
-        throw new CorruptIndexException("Version mismatch between stored fields index and data: " + version + " != " + version2);
+        throw new CorruptIndexException("Version mismatch between stored fields index and data: " + version + " != " + version2, vectorsStream);
       }
       assert CodecUtil.headerLength(codecNameDat) == vectorsStream.getFilePointer();
       
@@ -220,7 +220,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     final int docBase = vectorsStream.readVInt();
     final int chunkDocs = vectorsStream.readVInt();
     if (doc < docBase || doc >= docBase + chunkDocs || docBase + chunkDocs > numDocs) {
-      throw new CorruptIndexException("docBase=" + docBase + ",chunkDocs=" + chunkDocs + ",doc=" + doc + " (resource=" + vectorsStream + ")");
+      throw new CorruptIndexException("docBase=" + docBase + ",chunkDocs=" + chunkDocs + ",doc=" + doc, vectorsStream);
     }
 
     final int skip; // number of fields to skip

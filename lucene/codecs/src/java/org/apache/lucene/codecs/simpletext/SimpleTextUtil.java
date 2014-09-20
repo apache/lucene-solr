@@ -87,14 +87,14 @@ class SimpleTextUtil {
     String expectedChecksum = String.format(Locale.ROOT, "%020d", input.getChecksum());
     SimpleTextUtil.readLine(input, scratch);
     if (StringHelper.startsWith(scratch.get(), CHECKSUM) == false) {
-      throw new CorruptIndexException("SimpleText failure: expected checksum line but got " + scratch.get().utf8ToString() + " (resource=" + input + ")");
+      throw new CorruptIndexException("SimpleText failure: expected checksum line but got " + scratch.get().utf8ToString(), input);
     }
     String actualChecksum = new BytesRef(scratch.bytes(), CHECKSUM.length, scratch.length() - CHECKSUM.length).utf8ToString();
     if (!expectedChecksum.equals(actualChecksum)) {
-      throw new CorruptIndexException("SimpleText checksum failure: " + actualChecksum + " != " + expectedChecksum + " (resource=" + input + ")");
+      throw new CorruptIndexException("SimpleText checksum failure: " + actualChecksum + " != " + expectedChecksum, input);
     }
     if (input.length() != input.getFilePointer()) {
-      throw new CorruptIndexException("Unexpected stuff at the end of file, please be careful with your text editor! (resource=" + input + ")");
+      throw new CorruptIndexException("Unexpected stuff at the end of file, please be careful with your text editor!", input);
     }
   }
 }

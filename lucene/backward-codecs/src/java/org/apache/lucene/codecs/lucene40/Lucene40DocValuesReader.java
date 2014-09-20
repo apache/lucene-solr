@@ -159,7 +159,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
         }
       };
     } else {
-      throw new CorruptIndexException("invalid VAR_INTS header byte: " + header + " (resource=" + input + ")");
+      throw new CorruptIndexException("invalid VAR_INTS header byte: " + header, input);
     }
   }
 
@@ -169,7 +169,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
                                  Lucene40DocValuesFormat.INTS_VERSION_CURRENT);
     int valueSize = input.readInt();
     if (valueSize != 1) {
-      throw new CorruptIndexException("invalid valueSize: " + valueSize);
+      throw new CorruptIndexException("invalid valueSize: " + valueSize, input);
     }
     int maxDoc = state.segmentInfo.getDocCount();
     final byte values[] = new byte[maxDoc];
@@ -191,7 +191,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
                                  Lucene40DocValuesFormat.INTS_VERSION_CURRENT);
     int valueSize = input.readInt();
     if (valueSize != 2) {
-      throw new CorruptIndexException("invalid valueSize: " + valueSize);
+      throw new CorruptIndexException("invalid valueSize: " + valueSize, input);
     }
     int maxDoc = state.segmentInfo.getDocCount();
     final short values[] = new short[maxDoc];
@@ -215,7 +215,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
                                  Lucene40DocValuesFormat.INTS_VERSION_CURRENT);
     int valueSize = input.readInt();
     if (valueSize != 4) {
-      throw new CorruptIndexException("invalid valueSize: " + valueSize);
+      throw new CorruptIndexException("invalid valueSize: " + valueSize, input);
     }
     int maxDoc = state.segmentInfo.getDocCount();
     final int values[] = new int[maxDoc];
@@ -239,7 +239,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
                                  Lucene40DocValuesFormat.INTS_VERSION_CURRENT);
     int valueSize = input.readInt();
     if (valueSize != 8) {
-      throw new CorruptIndexException("invalid valueSize: " + valueSize);
+      throw new CorruptIndexException("invalid valueSize: " + valueSize, input);
     }
     int maxDoc = state.segmentInfo.getDocCount();
     final long values[] = new long[maxDoc];
@@ -263,7 +263,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
                                  Lucene40DocValuesFormat.FLOATS_VERSION_CURRENT);
     int valueSize = input.readInt();
     if (valueSize != 4) {
-      throw new CorruptIndexException("invalid valueSize: " + valueSize);
+      throw new CorruptIndexException("invalid valueSize: " + valueSize, input);
     }
     int maxDoc = state.segmentInfo.getDocCount();
     final int values[] = new int[maxDoc];
@@ -287,7 +287,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
                                  Lucene40DocValuesFormat.FLOATS_VERSION_CURRENT);
     int valueSize = input.readInt();
     if (valueSize != 8) {
-      throw new CorruptIndexException("invalid valueSize: " + valueSize);
+      throw new CorruptIndexException("invalid valueSize: " + valueSize, input);
     }
     int maxDoc = state.segmentInfo.getDocCount();
     final long values[] = new long[maxDoc];

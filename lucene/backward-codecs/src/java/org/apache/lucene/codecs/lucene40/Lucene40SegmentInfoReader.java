@@ -58,7 +58,7 @@ public class Lucene40SegmentInfoReader extends SegmentInfoReader {
       final Version version = Version.parse(input.readString());
       final int docCount = input.readInt();
       if (docCount < 0) {
-        throw new CorruptIndexException("invalid docCount: " + docCount + " (resource=" + input + ")");
+        throw new CorruptIndexException("invalid docCount: " + docCount, input);
       }
       final boolean isCompoundFile = input.readByte() == SegmentInfo.YES;
       final Map<String,String> diagnostics = input.readStringStringMap();

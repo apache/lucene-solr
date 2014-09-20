@@ -92,7 +92,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       
       indexInterval = in.readVInt();
       if (indexInterval < 1) {
-        throw new CorruptIndexException("invalid indexInterval: " + indexInterval + " (resource=" + in + ")");
+        throw new CorruptIndexException("invalid indexInterval: " + indexInterval, in);
       }
       packedIntsVersion = in.readVInt();
       blocksize = in.readVInt();
@@ -102,26 +102,26 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       // Read directory
       final int numFields = in.readVInt();     
       if (numFields < 0) {
-        throw new CorruptIndexException("invalid numFields: " + numFields + " (resource=" + in + ")");
+        throw new CorruptIndexException("invalid numFields: " + numFields, in);
       }
       //System.out.println("FGR: init seg=" + segment + " div=" + indexDivisor + " nF=" + numFields);
       for(int i=0;i<numFields;i++) {
         final int field = in.readVInt();
         final long numIndexTerms = in.readVInt(); // TODO: change this to a vLong if we fix writer to support > 2B index terms
         if (numIndexTerms < 0) {
-          throw new CorruptIndexException("invalid numIndexTerms: " + numIndexTerms + " (resource=" + in + ")");
+          throw new CorruptIndexException("invalid numIndexTerms: " + numIndexTerms, in);
         }
         final long termsStart = in.readVLong();
         final long indexStart = in.readVLong();
         final long packedIndexStart = in.readVLong();
         final long packedOffsetsStart = in.readVLong();
         if (packedIndexStart < indexStart) {
-          throw new CorruptIndexException("invalid packedIndexStart: " + packedIndexStart + " indexStart: " + indexStart + "numIndexTerms: " + numIndexTerms + " (resource=" + in + ")");
+          throw new CorruptIndexException("invalid packedIndexStart: " + packedIndexStart + " indexStart: " + indexStart + "numIndexTerms: " + numIndexTerms, in);
         }
         final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
         FieldIndexData previous = fields.put(fieldInfo.name, new FieldIndexData(in, termBytes, indexStart, termsStart, packedIndexStart, packedOffsetsStart, numIndexTerms));
         if (previous != null) {
-          throw new CorruptIndexException("duplicate field: " + fieldInfo.name + " (resource=" + in + ")");
+          throw new CorruptIndexException("duplicate field: " + fieldInfo.name, in);
         }
       }
       success = true;

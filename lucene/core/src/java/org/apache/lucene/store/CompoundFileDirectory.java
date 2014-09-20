@@ -147,7 +147,7 @@ public final class CompoundFileDirectory extends BaseDirectory {
         final String id = entriesStream.readString();
         FileEntry previous = mapping.put(id, fileEntry);
         if (previous != null) {
-          throw new CorruptIndexException("Duplicate cfs entry id=" + id + " in CFS: " + entriesStream);
+          throw new CorruptIndexException("Duplicate cfs entry id=" + id + " in CFS ", entriesStream);
         }
         fileEntry.offset = entriesStream.readLong();
         fileEntry.length = entriesStream.readLong();

@@ -90,10 +90,10 @@ public class Lucene40LiveDocsFormat extends LiveDocsFormat {
     String filename = IndexFileNames.fileNameFromGeneration(info.info.name, DELETES_EXTENSION, info.getDelGen());
     final BitVector liveDocs = new BitVector(dir, filename, context);
     if (liveDocs.length() != info.info.getDocCount()) {
-      throw new CorruptIndexException("liveDocs.length()=" + liveDocs.length() + "info.docCount=" + info.info.getDocCount() + " (filename=" + filename + ")");
+      throw new CorruptIndexException("liveDocs.length()=" + liveDocs.length() + "info.docCount=" + info.info.getDocCount(), filename);
     }
     if (liveDocs.count() != info.info.getDocCount() - info.getDelCount()) {
-      throw new CorruptIndexException("liveDocs.count()=" + liveDocs.count() + " info.docCount=" + info.info.getDocCount() + " info.getDelCount()=" + info.getDelCount() + " (filename=" + filename + ")");
+      throw new CorruptIndexException("liveDocs.count()=" + liveDocs.count() + " info.docCount=" + info.info.getDocCount() + " info.getDelCount()=" + info.getDelCount(), filename);
     }
     return liveDocs;
   }

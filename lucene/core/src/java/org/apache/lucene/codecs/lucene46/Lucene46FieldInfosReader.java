@@ -33,7 +33,6 @@ import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.IOUtils;
 
 /**
  * Lucene 4.6 FieldInfos reader.
@@ -50,10 +49,7 @@ final class Lucene46FieldInfosReader extends FieldInfosReader {
   @Override
   public FieldInfos read(Directory directory, String segmentName, String segmentSuffix, IOContext context) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(segmentName, segmentSuffix, Lucene46FieldInfosFormat.EXTENSION);
-    ChecksumIndexInput input = directory.openChecksumInput(fileName, context);
-    
-    boolean success = false;
-    try {
+    try (ChecksumIndexInput input = directory.openChecksumInput(fileName, context)) {
       int codecVersion = CodecUtil.checkHeader(input, Lucene46FieldInfosFormat.CODEC_NAME, 
                                                       Lucene46FieldInfosFormat.FORMAT_START, 
                                                       Lucene46FieldInfosFormat.FORMAT_CURRENT);
@@ -65,7 +61,7 @@ final class Lucene46FieldInfosReader extends FieldInfosReader {
         String name = input.readString();
         final int fieldNumber = input.readVInt();
         if (fieldNumber < 0) {
-          throw new CorruptIndexException("invalid field number for field: " + name + ", fieldNumber=" + fieldNumber + " (resource=" + input + ")");
+          throw new CorruptIndexException("invalid field number for field: " + name + ", fieldNumber=" + fieldNumber, input);
         }
         byte bits = input.readByte();
         boolean isIndexed = (bits & Lucene46FieldInfosFormat.IS_INDEXED) != 0;
@@ -100,15 +96,7 @@ final class Lucene46FieldInfosReader extends FieldInfosReader {
       } else {
         CodecUtil.checkEOF(input);
       }
-      FieldInfos fieldInfos = new FieldInfos(infos);
-      success = true;
-      return fieldInfos;
-    } finally {
-      if (success) {
-        input.close();
-      } else {
-        IOUtils.closeWhileHandlingException(input);
-      }
+      return new FieldInfos(infos);
     }
   }
   
@@ -126,7 +114,7 @@ final class Lucene46FieldInfosReader extends FieldInfosReader {
     } else if (b == 5) {
       return DocValuesType.SORTED_NUMERIC;
     } else {
-      throw new CorruptIndexException("invalid docvalues byte: " + b + " (resource=" + input + ")");
+      throw new CorruptIndexException("invalid docvalues byte: " + b, input);
     }
   }
 }

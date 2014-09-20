@@ -135,26 +135,26 @@ class TaxonomyIndexArrays extends ParallelTaxonomyArrays {
 
     // shouldn't really happen, if it does, something's wrong
     if (positions == null || positions.advance(first) == DocIdSetIterator.NO_MORE_DOCS) {
-      throw new CorruptIndexException("Missing parent data for category " + first);
+      throw new CorruptIndexException("Missing parent data for category " + first, reader.toString());
     }
     
     int num = reader.maxDoc();
     for (int i = first; i < num; i++) {
       if (positions.docID() == i) {
         if (positions.freq() == 0) { // shouldn't happen
-          throw new CorruptIndexException("Missing parent data for category " + i);
+          throw new CorruptIndexException("Missing parent data for category " + i, reader.toString());
         }
         
         parents[i] = positions.nextPosition();
         
         if (positions.nextDoc() == DocIdSetIterator.NO_MORE_DOCS) {
           if (i + 1 < num) {
-            throw new CorruptIndexException("Missing parent data for category "+ (i + 1));
+            throw new CorruptIndexException("Missing parent data for category "+ (i + 1), reader.toString());
           }
           break;
         }
       } else { // this shouldn't happen
-        throw new CorruptIndexException("Missing parent data for category " + i);
+        throw new CorruptIndexException("Missing parent data for category " + i, reader.toString());
       }
     }
   }

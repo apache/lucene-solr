@@ -125,10 +125,10 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
       assert HEADER_LENGTH_DOCS == tvd.getFilePointer();
       assert HEADER_LENGTH_FIELDS == tvf.getFilePointer();
       if (tvxVersion != tvdVersion) {
-        throw new CorruptIndexException("version mismatch: tvx=" + tvxVersion + " != tvd=" + tvdVersion + " (resource=" + tvd + ")");
+        throw new CorruptIndexException("version mismatch: tvx=" + tvxVersion + " != tvd=" + tvdVersion, tvd);
       }
       if (tvxVersion != tvfVersion) {
-        throw new CorruptIndexException("version mismatch: tvx=" + tvxVersion + " != tvf=" + tvfVersion + " (resource=" + tvf + ")");
+        throw new CorruptIndexException("version mismatch: tvx=" + tvxVersion + " != tvf=" + tvfVersion, tvf);
       }
 
       numTotalDocs = (int) (tvx.length()-HEADER_LENGTH_INDEX >> 4);
