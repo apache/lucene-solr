@@ -35,7 +35,6 @@ public final class TestRateLimiter extends LuceneTestCase {
 
   public void testPause() {
     SimpleRateLimiter limiter = new SimpleRateLimiter(10); // 10 MB / Sec
-    limiter.pause(2);//init
     long pause = 0;
     for (int i = 0; i < 3; i++) {
       pause += limiter.pause(4 * 1024 * 1024); // fire up 3 * 4 MB 

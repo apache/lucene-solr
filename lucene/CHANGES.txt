@@ -163,6 +163,9 @@ Bug Fixes
   to enforce here); use simple string tokenizer.  (Ryan Ernst, Uwe Schindler,
   Robert Muir, Mike McCandless)
 
+* LUCENE-5948: RateLimiter now fully inits itself on init.  (Varun
+  Thacker via Mike McCandless)
+
 Documentation
 
 * LUCENE-5392: Add/improve analysis package documentation to reflect
