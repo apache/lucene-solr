@@ -158,6 +158,11 @@ Bug Fixes
   for every IndexWriter method: instead such disasters will cause IW to close itself
   defensively. (Robert Muir, Mike McCandless)
 
+* LUCENE-5952: Improve error messages when version cannot be parsed;
+  don't check for too old or too new major version (it's too low level
+  to enforce here); use simple string tokenizer.  (Ryan Ernst, Uwe Schindler,
+  Robert Muir, Mike McCandless)
+
 Documentation
 
 * LUCENE-5392: Add/improve analysis package documentation to reflect
