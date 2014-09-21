@@ -703,7 +703,11 @@ public class CloudSolrServer extends SolrServer {
 
       // if we experienced a communication error, it's worth checking the state
       // with ZK just to make sure the node we're trying to hit is still part of the collection
-      if (retryCount < MAX_STALE_RETRIES && !stateWasStale && !requestedCollections.isEmpty() && wasCommError) {
+      if (retryCount < MAX_STALE_RETRIES &&
+          !stateWasStale &&
+          requestedCollections != null &&
+          !requestedCollections.isEmpty() &&
+          wasCommError) {
         for (DocCollection ext : requestedCollections) {
           DocCollection latestStateFromZk = getDocCollection(zkStateReader.getClusterState(), ext.getName());
           if (latestStateFromZk.getZNodeVersion() != ext.getZNodeVersion()) {
