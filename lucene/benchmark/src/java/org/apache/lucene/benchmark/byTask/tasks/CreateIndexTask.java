@@ -43,7 +43,6 @@ import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.NoDeletionPolicy;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.NoMergeScheduler;
-import org.apache.lucene.util.Version;
 
 /**
  * Create an index. <br>
