@@ -719,7 +719,9 @@ public class CloudSolrServer extends SolrServer {
         }
       }
 
-      requestedCollections.clear(); // done with this
+      if (requestedCollections != null) {
+        requestedCollections.clear(); // done with this
+      }
 
       // if the state was stale, then we retry the request once with new state pulled from Zk
       if (stateWasStale) {
