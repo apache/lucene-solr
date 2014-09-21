@@ -43,7 +43,6 @@ import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.NoDeletionPolicy;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.NoMergeScheduler;
-import org.apache.lucene.util.Version;
 
 /**
  * Create an index. <br>
@@ -75,8 +74,6 @@ public class CreateIndexTask extends PerfTask {
   public CreateIndexTask(PerfRunData runData) {
     super(runData);
   }
-
-  
   
   public static IndexDeletionPolicy getIndexDeletionPolicy(Config config) {
     String deletionPolicyName = config.get("deletion.policy", "org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy");
@@ -101,12 +98,6 @@ public class CreateIndexTask extends PerfTask {
   
   public static IndexWriterConfig createWriterConfig(Config config, PerfRunData runData, OpenMode mode, IndexCommit commit) {
     @SuppressWarnings("deprecation")
-    Version version;
-    try {
-      version = Version.parseLeniently(config.get("writer.version", Version.LATEST.toString()));
-    } catch (ParseException pe) {
-      throw new IllegalArgumentException(pe);
-    }
     IndexWriterConfig iwConf = new IndexWriterConfig(runData.getAnalyzer());
     iwConf.setOpenMode(mode);
     IndexDeletionPolicy indexDeletionPolicy = getIndexDeletionPolicy(config);
