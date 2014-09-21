@@ -16,8 +16,7 @@ Bug fixes
 
 * LUCENE-5952: Improve error messages when version cannot be parsed;
   don't check for too old or too new major version (it's too low level
-  to enforce here); use simple string tokenizer to sidestep possible
-  1.8.0_20 JVM bug in String.split.  (Ryan Ernst, Uwe Schindler,
+  to enforce here); use simple string tokenizer.  (Ryan Ernst, Uwe Schindler,
   Robert Muir, Mike McCandless)
 
 * LUCENE-5919: Fix exception handling inside IndexWriter when
