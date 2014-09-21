@@ -135,16 +135,7 @@ def download(name, urlString, tmpDir, quiet=False):
       print('    already done: %.1f MB' % (os.path.getsize(fileName)/1024./1024.))
     return
   try:
-    while True:
-      openSuccessful = False
-      try:
-        fIn = urllib.request.urlopen(urlString)
-        openSuccessful = True
-      finally:
-        if openSuccessful:
-          break
-        print('    Retrying to urlopen %s' % urlString)
-
+    fIn = urllib.request.urlopen(urlString)
     fOut = open(fileName, 'wb')
     success = False
     try:
