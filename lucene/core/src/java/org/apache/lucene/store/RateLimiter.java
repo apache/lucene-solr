@@ -66,6 +66,7 @@ public abstract class RateLimiter {
     /** mbPerSec is the MB/sec max IO rate */
     public SimpleRateLimiter(double mbPerSec) {
       setMbPerSec(mbPerSec);
+      lastNS = System.nanoTime();
     }
 
     /**
