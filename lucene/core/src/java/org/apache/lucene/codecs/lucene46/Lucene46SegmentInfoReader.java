@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene46;
  */
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.Map;
 import java.util.Set;
 
@@ -50,7 +51,13 @@ public class Lucene46SegmentInfoReader extends SegmentInfoReader {
       int codecVersion = CodecUtil.checkHeader(input, Lucene46SegmentInfoFormat.CODEC_NAME,
                                                       Lucene46SegmentInfoFormat.VERSION_START,
                                                       Lucene46SegmentInfoFormat.VERSION_CURRENT);
-      final Version version = Version.parse(input.readString());
+      final Version version;
+      try {
+        version = Version.parse(input.readString());
+      } catch (ParseException pe) {
+        throw new CorruptIndexException("unable to parse version string: " + pe.getMessage(), input, pe);
+      }
+
       final int docCount = input.readInt();
       if (docCount < 0) {
         throw new CorruptIndexException("invalid docCount: " + docCount, input);
