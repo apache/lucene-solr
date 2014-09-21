@@ -29,8 +29,9 @@ if [ -z "$1" ] ; then
 fi
 
 # Resolve redirects, e.g. from URL shortening, e.g. http://s.apache.org/lusolr36rc1
+# Also trim trailing slashes, if any, from the resolved URL.
 RC_URL=`(echo "Location: $1" ; wget -l 1 --spider "$1" 2>&1) \
-        | perl -ne '$url=$1 if (/Location:\s*(\S+)/); END { print "$url" if ($url); }'`
+        | perl -ne '$url=$1 if (/Location:\s*(\S+)/); END { $url =~ s~/+$~~; print $url; }'`
 
 if [ -d lucene ] ; then
     echo "Please remove directory ./lucene/ before running this script."
@@ -39,13 +40,29 @@ elif [ -d solr ] ; then
     echo "Please remove directory ./solr/ before running this script."
     exit 1;
 fi
+
 mkdir lucene
 cd lucene
-wget -r -np -l 0 -nH -erobots=off --cut-dirs=8 \
+
+# -r : recurse
+# -np : "no parents": only download below the given URL
+# -l 0 : infinite recursion (no limit on recursive crawling depth)
+# -nH : "no Hostname" output directory - use only path elements
+# -erobots=off : ignore robots.txt
+# --cut-dirs=5: Don't create output directories for the first 5 path elements, e.g.
+#    /~acct/staging_area/lucene-solr-X.Y.Z-RCM-revNNNNNNN/lucene/maven/org/apache/lucene/...
+#    1     2            3                                4      5     6   7      8      9
+#                                                                     ^- Dirs start here     
+wget -r -np -l 0 -nH -erobots=off --cut-dirs=5 \
      --reject="*.md5,*.sha1,maven-metadata.xml*,index.html*" "${RC_URL}/lucene/maven/"
+
 cd ..
+
 mkdir solr
 cd solr
-wget -r -np -l 0 -nH -erobots=off --cut-dirs=8 \
+
+wget -r -np -l 0 -nH -erobots=off --cut-dirs=5 \
      --reject="*.md5,*.sha1,maven-metadata.xml*,index.html*" "${RC_URL}/solr/maven/"
+
 cd ..
+
