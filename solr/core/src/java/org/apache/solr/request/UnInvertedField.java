@@ -40,6 +40,7 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.FieldFacetStats;
+import org.apache.solr.handler.component.StatsField;
 import org.apache.solr.handler.component.StatsValues;
 import org.apache.solr.handler.component.StatsValuesFactory;
 import org.apache.solr.schema.FieldType;
@@ -467,22 +468,24 @@ public class UnInvertedField extends DocTermOrds {
    *
    * @param searcher The Searcher to use to gather the statistics
    * @param baseDocs The {@link org.apache.solr.search.DocSet} to gather the stats on
-   * @param calcDistinct whether distinct values should be collected and counted
+   * @param statsField the {@link StatsField} param corrisponding to a real {@link SchemaField} to compute stats over
    * @param facet One or more fields to facet on.
    * @return The {@link org.apache.solr.handler.component.StatsValues} collected
    * @throws IOException If there is a low-level I/O error.
    */
-  public StatsValues getStats(SolrIndexSearcher searcher, DocSet baseDocs, boolean calcDistinct, String[] facet) throws IOException {
+  public StatsValues getStats(SolrIndexSearcher searcher, DocSet baseDocs, StatsField statsField, String[] facet) throws IOException {
     //this function is ripped off nearly wholesale from the getCounts function to use
     //for multiValued fields within the StatsComponent.  may be useful to find common
     //functionality between the two and refactor code somewhat
     use.incrementAndGet();
 
-    SchemaField sf = searcher.getSchema().getField(field);
-   // FieldType ft = sf.getType();
+    assert null != statsField.getSchemaField()
+      : "DocValuesStats requires a StatsField using a SchemaField";
 
-    StatsValues allstats = StatsValuesFactory.createStatsValues(sf, calcDistinct);
+    SchemaField sf = statsField.getSchemaField();
+    // FieldType ft = sf.getType();
 
+    StatsValues allstats = StatsValuesFactory.createStatsValues(statsField);
 
     DocSet docs = baseDocs;
     int baseSize = docs.size();
@@ -498,7 +501,7 @@ public class UnInvertedField extends DocTermOrds {
     SortedDocValues si;
     for (String f : facet) {
       SchemaField facet_sf = searcher.getSchema().getField(f);
-      finfo[i] = new FieldFacetStats(searcher, f, sf, facet_sf, calcDistinct);
+      finfo[i] = new FieldFacetStats(searcher, facet_sf, statsField);
       i++;
     }
 

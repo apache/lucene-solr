@@ -27,7 +27,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.queries.function.valuesource.QueryValueSource;
+
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -35,6 +39,7 @@ import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.BeforeClass;
@@ -183,14 +188,71 @@ public class StatsComponentTest extends AbstractSolrTestCase {
                 , kpre + "double[@name='mean'][.='-25.0']"
                 , kpre + "double[@name='stddev'][.='12.909944487358056']"
 
-                );  
-
-        
+                );
 
       }
     }
 
+    // we should be able to compute exact same stats for a field even
+    // when we specify it using the "field()" function, or use other 
+    // identify equivilent functions
+    for (String param : new String[] {
+        // bare
+        "{!key="+key+" ex=key_ex_tag}" + f,
+        "{!key="+key+" ex=key_ex_tag v="+f+"}",
+        // field func
+        "{!lucene key="+key+" ex=key_ex_tag}_val_:\"field("+f+")\"",
+        "{!func key="+key+" ex=key_ex_tag}field("+f+")",
+        "{!type=func key="+key+" ex=key_ex_tag}field("+f+")",
+        "{!type=func key="+key+" ex=key_ex_tag v=field("+f+")}",
+        "{!type=func key="+key+" ex=key_ex_tag v='field("+f+")'}",
+        // identity math functions
+        "{!type=func key="+key+" ex=key_ex_tag v='sum(0,"+f+")'}",
+        "{!type=func key="+key+" ex=key_ex_tag v='product(1,"+f+")'}",
+      }) {
+      
+      assertQ("test statistics over field specified as a function: " + param,
+              // NOTE: baseParams aren't used, we're looking at the function
+              req("q", "*:*", "stats", "true", "stats.calcdistinct", "true",
+                  "fq", "{!tag=key_ex_tag}-id:4", 
+                  "stats.field", param)
+              
+              , kpre + "double[@name='min'][.='-40.0']"
+              , kpre + "double[@name='max'][.='-10.0']"
+              , kpre + "double[@name='sum'][.='-100.0']"
+              , kpre + "long[@name='count'][.='4']"
+              , kpre + "long[@name='missing'][.='0']"
+              , kpre + "long[@name='countDistinct'][.='4']"
+              , "count(" + kpre + "arr[@name='distinctValues']/*)=4"
+              , kpre + "double[@name='sumOfSquares'][.='3000.0']"
+              , kpre + "double[@name='mean'][.='-25.0']"
+              , kpre + "double[@name='stddev'][.='12.909944487358056']"
+              
+              );
+    }
+    
+    // now get stats over a non-trivial function on our (single) field
+    String func = "product(2, " + f + ")";
+    assertQ("test function statistics & key override", 
+            // NOTE: baseParams aren't used, we're looking at the function
+            req("q", "*:*", "stats", "true", "stats.calcdistinct", "true",
+                "fq", "{!tag=key_ex_tag}-id:4", 
+                "stats.field", "{!func key="+key+" ex=key_ex_tag}"+func)
+
+            , kpre + "double[@name='min'][.='-80.0']"
+            , kpre + "double[@name='max'][.='-20.0']"
+            , kpre + "double[@name='sum'][.='-200.0']"
+            , kpre + "long[@name='count'][.='4']"
+            , kpre + "long[@name='missing'][.='0']"
+            , kpre + "long[@name='countDistinct'][.='4']"
+            , "count(" + kpre + "arr[@name='distinctValues']/*)=4"
+            , kpre + "double[@name='sumOfSquares'][.='12000.0']"
+            , kpre + "double[@name='mean'][.='-50.0']" 
+            , kpre + "double[@name='stddev'][.='25.81988897471611']"
+            );
   }
+
+  
 
 
   public void doTestMVFieldStatisticsResult(String f) throws Exception {
@@ -288,6 +350,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
               , "//lst[@name='false']/double[@name='stddev'][.='23.59908190304586']"
               );
     }
+
   }
 
   public void testFieldStatisticsResultsStringField() throws Exception {
@@ -313,6 +376,20 @@ public class StatsComponentTest extends AbstractSolrTestCase {
             "//long[@name='missing'][.='1']",
             "//long[@name='countDistinct'][.='3']",
             "count(//arr[@name='distinctValues']/str)=3");
+
+    // stats over a string function
+    assertQ("strdist func stats",
+            req("q", "*:*",
+                "fq", "-id:4", // SOLR-6540
+                "stats","true",
+                "stats.field","{!func}strdist('string22',active_s,edit)")
+            , "//double[@name='min'][.='0.75']"
+            , "//double[@name='max'][.='0.875']"
+            , "//double[@name='sum'][.='2.375']"
+            , "//long[@name='count'][.='3']"
+            ,"//long[@name='missing'][.='0']" // SOLR-6540 ==> '1'
+            );
+
   }
 
   public void testFieldStatisticsResultsDateField() throws Exception {
@@ -358,6 +435,10 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     assertU(adoc("id", "4", f, "-40"));
     assertU(commit());
 
+    final String fpre = XPRE + "lst[@name='stats_fields']/lst[@name='"+f+"']/";
+    final String key = "key_key";
+    final String kpre = XPRE + "lst[@name='stats_fields']/lst[@name='"+key+"']/";
+
     // status should be the same regardless of baseParams
     for (SolrParams baseParams : baseParamsSet) {
 
@@ -376,6 +457,46 @@ public class StatsComponentTest extends AbstractSolrTestCase {
               , "//double[@name='stddev'][.='15.275252316519467']"
               );
     }
+
+    // we should be able to compute exact same stats for a field even
+    // when we specify it using the "field()" function, or use other 
+    // identify equivilent functions
+    for (String param : new String[] {
+        // bare
+        "{!key="+key+" ex=key_ex_tag}" + f,
+        "{!key="+key+" ex=key_ex_tag v="+f+"}",
+        // field func
+        "{!lucene key="+key+" ex=key_ex_tag}_val_:\"field("+f+")\"",
+        "{!func key="+key+" ex=key_ex_tag}field("+f+")",
+        "{!type=func key="+key+" ex=key_ex_tag}field("+f+")",
+        "{!type=func key="+key+" ex=key_ex_tag v=field("+f+")}",
+        "{!type=func key="+key+" ex=key_ex_tag v='field("+f+")'}",
+
+        // identity math functions don't work as expected due to LUCENE-5961
+        // "{!type=func key="+key+" ex=key_ex_tag v='sum(0,"+f+")'}",
+        // "{!type=func key="+key+" ex=key_ex_tag v='product(1,"+f+")'}",
+      }) {
+      
+      assertQ("test statistics over field specified as a function: " + param,
+              // NOTE: baseParams aren't used, we're looking at the function
+              req("q", "*:*", "stats", "true", "stats.calcdistinct", "true",
+                  "fq", "{!tag=key_ex_tag}-id:4", 
+                  "stats.field", param)
+              
+              , kpre + "double[@name='min'][.='-40.0']"
+              , kpre + "double[@name='max'][.='-10.0']"
+              , kpre + "double[@name='sum'][.='-70.0']"
+              , kpre + "long[@name='count'][.='3']"
+              , kpre + "long[@name='missing'][.='1']"
+              , kpre + "long[@name='countDistinct'][.='3']"
+              , "count(" + kpre + "arr[@name='distinctValues']/*)=3"
+              , kpre + "double[@name='sumOfSquares'][.='2100.0']"
+              , kpre + "double[@name='mean'][.='-23.333333333333332']"
+              , kpre + "double[@name='stddev'][.='15.275252316519467']"
+              
+              );
+    }
+
   }
 
   public void doTestFacetStatisticsResult(String f, SolrParams[] baseParamsSet) throws Exception {
@@ -410,6 +531,54 @@ public class StatsComponentTest extends AbstractSolrTestCase {
 
       assertQ("test value for active_s=false", 
               req(baseParams, "q", "*:*", "stats.calcdistinct", "true", "stats.facet", "active_s")
+              , pre+"/lst[@name='false']/double[@name='min'][.='30.0']"
+              , pre+"/lst[@name='false']/double[@name='max'][.='40.0']"
+              , pre+"/lst[@name='false']/double[@name='sum'][.='70.0']"
+              , pre+"/lst[@name='false']/long[@name='count'][.='2']"
+              , pre+"/lst[@name='false']/long[@name='missing'][.='0']"
+              , pre + "/lst[@name='true']/long[@name='countDistinct'][.='2']"
+              , "count(" + pre + "/lst[@name='true']/arr[@name='distinctValues']/*)=2"
+              , pre+"/lst[@name='false']/double[@name='sumOfSquares'][.='2500.0']"
+              , pre+"/lst[@name='false']/double[@name='mean'][.='35.0']"
+              , pre+"/lst[@name='false']/double[@name='stddev'][.='7.0710678118654755']"
+              );
+    }
+
+    // we should be able to compute exact same stats & stats.facet for a field even
+    // when we specify it using the "field()" function, or use other 
+    // identify equivilent functions
+    for (String param : new String[] {
+        // bare
+        "{!key="+f+" ex=key_ex_tag}" + f,
+        "{!key="+f+" ex=key_ex_tag v="+f+"}",
+        // field func
+        "{!lucene key="+f+" ex=key_ex_tag}_val_:\"field("+f+")\"",
+        "{!func key="+f+" ex=key_ex_tag}field("+f+")",
+        "{!type=func key="+f+" ex=key_ex_tag}field("+f+")",
+        "{!type=func key="+f+" ex=key_ex_tag v=field("+f+")}",
+        "{!type=func key="+f+" ex=key_ex_tag v='field("+f+")'}",
+
+        // identity math functions don't work as expected due to LUCENE-5961
+        // "{!type=func key="+f+" ex=key_ex_tag v='sum(0,"+f+")'}",
+        // "{!type=func key="+f+" ex=key_ex_tag v='product(1,"+f+")'}",
+      }) {
+      assertQ("test statis & stats.facet over field specified as a function: " + param,
+              req("q", "*:*", "stats", "true", "stats.calcdistinct", "true",
+                  "fq", "{!tag=key_ex_tag}-id:4", 
+                  "stats.field", param,
+                  "stats.facet", "active_s", "stats.facet", "other_s")
+              , "*[count("+pre+")=1]"
+              , pre+"/lst[@name='true']/double[@name='min'][.='10.0']"
+              , pre+"/lst[@name='true']/double[@name='max'][.='20.0']"
+              , pre+"/lst[@name='true']/double[@name='sum'][.='30.0']"
+              , pre+"/lst[@name='true']/long[@name='count'][.='2']"
+              , pre+"/lst[@name='true']/long[@name='missing'][.='0']"
+              , pre + "/lst[@name='true']/long[@name='countDistinct'][.='2']"
+              , "count(" + pre + "/lst[@name='true']/arr[@name='distinctValues']/*)=2"
+              , pre+"/lst[@name='true']/double[@name='sumOfSquares'][.='500.0']"
+              , pre+"/lst[@name='true']/double[@name='mean'][.='15.0']"
+              , pre+"/lst[@name='true']/double[@name='stddev'][.='7.0710678118654755']"
+              //
               , pre+"/lst[@name='false']/double[@name='min'][.='30.0']"
               , pre+"/lst[@name='false']/double[@name='max'][.='40.0']"
               , pre+"/lst[@name='false']/double[@name='sum'][.='70.0']"
@@ -463,6 +632,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
               , "//lst[@name='false']/double[@name='stddev'][.='0.0']"
               );
     }
+
   }
 
   public void testFieldStatisticsResultsNumericFieldAlwaysMissing() throws Exception {
@@ -704,6 +874,98 @@ public class StatsComponentTest extends AbstractSolrTestCase {
      }
 
 
+  public void testMiscQueryStats() throws Exception {
+    final String kpre = XPRE + "lst[@name='stats_fields']/lst[@name='k']/";
+
+    assertU(adoc("id", "1", "a_f", "2.3", "b_f", "9.7", "foo_t", "how now brown cow"));
+    assertU(adoc("id", "2", "a_f", "4.5", "b_f", "8.6", "foo_t", "cow cow cow cow"));
+    assertU(adoc("id", "3", "a_f", "5.6", "b_f", "7.5", "foo_t", "red fox"));
+    assertU(adoc("id", "4", "a_f", "6.7", "b_f", "6.3", "foo_t", "red cow"));
+    assertU(commit());
+
+    assertQ("functions over multiple fields",
+            req("q","foo_t:cow", "stats", "true",
+                "stats.field", "{!func key=k}product(a_f,b_f)")
+            
+            , kpre + "double[@name='min'][.='22.309999465942383']"
+            , kpre + "double[@name='max'][.='42.209999084472656']"
+            , kpre + "double[@name='sum'][.='103.21999931335449']"
+            , kpre + "long[@name='count'][.='3']"
+            , kpre + "long[@name='missing'][.='0']"
+            , kpre + "double[@name='sumOfSquares'][.='3777.110157933046']"
+            , kpre + "double[@name='mean'][.='34.40666643778483']"
+            , kpre + "double[@name='stddev'][.='10.622007151430441']"
+            );
+
+    assertQ("functions over a query",
+            req("q","*:*", "stats", "true",
+                "stats.field", "{!lucene key=k}foo_t:cow")
+            // scores are: 1.0, 0.625, 0.5, & "missing"
+            , kpre + "double[@name='min'][.='0.5']"
+            , kpre + "double[@name='max'][.='1.0']"
+            , kpre + "double[@name='sum'][.='2.125']"
+            , kpre + "long[@name='count'][.='3']"
+            , kpre + "long[@name='missing'][.='1']"
+            , kpre + "double[@name='sumOfSquares'][.='1.640625']"
+            , kpre + "double[@name='mean'][.='0.7083333333333334']"
+            , kpre + "double[@name='stddev'][.='0.2602082499332666']"
+            );
+    
+  }
+
+  /**
+   * Whitebox test of {@link StatsField} parsing to ensure expected equivilence 
+   * operations hold up
+   */
+  public void testStatsFieldWhitebox() throws Exception {
+    StatsComponent component = new StatsComponent();
+    List<SearchComponent> components = new ArrayList<>(1);
+    components.add(component);
+    SolrParams common = params("stats", "true", "q", "*:*", "nested","foo_t:cow");
+
+    // all of these should produce the same SchemaField based StatsField
+    for (String param : new String[] { 
+        "foo_i", "{!func}field(\"foo_i\")", "{!lucene}_val_:\"field(foo_i)\""
+      }) {
+      SolrQueryRequest req = req(common);
+      try {
+        ResponseBuilder rb = new ResponseBuilder(req, new SolrQueryResponse(), components);
+        
+        StatsField sf = new StatsField(rb, param);
+        
+        assertNull("value source of: " + param, sf.getValueSource());
+        assertNotNull("schema field of: " + param, sf.getSchemaField());
+
+        assertEquals("field name of: " + param,
+                     "foo_i", sf.getSchemaField().getName());
+      } finally {
+        req.close();
+      }
+    }
+
+    // all of these should produce the same QueryValueSource based StatsField
+    for (String param : new String[] { 
+        "{!lucene}foo_t:cow", "{!func}query($nested)", "{!field f=foo_t}cow", 
+      }) {
+      SolrQueryRequest req = req(common);
+      try {
+        ResponseBuilder rb = new ResponseBuilder(req, new SolrQueryResponse(), components);
+        
+        StatsField sf = new StatsField(rb, param);
+        
+        assertNull("schema field of: " + param, sf.getSchemaField());
+        assertNotNull("value source of: " + param, sf.getValueSource());
+        assertTrue(sf.getValueSource().getClass() + " is vs type of: " + param,
+                   sf.getValueSource() instanceof QueryValueSource);
+        QueryValueSource qvs = (QueryValueSource) sf.getValueSource();
+        assertEquals("query of :" + param,
+                     new TermQuery(new Term("foo_t","cow")),
+                     qvs.getQuery());
+      } finally {
+        req.close();
+      }
+    }
+  }
 
   public void testFieldStatisticsDocValuesAndMultiValuedDouble() throws Exception {
     SolrCore core = h.getCore();

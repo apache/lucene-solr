@@ -36,22 +36,30 @@ import org.apache.solr.schema.*;
 public class StatsValuesFactory {
 
   /**
-   * Creates an instance of StatsValues which supports values from a field of the given FieldType
+   * Creates an instance of StatsValues which supports values from the specified {@link StatsField}
    *
-   * @param sf SchemaField for the field whose statistics will be created by the resulting StatsValues
-   * @return Instance of StatsValues that will create statistics from values from a field of the given type
+   * @param statsField {@link StatsField} whose statistics will be created by the resulting {@link StatsValues}
+   * @return Instance of {@link StatsValues} that will create statistics from values from the specified {@link StatsField}
    */
-  public static StatsValues createStatsValues(SchemaField sf, boolean calcDistinct) {
-    // TODO: allow for custom field types
-    FieldType fieldType = sf.getType();
+  public static StatsValues createStatsValues(StatsField statsField) {
+
+    final SchemaField sf = statsField.getSchemaField();
+
+    if (null == sf) {
+      // function stats
+      return new NumericStatsValues(statsField);
+    } 
+
+    final FieldType fieldType = sf.getType(); // TODO: allow FieldType to provide impl.
+    
     if (TrieDateField.class.isInstance(fieldType)) {
-      return new DateStatsValues(sf, calcDistinct);
+      return new DateStatsValues(statsField);
     } else if (TrieField.class.isInstance(fieldType)) {
-      return new NumericStatsValues(sf, calcDistinct);
+      return new NumericStatsValues(statsField);
     } else if (StrField.class.isInstance(fieldType)) {
-      return new StringStatsValues(sf, calcDistinct);
+      return new StringStatsValues(statsField);
     } else if (sf.getType().getClass().equals(EnumField.class)) {
-      return new EnumStatsValues(sf, calcDistinct);
+      return new EnumStatsValues(statsField);
     } else {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Field type " + fieldType + " is not currently supported");
     }
@@ -59,34 +67,81 @@ public class StatsValuesFactory {
 }
 
 /**
- * Abstract implementation of {@link org.apache.solr.handler.component.StatsValues} that provides the default behavior
- * for most StatsValues implementations.
+ * Abstract implementation of {@link org.apache.solr.handler.component.StatsValues} 
+ * that provides the default behavior for most StatsValues implementations.
  *
- * There are very few requirements placed on what statistics concrete implementations should collect, with the only required
- * statistics being the minimum and maximum values.
+ * There are very few requirements placed on what statistics concrete implementations 
+ * should collect, with the only required statistics being the minimum and maximum values.
  */
 abstract class AbstractStatsValues<T> implements StatsValues {
   private static final String FACETS = "facets";
+
+  /** Tracks all data about tthe stats we need to collect */
+  final protected StatsField statsField;
+
+  /** 
+   * local copy to save method dispatch in tight loops 
+   * @see StatsField#getCalcDistinct
+   */
+  final protected boolean calcDistinct;
+
+  /** may be null if we are collecting stats directly from a function ValueSource */
   final protected SchemaField sf;
+  /** may be null if we are collecting stats directly from a function ValueSource */
   final protected FieldType ft;
+
+  /** 
+   * Either a function value source to collect from, or the ValueSource associated 
+   * with a single valued field we are collecting from.  Will be null until/unless 
+   * {@link #setNextReader} is called at least once
+   */
+  private ValueSource valueSource;
+  /** 
+   * Context to use when retrieving FunctionValues, will be null until/unless 
+   * {@link #setNextReader} is called at least once
+   */
+  private Map vsContext;
+  /** 
+   * Values to collect, will be null until/unless {@link #setNextReader} is called 
+   * at least once 
+   */
+  protected FunctionValues values;
+
   protected T max;
   protected T min;
   protected long missing;
   protected long count;
   protected long countDistinct;
   protected Set<T> distinctValues;
-  private ValueSource valueSource;
-  protected FunctionValues values;
-  protected boolean calcDistinct = false;
   
   // facetField   facetValue
   protected Map<String, Map<String, StatsValues>> facets = new HashMap<>();
 
-  protected AbstractStatsValues(SchemaField sf, boolean calcDistinct) {
-    this.sf = sf;
-    this.ft = sf.getType();
+  protected AbstractStatsValues(StatsField statsField) {
+    this.statsField = statsField;
+    this.calcDistinct = statsField.getCalcDistinct();
     this.distinctValues = new TreeSet<>();
-    this.calcDistinct = calcDistinct;
+
+    // alternatively, we could refactor a common base class that doesn't know/care
+    // about either SchemaField or ValueSource - but then there would be a lot of
+    // duplicate code between "NumericSchemaFieldStatsValues" and 
+    // "NumericValueSourceStatsValues" which would have diff parent classes
+    //
+    // part of the complexity here being that the StatsValues API serves two 
+    // masters: collecting concrete Values from things like DocValuesStats and 
+    // the distributed aggregation logic, but also collecting docIds which it then
+    // uses to go out and pull concreate values from the ValueSource 
+    // (from a func, or single valued field)
+    if (null != statsField.getSchemaField()) {
+      assert null == statsField.getValueSource();
+      this.sf = statsField.getSchemaField();
+      this.ft = sf.getType();
+    } else {
+      assert null != statsField.getValueSource();
+      assert null == statsField.getSchemaField();
+      this.sf = null;
+      this.ft = null;
+    }
   }
 
   /**
@@ -121,7 +176,7 @@ abstract class AbstractStatsValues<T> implements StatsValues {
         String val = vals.getName(j);
         StatsValues vvals = addTo.get(val);
         if (vvals == null) {
-          vvals = StatsValuesFactory.createStatsValues(sf, calcDistinct);
+          vvals = StatsValuesFactory.createStatsValues(statsField);
           addTo.put(val, vvals);
         }
         vvals.accumulate((NamedList) vals.getVal(j));
@@ -134,11 +189,14 @@ abstract class AbstractStatsValues<T> implements StatsValues {
    */
   @Override
   public void accumulate(BytesRef value, int count) {
+    if (null == ft) {
+      throw new IllegalStateException("Can't collect & convert BytesRefs on stats that do't use a a FieldType: " + statsField);
+    }
     T typedValue = (T)ft.toObject(sf, value);
     accumulate(typedValue, count);
   }
 
-  public void accumulate(T value, int count) {
+  public void accumulate(T value, int count) { 
     this.count += count;
     if (calcDistinct) {
       distinctValues.add(value);
@@ -203,11 +261,18 @@ abstract class AbstractStatsValues<T> implements StatsValues {
     return res;
   }
 
-  public void setNextReader(AtomicReaderContext ctx) throws IOException {
+  /**
+   * {@inheritDoc}
+   */
+   public void setNextReader(AtomicReaderContext ctx) throws IOException {
     if (valueSource == null) {
-      valueSource = ft.getValueSource(sf, null);
+      // first time we've collected local values, get the right ValueSource
+      valueSource = (null == ft) 
+        ? statsField.getValueSource()
+        : ft.getValueSource(sf, null);
+      vsContext = ValueSource.newContext(statsField.getSearcher());
     }
-    values = valueSource.getValues(Collections.emptyMap(), ctx);
+    values = valueSource.getValues(vsContext, ctx);
   }
 
   /**
@@ -249,8 +314,8 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
   double sum;
   double sumOfSquares;
 
-  public NumericStatsValues(SchemaField sf, boolean calcDistinct) {
-    super(sf, calcDistinct);
+  public NumericStatsValues(StatsField statsField) {
+    super(statsField);
     min = Double.POSITIVE_INFINITY;
     max = Double.NEGATIVE_INFINITY;
   }
@@ -324,8 +389,8 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
  */
 class EnumStatsValues extends AbstractStatsValues<EnumFieldValue> {
 
-  public EnumStatsValues(SchemaField sf, boolean calcDistinct) {
-    super(sf, calcDistinct);
+  public EnumStatsValues(StatsField statsField) {
+    super(statsField);
   }
 
   /**
@@ -393,8 +458,8 @@ class DateStatsValues extends AbstractStatsValues<Date> {
   private long sum = 0;
   double sumOfSquares = 0;
 
-  public DateStatsValues(SchemaField sf, boolean calcDistinct) {
-    super(sf, calcDistinct);
+  public DateStatsValues(StatsField statsField) {
+    super(statsField);
   }
 
   @Override
@@ -479,8 +544,8 @@ class DateStatsValues extends AbstractStatsValues<Date> {
  */
 class StringStatsValues extends AbstractStatsValues<String> {
 
-  public StringStatsValues(SchemaField sf, boolean calcDistinct) {
-    super(sf, calcDistinct);
+  public StringStatsValues(StatsField statsField) {
+    super(statsField);
   }
 
   @Override

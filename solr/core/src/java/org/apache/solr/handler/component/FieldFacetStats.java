@@ -46,9 +46,8 @@ import org.apache.solr.search.SolrIndexSearcher;
 
 public class FieldFacetStats {
   public final String name;
+  final StatsField statsField;
   final SchemaField facet_sf;
-  final SchemaField field_sf;
-  final boolean calcDistinct;
 
   public final Map<String, StatsValues> facetStatsValues;
   private final Map<Integer, Integer> missingStats;
@@ -62,11 +61,10 @@ public class FieldFacetStats {
 
   SortedDocValues topLevelSortedValues = null;
 
-  public FieldFacetStats(SolrIndexSearcher searcher, String name, SchemaField field_sf, SchemaField facet_sf, boolean calcDistinct) {
-    this.name = name;
-    this.field_sf = field_sf;
+  public FieldFacetStats(SolrIndexSearcher searcher, SchemaField facet_sf, StatsField statsField) {
+    this.statsField = statsField;
     this.facet_sf = facet_sf;
-    this.calcDistinct = calcDistinct;
+    this.name = facet_sf.getName();
 
     topLevelReader = searcher.getAtomicReader();
     valueSource = facet_sf.getType().getValueSource(facet_sf, null);
@@ -79,7 +77,7 @@ public class FieldFacetStats {
   private StatsValues getStatsValues(String key) throws IOException {
     StatsValues stats = facetStatsValues.get(key);
     if (stats == null) {
-      stats = StatsValuesFactory.createStatsValues(field_sf, calcDistinct);
+      stats = StatsValuesFactory.createStatsValues(statsField);
       facetStatsValues.put(key, stats);
       stats.setNextReader(context);
     }
@@ -142,7 +140,7 @@ public class FieldFacetStats {
       String key = (String) pairs.getKey();
       StatsValues facetStats = facetStatsValues.get(key);
       if (facetStats == null) {
-        facetStats = StatsValuesFactory.createStatsValues(field_sf, calcDistinct);
+        facetStats = StatsValuesFactory.createStatsValues(statsField);
         facetStatsValues.put(key, facetStats);
       }
       Integer count = (Integer) pairs.getValue();
