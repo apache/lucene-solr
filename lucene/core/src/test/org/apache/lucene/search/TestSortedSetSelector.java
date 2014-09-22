@@ -17,9 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene410.Lucene410DocValuesFormat;
-import org.apache.lucene.codecs.memory.DirectDocValuesFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedSetDocValuesField;
@@ -28,30 +25,12 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /** Tests for SortedSetSortField selectors other than MIN,
  *  these require optional codec support (random access to ordinals) */
+@SuppressCodecs("Memory") // TODO: fix MemoryDV to support random access to ordinals
 public class TestSortedSetSelector extends LuceneTestCase {
-  static Codec savedCodec;
-  
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    savedCodec = Codec.getDefault();
-    // currently only these codecs that support random access ordinals
-    int victim = random().nextInt(2);
-    switch(victim) {
-      case 0:  Codec.setDefault(TestUtil.alwaysDocValuesFormat(new DirectDocValuesFormat())); break;
-      default: Codec.setDefault(TestUtil.alwaysDocValuesFormat(new Lucene410DocValuesFormat()));
-    }
-  }
-  
-  @AfterClass
-  public static void afterClass() throws Exception {
-    Codec.setDefault(savedCodec);
-  }
   
   public void testMax() throws Exception {
     Directory dir = newDirectory();
