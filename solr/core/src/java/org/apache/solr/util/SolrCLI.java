@@ -17,17 +17,12 @@ package org.apache.solr.util;
  * limitations under the License.
  */
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.URL;
-import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -45,12 +40,12 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ConnectTimeoutException;
+import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -313,7 +308,7 @@ public class SolrCLI {
       }
       
       for (String classInPackage : classes) {
-        Class theClass = Class.forName(classInPackage);
+        Class<?> theClass = Class.forName(classInPackage);
         if (Tool.class.isAssignableFrom(theClass)) {
           toolClasses.add((Class<Tool>) theClass);
         }
@@ -425,97 +420,34 @@ public class SolrCLI {
    * Utility function for sending HTTP GET request to Solr and then doing some
    * validation of the response.
    */
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"unchecked"})
   public static Map<String,Object> getJson(HttpClient httpClient, String getUrl) throws Exception {
     Map<String,Object> json = null;
-
-    // ensure we're requesting JSON back from Solr
-    URL url = new URL(getUrl);
-    String queryString = url.getQuery();
-    if (queryString != null) {
-      if (queryString.indexOf("wt=json") == -1) {
-        getUrl += "&wt=json";
-      }
-    } else {
-      getUrl += "?wt=json";      
-    }
        
-    // Prepare a request object
-    HttpGet httpget = new HttpGet(getUrl);
+    // ensure we're requesting JSON back from Solr
+    HttpGet httpGet = new HttpGet(new URIBuilder(getUrl).setParameter("wt", "json").build());
+
+    //Will throw HttpResponseException if a non-ok response
+    String content = httpClient.execute(httpGet, new BasicResponseHandler());
     
-    // Execute the request
-    HttpResponse response = httpClient.execute(httpget);
-    
-    // Get hold of the response entity
-    HttpEntity entity = response.getEntity();
-    if (response.getStatusLine().getStatusCode() != 200) {
-      StringBuilder body = new StringBuilder();
-      if (entity != null) {
-        InputStream instream = entity.getContent();
-        String line;
-        try {
-          BufferedReader reader = 
-              new BufferedReader(new InputStreamReader(instream, "UTF-8"));
-          while ((line = reader.readLine()) != null) {
-            body.append(line);
-          }
-        } catch (Exception ignore) {
-          // squelch it - just trying to compose an error message here
-        } finally {
-          instream.close();
-        }
-      }
-      throw new Exception("GET request [" + getUrl + "] failed due to: "
-          + response.getStatusLine() + ": " + body);
-    }
-    
-    // If the response does not enclose an entity, there is no need
-    // to worry about connection release
-    if (entity != null) {
-      InputStreamReader isr = null;
-      try {
-        isr = new InputStreamReader(entity.getContent(), "UTF-8");
-        Object resp = 
-            ObjectBuilder.getVal(new JSONParser(isr));
-        if (resp != null && resp instanceof Map) {
-          json = (Map<String,Object>)resp;
-        } else {
-          throw new SolrServerException("Expected JSON object in response from "+
-              getUrl+" but received "+ resp);
-        }
-      } catch (RuntimeException ex) {
-        // In case of an unexpected exception you may want to abort
-        // the HTTP request in order to shut down the underlying
-        // connection and release it back to the connection manager.
-        httpget.abort();
-        throw ex;
-      } finally {
-        // Closing the input stream will trigger connection release
-        isr.close();
-      }
+    Object resp = ObjectBuilder.getVal(new JSONParser(content));
+    if (resp != null && resp instanceof Map) {
+      json = (Map<String,Object>)resp;
+    } else {
+      throw new SolrServerException("Expected JSON object in response from "+
+          getUrl+" but received "+ resp);
     }
     
     // lastly check the response JSON from Solr to see if it is an error
-    int statusCode = -1;
-    Map responseHeader = (Map)json.get("responseHeader");
-    if (responseHeader != null) {
-      Long status = (Long)responseHeader.get("status");
-      if (status != null)
-        statusCode = status.intValue();
-    }
+    Long statusCode = asLong("/responseHeader/status", json);
     
-    if (statusCode == -1)
+    if (statusCode == -1) {
       throw new SolrServerException("Unable to determine outcome of GET request to: "+
-        getUrl+"! Response: "+json);
-    
-    if (statusCode != 0) {      
-      String errMsg = null;
-      Map error = (Map) json.get("error");
-      if (error != null) {
-        errMsg = (String)error.get("msg");
-      }
+          getUrl+"! Response: "+json);
+    } else if (statusCode != 0) {
+      String errMsg = asString("/error/msg", json);
       
-      if (errMsg == null) errMsg = String.valueOf(json);
+      errMsg = errMsg == null ? String.valueOf(json) : errMsg;
       throw new SolrServerException("Request to "+getUrl+" failed due to: "+errMsg);
     }
 
@@ -526,36 +458,14 @@ public class SolrCLI {
    * Helper function for reading a String value from a JSON Object tree. 
    */
   public static String asString(String jsonPath, Map<String,Object> json) {
-    String str = null;
-    Object obj = atPath(jsonPath, json);
-    if (obj != null) {
-      if (obj instanceof String) {
-        str = (String)obj;
-      } else {
-        // no ok if it's not null and of a different type
-        throw new IllegalStateException("Expected a String at path "+
-           jsonPath+" but found "+obj+" instead! "+json);
-      }
-    } // it's ok if it is null
-    return str;
+    return pathAs(String.class, jsonPath, json);
   }
 
   /**
    * Helper function for reading a Long value from a JSON Object tree. 
    */
   public static Long asLong(String jsonPath, Map<String,Object> json) {
-    Long num = null;
-    Object obj = atPath(jsonPath, json);
-    if (obj != null) {
-      if (obj instanceof Long) {
-        num = (Long)obj;
-      } else {
-        // no ok if it's not null and of a different type
-        throw new IllegalStateException("Expected a Long at path "+
-           jsonPath+" but found "+obj+" instead! "+json);
-      }
-    } // it's ok if it is null
-    return num;
+    return pathAs(Long.class, jsonPath, json);
   }
   
   /**
@@ -563,18 +473,7 @@ public class SolrCLI {
    */
   @SuppressWarnings("unchecked")
   public static List<String> asList(String jsonPath, Map<String,Object> json) {
-    List<String> list = null;
-    Object obj = atPath(jsonPath, json);
-    if (obj != null) {
-      if (obj instanceof List) {
-        list = (List<String>)obj;
-      } else {
-        // no ok if it's not null and of a different type
-        throw new IllegalStateException("Expected a List at path "+
-           jsonPath+" but found "+obj+" instead! "+json);
-      }
-    } // it's ok if it is null
-    return  list;
+    return pathAs(List.class, jsonPath, json);
   }
   
   /**
@@ -582,18 +481,23 @@ public class SolrCLI {
    */
   @SuppressWarnings("unchecked")
   public static Map<String,Object> asMap(String jsonPath, Map<String,Object> json) {
-    Map<String,Object> map = null;
+    return pathAs(Map.class, jsonPath, json);
+  }
+  
+  @SuppressWarnings("unchecked")
+  public static <T> T pathAs(Class<T> clazz, String jsonPath, Map<String,Object> json) {
+    T val = null;
     Object obj = atPath(jsonPath, json);
     if (obj != null) {
-      if (obj instanceof Map) {
-        map = (Map<String,Object>)obj;
+      if (clazz.isAssignableFrom(obj.getClass())) {
+        val = (T) obj;
       } else {
         // no ok if it's not null and of a different type
-        throw new IllegalStateException("Expected a Map at path "+
+        throw new IllegalStateException("Expected a " + clazz.getName() + " at path "+
            jsonPath+" but found "+obj+" instead! "+json);
       }
     } // it's ok if it is null
-    return map;
+    return val;
   }
   
   /**
