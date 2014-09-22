@@ -375,6 +375,12 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           "stats.field", "{!ex=xxx}stats_dt");
 
     query("q","*:*", "sort",i1+" desc", "stats", "true",
+          // do a really simple query so distributed IDF doesn't cause problems
+          // when comparing with control collection
+          "stats.field", "{!lucene key=q_key}" + i1 + "foo_b:true",
+          "stats.field", "{!func key=f_key}sum(" + tlong +","+i1+")");
+
+    query("q","*:*", "sort",i1+" desc", "stats", "true",
           "stats.field", "stats_dt",
           "stats.field", i1,
           "stats.field", tdate_a,

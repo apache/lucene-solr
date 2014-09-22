@@ -35,6 +35,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LongValues;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.component.FieldFacetStats;
+import org.apache.solr.handler.component.StatsField;
 import org.apache.solr.handler.component.StatsValues;
 import org.apache.solr.handler.component.StatsValuesFactory;
 import org.apache.solr.schema.FieldType;
@@ -52,10 +53,17 @@ import org.apache.solr.search.SolrIndexSearcher;
 public class DocValuesStats {
   private DocValuesStats() {}
   
-  public static StatsValues getCounts(SolrIndexSearcher searcher, String fieldName, DocSet docs, boolean calcDistinct, String[] facet) throws IOException {
-    SchemaField schemaField = searcher.getSchema().getField(fieldName);
-    FieldType ft = schemaField.getType();
-    StatsValues res = StatsValuesFactory.createStatsValues(schemaField, calcDistinct);
+  public static StatsValues getCounts(SolrIndexSearcher searcher, StatsField statsField, DocSet docs, String[] facet) throws IOException {
+
+    final SchemaField schemaField = statsField.getSchemaField(); 
+    final boolean calcDistinct = statsField.getCalcDistinct();
+
+    assert null != statsField.getSchemaField()
+      : "DocValuesStats requires a StatsField using a SchemaField";
+
+    final String fieldName = schemaField.getName();
+    final FieldType ft = schemaField.getType();
+    final StatsValues res = StatsValuesFactory.createStatsValues(statsField);
     
     //Initialize facetstats, if facets have been passed in
     final FieldFacetStats[] facetStats = new FieldFacetStats[facet.length];
@@ -69,7 +77,7 @@ public class DocValuesStats {
       }
       
       SchemaField facetSchemaField = searcher.getSchema().getField(facetField);
-      facetStats[upto++] = new FieldFacetStats(searcher, facetField, schemaField, facetSchemaField, calcDistinct);
+      facetStats[upto++] = new FieldFacetStats(searcher, facetSchemaField, statsField);
     }
     // TODO: remove multiValuedFieldCache(), check dv type / uninversion type?
     final boolean multiValued = schemaField.multiValued() || ft.multiValuedFieldCache();

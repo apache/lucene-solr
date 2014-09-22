@@ -131,6 +131,10 @@ New Features
 * SOLR-6482:  Add an onlyIfDown flag for DELETEREPLICA collections API command
   (Erick Erickson)
 
+* SOLR-6354: stats.field can now be used to generate stats over the numeric results
+  of arbitrary functions, ie: stats.field={!func}product(price,popularity)
+  (hossman)
+
 Bug Fixes
 ----------------------
 
