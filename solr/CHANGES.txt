@@ -192,6 +192,8 @@ Bug Fixes
 * SOLR-6484: SolrCLI's healthcheck action needs to check live nodes as part of reporting
   the status of a replica (Timothy Potter)
 
+* SOLR-6509: Solr start scripts interactive mode doesn't honor -z argument (Timothy Potter)
+
 
 Other Changes
 ----------------------

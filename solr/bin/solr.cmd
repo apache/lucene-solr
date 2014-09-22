@@ -418,8 +418,8 @@ IF "%SOLR_MODE%"=="solrcloud" (
   ) ELSE (
     IF "%verbose%"=="1" echo Configuring SolrCloud to launch an embedded ZooKeeper using -DzkRun
     set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DzkRun"
-    IF EXIST "%SOLR_HOME%\collection1\core.properties" set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -Dbootstrap_confdir=./solr/collection1/conf -Dcollection.configName=myconf -DnumShards=1"
   )
+  IF EXIST "%SOLR_HOME%\collection1\core.properties" set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -Dbootstrap_confdir=./solr/collection1/conf -Dcollection.configName=myconf -DnumShards=1"
 ) ELSE (
   set CLOUD_MODE_OPTS=
 )
@@ -541,15 +541,26 @@ for /l %%x in (1, 1, !CLOUD_NUM_NODES!) do (
     @echo Cloning %DEFAULT_SERVER_DIR% into %SOLR_TIP%\node%%x
     xcopy /Q /E /I "%DEFAULT_SERVER_DIR%" "%SOLR_TIP%\node%%x"
   )
-
+  
   IF %%x EQU 1 (
     set EXAMPLE=
-    START "" "%SDIR%\solr" -f -c -p !NODE_PORT! -d node1
+    IF NOT "!ZK_HOST!"=="" (
+      set "DASHZ=-z !ZK_HOST!"
+    ) ELSE (
+      set "DASHZ="
+    )
+    @echo Starting node1 on port !NODE_PORT! using command:
+    @echo solr -cloud -p !NODE_PORT! -d node1 !DASHZ!
+    START "" "%SDIR%\solr" -f -cloud -p !NODE_PORT! -d node1 !DASHZ!
     set NODE1_PORT=!NODE_PORT!
   ) ELSE (
-    set /A ZK_PORT=!NODE1_PORT!+1000
-    set "ZK_HOST=localhost:!ZK_PORT!"
-    START "" "%SDIR%\solr" -f -c -p !NODE_PORT! -d node%%x -z !ZK_HOST!
+    IF "!ZK_HOST!"=="" (
+      set /A ZK_PORT=!NODE1_PORT!+1000
+      set "ZK_HOST=localhost:!ZK_PORT!"
+    )
+    @echo Starting node%%x on port !NODE_PORT! using command:
+    @echo solr -cloud -p !NODE_PORT! -d node%%x -z !ZK_HOST!
+    START "" "%SDIR%\solr" -f -cloud -p !NODE_PORT! -d node%%x -z !ZK_HOST!
   )
 
   timeout /T 10
