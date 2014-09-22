@@ -189,6 +189,9 @@ Bug Fixes
 * SOLR-6481: CLUSTERSTATUS should check if the node hosting a replica is live when
   reporting replica status (Timothy Potter)
 
+* SOLR-6484: SolrCLI's healthcheck action needs to check live nodes as part of reporting
+  the status of a replica (Timothy Potter)
+
 
 Other Changes
 ----------------------
