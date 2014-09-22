@@ -698,11 +698,11 @@ if [ "$SOLR_MODE" == "solrcloud" ]; then
     fi
 
     CLOUD_MODE_OPTS="$CLOUD_MODE_OPTS -DzkRun"
-    
-    # and if collection1 needs to be bootstrapped
-    if [ -e "$SOLR_HOME/collection1/core.properties" ]; then
-      CLOUD_MODE_OPTS="$CLOUD_MODE_OPTS -Dbootstrap_confdir=./solr/collection1/conf -Dcollection.configName=myconf -DnumShards=1"
-    fi
+  fi
+
+  # and if collection1 needs to be bootstrapped
+  if [ -e "$SOLR_HOME/collection1/core.properties" ]; then
+    CLOUD_MODE_OPTS="$CLOUD_MODE_OPTS -Dbootstrap_confdir=./solr/collection1/conf -Dcollection.configName=myconf -DnumShards=1"
   fi
     
 fi
@@ -832,14 +832,22 @@ else
   SOLR_SERVER_DIR=$SOLR_TIP/node1
   SOLR_HOME=$SOLR_TIP/node1/solr
   SOLR_PORT=${CLOUD_PORTS[0]}
+  if [ "$ZK_HOST" != "" ]; then
+    DASHZ="-z $ZK_HOST"
+  fi
+
   echo -e "\nStarting up SolrCloud node1 on port ${CLOUD_PORTS[0]} using command:\n"
-  echo -e "solr start -cloud -d node1 -p $SOLR_PORT \n\n"
+  echo -e "solr start -cloud -d node1 -p $SOLR_PORT $DASHZ\n\n"
     
   # can't launch this node in the foreground else we can't run anymore commands
-  launch_solr "false" "$ADDITIONAL_CMD_OPTS"
-  
-  zk_port=$[$SOLR_PORT+1000]  
-  zk_host=localhost:$zk_port
+  launch_solr "false" ""
+
+  # if user did not define a specific -z parameter, assume embedded in first cloud node we launched above
+  zk_host=$ZK_HOST
+  if [ "$zk_host" == "" ]; then
+    zk_port=$[$SOLR_PORT+1000]
+    zk_host=localhost:$zk_port
+  fi
   
   for (( s=1; s<$CLOUD_NUM_NODES; s++ ))
   do
