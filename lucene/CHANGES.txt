@@ -193,6 +193,9 @@ Build
 
 * LUCENE-5902: Add bumpVersion.py script to manage version increase after release branch is cut.
 
+* LUCENE-5962: Rename diffSources.py to createPatch.py and make it work with all text file types.
+  (Ryan Ernst)
+
 Other
 
 * LUCENE-5563: Removed sep layout: which has fallen behind on features and doesn't
