@@ -56,6 +56,7 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -869,7 +870,10 @@ public class SolrCLI {
       log.info("Running healthcheck for "+collection);
       
       ZkStateReader zkStateReader = cloudSolrServer.getZkStateReader();
-      Collection<Slice> slices = zkStateReader.getClusterState().getSlices(collection);
+
+      ClusterState clusterState = zkStateReader.getClusterState();
+      Set<String> liveNodes = clusterState.getLiveNodes();
+      Collection<Slice> slices = clusterState.getSlices(collection);
       if (slices == null)
         throw new IllegalArgumentException("Collection "+collection+" not found!");
       
@@ -908,39 +912,45 @@ public class SolrCLI {
           ZkCoreNodeProps replicaCoreProps = new ZkCoreNodeProps(r);
           String coreUrl = replicaCoreProps.getCoreUrl();
           boolean isLeader = coreUrl.equals(leaderUrl);
-          
-          // query this replica directly to get doc count and assess health
-          HttpSolrServer solr = new HttpSolrServer(coreUrl);
-          String solrUrl = solr.getBaseURL();
-          q = new SolrQuery("*:*");
-          q.setRows(0);
-          q.set("distrib", "false");          
-          try {
-            qr = solr.query(q);
-            numDocs = qr.getResults().getNumFound();
-            
-            int lastSlash = solrUrl.lastIndexOf('/');            
-            String systemInfoUrl = solrUrl.substring(0,lastSlash)+"/admin/info/system";
-            Map<String,Object> info = getJson(solr.getHttpClient(), systemInfoUrl, 2);
-            uptime = uptime(asLong("/jvm/jmx/upTimeMS", info));            
-            String usedMemory = asString("/jvm/memory/used", info);
-            String totalMemory = asString("/jvm/memory/total", info);
-            memory = usedMemory+" of "+totalMemory;
-            
-            // if we get here, we can trust the state
-            replicaStatus = replicaCoreProps.getState();                                                                      
-          } catch (Exception exc) {
-            log.error("ERROR: " + exc + " when trying to reach: " + solrUrl);
 
-            if (checkCommunicationError(exc)) {
-              replicaStatus = "down";
-            } else {
-              replicaStatus = "error: "+exc;
-            }            
-          } finally {
-            solr.shutdown();
+          // if replica's node is not live, it's status is DOWN
+          String nodeName = replicaCoreProps.getNodeName();
+          if (nodeName == null || !liveNodes.contains(nodeName)) {
+            replicaStatus = ZkStateReader.DOWN;
+          } else {
+            // query this replica directly to get doc count and assess health
+            HttpSolrServer solr = new HttpSolrServer(coreUrl);
+            String solrUrl = solr.getBaseURL();
+            q = new SolrQuery("*:*");
+            q.setRows(0);
+            q.set("distrib", "false");
+            try {
+              qr = solr.query(q);
+              numDocs = qr.getResults().getNumFound();
+
+              int lastSlash = solrUrl.lastIndexOf('/');
+              String systemInfoUrl = solrUrl.substring(0,lastSlash)+"/admin/info/system";
+              Map<String,Object> info = getJson(solr.getHttpClient(), systemInfoUrl, 2);
+              uptime = uptime(asLong("/jvm/jmx/upTimeMS", info));
+              String usedMemory = asString("/jvm/memory/used", info);
+              String totalMemory = asString("/jvm/memory/total", info);
+              memory = usedMemory+" of "+totalMemory;
+
+              // if we get here, we can trust the state
+              replicaStatus = replicaCoreProps.getState();
+            } catch (Exception exc) {
+              log.error("ERROR: " + exc + " when trying to reach: " + solrUrl);
+
+              if (checkCommunicationError(exc)) {
+                replicaStatus = "down";
+              } else {
+                replicaStatus = "error: "+exc;
+              }
+            } finally {
+              solr.shutdown();
+            }
           }
-          
+
           replicaList.add(new ReplicaHealth(shardName, r.getName(), coreUrl, 
               replicaStatus, numDocs, isLeader, uptime, memory));          
         }
