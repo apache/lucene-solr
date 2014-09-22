@@ -211,6 +211,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       "481.nocfs",
       "49.cfs",
       "49.nocfs",
+      "491.cfs",
+      "491.nocfs",
       "410.cfs",
       "410.nocfs"
   };
@@ -390,7 +392,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       ++i;
     }
     while (j < testedVersions.size()) {
-      missingFiles.add(testedVersions.get(j));
+      extraFiles.add(testedVersions.get(j));
       ++j;
     }
 
