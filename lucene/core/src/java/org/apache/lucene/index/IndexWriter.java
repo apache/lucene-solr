@@ -1554,13 +1554,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * should only call this if the index is static (will no
    * longer be changed).</p>
    *
-   * <p>Note that this requires up to 2X the index size free
-   * space in your Directory (3X if you're using compound
-   * file format).  For example, if your index size is 10 MB
-   * then you need up to 20 MB free for this to complete (30
-   * MB if you're using compound file format).  Also,
-   * it's best to call {@link #commit()} afterwards,
-   * to allow IndexWriter to free up disk space.</p>
+   * <p>Note that this requires free space that is proportional
+   * to the size of the index in your Directory (2X if you're
+   * using compound file format). For example, if your index
+   * size is 10 MB then you need an additional 10 MB free for
+   * this to complete (20 MB if you're using compound file
+   * format). This is also affected by the {@link Codec} that
+   * is used to execute the merge, and may result in even a
+   * bigger index. Also, it's best to call {@link #commit()}
+   * afterwards, to allow IndexWriter to free up disk space.</p>
    *
    * <p>If some but not all readers re-open while merging
    * is underway, this will cause > 2X temporary
