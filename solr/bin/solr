@@ -117,7 +117,7 @@ function print_usage() {
     echo ""
   elif [[ "$CMD" == "start" || "$CMD" == "restart" ]]; then
     echo ""
-    echo "Usage: solr $CMD [-f] [-c] [-h hostname] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [-V]"
+    echo "Usage: solr $CMD [-f] [-c] [-h hostname] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [-a \"additional-options\"] [-V]"
     echo ""
     echo "  -f            Start Solr in foreground; default starts Solr in the background"
     echo "                  and sends stdout / stderr to solr-PORT-console.log"
@@ -144,13 +144,18 @@ function print_usage() {
     echo "      schemaless:    Schema-less example"
     echo "      multicore:     Multicore"
     echo ""
+    echo "  -a            Additional parameters to pass to the JVM when starting Solr, such as to setup"
+    echo "                Java debug options. For example, to enable a Java debugger to attach to the Solr JVM"
+    echo "                you could pass: -a \"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=18983\""
+    echo "                In most cases, you should wrap the additional parameters in double quotes."
+    echo ""
     echo "  -noprompt     Don't prompt for input; accept all defaults when running examples that accept user input"
     echo ""
     echo "  -V            Verbose messages from this script"
     echo ""
   elif [ "$CMD" == "stop" ]; then
     echo ""
-    echo "Usage: solr stop [-k key] [-p port]"
+    echo "Usage: solr stop [-k key] [-p port] [-V]"
     echo ""
     echo "  -k <key>      Stop key; default is solrrocks"
     echo ""
@@ -450,6 +455,10 @@ if [ $# -gt 0 ]; then
             fi
 
             ZK_HOST="$2"
+            shift 2
+        ;;
+        -a|-addlopts)
+            ADDITIONAL_CMD_OPTS="$2"
             shift 2
         ;;
         -help|-usage)
@@ -815,7 +824,7 @@ $SOLR_HOST_ARG -Djetty.port=$SOLR_PORT \
 }
 
 if [ "$EXAMPLE" != "cloud" ]; then
-  launch_solr "$FG" ""
+  launch_solr "$FG" "$ADDITIONAL_CMD_OPTS"
 else
   #
   # SolrCloud example is a bit involved so needs special handling here
@@ -827,7 +836,7 @@ else
   echo -e "solr start -cloud -d node1 -p $SOLR_PORT \n\n"
     
   # can't launch this node in the foreground else we can't run anymore commands
-  launch_solr "false" ""
+  launch_solr "false" "$ADDITIONAL_CMD_OPTS"
   
   zk_port=$[$SOLR_PORT+1000]  
   zk_host=localhost:$zk_port

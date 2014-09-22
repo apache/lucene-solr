@@ -249,6 +249,9 @@ Other Changes
 * SOLR-6115: Cleanup enum/string action types in Overseer, OverseerCollectionProcessor and
   CollectionHandler. (Erick Erickson, shalin)
 
+* SOLR-6486: solr start script can have a debug flag option; use -a to set arbitrary options
+  (Noble Paul, Timothy Potter)
+
 ==================  4.10.0 =================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
