@@ -19,11 +19,6 @@ Bug fixes
   to enforce here); use simple string tokenizer.  (Ryan Ernst, Uwe Schindler,
   Robert Muir, Mike McCandless)
 
-* LUCENE-5919: Fix exception handling inside IndexWriter when
-  deleteFile throws an exception, to not over-decRef index files,
-  possibly deleting a file that's still in use in the index, leading
-  to corruption.  (Mike McCandless)
-
 * LUCENE-5958: Don't let exceptions during checkpoint corrupt the index. 
   Refactor existing OOM handling too, so you don't need to handle OOM special
   for every IndexWriter method: instead such disasters will cause IW to close itself
@@ -39,8 +34,9 @@ Bug fixes
   MockDirectoryWrapper to have it simulate a virus checker holding a
   file open and preventing deletion (Robert Muir, Mike McCandless)
 
-* LUCENE-5922: DocValuesDocIdSet on 5.x and FieldCacheDocIdSet on 4.x
-  are not cacheable. (Adrien Grand)
+* LUCENE-5916: Static scope test components should be consistent between
+  tests (and test iterations). Fix for FaultyIndexInput in particular.
+  (Dawid Weiss)
 
 Tests
 
@@ -199,20 +195,7 @@ Bug Fixes
 
 * LUCENE-5824: Fix hunspell 'long' flag handling. (Robert Muir)
 
-* LUCENE-5827: Make all Directory implementations correctly fail with
-  IllegalArgumentException if slices are out of bounds.  (Uwe SChindler)
-
 * LUCENE-5838: Fix hunspell when the .aff file has over 64k affixes. (Robert Muir)
-
-* LUCENE-5844: ArrayUtil.grow/oversize now returns a maximum of
-  Integer.MAX_VALUE - 8 for the maximum array size.  (Robert Muir,
-  Mike McCandless)
-
-* LUCENE-5843: Added IndexWriter.MAX_DOCS which is the maximum number
-  of documents allowed in a single index, and any operations that add
-  documents will now throw IllegalStateException if the max count
-  would be exceeded, instead of silently creating an unusable
-  index.  (Mike McCandless)
 
 * LUCENE-5869: Added restriction to positive values for maxExpansions in
   FuzzyQuery.  (Ryan Ernst)
@@ -220,19 +203,6 @@ Bug Fixes
 * LUCENE-5672: IndexWriter.addIndexes() calls maybeMerge(), to ensure the index stays
   healthy. If you don't want merging use NoMergePolicy instead. (Robert Muir)
   
-* LUCENE-5897, LUCENE-5400: JFlex-based tokenizers StandardTokenizer and
-  UAX29URLEmailTokenizer tokenize extremely slowly over long sequences of
-  text partially matching certain grammar rules.  The scanner default
-  buffer size was reduced, and scanner buffer growth was disabled, resulting
-  in much, much faster tokenization for these text sequences.  
-  (Chris Geeringh, Robert Muir, Steve Rowe)
-
-* LUCENE-5907: Fix corruption case when opening a pre-4.x index with
-  IndexWriter, then opening an NRT reader from that writer, then
-  calling commit from the writer, then closing the NRT reader.  This
-  case would remove the wrong files from the index leading to a
-  corrupt index.  (Mike McCandless)
-
 * LUCENE-5908: Fix Lucene43NGramTokenizer to be final
   
 Test Framework
@@ -253,6 +223,44 @@ Build
 
 * SOLR-6358: Remove VcsDirectoryMappings from idea configuration 
   vcs.xml (Ramkumar Aiyengar via Steve Rowe)
+
+======================= Lucene 4.9.1 ======================
+
+Bug fixes
+
+* LUCENE-5907: Fix corruption case when opening a pre-4.x index with
+  IndexWriter, then opening an NRT reader from that writer, then
+  calling commit from the writer, then closing the NRT reader.  This
+  case would remove the wrong files from the index leading to a
+  corrupt index.  (Mike McCandless)
+
+* LUCENE-5919: Fix exception handling inside IndexWriter when
+  deleteFile throws an exception, to not over-decRef index files,
+  possibly deleting a file that's still in use in the index, leading
+  to corruption.  (Mike McCandless)
+
+* LUCENE-5922: DocValuesDocIdSet on 5.x and FieldCacheDocIdSet on 4.x
+  are not cacheable. (Adrien Grand)
+
+* LUCENE-5843: Added IndexWriter.MAX_DOCS which is the maximum number
+  of documents allowed in a single index, and any operations that add
+  documents will now throw IllegalStateException if the max count
+  would be exceeded, instead of silently creating an unusable
+  index.  (Mike McCandless)
+
+* LUCENE-5844: ArrayUtil.grow/oversize now returns a maximum of
+  Integer.MAX_VALUE - 8 for the maximum array size.  (Robert Muir,
+  Mike McCandless)
+
+* LUCENE-5827: Make all Directory implementations correctly fail with
+  IllegalArgumentException if slices are out of bounds.  (Uwe SChindler)
+
+* LUCENE-5897, LUCENE-5400: JFlex-based tokenizers StandardTokenizer and
+  UAX29URLEmailTokenizer tokenize extremely slowly over long sequences of
+  text partially matching certain grammar rules.  The scanner default
+  buffer size was reduced, and scanner buffer growth was disabled, resulting
+  in much, much faster tokenization for these text sequences.  
+  (Chris Geeringh, Robert Muir, Steve Rowe)
 
 ======================= Lucene 4.9.0 =======================
 

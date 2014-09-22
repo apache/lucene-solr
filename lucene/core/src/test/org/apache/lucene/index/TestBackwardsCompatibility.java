@@ -263,6 +263,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
                                     "481.nocfs",
                                     "49.cfs",
                                     "49.nocfs",
+                                    "491.cfs",
+                                    "491.nocfs",
                                     "410.cfs",
                                     "410.nocfs"
   };
@@ -398,7 +400,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
     Collections.sort(testedVersions);
 
-
     int i = 0;
     int j = 0;
     List<String> missingFiles = new ArrayList<>();
@@ -423,7 +424,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       ++i;
     }
     while (j < testedVersions.size()) {
-      missingFiles.add(testedVersions.get(j));
+      extraFiles.add(testedVersions.get(j));
       ++j;
     }
 
@@ -434,13 +435,13 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     StringBuffer msg = new StringBuffer();
     if (missingFiles.isEmpty() == false) {
-      msg.append("Missing backcompat test files:\n");
+      msg.append("Saw Version constant but no corresponding back-compat index:\n");
       for (String missingFile : missingFiles) {
         msg.append("  " + missingFile + "\n");
       }
     }
     if (extraFiles.isEmpty() == false) {
-      msg.append("Extra backcompat test files:\n");
+      msg.append("Saw back-compat index but no corresponding Version constant:\n");
       for (String extraFile : extraFiles) {
         msg.append("  " + extraFile + "\n");
       }
