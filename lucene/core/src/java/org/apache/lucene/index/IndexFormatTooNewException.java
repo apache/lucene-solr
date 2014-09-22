@@ -17,13 +17,16 @@
 
 package org.apache.lucene.index;
 
+import java.io.IOException;
+import java.util.Objects;
+
 import org.apache.lucene.store.DataInput;
 
 /**
  * This exception is thrown when Lucene detects
  * an index that is newer than this Lucene version.
  */
-public class IndexFormatTooNewException extends CorruptIndexException {
+public class IndexFormatTooNewException extends IOException {
 
   /** Creates an {@code IndexFormatTooNewException}
    *
@@ -34,9 +37,8 @@ public class IndexFormatTooNewException extends CorruptIndexException {
    *
    * @lucene.internal */
   public IndexFormatTooNewException(String resourceDesc, int version, int minVersion, int maxVersion) {
-    super("Format version is not supported: "
-      + version + " (needs to be between " + minVersion + " and " + maxVersion + ")", resourceDesc);
-    assert resourceDesc != null;
+    super("Format version is not supported (resource " + resourceDesc + "): "
+        + version + " (needs to be between " + minVersion + " and " + maxVersion + ")");
   }
 
   /** Creates an {@code IndexFormatTooNewException}
@@ -48,7 +50,8 @@ public class IndexFormatTooNewException extends CorruptIndexException {
    *
    * @lucene.internal */
   public IndexFormatTooNewException(DataInput in, int version, int minVersion, int maxVersion) {
-    this(in.toString(), version, minVersion, maxVersion);
+    this(Objects.toString(in), version, minVersion, maxVersion);
   }
+
 
 }

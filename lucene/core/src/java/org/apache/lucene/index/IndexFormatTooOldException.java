@@ -17,13 +17,16 @@
 
 package org.apache.lucene.index;
 
+import java.io.IOException;
+import java.util.Objects;
+
 import org.apache.lucene.store.DataInput;
 
 /**
  * This exception is thrown when Lucene detects
  * an index that is too old for this Lucene version
  */
-public class IndexFormatTooOldException extends CorruptIndexException {
+public class IndexFormatTooOldException extends IOException {
 
   /** Creates an {@code IndexFormatTooOldException}.
    *
@@ -32,21 +35,20 @@ public class IndexFormatTooOldException extends CorruptIndexException {
    * 
    * @lucene.internal */
   public IndexFormatTooOldException(String resourceDesc, String version) {
-    super("Format version is not supported: " +
-        version + ". This version of Lucene only supports indexes created with release 4.0 and later.", resourceDesc);
-    assert resourceDesc != null;
+    super("Format version is not supported (resource " + resourceDesc + "): " +
+        version + ". This version of Lucene only supports indexes created with release 4.0 and later.");
   }
 
   /** Creates an {@code IndexFormatTooOldException}.
    *
    *  @param in the open file that's too old
    *  @param version the version of the file that was too old
-   * 
+   *
    * @lucene.internal */
   public IndexFormatTooOldException(DataInput in, String version) {
-    this(in.toString(), version);
+    this(Objects.toString(in), version);
   }
-  
+
   /** Creates an {@code IndexFormatTooOldException}.
    *
    *  @param resourceDesc describes the file that was too old
@@ -56,10 +58,9 @@ public class IndexFormatTooOldException extends CorruptIndexException {
    * 
    * @lucene.internal */
   public IndexFormatTooOldException(String resourceDesc, int version, int minVersion, int maxVersion) {
-    super("Format version is not supported: " +
+    super("Format version is not supported (resource " + resourceDesc + "): " +
         version + " (needs to be between " + minVersion + " and " + maxVersion +
-    "). This version of Lucene only supports indexes created with release 4.0 and later.", resourceDesc);
-    assert resourceDesc != null;
+        "). This version of Lucene only supports indexes created with release 4.0 and later.");
   }
 
   /** Creates an {@code IndexFormatTooOldException}.
@@ -71,6 +72,6 @@ public class IndexFormatTooOldException extends CorruptIndexException {
    *
    * @lucene.internal */
   public IndexFormatTooOldException(DataInput in, int version, int minVersion, int maxVersion) {
-    this(in.toString(), version, minVersion, maxVersion);
+    this(Objects.toString(in), version, minVersion, maxVersion);
   }
 }

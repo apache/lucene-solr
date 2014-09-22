@@ -44,6 +44,6 @@ public class CorruptIndexException extends IOException {
   
   /** Create exception with message and root cause. */
   public CorruptIndexException(String message, String resourceDescription, Throwable cause) {
-    super(message + " (resource=" + resourceDescription + ")", cause);
+    super(Objects.toString(message) + " (resource=" + resourceDescription + ")", cause);
   }
 }

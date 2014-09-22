@@ -122,6 +122,10 @@ API Changes
 * LUCENE-5965: CorruptIndexException requires a String or DataInput resource.
   (Robert Muir)
 
+* LUCENE-5972: IndexFormatTooOldException and IndexFormatTooNewException now
+               extend from IOException.
+  (Ryan Ernst, Robert Muir)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary
