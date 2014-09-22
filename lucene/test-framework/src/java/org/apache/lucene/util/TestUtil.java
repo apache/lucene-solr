@@ -728,6 +728,14 @@ public final class TestUtil {
       }
     };
   }
+  
+  /** 
+   * Returns the actual default codec (e.g. LuceneMNCodec) for this version of Lucene.
+   * This may be different than {@link Codec#getDefault()} because that is randomized. 
+   */
+  public static Codec getDefaultCodec() {
+    return new Lucene410Codec();
+  }
 
   // TODO: generalize all 'test-checks-for-crazy-codecs' to
   // annotations (LUCENE-3489)

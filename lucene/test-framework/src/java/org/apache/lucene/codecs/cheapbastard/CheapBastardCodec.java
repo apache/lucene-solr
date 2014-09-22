@@ -25,10 +25,10 @@ import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41StoredFieldsFormat;
-import org.apache.lucene.codecs.lucene410.Lucene410Codec;
 import org.apache.lucene.codecs.lucene410.Lucene410DocValuesFormat;
 import org.apache.lucene.codecs.lucene42.Lucene42TermVectorsFormat;
 import org.apache.lucene.codecs.lucene49.Lucene49NormsFormat;
+import org.apache.lucene.util.TestUtil;
 
 /** Codec that tries to use as little ram as possible because he spent all his money on beer */
 // TODO: better name :) 
@@ -43,7 +43,7 @@ public class CheapBastardCodec extends FilterCodec {
   private final NormsFormat norms = new Lucene49NormsFormat();
 
   public CheapBastardCodec() {
-    super("CheapBastard", new Lucene410Codec());
+    super("CheapBastard", TestUtil.getDefaultCodec());
   }
   
   @Override

@@ -1122,7 +1122,7 @@ public class TestAddIndexes extends LuceneTestCase {
   
   private static final class UnRegisteredCodec extends FilterCodec {
     public UnRegisteredCodec() {
-      super("NotRegistered", new Lucene410Codec());
+      super("NotRegistered", TestUtil.getDefaultCodec());
     }
   }
   

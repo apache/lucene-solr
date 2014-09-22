@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.codecs.lucene410.Lucene410Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -46,7 +45,7 @@ public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
     }
 
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
-    conf.setCodec(new Lucene410Codec());
+    conf.setCodec(TestUtil.getDefaultCodec());
     RandomIndexWriter riw = new RandomIndexWriter(random(), dir, conf);
     Document doc = new Document();
     // these fields should sometimes get term vectors, etc

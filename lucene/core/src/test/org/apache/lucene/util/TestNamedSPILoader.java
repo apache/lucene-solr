@@ -26,8 +26,9 @@ import org.apache.lucene.codecs.Codec;
 public class TestNamedSPILoader extends LuceneTestCase {
   
   public void testLookup() {
-    Codec codec = Codec.forName("Lucene410");
-    assertEquals("Lucene410", codec.getName());
+    String currentName = TestUtil.getDefaultCodec().getName();
+    Codec codec = Codec.forName(currentName);
+    assertEquals(currentName, codec.getName());
   }
   
   // we want an exception if its not found.
@@ -40,6 +41,6 @@ public class TestNamedSPILoader extends LuceneTestCase {
   
   public void testAvailableServices() {
     Set<String> codecs = Codec.availableCodecs();
-    assertTrue(codecs.contains("Lucene410"));
+    assertTrue(codecs.contains(TestUtil.getDefaultCodec().getName()));
   }
 }

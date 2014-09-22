@@ -630,7 +630,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     }
 
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(Codec.forName("Lucene410"));
+    iwc.setCodec(TestUtil.getDefaultCodec());
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
     doc.add(newStringField("id", "id", Field.Store.NO));

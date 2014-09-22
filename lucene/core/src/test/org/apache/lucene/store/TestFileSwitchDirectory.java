@@ -18,14 +18,12 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexNotFoundException;
@@ -34,6 +32,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TestIndexWriterReader;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.TestUtil;
 
 public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
 
@@ -51,11 +50,11 @@ public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
     secondaryDir.setCheckIndexOnClose(false); // only part of an index
     
     FileSwitchDirectory fsd = new FileSwitchDirectory(fileExtensions, primaryDir, secondaryDir, true);
-    // for now we wire Lucene410Codec because we rely upon its specific impl
+    // for now we wire the default codec because we rely upon its specific impl
     IndexWriter writer = new IndexWriter(
         fsd,
         new IndexWriterConfig(new MockAnalyzer(random())).
-            setMergePolicy(newLogMergePolicy(false)).setCodec(Codec.forName("Lucene410")).setUseCompoundFile(false)
+            setMergePolicy(newLogMergePolicy(false)).setCodec(TestUtil.getDefaultCodec()).setUseCompoundFile(false)
     );
     TestIndexWriterReader.createIndexNoClose(true, "ram", writer);
     IndexReader reader = DirectoryReader.open(writer, true);
