@@ -186,6 +186,9 @@ Bug Fixes
 
 * SOLR-6507: Fixed several bugs involving stats.field used with local params (hossman)
 
+* SOLR-6481: CLUSTERSTATUS should check if the node hosting a replica is live when
+  reporting replica status (Timothy Potter)
+
 
 Other Changes
 ----------------------

@@ -40,6 +40,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -795,6 +796,10 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       }
     }
 
+    List<String> liveNodes = zkStateReader.getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true);
+
+    // now we need to walk the collectionProps tree to cross-check replica state with live nodes
+    crossCheckReplicaStateWithLiveNodes(liveNodes, collectionProps);
 
     NamedList<Object> clusterStatus = new SimpleOrderedMap<>();
     clusterStatus.add("collections", collectionProps);
@@ -816,10 +821,40 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     }
 
     // add live_nodes
-    List<String> liveNodes = zkStateReader.getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true);
     clusterStatus.add("live_nodes", liveNodes);
 
     results.add("cluster", clusterStatus);
+  }
+
+  /**
+   * Walks the tree of collection status to verify that any replicas not reporting a "down" status is
+   * on a live node, if any replicas reporting their status as "active" but the node is not live is
+   * marked as "down"; used by CLUSTERSTATUS.
+   * @param liveNodes List of currently live node names.
+   * @param collectionProps Map of collection status information pulled directly from ZooKeeper.
+   */
+  protected void crossCheckReplicaStateWithLiveNodes(List<String> liveNodes, NamedList<Object> collectionProps) {
+    Iterator<Map.Entry<String,Object>> colls = collectionProps.iterator();
+    while (colls.hasNext()) {
+      Map.Entry<String,Object> next = colls.next();
+      Map<String,Object> collMap = (Map<String,Object>)next.getValue();
+      Map<String,Object> shards = (Map<String,Object>)collMap.get("shards");
+      for (Object nextShard : shards.values()) {
+        Map<String,Object> shardMap = (Map<String,Object>)nextShard;
+        Map<String,Object> replicas = (Map<String,Object>)shardMap.get("replicas");
+        for (Object nextReplica : replicas.values()) {
+          Map<String,Object> replicaMap = (Map<String,Object>)nextReplica;
+          if (!ZkStateReader.DOWN.equals(replicaMap.get(ZkStateReader.STATE_PROP))) {
+            // not down, so verify the node is live
+            String node_name = (String)replicaMap.get(ZkStateReader.NODE_NAME_PROP);
+            if (!liveNodes.contains(node_name)) {
+              // node is not live, so this replica is actually down
+              replicaMap.put(ZkStateReader.STATE_PROP, ZkStateReader.DOWN);
+            }
+          }
+        }
+      }
+    }
   }
 
   /**
