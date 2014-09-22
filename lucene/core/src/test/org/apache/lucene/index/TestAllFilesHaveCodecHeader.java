@@ -18,12 +18,16 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
@@ -48,16 +52,22 @@ public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
     conf.setCodec(TestUtil.getDefaultCodec());
     RandomIndexWriter riw = new RandomIndexWriter(random(), dir, conf);
     Document doc = new Document();
-    // these fields should sometimes get term vectors, etc
-    Field idField = newStringField("id", "", Field.Store.NO);
-    Field bodyField = newTextField("body", "", Field.Store.NO);
+    Field idField = newStringField("id", "", Field.Store.YES);
+    Field bodyField = newTextField("body", "", Field.Store.YES);
+    FieldType vectorsType = new FieldType(TextField.TYPE_STORED);
+    vectorsType.setStoreTermVectors(true);
+    vectorsType.setStoreTermVectorPositions(true);
+    Field vectorsField = new Field("vectors", "", vectorsType);
     Field dvField = new NumericDocValuesField("dv", 5);
     doc.add(idField);
     doc.add(bodyField);
+    doc.add(vectorsField);
     doc.add(dvField);
     for (int i = 0; i < 100; i++) {
       idField.setStringValue(Integer.toString(i));
       bodyField.setStringValue(TestUtil.randomUnicodeString(random()));
+      dvField.setLongValue(random().nextInt(5));
+      vectorsField.setStringValue(TestUtil.randomUnicodeString(random()));
       riw.addDocument(doc);
       if (random().nextInt(7) == 0) {
         riw.commit();
@@ -68,18 +78,18 @@ public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
       // }
     }
     riw.close();
-    checkHeaders(dir);
+    checkHeaders(dir, new HashMap<String,String>());
     dir.close();
   }
   
-  private void checkHeaders(Directory dir) throws IOException {
+  private void checkHeaders(Directory dir, Map<String,String> namesToExtensions) throws IOException {
     for (String file : dir.listAll()) {
       if (file.equals(IndexWriter.WRITE_LOCK_NAME)) {
         continue; // write.lock has no header, thats ok
       }
       if (file.endsWith(IndexFileNames.COMPOUND_FILE_EXTENSION)) {
         CompoundFileDirectory cfsDir = new CompoundFileDirectory(dir, file, newIOContext(random()), false);
-        checkHeaders(cfsDir); // recurse into cfs
+        checkHeaders(cfsDir, namesToExtensions); // recurse into cfs
         cfsDir.close();
       }
       IndexInput in = null;
@@ -88,6 +98,18 @@ public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
         in = dir.openInput(file, newIOContext(random()));
         int val = in.readInt();
         assertEquals(file + " has no codec header, instead found: " + val, CodecUtil.CODEC_MAGIC, val);
+        String codecName = in.readString();
+        assertFalse(codecName.isEmpty());
+        String extension = IndexFileNames.getExtension(file);
+        if (extension == null) {
+          assertTrue(file.startsWith(IndexFileNames.SEGMENTS));
+          extension = "<segments> (not a real extension, designates segments file)";
+        }
+        String previous = namesToExtensions.put(codecName, extension);
+        if (previous != null && !previous.equals(extension)) {
+          //TODO: not yet 
+          // fail("extensions " + previous + " and " + extension + " share same codecName " + codecName);
+        }
         success = true;
       } finally {
         if (success) {
