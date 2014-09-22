@@ -435,7 +435,8 @@ public class TestIndexFileDeleter extends LuceneTestCase {
             // suppress only FakeIOException:
             if (exc instanceof RuntimeException && exc.getMessage().equals("fake fail")) {
               // ok to ignore
-            } else if (exc instanceof AlreadyClosedException && exc.getCause() != null && "fake fail".equals(exc.getCause().getMessage())) {
+            } else if ((exc instanceof AlreadyClosedException || exc instanceof IllegalStateException) 
+                        && exc.getCause() != null && "fake fail".equals(exc.getCause().getMessage())) {
               // also ok to ignore
             } else {
               super.handleMergeException(exc);
