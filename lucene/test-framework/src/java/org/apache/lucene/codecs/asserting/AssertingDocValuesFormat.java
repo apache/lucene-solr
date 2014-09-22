@@ -28,11 +28,14 @@ import org.apache.lucene.index.AssertingAtomicReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.RandomAccessOrds;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.AssertingAtomicReader.AssertingRandomAccessOrds;
+import org.apache.lucene.index.AssertingAtomicReader.AssertingSortedSetDocValues;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -258,7 +261,11 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
       assert field.getDocValuesType() == FieldInfo.DocValuesType.SORTED_SET;
       SortedSetDocValues values = in.getSortedSet(field);
       assert values != null;
-      return new AssertingAtomicReader.AssertingSortedSetDocValues(values, maxDoc);
+      if (values instanceof RandomAccessOrds) {
+        return new AssertingRandomAccessOrds((RandomAccessOrds) values, maxDoc);
+      } else {
+        return new AssertingSortedSetDocValues(values, maxDoc);
+      }
     }
     
     @Override
