@@ -18,12 +18,12 @@ package org.apache.lucene.codecs.lucene41;
  */
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene410.Lucene410Codec;
 import org.apache.lucene.index.BaseStoredFieldsFormatTestCase;
+import org.apache.lucene.util.TestUtil;
 
 public class TestLucene41StoredFieldsFormat extends BaseStoredFieldsFormatTestCase {
   @Override
   protected Codec getCodec() {
-    return new Lucene410Codec();
+    return TestUtil.getDefaultCodec();
   }
 }

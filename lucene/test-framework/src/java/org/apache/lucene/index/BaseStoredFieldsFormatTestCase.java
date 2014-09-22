@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.StoredFieldsFormat;
-import org.apache.lucene.codecs.lucene410.Lucene410Codec;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleField;
@@ -491,7 +490,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     // get another codec, other than the default: so we are merging segments across different codecs
     final Codec otherCodec;
     if ("SimpleText".equals(Codec.getDefault().getName())) {
-      otherCodec = new Lucene410Codec();
+      otherCodec = TestUtil.getDefaultCodec();
     } else {
       otherCodec = new SimpleTextCodec();
     }

@@ -220,7 +220,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     TieredMergePolicy tmp = (TieredMergePolicy) iwc.getMergePolicy();
     tmp.setFloorSegmentMB(0.00001);
     // We need stable sizes for each segment:
-    iwc.setCodec(Codec.forName("Lucene410"));
+    iwc.setCodec(TestUtil.getDefaultCodec());
     iwc.setMergeScheduler(new SerialMergeScheduler());
     iwc.setMaxBufferedDocs(100);
     iwc.setRAMBufferSizeMB(-1);
