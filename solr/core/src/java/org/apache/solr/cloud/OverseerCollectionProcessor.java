@@ -625,8 +625,16 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
         }
       }
     } catch (Exception e) {
-      SolrException.log(log, "Collection " + operation + " of " + operation
-          + " failed", e);
+      String collName = message.getStr("collection");
+      if (collName == null) collName = message.getStr("name");
+
+      if (collName == null) {
+        SolrException.log(log, "Operation " + operation + " failed", e);
+      } else  {
+        SolrException.log(log, "Collection: " + collName + " operation: " + operation
+            + " failed", e);
+      }
+
       results.add("Operation " + operation + " caused exception:", e);
       SimpleOrderedMap nl = new SimpleOrderedMap();
       nl.add("msg", e.getMessage());
