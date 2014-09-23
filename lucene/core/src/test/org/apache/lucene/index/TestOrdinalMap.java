@@ -22,7 +22,6 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.lucene410.Lucene410DocValuesFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
@@ -64,7 +63,7 @@ public class TestOrdinalMap extends LuceneTestCase {
 
   public void testRamBytesUsed() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig cfg = new IndexWriterConfig(new MockAnalyzer(random())).setCodec(TestUtil.alwaysDocValuesFormat(new Lucene410DocValuesFormat()));
+    IndexWriterConfig cfg = new IndexWriterConfig(new MockAnalyzer(random())).setCodec(TestUtil.alwaysDocValuesFormat(TestUtil.getDefaultDocValuesFormat()));
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, cfg);
     final int maxDoc = TestUtil.nextInt(random(), 10, 1000);
     final int maxTermLength = TestUtil.nextInt(random(), 1, 4);

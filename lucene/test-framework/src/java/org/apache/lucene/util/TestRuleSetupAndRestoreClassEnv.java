@@ -32,9 +32,10 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
+import org.apache.lucene.codecs.asserting.AssertingDocValuesFormat;
+import org.apache.lucene.codecs.asserting.AssertingPostingsFormat;
 import org.apache.lucene.codecs.cheapbastard.CheapBastardCodec;
 import org.apache.lucene.codecs.compressing.CompressingCodec;
-import org.apache.lucene.codecs.lucene410.Lucene410Codec;
 import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.index.RandomCodec;
@@ -158,7 +159,7 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
       
       final PostingsFormat format;
       if ("random".equals(TEST_POSTINGSFORMAT)) {
-        format = PostingsFormat.forName("Lucene41");
+        format = new AssertingPostingsFormat();
       } else if ("MockRandom".equals(TEST_POSTINGSFORMAT)) {
         format = new MockRandomPostingsFormat(new Random(random.nextLong()));
       } else {
@@ -167,13 +168,12 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
       
       final DocValuesFormat dvFormat;
       if ("random".equals(TEST_DOCVALUESFORMAT)) {
-        // TODO: huh?
-        dvFormat = DocValuesFormat.forName("Lucene410");
+        dvFormat = new AssertingDocValuesFormat();
       } else {
         dvFormat = DocValuesFormat.forName(TEST_DOCVALUESFORMAT);
       }
       
-      codec = new Lucene410Codec() {       
+      codec = new AssertingCodec() {       
         @Override
         public PostingsFormat getPostingsFormatForField(String field) {
           return format;

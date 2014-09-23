@@ -577,6 +577,6 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
   
   protected boolean codecAcceptsHugeBinaryValues(String field) {
     String name = TestUtil.getDocValuesFormat(field);
-    return !(name.equals("Lucene40") || name.equals("Lucene41") || name.equals("Lucene42") || name.equals("Memory") || name.equals("Direct"));
+    return !(name.equals("Memory") || name.equals("Direct"));
   }
 }

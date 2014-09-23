@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.codecs.TermVectorsWriter;
-import org.apache.lucene.codecs.lucene42.Lucene42TermVectorsFormat;
 import org.apache.lucene.index.AssertingAtomicReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -35,10 +34,10 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TestUtil;
 
 /**
- * Just like {@link Lucene42TermVectorsFormat} but with additional asserts.
+ * Just like the default vectors format but with additional asserts.
  */
 public class AssertingTermVectorsFormat extends TermVectorsFormat {
-  private final TermVectorsFormat in = new Lucene42TermVectorsFormat();
+  private final TermVectorsFormat in = TestUtil.getDefaultCodec().termVectorsFormat();
 
   @Override
   public TermVectorsReader vectorsReader(Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos, IOContext context) throws IOException {

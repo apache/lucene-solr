@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.blocktreeords.Ords41PostingsFormat;
 import org.apache.lucene.codecs.lucene41ords.Lucene41WithOrds;
 import org.apache.lucene.codecs.memory.FSTOrdPostingsFormat;
@@ -133,7 +134,7 @@ public class TestLucene410DocValuesFormat extends BaseCompressingDocValuesFormat
       default: throw new AssertionError();
     }
     final DocValuesFormat dv = new Lucene410DocValuesFormat();
-    conf.setCodec(new Lucene410Codec() {
+    conf.setCodec(new AssertingCodec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
         return pf;

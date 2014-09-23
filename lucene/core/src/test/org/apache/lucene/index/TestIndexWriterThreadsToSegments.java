@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene46.Lucene46SegmentInfoFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
@@ -332,7 +331,7 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
           String segName = IndexFileNames.parseSegmentName(fileName);
           if (segSeen.contains(segName) == false) {
             segSeen.add(segName);
-            SegmentInfo si = new Lucene46SegmentInfoFormat().getSegmentInfoReader().read(dir, segName, IOContext.DEFAULT);
+            SegmentInfo si = TestUtil.getDefaultCodec().segmentInfoFormat().getSegmentInfoReader().read(dir, segName, IOContext.DEFAULT);
             si.setCodec(codec);
             SegmentCommitInfo sci = new SegmentCommitInfo(si, 0, -1, -1, -1);
             SegmentReader sr = new SegmentReader(sci, IOContext.DEFAULT);

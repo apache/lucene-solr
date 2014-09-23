@@ -32,10 +32,10 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.TestUtil;
 
 /**
- * Just like {@link Lucene49NormsFormat} but with additional asserts.
+ * Just like the default but with additional asserts.
  */
 public class AssertingNormsFormat extends NormsFormat {
-  private final NormsFormat in = new Lucene49NormsFormat();
+  private final NormsFormat in = TestUtil.getDefaultCodec().normsFormat();
   
   @Override
   public NormsConsumer normsConsumer(SegmentWriteState state) throws IOException {

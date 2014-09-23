@@ -44,7 +44,10 @@ import java.util.zip.ZipInputStream;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.asserting.AssertingCodec;
+import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
 import org.apache.lucene.codecs.lucene410.Lucene410Codec;
+import org.apache.lucene.codecs.lucene410.Lucene410DocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.document.BinaryDocValuesField;
@@ -703,7 +706,7 @@ public final class TestUtil {
     if (LuceneTestCase.VERBOSE) {
       System.out.println("forcing postings format to:" + format);
     }
-    return new Lucene410Codec() {
+    return new AssertingCodec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
         return format;
@@ -721,7 +724,7 @@ public final class TestUtil {
     if (LuceneTestCase.VERBOSE) {
       System.out.println("forcing docvalues format to:" + format);
     }
-    return new Lucene410Codec() {
+    return new AssertingCodec() {
       @Override
       public DocValuesFormat getDocValuesFormatForField(String field) {
         return format;
@@ -735,6 +738,28 @@ public final class TestUtil {
    */
   public static Codec getDefaultCodec() {
     return new Lucene410Codec();
+  }
+  
+  /** 
+   * Returns the actual default postings format (e.g. LuceneMNPostingsFormat for this version of Lucene.
+   */
+  public static PostingsFormat getDefaultPostingsFormat() {
+    return new Lucene41PostingsFormat();
+  }
+  
+  /** 
+   * Returns the actual default postings format (e.g. LuceneMNPostingsFormat for this version of Lucene.
+   * @lucene.internal this may disappear at any time
+   */
+  public static PostingsFormat getDefaultPostingsFormat(int minItemsPerBlock, int maxItemsPerBlock) {
+    return new Lucene41PostingsFormat(minItemsPerBlock, maxItemsPerBlock);
+  }
+  
+  /** 
+   * Returns the actual default docvalues format (e.g. LuceneMNDocValuesFormat for this version of Lucene.
+   */
+  public static DocValuesFormat getDefaultDocValuesFormat() {
+    return new Lucene410DocValuesFormat();
   }
 
   // TODO: generalize all 'test-checks-for-crazy-codecs' to

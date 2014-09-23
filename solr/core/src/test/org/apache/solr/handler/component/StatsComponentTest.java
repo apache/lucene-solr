@@ -48,7 +48,6 @@ import org.junit.BeforeClass;
 /**
  * Statistics Component Test
  */
-@LuceneTestCase.SuppressCodecs({"Lucene40", "Lucene41", "Lucene42"})
 public class StatsComponentTest extends AbstractSolrTestCase {
 
   final static String XPRE = "/response/lst[@name='stats']/";

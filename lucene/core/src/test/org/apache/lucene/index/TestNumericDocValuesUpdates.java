@@ -9,11 +9,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.asserting.AssertingDocValuesFormat;
-import org.apache.lucene.codecs.lucene410.Lucene410DocValuesFormat;
-import org.apache.lucene.codecs.lucene410.Lucene410Codec;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
@@ -472,12 +470,14 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
   
   @Test
   public void testDifferentDVFormatPerField() throws Exception {
+    // test relies on separate instances of the "same thing"
+    assert TestUtil.getDefaultDocValuesFormat() != TestUtil.getDefaultDocValuesFormat();
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
-    conf.setCodec(new Lucene410Codec() {
+    conf.setCodec(new AssertingCodec() {
       @Override
       public DocValuesFormat getDocValuesFormatForField(String field) {
-        return new Lucene410DocValuesFormat();
+        return TestUtil.getDefaultDocValuesFormat();
       }
     });
     IndexWriter writer = new IndexWriter(dir, conf);
@@ -1019,10 +1019,10 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setMergePolicy(NoMergePolicy.INSTANCE); // disable merges to simplify test assertions.
-    conf.setCodec(new Lucene410Codec() {
+    conf.setCodec(new AssertingCodec() {
       @Override
       public DocValuesFormat getDocValuesFormatForField(String field) {
-        return new Lucene410DocValuesFormat();
+        return TestUtil.getDefaultDocValuesFormat();
       }
     });
     IndexWriter writer = new IndexWriter(dir, conf);
@@ -1036,7 +1036,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     // change format
     conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setMergePolicy(NoMergePolicy.INSTANCE); // disable merges to simplify test assertions.
-    conf.setCodec(new Lucene410Codec() {
+    conf.setCodec(new AssertingCodec() {
       @Override
       public DocValuesFormat getDocValuesFormatForField(String field) {
         return new AssertingDocValuesFormat();
