@@ -1043,11 +1043,13 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     return files;
   }
 
-  final void finishCommit(Directory dir) throws IOException {
+  /** Returns the committed segments_N filename. */
+  final String finishCommit(Directory dir) throws IOException {
     if (pendingSegnOutput == null) {
       throw new IllegalStateException("prepareCommit was not called");
     }
     boolean success = false;
+    final String dest;
     try {
       CodecUtil.writeFooter(pendingSegnOutput);
       success = true;
@@ -1094,6 +1096,8 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
 
     lastGeneration = generation;
     writeSegmentsGen(dir, generation);
+
+    return fileName;
   }
 
   /** Writes & syncs to the Directory dir, taking care to

@@ -2213,15 +2213,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
      * get in our way and do unnecessary work. -- if we don't lock this here we might
      * get in trouble if */
     synchronized (fullFlushLock) { 
-        /*
-         * We first abort and trash everything we have in-memory
-         * and keep the thread-states locked, the lockAndAbortAll operation
-         * also guarantees "point in time semantics" ie. the checkpoint that we need in terms
-         * of logical happens-before relationship in the DW. So we do
-         * abort all in memory structures 
-         * We also drop global field numbering before during abort to make
-         * sure it's just like a fresh index.
-         */
+      /*
+       * We first abort and trash everything we have in-memory
+       * and keep the thread-states locked, the lockAndAbortAll operation
+       * also guarantees "point in time semantics" ie. the checkpoint that we need in terms
+       * of logical happens-before relationship in the DW. So we do
+       * abort all in memory structures 
+       * We also drop global field numbering before during abort to make
+       * sure it's just like a fresh index.
+       */
       try {
         docWriter.lockAndAbortAll(this);
         processEvents(false, true);
@@ -2246,8 +2246,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             segmentInfos.changed();
             globalFieldNumberMap.clear();
             success = true;
-          } catch (OutOfMemoryError oom) {
-            tragicEvent(oom, "deleteAll");
           } finally {
             if (!success) {
               if (infoStream.isEnabled("IW")) {
@@ -2256,6 +2254,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             }
           }
         }
+      } catch (OutOfMemoryError oom) {
+        tragicEvent(oom, "deleteAll");
       } finally {
         docWriter.unlockAllAfterAbortAll(this);
       }
@@ -3100,63 +3100,70 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
   }
 
-  private synchronized final void finishCommit() throws IOException {
+  private final void finishCommit() throws IOException {
 
-    boolean success = false;
-    
-    if (pendingCommit != null) {
-      try {
-        if (infoStream.isEnabled("IW")) {
-          infoStream.message("IW", "commit: pendingCommit != null");
-        }
-        pendingCommit.finishCommit(directory);
-        success = true;
-        // we committed, if anything goes wrong after this: we are screwed
-        try {
-          if (infoStream.isEnabled("IW")) {
-            infoStream.message("IW", "commit: wrote segments file \"" + pendingCommit.getSegmentsFileName() + "\"");
-          }
-          segmentInfos.updateGeneration(pendingCommit);
-          lastCommitChangeCount = pendingCommitChangeCount;
-          rollbackSegments = pendingCommit.createBackupSegmentInfos();
-          // NOTE: don't use this.checkpoint() here, because
-          // we do not want to increment changeCount:
-          deleter.checkpoint(pendingCommit, true);
-        } catch (Throwable tragedy) {
-          tragicEvent(tragedy, "finishCommit");
-        }
-      } finally {
-        // Matches the incRef done in prepareCommit:
-        try {
-          if (success == false || tragedy == null) {
+    boolean commitCompleted = false;
+    boolean finished = false;
+    String committedSegmentsFileName = null;
+
+    try {
+      synchronized(this) {
+        if (pendingCommit != null) {
+          try {
+
+            if (infoStream.isEnabled("IW")) {
+              infoStream.message("IW", "commit: pendingCommit != null");
+            }
+
+            committedSegmentsFileName = pendingCommit.finishCommit(directory);
+
+            // we committed, if anything goes wrong after this, we are screwed and it's a tragedy:
+            commitCompleted = true;
+
+            // NOTE: don't use this.checkpoint() here, because
+            // we do not want to increment changeCount:
+            deleter.checkpoint(pendingCommit, true);
+
+            lastCommitChangeCount = pendingCommitChangeCount;
+            rollbackSegments = pendingCommit.createBackupSegmentInfos();
+
+            finished = true;
+          } finally {
+            notifyAll();
             try {
-              deleter.decRef(filesToCommit);
-            } catch (Throwable t) {
-              // if the commit succeeded, we are in screwed state
-              // otherwise, throw our original exception
-              if (success) {
-                tragicEvent(tragedy, "finishCommit");
+              if (finished) {
+                // all is good
+                deleter.decRef(filesToCommit);
+              } else if (commitCompleted == false) {
+                // exc happened in finishCommit: not a tragedy
+                deleter.decRefWhileHandlingException(filesToCommit);
               }
-            } 
+            } finally {
+              pendingCommit = null;
+              filesToCommit = null;
+            }
           }
-        } finally {
-          filesToCommit = null;
-          pendingCommit = null;
-          notifyAll();
+        } else {
+          assert filesToCommit == null;
+          if (infoStream.isEnabled("IW")) {
+            infoStream.message("IW", "commit: pendingCommit == null; skip");
+          }
         }
       }
-
+    } catch (Throwable t) {
       if (infoStream.isEnabled("IW")) {
-        infoStream.message("IW", String.format(Locale.ROOT, "commit: took %.1f msec", (System.nanoTime()-startCommitTime)/1000000.0));
+        infoStream.message("IW", "hit exception during finishCommit: " + t.getMessage());
       }
-      
-    } else {
-      if (infoStream.isEnabled("IW")) {
-        infoStream.message("IW", "commit: pendingCommit == null; skip");
+      if (commitCompleted) {
+        tragicEvent(t, "finishCommit");
+      } else {
+        IOUtils.reThrow(t);
       }
     }
 
     if (infoStream.isEnabled("IW")) {
+      infoStream.message("IW", "commit: wrote segments file \"" + committedSegmentsFileName + "\"");
+      infoStream.message("IW", String.format(Locale.ROOT, "commit: took %.1f msec", (System.nanoTime()-startCommitTime)/1000000.0));
       infoStream.message("IW", "commit: done");
     }
   }
@@ -4595,12 +4602,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   }
 
   private void tragicEvent(Throwable tragedy, String location) {
+    // We cannot hold IW's lock here else it can lead to deadlock:
+    assert Thread.holdsLock(this) == false;
+
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "hit " + tragedy.getClass().getSimpleName() + " inside " + location);
     }
-    // its possible you could have a really bad day
-    if (this.tragedy == null) {
-      this.tragedy = tragedy;
+    synchronized (this) {
+      // its possible you could have a really bad day
+      if (this.tragedy == null) {
+        this.tragedy = tragedy;
+      }
     }
     // if we are already closed (e.g. called by rollback), this will be a no-op.
     synchronized(commitLock) {
