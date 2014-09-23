@@ -40,7 +40,11 @@ public class ResponseUtils {
   public static int getErrorInfo(Throwable ex, NamedList info, Logger log) {
     int code = 500;
     if (ex instanceof SolrException) {
-      code = ((SolrException)ex).code();
+      SolrException solrExc = (SolrException)ex;
+      code = solrExc.code();
+      NamedList<String> errorMetadata = solrExc.getMetadata();
+      if (errorMetadata != null)
+        info.add("metadata", errorMetadata);
     }
     
     for (Throwable th = ex; th != null; th = th.getCause()) {

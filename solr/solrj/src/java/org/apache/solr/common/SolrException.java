@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 
 /**
@@ -86,6 +87,7 @@ public class SolrException extends RuntimeException {
   }
   
   int code=0;
+  protected NamedList<String> metadata;
 
   /**
    * The HTTP Status code associated with this Exception.  For SolrExceptions 
@@ -98,6 +100,26 @@ public class SolrException extends RuntimeException {
    */
   public int code() { return code; }
 
+  public void setMetadata(NamedList<String> metadata) {
+    this.metadata = metadata;
+  }
+
+  public NamedList<String> getMetadata() {
+    return metadata;
+  }
+
+  public String getMetadata(String key) {
+    return (metadata != null && key != null) ? metadata.get(key) : null;
+  }
+
+  public void setMetadata(String key, String value) {
+    if (key == null || value == null)
+      throw new IllegalArgumentException("Exception metadata cannot be null!");
+
+    if (metadata == null)
+      metadata = new NamedList<String>();
+    metadata.add(key, value);
+  }
 
   public void log(Logger log) { log(log,this); }
   public static void log(Logger log, Throwable e) {
