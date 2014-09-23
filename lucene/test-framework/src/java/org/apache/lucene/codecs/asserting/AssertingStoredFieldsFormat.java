@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.StoredFieldsWriter;
-import org.apache.lucene.codecs.lucene41.Lucene41StoredFieldsFormat;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;
@@ -34,10 +33,10 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.TestUtil;
 
 /**
- * Just like {@link Lucene41StoredFieldsFormat} but with additional asserts.
+ * Just like the default stored fields format but with additional asserts.
  */
 public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
-  private final StoredFieldsFormat in = new Lucene41StoredFieldsFormat();
+  private final StoredFieldsFormat in = TestUtil.getDefaultCodec().storedFieldsFormat();
 
   @Override
   public StoredFieldsReader fieldsReader(Directory directory, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {

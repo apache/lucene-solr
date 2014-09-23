@@ -19,7 +19,7 @@ package org.apache.lucene;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene410.Lucene410Codec;
+import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
@@ -30,6 +30,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 
 /* Intentionally outside of oal.index to verify fully
@@ -37,10 +38,10 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestExternalCodecs extends LuceneTestCase {
 
-  private static final class CustomPerFieldCodec extends Lucene410Codec {
+  private static final class CustomPerFieldCodec extends AssertingCodec {
     
     private final PostingsFormat ramFormat = PostingsFormat.forName("RAMOnly");
-    private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene41");
+    private final PostingsFormat defaultFormat = TestUtil.getDefaultPostingsFormat();
     private final PostingsFormat memoryFormat = PostingsFormat.forName("Memory");
 
     @Override

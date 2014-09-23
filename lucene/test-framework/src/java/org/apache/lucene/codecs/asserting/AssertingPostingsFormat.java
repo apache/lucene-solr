@@ -23,7 +23,6 @@ import java.util.Iterator;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
 import org.apache.lucene.index.AssertingAtomicReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
@@ -39,10 +38,10 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.TestUtil;
 
 /**
- * Just like {@link Lucene41PostingsFormat} but with additional asserts.
+ * Just like the default postings format but with additional asserts.
  */
 public final class AssertingPostingsFormat extends PostingsFormat {
-  private final PostingsFormat in = new Lucene41PostingsFormat();
+  private final PostingsFormat in = TestUtil.getDefaultPostingsFormat();
   
   public AssertingPostingsFormat() {
     super("Asserting");

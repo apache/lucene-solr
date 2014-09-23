@@ -41,7 +41,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene410.Lucene410Codec;
+import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -1520,7 +1520,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     // TODO: would be better to use / delegate to the current
     // Codec returned by getCodec()
 
-    iwc.setCodec(new Lucene410Codec() {
+    iwc.setCodec(new AssertingCodec() {
         @Override
         public PostingsFormat getPostingsFormatForField(String field) {
 

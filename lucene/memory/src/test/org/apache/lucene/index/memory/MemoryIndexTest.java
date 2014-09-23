@@ -36,7 +36,6 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -148,7 +147,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     Directory ramdir = new RAMDirectory();
     Analyzer analyzer = randomAnalyzer();
     IndexWriter writer = new IndexWriter(ramdir,
-                                         new IndexWriterConfig(analyzer).setCodec(TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat())));
+                                         new IndexWriterConfig(analyzer).setCodec(TestUtil.alwaysPostingsFormat(TestUtil.getDefaultPostingsFormat())));
     Document doc = new Document();
     Field field1 = newTextField("foo", fooField.toString(), Field.Store.NO);
     Field field2 = newTextField("term", termField.toString(), Field.Store.NO);

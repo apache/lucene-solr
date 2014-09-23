@@ -23,7 +23,6 @@ import java.util.Iterator;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.DocValuesProducer;
-import org.apache.lucene.codecs.lucene410.Lucene410DocValuesFormat;
 import org.apache.lucene.index.AssertingAtomicReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfo;
@@ -44,10 +43,10 @@ import org.apache.lucene.util.LongBitSet;
 import org.apache.lucene.util.TestUtil;
 
 /**
- * Just like {@link Lucene410DocValuesFormat} but with additional asserts.
+ * Just like the default but with additional asserts.
  */
 public class AssertingDocValuesFormat extends DocValuesFormat {
-  private final DocValuesFormat in = new Lucene410DocValuesFormat();
+  private final DocValuesFormat in = TestUtil.getDefaultDocValuesFormat();
   
   public AssertingDocValuesFormat() {
     super("Asserting");

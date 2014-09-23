@@ -22,10 +22,10 @@ import java.io.IOException;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * A class used for testing {@link BloomFilteringPostingsFormat} with a concrete
@@ -34,7 +34,7 @@ import org.apache.lucene.index.SegmentWriteState;
  * APPLICATION This is not a realistic application of Bloom Filters as they
  * ordinarily are larger and operate on only primary key type fields.
  */
-public final class TestBloomFilteredLucene41Postings extends PostingsFormat {
+public final class TestBloomFilteredLucenePostings extends PostingsFormat {
   
   private BloomFilteringPostingsFormat delegate;
   
@@ -54,9 +54,9 @@ public final class TestBloomFilteredLucene41Postings extends PostingsFormat {
     }
   }
   
-  public TestBloomFilteredLucene41Postings() {
-    super("TestBloomFilteredLucene41Postings");
-    delegate = new BloomFilteringPostingsFormat(new Lucene41PostingsFormat(),
+  public TestBloomFilteredLucenePostings() {
+    super("TestBloomFilteredLucenePostings");
+    delegate = new BloomFilteringPostingsFormat(TestUtil.getDefaultPostingsFormat(),
         new LowMemoryBloomFactory());
   }
   
@@ -74,6 +74,6 @@ public final class TestBloomFilteredLucene41Postings extends PostingsFormat {
 
   @Override
   public String toString() {
-    return "TestBloomFilteredLucene41Postings(" + delegate + ")";
+    return "TestBloomFilteredLucenePostings(" + delegate + ")";
   }
 }

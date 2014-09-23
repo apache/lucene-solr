@@ -56,10 +56,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.SegmentInfoFormat;
-import org.apache.lucene.codecs.lucene46.Lucene46SegmentInfoFormat;
-import org.apache.lucene.codecs.simpletext.SimpleTextSegmentInfoFormat;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
