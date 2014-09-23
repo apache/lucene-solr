@@ -22,7 +22,7 @@ import java.text.ParseException;
 import java.util.Date;
 import java.util.Map;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.util.mutable.MutableValue;
@@ -55,7 +55,7 @@ public class ConstDateSource extends ConstDoubleSource {
   }
   
   @Override
-  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     return new FloatDocValues(this) {
       @Override
       public float floatVal(int doc) {

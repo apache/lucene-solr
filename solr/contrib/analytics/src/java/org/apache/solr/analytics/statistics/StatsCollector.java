@@ -20,7 +20,7 @@ package org.apache.solr.analytics.statistics;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.util.mutable.MutableValue;
 
@@ -40,7 +40,7 @@ public interface StatsCollector {
    * @param context The context to read documents from.
    * @throws IOException if setting next reader fails
    */
-  void setNextReader(AtomicReaderContext context) throws IOException;
+  void setNextReader(LeafReaderContext context) throws IOException;
   
   MutableValue getValue();
   FunctionValues getFunction();

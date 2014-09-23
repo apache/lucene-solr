@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.WeakHashMap;
 
-import org.apache.lucene.index.AssertingAtomicReader;
+import org.apache.lucene.index.AssertingLeafReader;
 
 /** Wraps a Scorer with additional checks */
 public class AssertingScorer extends Scorer {
@@ -63,13 +63,13 @@ public class AssertingScorer extends Scorer {
 
   final Random random;
   final Scorer in;
-  final AssertingAtomicReader.AssertingDocsEnum docsEnumIn;
+  final AssertingLeafReader.AssertingDocsEnum docsEnumIn;
 
   private AssertingScorer(Random random, Scorer in) {
     super(in.weight);
     this.random = random;
     this.in = in;
-    this.docsEnumIn = new AssertingAtomicReader.AssertingDocsEnum(in);
+    this.docsEnumIn = new AssertingLeafReader.AssertingDocsEnum(in);
   }
 
   public Scorer getIn() {

@@ -25,7 +25,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -94,7 +94,7 @@ public class TestDocValuesFieldSources extends LuceneTestCase {
     iw.close();
 
     DirectoryReader rd = DirectoryReader.open(d);
-    for (AtomicReaderContext leave : rd.leaves()) {
+    for (LeafReaderContext leave : rd.leaves()) {
       final FunctionValues ids = new LongFieldSource("id").getValues(null, leave);
       final ValueSource vs;
       switch (type) {

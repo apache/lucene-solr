@@ -126,6 +126,9 @@ API Changes
                extend from IOException.
   (Ryan Ernst, Robert Muir)
 
+* LUCENE-5569: *AtomicReader/AtomicReaderContext have been renamed to *LeafReader/LeafReaderContext.
+  (Ryan Ernst)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary

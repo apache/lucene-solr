@@ -17,16 +17,13 @@
 
 package org.apache.lucene.queries.function.valuesource;
 
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.BytesRefBuilder;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
 
@@ -47,7 +44,7 @@ public class IfFunction extends BoolFunction {
   }
 
   @Override
-  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     final FunctionValues ifVals = ifSource.getValues(context, readerContext);
     final FunctionValues trueVals = trueSource.getValues(context, readerContext);
     final FunctionValues falseVals = falseSource.getValues(context, readerContext);

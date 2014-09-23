@@ -18,7 +18,7 @@ package org.apache.lucene.spatial.util;
  */
 
 import com.spatial4j.core.shape.Shape;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.BoolDocValues;
@@ -64,7 +64,7 @@ public class ShapePredicateValueSource extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     final FunctionValues shapeValues = shapeValuesource.getValues(context, readerContext);
 
     return new BoolDocValues(this) {

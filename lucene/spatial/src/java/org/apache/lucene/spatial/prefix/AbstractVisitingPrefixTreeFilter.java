@@ -18,7 +18,7 @@ package org.apache.lucene.spatial.prefix;
  */
 
 import com.spatial4j.core.shape.Shape;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.spatial.prefix.tree.Cell;
@@ -35,7 +35,7 @@ import java.util.Iterator;
  * visitor design patterns for subclasses to guide the traversal and collect
  * matching documents.
  * <p/>
- * Subclasses implement {@link #getDocIdSet(org.apache.lucene.index.AtomicReaderContext,
+ * Subclasses implement {@link #getDocIdSet(org.apache.lucene.index.LeafReaderContext,
  * org.apache.lucene.util.Bits)} by instantiating a custom {@link
  * VisitorTemplate} subclass (i.e. an anonymous inner class) and implement the
  * required methods.
@@ -81,7 +81,7 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
    * other operations on a {@link SpatialPrefixTree} indexed field. An instance
    * of this class is not designed to be re-used across AtomicReaderContext
    * instances so simply create a new one for each call to, say a {@link
-   * org.apache.lucene.search.Filter#getDocIdSet(org.apache.lucene.index.AtomicReaderContext, org.apache.lucene.util.Bits)}.
+   * org.apache.lucene.search.Filter#getDocIdSet(org.apache.lucene.index.LeafReaderContext, org.apache.lucene.util.Bits)}.
    * The {@link #getDocIdSet()} method here starts the work. It first checks
    * that there are indexed terms; if not it quickly returns null. Then it calls
    * {@link #start()} so a subclass can set up a return value, like an
@@ -132,7 +132,7 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
 
     private BytesRef thisTerm;//the result of termsEnum.term()
 
-    public VisitorTemplate(AtomicReaderContext context, Bits acceptDocs,
+    public VisitorTemplate(LeafReaderContext context, Bits acceptDocs,
                            boolean hasIndexedLeaves) throws IOException {
       super(context, acceptDocs);
       this.hasIndexedLeaves = hasIndexedLeaves;

@@ -85,7 +85,7 @@ public final class TermContext {
     final BytesRef bytes = term.bytes();
     final TermContext perReaderTermState = new TermContext(context);
     //if (DEBUG) System.out.println("prts.build term=" + term);
-    for (final AtomicReaderContext ctx : context.leaves()) {
+    for (final LeafReaderContext ctx : context.leaves()) {
       //if (DEBUG) System.out.println("  r=" + leaves[i].reader);
       final Fields fields = ctx.reader().fields();
       if (fields != null) {

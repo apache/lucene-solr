@@ -22,8 +22,8 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexWriter;
@@ -38,7 +38,6 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.junit.BeforeClass;
 
 // TODO: really this should be in BaseTestPF or somewhere else? useful test!
 public class TestReuseDocsEnum extends LuceneTestCase {
@@ -53,8 +52,8 @@ public class TestReuseDocsEnum extends LuceneTestCase {
     writer.commit();
 
     DirectoryReader open = DirectoryReader.open(dir);
-    for (AtomicReaderContext ctx : open.leaves()) {
-      AtomicReader indexReader = ctx.reader();
+    for (LeafReaderContext ctx : open.leaves()) {
+      LeafReader indexReader = ctx.reader();
       Terms terms = indexReader.terms("body");
       TermsEnum iterator = terms.iterator(null);
       IdentityHashMap<DocsEnum, Boolean> enums = new IdentityHashMap<>();
@@ -81,7 +80,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
     writer.commit();
 
     DirectoryReader open = DirectoryReader.open(dir);
-    for (AtomicReaderContext ctx : open.leaves()) {
+    for (LeafReaderContext ctx : open.leaves()) {
       Terms terms = ctx.reader().terms("body");
       TermsEnum iterator = terms.iterator(null);
       IdentityHashMap<DocsEnum, Boolean> enums = new IdentityHashMap<>();
@@ -130,10 +129,10 @@ public class TestReuseDocsEnum extends LuceneTestCase {
 
     DirectoryReader firstReader = DirectoryReader.open(dir);
     DirectoryReader secondReader = DirectoryReader.open(dir);
-    List<AtomicReaderContext> leaves = firstReader.leaves();
-    List<AtomicReaderContext> leaves2 = secondReader.leaves();
+    List<LeafReaderContext> leaves = firstReader.leaves();
+    List<LeafReaderContext> leaves2 = secondReader.leaves();
     
-    for (AtomicReaderContext ctx : leaves) {
+    for (LeafReaderContext ctx : leaves) {
       Terms terms = ctx.reader().terms("body");
       TermsEnum iterator = terms.iterator(null);
       IdentityHashMap<DocsEnum, Boolean> enums = new IdentityHashMap<>();
@@ -160,11 +159,11 @@ public class TestReuseDocsEnum extends LuceneTestCase {
     IOUtils.close(firstReader, secondReader, dir);
   }
   
-  public DocsEnum randomDocsEnum(String field, BytesRef term, List<AtomicReaderContext> readers, Bits bits) throws IOException {
+  public DocsEnum randomDocsEnum(String field, BytesRef term, List<LeafReaderContext> readers, Bits bits) throws IOException {
     if (random().nextInt(10) == 0) {
       return null;
     }
-    AtomicReader indexReader = readers.get(random().nextInt(readers.size())).reader();
+    LeafReader indexReader = readers.get(random().nextInt(readers.size())).reader();
     Terms terms = indexReader.terms(field);
     if (terms == null) {
       return null;

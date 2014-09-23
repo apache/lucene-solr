@@ -20,7 +20,7 @@ package org.apache.lucene.index.sorter;
 import java.io.IOException;
 import java.util.Comparator;
 
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.Scorer;
@@ -61,8 +61,8 @@ final class Sorter {
     abstract int newToOld(int docID);
 
     /** Return the number of documents in this map. This must be equal to the
-     *  {@link AtomicReader#maxDoc() number of documents} of the
-     *  {@link AtomicReader} which is sorted. */
+     *  {@link org.apache.lucene.index.LeafReader#maxDoc() number of documents} of the
+     *  {@link org.apache.lucene.index.LeafReader} which is sorted. */
     abstract int size();
   }
 
@@ -211,7 +211,7 @@ final class Sorter {
    * <b>NOTE:</b> deleted documents are expected to appear in the mapping as
    * well, they will however be marked as deleted in the sorted view.
    */
-  DocMap sort(AtomicReader reader) throws IOException {
+  DocMap sort(LeafReader reader) throws IOException {
     SortField fields[] = sort.getSort();
     final int reverseMul[] = new int[fields.length];
     final FieldComparator<?> comparators[] = new FieldComparator[fields.length];

@@ -19,8 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReader; // javadocs
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReaderContext; // javadocs
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
@@ -32,10 +31,10 @@ import org.apache.lucene.util.Bits;
  * {@link Query}, so that a {@link Query} instance can be reused. <br>
  * {@link IndexSearcher} dependent state of the query should reside in the
  * {@link Weight}. <br>
- * {@link AtomicReader} dependent state should reside in the {@link Scorer}.
+ * {@link org.apache.lucene.index.LeafReader} dependent state should reside in the {@link Scorer}.
  * <p>
  * Since {@link Weight} creates {@link Scorer} instances for a given
- * {@link AtomicReaderContext} ({@link #scorer(AtomicReaderContext, Bits)})
+ * {@link org.apache.lucene.index.LeafReaderContext} ({@link #scorer(org.apache.lucene.index.LeafReaderContext, Bits)})
  * callers must maintain the relationship between the searcher's top-level
  * {@link IndexReaderContext} and the context used to create a {@link Scorer}. 
  * <p>
@@ -50,7 +49,7 @@ import org.apache.lucene.util.Bits;
  * <li>The query normalization factor is passed to {@link #normalize(float, float)}. At
  * this point the weighting is complete.
  * <li>A <code>Scorer</code> is constructed by
- * {@link #scorer(AtomicReaderContext, Bits)}.
+ * {@link #scorer(org.apache.lucene.index.LeafReaderContext, Bits)}.
  * </ol>
  * 
  * @since 2.9
@@ -65,7 +64,7 @@ public abstract class Weight {
    * @return an Explanation for the score
    * @throws IOException if an {@link IOException} occurs
    */
-  public abstract Explanation explain(AtomicReaderContext context, int doc) throws IOException;
+  public abstract Explanation explain(LeafReaderContext context, int doc) throws IOException;
 
   /** The query that this concerns. */
   public abstract Query getQuery();
@@ -89,7 +88,7 @@ public abstract class Weight {
    * query.
    * 
    * @param context
-   *          the {@link AtomicReaderContext} for which to return the {@link Scorer}.
+   *          the {@link org.apache.lucene.index.LeafReaderContext} for which to return the {@link Scorer}.
    * @param acceptDocs
    *          Bits that represent the allowable docs to match (typically deleted docs
    *          but possibly filtering other documents)
@@ -97,7 +96,7 @@ public abstract class Weight {
    * @return a {@link Scorer} which scores documents in/out-of order.
    * @throws IOException if there is a low-level I/O error
    */
-  public abstract Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException;
+  public abstract Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException;
 
   /**
    * Optional method, to return a {@link BulkScorer} to
@@ -108,7 +107,7 @@ public abstract class Weight {
    * collects the resulting hits.
    *
    * @param context
-   *          the {@link AtomicReaderContext} for which to return the {@link Scorer}.
+   *          the {@link org.apache.lucene.index.LeafReaderContext} for which to return the {@link Scorer}.
    * @param scoreDocsInOrder
    *          specifies whether in-order scoring of documents is required. Note
    *          that if set to false (i.e., out-of-order scoring is required),
@@ -126,7 +125,7 @@ public abstract class Weight {
    * passes them to a collector.
    * @throws IOException if there is a low-level I/O error
    */
-  public BulkScorer bulkScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
+  public BulkScorer bulkScorer(LeafReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
 
     Scorer scorer = scorer(context, acceptDocs);
     if (scorer == null) {
@@ -199,7 +198,7 @@ public abstract class Weight {
    * Returns true iff this implementation scores docs only out of order. This
    * method is used in conjunction with {@link Collector}'s
    * {@link LeafCollector#acceptsDocsOutOfOrder() acceptsDocsOutOfOrder} and
-   * {@link #bulkScorer(AtomicReaderContext, boolean, Bits)} to
+   * {@link #bulkScorer(org.apache.lucene.index.LeafReaderContext, boolean, Bits)} to
    * create a matching {@link Scorer} instance for a given {@link Collector}, or
    * vice versa.
    * <p>

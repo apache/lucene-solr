@@ -20,9 +20,9 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
@@ -75,7 +75,7 @@ public class TermQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
       assert termStates.topReaderContext == ReaderUtil.getTopLevelContext(context) : "The top-reader used to create Weight (" + termStates.topReaderContext + ") is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);
       final TermsEnum termsEnum = getTermsEnum(context);
       if (termsEnum == null) {
@@ -90,7 +90,7 @@ public class TermQuery extends Query {
      * Returns a {@link TermsEnum} positioned at this weights Term or null if
      * the term does not exist in the given context
      */
-    private TermsEnum getTermsEnum(AtomicReaderContext context) throws IOException {
+    private TermsEnum getTermsEnum(LeafReaderContext context) throws IOException {
       final TermState state = termStates.get(context.ord);
       if (state == null) { // term is not present in that reader
         assert termNotInReader(context.reader(), term) : "no termstate found but term exists in reader term=" + term;
@@ -102,14 +102,14 @@ public class TermQuery extends Query {
       return termsEnum;
     }
     
-    private boolean termNotInReader(AtomicReader reader, Term term) throws IOException {
+    private boolean termNotInReader(LeafReader reader, Term term) throws IOException {
       // only called from assert
       //System.out.println("TQ.termNotInReader reader=" + reader + " term=" + field + ":" + bytes.utf8ToString());
       return reader.docFreq(term) == 0;
     }
     
     @Override
-    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
+    public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       Scorer scorer = scorer(context, context.reader().getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);

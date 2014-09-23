@@ -19,7 +19,7 @@ package org.apache.lucene.queries.function.docvalues;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.SortedDocValues;
@@ -42,7 +42,7 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
   protected final MutableValueStr val = new MutableValueStr();
   protected final CharsRefBuilder spareChars = new CharsRefBuilder();
 
-  public DocTermsIndexDocValues(ValueSource vs, AtomicReaderContext context, String field) throws IOException {
+  public DocTermsIndexDocValues(ValueSource vs, LeafReaderContext context, String field) throws IOException {
     this(vs, open(context, field));
   }
   
@@ -159,7 +159,7 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
   }
 
   // TODO: why?
-  static SortedDocValues open(AtomicReaderContext context, String field) throws IOException {
+  static SortedDocValues open(LeafReaderContext context, String field) throws IOException {
     try {
       return DocValues.getSorted(context.reader(), field);
     } catch (RuntimeException e) {

@@ -44,7 +44,7 @@ public class TermFreqValueSource extends DocFreqValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     Fields fields = readerContext.reader().fields();
     final Terms terms = fields.terms(indexedField);
 

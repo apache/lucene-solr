@@ -26,7 +26,7 @@ import java.util.Map;
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsConfig;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
@@ -127,7 +127,7 @@ public class TaxonomyFacetSumValueSource extends FloatTaxonomyFacets {
     }
 
     @Override
-    public FunctionValues getValues(@SuppressWarnings("rawtypes") Map context, AtomicReaderContext readerContext) throws IOException {
+    public FunctionValues getValues(@SuppressWarnings("rawtypes") Map context, LeafReaderContext readerContext) throws IOException {
       final Scorer scorer = (Scorer) context.get("scorer");
       if (scorer == null) {
         throw new IllegalStateException("scores are missing; be sure to pass keepScores=true to FacetsCollector");

@@ -26,8 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.Bits;
@@ -61,12 +61,12 @@ public class CachingWrapperFilter extends Filter implements Accountable {
    *  Provide the DocIdSet to be cached, using the DocIdSet provided
    *  by the wrapped Filter. <p>This implementation returns the given {@link DocIdSet},
    *  if {@link DocIdSet#isCacheable} returns <code>true</code>, else it calls
-   *  {@link #cacheImpl(DocIdSetIterator,AtomicReader)}
+   *  {@link #cacheImpl(DocIdSetIterator, org.apache.lucene.index.LeafReader)}
    *  <p>Note: This method returns {@linkplain DocIdSet#EMPTY} if the given docIdSet
    *  is <code>null</code> or if {@link DocIdSet#iterator()} return <code>null</code>. The empty
    *  instance is use as a placeholder in the cache instead of the <code>null</code> value.
    */
-  protected DocIdSet docIdSetToCache(DocIdSet docIdSet, AtomicReader reader) throws IOException {
+  protected DocIdSet docIdSetToCache(DocIdSet docIdSet, LeafReader reader) throws IOException {
     if (docIdSet == null) {
       // this is better than returning null, as the nonnull result can be cached
       return EMPTY;
@@ -88,7 +88,7 @@ public class CachingWrapperFilter extends Filter implements Accountable {
   /**
    * Default cache implementation: uses {@link WAH8DocIdSet}.
    */
-  protected DocIdSet cacheImpl(DocIdSetIterator iterator, AtomicReader reader) throws IOException {
+  protected DocIdSet cacheImpl(DocIdSetIterator iterator, LeafReader reader) throws IOException {
     WAH8DocIdSet.Builder builder = new WAH8DocIdSet.Builder();
     builder.add(iterator);
     return builder.build();
@@ -98,8 +98,8 @@ public class CachingWrapperFilter extends Filter implements Accountable {
   int hitCount, missCount;
 
   @Override
-  public DocIdSet getDocIdSet(AtomicReaderContext context, final Bits acceptDocs) throws IOException {
-    final AtomicReader reader = context.reader();
+  public DocIdSet getDocIdSet(LeafReaderContext context, final Bits acceptDocs) throws IOException {
+    final LeafReader reader = context.reader();
     final Object key = reader.getCoreCacheKey();
 
     DocIdSet docIdSet = cache.get(key);

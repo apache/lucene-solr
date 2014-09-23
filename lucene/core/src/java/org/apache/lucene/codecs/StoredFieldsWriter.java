@@ -25,7 +25,7 @@ import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 
 /**
  * Codec API for writing stored fields:
@@ -82,7 +82,7 @@ public abstract class StoredFieldsWriter implements Closeable {
    *  merging (bulk-byte copying, etc). */
   public int merge(MergeState mergeState) throws IOException {
     int docCount = 0;
-    for (AtomicReader reader : mergeState.readers) {
+    for (LeafReader reader : mergeState.readers) {
       final int maxDoc = reader.maxDoc();
       final Bits liveDocs = reader.getLiveDocs();
       for (int i = 0; i < maxDoc; i++) {

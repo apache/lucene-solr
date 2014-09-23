@@ -18,15 +18,13 @@
 package org.apache.solr.schema;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.GeneralField;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -189,7 +187,7 @@ class BoolFieldSource extends ValueSource {
 
 
   @Override
-  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     final SortedDocValues sindex = DocValues.getSorted(readerContext.reader(), field);
 
     // figure out what ord maps to true

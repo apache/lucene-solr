@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -210,7 +210,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     writer.addDocument(doc);
 
     final IndexReader readerFromWriter = writer.getReader();
-    AtomicReader r = SlowCompositeReaderWrapper.wrap(readerFromWriter);
+    LeafReader r = SlowCompositeReaderWrapper.wrap(readerFromWriter);
 
     DocsAndPositionsEnum tp = r.termPositionsEnum(new Term("content", "a"));
     

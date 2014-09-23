@@ -20,7 +20,7 @@ package org.apache.solr.request;
 import java.io.IOException;
 import java.util.List;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
 import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
@@ -32,7 +32,6 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.UnicodeUtil;
@@ -70,12 +69,12 @@ public class DocValuesFacets {
     final SortedSetDocValues si; // for term lookups only
     OrdinalMap ordinalMap = null; // for mapping per-segment ords to global ones
     if (multiValued) {
-      si = searcher.getAtomicReader().getSortedSetDocValues(fieldName);
+      si = searcher.getLeafReader().getSortedSetDocValues(fieldName);
       if (si instanceof MultiSortedSetDocValues) {
         ordinalMap = ((MultiSortedSetDocValues)si).mapping;
       }
     } else {
-      SortedDocValues single = searcher.getAtomicReader().getSortedDocValues(fieldName);
+      SortedDocValues single = searcher.getLeafReader().getSortedDocValues(fieldName);
       si = single == null ? null : DocValues.singleton(single);
       if (single instanceof MultiSortedDocValues) {
         ordinalMap = ((MultiSortedDocValues)single).mapping;
@@ -122,9 +121,9 @@ public class DocValuesFacets {
       final int[] counts = new int[nTerms];
 
       Filter filter = docs.getTopFilter();
-      List<AtomicReaderContext> leaves = searcher.getTopReaderContext().leaves();
+      List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
       for (int subIndex = 0; subIndex < leaves.size(); subIndex++) {
-        AtomicReaderContext leaf = leaves.get(subIndex);
+        LeafReaderContext leaf = leaves.get(subIndex);
         DocIdSet dis = filter.getDocIdSet(leaf, null); // solr docsets already exclude any deleted docs
         DocIdSetIterator disi = null;
         if (dis != null) {

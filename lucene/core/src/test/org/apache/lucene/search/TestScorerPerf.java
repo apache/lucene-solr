@@ -1,6 +1,7 @@
 package org.apache.lucene.search;
 
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.DocIdBitSet;
 import org.apache.lucene.util.LuceneTestCase;
@@ -8,7 +9,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import java.util.BitSet;
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -112,7 +112,7 @@ public class TestScorerPerf extends LuceneTestCase {
     public int getSum() { return sum; }
 
     @Override
-    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       docBase = context.docBase;
     }
     @Override
@@ -144,7 +144,7 @@ public class TestScorerPerf extends LuceneTestCase {
     final BitSet rnd = sets[random().nextInt(sets.length)];
     Query q = new ConstantScoreQuery(new Filter() {
       @Override
-      public DocIdSet getDocIdSet (AtomicReaderContext context, Bits acceptDocs) {
+      public DocIdSet getDocIdSet (LeafReaderContext context, Bits acceptDocs) {
         assertNull("acceptDocs should be null, as we have an index without deletions", acceptDocs);
         return new DocIdBitSet(rnd);
       }

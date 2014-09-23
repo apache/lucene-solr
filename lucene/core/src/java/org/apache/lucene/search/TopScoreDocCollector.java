@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 
 /**
  * A {@link Collector} implementation that collects the top-scoring hits,
@@ -113,7 +113,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
     }
 
     @Override
-    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       super.doSetNextReader(context);
       afterDoc = after.doc - context.docBase;
     }
@@ -208,7 +208,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
     }
     
     @Override
-    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       super.doSetNextReader(context);
       afterDoc = after.doc - context.docBase;
     }
@@ -300,7 +300,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
   }
   
   @Override
-  protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+  protected void doSetNextReader(LeafReaderContext context) throws IOException {
     docBase = context.docBase;
   }
   

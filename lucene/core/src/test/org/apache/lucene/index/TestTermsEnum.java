@@ -735,7 +735,7 @@ public class TestTermsEnum extends LuceneTestCase {
     w.forceMerge(1);
     DirectoryReader r = w.getReader();
     w.close();
-    AtomicReader sub = getOnlySegmentReader(r);
+    LeafReader sub = getOnlySegmentReader(r);
     Terms terms = sub.fields().terms("field");
     Automaton automaton = new RegExp(".*", RegExp.NONE).toAutomaton();
     CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);    
@@ -789,7 +789,7 @@ public class TestTermsEnum extends LuceneTestCase {
     w.forceMerge(1);
     DirectoryReader r = w.getReader();
     w.close();
-    AtomicReader sub = getOnlySegmentReader(r);
+    LeafReader sub = getOnlySegmentReader(r);
     Terms terms = sub.fields().terms("field");
 
     Automaton automaton = new RegExp(".*d", RegExp.NONE).toAutomaton();
@@ -843,7 +843,7 @@ public class TestTermsEnum extends LuceneTestCase {
     w.forceMerge(1);
     DirectoryReader r = w.getReader();
     w.close();
-    AtomicReader sub = getOnlySegmentReader(r);
+    LeafReader sub = getOnlySegmentReader(r);
     Terms terms = sub.fields().terms("field");
 
     Automaton automaton = new RegExp(".*", RegExp.NONE).toAutomaton();  // accept ALL

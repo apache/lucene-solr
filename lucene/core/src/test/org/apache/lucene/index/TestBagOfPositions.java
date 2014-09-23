@@ -134,7 +134,7 @@ public class TestBagOfPositions extends LuceneTestCase {
     iw.forceMerge(1);
     DirectoryReader ir = iw.getReader();
     assertEquals(1, ir.leaves().size());
-    AtomicReader air = ir.leaves().get(0).reader();
+    LeafReader air = ir.leaves().get(0).reader();
     Terms terms = air.terms("field");
     // numTerms-1 because there cannot be a term 0 with 0 postings:
     assertEquals(numTerms-1, terms.size());

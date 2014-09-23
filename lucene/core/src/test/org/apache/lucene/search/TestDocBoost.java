@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -71,7 +71,7 @@ public class TestDocBoost extends LuceneTestCase {
            scores[doc + base] = scorer.score();
          }
          @Override
-         protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+         protected void doSetNextReader(LeafReaderContext context) throws IOException {
            base = context.docBase;
          }
          @Override

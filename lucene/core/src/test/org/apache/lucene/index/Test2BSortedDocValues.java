@@ -74,8 +74,8 @@ public class Test2BSortedDocValues extends LuceneTestCase {
     
     DirectoryReader r = DirectoryReader.open(dir);
     int expectedValue = 0;
-    for (AtomicReaderContext context : r.leaves()) {
-      AtomicReader reader = context.reader();
+    for (LeafReaderContext context : r.leaves()) {
+      LeafReader reader = context.reader();
       BinaryDocValues dv = reader.getSortedDocValues("dv");
       for (int i = 0; i < reader.maxDoc(); i++) {
         bytes[0] = (byte)(expectedValue >> 8);
@@ -131,8 +131,8 @@ public class Test2BSortedDocValues extends LuceneTestCase {
     
     DirectoryReader r = DirectoryReader.open(dir);
     int counter = 0;
-    for (AtomicReaderContext context : r.leaves()) {
-      AtomicReader reader = context.reader();
+    for (LeafReaderContext context : r.leaves()) {
+      LeafReader reader = context.reader();
       BytesRef scratch = new BytesRef();
       BinaryDocValues dv = reader.getSortedDocValues("dv");
       for (int i = 0; i < reader.maxDoc(); i++) {

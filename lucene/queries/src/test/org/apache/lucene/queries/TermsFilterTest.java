@@ -28,7 +28,7 @@ import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -75,8 +75,8 @@ public class TermsFilterTest extends LuceneTestCase {
       w.addDocument(doc);
     }
     IndexReader reader = SlowCompositeReaderWrapper.wrap(w.getReader());
-    assertTrue(reader.getContext() instanceof AtomicReaderContext);
-    AtomicReaderContext context = (AtomicReaderContext) reader.getContext();
+    assertTrue(reader.getContext() instanceof LeafReaderContext);
+    LeafReaderContext context = (LeafReaderContext) reader.getContext();
     w.close();
 
     List<Term> terms = new ArrayList<>();
@@ -121,7 +121,7 @@ public class TermsFilterTest extends LuceneTestCase {
     
     TermsFilter tf = new TermsFilter(new Term(fieldName, "content1"));
     MultiReader multi = new MultiReader(reader1, reader2);
-    for (AtomicReaderContext context : multi.leaves()) {
+    for (LeafReaderContext context : multi.leaves()) {
       DocIdSet docIdSet = tf.getDocIdSet(context, context.reader().getLiveDocs());
       if (context.reader().docFreq(new Term(fieldName, "content1")) == 0) {
         assertNull(docIdSet);
@@ -160,7 +160,7 @@ public class TermsFilterTest extends LuceneTestCase {
     
     
     
-    AtomicReaderContext context = reader.leaves().get(0);
+    LeafReaderContext context = reader.leaves().get(0);
     TermsFilter tf = new TermsFilter(terms);
 
     FixedBitSet bits = (FixedBitSet) tf.getDocIdSet(context, context.reader().getLiveDocs());
@@ -196,7 +196,7 @@ public class TermsFilterTest extends LuceneTestCase {
     IndexReader reader = w.getReader();
     w.close();
     assertEquals(1, reader.leaves().size());
-    AtomicReaderContext context = reader.leaves().get(0);
+    LeafReaderContext context = reader.leaves().get(0);
     TermsFilter tf = new TermsFilter(new ArrayList<>(terms));
 
     FixedBitSet bits = (FixedBitSet) tf.getDocIdSet(context, context.reader().getLiveDocs());

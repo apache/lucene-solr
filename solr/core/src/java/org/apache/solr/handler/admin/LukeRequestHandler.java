@@ -33,10 +33,8 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -315,7 +313,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       fields = new TreeSet<>(Arrays.asList(fl.split( "[,\\s]+" )));
     }
 
-    AtomicReader reader = searcher.getAtomicReader();
+    LeafReader reader = searcher.getLeafReader();
     IndexSchema schema = searcher.getSchema();
 
     // Don't be tempted to put this in the loop below, the whole point here is to alphabetize the fields!
@@ -385,7 +383,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   // Just get a document with the term in it, the first one will do!
   // Is there a better way to do this? Shouldn't actually be very costly
   // to do it this way.
-  private static StoredDocument getFirstLiveDoc(Terms terms, AtomicReader reader) throws IOException {
+  private static StoredDocument getFirstLiveDoc(Terms terms, LeafReader reader) throws IOException {
     DocsEnum docsEnum = null;
     TermsEnum termsEnum = terms.iterator(null);
     BytesRef text;
@@ -572,10 +570,10 @@ public class LukeRequestHandler extends RequestHandlerBase
   /** Returns the sum of RAM bytes used by each segment */
   private static long getIndexHeapUsed(DirectoryReader reader) {
     long indexHeapRamBytesUsed = 0;
-    for(AtomicReaderContext atomicReaderContext : reader.leaves()) {
-      AtomicReader atomicReader = atomicReaderContext.reader();
-      if (atomicReader instanceof SegmentReader) {
-        indexHeapRamBytesUsed += ((SegmentReader) atomicReader).ramBytesUsed();
+    for(LeafReaderContext leafReaderContext : reader.leaves()) {
+      LeafReader leafReader = leafReaderContext.reader();
+      if (leafReader instanceof SegmentReader) {
+        indexHeapRamBytesUsed += ((SegmentReader) leafReader).ramBytesUsed();
       } else {
         // Not supported for any reader that is not a SegmentReader
         return -1;

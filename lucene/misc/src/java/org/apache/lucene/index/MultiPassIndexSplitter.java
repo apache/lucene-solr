@@ -101,7 +101,7 @@ public class MultiPassIndexSplitter {
           .setOpenMode(OpenMode.CREATE));
       System.err.println("Writing part " + (i + 1) + " ...");
       // pass the subreaders directly, as our wrapper's numDocs/hasDeletetions are not up-to-date
-      final List<? extends FakeDeleteAtomicIndexReader> sr = input.getSequentialSubReaders();
+      final List<? extends FakeDeleteLeafIndexReader> sr = input.getSequentialSubReaders();
       w.addIndexes(sr.toArray(new IndexReader[sr.size()])); // TODO: maybe take List<IR> here?
       w.close();
     }
@@ -176,18 +176,18 @@ public class MultiPassIndexSplitter {
   /**
    * This class emulates deletions on the underlying index.
    */
-  private static final class FakeDeleteIndexReader extends BaseCompositeReader<FakeDeleteAtomicIndexReader> {
+  private static final class FakeDeleteIndexReader extends BaseCompositeReader<FakeDeleteLeafIndexReader> {
 
     public FakeDeleteIndexReader(IndexReader reader) {
       super(initSubReaders(reader));
     }
     
-    private static FakeDeleteAtomicIndexReader[] initSubReaders(IndexReader reader) {
-      final List<AtomicReaderContext> leaves = reader.leaves();
-      final FakeDeleteAtomicIndexReader[] subs = new FakeDeleteAtomicIndexReader[leaves.size()];
+    private static FakeDeleteLeafIndexReader[] initSubReaders(IndexReader reader) {
+      final List<LeafReaderContext> leaves = reader.leaves();
+      final FakeDeleteLeafIndexReader[] subs = new FakeDeleteLeafIndexReader[leaves.size()];
       int i = 0;
-      for (final AtomicReaderContext ctx : leaves) {
-        subs[i++] = new FakeDeleteAtomicIndexReader(ctx.reader());
+      for (final LeafReaderContext ctx : leaves) {
+        subs[i++] = new FakeDeleteLeafIndexReader(ctx.reader());
       }
       return subs;
     }
@@ -198,7 +198,7 @@ public class MultiPassIndexSplitter {
     }
 
     public void undeleteAll()  {
-      for (FakeDeleteAtomicIndexReader r : getSequentialSubReaders()) {
+      for (FakeDeleteLeafIndexReader r : getSequentialSubReaders()) {
         r.undeleteAll();
       }
     }
@@ -210,10 +210,10 @@ public class MultiPassIndexSplitter {
     // as we pass the subreaders directly to IW.addIndexes().
   }
   
-  private static final class FakeDeleteAtomicIndexReader extends FilterAtomicReader {
+  private static final class FakeDeleteLeafIndexReader extends FilterLeafReader {
     FixedBitSet liveDocs;
 
-    public FakeDeleteAtomicIndexReader(AtomicReader reader) {
+    public FakeDeleteLeafIndexReader(LeafReader reader) {
       super(reader);
       undeleteAll(); // initialize main bitset
     }

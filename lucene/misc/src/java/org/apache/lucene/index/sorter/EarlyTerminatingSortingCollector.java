@@ -19,7 +19,7 @@ package org.apache.lucene.index.sorter;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.CollectionTerminatedException;
@@ -92,7 +92,7 @@ public class EarlyTerminatingSortingCollector extends FilterCollector {
   }
 
   @Override
-  public LeafCollector getLeafCollector(AtomicReaderContext context) throws IOException {
+  public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
     if (SortingMergePolicy.isSorted(context.reader(), sort)) {
       // segment is sorted, can early-terminate
       return new FilterLeafCollector(super.getLeafCollector(context)) {

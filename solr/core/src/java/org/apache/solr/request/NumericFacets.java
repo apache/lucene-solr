@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.document.FieldType.NumericType;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.ReaderUtil;
@@ -39,7 +39,6 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.StringHelper;
@@ -139,12 +138,12 @@ final class NumericFacets {
     if (numericType == null) {
       throw new IllegalStateException();
     }
-    final List<AtomicReaderContext> leaves = searcher.getIndexReader().leaves();
+    final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
 
     // 1. accumulate
     final HashTable hashTable = new HashTable();
-    final Iterator<AtomicReaderContext> ctxIt = leaves.iterator();
-    AtomicReaderContext ctx = null;
+    final Iterator<LeafReaderContext> ctxIt = leaves.iterator();
+    LeafReaderContext ctx = null;
     NumericDocValues longs = null;
     Bits docsWithField = null;
     int missingCount = 0;
@@ -269,7 +268,7 @@ final class NumericFacets {
         for (int i = 0; i < result.size(); ++i) {
           alreadySeen.add(result.getName(i));
         }
-        final Terms terms = searcher.getAtomicReader().terms(fieldName);
+        final Terms terms = searcher.getLeafReader().terms(fieldName);
         if (terms != null) {
           final String prefixStr = TrieField.getMainValuePrefix(ft);
           final BytesRef prefix;
@@ -322,7 +321,7 @@ final class NumericFacets {
         final FunctionValues values = vs.getValues(Collections.emptyMap(), leaves.get(readerIdx));
         counts.put(values.strVal(entry.docID - leaves.get(readerIdx).docBase), entry.count);
       }
-      final Terms terms = searcher.getAtomicReader().terms(fieldName);
+      final Terms terms = searcher.getLeafReader().terms(fieldName);
       if (terms != null) {
         final String prefixStr = TrieField.getMainValuePrefix(ft);
         final BytesRef prefix;

@@ -24,7 +24,7 @@ import org.apache.lucene.document.DoubleField; // javadocs
 import org.apache.lucene.document.FloatField; // javadocs
 import org.apache.lucene.document.IntField; // javadocs
 import org.apache.lucene.document.LongField; // javadocs
-import org.apache.lucene.index.FilterAtomicReader;
+import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -532,7 +532,7 @@ public final class NumericUtils {
   }
 
   private static Terms intTerms(Terms terms) {
-    return new FilterAtomicReader.FilterTerms(terms) {
+    return new FilterLeafReader.FilterTerms(terms) {
         @Override
         public TermsEnum iterator(TermsEnum reuse) throws IOException {
           return filterPrefixCodedInts(in.iterator(reuse));
@@ -541,7 +541,7 @@ public final class NumericUtils {
   }
 
   private static Terms longTerms(Terms terms) {
-    return new FilterAtomicReader.FilterTerms(terms) {
+    return new FilterLeafReader.FilterTerms(terms) {
         @Override
         public TermsEnum iterator(TermsEnum reuse) throws IOException {
           return filterPrefixCodedLongs(in.iterator(reuse));

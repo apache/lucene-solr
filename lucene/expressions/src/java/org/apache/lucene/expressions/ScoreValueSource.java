@@ -17,7 +17,7 @@ package org.apache.lucene.expressions;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Scorer;
@@ -36,7 +36,7 @@ class ScoreValueSource extends ValueSource {
    * <code>context</code> must contain a key "scorer" which is a {@link Scorer}.
    */
   @Override
-  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     Scorer v = (Scorer) context.get("scorer");
     if (v == null) {
       throw new IllegalStateException("Expressions referencing the score can only be used for sorting");

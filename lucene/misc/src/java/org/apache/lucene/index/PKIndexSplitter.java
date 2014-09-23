@@ -101,11 +101,11 @@ public class PKIndexSplitter {
     boolean success = false;
     final IndexWriter w = new IndexWriter(target, config);
     try {
-      final List<AtomicReaderContext> leaves = reader.leaves();
+      final List<LeafReaderContext> leaves = reader.leaves();
       final IndexReader[] subReaders = new IndexReader[leaves.size()];
       int i = 0;
-      for (final AtomicReaderContext ctx : leaves) {
-        subReaders[i++] = new DocumentFilteredAtomicIndexReader(ctx, preserveFilter, negateFilter);
+      for (final LeafReaderContext ctx : leaves) {
+        subReaders[i++] = new DocumentFilteredLeafIndexReader(ctx, preserveFilter, negateFilter);
       }
       w.addIndexes(subReaders);
       success = true;
@@ -118,11 +118,11 @@ public class PKIndexSplitter {
     }
   }
     
-  private static class DocumentFilteredAtomicIndexReader extends FilterAtomicReader {
+  private static class DocumentFilteredLeafIndexReader extends FilterLeafReader {
     final Bits liveDocs;
     final int numDocs;
     
-    public DocumentFilteredAtomicIndexReader(AtomicReaderContext context, Filter preserveFilter, boolean negateFilter) throws IOException {
+    public DocumentFilteredLeafIndexReader(LeafReaderContext context, Filter preserveFilter, boolean negateFilter) throws IOException {
       super(context.reader());
       final int maxDoc = in.maxDoc();
       final FixedBitSet bits = new FixedBitSet(maxDoc);

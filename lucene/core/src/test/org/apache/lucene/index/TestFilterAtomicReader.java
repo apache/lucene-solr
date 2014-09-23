@@ -34,7 +34,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestFilterAtomicReader extends LuceneTestCase {
 
-  private static class TestReader extends FilterAtomicReader {
+  private static class TestReader extends FilterLeafReader {
 
     /** Filter that only permits terms containing 'e'.*/
     private static class TestFields extends FilterFields {
@@ -184,12 +184,12 @@ public class TestFilterAtomicReader extends LuceneTestCase {
   }
 
   public void testOverrideMethods() throws Exception {
-    checkOverrideMethods(FilterAtomicReader.class);
-    checkOverrideMethods(FilterAtomicReader.FilterFields.class);
-    checkOverrideMethods(FilterAtomicReader.FilterTerms.class);
-    checkOverrideMethods(FilterAtomicReader.FilterTermsEnum.class);
-    checkOverrideMethods(FilterAtomicReader.FilterDocsEnum.class);
-    checkOverrideMethods(FilterAtomicReader.FilterDocsAndPositionsEnum.class);
+    checkOverrideMethods(FilterLeafReader.class);
+    checkOverrideMethods(FilterLeafReader.FilterFields.class);
+    checkOverrideMethods(FilterLeafReader.FilterTerms.class);
+    checkOverrideMethods(FilterLeafReader.FilterTermsEnum.class);
+    checkOverrideMethods(FilterLeafReader.FilterDocsEnum.class);
+    checkOverrideMethods(FilterLeafReader.FilterDocsAndPositionsEnum.class);
   }
 
 }

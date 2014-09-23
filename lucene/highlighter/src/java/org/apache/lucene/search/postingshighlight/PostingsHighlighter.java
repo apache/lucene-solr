@@ -31,8 +31,8 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -350,7 +350,7 @@ public class PostingsHighlighter {
     rewritten.extractTerms(queryTerms);
 
     IndexReaderContext readerContext = reader.getContext();
-    List<AtomicReaderContext> leaves = readerContext.leaves();
+    List<LeafReaderContext> leaves = readerContext.leaves();
 
     // Make our own copies because we sort in-place:
     int[] docids = new int[docidsIn.length];
@@ -453,7 +453,7 @@ public class PostingsHighlighter {
     return null;
   }
     
-  private Map<Integer,Object> highlightField(String field, String contents[], BreakIterator bi, BytesRef terms[], int[] docids, List<AtomicReaderContext> leaves, int maxPassages, Query query) throws IOException {  
+  private Map<Integer,Object> highlightField(String field, String contents[], BreakIterator bi, BytesRef terms[], int[] docids, List<LeafReaderContext> leaves, int maxPassages, Query query) throws IOException {  
     Map<Integer,Object> highlights = new HashMap<>();
     
     PassageFormatter fieldFormatter = getFormatter(field);
@@ -489,8 +489,8 @@ public class PostingsHighlighter {
       bi.setText(content);
       int doc = docids[i];
       int leaf = ReaderUtil.subIndex(doc, leaves);
-      AtomicReaderContext subContext = leaves.get(leaf);
-      AtomicReader r = subContext.reader();
+      LeafReaderContext subContext = leaves.get(leaf);
+      LeafReader r = subContext.reader();
       
       assert leaf >= lastLeaf; // increasing order
       

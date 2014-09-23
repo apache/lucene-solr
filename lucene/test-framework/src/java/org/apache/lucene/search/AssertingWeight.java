@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Random;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Bits;
 
 class AssertingWeight extends Weight {
@@ -40,7 +40,7 @@ class AssertingWeight extends Weight {
   }
 
   @Override
-  public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
+  public Explanation explain(LeafReaderContext context, int doc) throws IOException {
     return in.explain(context, doc);
   }
 
@@ -60,7 +60,7 @@ class AssertingWeight extends Weight {
   }
 
   @Override
-  public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+  public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
     // if the caller asks for in-order scoring or if the weight does not support
     // out-of order scoring then collection will have to happen in-order.
     final Scorer inScorer = in.scorer(context, acceptDocs);
@@ -68,7 +68,7 @@ class AssertingWeight extends Weight {
   }
 
   @Override
-  public BulkScorer bulkScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
+  public BulkScorer bulkScorer(LeafReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
     // if the caller asks for in-order scoring or if the weight does not support
     // out-of order scoring then collection will have to happen in-order.
     BulkScorer inScorer = in.bulkScorer(context, scoreDocsInOrder, acceptDocs);

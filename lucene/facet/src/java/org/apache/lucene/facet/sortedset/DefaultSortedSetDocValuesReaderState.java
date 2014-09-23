@@ -1,18 +1,5 @@
 package org.apache.lucene.facet.sortedset;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.lucene.facet.FacetsConfig;
-import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState.OrdRange;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
-import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.util.BytesRef;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -30,13 +17,26 @@ import org.apache.lucene.util.BytesRef;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState.OrdRange;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.util.BytesRef;
+
 /**
  * Default implementation of {@link SortedSetDocValuesFacetCounts}
  */
 public class DefaultSortedSetDocValuesReaderState extends SortedSetDocValuesReaderState {
 
   private final String field;
-  private final AtomicReader topReader;
+  private final LeafReader topReader;
   private final int valueCount;
 
   /** {@link IndexReader} passed to the constructor. */

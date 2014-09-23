@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
@@ -67,7 +67,7 @@ public class CachedOrdinalsReader extends OrdinalsReader implements Accountable 
     this.source = source;
   }
 
-  private synchronized CachedOrds getCachedOrds(AtomicReaderContext context) throws IOException {
+  private synchronized CachedOrds getCachedOrds(LeafReaderContext context) throws IOException {
     Object cacheKey = context.reader().getCoreCacheKey();
     CachedOrds ords = ordsCache.get(cacheKey);
     if (ords == null) {
@@ -84,7 +84,7 @@ public class CachedOrdinalsReader extends OrdinalsReader implements Accountable 
   }
 
   @Override
-  public OrdinalsSegmentReader getReader(AtomicReaderContext context) throws IOException {
+  public OrdinalsSegmentReader getReader(LeafReaderContext context) throws IOException {
     final CachedOrds cachedOrds = getCachedOrds(context);
     return new OrdinalsSegmentReader() {
       @Override

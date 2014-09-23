@@ -50,7 +50,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * may share the same core data.
  * @lucene.experimental
  */
-public final class SegmentReader extends AtomicReader implements Accountable {
+public final class SegmentReader extends LeafReader implements Accountable {
 
   private static final long BASE_RAM_BYTES_USED =
         RamUsageEstimator.shallowSizeOfInstance(SegmentReader.class)

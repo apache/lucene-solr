@@ -40,7 +40,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -159,7 +159,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     memory.addField("foo", fooField.toString(), analyzer);
     memory.addField("term", termField.toString(), analyzer);
     
-    AtomicReader reader = (AtomicReader) memory.createSearcher().getIndexReader();
+    LeafReader reader = (LeafReader) memory.createSearcher().getIndexReader();
     DirectoryReader competitor = DirectoryReader.open(ramdir);
     duellReaders(competitor, reader);
     IOUtils.close(reader, competitor);
@@ -167,9 +167,9 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     ramdir.close();    
   }
 
-  private void duellReaders(CompositeReader other, AtomicReader memIndexReader)
+  private void duellReaders(CompositeReader other, LeafReader memIndexReader)
       throws IOException {
-    AtomicReader competitor = SlowCompositeReaderWrapper.wrap(other);
+    LeafReader competitor = SlowCompositeReaderWrapper.wrap(other);
     Fields memFields = memIndexReader.fields();
     for (String field : competitor.fields()) {
       Terms memTerms = memFields.terms(field);
@@ -312,7 +312,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     MemoryIndex memory = new MemoryIndex(random().nextBoolean(),  random().nextInt(50) * 1024 * 1024);
     memory.addField("foo", "bar", analyzer);
-    AtomicReader reader = (AtomicReader) memory.createSearcher().getIndexReader();
+    LeafReader reader = (LeafReader) memory.createSearcher().getIndexReader();
     DocsEnum disi = TestUtil.docs(random(), reader, "foo", new BytesRef("bar"), null, null, DocsEnum.FLAG_NONE);
     int docid = disi.docID();
     assertEquals(-1, docid);
@@ -342,7 +342,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     MemoryIndex memory = new MemoryIndex(true,  random().nextInt(50) * 1024 * 1024);
     for (int i = 0; i < numIters; i++) { // check reuse
       memory.addField("foo", "bar", analyzer);
-      AtomicReader reader = (AtomicReader) memory.createSearcher().getIndexReader();
+      LeafReader reader = (LeafReader) memory.createSearcher().getIndexReader();
       assertEquals(1, reader.terms("foo").getSumTotalTermFreq());
       DocsAndPositionsEnum disi = reader.termPositionsEnum(new Term("foo", "bar"));
       int docid = disi.docID();
@@ -393,7 +393,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     MockAnalyzer mockAnalyzer = new MockAnalyzer(random());
     mindex.addField("field", "the quick brown fox", mockAnalyzer);
     mindex.addField("field", "jumps over the", mockAnalyzer);
-    AtomicReader reader = (AtomicReader) mindex.createSearcher().getIndexReader();
+    LeafReader reader = (LeafReader) mindex.createSearcher().getIndexReader();
     assertEquals(7, reader.terms("field").getSumTotalTermFreq());
     PhraseQuery query = new PhraseQuery();
     query.add(new Term("field", "fox"));
@@ -412,7 +412,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     MemoryIndex mindex = new MemoryIndex(random().nextBoolean(),  random().nextInt(50) * 1024 * 1024);
     MockAnalyzer mockAnalyzer = new MockAnalyzer(random());
     mindex.addField("field", "the quick brown fox", mockAnalyzer);
-    AtomicReader reader = (AtomicReader) mindex.createSearcher().getIndexReader();
+    LeafReader reader = (LeafReader) mindex.createSearcher().getIndexReader();
     assertNull(reader.getNumericDocValues("not-in-index"));
     assertNull(reader.getNormValues("not-in-index"));
     assertNull(reader.termDocsEnum(new Term("not-in-index", "foo")));
@@ -446,7 +446,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
           memory.addField(field.name(), ((Field)field).stringValue(), mockAnalyzer);  
       }
       DirectoryReader competitor = DirectoryReader.open(dir);
-      AtomicReader memIndexReader= (AtomicReader) memory.createSearcher().getIndexReader();
+      LeafReader memIndexReader= (LeafReader) memory.createSearcher().getIndexReader();
       duellReaders(competitor, memIndexReader);
       IOUtils.close(competitor, memIndexReader);
       memory.reset();

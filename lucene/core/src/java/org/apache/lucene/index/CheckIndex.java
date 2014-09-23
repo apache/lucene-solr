@@ -712,7 +712,7 @@ public class CheckIndex {
    * Test field norms.
    * @lucene.experimental
    */
-  public static Status.FieldNormStatus testFieldNorms(AtomicReader reader, PrintStream infoStream, boolean failFast) throws IOException {
+  public static Status.FieldNormStatus testFieldNorms(LeafReader reader, PrintStream infoStream, boolean failFast) throws IOException {
     final Status.FieldNormStatus status = new Status.FieldNormStatus();
 
     try {
@@ -1306,7 +1306,7 @@ public class CheckIndex {
    * Test the term index.
    * @lucene.experimental
    */
-  public static Status.TermIndexStatus testPostings(AtomicReader reader, PrintStream infoStream) throws IOException {
+  public static Status.TermIndexStatus testPostings(LeafReader reader, PrintStream infoStream) throws IOException {
     return testPostings(reader, infoStream, false, false);
   }
   
@@ -1314,7 +1314,7 @@ public class CheckIndex {
    * Test the term index.
    * @lucene.experimental
    */
-  public static Status.TermIndexStatus testPostings(AtomicReader reader, PrintStream infoStream, boolean verbose, boolean failFast) throws IOException {
+  public static Status.TermIndexStatus testPostings(LeafReader reader, PrintStream infoStream, boolean verbose, boolean failFast) throws IOException {
 
     // TODO: we should go and verify term vectors match, if
     // crossCheckTermVectors is on...
@@ -1356,7 +1356,7 @@ public class CheckIndex {
    * Test stored fields.
    * @lucene.experimental
    */
-  public static Status.StoredFieldStatus testStoredFields(AtomicReader reader, PrintStream infoStream, boolean failFast) throws IOException {
+  public static Status.StoredFieldStatus testStoredFields(LeafReader reader, PrintStream infoStream, boolean failFast) throws IOException {
     final Status.StoredFieldStatus status = new Status.StoredFieldStatus();
 
     try {
@@ -1401,7 +1401,7 @@ public class CheckIndex {
    * Test docvalues.
    * @lucene.experimental
    */
-  public static Status.DocValuesStatus testDocValues(AtomicReader reader,
+  public static Status.DocValuesStatus testDocValues(LeafReader reader,
                                                      PrintStream infoStream,
                                                      boolean failFast) throws IOException {
     final Status.DocValuesStatus status = new Status.DocValuesStatus();
@@ -1443,7 +1443,7 @@ public class CheckIndex {
     return status;
   }
   
-  private static void checkBinaryDocValues(String fieldName, AtomicReader reader, BinaryDocValues dv, Bits docsWithField) {
+  private static void checkBinaryDocValues(String fieldName, LeafReader reader, BinaryDocValues dv, Bits docsWithField) {
     for (int i = 0; i < reader.maxDoc(); i++) {
       final BytesRef term = dv.get(i);
       assert term.isValid();
@@ -1453,7 +1453,7 @@ public class CheckIndex {
     }
   }
   
-  private static void checkSortedDocValues(String fieldName, AtomicReader reader, SortedDocValues dv, Bits docsWithField) {
+  private static void checkSortedDocValues(String fieldName, LeafReader reader, SortedDocValues dv, Bits docsWithField) {
     checkBinaryDocValues(fieldName, reader, dv, docsWithField);
     final int maxOrd = dv.getValueCount()-1;
     FixedBitSet seenOrds = new FixedBitSet(dv.getValueCount());
@@ -1493,7 +1493,7 @@ public class CheckIndex {
     }
   }
   
-  private static void checkSortedSetDocValues(String fieldName, AtomicReader reader, SortedSetDocValues dv, Bits docsWithField) {
+  private static void checkSortedSetDocValues(String fieldName, LeafReader reader, SortedSetDocValues dv, Bits docsWithField) {
     final long maxOrd = dv.getValueCount()-1;
     LongBitSet seenOrds = new LongBitSet(dv.getValueCount());
     long maxOrd2 = -1;
@@ -1563,7 +1563,7 @@ public class CheckIndex {
     }
   }
   
-  private static void checkSortedNumericDocValues(String fieldName, AtomicReader reader, SortedNumericDocValues ndv, Bits docsWithField) {
+  private static void checkSortedNumericDocValues(String fieldName, LeafReader reader, SortedNumericDocValues ndv, Bits docsWithField) {
     for (int i = 0; i < reader.maxDoc(); i++) {
       ndv.setDocument(i);
       int count = ndv.count();
@@ -1587,7 +1587,7 @@ public class CheckIndex {
     }
   }
 
-  private static void checkNumericDocValues(String fieldName, AtomicReader reader, NumericDocValues ndv, Bits docsWithField) {
+  private static void checkNumericDocValues(String fieldName, LeafReader reader, NumericDocValues ndv, Bits docsWithField) {
     for (int i = 0; i < reader.maxDoc(); i++) {
       long value = ndv.get(i);
       if (docsWithField.get(i) == false && value != 0) {
@@ -1596,7 +1596,7 @@ public class CheckIndex {
     }
   }
   
-  private static void checkDocValues(FieldInfo fi, AtomicReader reader, PrintStream infoStream, DocValuesStatus status) throws Exception {
+  private static void checkDocValues(FieldInfo fi, LeafReader reader, PrintStream infoStream, DocValuesStatus status) throws Exception {
     Bits docsWithField = reader.getDocsWithField(fi.name);
     if (docsWithField == null) {
       throw new RuntimeException(fi.name + " docsWithField does not exist");
@@ -1659,7 +1659,7 @@ public class CheckIndex {
     }
   }
   
-  private static void checkNorms(FieldInfo fi, AtomicReader reader, PrintStream infoStream) throws IOException {
+  private static void checkNorms(FieldInfo fi, LeafReader reader, PrintStream infoStream) throws IOException {
     switch(fi.getNormType()) {
       case NUMERIC:
         checkNumericDocValues(fi.name, reader, reader.getNormValues(fi.name), new Bits.MatchAllBits(reader.maxDoc()));
@@ -1673,7 +1673,7 @@ public class CheckIndex {
    * Test term vectors.
    * @lucene.experimental
    */
-  public static Status.TermVectorStatus testTermVectors(AtomicReader reader, PrintStream infoStream) throws IOException {
+  public static Status.TermVectorStatus testTermVectors(LeafReader reader, PrintStream infoStream) throws IOException {
     return testTermVectors(reader, infoStream, false, false, false);
   }
 
@@ -1681,7 +1681,7 @@ public class CheckIndex {
    * Test term vectors.
    * @lucene.experimental
    */
-  public static Status.TermVectorStatus testTermVectors(AtomicReader reader, PrintStream infoStream, boolean verbose, boolean crossCheckTermVectors, boolean failFast) throws IOException {
+  public static Status.TermVectorStatus testTermVectors(LeafReader reader, PrintStream infoStream, boolean verbose, boolean crossCheckTermVectors, boolean failFast) throws IOException {
     final Status.TermVectorStatus status = new Status.TermVectorStatus();
     final FieldInfos fieldInfos = reader.getFieldInfos();
     final Bits onlyDocIsDeleted = new FixedBitSet(1);

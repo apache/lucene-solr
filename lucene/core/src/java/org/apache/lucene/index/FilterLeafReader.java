@@ -35,7 +35,7 @@ import org.apache.lucene.util.BytesRef;
  * methods and fields.
  * <p><b>NOTE</b>: If you override {@link #getLiveDocs()}, you will likely need
  * to override {@link #numDocs()} as well and vice-versa.
- * <p><b>NOTE</b>: If this {@link FilterAtomicReader} does not change the
+ * <p><b>NOTE</b>: If this {@link FilterLeafReader} does not change the
  * content the contained reader, you could consider overriding
  * {@link #getCoreCacheKey()} so that
  * {@link CachingWrapperFilter} shares the same entries for this atomic reader
@@ -43,13 +43,13 @@ import org.apache.lucene.util.BytesRef;
  * overridden as well if the {@link #getLiveDocs() live docs} are not changed
  * either.
  */
-public class FilterAtomicReader extends AtomicReader {
+public class FilterLeafReader extends LeafReader {
 
   /** Get the wrapped instance by <code>reader</code> as long as this reader is
-   *  an intance of {@link FilterAtomicReader}.  */
-  public static AtomicReader unwrap(AtomicReader reader) {
-    while (reader instanceof FilterAtomicReader) {
-      reader = ((FilterAtomicReader) reader).in;
+   *  an intance of {@link FilterLeafReader}.  */
+  public static LeafReader unwrap(LeafReader reader) {
+    while (reader instanceof FilterLeafReader) {
+      reader = ((FilterLeafReader) reader).in;
     }
     return reader;
   }
@@ -318,14 +318,14 @@ public class FilterAtomicReader extends AtomicReader {
   }
 
   /** The underlying AtomicReader. */
-  protected final AtomicReader in;
+  protected final LeafReader in;
 
   /**
    * <p>Construct a FilterAtomicReader based on the specified base reader.
    * <p>Note that base reader is closed if this FilterAtomicReader is closed.</p>
    * @param in specified base reader.
    */
-  public FilterAtomicReader(AtomicReader in) {
+  public FilterLeafReader(LeafReader in) {
     super();
     this.in = in;
     in.registerParentReader(this);

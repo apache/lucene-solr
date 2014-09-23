@@ -72,7 +72,7 @@ public class TestReaderClosed extends LuceneTestCase {
   public void testReaderChaining() throws Exception {
     assertTrue(reader.getRefCount() > 0);
     IndexReader wrappedReader = SlowCompositeReaderWrapper.wrap(reader);
-    wrappedReader = new ParallelAtomicReader((AtomicReader) wrappedReader);
+    wrappedReader = new ParallelLeafReader((LeafReader) wrappedReader);
 
     IndexSearcher searcher = newSearcher(wrappedReader);
 

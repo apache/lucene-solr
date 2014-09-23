@@ -740,7 +740,7 @@ public class TestIndexWriter extends LuceneTestCase {
     writer.addDocument(doc);  
     writer.close();
     DirectoryReader reader = DirectoryReader.open(dir);
-    AtomicReader subreader = getOnlySegmentReader(reader);
+    LeafReader subreader = getOnlySegmentReader(reader);
     TermsEnum te = subreader.fields().terms("").iterator(null);
     assertEquals(new BytesRef("a"), te.next());
     assertEquals(new BytesRef("b"), te.next());
@@ -761,7 +761,7 @@ public class TestIndexWriter extends LuceneTestCase {
     writer.addDocument(doc);  
     writer.close();
     DirectoryReader reader = DirectoryReader.open(dir);
-    AtomicReader subreader = getOnlySegmentReader(reader);
+    LeafReader subreader = getOnlySegmentReader(reader);
     TermsEnum te = subreader.fields().terms("").iterator(null);
     assertEquals(new BytesRef(""), te.next());
     assertEquals(new BytesRef("a"), te.next());
@@ -1600,7 +1600,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
     assertNoUnreferencedFiles(dir, "no tv files");
     DirectoryReader r0 = DirectoryReader.open(dir);
-    for (AtomicReaderContext ctx : r0.leaves()) {
+    for (LeafReaderContext ctx : r0.leaves()) {
       SegmentReader sr = (SegmentReader) ctx.reader();
       assertFalse(sr.getFieldInfos().hasVectors());
     }
@@ -2241,9 +2241,9 @@ public class TestIndexWriter extends LuceneTestCase {
     }
     DirectoryReader reader = w.getReader();
     assertEquals(docCount, reader.numDocs());
-    List<AtomicReaderContext> leaves = reader.leaves();
-    for (AtomicReaderContext atomicReaderContext : leaves) {
-      AtomicReader ar = atomicReaderContext.reader();
+    List<LeafReaderContext> leaves = reader.leaves();
+    for (LeafReaderContext leafReaderContext : leaves) {
+      LeafReader ar = leafReaderContext.reader();
       Bits liveDocs = ar.getLiveDocs();
       int maxDoc = ar.maxDoc();
       for (int i = 0; i < maxDoc; i++) {
@@ -2293,9 +2293,9 @@ public class TestIndexWriter extends LuceneTestCase {
     }
     DirectoryReader reader = w.getReader();
     assertEquals(docCount, reader.numDocs());
-    List<AtomicReaderContext> leaves = reader.leaves();
-    for (AtomicReaderContext atomicReaderContext : leaves) {
-      AtomicReader ar = atomicReaderContext.reader();
+    List<LeafReaderContext> leaves = reader.leaves();
+    for (LeafReaderContext leafReaderContext : leaves) {
+      LeafReader ar = leafReaderContext.reader();
       Bits liveDocs = ar.getLiveDocs();
       int maxDoc = ar.maxDoc();
       for (int i = 0; i < maxDoc; i++) {

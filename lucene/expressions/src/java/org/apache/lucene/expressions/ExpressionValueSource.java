@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.SortField;
@@ -58,7 +58,7 @@ final class ExpressionValueSource extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     Map<String, FunctionValues> valuesCache = (Map<String, FunctionValues>)context.get("valuesCache");
     if (valuesCache == null) {
       valuesCache = new HashMap<>();

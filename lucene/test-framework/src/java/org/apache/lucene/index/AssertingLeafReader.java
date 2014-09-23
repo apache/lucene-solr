@@ -27,12 +27,12 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
  */
 
 /**
- * A {@link FilterAtomicReader} that can be used to apply
+ * A {@link FilterLeafReader} that can be used to apply
  * additional checks for tests.
  */
-public class AssertingAtomicReader extends FilterAtomicReader {
+public class AssertingLeafReader extends FilterLeafReader {
 
-  public AssertingAtomicReader(AtomicReader in) {
+  public AssertingLeafReader(LeafReader in) {
     super(in);
     // check some basic reader sanity
     assert in.maxDoc() >= 0;

@@ -20,7 +20,7 @@ package org.apache.lucene.facet.taxonomy;
 import java.io.IOException;
 
 import org.apache.lucene.facet.FacetsConfig;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.util.ArrayUtil;
@@ -43,7 +43,7 @@ public class DocValuesOrdinalsReader extends OrdinalsReader {
   }
 
   @Override
-  public OrdinalsSegmentReader getReader(AtomicReaderContext context) throws IOException {
+  public OrdinalsSegmentReader getReader(LeafReaderContext context) throws IOException {
     BinaryDocValues values0 = context.reader().getBinaryDocValues(field);
     if (values0 == null) {
       values0 = DocValues.emptyBinary();

@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.Bits;
@@ -98,7 +98,7 @@ public class FilteredQuery extends Query {
       }
 
       @Override
-      public Explanation explain(AtomicReaderContext ir, int i) throws IOException {
+      public Explanation explain(LeafReaderContext ir, int i) throws IOException {
         Explanation inner = weight.explain (ir, i);
         Filter f = FilteredQuery.this.filter;
         DocIdSet docIdSet = f.getDocIdSet(ir, ir.reader().getLiveDocs());
@@ -124,7 +124,7 @@ public class FilteredQuery extends Query {
 
       // return a filtering scorer
       @Override
-      public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
         assert filter != null;
 
         DocIdSet filterDocIdSet = filter.getDocIdSet(context, acceptDocs);
@@ -138,7 +138,7 @@ public class FilteredQuery extends Query {
 
       // return a filtering top scorer
       @Override
-      public BulkScorer bulkScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
+      public BulkScorer bulkScorer(LeafReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
         assert filter != null;
 
         DocIdSet filterDocIdSet = filter.getDocIdSet(context, acceptDocs);
@@ -477,14 +477,14 @@ public class FilteredQuery extends Query {
      * Returns a filtered {@link Scorer} based on this strategy.
      * 
      * @param context
-     *          the {@link AtomicReaderContext} for which to return the {@link Scorer}.
+     *          the {@link org.apache.lucene.index.LeafReaderContext} for which to return the {@link Scorer}.
      * @param weight the {@link FilteredQuery} {@link Weight} to create the filtered scorer.
      * @param docIdSet the filter {@link DocIdSet} to apply
      * @return a filtered scorer
      * 
      * @throws IOException if an {@link IOException} occurs
      */
-    public abstract Scorer filteredScorer(AtomicReaderContext context,
+    public abstract Scorer filteredScorer(LeafReaderContext context,
         Weight weight, DocIdSet docIdSet) throws IOException;
 
     /**
@@ -494,12 +494,12 @@ public class FilteredQuery extends Query {
      * wraps that into a BulkScorer.
      *
      * @param context
-     *          the {@link AtomicReaderContext} for which to return the {@link Scorer}.
+     *          the {@link org.apache.lucene.index.LeafReaderContext} for which to return the {@link Scorer}.
      * @param weight the {@link FilteredQuery} {@link Weight} to create the filtered scorer.
      * @param docIdSet the filter {@link DocIdSet} to apply
      * @return a filtered top scorer
      */
-    public BulkScorer filteredBulkScorer(AtomicReaderContext context,
+    public BulkScorer filteredBulkScorer(LeafReaderContext context,
         Weight weight, boolean scoreDocsInOrder, DocIdSet docIdSet) throws IOException {
       Scorer scorer = filteredScorer(context, weight, docIdSet);
       if (scorer == null) {
@@ -522,7 +522,7 @@ public class FilteredQuery extends Query {
   public static class RandomAccessFilterStrategy extends FilterStrategy {
 
     @Override
-    public Scorer filteredScorer(AtomicReaderContext context, Weight weight, DocIdSet docIdSet) throws IOException {
+    public Scorer filteredScorer(LeafReaderContext context, Weight weight, DocIdSet docIdSet) throws IOException {
       final DocIdSetIterator filterIter = docIdSet.iterator();
       if (filterIter == null) {
         // this means the filter does not accept any documents.
@@ -577,7 +577,7 @@ public class FilteredQuery extends Query {
     }
 
     @Override
-    public Scorer filteredScorer(AtomicReaderContext context,
+    public Scorer filteredScorer(LeafReaderContext context,
         Weight weight, DocIdSet docIdSet) throws IOException {
       final DocIdSetIterator filterIter = docIdSet.iterator();
       if (filterIter == null) {
@@ -613,7 +613,7 @@ public class FilteredQuery extends Query {
    */
   private static final class QueryFirstFilterStrategy extends FilterStrategy {
     @Override
-    public Scorer filteredScorer(final AtomicReaderContext context,
+    public Scorer filteredScorer(final LeafReaderContext context,
         Weight weight,
         DocIdSet docIdSet) throws IOException {
       Bits filterAcceptDocs = docIdSet.bits();
@@ -628,7 +628,7 @@ public class FilteredQuery extends Query {
     }
 
     @Override
-    public BulkScorer filteredBulkScorer(final AtomicReaderContext context,
+    public BulkScorer filteredBulkScorer(final LeafReaderContext context,
         Weight weight,
         boolean scoreDocsInOrder, // ignored (we always top-score in order)
         DocIdSet docIdSet) throws IOException {

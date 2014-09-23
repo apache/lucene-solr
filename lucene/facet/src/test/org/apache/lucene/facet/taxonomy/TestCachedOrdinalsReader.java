@@ -25,7 +25,7 @@ import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -59,7 +59,7 @@ public class TestCachedOrdinalsReader extends FacetTestCase {
       threads[i] = new Thread("CachedOrdsThread-" + i) {
         @Override
         public void run() {
-          for (AtomicReaderContext context : reader.leaves()) {
+          for (LeafReaderContext context : reader.leaves()) {
             try {
               ordsReader.getReader(context);
             } catch (IOException e) {

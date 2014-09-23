@@ -20,7 +20,7 @@ package org.apache.solr.analytics.request;
 import java.io.IOException;
 import java.util.List;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
@@ -103,9 +103,9 @@ public class AnalyticsStats {
       statsCollector.addQueries(((BasicAccumulator)accumulator).getNumQueries());
       
       // Loop through the documents returned by the query and add to accumulator
-      List<AtomicReaderContext> contexts = searcher.getTopReaderContext().leaves();
+      List<LeafReaderContext> contexts = searcher.getTopReaderContext().leaves();
       for (int leafNum = 0; leafNum < contexts.size(); leafNum++) {
-        AtomicReaderContext context = contexts.get(leafNum);
+        LeafReaderContext context = contexts.get(leafNum);
         DocIdSet dis = filter.getDocIdSet(context, null); // solr docsets already exclude any deleted docs
         DocIdSetIterator disi = null;
         if (dis != null) {

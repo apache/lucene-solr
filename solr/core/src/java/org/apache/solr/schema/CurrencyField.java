@@ -18,7 +18,7 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -385,7 +385,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
     }
 
     @Override
-    public FunctionValues getValues(Map context, AtomicReaderContext reader) 
+    public FunctionValues getValues(Map context, LeafReaderContext reader) 
       throws IOException {
       final FunctionValues amounts = source.getValues(context, reader);
       // the target digits & currency of our source, 
@@ -498,7 +498,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
     public Currency getTargetCurrency() { return targetCurrency; }
 
     @Override
-    public FunctionValues getValues(Map context, AtomicReaderContext reader) throws IOException {
+    public FunctionValues getValues(Map context, LeafReaderContext reader) throws IOException {
       final FunctionValues amounts = amountValues.getValues(context, reader);
       final FunctionValues currencies = currencyValues.getValues(context, reader);
 

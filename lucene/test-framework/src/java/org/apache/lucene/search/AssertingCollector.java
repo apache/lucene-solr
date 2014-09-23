@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Random;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 
 /** Wraps another Collector and checks that
  *  acceptsDocsOutOfOrder is respected. */
@@ -41,7 +41,7 @@ public class AssertingCollector extends FilterCollector {
   }
 
   @Override
-  public LeafCollector getLeafCollector(AtomicReaderContext context) throws IOException {
+  public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
     return new FilterLeafCollector(super.getLeafCollector(context)) {
 
       int lastCollected = -1;

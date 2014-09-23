@@ -17,7 +17,7 @@ package org.apache.lucene.queries.function;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldComparatorSource;
 import org.apache.lucene.search.IndexSearcher;
@@ -40,7 +40,7 @@ public abstract class ValueSource {
    * Gets the values for this reader and the context that was previously
    * passed to createWeight()
    */
-  public abstract FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException;
+  public abstract FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException;
 
   @Override
   public abstract boolean equals(Object o);
@@ -84,7 +84,7 @@ public abstract class ValueSource {
   /**
    * EXPERIMENTAL: This method is subject to change.
    * <p>
-   * Get the SortField for this ValueSource.  Uses the {@link #getValues(java.util.Map, AtomicReaderContext)}
+   * Get the SortField for this ValueSource.  Uses the {@link #getValues(java.util.Map, org.apache.lucene.index.LeafReaderContext)}
    * to populate the SortField.
    *
    * @param reverse true if this is a reverse sort.
@@ -154,7 +154,7 @@ public abstract class ValueSource {
     }
 
     @Override
-    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+    public FieldComparator setNextReader(LeafReaderContext context) throws IOException {
       docVals = getValues(fcontext, context);
       return this;
     }

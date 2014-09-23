@@ -992,7 +992,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     for (String name : oldNames) {
       Directory dir = oldIndexDirs.get(name);
       DirectoryReader r = DirectoryReader.open(dir);
-      for (AtomicReaderContext context : r.leaves()) {
+      for (LeafReaderContext context : r.leaves()) {
         air = (SegmentReader) context.reader();
         Version oldVersion = air.getSegmentInfo().info.getVersion();
         assertNotNull(oldVersion); // only 3.0 segments can have a null version
@@ -1005,7 +1005,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   public void verifyUsesDefaultCodec(Directory dir, String name) throws Exception {
     DirectoryReader r = DirectoryReader.open(dir);
-    for (AtomicReaderContext context : r.leaves()) {
+    for (LeafReaderContext context : r.leaves()) {
       SegmentReader air = (SegmentReader) context.reader();
       Codec codec = air.getSegmentInfo().info.getCodec();
       assertTrue("codec used in " + name + " (" + codec.getName() + ") is not a default codec (does not begin with Lucene)",
@@ -1229,7 +1229,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   public static final String dvUpdatesIndex = "dvupdates.48.zip";
 
-  private void assertNumericDocValues(AtomicReader r, String f, String cf) throws IOException {
+  private void assertNumericDocValues(LeafReader r, String f, String cf) throws IOException {
     NumericDocValues ndvf = r.getNumericDocValues(f);
     NumericDocValues ndvcf = r.getNumericDocValues(cf);
     for (int i = 0; i < r.maxDoc(); i++) {
@@ -1237,7 +1237,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
   
-  private void assertBinaryDocValues(AtomicReader r, String f, String cf) throws IOException {
+  private void assertBinaryDocValues(LeafReader r, String f, String cf) throws IOException {
     BinaryDocValues bdvf = r.getBinaryDocValues(f);
     BinaryDocValues bdvcf = r.getBinaryDocValues(cf);
     for (int i = 0; i < r.maxDoc(); i++) {
@@ -1247,8 +1247,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   
   private void verifyDocValues(Directory dir) throws IOException {
     DirectoryReader reader = DirectoryReader.open(dir);
-    for (AtomicReaderContext context : reader.leaves()) {
-      AtomicReader r = context.reader();
+    for (LeafReaderContext context : reader.leaves()) {
+      LeafReader r = context.reader();
       assertNumericDocValues(r, "ndv1", "ndv1_c");
       assertNumericDocValues(r, "ndv2", "ndv2_c");
       assertBinaryDocValues(r, "bdv1", "bdv1_c");

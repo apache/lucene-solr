@@ -5,7 +5,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.BaseTermVectorsFormatTestCase;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Terms;
@@ -50,7 +50,7 @@ public class TestCompressingTermVectorsFormat extends BaseTermVectorsFormatTestC
     ft.setStoreTermVectors(true);
     doc.add(new Field("foo", "this is a test", ft));
     iw.addDocument(doc);
-    AtomicReader ir = getOnlySegmentReader(iw.getReader());
+    LeafReader ir = getOnlySegmentReader(iw.getReader());
     Terms terms = ir.getTermVector(0, "foo");
     assertNotNull(terms);
     TermsEnum termsEnum = terms.iterator(null);

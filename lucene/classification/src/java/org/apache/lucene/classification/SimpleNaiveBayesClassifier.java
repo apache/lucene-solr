@@ -26,7 +26,7 @@ import java.util.List;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -48,10 +48,10 @@ import org.apache.lucene.util.BytesRef;
 public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
 
   /**
-   * {@link org.apache.lucene.index.AtomicReader} used to access the {@link org.apache.lucene.classification.Classifier}'s
+   * {@link org.apache.lucene.index.LeafReader} used to access the {@link org.apache.lucene.classification.Classifier}'s
    * index
    */
-  protected AtomicReader atomicReader;
+  protected LeafReader leafReader;
 
   /**
    * names of the fields to be used as input text
@@ -80,7 +80,7 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
 
   /**
    * Creates a new NaiveBayes classifier.
-   * Note that you must call {@link #train(AtomicReader, String, String, Analyzer) train()} before you can
+   * Note that you must call {@link #train(org.apache.lucene.index.LeafReader, String, String, Analyzer) train()} before you can
    * classify any documents.
    */
   public SimpleNaiveBayesClassifier() {
@@ -90,27 +90,27 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
    * {@inheritDoc}
    */
   @Override
-  public void train(AtomicReader atomicReader, String textFieldName, String classFieldName, Analyzer analyzer) throws IOException {
-    train(atomicReader, textFieldName, classFieldName, analyzer, null);
+  public void train(LeafReader leafReader, String textFieldName, String classFieldName, Analyzer analyzer) throws IOException {
+    train(leafReader, textFieldName, classFieldName, analyzer, null);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public void train(AtomicReader atomicReader, String textFieldName, String classFieldName, Analyzer analyzer, Query query)
+  public void train(LeafReader leafReader, String textFieldName, String classFieldName, Analyzer analyzer, Query query)
       throws IOException {
-    train(atomicReader, new String[]{textFieldName}, classFieldName, analyzer, query);
+    train(leafReader, new String[]{textFieldName}, classFieldName, analyzer, query);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public void train(AtomicReader atomicReader, String[] textFieldNames, String classFieldName, Analyzer analyzer, Query query)
+  public void train(LeafReader leafReader, String[] textFieldNames, String classFieldName, Analyzer analyzer, Query query)
       throws IOException {
-    this.atomicReader = atomicReader;
-    this.indexSearcher = new IndexSearcher(this.atomicReader);
+    this.leafReader = leafReader;
+    this.indexSearcher = new IndexSearcher(this.leafReader);
     this.textFieldNames = textFieldNames;
     this.classFieldName = classFieldName;
     this.analyzer = analyzer;
@@ -155,12 +155,12 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
   }
 
   private List<ClassificationResult<BytesRef>> assignClassNormalizedList(String inputDocument) throws IOException {
-    if (atomicReader == null) {
+    if (leafReader == null) {
       throw new IOException("You must first call Classifier#train");
     }
     List<ClassificationResult<BytesRef>> dataList = new ArrayList<>();
 
-    Terms terms = MultiFields.getTerms(atomicReader, classFieldName);
+    Terms terms = MultiFields.getTerms(leafReader, classFieldName);
     TermsEnum termsEnum = terms.iterator(null);
     BytesRef next;
     String[] tokenizedDoc = tokenizeDoc(inputDocument);
@@ -203,7 +203,7 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
    * @throws IOException if accessing to term vectors or search fails
    */
   protected int countDocsWithClass() throws IOException {
-    int docCount = MultiFields.getTerms(this.atomicReader, this.classFieldName).getDocCount();
+    int docCount = MultiFields.getTerms(this.leafReader, this.classFieldName).getDocCount();
     if (docCount == -1) { // in case codec doesn't support getDocCount
       TotalHitCountCollector totalHitCountCollector = new TotalHitCountCollector();
       BooleanQuery q = new BooleanQuery();
@@ -265,11 +265,11 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
   private double getTextTermFreqForClass(BytesRef c) throws IOException {
     double avgNumberOfUniqueTerms = 0;
     for (String textFieldName : textFieldNames) {
-      Terms terms = MultiFields.getTerms(atomicReader, textFieldName);
+      Terms terms = MultiFields.getTerms(leafReader, textFieldName);
       long numPostings = terms.getSumDocFreq(); // number of term/doc pairs
       avgNumberOfUniqueTerms += numPostings / (double) terms.getDocCount(); // avg # of unique terms per doc
     }
-    int docsWithC = atomicReader.docFreq(new Term(classFieldName, c));
+    int docsWithC = leafReader.docFreq(new Term(classFieldName, c));
     return avgNumberOfUniqueTerms * docsWithC; // avg # of unique terms in text fields per doc * # docs with c
   }
 
@@ -294,6 +294,6 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
   }
 
   private int docCount(BytesRef countedClass) throws IOException {
-    return atomicReader.docFreq(new Term(classFieldName, countedClass));
+    return leafReader.docFreq(new Term(classFieldName, countedClass));
   }
 }

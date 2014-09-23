@@ -19,7 +19,7 @@ package org.apache.solr.analytics.accumulator.facet;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
@@ -80,7 +80,7 @@ public class FieldFacetAccumulator extends ValueAccumulator {
    * Move to the next set of documents to add to the field facet.
    */
   @Override
-  protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+  protected void doSetNextReader(LeafReaderContext context) throws IOException {
     if (multiValued) {
       setValues = context.reader().getSortedSetDocValues(name);
     } else {

@@ -25,13 +25,12 @@ import java.util.Set;
 import com.spatial4j.core.shape.Point;
 
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.VectorValueSource;
-import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ComplexExplanation;
@@ -342,12 +341,12 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
       return new SpatialScorer(context, acceptDocs, this, queryWeight);
     }
 
     @Override
-    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
+    public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       return ((SpatialScorer)scorer(context, context.reader().getLiveDocs())).explain(doc);
     }
   }
@@ -376,7 +375,7 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     int lastDistDoc;
     double lastDist;
 
-    public SpatialScorer(AtomicReaderContext readerContext, Bits acceptDocs, SpatialWeight w, float qWeight) throws IOException {
+    public SpatialScorer(LeafReaderContext readerContext, Bits acceptDocs, SpatialWeight w, float qWeight) throws IOException {
       super(w);
       this.weight = w;
       this.qWeight = qWeight;
@@ -535,7 +534,7 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     }
 
     @Override
-    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       super.doSetNextReader(context);
       maxdoc = context.reader().maxDoc();
       spatialScorer = new SpatialScorer(context, null, weight, 1.0f);

@@ -17,10 +17,9 @@ package org.apache.lucene.search.grouping.function;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.grouping.AbstractSecondPassGroupingCollector;
 import org.apache.lucene.search.grouping.SearchGroup;
@@ -72,7 +71,7 @@ public class FunctionSecondPassGroupingCollector extends AbstractSecondPassGroup
   }
 
   @Override
-  protected void doSetNextReader(AtomicReaderContext readerContext) throws IOException {
+  protected void doSetNextReader(LeafReaderContext readerContext) throws IOException {
     super.doSetNextReader(readerContext);
     FunctionValues values = groupByVS.getValues(vsContext, readerContext);
     filler = values.getValueFiller();

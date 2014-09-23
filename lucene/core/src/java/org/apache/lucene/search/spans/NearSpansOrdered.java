@@ -17,7 +17,7 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.util.ArrayUtil;
@@ -26,7 +26,6 @@ import org.apache.lucene.util.InPlaceMergeSorter;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -89,11 +88,11 @@ public class NearSpansOrdered extends Spans {
   private SpanNearQuery query;
   private boolean collectPayloads = true;
   
-  public NearSpansOrdered(SpanNearQuery spanNearQuery, AtomicReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) throws IOException {
+  public NearSpansOrdered(SpanNearQuery spanNearQuery, LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) throws IOException {
     this(spanNearQuery, context, acceptDocs, termContexts, true);
   }
 
-  public NearSpansOrdered(SpanNearQuery spanNearQuery, AtomicReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts, boolean collectPayloads)
+  public NearSpansOrdered(SpanNearQuery spanNearQuery, LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts, boolean collectPayloads)
   throws IOException {
     if (spanNearQuery.getClauses().length < 2) {
       throw new IllegalArgumentException("Less than 2 clauses: "

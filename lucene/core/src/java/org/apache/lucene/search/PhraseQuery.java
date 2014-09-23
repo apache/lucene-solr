@@ -22,11 +22,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Set;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
@@ -245,9 +245,9 @@ public class PhraseQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
       assert !terms.isEmpty();
-      final AtomicReader reader = context.reader();
+      final LeafReader reader = context.reader();
       final Bits liveDocs = acceptDocs;
       PostingsAndFreq[] postingsFreqs = new PostingsAndFreq[terms.size()];
 
@@ -292,12 +292,12 @@ public class PhraseQuery extends Query {
     }
     
     // only called from assert
-    private boolean termNotInReader(AtomicReader reader, Term term) throws IOException {
+    private boolean termNotInReader(LeafReader reader, Term term) throws IOException {
       return reader.docFreq(term) == 0;
     }
 
     @Override
-    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
+    public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       Scorer scorer = scorer(context, context.reader().getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);

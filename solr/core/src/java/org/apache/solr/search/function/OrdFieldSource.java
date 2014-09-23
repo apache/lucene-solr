@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
@@ -40,7 +40,7 @@ import org.apache.solr.search.Insanity;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /**
- * Obtains the ordinal of the field value from {@link AtomicReader#getSortedDocValues}.
+ * Obtains the ordinal of the field value from {@link org.apache.lucene.index.LeafReader#getSortedDocValues}.
  * <br>
  * The native lucene index order is used to assign an ordinal value for each field value.
  * <br>Field values (terms) are lexicographically ordered by unicode value, and numbered starting at 1.
@@ -71,25 +71,25 @@ public class OrdFieldSource extends ValueSource {
 
 
   @Override
-  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     final int off = readerContext.docBase;
-    final AtomicReader r;
+    final LeafReader r;
     Object o = context.get("searcher");
     if (o instanceof SolrIndexSearcher) {
       SolrIndexSearcher is = (SolrIndexSearcher) o;
       SchemaField sf = is.getSchema().getFieldOrNull(field);
       if (sf != null && sf.hasDocValues() == false && sf.multiValued() == false && sf.getType().getNumericType() != null) {
         // its a single-valued numeric field: we must currently create insanity :(
-        List<AtomicReaderContext> leaves = is.getIndexReader().leaves();
-        AtomicReader insaneLeaves[] = new AtomicReader[leaves.size()];
+        List<LeafReaderContext> leaves = is.getIndexReader().leaves();
+        LeafReader insaneLeaves[] = new LeafReader[leaves.size()];
         int upto = 0;
-        for (AtomicReaderContext raw : leaves) {
+        for (LeafReaderContext raw : leaves) {
           insaneLeaves[upto++] = Insanity.wrapInsanity(raw.reader(), field);
         }
         r = SlowCompositeReaderWrapper.wrap(new MultiReader(insaneLeaves));
       } else {
         // reuse ordinalmap
-        r = ((SolrIndexSearcher)o).getAtomicReader();
+        r = ((SolrIndexSearcher)o).getLeafReader();
       }
     } else {
       IndexReader topReader = ReaderUtil.getTopLevelContext(readerContext).reader();

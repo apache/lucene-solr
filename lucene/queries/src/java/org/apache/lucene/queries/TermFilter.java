@@ -17,7 +17,7 @@ package org.apache.lucene.queries;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -56,7 +56,7 @@ final public class TermFilter extends Filter {
   }
 
   @Override
-  public DocIdSet getDocIdSet(AtomicReaderContext context, final Bits acceptDocs) throws IOException {
+  public DocIdSet getDocIdSet(LeafReaderContext context, final Bits acceptDocs) throws IOException {
     Terms terms = context.reader().terms(term.field());
     if (terms == null) {
       return null;

@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -337,7 +337,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     w.close();
     IndexSearcher s = new IndexSearcher(r) {
         @Override
-        protected void search(List<AtomicReaderContext> leaves, Weight weight, Collector collector) throws IOException {
+        protected void search(List<LeafReaderContext> leaves, Weight weight, Collector collector) throws IOException {
           assertEquals(-1, collector.getClass().getSimpleName().indexOf("OutOfOrder"));
           super.search(leaves, weight, collector);
         }

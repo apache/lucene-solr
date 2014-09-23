@@ -20,7 +20,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.search.TermAutomatonQuery.EnumAndScorer;
 import org.apache.lucene.search.TermAutomatonQuery.TermAutomatonWeight;
 import org.apache.lucene.search.similarities.Similarity;

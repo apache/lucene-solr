@@ -18,7 +18,6 @@ package org.apache.lucene.document;
  */
 
 import org.apache.lucene.analysis.NumericTokenStream; // javadocs
-import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.NumericRangeFilter; // javadocs
 import org.apache.lucene.search.NumericRangeQuery; // javadocs
@@ -57,7 +56,7 @@ import org.apache.lucene.util.NumericUtils;
  * NumericRangeFilter}.  To sort according to a
  * <code>IntField</code>, use the normal numeric sort types, eg
  * {@link org.apache.lucene.search.SortField.Type#INT}. <code>IntField</code> 
- * values can also be loaded directly from {@link AtomicReader#getNumericDocValues}.</p>
+ * values can also be loaded directly from {@link org.apache.lucene.index.LeafReader#getNumericDocValues}.</p>
  *
  * <p>You may add the same field name as an <code>IntField</code> to
  * the same document more than once.  Range querying and

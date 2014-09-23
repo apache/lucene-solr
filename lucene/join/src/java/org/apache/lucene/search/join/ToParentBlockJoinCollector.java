@@ -17,7 +17,7 @@ package org.apache.lucene.search.join;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexWriter; // javadocs
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.Scorer.ChildScorer;
@@ -91,7 +91,7 @@ public class ToParentBlockJoinCollector extends SimpleCollector {
 
   private int docBase;
   private ToParentBlockJoinQuery.BlockJoinScorer[] joinScorers = new ToParentBlockJoinQuery.BlockJoinScorer[0];
-  private AtomicReaderContext currentReaderContext;
+  private LeafReaderContext currentReaderContext;
   private Scorer scorer;
   private boolean queueFull;
 
@@ -136,7 +136,7 @@ public class ToParentBlockJoinCollector extends SimpleCollector {
       }
       counts = new int[numJoins];
     }
-    AtomicReaderContext readerContext;
+    LeafReaderContext readerContext;
     int[][] docs;
     float[][] scores;
     int[] counts;
@@ -269,7 +269,7 @@ public class ToParentBlockJoinCollector extends SimpleCollector {
   }
 
   @Override
-  protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+  protected void doSetNextReader(LeafReaderContext context) throws IOException {
     currentReaderContext = context;
     docBase = context.docBase;
     for (int compIDX = 0; compIDX < comparators.length; compIDX++) {

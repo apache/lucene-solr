@@ -17,7 +17,7 @@ package org.apache.lucene.search.grouping;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.*;
 
 import java.io.IOException;
@@ -107,7 +107,7 @@ public abstract class AbstractSecondPassGroupingCollector<GROUP_VALUE_TYPE> exte
   protected abstract SearchGroupDocs<GROUP_VALUE_TYPE> retrieveGroup(int doc) throws IOException;
 
   @Override
-  protected void doSetNextReader(AtomicReaderContext readerContext) throws IOException {
+  protected void doSetNextReader(LeafReaderContext readerContext) throws IOException {
     //System.out.println("SP.setNextReader");
     for (SearchGroupDocs<GROUP_VALUE_TYPE> group : groupMap.values()) {
       group.collector.getLeafCollector(readerContext);

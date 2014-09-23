@@ -110,7 +110,7 @@ public class TestUniqueTermCount extends LuceneTestCase {
     }
 
     @Override
-    public SimScorer simScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
+    public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
       throw new UnsupportedOperationException();
     }
   }

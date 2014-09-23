@@ -137,7 +137,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
 
     assertEquals(3, pr.leaves().size());
 
-    for(AtomicReaderContext cxt : pr.leaves()) {
+    for(LeafReaderContext cxt : pr.leaves()) {
       cxt.reader().addReaderClosedListener(new ReaderClosedListener() {
           @Override
           public void onClose(IndexReader reader) {
@@ -165,7 +165,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
 
     assertEquals(3, pr.leaves().size());
 
-    for(AtomicReaderContext cxt : pr.leaves()) {
+    for(LeafReaderContext cxt : pr.leaves()) {
       cxt.reader().addReaderClosedListener(new ReaderClosedListener() {
           @Override
           public void onClose(IndexReader reader) {
@@ -324,7 +324,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     assertNull(pr.document(0).get("f3"));
     assertNull(pr.document(0).get("f4"));
     // check that fields are there
-    AtomicReader slow = SlowCompositeReaderWrapper.wrap(pr);
+    LeafReader slow = SlowCompositeReaderWrapper.wrap(pr);
     assertNotNull(slow.terms("f1"));
     assertNotNull(slow.terms("f2"));
     assertNotNull(slow.terms("f3"));

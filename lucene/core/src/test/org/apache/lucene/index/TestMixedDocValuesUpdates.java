@@ -114,8 +114,8 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       reader = newReader;
 //      System.out.println("[" + Thread.currentThread().getName() + "]: reopened reader: " + reader);
       assertTrue(reader.numDocs() > 0); // we delete at most one document per round
-      for (AtomicReaderContext context : reader.leaves()) {
-        AtomicReader r = context.reader();
+      for (LeafReaderContext context : reader.leaves()) {
+        LeafReader r = context.reader();
 //        System.out.println(((SegmentReader) r).getSegmentName());
         Bits liveDocs = r.getLiveDocs();
         for (int field = 0; field < fieldValues.length; field++) {
@@ -259,8 +259,8 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     
     DirectoryReader reader = DirectoryReader.open(dir);
     BytesRef scratch = new BytesRef();
-    for (AtomicReaderContext context : reader.leaves()) {
-      AtomicReader r = context.reader();
+    for (LeafReaderContext context : reader.leaves()) {
+      LeafReader r = context.reader();
       for (int i = 0; i < numFields; i++) {
         BinaryDocValues bdv = r.getBinaryDocValues("f" + i);
         NumericDocValues control = r.getNumericDocValues("cf" + i);
@@ -310,8 +310,8 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       writer.updateDocValues(t, new BinaryDocValuesField("f", TestBinaryDocValuesUpdates.toBytes(value)),
           new NumericDocValuesField("cf", value*2));
       DirectoryReader reader = DirectoryReader.open(writer, true);
-      for (AtomicReaderContext context : reader.leaves()) {
-        AtomicReader r = context.reader();
+      for (LeafReaderContext context : reader.leaves()) {
+        LeafReader r = context.reader();
         BinaryDocValues fbdv = r.getBinaryDocValues("f");
         NumericDocValues cfndv = r.getNumericDocValues("cf");
         for (int j = 0; j < r.maxDoc(); j++) {
@@ -377,9 +377,9 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     writer.close();
     
     DirectoryReader reader = DirectoryReader.open(dir);
-    for (AtomicReaderContext context : reader.leaves()) {
+    for (LeafReaderContext context : reader.leaves()) {
       for (int i = 0; i < numBinaryFields; i++) {
-        AtomicReader r = context.reader();
+        LeafReader r = context.reader();
         BinaryDocValues f = r.getBinaryDocValues("f" + i);
         NumericDocValues cf = r.getNumericDocValues("cf" + i);
         for (int j = 0; j < r.maxDoc(); j++) {

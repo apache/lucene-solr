@@ -18,8 +18,8 @@ package org.apache.lucene.spatial.prefix;
  */
 
 import com.spatial4j.core.shape.Shape;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -76,16 +76,16 @@ public abstract class AbstractPrefixTreeFilter extends Filter {
    * traversing a {@link TermsEnum}. */
   public abstract class BaseTermsEnumTraverser {
 
-    protected final AtomicReaderContext context;
+    protected final LeafReaderContext context;
     protected Bits acceptDocs;
     protected final int maxDoc;
 
     protected TermsEnum termsEnum;//remember to check for null in getDocIdSet
     protected DocsEnum docsEnum;
 
-    public BaseTermsEnumTraverser(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+    public BaseTermsEnumTraverser(LeafReaderContext context, Bits acceptDocs) throws IOException {
       this.context = context;
-      AtomicReader reader = context.reader();
+      LeafReader reader = context.reader();
       this.acceptDocs = acceptDocs;
       this.maxDoc = reader.maxDoc();
       Terms terms = reader.terms(fieldName);

@@ -16,7 +16,7 @@ package org.apache.lucene.queries;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -153,7 +153,7 @@ public class CommonTermsQuery extends Query {
       tq.setBoost(getBoost());
       return tq;
     }
-    final List<AtomicReaderContext> leaves = reader.leaves();
+    final List<LeafReaderContext> leaves = reader.leaves();
     final int maxDoc = reader.maxDoc();
     final TermContext[] contextArray = new TermContext[terms.size()];
     final Term[] queryTerms = this.terms.toArray(new Term[0]);
@@ -234,10 +234,10 @@ public class CommonTermsQuery extends Query {
   }
   
   public void collectTermContext(IndexReader reader,
-      List<AtomicReaderContext> leaves, TermContext[] contextArray,
+      List<LeafReaderContext> leaves, TermContext[] contextArray,
       Term[] queryTerms) throws IOException {
     TermsEnum termsEnum = null;
-    for (AtomicReaderContext context : leaves) {
+    for (LeafReaderContext context : leaves) {
       final Fields fields = context.reader().fields();
       if (fields == null) {
         // reader has no fields

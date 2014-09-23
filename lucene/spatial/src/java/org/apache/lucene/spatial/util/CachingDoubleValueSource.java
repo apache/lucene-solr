@@ -17,7 +17,7 @@
 
 package org.apache.lucene.spatial.util;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 
@@ -47,7 +47,7 @@ public class CachingDoubleValueSource extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     final int base = readerContext.docBase;
     final FunctionValues vals = source.getValues(context,readerContext);
     return new FunctionValues() {

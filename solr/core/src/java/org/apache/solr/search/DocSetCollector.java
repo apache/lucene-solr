@@ -19,8 +19,7 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.util.FixedBitSet;
@@ -85,7 +84,7 @@ public class DocSetCollector extends SimpleCollector {
   }
 
   @Override
-  protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+  protected void doSetNextReader(LeafReaderContext context) throws IOException {
     this.base = context.docBase;
   }
 

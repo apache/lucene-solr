@@ -24,8 +24,8 @@ import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -99,7 +99,7 @@ public class TestFilteredQuery extends LuceneTestCase {
   private static Filter newStaticFilterB() {
     return new Filter() {
       @Override
-      public DocIdSet getDocIdSet (AtomicReaderContext context, Bits acceptDocs) {
+      public DocIdSet getDocIdSet (LeafReaderContext context, Bits acceptDocs) {
         if (acceptDocs == null) acceptDocs = new Bits.MatchAllBits(5);
         BitSet bitset = new BitSet(5);
         if (acceptDocs.get(1)) bitset.set(1);
@@ -181,7 +181,7 @@ public class TestFilteredQuery extends LuceneTestCase {
   private static Filter newStaticFilterA() {
     return new Filter() {
       @Override
-      public DocIdSet getDocIdSet (AtomicReaderContext context, Bits acceptDocs) {
+      public DocIdSet getDocIdSet (LeafReaderContext context, Bits acceptDocs) {
         assertNull("acceptDocs should be null, as we have an index without deletions", acceptDocs);
         BitSet bitset = new BitSet(5);
         bitset.set(0, 5);
@@ -421,10 +421,10 @@ public class TestFilteredQuery extends LuceneTestCase {
     Query query = new FilteredQuery(new TermQuery(new Term("field", "0")),
         new Filter() {
           @Override
-          public DocIdSet getDocIdSet(AtomicReaderContext context,
+          public DocIdSet getDocIdSet(LeafReaderContext context,
               Bits acceptDocs) throws IOException {
             final boolean nullBitset = random().nextInt(10) == 5;
-            final AtomicReader reader = context.reader();
+            final LeafReader reader = context.reader();
             DocsEnum termDocsEnum = reader.termDocsEnum(new Term("field", "0"));
             if (termDocsEnum == null) {
               return null; // no docs -- return null
@@ -504,7 +504,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
     Query query = new FilteredQuery(new TermQuery(new Term("field", "0")), new Filter() {
       @Override
-      public DocIdSet getDocIdSet(final AtomicReaderContext context, Bits acceptDocs)
+      public DocIdSet getDocIdSet(final LeafReaderContext context, Bits acceptDocs)
           throws IOException {
         return new DocIdSet() {
 

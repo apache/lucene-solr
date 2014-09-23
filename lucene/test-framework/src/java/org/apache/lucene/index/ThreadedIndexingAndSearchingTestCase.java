@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
@@ -340,7 +339,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
                   // Verify 1) IW is correctly setting
                   // diagnostics, and 2) segment warming for
                   // merged segments is actually happening:
-                  for(final AtomicReaderContext sub : s.getIndexReader().leaves()) {
+                  for(final LeafReaderContext sub : s.getIndexReader().leaves()) {
                     SegmentReader segReader = (SegmentReader) sub.reader();
                     Map<String,String> diagnostics = segReader.getSegmentInfo().info.getDiagnostics();
                     assertNotNull(diagnostics);
@@ -466,7 +465,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
 
     conf.setMergedSegmentWarmer(new IndexWriter.IndexReaderWarmer() {
       @Override
-      public void warm(AtomicReader reader) throws IOException {
+      public void warm(LeafReader reader) throws IOException {
         if (VERBOSE) {
           System.out.println("TEST: now warm merged reader=" + reader);
         }

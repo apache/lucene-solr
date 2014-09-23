@@ -19,7 +19,7 @@ package org.apache.lucene.queries;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
@@ -60,8 +60,8 @@ public class TermFilterTest extends LuceneTestCase {
     doc.add(newStringField(fieldName, "value1", Field.Store.NO));
     w.addDocument(doc);
     IndexReader reader = SlowCompositeReaderWrapper.wrap(w.getReader());
-    assertTrue(reader.getContext() instanceof AtomicReaderContext);
-    AtomicReaderContext context = (AtomicReaderContext) reader.getContext();
+    assertTrue(reader.getContext() instanceof LeafReaderContext);
+    LeafReaderContext context = (LeafReaderContext) reader.getContext();
     w.close();
 
     DocIdSet idSet = termFilter(fieldName, "value1").getDocIdSet(context, context.reader().getLiveDocs());

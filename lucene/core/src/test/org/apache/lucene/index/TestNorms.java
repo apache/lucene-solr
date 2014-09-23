@@ -111,7 +111,7 @@ public class TestNorms extends LuceneTestCase {
   public void testMaxByteNorms() throws IOException {
     Directory dir = newFSDirectory(createTempDir("TestNorms.testMaxByteNorms"));
     buildIndex(dir);
-    AtomicReader open = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
+    LeafReader open = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
     NumericDocValues normValues = open.getNormValues(byteTestField);
     assertNotNull(normValues);
     for (int i = 0; i < open.maxDoc(); i++) {
@@ -192,7 +192,7 @@ public class TestNorms extends LuceneTestCase {
     }
 
     @Override
-    public SimScorer simScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
+    public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
       throw new UnsupportedOperationException();
     }
   } 

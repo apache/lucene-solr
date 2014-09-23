@@ -224,7 +224,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, cfg);
     // we need to index enough documents so that constant overhead doesn't dominate
     final int numDocs = atLeast(10000);
-    AtomicReader reader1 = null;
+    LeafReader reader1 = null;
     for (int i = 0; i < numDocs; ++i) {
       Document d = new Document();
       addRandomFields(d);
@@ -239,9 +239,9 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     w.commit();
     w.close();
 
-    AtomicReader reader2 = getOnlySegmentReader(DirectoryReader.open(dir));
+    LeafReader reader2 = getOnlySegmentReader(DirectoryReader.open(dir));
 
-    for (AtomicReader reader : Arrays.asList(reader1, reader2)) {
+    for (LeafReader reader : Arrays.asList(reader1, reader2)) {
       new SimpleMergedSegmentWarmer(InfoStream.NO_OUTPUT).warm(reader);
     }
 

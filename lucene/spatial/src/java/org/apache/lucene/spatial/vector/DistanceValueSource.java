@@ -19,8 +19,8 @@ package org.apache.lucene.spatial.vector;
 
 import com.spatial4j.core.distance.DistanceCalculator;
 import com.spatial4j.core.shape.Point;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -63,8 +63,8 @@ public class DistanceValueSource extends ValueSource {
    * Returns the FunctionValues used by the function query.
    */
   @Override
-  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    AtomicReader reader = readerContext.reader();
+  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+    LeafReader reader = readerContext.reader();
 
     final NumericDocValues ptX = DocValues.getNumeric(reader, strategy.getFieldNameX());
     final NumericDocValues ptY = DocValues.getNumeric(reader, strategy.getFieldNameY());

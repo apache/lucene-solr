@@ -21,22 +21,22 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * {@link IndexReaderContext} for {@link AtomicReader} instances.
+ * {@link IndexReaderContext} for {@link LeafReader} instances.
  */
-public final class AtomicReaderContext extends IndexReaderContext {
+public final class LeafReaderContext extends IndexReaderContext {
   /** The readers ord in the top-level's leaves array */
   public final int ord;
   /** The readers absolute doc base */
   public final int docBase;
   
-  private final AtomicReader reader;
-  private final List<AtomicReaderContext> leaves;
+  private final LeafReader reader;
+  private final List<LeafReaderContext> leaves;
   
   /**
-   * Creates a new {@link AtomicReaderContext} 
+   * Creates a new {@link LeafReaderContext} 
    */    
-  AtomicReaderContext(CompositeReaderContext parent, AtomicReader reader,
-      int ord, int docBase, int leafOrd, int leafDocBase) {
+  LeafReaderContext(CompositeReaderContext parent, LeafReader reader,
+                    int ord, int docBase, int leafOrd, int leafDocBase) {
     super(parent, ord, docBase);
     this.ord = leafOrd;
     this.docBase = leafDocBase;
@@ -44,12 +44,12 @@ public final class AtomicReaderContext extends IndexReaderContext {
     this.leaves = isTopLevel ? Collections.singletonList(this) : null;
   }
   
-  AtomicReaderContext(AtomicReader atomicReader) {
-    this(null, atomicReader, 0, 0, 0, 0);
+  LeafReaderContext(LeafReader leafReader) {
+    this(null, leafReader, 0, 0, 0, 0);
   }
   
   @Override
-  public List<AtomicReaderContext> leaves() {
+  public List<LeafReaderContext> leaves() {
     if (!isTopLevel) {
       throw new UnsupportedOperationException("This is not a top-level context.");
     }
@@ -63,7 +63,7 @@ public final class AtomicReaderContext extends IndexReaderContext {
   }
   
   @Override
-  public AtomicReader reader() {
+  public LeafReader reader() {
     return reader;
   }
 }

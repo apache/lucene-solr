@@ -30,7 +30,7 @@ import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -72,7 +72,7 @@ public class TestFieldCacheWithThreads extends LuceneTestCase {
     w.close();
 
     assertEquals(1, r.leaves().size());
-    final AtomicReader ar = r.leaves().get(0).reader();
+    final LeafReader ar = r.leaves().get(0).reader();
 
     int numThreads = TestUtil.nextInt(random(), 2, 5);
     List<Thread> threads = new ArrayList<>();
@@ -181,7 +181,7 @@ public class TestFieldCacheWithThreads extends LuceneTestCase {
     final DirectoryReader r = writer.getReader();
     writer.close();
     
-    final AtomicReader sr = getOnlySegmentReader(r);
+    final LeafReader sr = getOnlySegmentReader(r);
 
     final long END_TIME = System.currentTimeMillis() + (TEST_NIGHTLY ? 30 : 1);
 

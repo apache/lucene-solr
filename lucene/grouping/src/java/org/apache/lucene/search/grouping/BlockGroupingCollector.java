@@ -21,7 +21,7 @@ package org.apache.lucene.search.grouping;
 import java.io.IOException;
 import java.util.Collection;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.ArrayUtil;
@@ -73,7 +73,7 @@ public class BlockGroupingCollector extends SimpleCollector {
   private final int compIDXEnd;
   private int bottomSlot;
   private boolean queueFull;
-  private AtomicReaderContext currentReaderContext;
+  private LeafReaderContext currentReaderContext;
 
   private int topGroupDoc;
   private int totalHitCount;
@@ -136,7 +136,7 @@ public class BlockGroupingCollector extends SimpleCollector {
   }
 
   private static final class OneGroup {
-    AtomicReaderContext readerContext;
+    LeafReaderContext readerContext;
     //int groupOrd;
     int topGroupDoc;
     int[] docs;
@@ -516,7 +516,7 @@ public class BlockGroupingCollector extends SimpleCollector {
   }
 
   @Override
-  protected void doSetNextReader(AtomicReaderContext readerContext) throws IOException {
+  protected void doSetNextReader(LeafReaderContext readerContext) throws IOException {
     if (subDocUpto != 0) {
       processGroup();
     }

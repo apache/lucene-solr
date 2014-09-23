@@ -19,12 +19,9 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.util.PriorityQueue;
 
@@ -47,7 +44,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -127,7 +124,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public FieldComparator<Object> setNextReader(AtomicReaderContext context) {
+    public FieldComparator<Object> setNextReader(LeafReaderContext context) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -157,7 +154,7 @@ final class JustCompileSearch {
     // still added here in case someone will add abstract methods in the future.
     
     @Override
-    public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) {
+    public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) {
       return null;
     }
   }
@@ -246,7 +243,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public SimScorer simScorer(SimWeight stats, AtomicReaderContext context) {
+    public SimScorer simScorer(SimWeight stats, LeafReaderContext context) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -268,7 +265,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -302,7 +299,7 @@ final class JustCompileSearch {
   static final class JustCompileWeight extends Weight {
 
     @Override
-    public Explanation explain(AtomicReaderContext context, int doc) {
+    public Explanation explain(LeafReaderContext context, int doc) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -322,7 +319,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) {
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     

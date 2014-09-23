@@ -20,10 +20,8 @@ package org.apache.solr.schema;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.index.GeneralField;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -82,7 +80,7 @@ public class RandomSortField extends FieldType {
    * Given a field name and an IndexReader, get a random hash seed.
    * Using dynamic fields, you can force the random order to change 
    */
-  private static int getSeed(String fieldName, AtomicReaderContext context) {
+  private static int getSeed(String fieldName, LeafReaderContext context) {
     final DirectoryReader top = (DirectoryReader) ReaderUtil.getTopLevelContext(context).reader();
     // calling getVersion() on a segment will currently give you a null pointer exception, so
     // we use the top-level reader.
@@ -143,7 +141,7 @@ public class RandomSortField extends FieldType {
         }
 
         @Override
-        public FieldComparator setNextReader(AtomicReaderContext context) {
+        public FieldComparator setNextReader(LeafReaderContext context) {
           seed = getSeed(fieldname, context);
           return this;
         }
@@ -177,7 +175,7 @@ public class RandomSortField extends FieldType {
     }
 
     @Override
-    public FunctionValues getValues(Map context, final AtomicReaderContext readerContext) throws IOException {
+    public FunctionValues getValues(Map context, final LeafReaderContext readerContext) throws IOException {
       return new IntDocValues(this) {
           private final int seed = getSeed(field, readerContext);
           @Override

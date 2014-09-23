@@ -17,7 +17,7 @@
 
 package org.apache.solr.search;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -357,8 +357,8 @@ public class TestRankQueryPlugin extends QParserPlugin {
       if(fsv){
         NamedList<Object[]> sortVals = new NamedList<>(); // order is important for the sort fields
         IndexReaderContext topReaderContext = searcher.getTopReaderContext();
-        List<AtomicReaderContext> leaves = topReaderContext.leaves();
-        AtomicReaderContext currentLeaf = null;
+        List<LeafReaderContext> leaves = topReaderContext.leaves();
+        LeafReaderContext currentLeaf = null;
         if (leaves.size()==1) {
           // if there is a single segment, use that subReader and avoid looking up each time
           currentLeaf = leaves.get(0);
@@ -716,7 +716,7 @@ public class TestRankQueryPlugin extends QParserPlugin {
       return false;
     }
 
-    public void doSetNextReader(AtomicReaderContext context) throws IOException {
+    public void doSetNextReader(LeafReaderContext context) throws IOException {
       values = DocValues.getNumeric(context.reader(), "sort_i");
       base = context.docBase;
     }
@@ -770,7 +770,7 @@ public class TestRankQueryPlugin extends QParserPlugin {
       return false;
     }
 
-    public void doSetNextReader(AtomicReaderContext context) throws IOException {
+    public void doSetNextReader(LeafReaderContext context) throws IOException {
       base = context.docBase;
     }
 

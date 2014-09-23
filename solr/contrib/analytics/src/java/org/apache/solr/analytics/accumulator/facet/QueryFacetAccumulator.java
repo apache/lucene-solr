@@ -19,7 +19,7 @@ package org.apache.solr.analytics.accumulator.facet;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.solr.analytics.accumulator.ValueAccumulator;
 import org.apache.solr.analytics.statistics.StatsCollector;
 import org.apache.solr.common.util.NamedList;
@@ -51,7 +51,7 @@ public class QueryFacetAccumulator extends ValueAccumulator {
    * Update the readers of the queryFacet {@link StatsCollector}s in FacetingAccumulator
    */
   @Override
-  protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+  protected void doSetNextReader(LeafReaderContext context) throws IOException {
     parent.setQueryStatsCollectorReaders(context);
   }
 

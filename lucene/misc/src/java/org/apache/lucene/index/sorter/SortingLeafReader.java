@@ -20,14 +20,14 @@ package org.apache.lucene.index.sorter;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.FilterLeafReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.FilterAtomicReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
@@ -50,7 +50,7 @@ import org.apache.lucene.util.TimSorter;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
- * An {@link AtomicReader} which supports sorting documents by a given
+ * An {@link org.apache.lucene.index.LeafReader} which supports sorting documents by a given
  * {@link Sort}. You can use this class to sort an index as follows:
  * 
  * <pre class="prettyprint">
@@ -65,7 +65,7 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
  * 
  * @lucene.experimental
  */
-public class SortingAtomicReader extends FilterAtomicReader {
+public class SortingLeafReader extends FilterLeafReader {
 
   private static class SortingFields extends FilterFields {
 
@@ -739,12 +739,12 @@ public class SortingAtomicReader extends FilterAtomicReader {
   /** Return a sorted view of <code>reader</code> according to the order
    *  defined by <code>sort</code>. If the reader is already sorted, this
    *  method might return the reader as-is. */
-  public static AtomicReader wrap(AtomicReader reader, Sort sort) throws IOException {
+  public static LeafReader wrap(LeafReader reader, Sort sort) throws IOException {
     return wrap(reader, new Sorter(sort).sort(reader));
   }
 
-  /** Expert: same as {@link #wrap(AtomicReader, Sort)} but operates directly on a {@link Sorter.DocMap}. */
-  static AtomicReader wrap(AtomicReader reader, Sorter.DocMap docMap) {
+  /** Expert: same as {@link #wrap(org.apache.lucene.index.LeafReader, Sort)} but operates directly on a {@link Sorter.DocMap}. */
+  static LeafReader wrap(LeafReader reader, Sorter.DocMap docMap) {
     if (docMap == null) {
       // the reader is already sorter
       return reader;
@@ -753,12 +753,12 @@ public class SortingAtomicReader extends FilterAtomicReader {
       throw new IllegalArgumentException("reader.maxDoc() should be equal to docMap.size(), got" + reader.maxDoc() + " != " + docMap.size());
     }
     assert Sorter.isConsistent(docMap);
-    return new SortingAtomicReader(reader, docMap);
+    return new SortingLeafReader(reader, docMap);
   }
 
   final Sorter.DocMap docMap; // pkg-protected to avoid synthetic accessor methods
 
-  private SortingAtomicReader(final AtomicReader in, final Sorter.DocMap docMap) {
+  private SortingLeafReader(final LeafReader in, final Sorter.DocMap docMap) {
     super(in);
     this.docMap = docMap;
   }

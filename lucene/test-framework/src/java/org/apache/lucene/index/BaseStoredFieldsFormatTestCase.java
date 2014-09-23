@@ -296,8 +296,8 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     
     assertEquals(numDocs, r.numDocs());
 
-    for(AtomicReaderContext ctx : r.leaves()) {
-      final AtomicReader sub = ctx.reader();
+    for(LeafReaderContext ctx : r.leaves()) {
+      final LeafReader sub = ctx.reader();
       final NumericDocValues ids = DocValues.getNumeric(sub, "id");
       for(int docID=0;docID<sub.numDocs();docID++) {
         final StoredDocument doc = sub.document(docID);

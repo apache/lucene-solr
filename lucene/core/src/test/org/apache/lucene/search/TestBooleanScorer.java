@@ -26,7 +26,7 @@ import java.util.List;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -111,7 +111,7 @@ public class TestBooleanScorer extends LuceneTestCase {
       }
       
       @Override
-      protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+      protected void doSetNextReader(LeafReaderContext context) throws IOException {
         docBase = context.docBase;
       }
       
@@ -188,7 +188,7 @@ public class TestBooleanScorer extends LuceneTestCase {
     public Weight createWeight(IndexSearcher searcher) throws IOException {
       return new Weight() {
         @Override
-        public Explanation explain(AtomicReaderContext context, int doc) {
+        public Explanation explain(LeafReaderContext context, int doc) {
           throw new UnsupportedOperationException();
         }
 
@@ -207,12 +207,12 @@ public class TestBooleanScorer extends LuceneTestCase {
         }
 
         @Override
-        public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) {
+        public Scorer scorer(LeafReaderContext context, Bits acceptDocs) {
           throw new UnsupportedOperationException();
         }
 
         @Override
-        public BulkScorer bulkScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) {
+        public BulkScorer bulkScorer(LeafReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) {
           return new BulkScorer() {
 
             @Override

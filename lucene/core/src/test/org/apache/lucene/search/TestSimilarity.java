@@ -18,11 +18,11 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -108,7 +108,7 @@ public class TestSimilarity extends LuceneTestCase {
            assertEquals((float)doc+base+1, scorer.score(), 0);
          }
          @Override
-         protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+         protected void doSetNextReader(LeafReaderContext context) throws IOException {
            base = context.docBase;
          }
          @Override

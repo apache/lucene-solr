@@ -29,7 +29,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -167,7 +167,7 @@ public class TestEarlyTermination extends LuceneTestCase {
       Sort different = new Sort(new SortField("ndv2", SortField.Type.LONG));
       searcher.search(query, new EarlyTerminatingSortingCollector(collector2, different, numHits) {
         @Override
-        public LeafCollector getLeafCollector(AtomicReaderContext context) throws IOException {
+        public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
           final LeafCollector ret = super.getLeafCollector(context);
           assertTrue("segment should not be recognized as sorted as different sorter was used", ret.getClass() == in.getLeafCollector(context).getClass());
           return ret;

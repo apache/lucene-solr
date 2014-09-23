@@ -38,7 +38,7 @@ public class SimpleMergedSegmentWarmer extends IndexReaderWarmer {
   }
   
   @Override
-  public void warm(AtomicReader reader) throws IOException {
+  public void warm(LeafReader reader) throws IOException {
     long startTime = System.currentTimeMillis();
     int indexedCount = 0;
     int docValuesCount = 0;

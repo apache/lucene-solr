@@ -17,6 +17,7 @@ package org.apache.lucene.queries;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.FunctionTestSetup;
 import org.apache.lucene.queries.function.ValueSource;
@@ -36,7 +37,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
@@ -85,7 +85,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     }
     
     @Override
-    protected CustomScoreProvider getCustomScoreProvider(AtomicReaderContext context) {
+    protected CustomScoreProvider getCustomScoreProvider(LeafReaderContext context) {
       return new CustomScoreProvider(context) {
         @Override
         public float customScore(int doc, float subQueryScore, float valSrcScore) {
@@ -120,7 +120,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     }
 
     @Override
-    protected CustomScoreProvider getCustomScoreProvider(AtomicReaderContext context) {
+    protected CustomScoreProvider getCustomScoreProvider(LeafReaderContext context) {
       return new CustomScoreProvider(context) {
         @Override
         public float customScore(int doc, float subQueryScore, float valSrcScores[]) {
@@ -159,7 +159,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   private final class CustomExternalQuery extends CustomScoreQuery {
 
     @Override
-    protected CustomScoreProvider getCustomScoreProvider(AtomicReaderContext context) throws IOException {
+    protected CustomScoreProvider getCustomScoreProvider(LeafReaderContext context) throws IOException {
       final NumericDocValues values = DocValues.getNumeric(context.reader(), INT_FIELD);
       return new CustomScoreProvider(context) {
         @Override

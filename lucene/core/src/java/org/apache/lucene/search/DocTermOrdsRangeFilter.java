@@ -18,15 +18,14 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * A range filter built on top of a cached multi-valued term field (from {@link AtomicReader#getSortedSetDocValues}).
+ * A range filter built on top of a cached multi-valued term field (from {@link org.apache.lucene.index.LeafReader#getSortedSetDocValues}).
  * 
  * <p>Like {@link DocValuesRangeFilter}, this is just a specialized range query versus
  *    using a TermRangeQuery with {@link DocTermOrdsRewriteMethod}: it will only do
@@ -50,17 +49,17 @@ public abstract class DocTermOrdsRangeFilter extends Filter {
   
   /** This method is implemented for each data type */
   @Override
-  public abstract DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException;
+  public abstract DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException;
   
   /**
-   * Creates a BytesRef range filter using {@link AtomicReader#getSortedSetDocValues}. This works with all
+   * Creates a BytesRef range filter using {@link org.apache.lucene.index.LeafReader#getSortedSetDocValues}. This works with all
    * fields containing zero or one term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
   public static DocTermOrdsRangeFilter newBytesRefRange(String field, BytesRef lowerVal, BytesRef upperVal, boolean includeLower, boolean includeUpper) {
     return new DocTermOrdsRangeFilter(field, lowerVal, upperVal, includeLower, includeUpper) {
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+      public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
         final SortedSetDocValues docTermOrds = DocValues.getSortedSet(context.reader(), field);
         final long lowerPoint = lowerVal == null ? -1 : docTermOrds.lookupTerm(lowerVal);
         final long upperPoint = upperVal == null ? -1 : docTermOrds.lookupTerm(upperVal);

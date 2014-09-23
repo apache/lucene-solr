@@ -20,9 +20,9 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.*;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
@@ -179,9 +179,9 @@ public class MultiPhraseQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
       assert !termArrays.isEmpty();
-      final AtomicReader reader = context.reader();
+      final LeafReader reader = context.reader();
       final Bits liveDocs = acceptDocs;
       
       PhraseQuery.PostingsAndFreq[] postingsFreqs = new PhraseQuery.PostingsAndFreq[termArrays.size()];
@@ -256,7 +256,7 @@ public class MultiPhraseQuery extends Query {
     }
 
     @Override
-    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
+    public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       Scorer scorer = scorer(context, context.reader().getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
@@ -473,7 +473,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
   private IntQueue _posList;
   private long cost;
 
-  public UnionDocsAndPositionsEnum(Bits liveDocs, AtomicReaderContext context, Term[] terms, Map<Term,TermContext> termContexts, TermsEnum termsEnum) throws IOException {
+  public UnionDocsAndPositionsEnum(Bits liveDocs, LeafReaderContext context, Term[] terms, Map<Term,TermContext> termContexts, TermsEnum termsEnum) throws IOException {
     List<DocsAndPositionsEnum> docsEnums = new LinkedList<>();
     for (int i = 0; i < terms.length; i++) {
       final Term term = terms[i];

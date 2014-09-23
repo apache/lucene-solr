@@ -44,8 +44,8 @@ import org.apache.lucene.document.LazyDocument;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
@@ -169,7 +169,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   private Collection<String> storedHighlightFieldNames;
   private DirectoryFactory directoryFactory;
   
-  private final AtomicReader atomicReader;
+  private final LeafReader leafReader;
   // only for addIndexes etc (no fieldcache)
   private final DirectoryReader rawReader;
   
@@ -245,7 +245,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     this.directoryFactory = directoryFactory;
     this.reader = (DirectoryReader) super.readerContext.reader();
     this.rawReader = r;
-    this.atomicReader = SlowCompositeReaderWrapper.wrap(this.reader);
+    this.leafReader = SlowCompositeReaderWrapper.wrap(this.reader);
     this.core = core;
     this.schema = schema;
     this.name = "Searcher@" + Integer.toHexString(hashCode()) + "[" + core.getName() + "]" + (name != null ? " " + name : "");
@@ -315,7 +315,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     optimizer = null;
     
     fieldNames = new HashSet<>();
-    fieldInfos = atomicReader.getFieldInfos();
+    fieldInfos = leafReader.getFieldInfos();
     for(FieldInfo fieldInfo : fieldInfos) {
       fieldNames.add(fieldInfo.name);
     }
@@ -347,8 +347,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     return reader.docFreq(term);
   }
   
-  public final AtomicReader getAtomicReader() {
-    return atomicReader;
+  public final LeafReader getLeafReader() {
+    return leafReader;
   }
   
   /** Raw reader (no fieldcaches etc). Useful for operations like addIndexes */
@@ -772,7 +772,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    * @return the first document number containing the term
    */
   public int getFirstMatch(Term t) throws IOException {
-    Fields fields = atomicReader.fields();
+    Fields fields = leafReader.fields();
     if (fields == null) return -1;
     Terms terms = fields.terms(t.field());
     if (terms == null) return -1;
@@ -781,7 +781,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     if (!termsEnum.seekExact(termBytes)) {
       return -1;
     }
-    DocsEnum docs = termsEnum.docs(atomicReader.getLiveDocs(), null, DocsEnum.FLAG_NONE);
+    DocsEnum docs = termsEnum.docs(leafReader.getLiveDocs(), null, DocsEnum.FLAG_NONE);
     if (docs == null) return -1;
     int id = docs.nextDoc();
     return id == DocIdSetIterator.NO_MORE_DOCS ? -1 : id;
@@ -795,8 +795,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     String field = schema.getUniqueKeyField().getName();
 
     for (int i=0, c=leafContexts.size(); i<c; i++) {
-      final AtomicReaderContext leaf = leafContexts.get(i);
-      final AtomicReader reader = leaf.reader();
+      final LeafReaderContext leaf = leafContexts.get(i);
+      final LeafReader reader = leaf.reader();
 
       final Terms terms = reader.terms(field);
       if (terms == null) continue;
@@ -972,8 +972,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       collector = pf.postFilter;
     }
 
-    for (final AtomicReaderContext leaf : leafContexts) {
-      final AtomicReader reader = leaf.reader();
+    for (final LeafReaderContext leaf : leafContexts) {
+      final LeafReader reader = leaf.reader();
       final Bits liveDocs = reader.getLiveDocs();   // TODO: the filter may already only have liveDocs...
       DocIdSet idSet = null;
       if (pf.filter != null) {
@@ -2005,7 +2005,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     while (iter.hasNext()) {
       int doc = iter.nextDoc();
       while (doc>=end) {
-        AtomicReaderContext leaf = leafContexts.get(readerIndex++);
+        LeafReaderContext leaf = leafContexts.get(readerIndex++);
         base = leaf.docBase;
         end = base + leaf.reader().maxDoc();
         topCollector.getLeafCollector(leaf);
@@ -2427,7 +2427,7 @@ class FilterImpl extends Filter {
   }
 
   @Override
-  public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+  public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
     DocIdSet sub = topFilter == null ? null : topFilter.getDocIdSet(context, acceptDocs);
     if (weights.size() == 0) return sub;
     return new FilterSet(sub, context);
@@ -2435,9 +2435,9 @@ class FilterImpl extends Filter {
 
   private class FilterSet extends DocIdSet {
     DocIdSet docIdSet;
-    AtomicReaderContext context;
+    LeafReaderContext context;
 
-    public FilterSet(DocIdSet docIdSet, AtomicReaderContext context) {
+    public FilterSet(DocIdSet docIdSet, LeafReaderContext context) {
       this.docIdSet = docIdSet;
       this.context = context;
     }

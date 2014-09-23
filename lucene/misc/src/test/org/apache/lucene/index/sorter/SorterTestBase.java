@@ -40,8 +40,8 @@ import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -59,8 +59,8 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
-import org.apache.lucene.index.sorter.SortingAtomicReader.SortingDocsAndPositionsEnum;
-import org.apache.lucene.index.sorter.SortingAtomicReader.SortingDocsEnum;
+import org.apache.lucene.index.sorter.SortingLeafReader.SortingDocsAndPositionsEnum;
+import org.apache.lucene.index.sorter.SortingLeafReader.SortingDocsEnum;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.TermStatistics;
@@ -100,7 +100,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
     }
     
     @Override
-    public SimScorer simScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
+    public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
       return in.simScorer(weight, context);
     }
     
@@ -167,7 +167,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
   }
   
   protected static Directory dir;
-  protected static AtomicReader reader;
+  protected static LeafReader reader;
   protected static Integer[] sortedValues;
 
   private static Document doc(final int id, PositionsTokenStream positions) {

@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.codecs.TermVectorsWriter;
-import org.apache.lucene.index.AssertingAtomicReader;
+import org.apache.lucene.index.AssertingLeafReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
@@ -68,7 +68,7 @@ public class AssertingTermVectorsFormat extends TermVectorsFormat {
     @Override
     public Fields get(int doc) throws IOException {
       Fields fields = in.get(doc);
-      return fields == null ? null : new AssertingAtomicReader.AssertingFields(fields);
+      return fields == null ? null : new AssertingLeafReader.AssertingFields(fields);
     }
 
     @Override

@@ -20,7 +20,7 @@ package org.apache.lucene.spatial.prefix;
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -75,13 +75,13 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
   }
 
   @Override
-  public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+  public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
     return new ContainsVisitor(context, acceptDocs).visit(grid.getWorldCell(), acceptDocs);
   }
 
   private class ContainsVisitor extends BaseTermsEnumTraverser {
 
-    public ContainsVisitor(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+    public ContainsVisitor(LeafReaderContext context, Bits acceptDocs) throws IOException {
       super(context, acceptDocs);
     }
 

@@ -23,7 +23,7 @@ import java.util.List;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
@@ -406,10 +406,10 @@ public class TestSpans extends LuceneTestCase {
     boolean ordered = true;
     int slop = 1;
     IndexReaderContext topReaderContext = searcher.getTopReaderContext();
-    List<AtomicReaderContext> leaves = topReaderContext.leaves();
+    List<LeafReaderContext> leaves = topReaderContext.leaves();
     int subIndex = ReaderUtil.subIndex(11, leaves);
     for (int i = 0, c = leaves.size(); i < c; i++) {
-      final AtomicReaderContext ctx = leaves.get(i);
+      final LeafReaderContext ctx = leaves.get(i);
      
       final Similarity sim = new DefaultSimilarity() {
         @Override

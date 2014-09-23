@@ -19,7 +19,7 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.FilterLeafCollector;
@@ -56,7 +56,7 @@ public class EarlyTerminatingCollector extends FilterCollector {
   }
 
   @Override
-  public LeafCollector getLeafCollector(AtomicReaderContext context)
+  public LeafCollector getLeafCollector(LeafReaderContext context)
       throws IOException {
     prevReaderCumulativeSize += currentReaderSize; // not current any more
     currentReaderSize = context.reader().maxDoc() - 1;

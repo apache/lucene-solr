@@ -27,7 +27,7 @@ import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.IndexReader; // javadocs
 import org.apache.lucene.index.NumericDocValues;
@@ -184,12 +184,12 @@ interface FieldCache {
    *  <code>reader.maxDoc()</code>, with turned on bits for each docid that 
    *  does have a value for this field.
    */
-  public Bits getDocsWithField(AtomicReader reader, String field) throws IOException;
+  public Bits getDocsWithField(LeafReader reader, String field) throws IOException;
 
   /**
    * Returns a {@link NumericDocValues} over the values found in documents in the given
    * field. If the field was indexed as {@link NumericDocValuesField}, it simply
-   * uses {@link AtomicReader#getNumericDocValues(String)} to read the values.
+   * uses {@link org.apache.lucene.index.LeafReader#getNumericDocValues(String)} to read the values.
    * Otherwise, it checks the internal cache for an appropriate entry, and if
    * none is found, reads the terms in <code>field</code> as longs and returns
    * an array of size <code>reader.maxDoc()</code> of the value each document
@@ -210,7 +210,7 @@ interface FieldCache {
    * @throws IOException
    *           If any error occurs.
    */
-  public NumericDocValues getNumerics(AtomicReader reader, String field, Parser parser, boolean setDocsWithField) throws IOException;
+  public NumericDocValues getNumerics(LeafReader reader, String field, Parser parser, boolean setDocsWithField) throws IOException;
 
   /** Checks the internal cache for an appropriate entry, and if none
    * is found, reads the term values in <code>field</code>
@@ -223,14 +223,14 @@ interface FieldCache {
    * @return The values in the given field for each document.
    * @throws IOException  If any error occurs.
    */
-  public BinaryDocValues getTerms(AtomicReader reader, String field, boolean setDocsWithField) throws IOException;
+  public BinaryDocValues getTerms(LeafReader reader, String field, boolean setDocsWithField) throws IOException;
 
-  /** Expert: just like {@link #getTerms(AtomicReader,String,boolean)},
+  /** Expert: just like {@link #getTerms(org.apache.lucene.index.LeafReader,String,boolean)},
    *  but you can specify whether more RAM should be consumed in exchange for
    *  faster lookups (default is "true").  Note that the
    *  first call for a given reader and field "wins",
    *  subsequent calls will share the same cache entry. */
-  public BinaryDocValues getTerms(AtomicReader reader, String field, boolean setDocsWithField, float acceptableOverheadRatio) throws IOException;
+  public BinaryDocValues getTerms(LeafReader reader, String field, boolean setDocsWithField, float acceptableOverheadRatio) throws IOException;
 
   /** Checks the internal cache for an appropriate entry, and if none
    * is found, reads the term values in <code>field</code>
@@ -242,15 +242,15 @@ interface FieldCache {
    * @return The values in the given field for each document.
    * @throws IOException  If any error occurs.
    */
-  public SortedDocValues getTermsIndex(AtomicReader reader, String field) throws IOException;
+  public SortedDocValues getTermsIndex(LeafReader reader, String field) throws IOException;
 
   /** Expert: just like {@link
-   *  #getTermsIndex(AtomicReader,String)}, but you can specify
+   *  #getTermsIndex(org.apache.lucene.index.LeafReader,String)}, but you can specify
    *  whether more RAM should be consumed in exchange for
    *  faster lookups (default is "true").  Note that the
    *  first call for a given reader and field "wins",
    *  subsequent calls will share the same cache entry. */
-  public SortedDocValues getTermsIndex(AtomicReader reader, String field, float acceptableOverheadRatio) throws IOException;
+  public SortedDocValues getTermsIndex(LeafReader reader, String field, float acceptableOverheadRatio) throws IOException;
 
   /** Can be passed to {@link #getDocTermOrds} to filter for 32-bit numeric terms */
   public static final BytesRef INT32_TERM_PREFIX = new BytesRef(new byte[] { NumericUtils.SHIFT_START_INT });
@@ -270,7 +270,7 @@ interface FieldCache {
    * @return a {@link DocTermOrds} instance
    * @throws IOException  If any error occurs.
    */
-  public SortedSetDocValues getDocTermOrds(AtomicReader reader, String field, BytesRef prefix) throws IOException;
+  public SortedSetDocValues getDocTermOrds(LeafReader reader, String field, BytesRef prefix) throws IOException;
 
   /**
    * EXPERT: A unique Identifier/Description for each item in the FieldCache. 

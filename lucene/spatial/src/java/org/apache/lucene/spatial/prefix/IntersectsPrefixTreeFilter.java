@@ -19,7 +19,7 @@ package org.apache.lucene.spatial.prefix;
 
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
@@ -51,7 +51,7 @@ public class IntersectsPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter
   }
 
   @Override
-  public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+  public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
     /* Possible optimizations (in IN ADDITION TO THOSE LISTED IN VISITORTEMPLATE):
 
     * If docFreq is 1 (or < than some small threshold), then check to see if we've already

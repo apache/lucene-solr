@@ -17,7 +17,7 @@ package org.apache.lucene.search.grouping.term;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.FieldComparator;
@@ -50,7 +50,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
   final String groupField;
 
   SortedDocValues groupIndex;
-  AtomicReaderContext readerContext;
+  LeafReaderContext readerContext;
 
   protected TermAllGroupHeadsCollector(String groupField, int numberOfSorts) {
     super(numberOfSorts);
@@ -158,7 +158,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
     }
 
     @Override
-    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       this.readerContext = context;
       groupIndex = DocValues.getSorted(context.reader(), groupField);
 
@@ -271,7 +271,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
     }
 
     @Override
-    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       this.readerContext = context;
       groupIndex = DocValues.getSorted(context.reader(), groupField);
       for (int i = 0; i < fields.length; i++) {
@@ -430,7 +430,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
     }
 
     @Override
-    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       this.readerContext = context;
       groupIndex = DocValues.getSorted(context.reader(), groupField);
       for (int i = 0; i < fields.length; i++) {
@@ -562,7 +562,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
     }
 
     @Override
-    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       this.readerContext = context;
       groupIndex = DocValues.getSorted(context.reader(), groupField);
 

@@ -17,7 +17,7 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.util.Bits;
@@ -140,7 +140,7 @@ public class NearSpansUnordered extends Spans {
   }
 
 
-  public NearSpansUnordered(SpanNearQuery query, AtomicReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts)
+  public NearSpansUnordered(SpanNearQuery query, LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts)
     throws IOException {
     this.query = query;
     this.slop = query.getSlop();

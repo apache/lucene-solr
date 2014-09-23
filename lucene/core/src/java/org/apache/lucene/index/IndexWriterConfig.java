@@ -110,7 +110,7 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
    *  ram buffers use <code>false</code> */
   public final static boolean DEFAULT_USE_COMPOUND_FILE_SYSTEM = true;
   
-  /** Default value for calling {@link AtomicReader#checkIntegrity()} before
+  /** Default value for calling {@link LeafReader#checkIntegrity()} before
    *  merging segments (set to <code>false</code>). You can set this
    *  to <code>true</code> for additional safety. */
   public final static boolean DEFAULT_CHECK_INTEGRITY_AT_MERGE = false;

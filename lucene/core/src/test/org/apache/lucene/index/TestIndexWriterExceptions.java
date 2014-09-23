@@ -46,7 +46,6 @@ import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
@@ -1312,7 +1311,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         assertTrue(reader.numDocs() > 0);
         SegmentInfos sis = new SegmentInfos();
         sis.read(dir);
-        for(AtomicReaderContext context : reader.leaves()) {
+        for(LeafReaderContext context : reader.leaves()) {
           assertFalse(context.reader().getFieldInfos().hasVectors());
         }
         reader.close();
@@ -2076,8 +2075,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       }
       assertEquals(docCount-deleteCount, r.numDocs());
       BytesRef scratch = new BytesRef();
-      for (AtomicReaderContext context : r.leaves()) {
-        AtomicReader reader = context.reader();
+      for (LeafReaderContext context : r.leaves()) {
+        LeafReader reader = context.reader();
         Bits liveDocs = reader.getLiveDocs();
         NumericDocValues f = reader.getNumericDocValues("f");
         NumericDocValues cf = reader.getNumericDocValues("cf");

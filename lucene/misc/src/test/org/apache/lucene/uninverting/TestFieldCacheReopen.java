@@ -21,7 +21,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.NumericDocValues;
@@ -49,7 +49,7 @@ public class TestFieldCacheReopen extends LuceneTestCase {
   
     // Open reader1
     DirectoryReader r = DirectoryReader.open(dir);
-    AtomicReader r1 = getOnlySegmentReader(r);
+    LeafReader r1 = getOnlySegmentReader(r);
     final NumericDocValues ints = FieldCache.DEFAULT.getNumerics(r1, "number", FieldCache.NUMERIC_UTILS_INT_PARSER, false);
     assertEquals(17, ints.get(0));
   
@@ -61,7 +61,7 @@ public class TestFieldCacheReopen extends LuceneTestCase {
     DirectoryReader r2 = DirectoryReader.openIfChanged(r);
     assertNotNull(r2);
     r.close();
-    AtomicReader sub0 = r2.leaves().get(0).reader();
+    LeafReader sub0 = r2.leaves().get(0).reader();
     final NumericDocValues ints2 = FieldCache.DEFAULT.getNumerics(sub0, "number", FieldCache.NUMERIC_UTILS_INT_PARSER, false);
     r2.close();
     assertTrue(ints == ints2);

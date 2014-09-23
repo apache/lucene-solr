@@ -18,7 +18,7 @@ package org.apache.lucene.spatial.bbox;
  */
 
 import com.spatial4j.core.shape.Rectangle;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
@@ -60,7 +60,7 @@ public abstract class BBoxSimilarityValueSource extends ValueSource {
   protected abstract String similarityDescription();
 
   @Override
-  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
 
     final FunctionValues shapeValues = bboxValueSource.getValues(context, readerContext);
 

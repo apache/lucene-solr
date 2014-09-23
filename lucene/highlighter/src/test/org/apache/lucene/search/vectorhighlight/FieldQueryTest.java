@@ -23,14 +23,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FilteredQuery;
-import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -940,7 +939,7 @@ public class FieldQueryTest extends AbstractTestCase {
     initBoost();
     Query query = new FilteredQuery(pqF( "A" ), new Filter() {
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs)
+      public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs)
           throws IOException {
         return null;
       }

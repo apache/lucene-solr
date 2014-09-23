@@ -22,7 +22,7 @@ import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.distance.GeodesicSphereDistCalc;
 import com.spatial4j.core.io.GeohashUtils;
 import com.spatial4j.core.shape.Point;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
@@ -61,7 +61,7 @@ public class GeohashHaversineFunction extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     final FunctionValues gh1DV = geoHash1.getValues(context, readerContext);
     final FunctionValues gh2DV = geoHash2.getValues(context, readerContext);
 

@@ -23,12 +23,10 @@ import java.util.Map;
 
 import org.apache.lucene.util.Bits;
 
-import org.apache.lucene.index.DirectoryReader; // javadoc
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
 import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.MultiDocValues.OrdinalMap;
-import org.apache.lucene.index.MultiReader; // javadoc
 
 /**
  * This class forces a composite reader (eg a {@link
@@ -45,22 +43,22 @@ import org.apache.lucene.index.MultiReader; // javadoc
  * atomic leaves and then operate per-AtomicReader,
  * instead of using this class.
  */
-public final class SlowCompositeReaderWrapper extends AtomicReader {
+public final class SlowCompositeReaderWrapper extends LeafReader {
 
   private final CompositeReader in;
   private final Fields fields;
   private final Bits liveDocs;
   
-  /** This method is sugar for getting an {@link AtomicReader} from
+  /** This method is sugar for getting an {@link LeafReader} from
    * an {@link IndexReader} of any kind. If the reader is already atomic,
    * it is returned unchanged, otherwise wrapped by this class.
    */
-  public static AtomicReader wrap(IndexReader reader) throws IOException {
+  public static LeafReader wrap(IndexReader reader) throws IOException {
     if (reader instanceof CompositeReader) {
       return new SlowCompositeReaderWrapper((CompositeReader) reader);
     } else {
-      assert reader instanceof AtomicReader;
-      return (AtomicReader) reader;
+      assert reader instanceof LeafReader;
+      return (LeafReader) reader;
     }
   }
 
@@ -143,7 +141,7 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
     final SortedDocValues[] values = new SortedDocValues[size];
     final int[] starts = new int[size+1];
     for (int i = 0; i < size; i++) {
-      AtomicReaderContext context = in.leaves().get(i);
+      LeafReaderContext context = in.leaves().get(i);
       SortedDocValues v = context.reader().getSortedDocValues(field);
       if (v == null) {
         v = DocValues.emptySorted();
@@ -182,7 +180,7 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
     final SortedSetDocValues[] values = new SortedSetDocValues[size];
     final int[] starts = new int[size+1];
     for (int i = 0; i < size; i++) {
-      AtomicReaderContext context = in.leaves().get(i);
+      LeafReaderContext context = in.leaves().get(i);
       SortedSetDocValues v = context.reader().getSortedSetDocValues(field);
       if (v == null) {
         v = DocValues.emptySortedSet();
@@ -259,7 +257,7 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
   @Override
   public void checkIntegrity() throws IOException {
     ensureOpen();
-    for (AtomicReaderContext ctx : in.leaves()) {
+    for (LeafReaderContext ctx : in.leaves()) {
       ctx.reader().checkIntegrity();
     }
   }

@@ -24,7 +24,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SortedSetDocValues;
@@ -55,7 +55,7 @@ public class TestUninvertingReader extends LuceneTestCase {
     
     DirectoryReader ir = UninvertingReader.wrap(DirectoryReader.open(dir), 
                          Collections.singletonMap("foo", Type.SORTED_SET_INTEGER));
-    AtomicReader ar = ir.leaves().get(0).reader();
+    LeafReader ar = ir.leaves().get(0).reader();
     SortedSetDocValues v = ar.getSortedSetDocValues("foo");
     assertEquals(2, v.getValueCount());
     
@@ -96,7 +96,7 @@ public class TestUninvertingReader extends LuceneTestCase {
     
     DirectoryReader ir = UninvertingReader.wrap(DirectoryReader.open(dir), 
                          Collections.singletonMap("foo", Type.SORTED_SET_FLOAT));
-    AtomicReader ar = ir.leaves().get(0).reader();
+    LeafReader ar = ir.leaves().get(0).reader();
     
     SortedSetDocValues v = ar.getSortedSetDocValues("foo");
     assertEquals(2, v.getValueCount());
@@ -138,7 +138,7 @@ public class TestUninvertingReader extends LuceneTestCase {
     
     DirectoryReader ir = UninvertingReader.wrap(DirectoryReader.open(dir), 
         Collections.singletonMap("foo", Type.SORTED_SET_LONG));
-    AtomicReader ar = ir.leaves().get(0).reader();
+    LeafReader ar = ir.leaves().get(0).reader();
     SortedSetDocValues v = ar.getSortedSetDocValues("foo");
     assertEquals(2, v.getValueCount());
     
@@ -179,7 +179,7 @@ public class TestUninvertingReader extends LuceneTestCase {
     
     DirectoryReader ir = UninvertingReader.wrap(DirectoryReader.open(dir), 
         Collections.singletonMap("foo", Type.SORTED_SET_DOUBLE));
-    AtomicReader ar = ir.leaves().get(0).reader();
+    LeafReader ar = ir.leaves().get(0).reader();
     SortedSetDocValues v = ar.getSortedSetDocValues("foo");
     assertEquals(2, v.getValueCount());
     

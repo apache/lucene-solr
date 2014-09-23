@@ -1224,13 +1224,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  reader you must use {@link #deleteDocuments(Term...)}). */
   public synchronized boolean tryDeleteDocument(IndexReader readerIn, int docID) throws IOException {
 
-    final AtomicReader reader;
-    if (readerIn instanceof AtomicReader) {
+    final LeafReader reader;
+    if (readerIn instanceof LeafReader) {
       // Reader is already atomic: use the incoming docID:
-      reader = (AtomicReader) readerIn;
+      reader = (LeafReader) readerIn;
     } else {
       // Composite reader: lookup sub-reader and re-base docID:
-      List<AtomicReaderContext> leaves = readerIn.leaves();
+      List<LeafReaderContext> leaves = readerIn.leaves();
       int subIndex = ReaderUtil.subIndex(docID, leaves);
       reader = leaves.get(subIndex).reader();
       docID -= leaves.get(subIndex).docBase;
@@ -2481,10 +2481,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       flush(false, true);
 
       String mergedName = newSegmentName();
-      final List<AtomicReader> mergeReaders = new ArrayList<>();
+      final List<LeafReader> mergeReaders = new ArrayList<>();
       for (IndexReader indexReader : readers) {
         numDocs += indexReader.numDocs();
-        for (AtomicReaderContext ctx : indexReader.leaves()) {
+        for (LeafReaderContext ctx : indexReader.leaves()) {
           mergeReaders.add(ctx.reader());
         }
       }
@@ -3945,7 +3945,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       try {
         if (!merger.shouldMerge()) {
           // would result in a 0 document segment: nothing to merge!
-          mergeState = new MergeState(new ArrayList<AtomicReader>(), merge.info.info, infoStream, checkAbort);
+          mergeState = new MergeState(new ArrayList<LeafReader>(), merge.info.info, infoStream, checkAbort);
         } else {
           mergeState = merger.merge();
         }
@@ -4375,10 +4375,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     protected IndexReaderWarmer() {
     }
 
-    /** Invoked on the {@link AtomicReader} for the newly
+    /** Invoked on the {@link LeafReader} for the newly
      *  merged segment, before that segment is made visible
      *  to near-real-time readers. */
-    public abstract void warm(AtomicReader reader) throws IOException;
+    public abstract void warm(LeafReader reader) throws IOException;
   }
 
   private void tragicEvent(Throwable tragedy, String location) {

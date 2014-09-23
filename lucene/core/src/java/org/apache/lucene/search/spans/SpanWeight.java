@@ -17,7 +17,7 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
@@ -81,7 +81,7 @@ public class SpanWeight extends Weight {
   }
 
   @Override
-  public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+  public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
     if (stats == null) {
       return null;
     } else {
@@ -90,7 +90,7 @@ public class SpanWeight extends Weight {
   }
 
   @Override
-  public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
+  public Explanation explain(LeafReaderContext context, int doc) throws IOException {
     SpanScorer scorer = (SpanScorer) scorer(context, context.reader().getLiveDocs());
     if (scorer != null) {
       int newDoc = scorer.advance(doc);

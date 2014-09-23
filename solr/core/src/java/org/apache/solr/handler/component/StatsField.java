@@ -27,8 +27,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.*;
-import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
@@ -40,7 +40,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.StatsParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest; // jdocs
 import org.apache.solr.request.DocValuesStats;
@@ -48,7 +47,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
-import org.apache.solr.search.FunctionQParserPlugin;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.QueryParsing;
@@ -296,8 +294,8 @@ public class StatsField {
       facetStats.add(new FieldFacetStats(searcher, fsf, this));
     }
 
-    final Iterator<AtomicReaderContext> ctxIt = searcher.getIndexReader().leaves().iterator();
-    AtomicReaderContext ctx = null;
+    final Iterator<LeafReaderContext> ctxIt = searcher.getIndexReader().leaves().iterator();
+    LeafReaderContext ctx = null;
     for (DocIterator docsIt = base.iterator(); docsIt.hasNext(); ) {
       final int doc = docsIt.nextDoc();
       if (ctx == null || doc >= ctx.docBase + ctx.reader().maxDoc()) {

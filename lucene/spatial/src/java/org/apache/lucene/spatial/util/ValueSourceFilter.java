@@ -17,7 +17,7 @@
 
 package org.apache.lucene.spatial.util;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DocIdSet;
@@ -52,7 +52,7 @@ public class ValueSourceFilter extends Filter {
   }
 
   @Override
-  public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+  public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
     final FunctionValues values = source.getValues( null, context );
     return new FilteredDocIdSet(startingFilter.getDocIdSet(context, acceptDocs)) {
       @Override

@@ -26,16 +26,16 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FilterIterator;
 
 /**
- * A {@link FilterAtomicReader} that exposes only a subset
+ * A {@link FilterLeafReader} that exposes only a subset
  * of fields from the underlying wrapped reader.
  */
-public final class FieldFilterAtomicReader extends FilterAtomicReader {
+public final class FieldFilterLeafReader extends FilterLeafReader {
   
   private final Set<String> fields;
   private final boolean negate;
   private final FieldInfos fieldInfos;
 
-  public FieldFilterAtomicReader(AtomicReader in, Set<String> fields, boolean negate) {
+  public FieldFilterLeafReader(LeafReader in, Set<String> fields, boolean negate) {
     super(in);
     this.fields = fields;
     this.negate = negate;

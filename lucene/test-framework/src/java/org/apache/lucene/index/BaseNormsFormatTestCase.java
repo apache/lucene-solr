@@ -178,8 +178,8 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     
     // compare
     DirectoryReader ir = DirectoryReader.open(dir);
-    for (AtomicReaderContext context : ir.leaves()) {
-      AtomicReader r = context.reader();
+    for (LeafReaderContext context : ir.leaves()) {
+      LeafReader r = context.reader();
       NumericDocValues docValues = r.getNormValues("stored");
       for (int i = 0; i < r.maxDoc(); i++) {
         long storedValue = Long.parseLong(r.document(i).get("stored"));
@@ -192,8 +192,8 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     
     // compare again
     ir = DirectoryReader.open(dir);
-    for (AtomicReaderContext context : ir.leaves()) {
-      AtomicReader r = context.reader();
+    for (LeafReaderContext context : ir.leaves()) {
+      LeafReader r = context.reader();
       NumericDocValues docValues = r.getNormValues("stored");
       for (int i = 0; i < r.maxDoc(); i++) {
         long storedValue = Long.parseLong(r.document(i).get("stored"));
@@ -230,7 +230,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     }
 
     @Override
-    public SimScorer simScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
+    public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
       throw new UnsupportedOperationException();
     }
   }

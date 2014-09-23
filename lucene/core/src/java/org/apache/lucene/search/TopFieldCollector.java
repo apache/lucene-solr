@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.util.PriorityQueue;
 
@@ -92,7 +92,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     }
     
     @Override
-    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       this.docBase = context.docBase;
       queue.setComparator(0, comparator.setNextReader(context));
       comparator = queue.firstComparator;
@@ -446,7 +446,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     }
 
     @Override
-    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       docBase = context.docBase;
       for (int i = 0; i < comparators.length; i++) {
         queue.setComparator(i, comparators[i].setNextReader(context));
@@ -1001,7 +1001,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     }
 
     @Override
-    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       docBase = context.docBase;
       afterDoc = after.doc - docBase;
       for (int i = 0; i < comparators.length; i++) {

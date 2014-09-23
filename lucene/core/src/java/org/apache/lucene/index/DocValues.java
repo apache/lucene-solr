@@ -202,7 +202,7 @@ public final class DocValues {
   /**
    * Returns NumericDocValues for the reader, or {@link #emptyNumeric()} if it has none. 
    */
-  public static NumericDocValues getNumeric(AtomicReader in, String field) throws IOException {
+  public static NumericDocValues getNumeric(LeafReader in, String field) throws IOException {
     NumericDocValues dv = in.getNumericDocValues(field);
     if (dv == null) {
       return emptyNumeric();
@@ -214,7 +214,7 @@ public final class DocValues {
   /**
    * Returns BinaryDocValues for the reader, or {@link #emptyBinary} if it has none. 
    */
-  public static BinaryDocValues getBinary(AtomicReader in, String field) throws IOException {
+  public static BinaryDocValues getBinary(LeafReader in, String field) throws IOException {
     BinaryDocValues dv = in.getBinaryDocValues(field);
     if (dv == null) {
       dv = in.getSortedDocValues(field);
@@ -228,7 +228,7 @@ public final class DocValues {
   /**
    * Returns SortedDocValues for the reader, or {@link #emptySorted} if it has none. 
    */
-  public static SortedDocValues getSorted(AtomicReader in, String field) throws IOException {
+  public static SortedDocValues getSorted(LeafReader in, String field) throws IOException {
     SortedDocValues dv = in.getSortedDocValues(field);
     if (dv == null) {
       return emptySorted();
@@ -240,7 +240,7 @@ public final class DocValues {
   /**
    * Returns SortedNumericDocValues for the reader, or {@link #emptySortedNumeric} if it has none. 
    */
-  public static SortedNumericDocValues getSortedNumeric(AtomicReader in, String field) throws IOException {
+  public static SortedNumericDocValues getSortedNumeric(LeafReader in, String field) throws IOException {
     SortedNumericDocValues dv = in.getSortedNumericDocValues(field);
     if (dv == null) {
       NumericDocValues single = in.getNumericDocValues(field);
@@ -256,7 +256,7 @@ public final class DocValues {
   /**
    * Returns SortedSetDocValues for the reader, or {@link #emptySortedSet} if it has none. 
    */
-  public static SortedSetDocValues getSortedSet(AtomicReader in, String field) throws IOException {
+  public static SortedSetDocValues getSortedSet(LeafReader in, String field) throws IOException {
     SortedSetDocValues dv = in.getSortedSetDocValues(field);
     if (dv == null) {
       SortedDocValues sorted = in.getSortedDocValues(field);
@@ -271,7 +271,7 @@ public final class DocValues {
   /**
    * Returns Bits for the reader, or {@link Bits} matching nothing if it has none. 
    */
-  public static Bits getDocsWithField(AtomicReader in, String field) throws IOException {
+  public static Bits getDocsWithField(LeafReader in, String field) throws IOException {
     Bits dv = in.getDocsWithField(field);
     if (dv == null) {
       return new Bits.MatchNoBits(in.maxDoc());

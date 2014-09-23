@@ -19,7 +19,7 @@ package org.apache.solr.update;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
@@ -327,7 +327,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
       int docid = dl.iterator().nextDoc();
 
       SolrIndexSearcher searcher = req.getSearcher();
-      AtomicReader reader = SlowCompositeReaderWrapper.wrap(searcher.getTopReaderContext().reader());
+      LeafReader reader = SlowCompositeReaderWrapper.wrap(searcher.getTopReaderContext().reader());
 
       assertTrue("similarity doesn't extend DefaultSimilarity, " + 
                  "config or defaults have changed since test was written",

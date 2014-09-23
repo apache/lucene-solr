@@ -18,8 +18,8 @@ package org.apache.lucene.spatial.bbox;
  */
 
 import com.spatial4j.core.shape.Rectangle;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -50,8 +50,8 @@ class BBoxValueSource extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    AtomicReader reader = readerContext.reader();
+  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+    LeafReader reader = readerContext.reader();
     final NumericDocValues minX = DocValues.getNumeric(reader, strategy.field_minX);
     final NumericDocValues minY = DocValues.getNumeric(reader, strategy.field_minY);
     final NumericDocValues maxX = DocValues.getNumeric(reader, strategy.field_maxX);

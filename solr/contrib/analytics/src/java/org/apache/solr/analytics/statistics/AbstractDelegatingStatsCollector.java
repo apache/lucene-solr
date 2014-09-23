@@ -20,7 +20,7 @@ package org.apache.solr.analytics.statistics;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.util.mutable.MutableValue;
 
@@ -43,7 +43,7 @@ public abstract class AbstractDelegatingStatsCollector implements StatsCollector
     this.statsList = delegate.getStatsList();
   }
   
-  public void setNextReader(AtomicReaderContext context) throws IOException {
+  public void setNextReader(LeafReaderContext context) throws IOException {
     delegate.setNextReader(context);
     value = getValue();
     function = getFunction();

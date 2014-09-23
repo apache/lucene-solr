@@ -280,9 +280,9 @@ public class TestStressIndexing2 extends LuceneTestCase {
   }
 
   private static void printDocs(DirectoryReader r) throws Throwable {
-    for(AtomicReaderContext ctx : r.leaves()) {
+    for(LeafReaderContext ctx : r.leaves()) {
       // TODO: improve this
-      AtomicReader sub = ctx.reader();
+      LeafReader sub = ctx.reader();
       Bits liveDocs = sub.getLiveDocs();
       System.out.println("  " + ((SegmentReader) sub).getSegmentInfo());
       for(int docID=0;docID<sub.maxDoc();docID++) {

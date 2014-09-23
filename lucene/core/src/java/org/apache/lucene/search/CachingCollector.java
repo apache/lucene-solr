@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -83,7 +83,7 @@ public abstract class CachingCollector extends FilterCollector {
   private static class NoScoreCachingCollector extends CachingCollector {
 
     List<Boolean> acceptDocsOutOfOrders;
-    List<AtomicReaderContext> contexts;
+    List<LeafReaderContext> contexts;
     List<int[]> docs;
     int maxDocsToCache;
     NoScoreCachingLeafCollector lastCollector;
@@ -100,7 +100,7 @@ public abstract class CachingCollector extends FilterCollector {
       return new NoScoreCachingLeafCollector(in, maxDocsToCache);
     }
 
-    public LeafCollector getLeafCollector(AtomicReaderContext context) throws IOException {
+    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       postCollection();
       final LeafCollector in = this.in.getLeafCollector(context);
       if (contexts != null) {
@@ -151,7 +151,7 @@ public abstract class CachingCollector extends FilterCollector {
       }
       assert docs.size() == contexts.size();
       for (int i = 0; i < contexts.size(); ++i) {
-        final AtomicReaderContext context = contexts.get(i);
+        final LeafReaderContext context = contexts.get(i);
         final boolean docsInOrder = !acceptDocsOutOfOrders.get(i);
         final LeafCollector collector = other.getLeafCollector(context);
         if (!collector.acceptsDocsOutOfOrder() && !docsInOrder) {

@@ -20,7 +20,7 @@ package org.apache.solr.analytics.util.valuesource;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
@@ -45,7 +45,7 @@ public abstract class SingleDoubleFunction extends ValueSource {
   abstract double func(int doc, FunctionValues vals);
 
   @Override
-  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     final FunctionValues vals =  source.getValues(context, readerContext);
     return new DoubleDocValues(this) {
       @Override

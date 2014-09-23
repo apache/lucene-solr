@@ -24,7 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -228,7 +228,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     }
 
     @Override
-    public Explanation explain(AtomicReaderContext context, int doc)
+    public Explanation explain(LeafReaderContext context, int doc)
       throws IOException {
       final int minShouldMatch =
         BooleanQuery.this.getMinimumNumberShouldMatch();
@@ -305,7 +305,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     }
 
     @Override
-    public BulkScorer bulkScorer(AtomicReaderContext context, boolean scoreDocsInOrder,
+    public BulkScorer bulkScorer(LeafReaderContext context, boolean scoreDocsInOrder,
                                  Bits acceptDocs) throws IOException {
 
       if (scoreDocsInOrder || minNrShouldMatch > 1) {
@@ -340,7 +340,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, Bits acceptDocs)
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs)
         throws IOException {
       // initially the user provided value,
       // but if minNrShouldMatch == optional.size(),

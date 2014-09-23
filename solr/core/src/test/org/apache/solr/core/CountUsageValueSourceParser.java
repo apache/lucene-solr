@@ -16,12 +16,11 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.valuesource.DoubleConstValueSource;
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.FunctionQParser;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.ValueSourceParser;
@@ -74,7 +73,7 @@ public class CountUsageValueSourceParser extends ValueSourceParser {
       this.counter = counter;
     }
     @Override
-    public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
       return new DoubleDocValues(this) {
         @Override
         public double doubleVal(int doc) {

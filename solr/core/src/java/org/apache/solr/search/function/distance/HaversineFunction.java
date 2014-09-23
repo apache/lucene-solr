@@ -16,7 +16,7 @@ package org.apache.solr.search.function.distance;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
@@ -94,7 +94,7 @@ public class HaversineFunction extends ValueSource {
 
 
   @Override
-  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     final FunctionValues vals1 = p1.getValues(context, readerContext);
 
     final FunctionValues vals2 = p2.getValues(context, readerContext);

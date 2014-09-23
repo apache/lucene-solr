@@ -42,12 +42,13 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.FilterLeafReader;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.FilterAtomicReader;
+import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiDocValues;
@@ -544,7 +545,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     // This will just be null if app didn't pass payloads to build():
     // TODO: maybe just stored fields?  they compress...
     BinaryDocValues payloadsDV = MultiDocValues.getBinaryValues(searcher.getIndexReader(), "payloads");
-    List<AtomicReaderContext> leaves = searcher.getIndexReader().leaves();
+    List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
     List<LookupResult> results = new ArrayList<>();
     for (int i=0;i<hits.scoreDocs.length;i++) {
       FieldDoc fd = (FieldDoc) hits.scoreDocs[i];
@@ -708,8 +709,8 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       if (searcherMgr != null) {
         IndexSearcher searcher = searcherMgr.acquire();
         try {
-          for (AtomicReaderContext context : searcher.getIndexReader().leaves()) {
-            AtomicReader reader = FilterAtomicReader.unwrap(context.reader());
+          for (LeafReaderContext context : searcher.getIndexReader().leaves()) {
+            LeafReader reader = FilterLeafReader.unwrap(context.reader());
             if (reader instanceof SegmentReader) {
               mem += ((SegmentReader) context.reader()).ramBytesUsed();
             }
@@ -731,8 +732,8 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       if (searcherMgr != null) {
         IndexSearcher searcher = searcherMgr.acquire();
         try {
-          for (AtomicReaderContext context : searcher.getIndexReader().leaves()) {
-            AtomicReader reader = FilterAtomicReader.unwrap(context.reader());
+          for (LeafReaderContext context : searcher.getIndexReader().leaves()) {
+            LeafReader reader = FilterLeafReader.unwrap(context.reader());
             if (reader instanceof SegmentReader) {
               resources.add(Accountables.namedAccountable("segment", (SegmentReader)reader));
             }

@@ -41,8 +41,8 @@ public abstract class FilterDirectoryReader extends DirectoryReader {
    */
   public static abstract class SubReaderWrapper {
 
-    private AtomicReader[] wrap(List<? extends AtomicReader> readers) {
-      AtomicReader[] wrapped = new AtomicReader[readers.size()];
+    private LeafReader[] wrap(List<? extends LeafReader> readers) {
+      LeafReader[] wrapped = new LeafReader[readers.size()];
       for (int i = 0; i < readers.size(); i++) {
         wrapped[i] = wrap(readers.get(i));
       }
@@ -57,7 +57,7 @@ public abstract class FilterDirectoryReader extends DirectoryReader {
      * @param reader the subreader to wrap
      * @return a wrapped/filtered AtomicReader
      */
-    public abstract AtomicReader wrap(AtomicReader reader);
+    public abstract LeafReader wrap(LeafReader reader);
 
   }
 
@@ -71,7 +71,7 @@ public abstract class FilterDirectoryReader extends DirectoryReader {
     public StandardReaderWrapper() {}
 
     @Override
-    public AtomicReader wrap(AtomicReader reader) {
+    public LeafReader wrap(LeafReader reader) {
       return reader;
     }
   }

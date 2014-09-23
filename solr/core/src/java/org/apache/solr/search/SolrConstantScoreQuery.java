@@ -1,10 +1,10 @@
 package org.apache.solr.search;
 
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.solr.common.SolrException;
 
 import java.io.IOException;
@@ -119,12 +119,12 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery implements Extend
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
       return new ConstantScorer(context, this, queryWeight, acceptDocs);
     }
 
     @Override
-    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
+    public Explanation explain(LeafReaderContext context, int doc) throws IOException {
 
       ConstantScorer cs = new ConstantScorer(context, this, queryWeight, context.reader().getLiveDocs());
       boolean exists = cs.docIdSetIterator.advance(doc) == doc;
@@ -154,7 +154,7 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery implements Extend
     final Bits acceptDocs;
     int doc = -1;
 
-    public ConstantScorer(AtomicReaderContext context, ConstantWeight w, float theScore, Bits acceptDocs) throws IOException {
+    public ConstantScorer(LeafReaderContext context, ConstantWeight w, float theScore, Bits acceptDocs) throws IOException {
       super(w);
       this.theScore = theScore;
       this.acceptDocs = acceptDocs;

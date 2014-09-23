@@ -17,7 +17,7 @@
 
 package org.apache.lucene.queries.function.valuesource;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -51,7 +51,7 @@ public class QueryValueSource extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map fcontext, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map fcontext, LeafReaderContext readerContext) throws IOException {
     return new QueryDocValues(this, readerContext, fcontext);
   }
 
@@ -76,7 +76,7 @@ public class QueryValueSource extends ValueSource {
 
 
 class QueryDocValues extends FloatDocValues {
-  final AtomicReaderContext readerContext;
+  final LeafReaderContext readerContext;
   final Bits acceptDocs;
   final Weight weight;
   final float defVal;
@@ -92,7 +92,7 @@ class QueryDocValues extends FloatDocValues {
   int lastDocRequested=Integer.MAX_VALUE;
   
 
-  public QueryDocValues(QueryValueSource vs, AtomicReaderContext readerContext, Map fcontext) throws IOException {
+  public QueryDocValues(QueryValueSource vs, LeafReaderContext readerContext, Map fcontext) throws IOException {
     super(vs);
 
     this.readerContext = readerContext;

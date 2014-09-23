@@ -21,7 +21,7 @@ import static org.apache.lucene.search.DocIdSet.EMPTY;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.search.CachingWrapperFilter;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -38,7 +38,7 @@ public final class FixedBitSetCachingWrapperFilter extends CachingWrapperFilter 
   }
 
   @Override
-  protected DocIdSet docIdSetToCache(DocIdSet docIdSet, AtomicReader reader)
+  protected DocIdSet docIdSetToCache(DocIdSet docIdSet, LeafReader reader)
       throws IOException {
     if (docIdSet == null) {
       return EMPTY;

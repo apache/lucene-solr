@@ -39,7 +39,7 @@ import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -648,7 +648,7 @@ public class TestDrillSideways extends FacetTestCase {
         }
         filter = new Filter() {
             @Override
-            public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+            public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
               int maxDoc = context.reader().maxDoc();
               final FixedBitSet bits = new FixedBitSet(maxDoc);
               for(int docID=0;docID < maxDoc;docID++) {
@@ -678,7 +678,7 @@ public class TestDrillSideways extends FacetTestCase {
                              }
 
                              @Override
-                             protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+                             protected void doSetNextReader(LeafReaderContext context) throws IOException {
                                lastDocID = -1;
                              }
 

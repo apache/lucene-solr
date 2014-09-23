@@ -19,12 +19,10 @@ package org.apache.lucene.queryparser.surround.query;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SimpleCollector;
@@ -79,7 +77,7 @@ public class BooleanQueryTst {
     }
 
     @Override
-    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       docBase = context.docBase;
     }
     

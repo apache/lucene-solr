@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.TermsEnum;
@@ -30,11 +30,9 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util.packed.PackedInts;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
@@ -85,7 +83,7 @@ class PerSegmentSingleValuedFaceting {
     // reuse the translation logic to go from top level set to per-segment set
     baseSet = docs.getTopFilter();
 
-    final List<AtomicReaderContext> leaves = searcher.getTopReaderContext().leaves();
+    final List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
     // The list of pending tasks that aren't immediately submitted
     // TODO: Is there a completion service, or a delegating executor that can
     // limit the number of concurrent tasks submitted to a bigger executor?
@@ -93,7 +91,7 @@ class PerSegmentSingleValuedFaceting {
 
     int threads = nThreads <= 0 ? Integer.MAX_VALUE : nThreads;
 
-    for (final AtomicReaderContext leave : leaves) {
+    for (final LeafReaderContext leave : leaves) {
       final SegFacet segFacet = new SegFacet(leave);
 
       Callable<SegFacet> task = new Callable<SegFacet>() {
@@ -222,8 +220,8 @@ class PerSegmentSingleValuedFaceting {
   }
 
   class SegFacet {
-    AtomicReaderContext context;
-    SegFacet(AtomicReaderContext context) {
+    LeafReaderContext context;
+    SegFacet(LeafReaderContext context) {
       this.context = context;
     }
     

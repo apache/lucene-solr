@@ -22,7 +22,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.StorableField;
@@ -56,7 +56,7 @@ public class DatasetSplitter {
   /**
    * Split a given index into 3 indexes for training, test and cross validation tasks respectively
    *
-   * @param originalIndex        an {@link AtomicReader} on the source index
+   * @param originalIndex        an {@link org.apache.lucene.index.LeafReader} on the source index
    * @param trainingIndex        a {@link Directory} used to write the training index
    * @param testIndex            a {@link Directory} used to write the test index
    * @param crossValidationIndex a {@link Directory} used to write the cross validation index
@@ -64,7 +64,7 @@ public class DatasetSplitter {
    * @param fieldNames           names of fields that need to be put in the new indexes or <code>null</code> if all should be used
    * @throws IOException if any writing operation fails on any of the indexes
    */
-  public void split(AtomicReader originalIndex, Directory trainingIndex, Directory testIndex, Directory crossValidationIndex,
+  public void split(LeafReader originalIndex, Directory trainingIndex, Directory testIndex, Directory crossValidationIndex,
                     Analyzer analyzer, String... fieldNames) throws IOException {
 
     // create IWs for train / test / cv IDXs

@@ -37,8 +37,8 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.MultiDocsEnum;
@@ -57,7 +57,6 @@ import org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.term.TermAllGroupsCollector;
 import org.apache.lucene.search.grouping.term.TermGroupFacetCollector;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.SolrException;
@@ -496,8 +495,8 @@ public class SimpleFacets {
       // there isnt a GroupedFacetCollector that works on numerics right now...
       searcher.search(new MatchAllDocsQuery(), base.getTopFilter(), new FilterCollector(collector) {
         @Override
-        public LeafCollector getLeafCollector(AtomicReaderContext context) throws IOException {
-          AtomicReader insane = Insanity.wrapInsanity(context.reader(), groupField);
+        public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
+          LeafReader insane = Insanity.wrapInsanity(context.reader(), groupField);
           return in.getLeafCollector(insane.getContext());
         }
       });
@@ -701,7 +700,7 @@ public class SimpleFacets {
 
 
     IndexSchema schema = searcher.getSchema();
-    AtomicReader r = searcher.getAtomicReader();
+    LeafReader r = searcher.getLeafReader();
     FieldType ft = schema.getFieldType(field);
 
     boolean sortByCount = sort.equals("count") || sort.equals("true");

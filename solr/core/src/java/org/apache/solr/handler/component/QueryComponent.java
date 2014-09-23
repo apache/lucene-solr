@@ -32,8 +32,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang.StringUtils;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
@@ -100,7 +99,6 @@ import org.apache.solr.search.grouping.endresulttransformer.MainEndResultTransfo
 import org.apache.solr.search.grouping.endresulttransformer.SimpleEndResultTransformer;
 import org.apache.solr.util.SolrPluginUtils;
 import java.util.Collections;
-import java.util.Comparator;
 
 /**
  * TODO!
@@ -520,8 +518,8 @@ public class QueryComponent extends SearchComponent
     if(fsv){
       NamedList<Object[]> sortVals = new NamedList<>(); // order is important for the sort fields
       IndexReaderContext topReaderContext = searcher.getTopReaderContext();
-      List<AtomicReaderContext> leaves = topReaderContext.leaves();
-      AtomicReaderContext currentLeaf = null;
+      List<LeafReaderContext> leaves = topReaderContext.leaves();
+      LeafReaderContext currentLeaf = null;
       if (leaves.size()==1) {
         // if there is a single segment, use that subReader and avoid looking up each time
         currentLeaf = leaves.get(0);

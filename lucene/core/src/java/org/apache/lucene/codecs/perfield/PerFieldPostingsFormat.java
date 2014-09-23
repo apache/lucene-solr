@@ -43,7 +43,7 @@ import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
-import static org.apache.lucene.index.FilterAtomicReader.FilterFields;
+import static org.apache.lucene.index.FilterLeafReader.FilterFields;
 
 /**
  * Enables per field postings support.

@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.util.TestUtil;
@@ -89,7 +89,7 @@ public class AssertingIndexSearcher extends IndexSearcher {
   }
 
   @Override
-  protected void search(List<AtomicReaderContext> leaves, Weight weight, Collector collector) throws IOException {
+  protected void search(List<LeafReaderContext> leaves, Weight weight, Collector collector) throws IOException {
     // TODO: shouldn't we AssertingCollector.wrap(collector) here?
     super.search(leaves, AssertingWeight.wrap(random, weight), collector);
   }

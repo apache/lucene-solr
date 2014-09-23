@@ -17,8 +17,8 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.LogDocMergePolicy;
-import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -58,9 +58,9 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     Map context = ValueSource.newContext(sqr.getSearcher());
     vs.createWeight(context, sqr.getSearcher());
     IndexReaderContext topReaderContext = sqr.getSearcher().getTopReaderContext();
-    List<AtomicReaderContext> leaves = topReaderContext.leaves();
+    List<LeafReaderContext> leaves = topReaderContext.leaves();
     int idx = ReaderUtil.subIndex(doc, leaves);
-    AtomicReaderContext leaf = leaves.get(idx);
+    LeafReaderContext leaf = leaves.get(idx);
     FunctionValues vals = vs.getValues(context, leaf);
     return vals.strVal(doc-leaf.docBase);
   }

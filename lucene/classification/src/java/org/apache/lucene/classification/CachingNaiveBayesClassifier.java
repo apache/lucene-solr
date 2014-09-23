@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -60,7 +60,7 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
 
   /**
    * Creates a new NaiveBayes classifier with inside caching. Note that you must
-   * call {@link #train(AtomicReader, String, String, Analyzer) train()} before
+   * call {@link #train(org.apache.lucene.index.LeafReader, String, String, Analyzer) train()} before
    * you can classify any documents. If you want less memory usage you could
    * call {@link #reInitCache(int, boolean) reInitCache()}.
    */
@@ -71,30 +71,30 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
    * {@inheritDoc}
    */
   @Override
-  public void train(AtomicReader atomicReader, String textFieldName, String classFieldName, Analyzer analyzer) throws IOException {
-    train(atomicReader, textFieldName, classFieldName, analyzer, null);
+  public void train(LeafReader leafReader, String textFieldName, String classFieldName, Analyzer analyzer) throws IOException {
+    train(leafReader, textFieldName, classFieldName, analyzer, null);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public void train(AtomicReader atomicReader, String textFieldName, String classFieldName, Analyzer analyzer, Query query) throws IOException {
-    train(atomicReader, new String[]{textFieldName}, classFieldName, analyzer, query);
+  public void train(LeafReader leafReader, String textFieldName, String classFieldName, Analyzer analyzer, Query query) throws IOException {
+    train(leafReader, new String[]{textFieldName}, classFieldName, analyzer, query);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public void train(AtomicReader atomicReader, String[] textFieldNames, String classFieldName, Analyzer analyzer, Query query) throws IOException {
-    super.train(atomicReader, textFieldNames, classFieldName, analyzer, query);
+  public void train(LeafReader leafReader, String[] textFieldNames, String classFieldName, Analyzer analyzer, Query query) throws IOException {
+    super.train(leafReader, textFieldNames, classFieldName, analyzer, query);
     // building the cache
     reInitCache(0, true);
   }
 
   private List<ClassificationResult<BytesRef>> assignClassNormalizedList(String inputDocument) throws IOException {
-    if (atomicReader == null) {
+    if (leafReader == null) {
       throw new IOException("You must first call Classifier#train");
     }
 
@@ -241,7 +241,7 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
     // build the cache for the word
     Map<String, Long> frequencyMap = new HashMap<>();
     for (String textFieldName : textFieldNames) {
-      TermsEnum termsEnum = atomicReader.terms(textFieldName).iterator(null);
+      TermsEnum termsEnum = leafReader.terms(textFieldName).iterator(null);
       while (termsEnum.next() != null) {
         BytesRef term = termsEnum.term();
         String termText = term.utf8ToString();
@@ -258,7 +258,7 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
     }
 
     // fill the class list
-    Terms terms = MultiFields.getTerms(atomicReader, classFieldName);
+    Terms terms = MultiFields.getTerms(leafReader, classFieldName);
     TermsEnum termsEnum = terms.iterator(null);
     while ((termsEnum.next()) != null) {
       cclasses.add(BytesRef.deepCopyOf(termsEnum.term()));
@@ -267,11 +267,11 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
     for (BytesRef cclass : cclasses) {
       double avgNumberOfUniqueTerms = 0;
       for (String textFieldName : textFieldNames) {
-        terms = MultiFields.getTerms(atomicReader, textFieldName);
+        terms = MultiFields.getTerms(leafReader, textFieldName);
         long numPostings = terms.getSumDocFreq(); // number of term/doc pairs
         avgNumberOfUniqueTerms += numPostings / (double) terms.getDocCount();
       }
-      int docsWithC = atomicReader.docFreq(new Term(classFieldName, cclass));
+      int docsWithC = leafReader.docFreq(new Term(classFieldName, cclass));
       classTermFreq.put(cclass, avgNumberOfUniqueTerms * docsWithC);
     }
   }

@@ -17,14 +17,10 @@
 
 package org.apache.solr.search;
 
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.ValueSourceScorer;
-import org.apache.lucene.search.LeafCollector;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.FilterCollector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.solr.search.function.ValueSourceRangeFilter;
 
@@ -63,7 +59,7 @@ public class FunctionRangeQuery extends SolrConstantScoreQuery implements PostFi
     }
 
     @Override
-    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       super.doSetNextReader(context);
       maxdoc = context.reader().maxDoc();
       FunctionValues dv = rangeFilt.getValueSource().getValues(fcontext, context);

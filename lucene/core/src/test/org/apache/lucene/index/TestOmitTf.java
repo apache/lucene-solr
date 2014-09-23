@@ -435,7 +435,7 @@ public class TestOmitTf extends LuceneTestCase {
     public static int getSum() { return sum; }
     
     @Override
-    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       docBase = context.docBase;
     }
     @Override
