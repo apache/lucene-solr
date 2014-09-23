@@ -704,14 +704,16 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     return files;
   }
 
-  final void finishCommit(Directory dir) throws IOException {
+  /** Returns the committed segments_N filename. */
+  final String finishCommit(Directory dir) throws IOException {
     if (pendingCommit == false) {
       throw new IllegalStateException("prepareCommit was not called");
     }
     boolean success = false;
+    final String dest;
     try {
       final String src =  IndexFileNames.fileNameFromGeneration(IndexFileNames.PENDING_SEGMENTS, "", generation);
-      final String dest = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,         "", generation);
+      dest = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", generation);
       dir.renameFile(src, dest);
       success = true;
     } finally {
@@ -723,6 +725,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
 
     pendingCommit = false;
     lastGeneration = generation;
+    return dest;
   }
 
   /** Writes & syncs to the Directory dir, taking care to
