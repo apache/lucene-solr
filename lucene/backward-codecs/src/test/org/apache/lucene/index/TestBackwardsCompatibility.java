@@ -986,6 +986,24 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       r.close();
     }
   }
+
+  public void verifyUsesDefaultCodec(Directory dir, String name) throws Exception {
+    DirectoryReader r = DirectoryReader.open(dir);
+    for (AtomicReaderContext context : r.leaves()) {
+      SegmentReader air = (SegmentReader) context.reader();
+      Codec codec = air.getSegmentInfo().info.getCodec();
+      assertTrue("codec used in " + name + " (" + codec.getName() + ") is not a default codec (does not begin with Lucene)",
+                 codec.getName().startsWith("Lucene"));
+    }
+      r.close();
+  }
+  
+  public void testAllIndexesUseDefaultCodec() throws Exception {
+    for (String name : oldNames) {
+      Directory dir = oldIndexDirs.get(name);
+      verifyUsesDefaultCodec(dir, name);
+    }
+  }
   
   public void testNumericFields() throws Exception {
     for (String name : oldNames) {
@@ -1187,6 +1205,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     Path oldIndexDir = createTempDir("moreterms");
     TestUtil.unzip(getDataInputStream(moreTermsIndex), oldIndexDir);
     Directory dir = newFSDirectory(oldIndexDir);
+    verifyUsesDefaultCodec(dir, moreTermsIndex);
     // TODO: more tests
     TestUtil.checkIndex(dir);
     dir.close();
@@ -1226,6 +1245,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     Path oldIndexDir = createTempDir("dvupdates");
     TestUtil.unzip(getDataInputStream(dvUpdatesIndex), oldIndexDir);
     Directory dir = newFSDirectory(oldIndexDir);
+    verifyUsesDefaultCodec(dir, dvUpdatesIndex);
     
     verifyDocValues(dir);
     
