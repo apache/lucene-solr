@@ -202,15 +202,11 @@
       <filterchain>
         <tokenfilter>
           <filetokenizer/>
-          <scriptfilter language="groovy">
-            <classpath>
-              <path refid="groovy.classpath"/>
-            </classpath><![CDATA[
-            //                   private static Codec defaultCodec   =   Codec    .   forName    (   "Lucene410"   )   ;
-            defaultCodecMatcher = self.getToken() =~ /defaultCodec\s*=\s*Codec\s*\.\s*forName\s*\(\s*"([^"]+)"\s*\)\s*;/
-            self.setToken(defaultCodecMatcher[0][1].toLowerCase());
-            ]]>
-          </scriptfilter>
+          <scriptfilter language="groovy" classpathref="groovy.classpath"><![CDATA[
+            //                   private static Codec defaultCodec   =   Codec    .   forName    (   "LuceneXXX"   )   ;
+            def defaultCodecMatcher = self.getToken() =~ /defaultCodec\s*=\s*Codec\s*\.\s*forName\s*\(\s*"([^"]+)"\s*\)\s*;/
+            self.setToken(defaultCodecMatcher[0][1].toLowerCase(Locale.ROOT));
+          ]]></scriptfilter>
         </tokenfilter>
       </filterchain>
     </loadfile>
