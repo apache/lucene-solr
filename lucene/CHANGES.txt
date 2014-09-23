@@ -179,6 +179,9 @@ Tests
 * LUCENE-5957: Add option for tests to not randomize codec
   (Ryan Ernst)
 
+* LUCENE-5974: Add check that backcompat indexes use default codecs
+  (Ryan Ernst)
+
 Optimizations
 
 * LUCENE-5960: Use a more efficient bitset, not a Set<Integer>, to
