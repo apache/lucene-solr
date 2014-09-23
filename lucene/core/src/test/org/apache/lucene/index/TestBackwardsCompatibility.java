@@ -161,7 +161,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
   */
   
-/*  
+/*
   private void updateNumeric(IndexWriter writer, String id, String f, String cf, long value) throws IOException {
     writer.updateNumericDocValue(new Term("id", id), f, value);
     writer.updateNumericDocValue(new Term("id", id), cf, value*2);
@@ -182,12 +182,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     Directory dir = newFSDirectory(indexDir);
     
     IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
-      .setUseCompoundFile(false).setMergePolicy(NoMergePolicy.INSTANCE);
+      .setUseCompoundFile(false).setMergePolicy(NoMergePolicy.COMPOUND_FILES);
     IndexWriter writer = new IndexWriter(dir, conf);
     // create an index w/ few doc-values fields, some with updates and some without
     for (int i = 0; i < 30; i++) {
       Document doc = new Document();
-      doc.add(new StringField("id", "" + i, Store.NO));
+      doc.add(new StringField("id", "" + i, Field.Store.NO));
       doc.add(new NumericDocValuesField("ndv1", i));
       doc.add(new NumericDocValuesField("ndv1_c", i*2));
       doc.add(new NumericDocValuesField("ndv2", i*3));
@@ -216,7 +216,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     updateNumeric(writer, "22", "ndv1", "ndv1_c", 200L); // update the field again
     writer.commit();
     
-    writer.shutdown();
+    writer.close();
     dir.close();
   }*/
 
