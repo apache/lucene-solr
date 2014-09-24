@@ -31,6 +31,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -44,6 +45,7 @@ import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARDS_PROP;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
 
+@Ignore
 public class DeleteLastCustomShardedReplicaTest extends AbstractFullDistribZkTestBase {
   private CloudSolrServer client;
 
