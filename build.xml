@@ -29,6 +29,7 @@
 
   <!-- define here, as common-build is not included! TODO: maybe include into a property file like the version? -->
   <property name="python32.exe" value="python3.2" />
+  <property name="args" value=""/>
 
   <!-- other settings: -->
   <property name="tests.heap-dump-dir" location="heapdumps"/>
@@ -484,47 +485,6 @@ File | Project Structure | Platform Settings | SDKs):
     <antcall target="test"/>
   </target>
 
-  <!-- Jenkins tasks -->
-  <target name="-jenkins-base" depends="clean,test-with-heapdumps,validate,documentation-lint,jar-checksums,check-svn-working-copy"/>
-  
-  <target name="jenkins-hourly">
-    <antcall>
-      <param name="is.jenkins.build" value="true"/>
-      <target name="-jenkins-base"/>
-    </antcall>
-  </target>
-  
-  <target name="jenkins-nightly">
-    <antcall>
-      <param name="is.jenkins.build" value="true"/>
-      <param name="tests.nightly" value="true"/>
-      <target name="-jenkins-base"/>
-    </antcall>
-  </target>
-  
-  <target name="jenkins-maven-nightly" depends="clean,clean-maven-build">
-    <!-- step 1: build, install, deploy, and validate ANT-generated maven artifacts: -->
-    <antcall>
-      <param name="is.jenkins.build" value="true"/>
-      <target name="remove-maven-artifacts"/>
-      <!-- this implicitely publishes the maven artifacts: -->
-      <target name="validate-maven-dependencies"/>
-    </antcall>
-    <!-- step 2: run the maven build to check that the pom templates also work to drive "mvn": -->
-    <antcall>
-      <param name="is.jenkins.build" value="true"/>
-      <target name="remove-maven-artifacts"/>
-      <target name="run-maven-build"/>
-    </antcall>
-  </target>
-  
-  <target name="jenkins-clover">
-    <antcall>
-      <param name="is.jenkins.build" value="true"/>
-      <target name="run-clover"/>
-    </antcall>
-  </target>
-
   <target name="regenerate" description="Runs all code regenerators">
     <subant target="regenerate" inheritall="false" failonerror="false">
       <fileset dir="lucene" includes="build.xml" />
@@ -549,4 +509,53 @@ File | Project Structure | Platform Settings | SDKs):
       </subant>
     </sequential>
   </target>
+  
+  <!-- Jenkins tasks -->
+  <target name="-jenkins-base" depends="-print-java-info,clean,test-with-heapdumps,validate,documentation-lint,jar-checksums,check-svn-working-copy"/>
+  
+  <target name="-print-java-info">
+    <echo level="info" taskname="java-info">java version &quot;${java.version}&quot;
+${java.runtime.name} (${java.runtime.version}, ${java.vendor})
+${java.vm.name} (build ${java.vm.version}, ${java.vm.vendor})
+Test args: [${args}]</echo>
+  </target>
+  
+  <target name="jenkins-hourly">
+    <antcall>
+      <param name="is.jenkins.build" value="true"/>
+      <target name="-jenkins-base"/>
+    </antcall>
+  </target>
+  
+  <target name="jenkins-nightly">
+    <antcall>
+      <param name="is.jenkins.build" value="true"/>
+      <param name="tests.nightly" value="true"/>
+      <target name="-jenkins-base"/>
+    </antcall>
+  </target>
+  
+  <target name="jenkins-maven-nightly" depends="-print-java-info,clean,clean-maven-build">
+    <!-- step 1: build, install, deploy, and validate ANT-generated maven artifacts: -->
+    <antcall>
+      <param name="is.jenkins.build" value="true"/>
+      <target name="remove-maven-artifacts"/>
+      <!-- this implicitely publishes the maven artifacts: -->
+      <target name="validate-maven-dependencies"/>
+    </antcall>
+    <!-- step 2: run the maven build to check that the pom templates also work to drive "mvn": -->
+    <antcall>
+      <param name="is.jenkins.build" value="true"/>
+      <target name="remove-maven-artifacts"/>
+      <target name="run-maven-build"/>
+    </antcall>
+  </target>
+  
+  <target name="jenkins-clover" depends="-print-java-info">
+    <antcall>
+      <param name="is.jenkins.build" value="true"/>
+      <target name="run-clover"/>
+    </antcall>
+  </target>
+
 </project>
