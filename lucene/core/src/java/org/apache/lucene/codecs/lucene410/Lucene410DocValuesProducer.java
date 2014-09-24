@@ -76,17 +76,16 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedReader;
 
 /** reader for {@link Lucene410DocValuesFormat} */
 class Lucene410DocValuesProducer extends DocValuesProducer implements Closeable {
-  private final Map<String,NumericEntry> numerics;
-  private final Map<String,BinaryEntry> binaries;
-  private final Map<String,SortedSetEntry> sortedSets;
-  private final Map<String,SortedSetEntry> sortedNumerics;
-  private final Map<String,NumericEntry> ords;
-  private final Map<String,NumericEntry> ordIndexes;
+  private final Map<String,NumericEntry> numerics = new HashMap<>();
+  private final Map<String,BinaryEntry> binaries = new HashMap<>();
+  private final Map<String,SortedSetEntry> sortedSets = new HashMap<>();
+  private final Map<String,SortedSetEntry> sortedNumerics = new HashMap<>();
+  private final Map<String,NumericEntry> ords = new HashMap<>();
+  private final Map<String,NumericEntry> ordIndexes = new HashMap<>();
   private final int numFields;
   private final AtomicLong ramBytesUsed;
   private final IndexInput data;
   private final int maxDoc;
-  private final int version;
 
   // memory-resident structures
   private final Map<String,MonotonicBlockPackedReader> addressInstances = new HashMap<>();
@@ -98,22 +97,25 @@ class Lucene410DocValuesProducer extends DocValuesProducer implements Closeable 
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     this.maxDoc = state.segmentInfo.getDocCount();
     
+    int version = -1;
+    int numFields = -1;
+    
     // read in the entries from the metadata file.
     try (ChecksumIndexInput in = state.directory.openChecksumInput(metaName, state.context)) {
-      version = CodecUtil.checkHeader(in, metaCodec, 
-                                      Lucene410DocValuesFormat.VERSION_START,
-                                      Lucene410DocValuesFormat.VERSION_CURRENT);
-      numerics = new HashMap<>();
-      ords = new HashMap<>();
-      ordIndexes = new HashMap<>();
-      binaries = new HashMap<>();
-      sortedSets = new HashMap<>();
-      sortedNumerics = new HashMap<>();
-      numFields = readFields(in, state.fieldInfos);
-
-      CodecUtil.checkFooter(in);
+      Throwable priorE = null;
+      try {
+        version = CodecUtil.checkHeader(in, metaCodec, 
+                                        Lucene410DocValuesFormat.VERSION_START,
+                                        Lucene410DocValuesFormat.VERSION_CURRENT);
+        numFields = readFields(in, state.fieldInfos);
+      } catch (Throwable exception) {
+        priorE = exception;
+      } finally {
+        CodecUtil.checkFooter(in, priorE);
+      }
     }
-
+    
+    this.numFields = numFields;
     String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
     this.data = state.directory.openInput(dataName, state.context);
     boolean success = false;

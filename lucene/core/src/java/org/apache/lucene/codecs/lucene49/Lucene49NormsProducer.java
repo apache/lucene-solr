@@ -54,7 +54,6 @@ class Lucene49NormsProducer extends NormsProducer {
   // metadata maps (just file pointers and minimal stuff)
   private final Map<String,NormsEntry> norms = new HashMap<>();
   private final IndexInput data;
-  private final int version;
   
   // ram instances we have already loaded
   final Map<String,NumericDocValues> instances = new HashMap<>();
@@ -68,12 +67,19 @@ class Lucene49NormsProducer extends NormsProducer {
     maxDoc = state.segmentInfo.getDocCount();
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     ramBytesUsed = new AtomicLong(RamUsageEstimator.shallowSizeOfInstance(getClass()));
+    int version = -1;
     
     // read in the entries from the metadata file.
     try (ChecksumIndexInput in = state.directory.openChecksumInput(metaName, state.context)) {
-      version = CodecUtil.checkHeader(in, metaCodec, VERSION_START, VERSION_CURRENT);
-      readFields(in, state.fieldInfos);
-      CodecUtil.checkFooter(in);
+      Throwable priorE = null;
+      try {
+        version = CodecUtil.checkHeader(in, metaCodec, VERSION_START, VERSION_CURRENT);
+        readFields(in, state.fieldInfos);
+      } catch (Throwable exception) {
+        priorE = exception;
+      } finally {
+        CodecUtil.checkFooter(in, priorE);
+      }
     }
 
     String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);

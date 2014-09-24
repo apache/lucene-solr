@@ -46,8 +46,8 @@ import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
-import org.apache.lucene.codecs.lucene410.Lucene410Codec;
 import org.apache.lucene.codecs.lucene410.Lucene410DocValuesFormat;
+import org.apache.lucene.codecs.lucene50.Lucene50Codec;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.document.BinaryDocValuesField;
@@ -64,11 +64,6 @@ import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.CheckIndex;
-import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
-import org.apache.lucene.index.CheckIndex.Status.FieldNormStatus;
-import org.apache.lucene.index.CheckIndex.Status.StoredFieldStatus;
-import org.apache.lucene.index.CheckIndex.Status.TermIndexStatus;
-import org.apache.lucene.index.CheckIndex.Status.TermVectorStatus;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
@@ -248,11 +243,13 @@ public final class TestUtil {
     PrintStream infoStream = new PrintStream(bos, false, IOUtils.UTF_8);
 
     reader.checkIntegrity();
-    FieldNormStatus fieldNormStatus = CheckIndex.testFieldNorms(reader, infoStream, true);
-    TermIndexStatus termIndexStatus = CheckIndex.testPostings(reader, infoStream, false, true);
-    StoredFieldStatus storedFieldStatus = CheckIndex.testStoredFields(reader, infoStream, true);
-    TermVectorStatus termVectorStatus = CheckIndex.testTermVectors(reader, infoStream, false, crossCheckTermVectors, true);
-    DocValuesStatus docValuesStatus = CheckIndex.testDocValues(reader, infoStream, true);
+    CheckIndex.testLiveDocs(reader, infoStream, true);
+    CheckIndex.testFieldInfos(reader, infoStream, true);
+    CheckIndex.testFieldNorms(reader, infoStream, true);
+    CheckIndex.testPostings(reader, infoStream, false, true);
+    CheckIndex.testStoredFields(reader, infoStream, true);
+    CheckIndex.testTermVectors(reader, infoStream, false, crossCheckTermVectors, true);
+    CheckIndex.testDocValues(reader, infoStream, true);
     
     if (LuceneTestCase.INFOSTREAM) {
       System.out.println(bos.toString(IOUtils.UTF_8));
@@ -737,7 +734,7 @@ public final class TestUtil {
    * This may be different than {@link Codec#getDefault()} because that is randomized. 
    */
   public static Codec getDefaultCodec() {
-    return new Lucene410Codec();
+    return new Lucene50Codec();
   }
   
   /** 

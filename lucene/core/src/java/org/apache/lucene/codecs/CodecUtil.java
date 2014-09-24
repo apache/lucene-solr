@@ -30,6 +30,7 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * Utility class for reading and writing versioned headers.
@@ -77,6 +78,7 @@ public final class CodecUtil {
    *              less than 128 characters in length.
    * @param version Version number
    * @throws IOException If there is an I/O error writing to the underlying medium.
+   * @throws IllegalArgumentException If the codec name is not simple ASCII, or is more than 127 characters in length
    */
   public static void writeHeader(DataOutput out, String codec, int version)
     throws IOException {
@@ -211,10 +213,60 @@ public final class CodecUtil {
       throw new CorruptIndexException("checksum failed (hardware problem?) : expected=" + Long.toHexString(expectedChecksum) +  
                                                        " actual=" + Long.toHexString(actualChecksum), in);
     }
-    if (in.getFilePointer() != in.length()) {
-      throw new CorruptIndexException("did not read all bytes from file: read " + in.getFilePointer() + " vs size " + in.length(), in);
-    }
     return actualChecksum;
+  }
+  
+  /** 
+   * Validates the codec footer previously written by {@link #writeFooter}, optionally
+   * passing an unexpected exception that has already occurred.
+   * <p>
+   * When a {@code priorException} is provided, this method will add a suppressed exception 
+   * indicating whether the checksum for the stream passes, fails, or cannot be computed, and 
+   * rethrow it. Otherwise it behaves the same as {@link #checkFooter(ChecksumIndexInput)}.
+   * <p>
+   * Example usage:
+   * <pre class="prettyprint">
+   * try (ChecksumIndexInput input = ...) {
+   *   Throwable priorE = null;
+   *   try {
+   *     // ... read a bunch of stuff ... 
+   *   } catch (Throwable exception) {
+   *     priorE = exception;
+   *   } finally {
+   *     CodecUtil.checkFooter(input, priorE);
+   *   }
+   * }
+   * </pre>
+   */
+  public static void checkFooter(ChecksumIndexInput in, Throwable priorException) throws IOException {
+    if (priorException == null) {
+      checkFooter(in);
+    } else {
+      try {
+        long remaining = in.length() - in.getFilePointer();
+        if (remaining < footerLength()) {
+          // corruption caused us to read into the checksum footer already: we can't proceed
+          priorException.addSuppressed(new CorruptIndexException("checksum status indeterminate: remaining=" + remaining +
+                                                                 ", please run checkindex for more details", in));
+        } else {
+          // otherwise, skip any unread bytes.
+          in.skipBytes(remaining - footerLength());
+          
+          // now check the footer
+          try {
+            long checksum = checkFooter(in);
+            priorException.addSuppressed(new CorruptIndexException("checksum passed (" + Long.toHexString(checksum) + 
+                                                                   "). possibly transient resource issue, or a Lucene or JVM bug", in));
+          } catch (CorruptIndexException t) {
+            priorException.addSuppressed(t);
+          }
+        }
+      } catch (Throwable t) {
+        // catch-all for things that shouldn't go wrong (e.g. OOM during readInt) but could...
+        priorException.addSuppressed(new CorruptIndexException("checksum status indeterminate: unexpected exception", in, t));
+      }
+      IOUtils.reThrow(priorException);
+    }
   }
   
   /** 
@@ -229,6 +281,14 @@ public final class CodecUtil {
   }
   
   private static void validateFooter(IndexInput in) throws IOException {
+    long remaining = in.length() - in.getFilePointer();
+    long expected = footerLength();
+    if (remaining < expected) {
+      throw new CorruptIndexException("misplaced codec footer (file truncated?): remaining=" + remaining + ", expected=" + expected, in);
+    } else if (remaining > expected) {
+      throw new CorruptIndexException("misplaced codec footer (file extended?): remaining=" + remaining + ", expected=" + expected, in);
+    }
+    
     final int magic = in.readInt();
     if (magic != FOOTER_MAGIC) {
       throw new CorruptIndexException("codec footer mismatch: actual footer=" + magic + " vs expected footer=" + FOOTER_MAGIC, in);
