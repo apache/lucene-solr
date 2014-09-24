@@ -170,7 +170,7 @@ public class CheckIndex {
       /** Current deletions generation. */
       public long deletionsGen;
 
-      /** True if we were able to open an AtomicReader on this
+      /** True if we were able to open an LeafReader on this
        *  segment. */
       public boolean openReaderPassed;
 

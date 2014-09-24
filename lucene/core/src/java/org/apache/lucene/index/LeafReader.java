@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.util.Bits;
 
-/** {@code AtomicReader} is an abstract class, providing an interface for accessing an
+/** {@code LeafReader} is an abstract class, providing an interface for accessing an
  index.  Search of an index is done entirely through this abstract interface,
  so that any subclass which implements it is searchable. IndexReaders implemented
  by this subclass do not consist of several sub-readers,

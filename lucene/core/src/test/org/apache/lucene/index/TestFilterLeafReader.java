@@ -32,7 +32,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TestFilterAtomicReader extends LuceneTestCase {
+public class TestFilterLeafReader extends LuceneTestCase {
 
   private static class TestReader extends FilterLeafReader {
 

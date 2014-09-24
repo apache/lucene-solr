@@ -30,7 +30,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-public class TestParallelAtomicReader extends LuceneTestCase {
+public class TestParallelLeafReader extends LuceneTestCase {
 
   private IndexSearcher parallel, single;
   private Directory dir, dir1, dir2;
@@ -128,7 +128,7 @@ public class TestParallelAtomicReader extends LuceneTestCase {
     
     try {
       pr.document(0);
-      fail("ParallelAtomicReader should be already closed because inner reader was closed!");
+      fail("ParallelLeafReader should be already closed because inner reader was closed!");
     } catch (AlreadyClosedException e) {
       // pass
     }

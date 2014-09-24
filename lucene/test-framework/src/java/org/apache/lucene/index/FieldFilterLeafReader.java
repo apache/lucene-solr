@@ -154,7 +154,7 @@ public final class FieldFilterLeafReader extends FilterLeafReader {
 
   @Override
   public String toString() {
-    final StringBuilder sb = new StringBuilder("FieldFilterAtomicReader(reader=");
+    final StringBuilder sb = new StringBuilder("FieldFilterLeafReader(reader=");
     sb.append(in).append(", fields=");
     if (negate) sb.append('!');
     return sb.append(fields).append(')').toString();

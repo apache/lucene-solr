@@ -144,7 +144,7 @@ public class ChainedFilter extends Filter {
   /**
    * Delegates to each filter in the chain.
    *
-   * @param context AtomicReaderContext
+   * @param context LeafReaderContext
    * @param logic Logical operation
    * @return DocIdSet
    */
@@ -161,7 +161,7 @@ public class ChainedFilter extends Filter {
   /**
    * Delegates to each filter in the chain.
    *
-   * @param context AtomicReaderContext
+   * @param context LeafReaderContext
    * @param logic Logical operation
    * @return DocIdSet
    */

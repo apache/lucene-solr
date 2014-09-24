@@ -45,7 +45,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class TestOrdinalMappingAtomicReader extends FacetTestCase {
+public class TestOrdinalMappingLeafReader extends FacetTestCase {
   
   private static final int NUM_DOCS = 100;
   private final FacetsConfig facetConfig = new FacetsConfig();
@@ -126,7 +126,7 @@ public class TestOrdinalMappingAtomicReader extends FacetTestCase {
       // add a facet under default dim config
       doc.add(new FacetField("id", Integer.toString(i)));
       
-      // make sure OrdinalMappingAtomicReader ignores non-facet BinaryDocValues fields
+      // make sure OrdinalMappingLeafReader ignores non-facet BinaryDocValues fields
       doc.add(new BinaryDocValuesField("bdv", new BytesRef(Integer.toString(i))));
       doc.add(new BinaryDocValuesField("cbdv", new BytesRef(Integer.toString(i*2))));
       writer.addDocument(facetConfig.build(taxonomyWriter, doc));

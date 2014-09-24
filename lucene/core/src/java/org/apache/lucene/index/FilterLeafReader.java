@@ -25,12 +25,12 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
-/**  A <code>FilterAtomicReader</code> contains another AtomicReader, which it
+/**  A <code>FilterLeafReader</code> contains another LeafReader, which it
  * uses as its basic source of data, possibly transforming the data along the
  * way or providing additional functionality. The class
- * <code>FilterAtomicReader</code> itself simply implements all abstract methods
+ * <code>FilterLeafReader</code> itself simply implements all abstract methods
  * of <code>IndexReader</code> with versions that pass all requests to the
- * contained index reader. Subclasses of <code>FilterAtomicReader</code> may
+ * contained index reader. Subclasses of <code>FilterLeafReader</code> may
  * further override some of these methods and may also provide additional
  * methods and fields.
  * <p><b>NOTE</b>: If you override {@link #getLiveDocs()}, you will likely need
@@ -317,12 +317,12 @@ public class FilterLeafReader extends LeafReader {
     }
   }
 
-  /** The underlying AtomicReader. */
+  /** The underlying LeafReader. */
   protected final LeafReader in;
 
   /**
-   * <p>Construct a FilterAtomicReader based on the specified base reader.
-   * <p>Note that base reader is closed if this FilterAtomicReader is closed.</p>
+   * <p>Construct a FilterLeafReader based on the specified base reader.
+   * <p>Note that base reader is closed if this FilterLeafReader is closed.</p>
    * @param in specified base reader.
    */
   public FilterLeafReader(LeafReader in) {
@@ -390,7 +390,7 @@ public class FilterLeafReader extends LeafReader {
 
   @Override
   public String toString() {
-    final StringBuilder buffer = new StringBuilder("FilterAtomicReader(");
+    final StringBuilder buffer = new StringBuilder("FilterLeafReader(");
     buffer.append(in);
     buffer.append(')');
     return buffer.toString();

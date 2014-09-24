@@ -197,7 +197,7 @@ public final class DocValues {
   }
   
   // some helpers, for transition from fieldcache apis.
-  // as opposed to the AtomicReader apis (which must be strict for consistency), these are lenient
+  // as opposed to the LeafReader apis (which must be strict for consistency), these are lenient
   
   /**
    * Returns NumericDocValues for the reader, or {@link #emptyNumeric()} if it has none. 

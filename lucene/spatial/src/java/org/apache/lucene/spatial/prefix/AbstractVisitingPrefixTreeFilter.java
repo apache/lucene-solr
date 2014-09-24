@@ -79,7 +79,7 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
   /**
    * An abstract class designed to make it easy to implement predicates or
    * other operations on a {@link SpatialPrefixTree} indexed field. An instance
-   * of this class is not designed to be re-used across AtomicReaderContext
+   * of this class is not designed to be re-used across LeafReaderContext
    * instances so simply create a new one for each call to, say a {@link
    * org.apache.lucene.search.Filter#getDocIdSet(org.apache.lucene.index.LeafReaderContext, org.apache.lucene.util.Bits)}.
    * The {@link #getDocIdSet()} method here starts the work. It first checks

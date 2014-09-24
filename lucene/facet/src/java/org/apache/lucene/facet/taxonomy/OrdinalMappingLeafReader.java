@@ -51,10 +51,10 @@ import org.apache.lucene.util.IntsRef;
  * DirectoryReader reader = DirectoryReader.open(oldDir);
  * IndexWriterConfig conf = new IndexWriterConfig(VER, ANALYZER);
  * IndexWriter writer = new IndexWriter(newDir, conf);
- * List&lt;AtomicReaderContext&gt; leaves = reader.leaves();
- * AtomicReader wrappedLeaves[] = new AtomicReader[leaves.size()];
+ * List&lt;LeafReaderContext&gt; leaves = reader.leaves();
+ * LeafReader wrappedLeaves[] = new LeafReader[leaves.size()];
  * for (int i = 0; i < leaves.size(); i++) {
- *   wrappedLeaves[i] = new OrdinalMappingAtomicReader(leaves.get(i).reader(), ordmap);
+ *   wrappedLeaves[i] = new OrdinalMappingLeafReader(leaves.get(i).reader(), ordmap);
  * }
  * writer.addIndexes(new MultiReader(wrappedLeaves));
  * writer.commit();
@@ -113,7 +113,7 @@ public class OrdinalMappingLeafReader extends FilterLeafReader {
   private final Set<String> facetFields;
   
   /**
-   * Wraps an AtomicReader, mapping ordinals according to the ordinalMap, using
+   * Wraps an LeafReader, mapping ordinals according to the ordinalMap, using
    * the provided {@link FacetsConfig} which was used to build the wrapped
    * reader.
    */

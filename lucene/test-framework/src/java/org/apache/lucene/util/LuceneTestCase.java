@@ -1431,7 +1431,7 @@ public abstract class LuceneTestCase extends Assert {
             r = SlowCompositeReaderWrapper.wrap(r);
             break;
           case 1:
-            // will create no FC insanity in atomic case, as ParallelAtomicReader has own cache key:
+            // will create no FC insanity in atomic case, as ParallelLeafReader has own cache key:
             r = (r instanceof LeafReader) ?
               new ParallelLeafReader((LeafReader) r) :
               new ParallelCompositeReader((CompositeReader) r);
@@ -1451,7 +1451,7 @@ public abstract class LuceneTestCase extends Assert {
             Collections.shuffle(allFields, random);
             final int end = allFields.isEmpty() ? 0 : random.nextInt(allFields.size());
             final Set<String> fields = new HashSet<>(allFields.subList(0, end));
-            // will create no FC insanity as ParallelAtomicReader has own cache key:
+            // will create no FC insanity as ParallelLeafReader has own cache key:
             r = new ParallelLeafReader(
               new FieldFilterLeafReader(ar, fields, false),
               new FieldFilterLeafReader(ar, fields, true)

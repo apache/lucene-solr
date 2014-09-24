@@ -146,7 +146,7 @@ public class BlockJoinComparatorSource extends FieldComparatorSource {
       public FieldComparator<Integer> setNextReader(LeafReaderContext context) throws IOException {
         final DocIdSet parents = parentsFilter.getDocIdSet(context, null);
         if (parents == null) {
-          throw new IllegalStateException("AtomicReader " + context.reader() + " contains no parents!");
+          throw new IllegalStateException("LeafReader " + context.reader() + " contains no parents!");
         }
         if (!(parents instanceof FixedBitSet)) {
           throw new IllegalStateException("parentFilter must return FixedBitSet; got " + parents);

@@ -368,7 +368,7 @@ public class WeightedSpanTermExtractor {
   
   /*
    * This reader will just delegate every call to a single field in the wrapped
-   * AtomicReader. This way we only need to build this field once rather than
+   * LeafReader. This way we only need to build this field once rather than
    * N-Times
    */
   static final class DelegatingLeafReader extends FilterLeafReader {
