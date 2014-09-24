@@ -198,16 +198,10 @@
       <fileset dir="." includes="**/build.xml" excludes="build.xml,analysis/*,build/**,tools/**,site/**"/>
     </makeurl>
     <property name="Codec.java" location="core/src/java/org/apache/lucene/codecs/Codec.java"/>
-    <loadfile srcfile="${Codec.java}" property="defaultCodecPackage">
+    <loadfile srcfile="${Codec.java}" property="defaultCodec" encoding="UTF-8">
       <filterchain>
-        <tokenfilter>
-          <filetokenizer/>
-          <scriptfilter language="groovy" classpathref="groovy.classpath"><![CDATA[
-            //                   private static Codec defaultCodec   =   Codec    .   forName    (   "LuceneXXX"   )   ;
-            def defaultCodecMatcher = self.getToken() =~ /defaultCodec\s*=\s*Codec\s*\.\s*forName\s*\(\s*"([^"]+)"\s*\)\s*;/
-            self.setToken(defaultCodecMatcher[0][1].toLowerCase(Locale.ROOT));
-          ]]></scriptfilter>
-        </tokenfilter>
+        <!--  private static Codec defaultCodec   =   Codec    .   forName    (   "LuceneXXX"                 )   ; -->
+        <containsregex pattern="^.*defaultCodec\s*=\s*Codec\s*\.\s*forName\s*\(\s*&quot;([^&quot;]+)&quot;\s*\)\s*;.*$" replace="\1"/>
       </filterchain>
     </loadfile>
 
@@ -223,7 +217,7 @@
       <outputproperty name="indent" value="yes"/>
       <param name="buildfiles" expression="${process-webpages.buildfiles}"/>
       <param name="version" expression="${version}"/>
-      <param name="defaultCodecPackage" expression="${defaultCodecPackage}"/>
+      <param name="defaultCodec" expression="${defaultCodec}"/>
     </xslt>
     
     <pegdown todir="${javadoc.dir}">
@@ -232,7 +226,7 @@
     </pegdown>
 
     <copy todir="${javadoc.dir}">
-      <fileset dir="site/html" includes="**/*"/>
+      <fileset dir="site/html"/>
     </copy>
   </target>
 	
