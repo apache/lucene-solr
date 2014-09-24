@@ -261,6 +261,8 @@ Other Changes
 * SOLR-6486: solr start script can have a debug flag option; use -a to set arbitrary options
   (Noble Paul, Timothy Potter)
 
+* SOLR-6453: Stop throwing an error message from Overseer when node exits (Ramkumar Aiyengar, Noble Paul)
+
 ==================  4.10.0 =================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
