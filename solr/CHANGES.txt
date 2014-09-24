@@ -201,6 +201,8 @@ Bug Fixes
 
 * SOLR-6509: Solr start scripts interactive mode doesn't honor -z argument (Timothy Potter)
 
+* SOLR-6511: Fencepost error in LeaderInitiatedRecoveryThread (Timothy Potter)
+
 
 Other Changes
 ----------------------
