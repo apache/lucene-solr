@@ -54,7 +54,7 @@ import java.util.concurrent.atomic.AtomicInteger;
   and postings.
   <li>{@link CompositeReader}: Instances (like {@link DirectoryReader})
   of this reader can only
-  be used to get stored fields from the underlying AtomicReaders,
+  be used to get stored fields from the underlying LeafReaders,
   but it is not possible to directly retrieve postings. To do that, get
   the sub-readers via {@link CompositeReader#getSequentialSubReaders}.
   Alternatively, you can mimic an {@link LeafReader} (with a serious slowdown),
@@ -89,7 +89,7 @@ public abstract class IndexReader implements Closeable {
 
   IndexReader() {
     if (!(this instanceof CompositeReader || this instanceof LeafReader))
-      throw new Error("IndexReader should never be directly extended, subclass AtomicReader or CompositeReader instead.");
+      throw new Error("IndexReader should never be directly extended, subclass LeafReader or CompositeReader instead.");
   }
   
   /**

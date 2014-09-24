@@ -29,7 +29,7 @@ import org.junit.BeforeClass;
 public class SortingLeafReaderTest extends SorterTestBase {
   
   @BeforeClass
-  public static void beforeClassSortingAtomicReaderTest() throws Exception {
+  public static void beforeClassSortingLeafReaderTest() throws Exception {
     
     // sort the index by id (as integer, in NUMERIC_DV_FIELD)
     Sort sort = new Sort(new SortField(NUMERIC_DV_FIELD, SortField.Type.INT));

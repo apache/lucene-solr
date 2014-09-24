@@ -59,19 +59,19 @@ public class ParallelLeafReader extends LeafReader {
   private final SortedMap<String,LeafReader> fieldToReader = new TreeMap<>();
   private final SortedMap<String,LeafReader> tvFieldToReader = new TreeMap<>();
   
-  /** Create a ParallelAtomicReader based on the provided
+  /** Create a ParallelLeafReader based on the provided
    *  readers; auto-closes the given readers on {@link #close()}. */
   public ParallelLeafReader(LeafReader... readers) throws IOException {
     this(true, readers);
   }
 
-  /** Create a ParallelAtomicReader based on the provided
+  /** Create a ParallelLeafReader based on the provided
    *  readers. */
   public ParallelLeafReader(boolean closeSubReaders, LeafReader... readers) throws IOException {
     this(closeSubReaders, readers, readers);
   }
 
-  /** Expert: create a ParallelAtomicReader based on the provided
+  /** Expert: create a ParallelLeafReader based on the provided
    *  readers and storedFieldReaders; when a document is
    *  loaded, only storedFieldsReaders will be used. */
   public ParallelLeafReader(boolean closeSubReaders, LeafReader[] readers, LeafReader[] storedFieldsReaders) throws IOException {
@@ -141,7 +141,7 @@ public class ParallelLeafReader extends LeafReader {
 
   @Override
   public String toString() {
-    final StringBuilder buffer = new StringBuilder("ParallelAtomicReader(");
+    final StringBuilder buffer = new StringBuilder("ParallelLeafReader(");
     for (final Iterator<LeafReader> iter = completeReaderSet.iterator(); iter.hasNext();) {
       buffer.append(iter.next());
       if (iter.hasNext()) buffer.append(", ");

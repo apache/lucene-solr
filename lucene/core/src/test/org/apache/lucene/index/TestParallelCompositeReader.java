@@ -383,7 +383,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     ParallelCompositeReader pr = new ParallelCompositeReader(new CompositeReader[] {ir1});
     
     final String s = pr.toString();
-    assertTrue("toString incorrect: " + s, s.startsWith("ParallelCompositeReader(ParallelAtomicReader("));
+    assertTrue("toString incorrect: " + s, s.startsWith("ParallelCompositeReader(ParallelLeafReader("));
 
     pr.close();
     dir1.close();
@@ -395,7 +395,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     ParallelCompositeReader pr = new ParallelCompositeReader(new CompositeReader[] {new MultiReader(ir1)});
     
     final String s = pr.toString();
-    assertTrue("toString incorrect: " + s, s.startsWith("ParallelCompositeReader(ParallelCompositeReader(ParallelAtomicReader("));
+    assertTrue("toString incorrect: " + s, s.startsWith("ParallelCompositeReader(ParallelCompositeReader(ParallelLeafReader("));
 
     pr.close();
     dir1.close();

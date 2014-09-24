@@ -42,10 +42,10 @@ public class EarlyTerminatingCollectorException extends RuntimeException {
    * This number represents the sum of:
    * </p>
    * <ul>
-   *  <li>The total number of documents in all AtomicReaders
+   *  <li>The total number of documents in all LeafReaders
    *      that were fully exhausted during collection
    *  </li>
-   *  <li>The id of the last doc collected in the last AtomicReader
+   *  <li>The id of the last doc collected in the last LeafReader
    *      consulted during collection.
    *  </li>
    * </ul>

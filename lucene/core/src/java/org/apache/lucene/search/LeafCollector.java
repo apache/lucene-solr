@@ -43,7 +43,7 @@ import java.io.IOException;
  * final BitSet bits = new BitSet(indexReader.maxDoc());
  * searcher.search(query, new Collector() {
  *
- *   public LeafCollector getLeafCollector(AtomicReaderContext context)
+ *   public LeafCollector getLeafCollector(LeafReaderContext context)
  *       throws IOException {
  *     final int docBase = context.docBase;
  *     return new LeafCollector() {

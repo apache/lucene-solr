@@ -40,7 +40,7 @@ import org.apache.lucene.index.MultiDocValues.OrdinalMap;
  * performance hit.  If this is important to your use case,
  * you'll get better performance by gathering the sub readers using
  * {@link IndexReader#getContext()} to get the
- * atomic leaves and then operate per-AtomicReader,
+ * atomic leaves and then operate per-LeafReader,
  * instead of using this class.
  */
 public final class SlowCompositeReaderWrapper extends LeafReader {

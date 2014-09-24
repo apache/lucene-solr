@@ -41,7 +41,7 @@ import org.apache.lucene.util.packed.PackedLongValues;
  * <p><b>NOTE</b>: for multi readers, you'll get better
  * performance by gathering the sub readers using
  * {@link IndexReader#getContext()} to get the
- * atomic leaves and then operate per-AtomicReader,
+ * atomic leaves and then operate per-LeafReader,
  * instead of using this class.
  * 
  * <p><b>NOTE</b>: This is very costly.

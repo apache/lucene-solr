@@ -199,7 +199,7 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
 
   /**
    * Given an IndexReader, asserts that there is at least one AtomcReader leaf,
-   * and that all AtomicReader leaves are SegmentReader's that have a compound 
+   * and that all LeafReader leaves are SegmentReader's that have a compound 
    * file status that matches the expected input.
    */
   private static void assertCompoundSegments(IndexReader reader, 
