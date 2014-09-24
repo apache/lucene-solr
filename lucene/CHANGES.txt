@@ -185,6 +185,11 @@ Tests
 * LUCENE-5974: Add check that backcompat indexes use default codecs
   (Ryan Ernst)
 
+* LUCENE-5971: Create addBackcompatIndexes.py script to build and add 
+  backcompat test indexes for a given lucene version. Also renamed backcompat
+  index files to use Version.toString() in filename.
+  (Ryan Ernst)
+
 Optimizations
 
 * LUCENE-5960: Use a more efficient bitset, not a Set<Integer>, to

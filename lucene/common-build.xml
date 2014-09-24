@@ -1044,6 +1044,7 @@
                 <propertyref prefix="tests.maxfailures" />
                 <propertyref prefix="tests.failfast" />
                 <propertyref prefix="tests.badapples" />
+                <propertyref prefix="tests.bwcdir" />
                 <propertyref prefix="tests.timeoutSuite" />
                 <propertyref prefix="tests.jettyConnector" />
                 <propertyref prefix="tests.disableHdfs" />
