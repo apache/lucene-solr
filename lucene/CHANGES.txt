@@ -38,6 +38,10 @@ Bug fixes
   tests (and test iterations). Fix for FaultyIndexInput in particular.
   (Dawid Weiss)
 
+* LUCENE-5975: Fix reading of 3.0-3.3 indexes, where bugs in these old
+  index formats would result in CorruptIndexException "did not read all
+  bytes from file" when reading the deleted docs file. (Patrick Mi, Robert MUir)
+
 Tests
 
 * LUCENE-5936: Add backcompat checks to verify what is tested matches known versions
