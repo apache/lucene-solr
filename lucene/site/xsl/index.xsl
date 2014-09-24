@@ -22,7 +22,10 @@
 >
   <xsl:param name="buildfiles"/>
   <xsl:param name="version"/>
-  <xsl:param name="defaultCodecPackage"/>
+  <xsl:param name="defaultCodec"/>
+  
+  <!-- ANT cannot lowercase a property, so we hack this here: -->
+  <xsl:variable name="defaultCodecPackage" select="translate($defaultCodec,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')"/>
   
   <!--
     NOTE: This template matches the root element of any given input XML document!
