@@ -177,6 +177,9 @@ def checkAll(dirName):
       else:
         anchor = None
 
+      # remove any whitespace from the middle of the link
+      link = ''.join(link.split())
+
       idx = link.find('?')
       if idx != -1:
         link = link[:idx]
